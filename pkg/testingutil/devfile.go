@@ -14,7 +14,7 @@ type TestDevfileData struct {
 
 // GetComponents is a mock function to get the components from a devfile
 func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
-	return d.GetAliasedComponents()
+	return d.Components
 }
 
 // GetMetadata is a mock function to get metadata from devfile
@@ -114,8 +114,8 @@ func (d TestDevfileData) UpdateEvents(postStart, postStop, preStart, preStop []s
 
 func (d TestDevfileData) SetParent(parent common.DevfileParent) {}
 
-// GetFakeComponent returns fake component for testing
-func GetFakeComponent(name string) versionsCommon.DevfileComponent {
+// GetFakeContainerComponent returns a fake container component for testing
+func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
 	image := "docker.io/maven:latest"
 	memoryLimit := "128Mi"
 	volumeName := "myvolume1"
@@ -132,6 +132,18 @@ func GetFakeComponent(name string) versionsCommon.DevfileComponent {
 				Path: volumePath,
 			}},
 			MountSources: true,
+		}}
+
+}
+
+// GetFakeVolumeComponent returns a fake volume component for testing
+func GetFakeVolumeComponent(name string) versionsCommon.DevfileComponent {
+	size := "4Gi"
+
+	return versionsCommon.DevfileComponent{
+		Volume: &versionsCommon.Volume{
+			Name: name,
+			Size: size,
 		}}
 
 }

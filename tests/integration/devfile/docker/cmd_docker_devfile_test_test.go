@@ -58,17 +58,6 @@ var _ = Describe("odo docker devfile test command tests", func() {
 			Expect(output).To(ContainSubstring("component does not exist, a valid component is required to run 'odo test'"))
 		})
 
-		It("should show error for devfile v1", func() {
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--context", context, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldFail("odo", "test", "--context", context)
-
-			Expect(output).To(ContainSubstring("'odo test' is not supported in devfile 1.0.0"))
-		})
-
 		It("should show error if no test group is defined", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 

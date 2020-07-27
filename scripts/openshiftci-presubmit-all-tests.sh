@@ -5,8 +5,13 @@ set -e
 # show commands
 set -x
 
+ARCH=$(uname -m)
 export CI="openshift"
-make configure-installer-tests-cluster
+if [ "${ARCH}" == "s390x" ]; then
+    make configure-installer-tests-cluster-s390x
+else
+    make configure-installer-tests-cluster
+fi
 make bin
 mkdir -p $GOPATH/bin
 go get -u github.com/onsi/ginkgo/ginkgo
@@ -27,14 +32,35 @@ odo login -u developer -p developer
 # Check login user name for debugging purpose
 oc whoami
 
-# Integration tests
-make test-integration
-make test-integration-devfile
-make test-cmd-login-logout
-make test-cmd-project
-make test-operator-hub
+# import the odo-init-image for s390x arch
+if [ "${ARCH}" == "s390x" ]; then
+    export ODO_BOOTSTRAPPER_IMAGE=registry.redhat.io/ocp-tools-4/odo-init-container-rhel8:1.1.4
+fi
 
-# E2e tests
-make test-e2e-all
+if [ "${ARCH}" == "s390x" ]; then
+    # Integration tests
+    make test-generic
+    make test-cmd-link-unlink
+    make test-cmd-pref-config
+    make test-cmd-watch
+    make test-cmd-debug
+    make test-cmd-login-logout
+    make test-cmd-project
+    make test-cmd-app
+    make test-cmd-storage
+    make test-cmd-push
+    make test-cmd-watch
+    # E2e tests
+    make test-e2e-beta
+else
+    # Integration tests
+    make test-integration
+    make test-integration-devfile
+    make test-cmd-login-logout
+    make test-cmd-project
+    make test-operator-hub
+    # E2e tests
+    make test-e2e-all
+fi
 
 odo logout

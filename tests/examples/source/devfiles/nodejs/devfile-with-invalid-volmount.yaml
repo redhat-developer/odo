@@ -1,6 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: nodejs
+  name: test-devfile
 projects:
   - name: nodejs-starter
     git:
@@ -9,10 +9,6 @@ components:
   - container:
       name: runtime
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
-      memoryLimit: 1024Mi
-      env:
-        - name: FOO
-          value: "bar"
       endpoints:
         - name: "3000/tcp"
           configuration:
@@ -21,23 +17,22 @@ components:
           targetPort: 3000
       mountSources: true
       volumeMounts:
-        - name: myvol
+        - name: invalidvol1
           path: /data
   - container:
       name: runtime2
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
-      memoryLimit: 1024Mi
       mountSources: false
       volumeMounts:
-        - name: myvol
+        - name: invalidvol2
           path: /data
-        - name: myvol2
+        - name: secondvol
           path: /data2
   - volume:
-      name: myvol
-      size: 3Gi
+      name: firstvol
   - volume:
-      name: myvol2
+      name: secondvol
+      size: 3Gi
 commands:
   - exec:
       id: devbuild

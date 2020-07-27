@@ -15,4 +15,5 @@ type CliRunner interface {
 	CreateRandNamespaceProject() string
 	DeleteNamespaceProject(projectName string)
 	GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string
+	GetPVCSize(compName, storageName, namespace string) string
 }

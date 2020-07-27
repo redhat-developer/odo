@@ -138,6 +138,14 @@ prepare-release: cross
 configure-installer-tests-cluster:
 	. ./scripts/configure-installer-tests-cluster.sh
 
+# configure cluster to run tests on s390x arch
+.PHONY: configure-installer-tests-cluster-s390x
+configure-installer-tests-cluster-s390x:
+	. ./scripts/configure-installer-tests-cluster-s390x.sh
+
+.PHONY: configure-supported-311-is
+configure-supported-311-is:
+	. ./scripts/supported-311-is.sh
 
 .PHONY: test
 test:

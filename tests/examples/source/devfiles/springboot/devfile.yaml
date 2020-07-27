@@ -33,6 +33,8 @@ components:
         - name: springbootpvc
           path: /data
       mountSources: false
+  - volume:
+      name: springbootpvc
 commands:
   - exec:
       id: defaultBuild
