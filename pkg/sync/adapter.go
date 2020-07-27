@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift/odo-47/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -221,15 +222,33 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 		err = exec.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, true, nil, nil)
 		if err != nil {
-			// This command may fail if the parent directory permissions are restrictive; since this doesn't
-			// affect our ability to delete the files _within_ the directory, we merely log it here.
+			// This command will return a non-zero error code if 'syncFolder' cannot be removed; this occurs
+			// if the folder is owned by a different container user (for example, if it is a source volume mount) or
+			// if we do not have sufficient permissions to remove it.
+			//
+			// However, for this function, we do not want 'syncFolder' itself to be removed, we just want the
+			// contents inside of it removed.
+			//
+			// So, to verify that the files inside that directory are actually removed, we will call
+			// isDirectoryEmpty below.
 			klog.V(4).Infof("error on deleting sync folder, but this is most likely an expected error. error: %v", err)
 		}
+
+		// (Re)create the folder
 		err = exec.ExecuteCommand(a.Client, compInfo, getCmdToCreateSyncFolder(syncFolder), false, nil, nil)
 		if err != nil {
 			return err
 		}
 
+		// The folder contents should be empty after we have cleared it; return an error if it's not
+		if isEmpty, err := isRemoteFolderEmpty(a, compInfo, syncFolder); err != nil || !isEmpty {
+
+			if err != nil {
+				return err
+			}
+			return errors.Errorf("remote directory '%s' should be empty, but is not", syncFolder)
+
+		}
 	}
 
 	if isForcePush || len(files) > 0 {
@@ -302,6 +321,34 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 	// Write the result
 	return util.WriteFile(fileIndex.Files, indexFilePath)
 
+}
+
+// isRemoteFolderEmpty returns true if the 'syncFolder' path in the pod contains no files/folders, false otherwise
+func isRemoteFolderEmpty(a Adapter, compInfo common.ComponentInfo, syncFolder string) (bool, error) {
+
+	stdoutWriter, stdoutOutputChan := exec.CreateConsoleOutputWriterAndChannel()
+	stderrWriter, stderrOutputChan := exec.CreateConsoleOutputWriterAndChannel()
+
+	err := exec.ExecuteCommand(a.Client, compInfo, []string{"ls", "-a", syncFolder}, false, stdoutWriter, stderrWriter)
+	if err != nil {
+		return false, err
+	}
+
+	stdoutWriter.Close()
+	stdout := <-stdoutOutputChan
+
+	stderrWriter.Close()
+	stderr := <-stderrOutputChan
+
+	// Count the number of lines from ls, should be 0 (excluding . and ..)
+	stdoutLinesFiltered := 0
+	for _, line := range stdout {
+		if line != ".." && line != "." {
+			stdoutLinesFiltered++
+		}
+	}
+
+	return stdoutLinesFiltered == 0 && len(stderr) == 0, nil
 }
 
 // getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container
