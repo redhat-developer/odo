@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -120,12 +119,17 @@ func (a Adapter) generateInitContainer(initContainerName string) corev1.Containe
 
 	initImage := "ubuntu"
 	command := []string{}
-	commandArgs := []string{}
+	commandArgs := []string{"/bin/sh", "-c", "while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"}
+	// commandArgs := []string{}
 	isPrivileged := false
 	envVars := []corev1.EnvVar{}
 	resourceReqs := corev1.ResourceRequirements{}
 
 	container := kclient.GenerateContainer(initContainerName, initImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
+
+	container.VolumeMounts = []corev1.VolumeMount{
+		{Name: "build-context", MountPath: "/kaniko/build-context"},
+	}
 
 	return *container
 }
@@ -168,29 +172,10 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container, init
 	if err != nil {
 		return err
 	}
-	klog.V(3).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
-
-	return nil
-}
-
-func (a Adapter) injectBuildContext(syncFolder io.Reader, destinationDirectory string, compInfo common.ComponentInfo) (err error) {
-
-	log.Error("~~~~~~~~~~~~ REACHING inject ~~~~~~~~~~~~~~~~~")
-	buildContextTar, err := ioutil.ReadAll(syncFolder)
-	if err != nil {
-		return err
-	}
-	writeErr := ioutil.WriteFile("kaniko-build-context.tar.gz", buildContextTar, 0644)
-	if writeErr != nil {
-		return writeErr
-	}
-	command := []string{adaptersCommon.ShellExecutable, "tar -zxf kaniko-build-context.tar.gz -c /kaniko/build-context"}
-	// command := []string{adaptersCommon.BusyboxExecutable, "while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"}
-
-	err = exec.ExecuteCommand(&a.Client, compInfo, command, false, nil, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to load tar into specified build context directory")
-	}
+	klog.V(5).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
+	// ownerReference := kclient.GenerateOwnerReference(deployment)
+	// objectMetaTemp := objectMeta
+	// objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 	return nil
 }
 
@@ -374,15 +359,25 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 		// }
 	}()
 
-	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
-	if err != nil {
-		return errors.Wrap(err, "error while waiting for deployment rollout")
-	}
+	// _, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
+	// if err != nil {
+	// 	return errors.Wrap(err, "error while waiting for deployment rollout")
+	// }
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(true)
+	// pod, err := a.waitAndGetComponentPod(true)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	// }
+
+	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+	watchOptions := metav1.ListOptions{
+		LabelSelector: podSelector,
+	}
+
+	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodPending, "Waiting for component to start in waitAndGetComponentPod", false)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		return errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 	}
 
 	// Need to wait for container to start
@@ -397,6 +392,7 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 		PodName:       pod.GetName(),
 	}
 
+	// log.Spinner("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " + compInfo.PodName)
 	syncFolder, err := syncAdapter.SyncFilesBuild(parameters, dockerfilePath)
 	log.Spinner("~~~~~~~~~~~~ AFTER syncFilesBuild ~~~~~~~~~~~~~~~~~")
 
@@ -404,10 +400,19 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
 	log.Spinner("~~~~~~~~~~~~ BEFORE inject ~~~~~~~~~~~~~~~~~")
+
 	destinationDirectory := "/kaniko/build-context"
-	err = a.injectBuildContext(syncFolder, destinationDirectory, compInfo)
+	klog.V(4).Infof("Copying files to pod")
+	err = a.Client.ExtractProjectToComponent(compInfo, destinationDirectory, syncFolder)
 	if err != nil {
 		return err
+	}
+	command := []string{"touch /tmp/complete"}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err = a.Client.ExecCMDInContainer(compInfo, command, &stdout, &stderr, syncFolder, false)
+	if err != nil {
+		return errors.Wrapf(err, "failed to close init container")
 	}
 
 	return
@@ -938,7 +943,7 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 		LabelSelector: podSelector,
 	}
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
+	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start in waitAndGetComponentPod", hideSpinner)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 	}
