@@ -168,7 +168,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 	}
 	numPods := len(pods.Items)
 	if numPods == 0 {
-		return nil, &NoPodFoundError{selector: selector}
+		return nil, &NoPodFoundError{Selector: selector}
 	} else if numPods > 1 {
 		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
 	}

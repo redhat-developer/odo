@@ -48,12 +48,13 @@ type DeleteOptions struct {
 	// devfile path
 	devfilePath     string
 	namespace       string
+	show            bool
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, false, false, "", false, &ComponentOptions{}, "", "", nil}
+	return &DeleteOptions{false, false, false, false, "", false, &ComponentOptions{}, "", "", false, nil}
 }
 
 // Complete completes log args
@@ -298,6 +299,11 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteAllFlag, "all", "a", false, "Delete component and local config")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteWaitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteS2iFlag, "s2i", "", false, "Delete s2i component if devfile and s2i both component present with same name")
+
+	// enable show flag if experimental mode is enabled
+	if experimental.IsExperimentalModeEnabled() {
+		componentDeleteCmd.Flags().BoolVar(&do.show, "show-log", false, "If enabled, logs will be shown when deleted")
+	}
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)

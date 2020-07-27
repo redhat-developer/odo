@@ -207,7 +207,7 @@ func getFirstContainerWithSourceVolume(containers []types.Container) (string, st
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
-func (a Adapter) Delete(labels map[string]string) error {
+func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	componentName, exists := labels["component"]
 	if !exists {

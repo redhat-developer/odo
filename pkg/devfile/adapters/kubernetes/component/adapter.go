@@ -163,9 +163,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// didn't previously exist
 	postStartEvents := a.Devfile.Data.GetEvents().PostStart
 	if !componentExists && len(postStartEvents) > 0 {
-		// log only when there are post start events present in devfile
-		// log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
-		err = a.execDevfileEvent(postStartEvents, "postStart", a.ComponentName, pod.GetName())
+		err = a.execDevfileEvent(postStartEvents, string(common.PostStart), a.ComponentName, pod.GetName(), parameters.Show)
 		if err != nil {
 			return err
 
@@ -486,7 +484,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
-func (a Adapter) execDevfileEvent(events []string, eventType, componentName, podName string) error {
+func (a Adapter) execDevfileEvent(events []string, eventType, componentName, podName string, show bool) error {
 
 	log.Infof("\nExecuting %s event commands for component %s", eventType, componentName)
 
@@ -500,7 +498,7 @@ func (a Adapter) execDevfileEvent(events []string, eventType, componentName, pod
 		}
 
 		if command.Composite != nil {
-			err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, commandMap, compInfo, false, a.machineEventLogger)
+			err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, commandMap, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return errors.Wrapf(err, "unable to execute devfile composite command "+commandName)
 			}
@@ -508,7 +506,7 @@ func (a Adapter) execDevfileEvent(events []string, eventType, componentName, pod
 			compInfo.ContainerName = command.Exec.Component
 
 			// Execute command in pod
-			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger, false)
+			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
 			if err != nil {
 				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
 			}
@@ -570,7 +568,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 }
 
 // Delete deletes the component
-func (a Adapter) Delete(labels map[string]string) error {
+func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	log.Infof("\nGathering information for component %s", a.ComponentName)
 	podSpinner := log.Spinnerf("Retrieving pod for component %s", a.ComponentName)
@@ -600,7 +598,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", a.ComponentName)
 		}
 
-		err = a.execDevfileEvent(preStopEvents, "preStop", a.ComponentName, pod.GetName())
+		err = a.execDevfileEvent(preStopEvents, string(common.PreStop), a.ComponentName, pod.GetName(), show)
 		if err != nil {
 			return err
 		}

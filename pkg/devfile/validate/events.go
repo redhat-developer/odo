@@ -8,48 +8,38 @@ import (
 	"k8s.io/klog"
 )
 
-// Errors
-var (
-	ErrorInvalidEvent = "%s type event %s invalid"
-)
-
 // validateEvents validates all the devfile events
 func validateEvents(events common.DevfileEvents, commands []common.DevfileCommand) error {
 
-	var preStartErr, postStartErr, preStopErr, postStopErr error
+	eventErrors := ""
 
 	switch {
 	case len(events.PreStart) > 0:
 		klog.V(4).Info("Validating preStart events")
-		preStartErr = isEventValid(events.PreStart, "preStart", commands)
+		if preStartErr := isEventValid(events.PreStart, "preStart", commands); preStartErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", preStartErr.Error())
+		}
 		fallthrough
 	case len(events.PostStart) > 0:
 		klog.V(4).Info("Validating postStart events")
-		postStartErr = isEventValid(events.PostStart, "postStart", commands)
+		if postStartErr := isEventValid(events.PostStart, "postStart", commands); postStartErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", postStartErr.Error())
+		}
 		fallthrough
 	case len(events.PreStop) > 0:
 		klog.V(4).Info("Validating preStop events")
-		preStopErr = isEventValid(events.PreStop, "preStop", commands)
+		if preStopErr := isEventValid(events.PreStop, "preStop", commands); preStopErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", preStopErr.Error())
+		}
 		fallthrough
 	case len(events.PostStop) > 0:
 		klog.V(4).Info("Validating postStop events")
-		postStopErr = isEventValid(events.PostStop, "postStop", commands)
+		if postStopErr := isEventValid(events.PostStop, "postStop", commands); postStopErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", postStopErr.Error())
+		}
 	}
 
-	eventErrors := ""
-	if preStartErr != nil {
-		eventErrors += fmt.Sprintf("\n%s", preStartErr.Error())
-	}
-	if postStartErr != nil {
-		eventErrors += fmt.Sprintf("\n%s", postStartErr.Error())
-	}
-	if preStopErr != nil {
-		eventErrors += fmt.Sprintf("\n%s", preStopErr.Error())
-	}
-	if postStopErr != nil {
-		eventErrors += fmt.Sprintf("\n%s", postStopErr.Error())
-	}
-
+	// if there is any validation error, return it
 	if len(eventErrors) > 0 {
 		return fmt.Errorf("devfile events validation error: %s", eventErrors)
 	}
@@ -63,20 +53,20 @@ func isEventValid(eventNames []string, eventType string, commands []common.Devfi
 	for _, eventName := range eventNames {
 		isValid := false
 		for _, command := range commands {
-			if command.Exec != nil && command.Exec.Id == strings.ToLower(eventName) {
+			if command.GetID() == strings.ToLower(eventName) {
 				isValid = true
 				break
 			}
 		}
 
 		if !isValid {
-			klog.V(4).Infof(ErrorInvalidEvent, eventType, eventName)
+			klog.V(4).Infof("%s type event %s invalid", eventType, eventName)
 			invalidEvents = append(invalidEvents, eventName)
 		}
 	}
 
 	if len(invalidEvents) > 0 {
-		return fmt.Errorf(ErrorInvalidEvent, eventType, strings.Join(invalidEvents, ","))
+		return &InvalidEventError{eventType: eventType, event: strings.Join(invalidEvents, ",")}
 	}
 
 	return nil

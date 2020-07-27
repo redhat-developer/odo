@@ -377,7 +377,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-post-start.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
@@ -389,6 +389,18 @@ var _ = Describe("odo devfile push command tests", func() {
 				"Executing devbuild command",
 				"Executing devrun command",
 			})
+		})
+
+		It("should err out on invalid events", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.ReplaceString("devfile.yaml", "secondpoststart", "secondpoststart12345")
+
+			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"postStart type event secondpoststart12345 invalid"})
 		})
 
 		It("should be able to handle a missing build command group", func() {

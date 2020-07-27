@@ -45,9 +45,9 @@ func (k Adapter) DoesComponentExist(cmpName string) (bool, error) {
 }
 
 // Delete deletes the Kubernetes resources that correspond to the devfile
-func (k Adapter) Delete(labels map[string]string) error {
+func (k Adapter) Delete(labels map[string]string, show bool) error {
 
-	err := k.componentAdapter.Delete(labels)
+	err := k.componentAdapter.Delete(labels, show)
 	if err != nil {
 		return err
 	}

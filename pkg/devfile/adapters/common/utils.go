@@ -14,6 +14,9 @@ import (
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
 type PredefinedDevfileCommands string
 
+// DevfileEventType encapsulates constants for devfile events
+type DevfileEventType string
+
 const (
 	// DefaultDevfileInitCommand is a predefined devfile command for init
 	DefaultDevfileInitCommand PredefinedDevfileCommands = "devinit"
@@ -84,6 +87,18 @@ const (
 
 	// SupervisordCtlSubCommand is the supervisord sub command ctl
 	SupervisordCtlSubCommand = "ctl"
+
+	// PreStart is a devfile event
+	PreStart DevfileEventType = "preStart"
+
+	// PostStart is a devfile event
+	PostStart DevfileEventType = "postStart"
+
+	// PreStop is a devfile event
+	PreStop DevfileEventType = "preStop"
+
+	// PostStop is a devfile event
+	PostStop DevfileEventType = "postStop"
 )
 
 // CommandNames is a struct to store the default and adapter names for devfile commands
