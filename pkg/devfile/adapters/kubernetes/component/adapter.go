@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -88,11 +89,18 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 		Name: buildName,
 	}
 
+	buildOutput := "DockerImage"
+
+	if parameters.Tag == "" {
+		parameters.Tag = fmt.Sprintf("%s:latest", buildName)
+		buildOutput = "ImageStreamTag"
+	}
+
 	controlC := make(chan os.Signal)
 	signal.Notify(controlC, os.Interrupt, syscall.SIGTERM)
 	go a.terminateBuild(controlC, client, commonObjectMeta)
 
-	_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{})
+	_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{}, buildOutput)
 	if err != nil {
 		return err
 	}
@@ -156,6 +164,7 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	s.End(true)
 	// Stop listening for a ^C so it doesnt perform terminateBuild during any later stages
 	signal.Stop(controlC)
+	log.Successf("Successfully built container image: %s", parameters.Tag)
 	return
 }
 
@@ -176,6 +185,7 @@ func (a Adapter) terminateBuild(c chan os.Signal, client *occlient.Client, commo
 
 // Build image for devfile project
 func (a Adapter) Build(parameters common.BuildParameters) (err error) {
+	// TODO: set namespace from user flag
 	client, err := occlient.New()
 	if err != nil {
 		return err
@@ -206,9 +216,6 @@ func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string
 
 	// apply template to yaml file
 	_ = tmpl.Execute(&buf, yamlSubstitutions)
-	if err != nil {
-		return []byte{}, errors.Wrap(err, "error executing template")
-	}
 
 	return buf.Bytes(), nil
 }
@@ -224,6 +231,20 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	namespace := a.Client.Namespace
 	applicationName := a.ComponentName + DeployComponentSuffix
 	deploymentManifest := &unstructured.Unstructured{}
+
+	var imageStream *imagev1.ImageStream
+	if parameters.Tag == "" {
+		imageStream, err = client.GetImageStream(namespace, a.ComponentName, "latest")
+		if err != nil {
+			return err
+		}
+
+		imageStreamImage, err := client.GetImageStreamImage(imageStream, "latest")
+		if err != nil {
+			return err
+		}
+		parameters.Tag = imageStreamImage.Image.DockerImageReference
+	}
 
 	// Specify the substitution keys and values
 	yamlSubstitutions := map[string]string{
@@ -319,6 +340,17 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 			}
 			s.End(true)
 
+			if imageStream != nil {
+				ownerReference := metav1.OwnerReference{
+					APIVersion: result.GetAPIVersion(),
+					Kind:       result.GetKind(),
+					Name:       result.GetName(),
+					UID:        result.GetUID(),
+				}
+
+				imageStream.ObjectMeta.OwnerReferences = append(imageStream.ObjectMeta.OwnerReferences, ownerReference)
+			}
+
 			// Write the returned manifest to the local manifest file
 			if writtenToManifest {
 				_, err = manifestFile.WriteString("---\n")
@@ -334,10 +366,16 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 		}
 	}
 
+	if imageStream != nil {
+		err = client.UpdateImageStream(imageStream)
+		if err != nil {
+			return err
+		}
+	}
 	s := log.Spinner("Determining the application URL")
 
 	// Need to wait for a second to give the server time to create the artifacts
-	// TODO: Replace wait with a wait for object to be created (need to determine which object!!!)
+	// TODO: Replace wait with a wait for object to be created correctly
 	time.Sleep(2 * time.Second)
 
 	labelSelector := fmt.Sprintf("%v=%v", "component", applicationName)

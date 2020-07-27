@@ -275,8 +275,8 @@ func (oc OcRunner) SourceLocationBC(componentName string, appName string, projec
 	return sourceLocation
 }
 
-// checkForImageStream checks if there is a ImageStram with name and tag in openshift namespace
-func (oc OcRunner) checkForImageStream(name string, tag string) bool {
+// CheckForImageStream checks if there is a ImageStram with name and tag in openshift namespace
+func (oc OcRunner) CheckForImageStream(name string, tag string) bool {
 	// first check if there is ImageStream with given name
 	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"), "'")
@@ -316,7 +316,7 @@ func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project str
 // ImportJavaIS import the openjdk image which is used for jars
 func (oc OcRunner) ImportJavaIS(project string) {
 	// if ImageStram already exists, no need to do anything
-	if oc.checkForImageStream("java", "8") {
+	if oc.CheckForImageStream("java", "8") {
 		return
 	}
 
@@ -331,7 +331,7 @@ func (oc OcRunner) ImportJavaIS(project string) {
 // ImportDotnet20IS import the dotnet image
 func (oc OcRunner) ImportDotnet20IS(project string) {
 	// if ImageStram already exists, no need to do anything
-	if oc.checkForImageStream("dotnet", "2.0") {
+	if oc.CheckForImageStream("dotnet", "2.0") {
 		return
 	}
 

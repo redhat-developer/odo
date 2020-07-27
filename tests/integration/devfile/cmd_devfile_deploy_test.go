@@ -15,6 +15,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig, imageTag string
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
+	oc := helper.NewOcRunner("oc")
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -159,6 +160,22 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 			cmdOutput := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
 			Expect(cmdOutput).To(ContainSubstring(fmt.Sprintf("Successfully deployed component: http://%s-deploy-%s", cmpName, namespace)))
+		})
+	})
+
+	Context("Verify the deploy completes on openshift with no tag provided", func() {
+		It("Should successfully deploy the application", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			cmdOutput := helper.CmdShouldPass("odo", "deploy")
+			Expect(cmdOutput).To(ContainSubstring(fmt.Sprintf("Successfully deployed component: http://%s-deploy-%s", cmpName, namespace)))
+
+			output := cliRunner.GetServices(namespace)
+			Expect(output).To(ContainSubstring(cmpName + "-deploy"))
+
+			ok := oc.CheckForImageStream(cmpName, "latest")
+			Expect(ok).To(BeTrue())
 		})
 	})
 })

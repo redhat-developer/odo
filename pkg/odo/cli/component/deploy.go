@@ -84,15 +84,16 @@ func (do *DeployOptions) Validate() (err error) {
 	log.Infof("\nValidation")
 
 	// Validate the --tag
-	if do.tag == "" {
-		return errors.New("odo deploy requires a tag, in the format <registry>/namespace>/<image>")
-	}
-
 	s := log.Spinner("Validating arguments")
-	err = util.ValidateTag(do.tag)
-	if err != nil {
-		s.End(false)
-		return err
+
+	// Empty tag will be set in the adapter
+	// based on the namespace and component name
+	if do.tag != "" {
+		err = util.ValidateTag(do.tag)
+		if err != nil {
+			s.End(false)
+			return err
+		}
 	}
 	s.End(true)
 

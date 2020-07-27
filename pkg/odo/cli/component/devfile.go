@@ -170,7 +170,6 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		)
 		os.Exit(1)
 	}
-	log.Successf("Successfully built container image: %s", do.tag)
 
 	deployParams := common.DeployParameters{
 		EnvSpecificInfo: *do.EnvSpecificInfo,
