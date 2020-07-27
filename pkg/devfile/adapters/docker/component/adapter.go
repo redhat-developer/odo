@@ -215,9 +215,9 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 // container to sync to, so return an error
 func getFirstContainerWithSourceVolume(containers []types.Container) (string, string, error) {
 	for _, c := range containers {
-		for _, m := range c.Mounts {
-			if strings.Contains(m.Name, lclient.ProjectSourceVolumeName) {
-				return c.ID, m.Destination, nil
+		for _, mnt := range c.Mounts {
+			if strings.Contains(mnt.Name, lclient.ProjectSourceVolumeName) {
+				return c.ID, mnt.Destination, nil
 			}
 		}
 	}
