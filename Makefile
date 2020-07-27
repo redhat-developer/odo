@@ -143,6 +143,11 @@ configure-installer-tests-cluster:
 configure-installer-tests-cluster-s390x:
 	. ./scripts/configure-installer-tests-cluster-s390x.sh
 
+# configure cluster to run tests on ppc64le arch
+.PHONY: configure-installer-tests-cluster-ppc64le
+configure-installer-tests-cluster-ppc64le:
+	. ./scripts/configure-installer-tests-cluster-ppc64le.sh
+
 .PHONY: configure-supported-311-is
 configure-supported-311-is:
 	. ./scripts/supported-311-is.sh
