@@ -8,7 +8,7 @@ Currently, odo uses the following logic to determine where to sync source code t
 1) If the `sourceMapping` field is set, odo will mount the source volume under to the specified folder and sync the source code there
 
 2) If `sourceMapping` is unset, odo will do one of two things:
-   a) If a single project is defined in the devfile, odo will sync to `/projects/<projectName>
+   a) If a single project is defined in the devfile, odo will sync to `/projects/<projectName>`
    b) If no projects are defined, or there are multiple projects defined, odo will sync to `/projects`
 
 The downside to this current approach is that the expected sync directory isn't consistent for somebody writing a devfile, and as they add or remove projects from the devfile, the sync directory will change, potentially breaking the commands in their devfile each time.
