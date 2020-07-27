@@ -19,7 +19,7 @@ To make the syncing directory more consistent, odo will do the following (in the
 
 1) If the `sourceMapping` field is set, odo will mount the source volume under to the specified folder and sync the source code there. The `PROJECTS_ROOT` environment variable in each container will be set to this value (as-is today).
 
-2) If the `PROJECTS_ROOT` environment variable is set on the user's machine, odo will sync to there, *and* set it as an environment variable in each remore container
+2) If `sourceMapping` is unset and the `PROJECTS_ROOT` environment variable is set for a given container, then the source code will be mounted into the value of `PROJECTS_ROOT`.
 
 3) If neither `sourceMapping` or `PROJECTS_ROOT` are set, odo will mount and sync the project source code to `/projects`
 
