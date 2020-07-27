@@ -82,10 +82,11 @@ type Adapter struct {
 
 const dockerfilePath string = "Dockerfile"
 
-var runAsUser = new(int64)
+var runAsUser = int64(1000)
 
 func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []byte, imageTag string) corev1.Container {
-	buildImage := "gcr.io/kaniko-project/executor:debug"
+	// buildImage := "gcr.io/kaniko-project/executor:latest"
+	buildImage := "docker.io/busybox:latest"
 
 	// TODO(Optional): Init container before the buildah bud to copy over the files.
 
@@ -111,7 +112,11 @@ func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []
 		{Name: "build-context", MountPath: "/kaniko/build-context"},
 		{Name: "kaniko-secret", MountPath: "/kaniko/.docker"},
 	}
-	// container.SecurityContext.RunAsUser = runAsUser
+	if container.SecurityContext == nil {
+		container.SecurityContext = &corev1.SecurityContext{}
+	}
+	// priv := true
+	// container.SecurityContext.Privileged = &priv
 	return *container
 }
 
@@ -119,7 +124,7 @@ func (a Adapter) generateInitContainer(initContainerName string) corev1.Containe
 
 	initImage := "ubuntu"
 	command := []string{}
-	commandArgs := []string{"/bin/sh", "-c", "while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"}
+	commandArgs := []string{"/bin/sh", "-c", "while true; do sleep 1"}
 	// commandArgs := []string{}
 	isPrivileged := false
 	envVars := []corev1.EnvVar{}
@@ -160,11 +165,21 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container, init
 			},
 		},
 	}
-	// runAsUser := int64(0)
-	// var runAsUser int64
+
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, buildContextVolume)
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, kanikoSecretVolume)
 	podTemplateSpec.Spec.InitContainers = []corev1.Container{initContainer}
+
+	// podTemplateSpec.Spec.SecurityContext.RunAsUser = &runAsUser
+	// if podTemplateSpec.Spec.SecurityContext == nil {
+	// 	podTemplateSpec.Spec.SecurityContext = &corev1.PodSecurityContext{}
+	// }
+	// zero := int64(0)
+	// podTemplateSpec.Spec.SecurityContext.RunAsUser = &zero
+	// podTemplateSpec.Spec.SecurityContext.RunAsNonRoot = nil
+
+	// fmt.Printf("%v\n", podTemplateSpec.Spec.SecurityContext)
+	// fmt.Printf("%v\n", podTemplateSpec.Spec.SecurityContext.RunAsUser)
 
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
@@ -401,19 +416,25 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	}
 	log.Spinner("~~~~~~~~~~~~ BEFORE inject ~~~~~~~~~~~~~~~~~")
 
-	destinationDirectory := "/kaniko/build-context"
+	destinationDirectory := "/tmp/build-context"
 	klog.V(4).Infof("Copying files to pod")
 	err = a.Client.ExtractProjectToComponent(compInfo, destinationDirectory, syncFolder)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to stream tarball into init container")
 	}
-	command := []string{"touch /tmp/complete"}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	err = a.Client.ExecCMDInContainer(compInfo, command, &stdout, &stderr, syncFolder, false)
-	if err != nil {
-		return errors.Wrapf(err, "failed to close init container")
-	}
+	// command := []string{"touch", "/tmp/complete"}
+	// var stdout bytes.Buffer
+	// var stderr bytes.Buffer
+	// err = a.Client.ExecCMDInContainer(compInfo, command, &stdout, &stderr, syncFolder, false)
+
+	// if err != nil {
+	// 	return errors.Wrapf(err, "failed to close init container")
+	// }
+
+	// err = exec.ExecuteCommand(&a.Client, compInfo, command, false, nil, nil)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "failed to close init container")
+	// }
 
 	return
 

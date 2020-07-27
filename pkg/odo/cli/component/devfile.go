@@ -174,26 +174,26 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	}
 	log.Successf("Successfully built container image: %s", do.tag)
 
-	deployParams := common.DeployParameters{
-		EnvSpecificInfo: *do.EnvSpecificInfo,
-		Tag:             do.tag,
-		ManifestSource:  do.ManifestSource,
-		DeploymentPort:  do.DeploymentPort,
-	}
+	// deployParams := common.DeployParameters{
+	// 	EnvSpecificInfo: *do.EnvSpecificInfo,
+	// 	Tag:             do.tag,
+	// 	ManifestSource:  do.ManifestSource,
+	// 	DeploymentPort:  do.DeploymentPort,
+	// }
 
-	warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
+	// warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
 
-	log.Infof("\nDeploying component %s", componentName)
-	// Deploy the application
-	err = devfileHandler.Deploy(deployParams)
-	if err != nil {
-		log.Errorf(
-			"Failed to deploy application with name %s.\nError: %v",
-			componentName,
-			err,
-		)
-		os.Exit(1)
-	}
+	// log.Infof("\nDeploying component %s", componentName)
+	// // Deploy the application
+	// err = devfileHandler.Deploy(deployParams)
+	// if err != nil {
+	// 	log.Errorf(
+	// 		"Failed to deploy application with name %s.\nError: %v",
+	// 		componentName,
+	// 		err,
+	// 	)
+	// 	os.Exit(1)
+	// }
 
 	return nil
 }
