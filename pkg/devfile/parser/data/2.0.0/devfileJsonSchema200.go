@@ -341,7 +341,7 @@ const JsonSchema200 = `{
                       "type": "string"
                     },
                     "protocol": {
-                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is \"http\"",
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is http.",
                       "type": "string"
                     },
                     "secure": {
@@ -353,9 +353,9 @@ const JsonSchema200 = `{
                         "internal",
                         "none"
                       ],
-                      "description": "Describes how the endpoint should be exposed on the network. Default value is \"public\"",
+                      "description": "Describes how the endpoint should be exposed on the network. Default value is public.",
                       "type": "string"
-                    }
+                    },
                     "name": {
                       "type": "string"
                     },
@@ -466,7 +466,7 @@ const JsonSchema200 = `{
                       "type": "string"
                     },
                     "protocol": {
-                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is \"http\"",
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is http.",
                       "type": "string"
                     },
                     "secure": {
@@ -478,9 +478,9 @@ const JsonSchema200 = `{
                         "internal",
                         "none"
                       ],
-                      "description": "Describes how the endpoint should be exposed on the network. Default value is \"public\"",
+                      "description": "Describes how the endpoint should be exposed on the network. Default value is public.",
                       "type": "string"
-                    }
+                    },
                     "name": {
                       "type": "string"
                     },
@@ -544,7 +544,7 @@ const JsonSchema200 = `{
                       "type": "string"
                     },
                     "protocol": {
-                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is \"http\"",
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is http",
                       "type": "string"
                     },
                     "secure": {
@@ -556,9 +556,9 @@ const JsonSchema200 = `{
                         "internal",
                         "none"
                       ],
-                      "description": "Describes how the endpoint should be exposed on the network. Default value is \"public\"",
+                      "description": "Describes how the endpoint should be exposed on the network. Default value is public",
                       "type": "string"
-                    }
+                    },
                     "name": {
                       "type": "string"
                     },
@@ -942,14 +942,14 @@ const JsonSchema200 = `{
                                     "type": "string"
                                   },
                                   "protocol": {
-                                    "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
+                                    "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is tcp",
                                     "type": "string"
                                   },
                                   "public": {
                                     "type": "boolean"
                                   },
                                   "scheme": {
-                                    "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
+                                    "description": "The is the URL scheme to use when accessing the endpoint. Default value is http",
                                     "type": "string"
                                   },
                                   "secure": {
@@ -1647,14 +1647,14 @@ const JsonSchema200 = `{
                               "type": "string"
                             },
                             "protocol": {
-                              "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
+                              "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is tcp",
                               "type": "string"
                             },
                             "public": {
                               "type": "boolean"
                             },
                             "scheme": {
-                              "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
+                              "description": "The is the URL scheme to use when accessing the endpoint. Default value is http",
                               "type": "string"
                             },
                             "secure": {
@@ -2168,14 +2168,14 @@ const JsonSchema200 = `{
                                         "type": "string"
                                       },
                                       "protocol": {
-                                        "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
+                                        "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is tcp",
                                         "type": "string"
                                       },
                                       "public": {
                                         "type": "boolean"
                                       },
                                       "scheme": {
-                                        "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
+                                        "description": "The is the URL scheme to use when accessing the endpoint. Default value is http",
                                         "type": "string"
                                       },
                                       "secure": {

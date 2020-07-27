@@ -110,7 +110,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
 	if err != nil {
-		return fmt.Errorf("unable to get endpoints: %w", err)
+		// return fmt.Errorf("unable to get endpoints: %w", err)
+		return errors.Wrap(err, "unable to get endpoints")
 	}
 
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, endpointsMap)
