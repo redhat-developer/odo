@@ -142,13 +142,13 @@ var _ = Describe("odo push command tests", func() {
 	Context("Test push outside of the current working direcory", func() {
 
 		// Change to "outside" the directory before running the below tests
-		var _ = BeforeEach(func() {
+		JustBeforeEach(func() {
 			currentWorkingDirectory = helper.Getwd()
 			helper.Chdir(context)
 		})
 
 		// Change back to the currentWorkingDirectory
-		var _ = AfterEach(func() {
+		JustAfterEach(func() {
 			helper.Chdir(currentWorkingDirectory)
 		})
 

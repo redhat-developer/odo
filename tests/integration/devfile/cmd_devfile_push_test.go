@@ -129,7 +129,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/test/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -154,7 +154,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -179,7 +179,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -205,7 +205,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -328,7 +328,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -342,7 +342,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
@@ -369,7 +369,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -492,7 +492,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -505,7 +505,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/data2"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
