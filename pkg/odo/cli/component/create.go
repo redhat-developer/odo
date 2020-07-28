@@ -296,28 +296,59 @@ func createDefaultComponentName(context *genericclioptions.Context, componentTyp
 	return componentName, nil
 }
 
-func (co *CreateOptions) checkConflictingFlags() error {
-	errorString := "flag %s, requires --s2i flag to be set, when in experimental mode."
+func (co *CreateOptions) checkConflictingFlags() (err error) {
+	if err = co.checkConflictingS2IFlags(); err != nil {
+		return
+	}
 
+	if err = co.checkConflictingDevfileFlags(); err != nil {
+		return
+	}
+
+	return nil
+}
+
+func (co *CreateOptions) checkConflictingS2IFlags() error {
 	if !co.forceS2i {
+		errorString := "flag --%s, requires --s2i flag to be set true, when in experimental mode."
+
+		var flagName string
 		if co.now {
-			return errors.New(fmt.Sprintf(errorString, "--now"))
+			flagName = "now"
+		} else if len(co.componentBinary) != 0 {
+			flagName = "binary"
+		} else if len(co.componentGit) != 0 {
+			flagName = "git"
+		} else if len(co.componentEnvVars) != 0 {
+			flagName = "env"
+		} else if len(co.componentPorts) != 0 {
+			flagName = "port"
 		}
 
-		if len(co.componentBinary) != 0 {
-			return errors.New(fmt.Sprintf(errorString, "--binary"))
+		if len(flagName) != 0 {
+			return errors.New(fmt.Sprintf(errorString, flagName))
+		}
+	}
+	return nil
+}
+
+func (co *CreateOptions) checkConflictingDevfileFlags() error {
+	if co.forceS2i {
+		errorString := "you can't set --s2i flag as true if you want to use the %s via --%s"
+
+		var flagName string
+		if len(co.devfileMetadata.devfilePath.value) != 0 {
+			flagName = "devfile"
+		} else if len(co.devfileMetadata.devfileRegistry.Name) != 0 {
+			flagName = "registry"
+		} else if len(co.devfileMetadata.token) != 0 {
+			flagName = "token"
+		} else if len(co.devfileMetadata.starter) != 0 {
+			flagName = "starter"
 		}
 
-		if len(co.componentGit) != 0 {
-			return errors.New(fmt.Sprintf(errorString, "--git"))
-		}
-
-		if len(co.componentEnvVars) != 0 {
-			return errors.New(fmt.Sprintf(errorString, "--env"))
-		}
-
-		if len(co.componentPorts) != 0 {
-			return errors.New(fmt.Sprintf(errorString, "--port"))
+		if len(flagName) != 0 {
+			return errors.New(fmt.Sprintf(errorString, flagName, flagName))
 		}
 	}
 	return nil
@@ -366,9 +397,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
-			if co.forceS2i {
-				return errors.New("you can't set --s2i flag as true if you want to use the devfile that is specified via --devfile")
-			}
 			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 			if fileErr != nil && urlErr != nil {
@@ -382,9 +410,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
-			if co.forceS2i {
-				return errors.New("you can't specify registry via --registry if you want to force the S2I build with --s2i")
-			}
 
 			if co.devfileMetadata.devfilePath.value != "" {
 				return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
@@ -1150,7 +1175,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
-		componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Path to the user specify devfile")
+		componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Enforce S2I type components")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
