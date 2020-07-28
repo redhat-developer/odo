@@ -8,7 +8,7 @@ import (
 	"k8s.io/klog"
 )
 
-// validateEvents validates all the devfile events
+// validateEvents validates all the devfile events against the devfile commands
 func validateEvents(events common.DevfileEvents, commands []common.DevfileCommand) error {
 
 	eventErrors := ""
@@ -47,6 +47,7 @@ func validateEvents(events common.DevfileEvents, commands []common.DevfileComman
 	return nil
 }
 
+// isEventValid checks if events belonging to a specific event type are valid
 func isEventValid(eventNames []string, eventType string, commands []common.DevfileCommand) error {
 	var invalidEvents []string
 

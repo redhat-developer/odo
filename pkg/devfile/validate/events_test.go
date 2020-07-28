@@ -43,7 +43,7 @@ func TestValidateEvents(t *testing.T) {
 			errorShouldContain: nil,
 		},
 		{
-			name: "Case 1: Valid events",
+			name: "Case 2: Invalid events",
 			events: common.DevfileEvents{
 				PostStop: []string{
 					"event1",

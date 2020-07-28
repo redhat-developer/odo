@@ -571,7 +571,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	log.Infof("\nGathering information for component %s", a.ComponentName)
-	podSpinner := log.Spinnerf("Retrieving pod for component %s", a.ComponentName)
+	podSpinner := log.Spinnerf("Checking status for component %s", a.ComponentName)
 	defer podSpinner.End(false)
 
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
