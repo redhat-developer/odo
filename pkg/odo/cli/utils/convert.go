@@ -108,7 +108,7 @@ func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []strin
 // Validate validates the ConvertOptions based on completed values
 func (co *ConvertOptions) Validate() (err error) {
 	if co.context.LocalConfigInfo.GetSourceType() == config.GIT {
-		return errors.New("migration of git type s2i components to devfile not supported by odo")
+		return errors.New("migration of git type s2i components to devfile is not supported by odo")
 	}
 
 	return nil
@@ -154,6 +154,7 @@ func NewCmdConvert(name, fullName string) *cobra.Command {
 	return convertCmd
 }
 
+// generateDevfileYaml generates a devfile.yaml from s2i data.
 func generateDevfileYaml(co *ConvertOptions) error {
 
 	// builder image to use
@@ -183,7 +184,10 @@ func generateDevfileYaml(co *ConvertOptions) error {
 	// set metadata
 	s2iDevfile.SetMetadata(co.componentName, "1.0.0")
 	// set commponents
-	setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, co.context.LocalConfigInfo, s2iEnv)
+	err = setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, co.context.LocalConfigInfo, s2iEnv)
+	if err != nil {
+		return err
+	}
 	// set commands
 	setDevfileCommandsForS2I(s2iDevfile)
 
@@ -199,6 +203,7 @@ func generateDevfileYaml(co *ConvertOptions) error {
 	return nil
 }
 
+// generateEnvYaml generates .odo/env.yaml from s2i data.
 func generateEnvYaml(co *ConvertOptions) (err error) {
 
 	// list of urls having name, ports, secure
@@ -242,6 +247,7 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 	return co.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
 }
 
+// getImageforDevfile gets image details from s2i component type.
 func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1.ImageStreamImage, string, error) {
 
 	imageNS, imageName, imageTag, _, err := occlient.ParseImageName(componentType)
@@ -263,6 +269,7 @@ func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1
 	return imageStreamImage, imageforDevfile, nil
 }
 
+// setDevfileCommandsForS2I sets command in devfile.yaml from s2i data.
 func setDevfileCommandsForS2I(d data.DevfileData) {
 
 	buildCommand := common.DevfileCommand{
@@ -294,7 +301,8 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 
 }
 
-func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig *config.LocalConfigInfo, s2iEnv config.EnvVarList) {
+// setDevfileComponentsForS2I sets the devfile.yaml components field from s2i data.
+func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig *config.LocalConfigInfo, s2iEnv config.EnvVarList) error {
 
 	maxMemory := localConfig.GetMaxMemory()
 	volumes := localConfig.GetStorage()
@@ -342,7 +350,11 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		port := strings.Split(port, "/")
 		// from s2i config.yaml port is of the form 8080/TCP
 		// Ignoring TCP and Udp values here
-		portInt, _ := strconv.ParseInt(port[0], 10, 32)
+		portInt, err := strconv.ParseInt(port[0], 10, 32)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to convert port %s from config.yaml to devfile.yaml", port)
+		}
+
 		endpoint := common.Endpoint{
 			Name:       fmt.Sprintf("port-%s", port[0]),
 			TargetPort: int32(portInt),
@@ -370,6 +382,8 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	// Ignoring error here as we are writing a new file
 	_ = d.AddComponents(components)
 
+	return nil
+
 }
 
 func printOutput() {
@@ -387,7 +401,7 @@ $ odo push
 2. Verify if the component gets deployed successfully. 
 $ odo list
 
-3. If devfile component deployed successfully, your application is up, you can safely delete the s2i component. 
+3. If the devfile component was deployed successfully, your application is up, you can safely delete the s2i component. 
 $ odo delete --s2i -a
 
 congratulations you have successfully converted s2i component to devfile component :).
