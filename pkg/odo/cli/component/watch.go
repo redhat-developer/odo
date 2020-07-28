@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
@@ -213,9 +214,7 @@ func (wo *WatchOptions) Run() (err error) {
 				PushDiffDelay:       wo.delay,
 				StartChan:           nil,
 				ExtChan:             make(chan bool),
-				DevfileNamespace:    wo.namespace,
-				DevfilePath:         wo.devfilePath,
-				DevfileWatchHandler: regenerateAdapterAndPush,
+				DevfileWatchHandler: wo.regenerateAdapterAndPush,
 				Show:                wo.show,
 				DevfileInitCmd:      strings.ToLower(wo.devfileInitCommand),
 				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
@@ -302,29 +301,35 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 // regenerateAdapterAndPush is used as a DevfileWatchHandler in WatchParameters; it is a wrapper around adapter.Push()
 // that first regenerates the component adapter before calling push. This ensures that it has picked up the latest
 // devfile.yaml changes
-func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+func (wo *WatchOptions) regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
 	var adapter common.ComponentAdapter
-	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
-	if err == nil {
-		err = adapter.Push(pushParams)
+
+	adapter, err := wo.regenerateComponentAdapterFromWatchParams(watchParams)
+	if err != nil {
+		return errors.Wrapf(err, "unable to generate component from watch parameters")
+	}
+
+	err = adapter.Push(pushParams)
+	if err != nil {
+		return errors.Wrapf(err, "watch command was unable to push component")
 	}
 
 	return err
 }
 
 // regenerateComponentAdapterFromWatchParams (re)generates a component adapter from the given watch parameters.
-func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(parameters.DevfilePath)
+	devObj, err := devfile.ParseAndValidate(wo.devfilePath)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to parse and validate '%s'", wo.devfilePath)
 	}
 
 	var platformContext interface{}
 	if !pushtarget.IsPushTargetDocker() {
 		platformContext = kubernetes.KubernetesContext{
-			Namespace: parameters.DevfileNamespace,
+			Namespace: wo.namespace,
 		}
 	} else {
 		platformContext = nil

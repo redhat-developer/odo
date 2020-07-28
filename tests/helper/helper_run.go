@@ -99,3 +99,13 @@ func CmdShouldFailWithRetry(maxRetry, intervalSeconds int, program string, args 
 	return ""
 
 }
+
+// WaitForOutputToContain waits for for the session stdout output to contain a particular substring
+func WaitForOutputToContain(substring string, timeoutInSeconds int, intervalInSeconds int, session *gexec.Session) {
+
+	Eventually(func() string {
+		contents := string(session.Out.Contents())
+		return contents
+	}, timeoutInSeconds, intervalInSeconds).Should(ContainSubstring(substring))
+
+}

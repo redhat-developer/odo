@@ -53,9 +53,7 @@ type WatchParameters struct {
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileBuildCmd string
 	// DevfileRunCmd takes the run command through the command line and overwrites devfile run command
-	DevfileRunCmd    string
-	DevfilePath      string
-	DevfileNamespace string
+	DevfileRunCmd string
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided

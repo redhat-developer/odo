@@ -10,7 +10,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/pkg/watch"
@@ -122,15 +121,11 @@ var _ = Describe("odo devfile watch command tests", func() {
 			session := helper.CmdRunner("odo", "watch", "--context", context)
 			defer session.Kill()
 
-			waitForOutputToContain("Waiting for something to change", session)
+			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
 
 			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "kind: build", "kind: run")
 
-			waitForOutputToContain(watch.PushErrorString, session)
-
-			session.Kill()
-
-			Eventually(session).Should(gexec.Exit())
+			helper.WaitForOutputToContain(watch.PushErrorString, 180, 10, session)
 
 		})
 	})
@@ -153,14 +148,11 @@ var _ = Describe("odo devfile watch command tests", func() {
 			session := helper.CmdRunner("odo", "watch", "--context", context)
 			defer session.Kill()
 
-			waitForOutputToContain("Waiting for something to change", session)
+			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
 
 			// 4) Change some other file B
 			helper.ReplaceString(filepath.Join(context, "server.js"), "App started", "App is super started")
-			waitForOutputToContain("Executing devrun command", session)
-
-			session.Kill()
-			Eventually(session).Should(gexec.Exit())
+			helper.WaitForOutputToContain("Executing devrun command", 180, 10, session)
 
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
@@ -244,7 +236,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			session := helper.CmdRunner("odo", "watch", "--context", context)
 			defer session.Kill()
 
-			waitForOutputToContain("Waiting for something to change", session)
+			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
 
 			// 3) Create a new file A
 			fileAPath, _ := createSimpleFile(context)
@@ -296,7 +288,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 			// 6) Change server.js
 			helper.ReplaceString(filepath.Join(context, "server.js"), "App started", "App is super started")
-			waitForOutputToContain("server.js", session)
+			helper.WaitForOutputToContain("server.js", 180, 10, session)
 
 			// 7) Wait for the size values in the old and new index files to differ, indicating that watch has updated the index
 			Eventually(func() bool {
@@ -338,14 +330,4 @@ func createSimpleFile(context string) (string, string) {
 	Expect(err).NotTo(HaveOccurred())
 
 	return textFilePath, string(textOne)
-}
-
-// Wait for the session stdout output to contain a particular string
-func waitForOutputToContain(substring string, session *gexec.Session) {
-
-	Eventually(func() string {
-		contents := string(session.Out.Contents())
-		return contents
-	}, 180, 10).Should(ContainSubstring(substring))
-
 }
