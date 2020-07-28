@@ -825,24 +825,4 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
-	Context("Verify devfile push works", func() {
-
-		It("should mooooooo", func() {
-
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-
-			err := os.Rename(filepath.Join(context, "pom.xml"), filepath.Join(context, "pom.xml.renamed"))
-			Expect(err).NotTo(HaveOccurred())
-
-			// session := helper.CmdRunner("odo", "push", "-v", "5", "--namespace", namespace)
-			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--namespace", namespace)
-			waitForOutputToContain("Non-readable POM", session)
-
-		})
-	})
-
 })
