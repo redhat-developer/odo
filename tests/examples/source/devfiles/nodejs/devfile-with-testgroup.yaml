@@ -1,6 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: test-devfile
+  name: nodejs
 projects:
   - name: nodejs-starter
     git:
@@ -43,3 +43,12 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: test
+  - composite:
+         id: compositetest
+         label: Build and Mkdir
+         commands:
+           - test1
+           - test2
+         parallel: false
+         group: 
+            kind: test

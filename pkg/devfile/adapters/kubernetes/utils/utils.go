@@ -8,6 +8,7 @@ import (
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
@@ -61,7 +62,7 @@ func ConvertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 // GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
 func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, error) {
 	var containers []corev1.Container
-	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
+	for _, comp := range adaptersCommon.GetDevfileContainerComponents(devfileObj.Data) {
 		envVars := ConvertEnvs(comp.Container.Env)
 		resourceReqs := GetResourceReqs(comp)
 		ports, err := ConvertPorts(comp.Container.Endpoints)
@@ -269,4 +270,40 @@ func overrideContainerArgs(container *corev1.Container) {
 	klog.V(4).Infof("Updating container %v entrypoint with supervisord", container.Name)
 	container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
 	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
+}
+
+// UpdateContainerWithEnvFrom populates the runtime container with relevant
+// values for "EnvFrom" so that component can be linked with Operator backed
+// service
+func UpdateContainerWithEnvFrom(containers []corev1.Container, devfile devfileParser.DevfileObj, devfileRunCmd string, ei envinfo.EnvSpecificInfo) ([]corev1.Container, error) {
+	runCommand, err := adaptersCommon.GetRunCommand(devfile.Data, devfileRunCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range containers {
+		c := &containers[i]
+		if c.Name == runCommand.Exec.Component {
+			c.EnvFrom = generateEnvFromSource(ei)
+		}
+	}
+
+	return containers, nil
+}
+
+func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
+
+	envFrom := []corev1.EnvFromSource{}
+
+	for _, link := range ei.GetLink() {
+		envFrom = append(envFrom, corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: link.Name,
+				},
+			},
+		})
+	}
+
+	return envFrom
 }

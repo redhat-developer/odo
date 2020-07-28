@@ -21,13 +21,12 @@ import (
 	"sort"
 	"sync/atomic"
 
-	"k8s.io/api/admissionregistration/v1"
+	"k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apiserver/pkg/admission/plugin/webhook"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/generic"
 	"k8s.io/client-go/informers"
-	admissionregistrationlisters "k8s.io/client-go/listers/admissionregistration/v1"
+	admissionregistrationlisters "k8s.io/client-go/listers/admissionregistration/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -41,7 +40,7 @@ type validatingWebhookConfigurationManager struct {
 var _ generic.Source = &validatingWebhookConfigurationManager{}
 
 func NewValidatingWebhookConfigurationManager(f informers.SharedInformerFactory) generic.Source {
-	informer := f.Admissionregistration().V1().ValidatingWebhookConfigurations()
+	informer := f.Admissionregistration().V1beta1().ValidatingWebhookConfigurations()
 	manager := &validatingWebhookConfigurationManager{
 		configuration: &atomic.Value{},
 		lister:        informer.Lister(),
@@ -49,7 +48,7 @@ func NewValidatingWebhookConfigurationManager(f informers.SharedInformerFactory)
 	}
 
 	// Start with an empty list
-	manager.configuration.Store([]webhook.WebhookAccessor{})
+	manager.configuration.Store(&v1beta1.ValidatingWebhookConfiguration{})
 
 	// On any change, rebuild the config
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -62,8 +61,8 @@ func NewValidatingWebhookConfigurationManager(f informers.SharedInformerFactory)
 }
 
 // Webhooks returns the merged ValidatingWebhookConfiguration.
-func (v *validatingWebhookConfigurationManager) Webhooks() []webhook.WebhookAccessor {
-	return v.configuration.Load().([]webhook.WebhookAccessor)
+func (v *validatingWebhookConfigurationManager) Webhooks() []v1beta1.Webhook {
+	return v.configuration.Load().(*v1beta1.ValidatingWebhookConfiguration).Webhooks
 }
 
 // HasSynced returns true if the shared informers have synced.
@@ -80,24 +79,18 @@ func (v *validatingWebhookConfigurationManager) updateConfiguration() {
 	v.configuration.Store(mergeValidatingWebhookConfigurations(configurations))
 }
 
-func mergeValidatingWebhookConfigurations(configurations []*v1.ValidatingWebhookConfiguration) []webhook.WebhookAccessor {
+func mergeValidatingWebhookConfigurations(
+	configurations []*v1beta1.ValidatingWebhookConfiguration,
+) *v1beta1.ValidatingWebhookConfiguration {
 	sort.SliceStable(configurations, ValidatingWebhookConfigurationSorter(configurations).ByName)
-	accessors := []webhook.WebhookAccessor{}
+	var ret v1beta1.ValidatingWebhookConfiguration
 	for _, c := range configurations {
-		// webhook names are not validated for uniqueness, so we check for duplicates and
-		// add a int suffix to distinguish between them
-		names := map[string]int{}
-		for i := range c.Webhooks {
-			n := c.Webhooks[i].Name
-			uid := fmt.Sprintf("%s/%s/%d", c.Name, n, names[n])
-			names[n]++
-			accessors = append(accessors, webhook.NewValidatingWebhookAccessor(uid, c.Name, &c.Webhooks[i]))
-		}
+		ret.Webhooks = append(ret.Webhooks, c.Webhooks...)
 	}
-	return accessors
+	return &ret
 }
 
-type ValidatingWebhookConfigurationSorter []*v1.ValidatingWebhookConfiguration
+type ValidatingWebhookConfigurationSorter []*v1beta1.ValidatingWebhookConfiguration
 
 func (a ValidatingWebhookConfigurationSorter) ByName(i, j int) bool {
 	return a[i].Name < a[j].Name

@@ -4,6 +4,7 @@ import (
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/util"
 	"k8s.io/klog"
+	"net/url"
 )
 
 // DevfileCtx stores context info regarding devfile
@@ -24,6 +25,9 @@ type DevfileCtx struct {
 	// devfile json schema
 	jsonSchema string
 
+	//url path of the devfile
+	url string
+
 	// filesystem for devfile
 	Fs filesystem.Filesystem
 }
@@ -33,6 +37,13 @@ func NewDevfileCtx(path string) DevfileCtx {
 	return DevfileCtx{
 		relPath: path,
 		Fs:      filesystem.DefaultFs{},
+	}
+}
+
+// NewURLDevfileCtx returns a new DevfileCtx type object
+func NewURLDevfileCtx(url string) DevfileCtx {
+	return DevfileCtx{
+		url: url,
 	}
 }
 
@@ -64,11 +75,16 @@ func (d *DevfileCtx) Populate() (err error) {
 	return d.populateDevfile()
 }
 
-// PopulateFromBytes fills the DevfileCtx struct with relevant context info
-func (d *DevfileCtx) PopulateFromBytes(bytes []byte) (err error) {
+// PopulateFromURL fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) PopulateFromURL() (err error) {
+
+	_, err = url.ParseRequestURI(d.url)
+	if err != nil {
+		return err
+	}
 
 	// Read and save devfile content
-	if err := d.SetDevfileContentFromBytes(bytes); err != nil {
+	if err := d.SetDevfileContent(); err != nil {
 		return err
 	}
 	return d.populateDevfile()

@@ -74,6 +74,21 @@ func (d *DockerRunner) ExecContainer(containerID, command string) string {
 	return stdOut
 }
 
+func (d *DockerRunner) GetEnvsDevFileDeployment(containerID, command string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := d.ExecContainer(containerID, command)
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, "=")
+		name := splits[0]
+		value := strings.Join(splits[1:], "=")
+		mapOutput[name] = value
+	}
+	return mapOutput
+}
+
 // GetVolumesByLabel returns a list of volumes with the label (of the form "key=value")
 func (d *DockerRunner) GetVolumesByLabel(label string) []string {
 	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with label %s", label)

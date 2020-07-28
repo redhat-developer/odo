@@ -88,15 +88,20 @@ import:
   version: v1.3.3
   subpackages:
   - errdefs
-- package: github.com/google/go-github/github
+- package: github.com/google/go-github
   version: v30.1.0
+  subpackages:
+  - github
 - package: github.com/golang/mock
   version: v1.4.3
-# help glide with go mod submodule tag
 - package: github.com/Azure/go-autorest
   version: autorest/v0.9.0
-  # use older version due to https://github.com/hashicorp/go-multierror/issues/36
 - package: github.com/hashicorp/go-multierror
   version: v1.0.0
 - package: github.com/zalando/go-keyring
   version: master
+- package: github.com/redhat-developer/service-binding-operator
+  version: v0.1.1
+- package: github.com/openshift/custom-resource-status
+- package: sigs.k8s.io/controller-runtime/
+  version: v0.6.0

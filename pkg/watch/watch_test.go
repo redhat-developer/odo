@@ -101,6 +101,8 @@ type mockPushParameters struct {
 	isForcePush     bool
 	globExps        []string
 	show            bool
+	isDebug         bool
+	debugPort       int
 }
 
 var mockPush mockPushParameters
@@ -109,9 +111,11 @@ var mockPush mockPushParameters
 func mockDevFilePush(parameters common.PushParameters) error {
 	muLock.Lock()
 	defer muLock.Unlock()
-	if parameters.Show != mockPush.show {
+	if parameters.Show != mockPush.show || parameters.Debug != mockPush.isDebug || parameters.DebugPort != mockPush.debugPort {
 		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
 			"show:" + strconv.FormatBool(parameters.Show),
+			"debug:" + strconv.FormatBool(parameters.Debug),
+			"debugPort:" + strconv.Itoa(parameters.DebugPort),
 		})
 		os.Exit(1)
 	}
@@ -198,6 +202,8 @@ func TestWatchAndPush(t *testing.T) {
 		requiredFilePaths []testingutil.FileProperties
 		setupEnv          func(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error)
 		isExperimental    bool
+		isDebug           bool
+		debugPort         int
 	}{
 		{
 			name:            "Case 1: Valid watch with list of files to be ignored with a append event",
@@ -303,6 +309,8 @@ func TestWatchAndPush(t *testing.T) {
 			want:        []string{"src/read_licenses.py", "__init__.py"},
 			wantDeleted: []string{},
 			setupEnv:    setUpF8AnalyticsComponentSrc,
+			debugPort:   5858,
+			isDebug:     true,
 		},
 		{
 			name:            "Case 2: Valid watch with list of files to be ignored with a append and a delete event",
@@ -732,6 +740,8 @@ func TestWatchAndPush(t *testing.T) {
 					isForcePush:     tt.forcePush,
 					globExps:        tt.ignores,
 					show:            tt.show,
+					debugPort:       tt.debugPort,
+					isDebug:         tt.isDebug,
 				}
 
 				ExpectedChangedFiles = tt.want
@@ -811,7 +821,16 @@ func TestWatchAndPush(t *testing.T) {
 
 				if tt.isExperimental {
 					watchParameters.DevfileWatchHandler = mockDevFilePush
-					watchParameters.EnvSpecificInfo = &envinfo.EnvSpecificInfo{}
+					runMode := envinfo.Run
+					if tt.isDebug {
+						runMode = envinfo.Debug
+					}
+					watchParameters.EnvSpecificInfo = &envinfo.EnvSpecificInfo{
+						EnvInfo: *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
+							DebugPort: &tt.debugPort,
+							RunMode:   &runMode,
+						}),
+					}
 				} else {
 					watchParameters.ApplicationName = tt.applicationName
 					watchParameters.WatchHandler = mockPushLocal

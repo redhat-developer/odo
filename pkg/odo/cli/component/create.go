@@ -48,13 +48,17 @@ type CreateOptions struct {
 	componentPorts    []string
 	componentEnvVars  []string
 	memoryMax         string
-	memoryMin         string
-	memory            string
-	cpuMax            string
-	cpuMin            string
-	cpu               string
-	interactive       bool
-	now               bool
+
+	memoryMin string
+
+	appName string
+
+	memory      string
+	cpuMax      string
+	cpuMin      string
+	cpu         string
+	interactive bool
+	now         bool
 	*CommonPushOptions
 	devfileMetadata DevfileMetadata
 }
@@ -352,6 +356,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath.value) {
 			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
 		}
+
+		co.appName = genericclioptions.ResolveAppFlag(cmd)
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
@@ -905,7 +911,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return err
 	}
 
-	var url, sparseDir string
+	var logUrl, url, sparseDir string
 	if project.Git != nil {
 		if strings.Contains(project.Git.Location, "github.com") {
 			url, err = util.GetGitHubZipURL(project.Git.Location, project.Git.Branch, project.Git.StartPoint)
@@ -916,25 +922,32 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		} else {
 			return errors.Errorf("project type git with non github url not supported")
 		}
+		logUrl = project.Git.Location
 	} else if project.Github != nil {
 		url, err = util.GetGitHubZipURL(project.Github.Location, project.Github.Branch, project.Github.StartPoint)
 		if err != nil {
 			return err
 		}
+		logUrl = project.Github.Location
 		sparseDir = project.Github.SparseCheckoutDir
 	} else if project.Zip != nil {
 		url = project.Zip.Location
+		logUrl = project.Zip.Location
 		sparseDir = project.Zip.SparseCheckoutDir
 	} else {
 		return errors.Errorf("Project type not supported")
 	}
 
+	log.Info("\nProject")
+	downloadSpinner := log.Spinnerf("Downloading project from %s", logUrl)
 	err = checkoutProject(sparseDir, url, path)
 
 	if err != nil {
+		downloadSpinner.End(false)
 		return err
 	}
 
+	downloadSpinner.End(true)
 	return nil
 }
 
@@ -999,7 +1012,11 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			// Generate env file
-			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
+				Name:      co.devfileMetadata.componentName,
+				Namespace: co.devfileMetadata.componentNamespace,
+				AppName:   co.appName,
+			})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env file for devfile component")
 			}

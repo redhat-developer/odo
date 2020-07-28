@@ -48,7 +48,7 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 	session := CmdRunner(kubectl.path, args...)
 	stdOut := string(session.Wait().Out.Contents())
 	stdErr := string(session.Wait().Err.Contents())
-	if stdErr != "" {
+	if stdErr != "" && session.ExitCode() != 0 {
 		return checkOp(stdOut, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stdErr, podName))
 	}
 	return checkOp(stdOut, nil)
@@ -61,6 +61,14 @@ func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, names
 	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*component=` + compName)
 	podName := re.FindStringSubmatch(stdOut)[1]
 	return strings.TrimSpace(podName)
+}
+
+// GetPVCSize executes kubectl command and returns the bound storage size
+func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string) string {
+	stdOut := CmdShouldPass(kubectl.path, "get", "pvc", "--namespace", namespace, "--show-labels")
+	re := regexp.MustCompile(storageName + `-\S+\s+Bound\s+\S+\s+(\S+).*component=` + compName + `,storage-name=` + storageName)
+	storageSize := re.FindStringSubmatch(stdOut)[1]
+	return strings.TrimSpace(storageSize)
 }
 
 // GetVolumeMountNamesandPathsFromContainer returns the volume name and mount path in the format name:path\n
@@ -120,4 +128,20 @@ func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
 func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
 	CmdShouldPass("kubectl", "delete", "namespaces", projectName)
+}
+
+func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := CmdShouldPass(kubectl.path, "get", "deployment", componentName, "--namespace", projectName,
+		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, ":")
+		name := splits[0]
+		value := strings.Join(splits[1:], ":")
+		mapOutput[name] = value
+	}
+	return mapOutput
 }

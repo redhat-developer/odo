@@ -1,7 +1,7 @@
 #this is a template spec and actual spec will be generated
 #debuginfo not supported with Go
 %global debug_package %{nil}
-%global package_name openshift-odo
+%global package_name odo
 %global product_name odo
 %global golang_version ${GOLANG_VERSION}
 %global golang_version_nodot ${GOLANG_VERSION_NODOT}
@@ -65,7 +65,6 @@ cp -avrf dist/release/SHA256_SUM %{buildroot}%{_datadir}/%{name}-redistributable
 %license LICENSE
 %{_bindir}/odo
 
-%ifarch x86_64
 %package redistributable
 Summary:        %{product_name} client CLI binaries for Linux, macOS and Windows
 BuildRequires:  gcc
@@ -92,4 +91,3 @@ Obsoletes:      %{package_name}-redistributable
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe.tar.gz
 %{_datadir}/%{name}-redistributable/SHA256_SUM
-%endif

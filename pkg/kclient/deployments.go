@@ -42,6 +42,14 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 	return nil
 }
 
+// ListDeployments lists all deployments by selector
+func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error) {
+
+	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+}
+
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
 func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
 	klog.V(4).Infof("Waiting for %s deployment rollout", deploymentName)

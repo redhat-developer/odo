@@ -17,7 +17,6 @@ limitations under the License.
 package authorizer
 
 import (
-	"context"
 	"net/http"
 
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -57,7 +56,7 @@ type Attributes interface {
 	GetAPIVersion() string
 
 	// IsResourceRequest returns true for requests to API resources, like /api/v1/nodes,
-	// and false for non-resource endpoints like /api, /healthz
+	// and false for non-resource endpoints like /api, /healthz, and /swaggerapi
 	IsResourceRequest() bool
 
 	// GetPath returns the path of the request
@@ -68,12 +67,12 @@ type Attributes interface {
 // zero or more calls to methods of the Attributes interface.  It returns nil when an action is
 // authorized, otherwise it returns an error.
 type Authorizer interface {
-	Authorize(ctx context.Context, a Attributes) (authorized Decision, reason string, err error)
+	Authorize(a Attributes) (authorized Decision, reason string, err error)
 }
 
 type AuthorizerFunc func(a Attributes) (Decision, string, error)
 
-func (f AuthorizerFunc) Authorize(ctx context.Context, a Attributes) (Decision, string, error) {
+func (f AuthorizerFunc) Authorize(a Attributes) (Decision, string, error) {
 	return f(a)
 }
 

@@ -1,97 +1,72 @@
 package parser
 
 import (
-	"os"
+	"net/http"
+	"net/http/httptest"
 	"testing"
-
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 
 func TestPopulateFromBytes(t *testing.T) {
 
 	const (
-		InvalidDevfilePath = "/invalid/path"
+		InvalidURL = "blah"
 	)
-
-	// createTempDevfile helper creates temp devfile
-	createTempDevfile := func(t *testing.T, content []byte, fakeFs filesystem.Filesystem) (f filesystem.File) {
-
-		t.Helper()
-
-		// Create tempfile
-		f, err := fakeFs.TempFile(os.TempDir(), TempJSONDevfilePrefix)
-		if err != nil {
-			t.Errorf("failed to create temp devfile, %v", err)
-			return f
-		}
-
-		// Write content to devfile
-		if _, err := f.Write(content); err != nil {
-			t.Errorf("failed to write to temp devfile")
-			return f
-		}
-
-		// Successful
-		return f
-	}
 
 	t.Run("valid data passed", func(t *testing.T) {
 
+		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write(validJsonRawContent100())
+			if err != nil {
+				t.Error(err)
+			}
+		}))
+
 		var (
-			fakeFs      = filesystem.NewFakeFs()
-			tempDevfile = createTempDevfile(t, validJsonRawContent100(), fakeFs)
-			d           = DevfileCtx{
-				absPath: tempDevfile.Name(),
-				Fs:      fakeFs,
+			d = DevfileCtx{
+				url: testServer.URL,
 			}
 		)
-		defer os.Remove(tempDevfile.Name())
+		defer testServer.Close()
 
-		err := d.PopulateFromBytes(validJsonRawContent100())
+		err := d.PopulateFromURL()
 
 		if err != nil {
 			t.Errorf("unexpected error '%v'", err)
-		}
-
-		if err := tempDevfile.Close(); err != nil {
-			t.Errorf("failed to close temp devfile")
 		}
 	})
 
 	t.Run("invalid data passed", func(t *testing.T) {
 
+		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte(InvalidDevfileContent))
+			if err != nil {
+				t.Error(err)
+			}
+		}))
+
 		var (
-			fakeFs      = filesystem.NewFakeFs()
-			tempDevfile = createTempDevfile(t, []byte(validJsonRawContent100()), fakeFs)
-			d           = DevfileCtx{
-				absPath: tempDevfile.Name(),
-				Fs:      fakeFs,
+			d = DevfileCtx{
+				url: testServer.URL,
 			}
 		)
-		defer os.Remove(tempDevfile.Name())
+		defer testServer.Close()
 
-		err := d.PopulateFromBytes([]byte(InvalidDevfileContent))
+		err := d.PopulateFromURL()
 
 		if err == nil {
 			t.Errorf("expected error, didn't get one ")
-		}
-
-		if err := tempDevfile.Close(); err != nil {
-			t.Errorf("failed to close temp devfile")
 		}
 	})
 
 	t.Run("invalid filepath", func(t *testing.T) {
 
 		var (
-			fakeFs = filesystem.NewFakeFs()
-			d      = DevfileCtx{
-				absPath: InvalidDevfilePath,
-				Fs:      fakeFs,
+			d = DevfileCtx{
+				url: InvalidURL,
 			}
 		)
 
-		err := d.SetDevfileContent()
+		err := d.PopulateFromURL()
 
 		if err == nil {
 			t.Errorf("expected an error, didn't get one")

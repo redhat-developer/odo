@@ -2,7 +2,9 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/odo/util/validation"
 	"strconv"
+	"strings"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
@@ -83,6 +85,9 @@ type URLCreateOptions struct {
 	isRouteSupported bool
 	wantIngress      bool
 	urlType          envinfo.URLKind
+	isDevFile        bool
+	isDocker         bool
+	isExperimental   bool
 }
 
 // NewURLCreateOptions creates a new URLCreateOptions instance
@@ -91,10 +96,11 @@ func NewURLCreateOptions() *URLCreateOptions {
 }
 
 // Complete completes URLCreateOptions after they've been Created
-func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
 	o.DevfilePath = clicomponent.DevfilePath
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+	o.isDevFile = o.isExperimental && util.CheckPathExists(o.DevfilePath)
+	if o.isDevFile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
@@ -102,8 +108,8 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		o.Context = genericclioptions.NewContext(cmd)
 	}
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		if !pushtarget.IsPushTargetDocker() {
+	if o.isDevFile {
+		if !o.isDocker {
 			o.Client = genericclioptions.Client(cmd)
 
 			o.isRouteSupported, err = o.Client.IsRouteSupported()
@@ -115,10 +121,6 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 				o.urlType = envinfo.INGRESS
 			} else {
 				o.urlType = envinfo.ROUTE
-			}
-
-			if o.tlsSecret != "" && (!o.wantIngress || !o.secureURL) {
-				return fmt.Errorf("tls secret is only available for secure URLs of ingress kind")
 			}
 		}
 
@@ -161,7 +163,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			return err
 		}
 
-		if pushtarget.IsPushTargetDocker() {
+		if o.isDocker {
 			o.exposedPort, err = url.GetValidExposedPortNumber(o.exposedPort)
 			if err != nil {
 				return err
@@ -204,52 +206,66 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 // Validate validates the URLCreateOptions based on completed values
 func (o *URLCreateOptions) Validate() (err error) {
-	// Check if exist
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		// check if a host is provided for route based URLs
-		if o.isRouteSupported && !o.wantIngress && len(o.host) > 0 {
-			return fmt.Errorf("host is not supported for URLs of Route Kind")
+	if !util.CheckOutputFlag(o.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	}
+
+	// if experimental mode is enabled, and devfile is provided.
+	errorList := make([]string, 0)
+	if o.isDevFile {
+		if !o.isDocker && o.tlsSecret != "" && (o.urlType != envinfo.INGRESS || !o.secureURL) {
+			errorList = append(errorList, "TLS secret is only available for secure URLs of Ingress kind")
 		}
-		// if experimental mode is enabled, and devfile is provided.
-		// check if valid host is provided
-		if !pushtarget.IsPushTargetDocker() && len(o.host) <= 0 && (!o.isRouteSupported || o.wantIngress) {
-			return fmt.Errorf("host must be provided in order to create ingress")
+
+		// check if a host is provided for route based URLs
+		if len(o.host) > 0 {
+			if o.urlType == envinfo.ROUTE {
+				errorList = append(errorList, "host is not supported for URLs of Route Kind")
+			}
+			if err := validation.ValidateHost(o.host); err != nil {
+				errorList = append(errorList, err.Error())
+			}
+		} else if o.urlType == envinfo.INGRESS {
+			errorList = append(errorList, "host must be provided in order to create URLS of Ingress Kind")
 		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
 			if o.urlName == localURL.Name {
-				return fmt.Errorf("the url %s already exists", o.urlName)
+				errorList = append(errorList, fmt.Sprintf("URL %s already exists", o.urlName))
 			}
 		}
 	} else {
 		for _, localURL := range o.LocalConfigInfo.GetURL() {
 			if o.urlName == localURL.Name {
-				return fmt.Errorf("the url %s already exists in the application: %s", o.urlName, o.Application)
+				errorList = append(errorList, fmt.Sprintf("URL %s already exists in application: %s", o.urlName, o.Application))
 			}
 		}
 	}
 	// Check if url name is more than 63 characters long
 	if len(o.urlName) > 63 {
-		return fmt.Errorf("url name must be shorter than 63 characters")
+		errorList = append(errorList, "URL name must be shorter than 63 characters")
 	}
 
-	if !util.CheckOutputFlag(o.OutputFlag) {
-		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
-	}
-	if !experimental.IsExperimentalModeEnabled() {
+	if !o.isExperimental {
 		if o.now {
-			err = o.ValidateComponentCreate()
-			if err != nil {
-				return err
+			if err = o.ValidateComponentCreate(); err != nil {
+				errorList = append(errorList, err.Error())
 			}
 		}
+	}
+
+	if len(errorList) > 0 {
+		for i := range errorList {
+			errorList[i] = fmt.Sprintf("\t- %s", errorList[i])
+		}
+		return fmt.Errorf("URL creation failed:\n%s", strings.Join(errorList, "\n"))
 	}
 	return
 }
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		if pushtarget.IsPushTargetDocker() {
+	if o.isDevFile {
+		if o.isDocker {
 			for _, localURL := range o.EnvSpecificInfo.GetURL() {
 				fmt.Printf("componentPort is %v, localUrl.port is %v", o.componentPort, localURL.Port)
 				if o.componentPort == localURL.Port && localURL.ExposedPort > 0 {
@@ -275,9 +291,9 @@ func (o *URLCreateOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+	if o.isDevFile {
 		componentName := o.EnvSpecificInfo.GetName()
-		if pushtarget.IsPushTargetDocker() {
+		if o.isDocker {
 			log.Successf("URL %s created for component: %v with exposed port: %v", o.urlName, componentName, o.exposedPort)
 		} else {
 			log.Successf("URL %s created for component: %v", o.urlName, componentName)
@@ -286,7 +302,7 @@ func (o *URLCreateOptions) Run() (err error) {
 		log.Successf("URL %s created for component: %v", o.urlName, o.Component())
 	}
 	if o.now {
-		if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		if o.isDevFile {
 			err = o.DevfilePush()
 		} else {
 			err = o.Push()
@@ -314,22 +330,24 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
+	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "Port number for the url of the component, required in case of components which expose more than one service port")
 	// if experimental mode is enabled, add more flags to support ingress creation or docker application based on devfile
-	if experimental.IsExperimentalModeEnabled() {
-		if pushtarget.IsPushTargetDocker() {
-			urlCreateCmd.Flags().IntVarP(&o.exposedPort, "exposed-port", "", -1, "an external port to the application container")
+	o.isExperimental = experimental.IsExperimentalModeEnabled()
+	if o.isExperimental {
+		o.isDocker = pushtarget.IsPushTargetDocker()
+		if o.isDocker {
+			urlCreateCmd.Flags().IntVarP(&o.exposedPort, "exposed-port", "", -1, "External port to the application container")
 			urlCreateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, assign an exposed port directly")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleDocker, fullName)
 		} else {
-			urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "tls secret name for the url of the component if the user bring his own tls secret")
-			urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster ip for this URL")
-			urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
-			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Creates an ingress instead of Route on OpenShift clusters")
+			urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
+			urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster IP for this URL")
+			urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "Create a secure HTTPS URL")
+			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}
 	} else {
-		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
+		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "Create a secure HTTPS URL")
 		urlCreateCmd.Example = fmt.Sprintf(urlCreateExample, fullName)
 	}
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)

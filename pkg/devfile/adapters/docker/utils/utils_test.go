@@ -35,8 +35,8 @@ func TestComponentExists(t *testing.T) {
 			componentName: "golang",
 			client:        fakeClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
-				testingutil.GetFakeComponent("alias2"),
+				testingutil.GetFakeContainerComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias2"),
 			},
 			want:    true,
 			wantErr: false,
@@ -46,7 +46,7 @@ func TestComponentExists(t *testing.T) {
 			componentName: "fakecomponent",
 			client:        fakeClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			want:    false,
 			wantErr: false,
@@ -56,7 +56,7 @@ func TestComponentExists(t *testing.T) {
 			componentName: "golang",
 			client:        fakeErrorClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			want:    false,
 			wantErr: true,

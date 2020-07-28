@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/url"
 
-	authnv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apiserver/pkg/apis/audit"
 	authuser "k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
@@ -127,7 +126,7 @@ func (a *attributes) GetPath() string {
 }
 
 // user represents the event user
-type user authnv1.UserInfo
+type user audit.UserInfo
 
 // GetName returns the user name
 func (u user) GetName() string { return u.Username }

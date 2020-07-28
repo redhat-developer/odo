@@ -1,0 +1,23 @@
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: shell-app
+  namespace: service-binding-demo
+  labels:
+    connects-to: postgres
+    environment: shell
+spec:
+  selector:
+    app: shell-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: shell-app
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: shell-app
+          image: image-registry.openshift-image-registry.svc:5000/service-binding-demo/shell-app  # yamllint disable-line rule:line-length
+          imagePullPolicy: Always

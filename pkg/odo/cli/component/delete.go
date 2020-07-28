@@ -196,13 +196,19 @@ func (do *DeleteOptions) Run() (err error) {
 	return
 }
 
-// Run has the logic to perform the required actions as part of command for devfiles
+// DevFileRun has the logic to perform the required actions as part of command for devfiles
 func (do *DeleteOptions) DevFileRun() (err error) {
 	// devfile delete
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
 		err = do.DevfileComponentDelete()
 		if err != nil {
 			log.Errorf("error occurred while deleting component, cause: %v", err)
+		}
+
+		// delete the information about link of the components because deleting a component also deletes its links (Service Binding Requests)
+		err = do.EnvSpecificInfo.DeleteConfiguration("link")
+		if err != nil {
+			log.Errorf("error occurred while deleting environment specific information of the component, cause: %v", err)
 		}
 	} else {
 		log.Error("Aborting deletion of component")

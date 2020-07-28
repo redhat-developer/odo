@@ -1,0 +1,40 @@
+FROM centos:7 as build-tools
+ENV LANG=en_US.utf8
+ENV GOPATH /tmp/go
+ARG GO_PACKAGE_PATH=github.com/redhat-developer/service-binding-operator
+
+ENV GIT_COMMITTER_NAME devtools
+ENV GIT_COMMITTER_EMAIL devtools@redhat.com
+
+RUN yum install epel-release -y \
+    && yum install --enablerepo=centosplus install -y --quiet \
+    findutils \
+    git \
+    make \
+    gcc \
+    procps-ng \
+    tar \
+    wget \
+    which \
+    bc \
+    jq \
+    python36-virtualenv \
+    && yum clean all
+
+ENV PATH=:$GOPATH/bin:/tmp/goroot/go/bin:$PATH
+
+WORKDIR /tmp
+
+RUN mkdir -p $GOPATH/bin
+RUN mkdir -p /tmp/goroot
+
+RUN curl -Lo go1.14.3.linux-amd64.tar.gz https://dl.google.com/go/go1.14.3.linux-amd64.tar.gz && tar -C /tmp/goroot -xzf go1.14.3.linux-amd64.tar.gz
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && chmod +x kubectl && mv kubectl $GOPATH/bin/
+
+RUN curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v0.16.0/operator-sdk-v0.16.0-x86_64-linux-gnu && chmod +x operator-sdk && mv operator-sdk $GOPATH/bin/
+
+RUN mkdir -p ${GOPATH}/src/${GO_PACKAGE_PATH}/
+
+WORKDIR ${GOPATH}/src/${GO_PACKAGE_PATH}
+
+ENTRYPOINT [ "/bin/bash" ]

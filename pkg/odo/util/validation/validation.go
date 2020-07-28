@@ -18,5 +18,14 @@ func ValidateName(name string) error {
 	}
 
 	return nil
+}
 
+// ValidateHost validates that the provided host is a valid subdomain according to DNS (RFC 1123) rules
+func ValidateHost(host string) error {
+	errorList := validation.IsDNS1123Subdomain(host)
+	if len(errorList) != 0 {
+		return fmt.Errorf("%s is not a valid host name:  %s", host, strings.Join(errorList, " "))
+	}
+
+	return nil
 }

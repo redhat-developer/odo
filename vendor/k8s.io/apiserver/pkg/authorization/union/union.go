@@ -25,7 +25,6 @@ limitations under the License.
 package union
 
 import (
-	"context"
 	"strings"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -42,14 +41,14 @@ func New(authorizationHandlers ...authorizer.Authorizer) authorizer.Authorizer {
 }
 
 // Authorizes against a chain of authorizer.Authorizer objects and returns nil if successful and returns error if unsuccessful
-func (authzHandler unionAuthzHandler) Authorize(ctx context.Context, a authorizer.Attributes) (authorizer.Decision, string, error) {
+func (authzHandler unionAuthzHandler) Authorize(a authorizer.Attributes) (authorizer.Decision, string, error) {
 	var (
 		errlist    []error
 		reasonlist []string
 	)
 
 	for _, currAuthzHandler := range authzHandler {
-		decision, reason, err := currAuthzHandler.Authorize(ctx, a)
+		decision, reason, err := currAuthzHandler.Authorize(a)
 
 		if err != nil {
 			errlist = append(errlist, err)

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedComponentCommandName is the recommended component command name
+// RecommendedCommandName is the recommended component command name
 const RecommendedCommandName = "component"
 
 // ComponentOptions encapsulates basic component options

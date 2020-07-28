@@ -8,6 +8,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile"
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -93,6 +95,8 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(testCmd, &to.componentContext)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(testCmd)
+	// Adding `--app` flag
+	appCmd.AddApplicationFlag(testCmd)
 	completion.RegisterCommandHandler(testCmd, completion.ComponentNameCompletionHandler)
 	return testCmd
 }

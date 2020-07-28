@@ -3,16 +3,18 @@ package exec
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 )
 
 // ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
-func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
+func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient, noSpin bool) error {
 	var s *log.Status
 	var setEnvVariable, command string
 	for _, envVar := range exec.Env {
@@ -32,7 +34,7 @@ func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, com
 		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", command}
 	}
 
-	if show {
+	if show || noSpin {
 		s = log.SpinnerNoSpin("Executing " + commandName + " command " + fmt.Sprintf("%q", exec.CommandLine))
 	} else {
 		s = log.Spinnerf("Executing %s command %q", commandName, exec.CommandLine)
@@ -228,6 +230,61 @@ func ExecuteDevfileDebugActionWithoutRestart(client ExecClient, exec common.Exec
 	s.End(true)
 
 	return nil
+}
+
+// ExecuteCompositeDevfileAction executes a given composite command in a devfile
+// The composite command may reference exec commands, composite commands, or both
+func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite, commandsMap map[string]common.DevfileCommand, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) (err error) {
+	if composite.Parallel {
+		// Loop over each command and execute it in parallel
+		commandExecs := util.NewConcurrentTasks(len(composite.Commands))
+		for _, command := range composite.Commands {
+			cmd := command // needed to prevent the lambda from capturing the value
+			if devfileCommand, ok := commandsMap[strings.ToLower(cmd)]; ok {
+				commandExecs.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+					err := execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger, true)
+					if err != nil {
+						errChannel <- err
+					}
+				}})
+			} else {
+				return fmt.Errorf("composite command %q has command %q not found in devfile", composite.Id, command)
+			}
+		}
+
+		err := commandExecs.Run()
+		if err != nil {
+			return errors.Wrap(err, "parallel command execution failed")
+		}
+
+	} else {
+		// Execute the commands in order
+		for _, command := range composite.Commands {
+			if devfileCommand, ok := commandsMap[strings.ToLower(command)]; ok {
+				err = execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger, false)
+				if err != nil {
+					return fmt.Errorf("command execution failed: %v", err)
+				}
+			} else {
+				// Devfile validation should have caught a missing command earlier, but should include error handling here as well
+				return fmt.Errorf("composite command %q has command %q not found in devfile", composite.Id, command)
+			}
+		}
+	}
+
+	return nil
+}
+
+// execCommandFromComposite takes a command in a composite command and executes it.
+func execCommandFromComposite(client ExecClient, command common.DevfileCommand, commandsMap map[string]common.DevfileCommand, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient, noSpin bool) (err error) {
+	if command.Composite != nil {
+		err = ExecuteCompositeDevfileAction(client, *command.Composite, commandsMap, compInfo, show, machineEventLogger)
+	} else {
+		compInfo.ContainerName = command.Exec.Component
+		err = ExecuteDevfileCommandSynchronously(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger, noSpin)
+	}
+
+	return
 }
 
 // closeWriterAndWaitForAck closes the PipeWriter and then waits for a channel response from the ContainerOutputWriter (indicating that the reader had closed).

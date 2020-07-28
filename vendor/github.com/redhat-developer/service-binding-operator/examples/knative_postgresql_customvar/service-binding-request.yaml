@@ -1,0 +1,24 @@
+---
+apiVersion: apps.openshift.io/v1alpha1
+kind: ServiceBindingRequest
+metadata:
+  name: binding-request
+  namespace: service-binding-demo
+spec:
+  applicationSelector:
+    group: serving.knative.dev
+    version: v1beta1
+    resource: services
+    resourceRef: knative-app
+  backingServiceSelector:
+    group: postgresql.baiju.dev
+    version: v1alpha1
+    kind: Database
+    resourceRef: db-demo
+  customEnvVar:
+    - name: JDBC_URL
+      value: 'jdbc:postgresql://{{ .status.dbConnectionIP }}:{{ .status.dbConnectionPort }}/{{ .status.dbName }}'   # yamllint disable-line rule:line-length
+    - name: DB_USER
+      value: '{{ index .status.dbConfigMap "db.username" }}'
+    - name: DB_PASSWORD
+      value: '{{ index .status.dbConfigMap "db.password" }}'

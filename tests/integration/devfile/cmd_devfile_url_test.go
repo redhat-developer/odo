@@ -166,6 +166,12 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress")
+
+			// check the env for the runMode
+			envOutput, err := helper.ReadFile(filepath.Join(context, ".odo/env/env.yaml"))
+			Expect(err).To(BeNil())
+			Expect(envOutput).To(ContainSubstring(" RunMode: run"))
+
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
 			stdout = helper.CmdShouldPass("odo", "url", "delete", url1, "--now", "-f")
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
@@ -195,6 +201,23 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.DontMatchAllInOutput(stdOut, []string{"successfully deleted", "created"})
 			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 		})
+
+		It("should not allow creating an invalid host", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--ingress")
+			Expect(stdOut).To(ContainSubstring("is not a valid host name"))
+		})
+		It("should not allow using tls secret if url is not secure", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
+		})
+		It("should report multiple issues when it's the case", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
+		})
+
 	})
 
 	Context("Describing urls", func() {

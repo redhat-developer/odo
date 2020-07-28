@@ -1,0 +1,66 @@
+schemaVersion: 2.0.0
+metadata:
+  name: test-devfile
+projects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      mountSources: true
+commands:
+  - exec:
+      id: install
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+  - exec:
+      id: echo1
+      component: runtime
+      commandLine: echo hi
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+  - exec:
+      id: run
+      component: runtime
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+        isDefault: true
+  - composite:
+         id: buildAndEcho
+         label: Build and Echo
+         commands:
+           - echo1
+           - install
+           - NestedCommand
+           - echo3
+         parallel: false
+         group:
+           kind: build
+           isDefault: true
+  - composite:
+         id: NestedCommand
+         label: Build and Echo
+         commands:
+           - buildAndEcho
+           - install
+           - echo2
+           - echo3
+         parallel: false
+         group:
+           kind: build
+           isDefault: false
+  - exec:
+      id: echo2
+      component: runtime
+      commandLine: echo hello
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+  - exec:
+      id: echo3
+      component: runtime
+      commandLine: echo hellohii
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter

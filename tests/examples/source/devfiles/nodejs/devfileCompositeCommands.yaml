@@ -1,0 +1,56 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+projects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      mountSources: true
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+          configuration:
+            protocol: tcp
+            scheme: http
+            type: terminal
+commands:
+  - exec:
+      id: install
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: build
+        isDefault: false
+  - exec:
+      id: mkdir
+      component: runtime
+      commandLine: mkdir /projects/testfolder
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: build
+        isDefault: false
+  - exec:
+      id: run
+      component: runtime
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+        isDefault: true
+  - composite:
+         id: buildAndMkdir
+         label: Build and Mkdir
+         commands:
+           - mkdir
+           - install
+         parallel: false
+         group: 
+            kind: build
+            isDefault: true

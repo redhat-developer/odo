@@ -1,6 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: test-devfile
+  name: nodejs
 projects:
   - name: nodejs-starter
     git:
@@ -33,6 +33,11 @@ components:
           path: /data
         - name: myvol2
           path: /data2
+  - volume:
+      name: myvol
+      size: 3Gi
+  - volume:
+      name: myvol2
 commands:
   - exec:
       id: devbuild
