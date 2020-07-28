@@ -433,7 +433,9 @@ func TestUpdateIndexWithWatchChangesLocal(t *testing.T) {
 				}
 			}
 
-			updateIndexWithWatchChanges(pushParams)
+			if err := updateIndexWithWatchChanges(pushParams); err != nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal: unexpected error: %v", err)
+			}
 
 			postFileIndex, err := util.ReadFileIndex(fileIndexPath)
 			if err != nil || postFileIndex == nil {
