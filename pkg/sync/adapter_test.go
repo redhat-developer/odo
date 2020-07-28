@@ -341,7 +341,7 @@ func TestPushLocal(t *testing.T) {
 	}
 }
 
-func TestUpdateIndexWithWatchChangesLocal(t *testing.T) {
+func TestUpdateIndexWithWatchChanges(t *testing.T) {
 
 	tests := []struct {
 		name                 string
@@ -381,7 +381,7 @@ func TestUpdateIndexWithWatchChangesLocal(t *testing.T) {
 			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to resolve index file path: %v", err)
 		}
 
-		if err := os.MkdirAll(filepath.Dir(fileIndexPath), 0644); err != nil {
+		if err := os.MkdirAll(filepath.Dir(fileIndexPath), 0750); err != nil {
 			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to create directories for %s: %v", fileIndexPath, err)
 		}
 

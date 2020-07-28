@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -190,27 +191,31 @@ func TestGenerateNewFileDataEntry(t *testing.T) {
 		expectedKey   string
 	}{
 		{
-			absolutePath:  filepath.Join(directory, "/path/file1"),
-			rootDirectory: filepath.Join(directory, "/path"),
+			absolutePath:  filepath.Join(directory, "/path1/file1"),
+			rootDirectory: filepath.Join(directory, "/path1"),
 			expectedKey:   "file1",
 		},
 		{
-			absolutePath:  filepath.Join(directory, "/path/path2/file1"),
-			rootDirectory: filepath.Join(directory, "/path/"),
+			absolutePath:  filepath.Join(directory, "/path2/path2/file1"),
+			rootDirectory: filepath.Join(directory, "/path2"),
 			expectedKey:   "path2/file1",
 		},
 		{
-			absolutePath:  filepath.Join(directory, "/path"),
+			absolutePath:  filepath.Join(directory, "/path3"),
 			rootDirectory: filepath.Join(directory, "/"),
-			expectedKey:   "path",
+			expectedKey:   "path3",
 		},
 	}
 
 	for _, tt := range tests {
 
-		t.Run("Expected key "+tt.expectedKey, func(t *testing.T) {
+		t.Run("Expected key '"+tt.expectedKey+"'", func(t *testing.T) {
 
-			if err := ioutil.WriteFile(tt.absolutePath, []byte("hi"), 0644); err != nil {
+			if err := os.MkdirAll(filepath.Dir(tt.absolutePath), 0750); err != nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to create directories for %s: %v", tt.absolutePath, err)
+			}
+
+			if err := ioutil.WriteFile(tt.absolutePath, []byte("non-empty-string"), 0644); err != nil {
 				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
 			}
 
@@ -219,6 +224,9 @@ func TestGenerateNewFileDataEntry(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error occurred %v", err)
 			}
+
+			// Keys are platform specific, so swap to forward slash for Windows before comparison
+			key = strings.ReplaceAll(key, "\\", "/")
 
 			if key != tt.expectedKey {
 				t.Fatalf("Key %s did not match expected key %s", key, tt.expectedKey)
