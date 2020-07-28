@@ -39,15 +39,15 @@ type DeployOptions struct {
 	ignores          []string
 	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 
-	DevfilePath     string
-	devObj          devfileParser.DevfileObj
-	DockerfileURL   string
-	DockerfileBytes []byte
-	namespace       string
-	tag             string
-	credentials     string
-	ManifestSource  []byte
-	DeploymentPort  int
+	DevfilePath              string
+	devObj                   devfileParser.DevfileObj
+	DockerfileURL            string
+	DockerfileBytes          []byte
+	namespace                string
+	tag                      string
+	dockerConfigJSONFilename string
+	ManifestSource           []byte
+	DeploymentPort           int
 
 	*genericclioptions.Context
 }
@@ -215,8 +215,8 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	deployCmd.Flags().StringVar(&do.tag, "tag", "", "Tag used to build the image")
-	deployCmd.Flags().StringVar(&do.credentials, "credentials", "", "dockerconfig credentials used to push image to external registry")
 	deployCmd.Flags().StringSliceVar(&do.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
+	deployCmd.Flags().StringVar(&do.dockerConfigJSONFilename, "dockerconfigjson", "~/.docker/config.json", "Filepath to config.json which authenticates the image push to the desired image registry ")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(deployCmd)
