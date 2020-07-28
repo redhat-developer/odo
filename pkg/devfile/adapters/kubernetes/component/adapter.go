@@ -383,7 +383,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	fullURL, err := client.GetApplicationURL(applicationName, labelSelector)
 	if err != nil {
 		s.End(false)
-		log.Errorf("Unable to determine the application URL for component %s: %s", a.ComponentName, err)
+		log.Warningf("Unable to determine the application URL for component %s: %s", a.ComponentName, err)
 	} else {
 		s.End(true)
 		log.Successf("Successfully deployed component: %s", fullURL)
