@@ -174,7 +174,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			output := cliRunner.GetServices(namespace)
 			Expect(output).To(ContainSubstring(cmpName + "-deploy"))
 
-			ok := oc.CheckForImageStream(cmpName, "latest")
+			ok := oc.CheckForImageStream(namespace, cmpName, "latest")
 			Expect(ok).To(BeTrue())
 		})
 	})

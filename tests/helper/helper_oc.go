@@ -275,10 +275,10 @@ func (oc OcRunner) SourceLocationBC(componentName string, appName string, projec
 	return sourceLocation
 }
 
-// CheckForImageStream checks if there is a ImageStram with name and tag in openshift namespace
-func (oc OcRunner) CheckForImageStream(name string, tag string) bool {
+// CheckForImageStream checks if there is a ImageStram with name and tag in the specified namespace
+func (oc OcRunner) CheckForImageStream(namespace string, name string, tag string) bool {
 	// first check if there is ImageStream with given name
-	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
+	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", namespace,
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"), "'")
 	scanner := bufio.NewScanner(strings.NewReader(names))
 	namePresent := false
@@ -290,8 +290,8 @@ func (oc OcRunner) CheckForImageStream(name string, tag string) bool {
 	tagPresent := false
 	// if there is a ImageStream check if there is a given tag
 	if namePresent {
-		tags := strings.Trim(CmdShouldPass(oc.path, "get", "is", name, "-n", "openshift",
-			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'"), "'")
+		tags := strings.Trim(CmdShouldPass(oc.path, "get", "is", name, "-n", namespace,
+			"-o", "jsonpath='{range .status.tags[*]}{.tag}{\"\\n\"}{end}'"), "'")
 		scanner := bufio.NewScanner(strings.NewReader(tags))
 		for scanner.Scan() {
 			if scanner.Text() == tag {
@@ -316,7 +316,7 @@ func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project str
 // ImportJavaIS import the openjdk image which is used for jars
 func (oc OcRunner) ImportJavaIS(project string) {
 	// if ImageStram already exists, no need to do anything
-	if oc.CheckForImageStream("java", "8") {
+	if oc.CheckForImageStream("openshift", "java", "8") {
 		return
 	}
 
@@ -331,7 +331,7 @@ func (oc OcRunner) ImportJavaIS(project string) {
 // ImportDotnet20IS import the dotnet image
 func (oc OcRunner) ImportDotnet20IS(project string) {
 	// if ImageStram already exists, no need to do anything
-	if oc.CheckForImageStream("dotnet", "2.0") {
+	if oc.CheckForImageStream("openshift", "dotnet", "2.0") {
 		return
 	}
 
