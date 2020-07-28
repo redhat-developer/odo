@@ -65,10 +65,9 @@ func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, names
 
 // GetPVCSize executes kubectl command and returns the bound storage size
 func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string) string {
-	stdOut := CmdShouldPass(kubectl.path, "get", "pvc", "--namespace", namespace, "--show-labels")
-	re := regexp.MustCompile(storageName + `-\S+\s+Bound\s+\S+\s+(\S+).*component=` + compName + `,storage-name=` + storageName)
-	storageSize := re.FindStringSubmatch(stdOut)[1]
-	return strings.TrimSpace(storageSize)
+	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	stdOut := CmdShouldPass(kubectl.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
+	return strings.TrimSpace(stdOut)
 }
 
 // GetVolumeMountNamesandPathsFromContainer returns the volume name and mount path in the format name:path\n

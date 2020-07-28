@@ -381,10 +381,9 @@ func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace strin
 
 // GetPVCSize executes oc command and returns the bound storage size
 func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
-	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, "--show-labels")
-	re := regexp.MustCompile(storageName + `-\S+\s+Bound\s+\S+\s+(\S+).*component=` + compName + `,storage-name=` + storageName)
-	storageSize := re.FindStringSubmatch(stdOut)[1]
-	return strings.TrimSpace(storageSize)
+	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
+	return strings.TrimSpace(stdOut)
 }
 
 // GetRoute returns route URL
