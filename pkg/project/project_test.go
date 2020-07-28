@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"sync"
@@ -77,24 +78,20 @@ func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 }
 
 func TestCreate(t *testing.T) {
-
 	tests := []struct {
-		name            string
-		wantErr         bool
-		projectName     string
-		discoveryClient *fakeDiscovery
+		name        string
+		wantErr     bool
+		projectName string
 	}{
 		{
-			name:            "Case 1: project name is given",
-			wantErr:         false,
-			projectName:     "project1",
-			discoveryClient: fakeDiscoveryWithProject,
+			name:        "Case 1: project name is given",
+			wantErr:     false,
+			projectName: "project1",
 		},
 		{
-			name:            "Case 2: no project name given",
-			wantErr:         true,
-			projectName:     "",
-			discoveryClient: fakeDiscoveryWithProject,
+			name:        "Case 2: no project name given",
+			wantErr:     true,
+			projectName: "",
 		},
 	}
 
@@ -114,8 +111,9 @@ func TestCreate(t *testing.T) {
 		t.Errorf("failed to create mock odo and kube config files. Error %v", err)
 	}
 
+	// run tests for OpenShift (Project)
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(fmt.Sprintf(" %s with Project", tt.name), func(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
@@ -149,7 +147,7 @@ func TestCreate(t *testing.T) {
 				return true, fkWatch2, nil
 			})
 
-			client.SetDiscoveryInterface(tt.discoveryClient)
+			client.SetDiscoveryInterface(fakeDiscoveryWithProject)
 
 			// The function we are testing
 			err := Create(client, tt.projectName, true)
@@ -167,29 +165,81 @@ func TestCreate(t *testing.T) {
 		})
 	}
 
+	// run tests for Kubernetes (Namespace)
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf(" %s with Namespace", tt.name), func(t *testing.T) {
+
+			// Fake the client with the appropriate arguments
+			client, fakeClientSet := occlient.FakeNew()
+
+			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+			configOverrides := &clientcmd.ConfigOverrides{}
+			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+			fkWatch := watch.NewFake()
+
+			fakeClientSet.Kubernetes.PrependReactor("create", "namespace", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			go func() {
+				fkWatch.Add(testingutil.FakeNamespaceStatus(corev1.NamespacePhase("Active"), tt.projectName))
+			}()
+			fakeClientSet.Kubernetes.PrependWatchReactor("namespaces", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			fkWatch2 := watch.NewFake()
+			go func() {
+				fkWatch2.Add(&corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "default",
+					},
+				})
+			}()
+
+			fakeClientSet.Kubernetes.PrependWatchReactor("serviceaccounts", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch2, nil
+			})
+
+			client.SetDiscoveryInterface(fakeDiscoveryWithNamespace)
+
+			// The function we are testing
+			err := Create(client, tt.projectName, true)
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("project Create() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.Kubernetes.Actions()) != 2 {
+					t.Errorf("expected 2 ProjClientSet.Actions() in Project Create, got: %v", len(fakeClientSet.ProjClientset.Actions()))
+				}
+			}
+
+		})
+	}
+
 }
 
 func TestDelete(t *testing.T) {
 	tests := []struct {
-		name            string
-		wantErr         bool
-		wait            bool
-		projectName     string
-		discoveryClient *fakeDiscovery
+		name        string
+		wantErr     bool
+		wait        bool
+		projectName string
 	}{
 		{
-			name:            "Case 1: Test project delete for multiple projects",
-			wantErr:         false,
-			wait:            false,
-			projectName:     "prj2",
-			discoveryClient: fakeDiscoveryWithProject,
+			name:        "Case 1: Test project delete for multiple projects",
+			wantErr:     false,
+			wait:        false,
+			projectName: "prj2",
 		},
 		{
-			name:            "Case 2: Test delete the only remaining project",
-			wantErr:         false,
-			wait:            false,
-			projectName:     "testing",
-			discoveryClient: fakeDiscoveryWithProject,
+			name:        "Case 2: Test delete the only remaining project",
+			wantErr:     false,
+			wait:        false,
+			projectName: "testing",
 		},
 	}
 
@@ -209,8 +259,9 @@ func TestDelete(t *testing.T) {
 		t.Errorf("failed to create mock odo and kube config files. Error %v", err)
 	}
 
+	// run as on OpenShift (with Project)
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(fmt.Sprintf(" %s with Project", tt.name), func(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
@@ -243,13 +294,66 @@ func TestDelete(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
-			client.SetDiscoveryInterface(tt.discoveryClient)
+			client.SetDiscoveryInterface(fakeDiscoveryWithProject)
 
 			// The function we are testing
 			err := Delete(client, tt.projectName, tt.wait)
 
 			if err == nil && !tt.wantErr {
 				if len(fakeClientSet.ProjClientset.Actions()) != 1 {
+					t.Errorf("expected 1 ProjClientSet.Actions() in Project Delete, got: %v", len(fakeClientSet.ProjClientset.Actions()))
+				}
+			}
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("project Delete() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+
+	// run as on Kubernetes (with Namespace)
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf(" %s with Namespace", tt.name), func(t *testing.T) {
+
+			// Fake the client with the appropriate arguments
+			client, fakeClientSet := occlient.FakeNew()
+
+			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+			configOverrides := &clientcmd.ConfigOverrides{}
+			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+
+			client.Namespace = "testing"
+			fkWatch := watch.NewFake()
+
+			fakeClientSet.Kubernetes.PrependReactor("list", "namespaces", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.name == "Test delete the only remaining namspace" {
+					return true, testingutil.FakeOnlyOneExistingNamespace(), nil
+				}
+				return true, testingutil.FakeProjects(), nil
+			})
+
+			fakeClientSet.Kubernetes.PrependReactor("delete", "namespaces", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			// We pass in the fakeNamespace in order to avoid race conditions with multiple go routines
+			fakeNamespace := testingutil.FakeNamespaceStatus(corev1.NamespacePhase(""), tt.projectName)
+			go func(namespace *corev1.Namespace) {
+				fkWatch.Delete(namespace)
+			}(fakeNamespace)
+
+			fakeClientSet.Kubernetes.PrependWatchReactor("namespaces", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			client.SetDiscoveryInterface(fakeDiscoveryWithNamespace)
+
+			// The function we are testing
+			err := Delete(client, tt.projectName, tt.wait)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.Kubernetes.Actions()) != 1 {
 					t.Errorf("expected 1 ProjClientSet.Actions() in Project Delete, got: %v", len(fakeClientSet.ProjClientset.Actions()))
 				}
 			}
@@ -268,7 +372,6 @@ func TestList(t *testing.T) {
 		wantErr          bool
 		returnedProjects *v1.ProjectList
 		expectedProjects ProjectList
-		discoveryClient  *fakeDiscovery
 	}{
 		{
 			name:             "Case 1: Multiple projects returned",
@@ -281,7 +384,6 @@ func TestList(t *testing.T) {
 					GetMachineReadableFormat("prj2", false),
 				},
 			),
-			discoveryClient: fakeDiscoveryWithProject,
 		},
 		{
 			name:             "Case 2: Single project returned",
@@ -292,7 +394,6 @@ func TestList(t *testing.T) {
 					GetMachineReadableFormat("testing", false),
 				},
 			),
-			discoveryClient: fakeDiscoveryWithProject,
 		},
 		{
 			name:             "Case 3: No project returned",
@@ -301,7 +402,6 @@ func TestList(t *testing.T) {
 			expectedProjects: getMachineReadableFormatForList(
 				nil,
 			),
-			discoveryClient: fakeDiscoveryWithProject,
 		},
 	}
 
@@ -335,7 +435,7 @@ func TestList(t *testing.T) {
 				return true, tt.returnedProjects, nil
 			})
 
-			client.SetDiscoveryInterface(tt.discoveryClient)
+			client.SetDiscoveryInterface(fakeDiscoveryWithProject)
 
 			// The function we are testing
 			projects, err := List(client)
@@ -356,4 +456,5 @@ func TestList(t *testing.T) {
 			}
 		})
 	}
+
 }
