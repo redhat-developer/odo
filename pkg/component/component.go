@@ -544,7 +544,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceName string) error {
 	klog.V(4).Infof("Validating configured %v values", resourceName)
 
-	err := fmt.Errorf("`min%s` should accompany `max%s` or use `odo config set %s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
+	err := fmt.Errorf("`min%s` should accompany `max%s` or use `odo config set %s` to use same value for both min and max", resourceName, resourceName, resourceName)
 
 	if (resourceMin == nil) != (resourceMax == nil) {
 		return err
