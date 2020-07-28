@@ -27,6 +27,12 @@ var (
 	`)
 )
 
+var (
+	supportedUnsetParameters = map[string]string{
+		debugportParameter: debugportParameterDescription,
+	}
+)
+
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
 	context   string
@@ -56,6 +62,10 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 func (o *UnsetOptions) Validate() (err error) {
 	if !o.cfg.EnvInfoFileExists() {
 		return errors.Errorf("the context directory doesn't contain a component, please refer `odo create --help` to create a component")
+	}
+
+	if !isSupportedParameter(o.paramName, supportedUnsetParameters) {
+		return errors.Errorf("%q is not a valid parameter to unset, please refer `odo env unset --help` to unset a valid parameter", o.paramName)
 	}
 
 	return nil
@@ -90,7 +100,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	envUnsetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Unset a value in odo environment file",
-		Long:    unsetLongDesc,
+		Long:    unsetLongDesc + printSupportedParameters(supportedUnsetParameters),
 		Example: fmt.Sprintf(fmt.Sprint(unsetExample), fullName, envinfo.DebugPort),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {

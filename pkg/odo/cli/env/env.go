@@ -12,6 +12,15 @@ import (
 // RecommendedCommandName is the recommended env command name
 const RecommendedCommandName = "env"
 
+const (
+	nameParameter                 = "Name"
+	nameParameterDescription      = "Use this value to set component name"
+	namespaceParameter            = "Namespace"
+	namespaceParameterDescription = "Use this value to set component namespace"
+	debugportParameter            = "DebugPort"
+	debugportParameterDescription = "Use this value to set component debug port"
+)
+
 var envLongDesc = ktemplates.LongDesc(`Modifies odo specific configuration settings within environment file`)
 
 // NewCmdEnv implements the environment configuration command
@@ -35,4 +44,21 @@ func NewCmdEnv(name, fullName string) *cobra.Command {
 	envCmd.Annotations = map[string]string{"command": "main"}
 
 	return envCmd
+}
+
+func printSupportedParameters(supportedParameters map[string]string) string {
+	output := "\n\nAvailable parameters:\n"
+	for parameter, paparameterDescription := range supportedParameters {
+		output = output + "  " + parameter + ": " + paparameterDescription + "\n"
+	}
+
+	return output
+}
+
+func isSupportedParameter(parameter string, supportedParameters map[string]string) bool {
+	if _, ok := supportedParameters[parameter]; ok {
+		return true
+	}
+
+	return false
 }

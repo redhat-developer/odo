@@ -30,6 +30,14 @@ var (
 	`)
 )
 
+var (
+	supportedSetParameters = map[string]string{
+		nameParameter:      nameParameterDescription,
+		namespaceParameter: namespaceParameterDescription,
+		debugportParameter: debugportParameterDescription,
+	}
+)
+
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
 	context    string
@@ -63,6 +71,10 @@ func (o *SetOptions) Validate() (err error) {
 		return errors.Errorf("the context directory doesn't contain a component, please refer `odo create --help` to create a component")
 	}
 
+	if !isSupportedParameter(o.paramName, supportedSetParameters) {
+		return errors.Errorf("%q is not a valid parameter to set, please refer `odo env set --help` to set a valid parameter", o.paramName)
+	}
+
 	return nil
 }
 
@@ -92,7 +104,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	envSetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Set a value in odo environment file",
-		Long:  setLongDesc,
+		Long:  setLongDesc + printSupportedParameters(supportedSetParameters),
 		Example: fmt.Sprintf(fmt.Sprint(setExample), fullName,
 			envinfo.Name, envinfo.Namespace, envinfo.DebugPort),
 		Args: func(cmd *cobra.Command, args []string) error {

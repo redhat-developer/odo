@@ -238,7 +238,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter: %s is not a parameter in the odo environment", parameter)
+	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to set a valid parameter", parameter)
 
 }
 
@@ -297,7 +297,7 @@ var (
 func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 	for _, manParam := range manParams {
 		if parameter == manParam {
-			return errors.Errorf("failed to unset parameter %s: parameter %s is mandatory parameter", parameter, parameter)
+			return errors.Errorf("failed to unset %q: %q is mandatory parameter", parameter, parameter)
 		}
 	}
 
@@ -311,7 +311,7 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 		}
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter: %s is not a parameter in the odo environment", parameter)
+	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
 
 }
 
