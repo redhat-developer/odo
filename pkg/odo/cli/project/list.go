@@ -47,7 +47,6 @@ func (plo *ProjectListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo project list command
 func (plo *ProjectListOptions) Run() (err error) {
-
 	projects, err := project.List(plo.Client)
 	if err != nil {
 		return err

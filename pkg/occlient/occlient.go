@@ -212,8 +212,12 @@ type Client struct {
 	routeClient          routeclientset.RouteV1Interface
 	userClient           userclientset.UserV1Interface
 	KubeConfig           clientcmd.ClientConfig
-	discoveryClient      discovery.DiscoveryClient
+	discoveryClient      discovery.DiscoveryInterface
 	Namespace            string
+}
+
+func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
+	c.discoveryClient = client
 }
 
 // New creates a new client
@@ -283,7 +287,7 @@ func New() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.discoveryClient = *discoveryClient
+	client.discoveryClient = discoveryClient
 
 	namespace, _, err := client.KubeConfig.Namespace()
 	if err != nil {
@@ -3317,7 +3321,7 @@ func (c *Client) IsRouteSupported() (bool, error) {
 
 // IsProjectSupported checks if Project resource type is present on the cluster
 func (c *Client) IsProjectSupported() (bool, error) {
-	return c.isResourceSupported("project.openshift.io/v1", "v1", "projects")
+	return c.isResourceSupported("project.openshift.io", "v1", "projects")
 }
 
 // IsImageStreamSupported checks if imagestream resource type is present on the cluster

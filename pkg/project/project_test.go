@@ -1,38 +1,100 @@
 package project
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"reflect"
+	"sync"
 	"testing"
 
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/project/v1"
-
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/discovery/fake"
 	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+type resourceMapEntry struct {
+	list *metav1.APIResourceList
+	err  error
+}
+
+type fakeDiscovery struct {
+	*fake.FakeDiscovery
+
+	lock        sync.Mutex
+	resourceMap map[string]*resourceMapEntry
+}
+
+var fakeDiscoveryWithProject = &fakeDiscovery{
+	resourceMap: map[string]*resourceMapEntry{
+		"project.openshift.io/v1": {
+			list: &metav1.APIResourceList{
+				GroupVersion: "project.openshift.io/v1",
+				APIResources: []metav1.APIResource{{
+					Name:         "projects",
+					SingularName: "project",
+					Namespaced:   false,
+					Kind:         "Project",
+					ShortNames:   []string{"proj"},
+				}},
+			},
+		},
+	},
+}
+
+var fakeDiscoveryWithNamespace = &fakeDiscovery{
+	resourceMap: map[string]*resourceMapEntry{
+		"v1": {
+			list: &metav1.APIResourceList{
+				GroupVersion: "v1",
+				APIResources: []metav1.APIResource{{
+					Name:         "namespaces",
+					SingularName: "namespace",
+					Namespaced:   false,
+					Kind:         "Namespace",
+					ShortNames:   []string{"ns"},
+				}},
+			},
+		},
+	},
+}
+
+func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if rl, ok := c.resourceMap[groupVersion]; ok {
+		return rl.list, rl.err
+	}
+	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
+}
+
 func TestCreate(t *testing.T) {
+
 	tests := []struct {
-		name        string
-		wantErr     bool
-		projectName string
+		name            string
+		wantErr         bool
+		projectName     string
+		discoveryClient *fakeDiscovery
 	}{
 		{
-			name:        "Case 1: project name is given",
-			wantErr:     false,
-			projectName: "project1",
+			name:            "Case 1: project name is given",
+			wantErr:         false,
+			projectName:     "project1",
+			discoveryClient: fakeDiscoveryWithProject,
 		},
 		{
-			name:        "Case 2: no project name given",
-			wantErr:     true,
-			projectName: "",
+			name:            "Case 2: no project name given",
+			wantErr:         true,
+			projectName:     "",
+			discoveryClient: fakeDiscoveryWithProject,
 		},
 	}
 
@@ -87,6 +149,8 @@ func TestCreate(t *testing.T) {
 				return true, fkWatch2, nil
 			})
 
+			client.SetDiscoveryInterface(tt.discoveryClient)
+
 			// The function we are testing
 			err := Create(client, tt.projectName, true)
 
@@ -107,22 +171,25 @@ func TestCreate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	tests := []struct {
-		name        string
-		wantErr     bool
-		wait        bool
-		projectName string
+		name            string
+		wantErr         bool
+		wait            bool
+		projectName     string
+		discoveryClient *fakeDiscovery
 	}{
 		{
-			name:        "Case 1: Test project delete for multiple projects",
-			wantErr:     false,
-			wait:        false,
-			projectName: "prj2",
+			name:            "Case 1: Test project delete for multiple projects",
+			wantErr:         false,
+			wait:            false,
+			projectName:     "prj2",
+			discoveryClient: fakeDiscoveryWithProject,
 		},
 		{
-			name:        "Case 2: Test delete the only remaining project",
-			wantErr:     false,
-			wait:        false,
-			projectName: "testing",
+			name:            "Case 2: Test delete the only remaining project",
+			wantErr:         false,
+			wait:            false,
+			projectName:     "testing",
+			discoveryClient: fakeDiscoveryWithProject,
 		},
 	}
 
@@ -176,6 +243,8 @@ func TestDelete(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
+			client.SetDiscoveryInterface(tt.discoveryClient)
+
 			// The function we are testing
 			err := Delete(client, tt.projectName, tt.wait)
 
@@ -199,6 +268,7 @@ func TestList(t *testing.T) {
 		wantErr          bool
 		returnedProjects *v1.ProjectList
 		expectedProjects ProjectList
+		discoveryClient  *fakeDiscovery
 	}{
 		{
 			name:             "Case 1: Multiple projects returned",
@@ -211,6 +281,7 @@ func TestList(t *testing.T) {
 					GetMachineReadableFormat("prj2", false),
 				},
 			),
+			discoveryClient: fakeDiscoveryWithProject,
 		},
 		{
 			name:             "Case 2: Single project returned",
@@ -221,6 +292,7 @@ func TestList(t *testing.T) {
 					GetMachineReadableFormat("testing", false),
 				},
 			),
+			discoveryClient: fakeDiscoveryWithProject,
 		},
 		{
 			name:             "Case 3: No project returned",
@@ -229,6 +301,7 @@ func TestList(t *testing.T) {
 			expectedProjects: getMachineReadableFormatForList(
 				nil,
 			),
+			discoveryClient: fakeDiscoveryWithProject,
 		},
 	}
 
@@ -261,6 +334,8 @@ func TestList(t *testing.T) {
 			fakeClientSet.ProjClientset.PrependReactor("list", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, tt.returnedProjects, nil
 			})
+
+			client.SetDiscoveryInterface(tt.discoveryClient)
 
 			// The function we are testing
 			projects, err := List(client)
