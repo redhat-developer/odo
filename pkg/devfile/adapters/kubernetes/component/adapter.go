@@ -225,7 +225,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
-	err = a.ExecuteDevfileCommandSynchronously(testCommand, show)
+	err = a.ExecuteDevfileCommand(testCommand, show)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}

@@ -55,8 +55,8 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 	return ExecuteCommand(a.client, compInfo, command, show, consoleOutputStdout, consoleOutputStderr)
 }
 
-// ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
-func (a GenericAdapter) ExecuteDevfileCommandSynchronously(command common.DevfileCommand, show bool) error {
+// ExecuteDevfileCommand executes the devfile init, build and test command actions synchronously
+func (a GenericAdapter) ExecuteDevfileCommand(command common.DevfileCommand, show bool) error {
 	c, err := New(command, GetCommandsMap(a.Devfile.Data.GetCommands()), a)
 	if err != nil {
 		return err

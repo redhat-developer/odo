@@ -660,7 +660,7 @@ func TestExecTestCmd(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.ExecuteDevfileCommandSynchronously(tt.testDevfileCommand, false)
+			err := componentAdapter.ExecuteDevfileCommand(tt.testDevfileCommand, false)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestExecTestCmd error: unexpected error during executing devfile commands: %v", err)
 			}
