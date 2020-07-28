@@ -131,10 +131,6 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			return err
 		}
 
-		if err != nil {
-			return err
-		}
-
 		// Check if the devfile run component containers have supervisord as the entrypoint.
 		// Start the supervisord if the odo component does not exist
 		if !componentExists {
