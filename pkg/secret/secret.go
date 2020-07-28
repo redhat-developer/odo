@@ -2,6 +2,8 @@ package secret
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 
 	"strings"
 
@@ -82,19 +84,23 @@ func availablePorts(secrets []corev1.Secret) []string {
 	return ports
 }
 
-func CreateDockerConfigSecret(name types.NamespacedName, configData []byte) (*corev1.Secret, error) {
-	return createSecret(name, ".dockerconfigjson", corev1.SecretTypeDockerConfigJson, configData)
+func CreateDockerConfigSecret(name types.NamespacedName, in io.Reader) (*corev1.Secret, error) {
+	return createSecret(name, ".dockerconfigjson", corev1.SecretTypeDockerConfigJson, in)
 }
 
-func createSecret(name types.NamespacedName, key string, st corev1.SecretType, configData []byte) (*corev1.Secret, error) {
-
+func createSecret(name types.NamespacedName, key string, st corev1.SecretType, in io.Reader) (*corev1.Secret, error) {
+	data, err := ioutil.ReadAll(in)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secret data: %v", err)
+	}
 	secret := &corev1.Secret{
 		TypeMeta:   secretTypeMeta,
 		ObjectMeta: ObjectMeta(name),
 		Type:       st,
 		Data: map[string][]byte{
-			key: configData,
+			key: data,
 		},
 	}
 	return secret, nil
+
 }
