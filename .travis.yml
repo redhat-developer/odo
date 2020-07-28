@@ -142,6 +142,8 @@ jobs:
         - travis_wait make test-cmd-devfile-push
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-delete
+        - travis_wait make test-cmd-devfile-deploy
+        - travis_wait make test-cmd-devfile-deploy-delete
         - travis_wait make test-cmd-devfile-registry
         - travis_wait make test-cmd-devfile-test
         - travis_wait make test-cmd-devfile-log
