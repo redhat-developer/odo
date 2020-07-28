@@ -589,6 +589,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		EnvURLS:                   envSpecificInfo.GetURL(),
 		IsRouteSupported:          isRouteSupported,
 		IsExperimentalModeEnabled: isExperimentalModeEnabled,
+		EndpointMap:               endpointMap,
 	})
 }
 

@@ -114,7 +114,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 func GetEndpoints(data data.DevfileData) (map[int32]common.Endpoint, error) {
 	endpointsMap := make(map[int32]common.Endpoint)
 
-	for _, comp := range adaptersCommon.GetSupportedComponents(data) {
+	for _, comp := range adaptersCommon.GetDevfileContainerComponents(data) {
 		// Currently type container is the only devfile component that odo supports
 		if comp.Container.Endpoints != nil {
 			for _, endpoint := range comp.Container.Endpoints {
