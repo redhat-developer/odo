@@ -201,7 +201,7 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
 	// Error out by default if no type of sources were passed..
 	default:
-		return fmt.Errorf("The source can be either --binary or --local or --git")
+		return fmt.Errorf("the source can be either --binary or --local or --git")
 
 	}
 
@@ -212,7 +212,7 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
 	// Error out if reference is passed but no --git flag passed
 	if len(co.componentGit) == 0 && len(co.componentGitRef) != 0 {
-		return fmt.Errorf("The --ref flag is only valid for --git flag")
+		return fmt.Errorf("the --ref flag is only valid for --git flag")
 	}
 
 	return
@@ -346,11 +346,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
-			return errors.New("This directory already contains a component")
+			return errors.New("this directory already contains a component")
 		}
 
 		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath.value) {
-			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
+			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 		}
 
 		co.appName = genericclioptions.ResolveAppFlag(cmd)
@@ -367,12 +367,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
 			if co.forceS2i {
-				return errors.New("You can't set --s2i flag as true if you want to use the devfile that is specified via --devfile")
+				return errors.New("you can't set --s2i flag as true if you want to use the devfile that is specified via --devfile")
 			}
 			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 			if fileErr != nil && urlErr != nil {
-				return errors.Errorf("The devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
+				return errors.Errorf("the devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
 			} else if fileErr == nil {
 				co.devfileMetadata.devfilePath.protocol = "file"
 			} else if urlErr == nil {
@@ -383,19 +383,19 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
 			if co.forceS2i {
-				return errors.New("You can't specify registry via --registry if you want to force the S2I build with --s2i")
+				return errors.New("you can't specify registry via --registry if you want to force the S2I build with --s2i")
 			}
 
 			if co.devfileMetadata.devfilePath.value != "" {
-				return errors.New("You can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
+				return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
 			}
 
 			registryList, err := catalog.GetDevfileRegistries(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
-				return errors.Wrap(err, "Failed to get registry")
+				return errors.Wrap(err, "failed to get registry")
 			}
 			if len(registryList) == 0 {
-				return errors.Errorf("Registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
+				return errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
 			}
 		}
 
@@ -461,11 +461,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				// Use existing devfile directly
 
 				if co.forceS2i {
-					return errors.Errorf("Existing devfile component detected. Please remove the devfile component before creating an s2i component")
+					return errors.Errorf("existing devfile component detected. Please remove the devfile component before creating an s2i component")
 				}
 
 				if len(args) > 1 {
-					return errors.Errorf("Accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
+					return errors.Errorf("accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
 				}
 
 				// If user can use existing devfile directly, the first arg is component name instead of component type
@@ -500,7 +500,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return err
 				}
 				if co.devfileMetadata.devfileRegistry.Name != "" && catalogDevfileList.Items == nil {
-					return errors.Errorf("Can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
+					return errors.Errorf("can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
 				}
 
 				if len(catalogDevfileList.DevfileRegistries) == 0 {
@@ -588,7 +588,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					}
 				}
 				if !s2iOverride {
-					return errors.New("Cannot select this component with --s2i flag")
+					return errors.New("cannot select this devfile component type with --s2i flag")
 				}
 			}
 
