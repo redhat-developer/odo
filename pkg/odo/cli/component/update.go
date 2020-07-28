@@ -50,15 +50,17 @@ var updateCmdExample = ktemplates.Examples(`  # Change the source code path of c
 	  # Change the source code path of of currently active component to a binary named sample.war in ./downloads directory
 	  %[1]s --binary ./downloads/sample.war
 
-	  WARNING: %[1]s is not available for Devfile based components and will be removed in the future odo versions.
 	`)
 
-var deprecationWarning string = `WARNING: 'odo update' command will be removed in the future odo version.
+const (
+	descDeprecationWarning = "WARNING: 'odo update' command will be removed in the future odo version."
+
+	deprecationWarning = `WARNING: 'odo update' command will be removed in the future odo version.
 	     You should be using 'odo config' command instead.
 	     example:
 		odo config set SourceType git
 		odo config set SourceLocation https://github.com/example/example`
-
+)
 const devfileErrorString string = "'odo update' command is not available for Devfile based components."
 
 // NewUpdateOptions returns new instance of UpdateOptions
@@ -206,7 +208,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 		Use:     name,
 		Args:    cobra.MaximumNArgs(0),
 		Short:   "Update the source code path of a component",
-		Long:    "Update the source code path of a component",
+		Long:    fmt.Sprint("Update the source code path of a component\n", descDeprecationWarning),
 		Example: fmt.Sprintf(updateCmdExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(uo, cmd, args)

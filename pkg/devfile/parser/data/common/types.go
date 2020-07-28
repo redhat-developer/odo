@@ -47,6 +47,9 @@ type DevfileMetadata struct {
 type DevfileCommand struct {
 	// CLI Command executed in a component container
 	Exec *Exec `json:"exec,omitempty"`
+
+	// Composite command executed in a component container
+	Composite *Composite `json:"composite,omitempty"`
 }
 
 // DevfileComponent component specified in devfile
@@ -90,10 +93,10 @@ type Container struct {
 	// The command to run in the dockerimage component instead of the default one provided in the image. Defaults to an empty array, meaning use whatever is defined in the image.
 	Command []string `json:"command,omitempty"`
 
-	Endpoints []Endpoint `json:"endpoints,omitempty"`
+	Endpoints []Endpoint `json:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Environment variables used in this container
-	Env          []Env  `json:"env,omitempty"`
+	Env          []Env  `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 	Image        string `json:"image,omitempty"`
 	MemoryLimit  string `json:"memoryLimit,omitempty"`
 	MountSources bool   `json:"mountSources,omitempty"`
@@ -103,12 +106,12 @@ type Container struct {
 	SourceMapping string `json:"sourceMapping,omitempty"`
 
 	// List of volumes mounts that should be mounted is this container.
-	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
+	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
 // Endpoint
 type Endpoint struct {
-	Attributes    map[string]string `json:"attributes,omitempty"`
+	Attributes    map[string]string `json:"attributes,omitempty" patchStrategy:"merge"`
 	Configuration *Configuration    `json:"configuration,omitempty"`
 	Name          string            `json:"name"`
 	TargetPort    int32             `json:"targetPort"`
@@ -140,7 +143,7 @@ type DevfileEvents struct {
 type Exec struct {
 
 	// Optional map of free-form additional command attributes
-	Attributes map[string]string `json:"attributes,omitempty"`
+	Attributes map[string]string `json:"attributes,omitempty" patchStrategy:"merge"`
 
 	// The actual command-line string
 	CommandLine string `json:"commandLine,omitempty"`
@@ -149,7 +152,7 @@ type Exec struct {
 	Component string `json:"component,omitempty"`
 
 	// Optional list of environment variables that have to be set before running the command
-	Env []Env `json:"env,omitempty"`
+	Env []Env `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty"`
@@ -162,6 +165,27 @@ type Exec struct {
 
 	// Working directory where the command should be executed
 	WorkingDir string `json:"workingDir,omitempty"`
+}
+
+// Composite command containing a list of commands to execute in a component container
+type Composite struct {
+	// Optional map of free-form additional command attributes
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// The list of commands to execute in this composite command.
+	Commands []string `json:"commands,omitempty"`
+
+	// Defines the group this command is part of
+	Group *Group `json:"group,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
+	Id string `json:"id"`
+
+	// Optional label that provides a label for this command to be used in Editor UI menus for example
+	Label string `json:"label,omitempty"`
+
+	// Whether or not the composite command should be executed in parallel
+	Parallel bool `json:"parallel,omitempty"`
 }
 
 // Git Project's Git source
@@ -236,22 +260,22 @@ type Openshift struct {
 type DevfileParent struct {
 
 	// Predefined, ready-to-use, workspace-related commands
-	Commands []*DevfileCommand `json:"commands,omitempty"`
+	Commands []DevfileCommand `json:"commands,omitempty"`
 
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
-	Components []*DevfileComponent `json:"components,omitempty"`
+	Components []DevfileComponent `json:"components,omitempty"`
 
 	// Bindings of commands to events. Each command is referred-to by its name.
-	Events *DevfileEvents `json:"events,omitempty"`
+	Events DevfileEvents `json:"events,omitempty"`
 
 	// Id in a registry that contains a Devfile yaml file
 	Id string `json:"id,omitempty"`
 
 	// Reference to a Kubernetes CRD of type DevWorkspaceTemplate
-	Kubernetes *Kubernetes `json:"kubernetes,omitempty"`
+	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
 
 	// Projects worked on in the workspace, containing names and sources locations
-	Projects []*DevfileProject `json:"projects,omitempty"`
+	Projects []DevfileProject `json:"projects,omitempty"`
 
 	RegistryUrl string `json:"registryUrl,omitempty"`
 
@@ -314,7 +338,7 @@ type Volume struct {
 // VolumeMount describes a path where a volume should be mounted to a component container
 type VolumeMount struct {
 
-	// The volume mount name is the name of an existing `Volume` component. If no corresponding `Volume` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
+	// The volume mount name is the name of an existing `Volume` component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
 	Name string `json:"name"`
 
 	// The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is `/<name>`.

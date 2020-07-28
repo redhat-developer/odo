@@ -780,16 +780,16 @@ func IsValidProjectDir(path string, devfilePath string) error {
 	}
 
 	if len(files) > 1 {
-		return errors.Errorf("Folder is not empty. It can only contain the devfile used.")
+		return errors.Errorf("Folder %s is not empty. It can only contain the devfile used.", path)
 	} else if len(files) == 1 {
 		file := files[0]
 		if file.IsDir() {
-			return errors.Errorf("Folder is not empty. It contains a subfolder.")
+			return errors.Errorf("Folder %s is not empty. It contains a subfolder.", path)
 		}
 		fileName := files[0].Name()
 		devfilePath = strings.TrimPrefix(devfilePath, "./")
 		if fileName != devfilePath {
-			return errors.Errorf("Folder contains one element and it's not the devfile used.")
+			return errors.Errorf("Folder %s contains one element and it's not the devfile used.", path)
 		}
 	}
 

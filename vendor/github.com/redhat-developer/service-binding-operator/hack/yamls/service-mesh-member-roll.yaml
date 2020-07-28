@@ -1,0 +1,11 @@
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  members:
+  - knative-serving
+  - serverless-test
+  - service-binding-demo

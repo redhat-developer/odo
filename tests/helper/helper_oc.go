@@ -379,6 +379,14 @@ func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace strin
 	return strings.TrimSpace(podName)
 }
 
+// GetPVCSize executes oc command and returns the bound storage size
+func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
+	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, "--show-labels")
+	re := regexp.MustCompile(storageName + `-\S+\s+Bound\s+\S+\s+(\S+).*component=` + compName + `,storage-name=` + storageName)
+	storageSize := re.FindStringSubmatch(stdOut)[1]
+	return strings.TrimSpace(storageSize)
+}
+
 // GetRoute returns route URL
 func (oc OcRunner) GetRoute(urlName string, appName string) string {
 	session := CmdRunner(oc.path, "get", "routes", urlName+"-"+appName,
@@ -456,6 +464,22 @@ func (oc OcRunner) GetEnvs(componentName string, appName string, projectName str
 	var mapOutput = make(map[string]string)
 
 	output := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
+		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, ":")
+		name := splits[0]
+		value := strings.Join(splits[1:], ":")
+		mapOutput[name] = value
+	}
+	return mapOutput
+}
+
+func (oc OcRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := CmdShouldPass(oc.path, "get", "deployment", componentName, "--namespace", projectName,
 		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
 
 	for _, line := range strings.Split(output, "\n") {

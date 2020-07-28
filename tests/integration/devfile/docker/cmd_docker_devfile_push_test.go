@@ -183,49 +183,6 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
 		})
 
-		// v1 devfile test
-		It("should execute the optional devinit, and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-springboot", cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push")
-			helper.MatchAllInOutput(output, []string{
-				"Executing devinit command \"echo hello",
-				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
-				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
-			})
-
-			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
-			Expect(len(containers)).To(Equal(1))
-
-			stdOut := dockerClient.ExecContainer(containers[0], "ps -ef")
-			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
-		})
-
-		// v1 devfile test
-		It("should execute devinit and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-springboot", cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push")
-			helper.MatchAllInOutput(output, []string{
-				"Executing devinit command \"echo hello",
-				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
-			})
-
-			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
-			Expect(len(containers)).To(Equal(1))
-
-			stdOut := dockerClient.ExecContainer(containers[0], "ls /data")
-			Expect(stdOut).To(ContainSubstring(("afile.txt")))
-		})
-
 		It("should execute PostStart commands if present", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
@@ -270,4 +227,64 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 	})
 
+	Context("Handle devfiles with parent", func() {
+		It("should handle a devfile with a parent and add a extra command", func() {
+			utils.ExecPushToTestParent(context, cmpName, "")
+			// Check to see if it's been pushed (foobar.txt abd directory testdir)
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+			Expect(len(containers)).To(Equal(1))
+
+			stdOut := dockerClient.ExecContainer(containers[0], "ls -a /projects/nodejs-starter")
+			Expect(stdOut).To(ContainSubstring(("blah.js")))
+		})
+
+		It("should handle a parent and override/append it's envs", func() {
+			utils.ExecPushWithParentOverride(context, cmpName, "")
+			// Check to see if it's been pushed (foobar.txt abd directory testdir)
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "appsodyrun")
+			Expect(len(containers)).To(Equal(1))
+
+			envMap := dockerClient.GetEnvsDevFileDeployment(containers[0], "printenv")
+
+			value, ok := envMap["MODE2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("TEST2-override"))
+
+			value, ok = envMap["myprop-3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval-3"))
+
+			value, ok = envMap["myprop2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval2"))
+		})
+
+		It("should handle a multi layer parent", func() {
+			utils.ExecPushWithMultiLayerParent(context, cmpName, "")
+			// Check to see if it's been pushed (foobar.txt abd directory testdir)
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "appsodyrun")
+			Expect(len(containers)).To(Equal(1))
+
+			stdOut := dockerClient.ExecContainer(containers[0], "ls -a /projects/user-app")
+			helper.MatchAllInOutput(stdOut, []string{"blah.js", "new-blah.js"})
+
+			envMap := dockerClient.GetEnvsDevFileDeployment(containers[0], "printenv")
+
+			value, ok := envMap["MODE2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("TEST2-override"))
+
+			value, ok = envMap["myprop3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval3"))
+
+			value, ok = envMap["myprop2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval2"))
+
+			value, ok = envMap["myprop4"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval4"))
+		})
+	})
 })

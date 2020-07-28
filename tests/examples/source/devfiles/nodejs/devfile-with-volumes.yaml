@@ -33,6 +33,11 @@ components:
           path: /data
         - name: myvol2
           path: /data2
+  - volume:
+      name: myvol
+      size: 3Gi
+  - volume:
+      name: myvol2
 commands:
   - exec:
       id: devbuild

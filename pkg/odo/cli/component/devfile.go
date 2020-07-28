@@ -50,7 +50,17 @@ func (po *PushOptions) DevfilePush() error {
 		os.Exit(1)
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	// push is successful, save the runMode used
+	runMode := envinfo.Run
+	if po.debugRun {
+		runMode = envinfo.Debug
+	}
+
+	return po.EnvSpecificInfo.SetRunMode(runMode)
 }
 
 func (po *PushOptions) devfilePushInner() (err error) {

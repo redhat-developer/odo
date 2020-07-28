@@ -285,8 +285,8 @@ func TestDoesComponentExist(t *testing.T) {
 			name:   "Case 1: Valid component name",
 			client: fakeClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
-				testingutil.GetFakeComponent("alias2"),
+				testingutil.GetFakeContainerComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias2"),
 			},
 			componentName:    "golang",
 			getComponentName: "golang",
@@ -297,7 +297,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:   "Case 2: Non-existent component name",
 			client: fakeClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			componentName:    "test",
 			getComponentName: "fake-component",
@@ -317,7 +317,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:   "Case 4: Docker client error",
 			client: fakeErrorClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			componentName:    "test",
 			getComponentName: "fake-component",

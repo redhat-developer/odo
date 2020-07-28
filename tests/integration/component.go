@@ -583,6 +583,12 @@ func componentTests(args ...string) {
 			output := helper.CmdShouldPass("odo", append(args, "create", "nodejs:latest", componentName, "--app", appName, "--project", project, "--context", context)...)
 			Expect(output).NotTo(ContainSubstring("Warning"))
 		})
+
+		It("creates a local java component and check unsupported warning hasn't occured", func() {
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
+			output := helper.CmdShouldPass("odo", append(args, "create", "java:latest", componentName, "--project", project, "--context", context)...)
+			Expect(output).NotTo(ContainSubstring("Warning"))
+		})
 	})
 
 	Context("odo component updating", func() {

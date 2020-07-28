@@ -41,6 +41,11 @@ var _ = Describe("odo devfile debug command tests", func() {
 		projectDirPath = context + projectDir
 	})
 
+	preSetup := func() {
+		helper.MakeDir(projectDirPath)
+		helper.Chdir(projectDirPath)
+	}
+
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
@@ -53,10 +58,11 @@ var _ = Describe("odo devfile debug command tests", func() {
 	})
 
 	Context("odo debug on a nodejs:latest component", func() {
-		It("check that machine output debug information works", func() {
-			helper.MakeDir(projectDirPath)
-			helper.Chdir(projectDirPath)
+		JustBeforeEach(func() {
+			preSetup()
+		})
 
+		It("check that machine output debug information works", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
@@ -86,15 +92,17 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.MakeDir(projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push")
 			helper.CmdShouldPass("odo", "push", "--debug")
+
+			// check the env for the runMode
+			envOutput, err := helper.ReadFile(filepath.Join(projectDirPath, ".odo/env/env.yaml"))
+			Expect(err).To(BeNil())
+			Expect(envOutput).To(ContainSubstring(" RunMode: debug"))
 
 			stopChannel := make(chan bool)
 			go func() {
@@ -110,10 +118,11 @@ var _ = Describe("odo devfile debug command tests", func() {
 	})
 
 	Context("odo debug info should work on a odo component", func() {
-		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.MakeDir(projectDirPath)
-			helper.Chdir(projectDirPath)
+		JustBeforeEach(func() {
+			preSetup()
+		})
 
+		It("should start a debug session and run debug info on a running debug session", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+namespace, "--project", namespace)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
@@ -139,9 +148,6 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
-			helper.MakeDir(projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))

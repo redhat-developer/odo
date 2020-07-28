@@ -34,8 +34,8 @@ func (a Adapter) createComponent() (err error) {
 
 	log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 
-	supportedComponents := common.GetSupportedComponents(a.Devfile.Data)
-	if len(supportedComponents) == 0 {
+	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	if len(containerComponents) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
 
@@ -46,10 +46,10 @@ func (a Adapter) createComponent() (err error) {
 		return errors.Wrapf(err, "unable to create Docker storage adapter for component %s", componentName)
 	}
 
-	// Loop over each component and start a container for it
-	for _, comp := range supportedComponents {
+	// Loop over each container component and start a container for it
+	for _, comp := range containerComponents {
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
+		for _, vol := range a.containerNameToVolumes[comp.Container.Name] {
 
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
@@ -77,12 +77,12 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
 	err = stoAdapter.Create(a.uniqueStorage)
 
-	supportedComponents := common.GetSupportedComponents(a.Devfile.Data)
-	if len(supportedComponents) == 0 {
+	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	if len(containerComponents) == 0 {
 		return componentExists, fmt.Errorf("no valid components found in the devfile")
 	}
 
-	for _, comp := range supportedComponents {
+	for _, comp := range containerComponents {
 		// Check to see if this component is already running and if so, update it
 		// If component isn't running, re-create it, as it either may be new, or crashed.
 		containers, err := a.Client.GetContainersByComponentAndAlias(componentName, comp.Container.Name)
@@ -91,7 +91,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		}
 
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
+		for _, vol := range a.containerNameToVolumes[comp.Container.Name] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
 				Source: a.volumeNameToDockerVolName[vol.Name],
@@ -328,7 +328,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
 			if err != nil {
 				return err
 			}
@@ -340,7 +340,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	if ok {
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
 		if err != nil {
 			return err
 		}
@@ -380,7 +380,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 // in the command
 func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
 
-	commandMap := common.GetCommandMap(a.Devfile.Data)
+	commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
 
 	for _, commandName := range events {
 		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
@@ -396,7 +396,7 @@ func (a Adapter) execDevfileEvent(events []string, containers []types.Container)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
 
 		// Execute command in container
-		err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+		err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger, false)
 		if err != nil {
 			return errors.Wrapf(err, "unable to execute devfile command "+commandName)
 		}
@@ -409,7 +409,7 @@ func (a Adapter) execDevfileEvent(events []string, containers []types.Container)
 func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
 	containerID := utils.GetContainerIDForAlias(containers, testCmd.Exec.Component)
 	compInfo := common.ComponentInfo{ContainerName: containerID}
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
 	return
 }
 

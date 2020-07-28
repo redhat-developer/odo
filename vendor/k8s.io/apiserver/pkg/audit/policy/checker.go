@@ -185,11 +185,11 @@ func ruleMatchesResource(r *audit.PolicyRule, attrs authorizer.Attributes) bool 
 						return true
 					}
 					// match "*/subresource"
-					if len(subresource) > 0 && strings.HasPrefix(res, "*/") && subresource == strings.TrimPrefix(res, "*/") {
+					if len(subresource) > 0 && strings.HasPrefix(res, "*/") && subresource == strings.TrimLeft(res, "*/") {
 						return true
 					}
 					// match "resource/*"
-					if strings.HasSuffix(res, "/*") && resource == strings.TrimSuffix(res, "/*") {
+					if strings.HasSuffix(res, "/*") && resource == strings.TrimRight(res, "/*") {
 						return true
 					}
 				}

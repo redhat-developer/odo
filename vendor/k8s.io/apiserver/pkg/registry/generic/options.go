@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
-	"k8s.io/client-go/tools/cache"
 )
 
 // RESTOptions is set of configuration options to generic registries.
@@ -48,7 +47,6 @@ type RESTOptionsGetter interface {
 // StoreOptions is set of configuration options used to complete generic registries.
 type StoreOptions struct {
 	RESTOptions RESTOptionsGetter
-	TriggerFunc storage.IndexerFuncs
+	TriggerFunc storage.TriggerPublisherFunc
 	AttrFunc    storage.AttrFunc
-	Indexers    *cache.Indexers
 }

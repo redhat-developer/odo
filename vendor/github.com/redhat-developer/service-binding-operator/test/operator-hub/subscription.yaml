@@ -1,0 +1,13 @@
+# Ref. https://github.com/operator-framework/operator-lifecycle-manager
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: service-binding-operator
+  namespace: openshift-operators
+spec:
+  channel: alpha
+  installPlanApproval: Manual
+  name: service-binding-operator
+  source: example-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: REPLACE_CSV_VERSION

@@ -35,7 +35,7 @@ func TestNamespaceContext(t *testing.T) {
 	}
 
 	ctx = NewContext()
-	_, ok = NamespaceFrom(ctx)
+	result, ok = NamespaceFrom(ctx)
 	if ok {
 		t.Fatalf("Should not be ok because there is no namespace on the context")
 	}
