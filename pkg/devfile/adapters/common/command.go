@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
 
@@ -208,8 +209,7 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 		} else {
 			err := validateCommand(data, subCommand)
 			if err != nil {
-				// Don't wrap the error message here to make the error message more readable to the user
-				return err
+				return errors.Wrapf(err, "the composite command %q references an invalid command %q", compositeCommand.Id, subCommand.GetID())
 			}
 		}
 	}

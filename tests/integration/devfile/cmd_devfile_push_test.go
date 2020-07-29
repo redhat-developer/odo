@@ -241,6 +241,17 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("cannot indirectly reference itself"))
 		})
 
+		It("should throw a validation error for composite command that has invalid exec subcommand", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeInvalidComponent.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("references an invalid command"))
+		})
+
 		It("checks that odo push works outside of the context directory", func() {
 			helper.Chdir(currentWorkingDirectory)
 
