@@ -227,64 +227,68 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 	})
 
-	Context("Handle devfiles with parent", func() {
-		It("should handle a devfile with a parent and add a extra command", func() {
-			utils.ExecPushToTestParent(context, cmpName, "")
-			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
-			Expect(len(containers)).To(Equal(1))
+	/*
+		Disabled test due to issue https://github.com/openshift/odo/issues/3638
 
-			stdOut := dockerClient.ExecContainer(containers[0], "ls -a /projects/nodejs-starter")
-			Expect(stdOut).To(ContainSubstring(("blah.js")))
+		Context("Handle devfiles with parent", func() {
+			It("should handle a devfile with a parent and add a extra command", func() {
+				utils.ExecPushToTestParent(context, cmpName, "")
+				// Check to see if it's been pushed (foobar.txt abd directory testdir)
+				containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+				Expect(len(containers)).To(Equal(1))
+
+				stdOut := dockerClient.ExecContainer(containers[0], "ls -a /projects/nodejs-starter")
+				Expect(stdOut).To(ContainSubstring(("blah.js")))
+			})
+
+			It("should handle a parent and override/append it's envs", func() {
+				utils.ExecPushWithParentOverride(context, cmpName, "")
+				// Check to see if it's been pushed (foobar.txt abd directory testdir)
+				containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "appsodyrun")
+				Expect(len(containers)).To(Equal(1))
+
+				envMap := dockerClient.GetEnvsDevFileDeployment(containers[0], "printenv")
+
+				value, ok := envMap["MODE2"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("TEST2-override"))
+
+				value, ok = envMap["myprop-3"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("myval-3"))
+
+				value, ok = envMap["myprop2"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("myval2"))
+			})
+
+			It("should handle a multi layer parent", func() {
+				utils.ExecPushWithMultiLayerParent(context, cmpName, "")
+				// Check to see if it's been pushed (foobar.txt abd directory testdir)
+				containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "appsodyrun")
+				Expect(len(containers)).To(Equal(1))
+
+				stdOut := dockerClient.ExecContainer(containers[0], "ls -a /projects/user-app")
+				helper.MatchAllInOutput(stdOut, []string{"blah.js", "new-blah.js"})
+
+				envMap := dockerClient.GetEnvsDevFileDeployment(containers[0], "printenv")
+
+				value, ok := envMap["MODE2"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("TEST2-override"))
+
+				value, ok = envMap["myprop3"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("myval3"))
+
+				value, ok = envMap["myprop2"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("myval2"))
+
+				value, ok = envMap["myprop4"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("myval4"))
+			})
 		})
-
-		It("should handle a parent and override/append it's envs", func() {
-			utils.ExecPushWithParentOverride(context, cmpName, "")
-			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "appsodyrun")
-			Expect(len(containers)).To(Equal(1))
-
-			envMap := dockerClient.GetEnvsDevFileDeployment(containers[0], "printenv")
-
-			value, ok := envMap["MODE2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("TEST2-override"))
-
-			value, ok = envMap["myprop-3"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval-3"))
-
-			value, ok = envMap["myprop2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval2"))
-		})
-
-		It("should handle a multi layer parent", func() {
-			utils.ExecPushWithMultiLayerParent(context, cmpName, "")
-			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "appsodyrun")
-			Expect(len(containers)).To(Equal(1))
-
-			stdOut := dockerClient.ExecContainer(containers[0], "ls -a /projects/user-app")
-			helper.MatchAllInOutput(stdOut, []string{"blah.js", "new-blah.js"})
-
-			envMap := dockerClient.GetEnvsDevFileDeployment(containers[0], "printenv")
-
-			value, ok := envMap["MODE2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("TEST2-override"))
-
-			value, ok = envMap["myprop3"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval3"))
-
-			value, ok = envMap["myprop2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval2"))
-
-			value, ok = envMap["myprop4"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval4"))
-		})
-	})
+	*/
 })

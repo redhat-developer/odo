@@ -15,10 +15,6 @@ components:
       endpoints:
         - name: http-3000
           targetPort: 3000
-          configuration:
-            protocol: tcp
-            scheme: http
-            type: terminal
 commands:
   - exec:
       id: install
