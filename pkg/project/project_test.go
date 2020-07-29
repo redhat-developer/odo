@@ -127,9 +127,11 @@ func TestCreate(t *testing.T) {
 				return true, nil, nil
 			})
 
-			go func() {
-				fkWatch.Add(testingutil.FakeProjectStatus(corev1.NamespacePhase("Active"), tt.projectName))
-			}()
+			fakeProject := testingutil.FakeProjectStatus(corev1.NamespacePhase("Active"), tt.projectName)
+			go func(project *projectv1.Project) {
+				fkWatch.Add(project)
+			}(fakeProject)
+
 			fakeClientSet.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
 			})
@@ -181,9 +183,11 @@ func TestCreate(t *testing.T) {
 				return true, nil, nil
 			})
 
-			go func() {
-				fkWatch.Add(testingutil.FakeNamespaceStatus(corev1.NamespacePhase("Active"), tt.projectName))
-			}()
+			fakeNamespace := testingutil.FakeNamespaceStatus(corev1.NamespacePhase("Active"), tt.projectName)
+			go func(project *corev1.Namespace) {
+				fkWatch.Add(project)
+			}(fakeNamespace)
+
 			fakeClientSet.Kubernetes.PrependWatchReactor("namespaces", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
 			})
