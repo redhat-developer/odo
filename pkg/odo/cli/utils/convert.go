@@ -358,9 +358,6 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		endpoint := common.Endpoint{
 			Name:       fmt.Sprintf("port-%s", port[0]),
 			TargetPort: int32(portInt),
-			Configuration: &common.Configuration{
-				Public: true,
-			},
 		}
 
 		endpoints = append(endpoints, endpoint)
