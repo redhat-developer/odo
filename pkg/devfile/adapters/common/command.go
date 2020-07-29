@@ -44,7 +44,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 		cmdGroup := command.GetGroup()
 		if cmdGroup != nil && cmdGroup.Kind == groupType {
 			if cmdGroup.IsDefault {
-				return command, validateCommand(data, command)
+				return command, ValidateCommand(data, command)
 			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
 				// return the only remaining command for the group if there is no default command
 				// NOTE: we return outside the for loop since the next iteration can have a default command
@@ -55,7 +55,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 
 	// if default command is not found return the first command found for the matching type.
 	if !reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
-		return onlyCommand, validateCommand(data, onlyCommand)
+		return onlyCommand, ValidateCommand(data, onlyCommand)
 	}
 
 	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
@@ -90,7 +90,7 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
 
-			return command, validateCommand(data, command)
+			return command, ValidateCommand(data, command)
 		}
 	}
 
@@ -129,11 +129,12 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 	return nil
 }
 
-// validateCommand validates the given command
-// 1. command has to be of type exec or composite
+// ValidateCommand validates the given command
+// 1. command has to be of type exec or composite, if composite command is validated further
 // 2. component should be present
-// 4. command must have group
-func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
+// 3. commandline should be present
+// 4. command must map to a valid container component
+func ValidateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
 	// type must be exec or composite
 	if command.Exec == nil && command.Composite == nil {

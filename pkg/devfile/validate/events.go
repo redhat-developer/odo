@@ -4,37 +4,39 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"k8s.io/klog"
 )
 
-// validateEvents validates all the devfile events against the devfile commands
-func validateEvents(events common.DevfileEvents, commands []common.DevfileCommand) error {
+// validateEvents validates all the devfile events
+func validateEvents(data data.DevfileData) error {
 
 	eventErrors := ""
+	events := data.GetEvents()
 
 	switch {
 	case len(events.PreStart) > 0:
 		klog.V(4).Info("Validating preStart events")
-		if preStartErr := isEventValid(events.PreStart, "preStart", commands); preStartErr != nil {
+		if preStartErr := isEventValid(data, events.PreStart, "preStart"); preStartErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", preStartErr.Error())
 		}
 		fallthrough
 	case len(events.PostStart) > 0:
 		klog.V(4).Info("Validating postStart events")
-		if postStartErr := isEventValid(events.PostStart, "postStart", commands); postStartErr != nil {
+		if postStartErr := isEventValid(data, events.PostStart, "postStart"); postStartErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", postStartErr.Error())
 		}
 		fallthrough
 	case len(events.PreStop) > 0:
 		klog.V(4).Info("Validating preStop events")
-		if preStopErr := isEventValid(events.PreStop, "preStop", commands); preStopErr != nil {
+		if preStopErr := isEventValid(data, events.PreStop, "preStop"); preStopErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", preStopErr.Error())
 		}
 		fallthrough
 	case len(events.PostStop) > 0:
 		klog.V(4).Info("Validating postStop events")
-		if postStopErr := isEventValid(events.PostStop, "postStop", commands); postStopErr != nil {
+		if postStopErr := isEventValid(data, events.PostStop, "postStop"); postStopErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", postStopErr.Error())
 		}
 	}
@@ -47,27 +49,47 @@ func validateEvents(events common.DevfileEvents, commands []common.DevfileComman
 	return nil
 }
 
-// isEventValid checks if events belonging to a specific event type are valid
-func isEventValid(eventNames []string, eventType string, commands []common.DevfileCommand) error {
-	var invalidEvents []string
+// isEventValid checks if events belonging to a specific event type are valid:
+// 1. Event should map to a valid devfile command
+// 2. Event commands should be valid
+func isEventValid(data data.DevfileData, eventNames []string, eventType string) error {
+	eventErrorMsg := make(map[string][]string)
+	eventErrors := ""
+	commands := data.GetCommands()
 
 	for _, eventName := range eventNames {
-		isValid := false
+		isEventPresent := false
 		for _, command := range commands {
+			// Check if event matches a valid devfile command
 			if command.GetID() == strings.ToLower(eventName) {
-				isValid = true
+				isEventPresent = true
+
+				// Check if the devfile command is valid
+				err := adapterCommon.ValidateCommand(data, command)
+				if err != nil {
+					klog.V(4).Infof("command %s is not valid: %s", command.GetID(), err.Error())
+					eventErrorMsg[strings.ToLower(eventName)] = append(eventErrorMsg[strings.ToLower(eventName)], err.Error())
+				}
 				break
 			}
 		}
 
-		if !isValid {
-			klog.V(4).Infof("%s type event %s invalid", eventType, eventName)
-			invalidEvents = append(invalidEvents, eventName)
+		if !isEventPresent {
+			klog.V(4).Infof("%s type event %s does not map to a valid devfile command", eventType, eventName)
+			eventErrorMsg[strings.ToLower(eventName)] = append(eventErrorMsg[strings.ToLower(eventName)], fmt.Sprintf("event %s does not map to a valid devfile command", eventName))
 		}
 	}
 
-	if len(invalidEvents) > 0 {
-		return &InvalidEventError{eventType: eventType, event: strings.Join(invalidEvents, ",")}
+	for eventName, errors := range eventErrorMsg {
+		if len(errors) > 0 {
+			klog.V(4).Infof("errors found for event %s belonging to %s: %s", eventName, eventType, strings.Join(errors, ","))
+			eventErrors += fmt.Sprintf("\n%s is invalid: %s", eventName, strings.Join(errors, ","))
+		}
+	}
+
+	if len(eventErrors) > 0 {
+		klog.V(4).Infof("errors found for event type %s", eventType)
+		return &InvalidEventError{eventType: eventType, errorMsg: eventErrors}
 	}
 
 	return nil

@@ -53,9 +53,9 @@ func (e *MissingVolumeMountError) Error() string {
 // InvalidEventError returns an error if the devfile event type has invalid events
 type InvalidEventError struct {
 	eventType string
-	event     string
+	errorMsg  string
 }
 
 func (e *InvalidEventError) Error() string {
-	return fmt.Sprintf("%s type event %s invalid", e.eventType, e.event)
+	return fmt.Sprintf("%s type events is invalid: %s", e.eventType, e.errorMsg)
 }

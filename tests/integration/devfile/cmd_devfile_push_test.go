@@ -391,7 +391,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
-		It("should err out on invalid events", func() {
+		It("should err out on an event not mentioned in the devfile commands", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -400,7 +400,31 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.ReplaceString("devfile.yaml", "secondpoststart", "secondpoststart12345")
 
 			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{"postStart type event secondpoststart12345 invalid"})
+			helper.MatchAllInOutput(output, []string{"does not map to a valid devfile command"})
+		})
+
+		It("should err out on an event command not mapping to a devfile container component", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.ReplaceString("devfile.yaml", "secondpoststart", "wrongPostStart")
+
+			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"the command does not map to a supported component"})
+		})
+
+		It("should err out on an event composite command mentioning an invalid child command", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.ReplaceString("devfile.yaml", "secondpoststart", "myWrongCompCmd")
+
+			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"does not exist in the devfile"})
 		})
 
 		It("should be able to handle a missing build command group", func() {
