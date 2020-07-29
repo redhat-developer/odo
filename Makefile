@@ -103,10 +103,11 @@ clean:
 goget-tools:
 	go get -u github.com/Masterminds/glide
 	go get -u github.com/frapposelli/wwhrd
-	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
+	./scripts/pin-ginkgo-version.sh
 	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+	sh -s -- -b $(shell go env GOPATH)/bin v1.23.6
 
 
 # Run unit tests and collect coverage
