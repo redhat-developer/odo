@@ -15,11 +15,6 @@ components:
       sourceMapping: /test
       endpoints:
         - name: "nodejs"
-          configuration:
-            discoverable: false
-            public: true
-            protocol: tcp
-            scheme: http
           targetPort: 3000
 commands:
   - exec:

@@ -25,9 +25,6 @@ components:
       args: [ '-f', '/dev/null']
       endpoints:
         - name: "8080/tcp"
-          configuration:
-            protocol: tcp
-            scheme: http
           targetPort: 8080
       volumeMounts:
         - name: springbootpvc

@@ -12,9 +12,6 @@ components:
       memoryLimit: 1024Mi
       endpoints:
         - name: "3000/tcp"
-          configuration:
-            protocol: tcp
-            scheme: http
           targetPort: 3000
       mountSources: true
 commands:

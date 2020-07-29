@@ -36,10 +36,20 @@ type Devfile200 struct {
 
 	// Devfile schema version
 	SchemaVersion string `json:"schemaVersion"`
+
+	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
+	StarterProjects []StarterProject `json:"starterProjects,omitempty"`
 }
 
-// CommandsItems
+// Command
 type Command struct {
+
+	// Command that consists in applying a given component definition, typically bound to a workspace event.
+	//
+	// For example, when an `apply` command is bound to a `preStart` event, and references a `container` component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its `dedicatedPod` field set to `true`.
+	//
+	// When no `apply` command exist for a given component, it is assumed the component will be applied at workspace start by default.
+	Apply *Apply `json:"apply,omitempty"`
 
 	// Composite command that allows executing several sub-commands either sequentially or concurrently
 	Composite *Composite `json:"composite,omitempty"`
@@ -122,6 +132,11 @@ type Container struct {
 
 	Endpoints []*Endpoint `json:"endpoints,omitempty"`
 
+	// Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.
+	//
+	// Default value is `false`
+	DedicatedPod bool `json:"dedicatedPod,omitempty"`
+
 	// Environment variables used in this container
 	Env          []*Env `json:"env,omitempty"`
 	Image        string `json:"image,omitempty"`
@@ -138,10 +153,40 @@ type Container struct {
 
 // Endpoint holds information about how an application is exposed
 type Endpoint struct {
-	Attributes    map[string]string `json:"attributes,omitempty"`
-	Configuration *Configuration    `json:"configuration,omitempty"`
-	Name          string            `json:"name"`
-	TargetPort    int32             `json:"targetPort"`
+
+	// Map of implementation-dependant string-based free-form attributes.
+	//
+	// Examples of Che-specific attributes:
+	// - cookiesAuthEnabled: "true" / "false",
+	// - type: "terminal" / "ide" / "ide-dev",
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Describes how the endpoint should be exposed on the network.
+	// - `public` means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.
+	// - `internal` means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.
+	// - `none` means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.
+	//
+	// Default value is `public`
+	Exposure string `json:"exposure,omitempty"`
+	Name     string `json:"name"`
+
+	// Path of the endpoint URL
+	Path string `json:"path,omitempty"`
+
+	// Describes the application and transport protocols of the traffic that will go through this endpoint.
+	// - `http`: Endpoint will have `http` traffic, typically on a TCP connection. It will be automaticaly promoted to `https` when the `secure` field is set to `true`.
+	// - `https`: Endpoint will have `https` traffic, typically on a TCP connection.
+	// - `ws`: Endpoint will have `ws` traffic, typically on a TCP connection. It will be automaticaly promoted to `wss` when the `secure` field is set to `true`.
+	// - `wss`: Endpoint will have `wss` traffic, typically on a TCP connection.
+	// - `tcp`: Endpoint will have traffic on a TCP connection, without specifying an application protocol.
+	// - `udp`: Endpoint will have traffic on an UDP connection, without specifying an application protocol.
+	//
+	// Default value is `http`
+	Protocol string `json:"protocol,omitempty"`
+
+	// Describes whether the endpoint should be secured and protected by some authentication process
+	Secure     bool  `json:"secure,omitempty"`
+	TargetPort int32 `json:"targetPort,omitempty"`
 }
 
 // Env is the key value pair representing an Environment variable
@@ -192,6 +237,29 @@ type Exec struct {
 
 	// Working directory where the command should be executed
 	WorkingDir string `json:"workingDir,omitempty"`
+}
+
+// Apply Command that consists in applying a given component definition, typically bound to a workspace event.
+//
+// For example, when an `apply` command is bound to a `preStart` event, and references a `container` component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its `dedicatedPod` field set to `true`.
+//
+// When no `apply` command exist for a given component, it is assumed the component will be applied at workspace start by default.
+type Apply struct {
+
+	// Optional map of free-form additional command attributes
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Describes component that will be applied
+	Component string `json:"component,omitempty"`
+
+	// Defines the group this command is part of
+	Group *Group `json:"group,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.
+	Id string `json:"id"`
+
+	// Optional label that provides a label for this command to be used in Editor UI menus for example
+	Label string `json:"label,omitempty"`
 }
 
 // Git Project's Git source
@@ -291,9 +359,11 @@ type Parent struct {
 	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
 
 	// Projects worked on in the workspace, containing names and sources locations
-	Projects []Project `json:"projects,omitempty"`
+	Projects    []Project `json:"projects,omitempty"`
+	RegistryUrl string    `json:"registryUrl,omitempty"`
 
-	RegistryUrl string `json:"registryUrl,omitempty"`
+	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
+	StarterProjects []StarterProject `json:"starterProjects,omitempty"`
 
 	// Uri of a Devfile yaml file
 	Uri string `json:"uri,omitempty"`
@@ -341,6 +411,31 @@ type Project struct {
 	Zip *Zip `json:"zip,omitempty"`
 }
 
+// StarterProject
+type StarterProject struct {
+
+	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
+	ClonePath string `json:"clonePath,omitempty"`
+
+	// Description of a starter project
+	Description string `json:"description,omitempty"`
+
+	// Project's Git source
+	Git *Git `json:"git,omitempty"`
+
+	// Project's GitHub source
+	Github *Github `json:"github,omitempty"`
+
+	// Description of a starter project
+	MarkdownDescription string `json:"markdownDescription,omitempty"`
+
+	// Project name
+	Name string `json:"name"`
+
+	// Project's Zip source
+	Zip *Zip `json:"zip,omitempty"`
+}
+
 // Volume Allows specifying the definition of a volume shared by several other components
 type Volume struct {
 
@@ -354,7 +449,7 @@ type Volume struct {
 // VolumeMountsItems Volume that should be mounted to a component container
 type VolumeMount struct {
 
-	// The volume mount name is the name of an existing `Volume` component. If no corresponding `Volume` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
+	// The volume mount name is the name of an existing `Volume` component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
 	Name string `json:"name"`
 
 	// The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is `/<name>`.
