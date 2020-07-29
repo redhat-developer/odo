@@ -143,7 +143,7 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	if command.Composite != nil {
 		parentCommands := make(map[string]string)
 		commandsMap := GetCommandsMap(data.GetCommands())
-		return validateCompositeCommand(command.Composite, parentCommands, commandsMap)
+		return validateCompositeCommand(data, command.Composite, parentCommands, commandsMap)
 	}
 
 	// component must be specified
@@ -173,7 +173,7 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 }
 
 // validateCompositeCommand checks that the specified composite command is valid
-func validateCompositeCommand(compositeCommand *common.Composite, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
+func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
 	if compositeCommand.Group != nil && compositeCommand.Group.Kind == common.RunCommandGroupType {
 		return fmt.Errorf("composite commands of run Kind are not supported currently")
 	}
@@ -200,12 +200,17 @@ func validateCompositeCommand(compositeCommand *common.Composite, parentCommands
 
 		if subCommand.Composite != nil {
 			// Recursively validate the composite subcommand
-			err := validateCompositeCommand(subCommand.Composite, parentCommands, devfileCommands)
+			err := validateCompositeCommand(data, subCommand.Composite, parentCommands, devfileCommands)
 			if err != nil {
 				// Don't wrap the error message here to make the error message more readable to the user
 				return err
 			}
-
+		} else {
+			err := validateCommand(data, subCommand)
+			if err != nil {
+				// Don't wrap the error message here to make the error message more readable to the user
+				return err
+			}
 		}
 	}
 	return nil
