@@ -25,7 +25,6 @@ import (
 const provisionedAndBoundStatus = "ProvisionedAndBound"
 const provisionedAndLinkedStatus = "ProvisionedAndLinked"
 const apiVersion = "odo.dev/v1alpha1"
-const serviceListCmd = "odo service list"
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
@@ -550,7 +549,7 @@ func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error)
 		}
 	}
 
-	return false, fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", serviceName, serviceListCmd)
+	return false, nil
 }
 
 // splitServiceKindName splits the service name provided for deletion by the
@@ -558,7 +557,7 @@ func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error)
 func splitServiceKindName(serviceName string) (string, string, error) {
 	sn := strings.SplitN(serviceName, "/", 2)
 	if len(sn) != 2 || sn[0] == "" || sn[1] == "" {
-		return "", "", fmt.Errorf("Invalid service name. Refer %q to see list of running services", serviceListCmd)
+		return "", "", fmt.Errorf("Invalid service name. Refer %q to see list of running services", "odo service list")
 	}
 
 	kind := sn[0]

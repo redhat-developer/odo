@@ -58,7 +58,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "mongodb-enterprise", "etcdoperator"})
 		})
 
-		It("should now allow interactive mode command to be executed", func() {
+		It("should not allow interactive mode command to be executed", func() {
 			stdOut := helper.CmdShouldFail("odo", "service", "create")
 			Expect(stdOut).To(ContainSubstring("please use a valid command to start an Operator backed service"))
 		})
