@@ -32,19 +32,19 @@ commands:
       - type: exec
         component: runtime
         command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter/app
+        workdir: ${PROJECTS_ROOT}/nodejs-starter/app
   - name: devrun
     actions:
       - type: exec
         component: runtime
         command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter/app
+        workdir: ${PROJECTS_ROOT}/nodejs-starter/app
   - name: debugrun
     actions:
       - type: exec
         component: runtime
         command: "nodemon --inspect=${DEBUG_PORT}"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter/
+        workdir: ${PROJECTS_ROOT}/nodejs-starter/
 ```
 
 - Now we need to create the component using `odo create nodejs`

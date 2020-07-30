@@ -16,17 +16,17 @@ commands:
       id: install
       component: runtime
       commandLine: npm install
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}/nodejs-starter
   - exec:
       id: echo1
       component: runtime
       commandLine: echo hi
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}/nodejs-starter
   - exec:
       id: run
       component: runtime
       commandLine: npm start
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}/nodejs-starter
       group:
         kind: run
         isDefault: true
@@ -58,9 +58,9 @@ commands:
       id: echo2
       component: runtime
       commandLine: echo hello
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}/nodejs-starter
   - exec:
       id: echo3
       component: runtime
       commandLine: echo hellohii
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}/nodejs-starter

@@ -198,7 +198,7 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 	}
 	updateComponentWithSupervisord(&comp, runCommand, a.supervisordVolumeName, &hostConfig)
 
-	// If the component set `mountSources` to true, add the source volume and env CHE_PROJECTS_ROOT to it
+	// If the component set `mountSources` to true, add the source volume and env PROJECTS_ROOT to it
 	if comp.Container.MountSources {
 		var syncFolder, projectsRoot string
 		if comp.Container.SourceMapping != "" {
