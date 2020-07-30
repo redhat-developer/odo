@@ -674,12 +674,3 @@ func isRequired(required []string, name string) bool {
 	}
 	return false
 }
-
-func IsValidServiceCreateName(name string) (string, string, error) {
-	serviceType, serviceName, err := SplitServiceKindName(name)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "Invalid syntax. Please refer %q for help.", "odo service create -h")
-	}
-
-	return serviceType, serviceName, nil
-}
