@@ -97,7 +97,7 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 		buildOutput = "ImageStreamTag"
 	}
 
-	controlC := make(chan os.Signal)
+	controlC := make(chan os.Signal, 1)
 	signal.Notify(controlC, os.Interrupt, syscall.SIGTERM)
 	go a.terminateBuild(controlC, client, commonObjectMeta)
 
@@ -174,7 +174,7 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 // It cleans up the resources created for the build, as the defer function would not be reached.
 // The subsequent deploy would fail if these resources are not cleaned up.
 func (a Adapter) terminateBuild(c chan os.Signal, client *occlient.Client, commonObjectMeta metav1.ObjectMeta) {
-	_ = <-c
+	<-c
 
 	log.Info("\nBuild process interrupted, terminating build, this might take a few seconds")
 	err := client.DeleteBuildConfig(commonObjectMeta)
@@ -329,7 +329,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 				actionType = "Updating" // Update deployment
 			}
 			s := log.Spinnerf("%s resource of kind %s", strings.Title(actionType), gvk.Kind)
-			result := &unstructured.Unstructured{}
+			var result *unstructured.Unstructured
 			if !instanceFound {
 				result, err = a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Create(deploymentManifest, metav1.CreateOptions{})
 			} else {

@@ -47,6 +47,10 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, dockerfi
 	s = log.Spinner("Preparing files for building image")
 	// run the indexer and find the project source files
 	files, err := util.DeployRunIndexer(buildParameters.Path, absIgnoreRules)
+	if err != nil {
+		return reader, err
+	}
+
 	if len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		dockerfile := map[string][]byte{

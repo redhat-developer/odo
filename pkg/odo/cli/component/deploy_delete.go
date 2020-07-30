@@ -102,7 +102,7 @@ func NewCmdDeployDelete(name, fullName string) *cobra.Command {
 	ddo := NewDeployDeleteOptions()
 
 	var deployDeleteCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s", name),
+		Use:     name,
 		Short:   "Delete deployed component",
 		Long:    "Delete deployed component",
 		Example: fmt.Sprintf(deployDeleteCmdExample, fullName),
