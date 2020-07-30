@@ -1,11 +1,13 @@
 package integration_test
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,7 +27,7 @@ func TestIntegration(t *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	pathToGinkgo, err := gexec.Build("github.com/onsi/ginkgo/ginkgo")
+	pathToGinkgo, err := gexec.Build("../ginkgo")
 	Ω(err).ShouldNot(HaveOccurred())
 	return []byte(pathToGinkgo)
 }, func(computedPathToGinkgo []byte) {
@@ -33,8 +35,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 })
 
 var _ = BeforeEach(func() {
-	var err error
-	tmpDir, err = ioutil.TempDir("", "ginkgo-run")
+	tmpDir = fmt.Sprintf("./ginko-run-%d", GinkgoParallelNode())
+	err := os.Mkdir(tmpDir, 0700)
 	Ω(err).ShouldNot(HaveOccurred())
 })
 
@@ -44,6 +46,7 @@ var _ = AfterEach(func() {
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
+	os.RemoveAll(tmpDir)
 	gexec.CleanupBuildArtifacts()
 })
 
@@ -126,4 +129,16 @@ func startGinkgo(dir string, args ...string) *gexec.Session {
 func removeSuccessfully(path string) {
 	err := os.RemoveAll(path)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func raceDetectorSupported() bool {
+	// https://github.com/golang/go/blob/1a370950/src/cmd/internal/sys/supported.go#L12
+	switch runtime.GOOS {
+	case "linux":
+		return runtime.GOARCH == "amd64" || runtime.GOARCH == "ppc64le" || runtime.GOARCH == "arm64"
+	case "darwin", "freebsd", "netbsd", "windows":
+		return runtime.GOARCH == "amd64"
+	default:
+		return false
+	}
 }

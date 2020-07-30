@@ -191,13 +191,6 @@ imports:
   - simplelru
 - name: github.com/hinshun/vt10x
   version: d55458df857cfff952e4bf72ce1b567c5a4e141c
-- name: github.com/hpcloud/tail
-  version: a30252cb686a21eb2d0b98132633053ec2f7f1e5
-  subpackages:
-  - ratelimiter
-  - util
-  - watch
-  - winfile
 - name: github.com/imdario/mergo
   version: 9316a62528ac99aaecb4e47eadd6dc8aa6533d58
 - name: github.com/inconshreveable/mousetrap
@@ -263,15 +256,23 @@ imports:
   version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
 - name: github.com/Netflix/go-expect
   version: da48e75238e2d0bd8dd0fc70046a73c7d773e0ff
+- name: github.com/nxadm/tail
+  version: 327c577245448d8192115e77a76ea3d6aee88202
+  subpackages:
+  - ratelimiter
+  - util
+  - watch
+  - winfile
 - name: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - name: github.com/onsi/ginkgo
-  version: 40598150331533e3cd497f21dcce387dae84b561
+  version: 9c254cb251dc962dc20ca91d0279c870095cfcf9
   subpackages:
   - config
   - internal/codelocation
   - internal/containernode
   - internal/failer
+  - internal/global
   - internal/leafnodes
   - internal/remote
   - internal/spec
@@ -286,7 +287,7 @@ imports:
   - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: 6be6c439588487cd908a3a700795660c2a16dfec
+  version: 904ac6ab26e9a888bdff3467eea03b6122a1c027
   subpackages:
   - format
   - gbytes

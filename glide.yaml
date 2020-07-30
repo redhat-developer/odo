@@ -37,9 +37,9 @@ import:
   version: v1.1.9
   repo: https://github.com/creack/pty
 - package: github.com/onsi/gomega
-  version: v1.9.0
+  version: v1.10.1
 - package: github.com/onsi/ginkgo
-  version: v1.12.0
+  version: v1.14.0
 - package: github.com/kubernetes-sigs/service-catalog
   version: v0.2.2
 - package: github.com/satori/go.uuid
@@ -54,6 +54,8 @@ import:
   version: master
 - package: github.com/Netflix/go-expect
   version: master
+- package: github.com/nxadm/tail
+  version: v1.4.4
 - package: github.com/stretchr/testify
   version: v1.3.0
 - package: github.com/posener/complete

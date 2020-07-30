@@ -9,7 +9,7 @@ export CI="openshift"
 make configure-installer-tests-cluster
 make bin
 mkdir -p $GOPATH/bin
-go get -u github.com/onsi/ginkgo/ginkgo
+./pin-ginkgo-version.go
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR

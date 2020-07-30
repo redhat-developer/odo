@@ -5,7 +5,7 @@ set -e
 # show commands
 set -x
 
-CHECKOUT_GINKGO_VERSION="v1.13.0"
+CHECKOUT_GINKGO_VERSION="v1.14.0"
 
 # Delete existing ginkgo repo
 if [ -d "$GOPATH/src/github.com/onsi/ginkgo" ]; then
@@ -15,7 +15,7 @@ fi
 git clone https://github.com/onsi/ginkgo $GOPATH/src/github.com/onsi/ginkgo
 pushd $GOPATH/src/github.com/onsi/ginkgo
 git checkout $CHECKOUT_GINKGO_VERSION
-go install github.com/onsi/ginkgo/ginkgo
+go install -mod=“” github.com/onsi/ginkgo/ginkgo
 popd
 
 INSTALLED_GINKGO_VERSION=`ginkgo version`
