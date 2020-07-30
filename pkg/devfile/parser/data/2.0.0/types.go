@@ -71,6 +71,9 @@ type Component struct {
 
 	// Allows specifying the definition of a volume shared by several other components
 	Volume *Volume `json:"volume,omitempty"`
+
+	// Allows specifying a dockerfile to initiate build
+	Dockerfile *Dockerfile `json:"dockerfile,omitempty"`
 }
 
 // Composite Composite command that allows executing several sub-commands either sequentially or concurrently
@@ -407,4 +410,28 @@ type Zip struct {
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty"`
+}
+
+// Dockerfile Component is for dockerfile image build
+type Dockerfile struct {
+	// Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent
+	Name string `json:"name"`
+
+	// Mandatory path to source code
+	Source *Source `json:"source"`
+
+	// Mandatory path to dockerfile
+	DockerfileLocation string `json:"dockerfileLocation"`
+
+	// Mandatory destination to registry to push built image
+	Destination string `json:"destination,omitempty"`
+}
+
+// Source represents source code for Dockerfile Component
+type Source struct {
+	// Mandatory path to local source directory folder
+	SourceDir string `json:"sourceDir"`
+
+	// Mandatory path to source repository hosted locally or on cloud
+	Location string `json:"location"`
 }

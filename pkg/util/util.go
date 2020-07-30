@@ -1167,7 +1167,7 @@ func ValidateURL(sourceURL string) error {
 // This function could be expanded to be a more viable linter
 func ValidateDockerfile(contents []byte) error {
 	if len(contents) == 0 {
-		return errors.New("aplha.build-dockerfile URL provided in the Devfile is referencing an empty file")
+		return errors.New("DockerfileLocation provided in the Devfile is referencing an empty file")
 	}
 	// Split the file downloaded line-by-line
 	splitContents := strings.Split(string(contents), "\n")

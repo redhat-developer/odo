@@ -1,7 +1,9 @@
 package common
 
 import (
+	//devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 )
@@ -29,11 +31,12 @@ type Storage struct {
 
 // BuildParameters is a struct containing the parameters to be used when building the image for a devfile component
 type BuildParameters struct {
-	Path            string                  // Path refers to the parent folder containing the source code to push up to a component
-	DockerfileBytes []byte                  // DockerfileBytes is the contents of the project Dockerfile in bytes
-	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
-	Tag             string                  // Tag refers to the image tag of the image being built
-	IgnoredFiles    []string                // IgnoredFiles is the list of files to not push up to a component
+	Path                     string                  // Path refers to the parent folder containing the source code to push up to a component
+	DockerfileBytes          []byte                  // DockerfileBytes is the contents of the project Dockerfile in bytes
+	EnvSpecificInfo          envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
+	Tag                      string                  // Tag refers to the image tag of the image being built
+	DockerConfigJSONFilename string                  // Credentials refers to the path to the dockerconfig file containing external registry credentials
+	IgnoredFiles             []string                // IgnoredFiles is the list of files to not push up to a component
 }
 
 // DeployParameters is a struct containing the parameters to be used when building the image for a devfile component

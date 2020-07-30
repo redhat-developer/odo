@@ -3,6 +3,7 @@ package component
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -15,19 +16,20 @@ import (
 	"text/template"
 	"time"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/mitchellh/go-homedir"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/exec"
-
+	"github.com/openshift/odo/pkg/secret"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	runtimeUnstructured "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/klog"
 
 	imagev1 "github.com/openshift/api/image/v1"
@@ -47,8 +49,8 @@ import (
 )
 
 const (
-	DeployComponentSuffix = "-deploy"
-	BuildTimeout          = 5 * time.Minute
+	DeployWaitTimeout = 60 * time.Second
+	regcredName       = "regcred"
 )
 
 // New instantiantes a component adapter
@@ -82,6 +84,174 @@ type Adapter struct {
 }
 
 const dockerfilePath string = "Dockerfile"
+
+func (a Adapter) generateBuildContainers(containerName string, dockerfileBytes []byte, imageTag string) (corev1.Container, corev1.Container) {
+	buildImage := "gcr.io/kaniko-project/executor:latest"
+
+	command := []string{}
+	commandArgs := []string{"--dockerfile=/kaniko/build-context/Dockerfile",
+		"--context=dir:///kaniko/build-context",
+		"--destination=" + imageTag,
+		"--skip-tls-verify"}
+
+	envVars := []corev1.EnvVar{
+		{Name: "DOCKER_CONFIG", Value: "/kaniko/.docker"},
+		{Name: "AWS_ACCESS_KEY_ID", Value: "NOT_SET"},
+		{Name: "AWS_SECRET_KEY", Value: "NOT_SET"},
+	}
+
+	isPrivileged := true
+	resourceReqs := corev1.ResourceRequirements{}
+	containerKaniko := kclient.GenerateContainer(containerName, buildImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
+
+	containerNginx := kclient.GenerateContainer(containerName+"-nginx",
+		//"busybox",
+		"nginx",
+		// "ubuntu",
+		true, // isPrivileged
+		[]string{},
+		//		[]string{"while true; do echo \"x\"; sleep 5; done"},
+		// []string{"while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"},
+		[]string{}, // command args
+		[]corev1.EnvVar{}, corev1.ResourceRequirements{},
+		nil) // ports
+
+	containerKaniko.VolumeMounts = []corev1.VolumeMount{
+		//		{Name: "destination", MountPath: "/data"},
+		{Name: "build-context", MountPath: "/kaniko/build-context"},
+		{Name: "kaniko-secret", MountPath: "/kaniko/.docker"},
+	}
+
+	containerNginx.VolumeMounts = []corev1.VolumeMount{
+		{Name: "build-context", MountPath: "/kaniko/build-context"},
+	}
+
+	/*
+		if container.SecurityContext == nil {
+			container.SecurityContext = &corev1.SecurityContext{}
+		}
+	*/
+	// priv := true
+	// container.SecurityContext.Privileged = &priv
+	return *containerKaniko, *containerNginx
+}
+
+// func (a Adapter) generateInitContainer(initContainerName string) corev1.Container {
+
+// 	//initImage := "ubuntu"
+// 	//command := []string{}
+// 	//commandArgs := []string{"/bin/sh", "-c", "while true; do sleep 1"}
+// 	// commandArgs := []string{}
+// 	//isPrivileged := false
+// 	//envVars := []corev1.EnvVar{}
+// 	//resourceReqs := corev1.ResourceRequirements{}
+
+// 	container := kclient.GenerateContainer(initContainerName,
+// 		//"busybox",
+// 		"ngnix",
+// 		true, // privileged
+// 		//		[]string{"while true; do echo \"x\"; sleep 5; done"},
+// 		[]string{}, // comand
+// 		[]string{}, // comand args
+
+// 		[]corev1.EnvVar{}, corev1.ResourceRequirements{},
+// 		nil) // ports
+
+// 	/*
+// 		container.VolumeMounts = []corev1.VolumeMount{
+// 			{Name: "source", MountPath: "/src"},
+// 			{Name: "destination", MountPath: "/dst"},
+// 		}
+// 	*/
+
+// 	return *container
+// }
+
+func (a Adapter) createBuildDeployment(labels map[string]string, containerKaniko, containerNginx corev1.Container) (err error) {
+
+	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
+	//podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
+	//hostPathType := corev1.HostPathDirectoryOrCreate
+	//hostPathType := corev1.HostPathFileOrCreate
+
+	podTemplateSpec := &corev1.PodTemplateSpec{
+		ObjectMeta: objectMeta,
+		Spec: corev1.PodSpec{
+			// InitContainers: []corev1.Container{initContainer},
+			Containers: []corev1.Container{containerNginx, containerKaniko},
+			Volumes: []corev1.Volume{
+				{Name: "kaniko-secret",
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: regcredName,
+							Items: []corev1.KeyToPath{
+								{
+									Key:  ".dockerconfigjson",
+									Path: "config.json",
+								},
+							},
+						},
+					},
+				},
+				{Name: "build-context",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
+			},
+		},
+	}
+
+	/*
+		buildContextVolume := corev1.Volume{
+			Name: "build-context",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		}
+
+		kanikoSecretVolume := corev1.Volume{
+			Name: "kaniko-secret",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: regcredName,
+					Items: []corev1.KeyToPath{
+						{
+							Key:  ".dockerconfigjson",
+							Path: "config.json",
+						},
+					},
+				},
+			},
+		}
+
+		podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, buildContextVolume)
+		podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, kanikoSecretVolume)
+		podTemplateSpec.Spec.InitContainers = []corev1.Container{initContainer}
+	*/
+	// podTemplateSpec.Spec.SecurityContext.RunAsUser = &runAsUser
+	// if podTemplateSpec.Spec.SecurityContext == nil {
+	// 	podTemplateSpec.Spec.SecurityContext = &corev1.PodSecurityContext{}
+	// }
+	// zero := int64(0)
+	// podTemplateSpec.Spec.SecurityContext.RunAsUser = &zero
+	// podTemplateSpec.Spec.SecurityContext.RunAsNonRoot = nil
+
+	// fmt.Printf("%v\n", podTemplateSpec.Spec.SecurityContext)
+	// fmt.Printf("%v\n", podTemplateSpec.Spec.SecurityContext.RunAsUser)
+
+	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
+	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	_, err = a.Client.CreateDeployment(*deploymentSpec)
+	if err != nil {
+		return err
+	}
+	klog.V(5).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
+	// ownerReference := kclient.GenerateOwnerReference(deployment)
+	// objectMetaTemp := objectMeta
+	// objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+	return nil
+}
 
 func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.BuildParameters) (err error) {
 	buildName := a.ComponentName
@@ -192,16 +362,149 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		return err
 	}
 
-	isBuildConfigSupported, err := client.IsBuildConfigSupported()
+	useKanikoBuild := true
+
+	if useKanikoBuild {
+		// perform kaniko build
+		err := a.BuildWithKaniko(parameters)
+		if err != nil {
+			return err
+		}
+	} else {
+		isBuildConfigSupported, err := client.IsBuildConfigSupported()
+		if err != nil {
+			return err
+		}
+		if isBuildConfigSupported {
+			return a.runBuildConfig(client, parameters)
+		}
+
+		return errors.New("unable to build image, only Openshift BuildConfig build is supported")
+	}
+	return nil
+}
+
+func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) {
+
+	NamespacedName := types.NamespacedName{
+		Name:      regcredName,
+		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
+	}
+
+	authJSONPath, err := homedir.Expand(parameters.DockerConfigJSONFilename)
+	if err != nil {
+		return fmt.Errorf("failed to generate path to file: %v", err)
+	}
+
+	f, err := os.Open(authJSONPath)
+	if err != nil {
+		return fmt.Errorf("failed to read Docker config %#v : %s", authJSONPath, err)
+	}
+	defer f.Close()
+
+	dockerSecret, err := secret.CreateDockerConfigSecret(NamespacedName, f)
 	if err != nil {
 		return err
 	}
 
-	if isBuildConfigSupported {
-		return a.runBuildConfig(client, parameters)
+	gvk := schema.GroupVersionKind{
+		Group:   "",
+		Version: "v1",
+		Kind:    "Secret",
 	}
 
-	return errors.New("unable to build image, only Openshift BuildConfig build is supported")
+	gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
+	dockerSecretMap, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(dockerSecret)
+	dockerSecretByteArray, err := json.Marshal(dockerSecretMap)
+	var dockerSecretUnstructured *unstructured.Unstructured
+	err = json.Unmarshal(dockerSecretByteArray, &dockerSecretUnstructured)
+	if err != nil {
+		return err
+	}
+	_, err = a.Client.DynamicClient.Resource(gvr).Namespace(NamespacedName.Namespace).Create(dockerSecretUnstructured, metav1.CreateOptions{})
+
+	if err != nil {
+		if errors.Cause(err).Error() != "secrets \""+regcredName+"\" already exists" {
+			return err
+		}
+	}
+
+	containerName := a.ComponentName + "-kaniko-build-container"
+	buildContainer, fileTransferContainer := a.generateBuildContainers(containerName, parameters.DockerfileBytes, parameters.Tag)
+	labels := map[string]string{
+		"component": a.ComponentName,
+	}
+
+	err = a.createBuildDeployment(labels, buildContainer, fileTransferContainer)
+	if err != nil {
+		return errors.Wrap(err, "error while creating kaniko deployment")
+	}
+
+	// Delete deployment
+
+	defer func() {
+		// derr := a.Delete(labels)
+		// if err == nil {
+		// 	err = errors.Wrapf(derr, "failed to delete build step for component with name: %s", a.ComponentName)
+		// }
+
+		// rerr := os.Remove(parameters.DockerfilePath)
+		// if err == nil {
+		// 	err = errors.Wrapf(rerr, "failed to delete %s", parameters.DockerfilePath)
+		// }
+	}()
+
+	// _, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
+	// if err != nil {
+	// 	return errors.Wrap(err, "error while waiting for deployment rollout")
+	// }
+
+	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
+	pod, err := a.waitAndGetComponentPod(true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	// podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+	// watchOptions := metav1.ListOptions{
+	// 	LabelSelector: podSelector,
+	// }
+
+	// // pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodPending, "Waiting for component to start in waitAndGetComponentPod", false)
+	// pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start in waitAndGetComponentPod", false)
+
+	// if err != nil {
+	// 	return errors.Wrapf(err, "error while waiting for pod %s", podSelector)
+	// }
+
+	// Need to wait for container to start
+	time.Sleep(5 * time.Second)
+
+	// Sync files to volume
+	log.Infof("\nSyncing to component %s", a.ComponentName)
+	// Get a sync adapter. Check if project files have changed and sync accordingly
+	syncAdapter := sync.New(a.AdapterContext, &a.Client)
+	compInfo := common.ComponentInfo{
+		//ContainerName: containerName,
+		ContainerName: containerName + "-nginx",
+		PodName:       pod.GetName(),
+	}
+
+	syncFolder, err := syncAdapter.SyncFilesBuild(parameters, dockerfilePath)
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
+	}
+
+	destinationDirectory := "/kaniko/build-context"
+	klog.V(4).Infof("Copying files to pod")
+	err = a.Client.ExtractProjectToComponent(compInfo, destinationDirectory, syncFolder)
+	if err != nil {
+		return errors.Wrapf(err, "failed to stream tarball into file transfer container")
+	}
+
+	return
+
 }
 
 // Perform the substitutions in the manifest file(s)
@@ -743,7 +1046,7 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 		LabelSelector: podSelector,
 	}
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
+	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start in waitAndGetComponentPod", hideSpinner)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 	}

@@ -12,6 +12,8 @@ const (
 	PluginComponentType     DevfileComponentType = "Plugin"
 	VolumeComponentType     DevfileComponentType = "Volume"
 	CustomComponentType     DevfileComponentType = "Custom"
+
+	DockerfileComponentType DevfileComponentType = "Dockerfile"
 )
 
 // DevfileCommandGroupType describes the kind of command group.
@@ -35,9 +37,6 @@ type DevfileMetadata struct {
 
 	// Version Optional semver-compatible version
 	Version string `json:"version,omitempty"`
-
-	// Dockerfile optional URL to remote Dockerfile
-	Dockerfile string `json:"alpha.build-dockerfile,omitempty"`
 
 	// Manifest optional URL to remote Deployment Manifest
 	Manifest string `json:"alpha.deployment-manifest,omitempty"`
@@ -66,6 +65,9 @@ type DevfileComponent struct {
 
 	// Allows specifying the definition of a volume shared by several other components
 	Volume *Volume `json:"volume,omitempty"`
+
+	// Allows specifying a dockerfile to initiate build
+	Dockerfile *Dockerfile `json:"dockerfile,omitempty"`
 }
 
 // Configuration
@@ -353,4 +355,26 @@ type Zip struct {
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty"`
+}
+
+type Dockerfile struct {
+	// Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent
+	Name string `json:"name"`
+
+	// Mandatory path to source code
+	Source *Source `json:"source"`
+
+	// Mandatory path to dockerfile
+	DockerfileLocation string `json:"dockerfileLocation"`
+
+	// Mandatory destination to registry to push built image
+	Destination string `json:"destination,omitempty"`
+}
+
+type Source struct {
+	// Mandatory path to local source directory folder
+	SourceDir string `json:"sourceDir"`
+
+	// Mandatory path to source repository hosted locally or on cloud
+	Location string `json:"location"`
 }

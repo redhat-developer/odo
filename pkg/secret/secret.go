@@ -2,16 +2,43 @@ package secret
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 
 	"strings"
 
 	"github.com/openshift/odo/pkg/occlient"
 	corev1 "k8s.io/api/core/v1"
-)
-import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+
 	applabels "github.com/openshift/odo/pkg/application/labels"
+
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 )
+
+var secretTypeMeta = TypeMeta("Secret", "v1")
+
+type objectMetaFunc func(om *v1.ObjectMeta)
+
+func TypeMeta(kind, apiVersion string) v1.TypeMeta {
+	return v1.TypeMeta{
+		Kind:       kind,
+		APIVersion: apiVersion,
+	}
+}
+
+func ObjectMeta(n types.NamespacedName, opts ...objectMetaFunc) v1.ObjectMeta {
+	om := v1.ObjectMeta{
+		Namespace: n.Namespace,
+		Name:      n.Name,
+	}
+	for _, o := range opts {
+		o(&om)
+	}
+	return om
+
+}
 
 // DetermineSecretName resolves the name of the secret that corresponds to the supplied component name and port
 func DetermineSecretName(client *occlient.Client, componentName, applicationName, port string) (string, error) {
@@ -55,4 +82,25 @@ func availablePorts(secrets []corev1.Secret) []string {
 		ports = append(ports, secret.Annotations[occlient.ComponentPortAnnotationName])
 	}
 	return ports
+}
+
+func CreateDockerConfigSecret(name types.NamespacedName, in io.Reader) (*corev1.Secret, error) {
+	return createSecret(name, ".dockerconfigjson", corev1.SecretTypeDockerConfigJson, in)
+}
+
+func createSecret(name types.NamespacedName, key string, st corev1.SecretType, in io.Reader) (*corev1.Secret, error) {
+	data, err := ioutil.ReadAll(in)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secret data: %v", err)
+	}
+	secret := &corev1.Secret{
+		TypeMeta:   secretTypeMeta,
+		ObjectMeta: ObjectMeta(name),
+		Type:       st,
+		Data: map[string][]byte{
+			key: data,
+		},
+	}
+	return secret, nil
+
 }

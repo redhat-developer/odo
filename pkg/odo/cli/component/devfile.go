@@ -4,9 +4,16 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
+<<<<<<< HEAD
+=======
+	//	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser"
+
+>>>>>>> e792124a71dde2630bd692553d694bdb7f169478
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -163,10 +170,11 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	}
 
 	buildParams := common.BuildParameters{
-		Path:            do.sourcePath,
-		Tag:             do.tag,
-		DockerfileBytes: do.DockerfileBytes,
-		EnvSpecificInfo: *do.EnvSpecificInfo,
+		Path:                     do.sourcePath,
+		Tag:                      do.tag,
+		DockerConfigJSONFilename: do.dockerConfigJSONFilename,
+		DockerfileBytes:          do.DockerfileBytes,
+		EnvSpecificInfo:          *do.EnvSpecificInfo,
 	}
 
 	log.Infof("\nBuilding component %s", componentName)
@@ -180,6 +188,8 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		)
 		os.Exit(1)
 	}
+
+	time.Sleep(5 * time.Second)
 
 	deployParams := common.DeployParameters{
 		EnvSpecificInfo: *do.EnvSpecificInfo,

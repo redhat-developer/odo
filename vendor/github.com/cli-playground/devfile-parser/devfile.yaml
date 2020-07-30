@@ -1,0 +1,64 @@
+schemaVersion: 2.1.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+  alpha.deployment-manifest: "https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/deploy_deployment.yaml"
+projects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      mountSources: true
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+          configuration:
+            protocol: tcp
+            scheme: http
+            type: terminal
+
+  - dockerfile:
+      name: dockerfile-build
+      source: 
+         sourceDir: "src"
+         location: "https://github.com/ranakan19/golang-ex.git"
+      dockerfileLocation: "https://raw.githubusercontent.com/wtam2018/test/master/nodejs-dockerfiile"
+      destination: "docker.io"
+
+commands:
+  - exec:
+      id: install
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: run
+      component: runtime
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+        isDefault: true
+  - exec:
+      id: debug
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: debug
+        isDefault: true
+  - exec:
+      id: test
+      component: runtime
+      commandLine: npm test
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: test
+        isDefault: true

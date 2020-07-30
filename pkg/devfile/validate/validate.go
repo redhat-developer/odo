@@ -8,6 +8,7 @@ import (
 
 	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
+	v210 "github.com/openshift/odo/pkg/devfile/parser/data/2.1.0"
 )
 
 // ValidateDevfileData validates whether sections of devfile are odo compatible
@@ -21,6 +22,11 @@ func ValidateDevfileData(data interface{}) error {
 		components = d.GetComponents()
 	default:
 		return fmt.Errorf("unknown devfile type %T", d)
+	}
+
+	if typeData == reflect.TypeOf(&v210.Devfile210{}) {
+		d := data.(*v210.Devfile210)
+		components = d.GetComponents()
 	}
 
 	// Validate Components

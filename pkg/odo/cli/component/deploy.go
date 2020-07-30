@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	devfile "github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -38,14 +39,15 @@ type DeployOptions struct {
 	ignores          []string
 	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 
-	DevfilePath     string
-	devObj          devfileParser.DevfileObj
-	DockerfileURL   string
-	DockerfileBytes []byte
-	namespace       string
-	tag             string
-	ManifestSource  []byte
-	DeploymentPort  int
+	DevfilePath              string
+	devObj                   devfileParser.DevfileObj
+	DockerfileURL            string
+	DockerfileBytes          []byte
+	namespace                string
+	tag                      string
+	dockerConfigJSONFilename string
+	ManifestSource           []byte
+	DeploymentPort           int
 
 	*genericclioptions.Context
 }
@@ -103,8 +105,15 @@ func (do *DeployOptions) Validate() (err error) {
 	}
 
 	s = log.Spinner("Validating build information")
-	metadata := do.devObj.Data.GetMetadata()
-	dockerfileURL := metadata.Dockerfile
+
+	var dockerfileURL string
+	components := do.devObj.Data.GetAliasedComponents()
+	for _, component := range components {
+		if component.Dockerfile != nil {
+			dockerfileURL = component.Dockerfile.DockerfileLocation
+			break
+		}
+	}
 
 	//Download Dockerfile to .odo, build, then delete from .odo dir
 	//If Dockerfile is present in the project already, use that for the build
@@ -133,12 +142,13 @@ func (do *DeployOptions) Validate() (err error) {
 
 	} else if !util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
 		s.End(false)
-		return errors.New("dockerfile required for build. No 'alpha.build-dockerfile' field found in devfile, or Dockerfile found in project directory")
+		return errors.New("dockerfile required for build. No 'DockerfileLocation' field found in dockerfile component of devfile, or Dockerfile found in project directory")
 	}
 
 	s.End(true)
 
 	s = log.Spinner("Validating deployment information")
+	metadata := do.devObj.Data.GetMetadata()
 	manifestURL := metadata.Manifest
 
 	if manifestURL == "" {
@@ -208,6 +218,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	deployCmd.Flags().StringVar(&do.tag, "tag", "", "Tag used to build the image.  In the format <registry>/namespace>/<image>")
 
 	deployCmd.Flags().StringSliceVar(&do.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
+	deployCmd.Flags().StringVar(&do.dockerConfigJSONFilename, "dockerconfigjson", "~/.docker/config.json", "Filepath to config.json which authenticates the image push to the desired image registry ")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(deployCmd)

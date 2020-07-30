@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 hash: 12566638b19adff35178c60a628f99d3536e5d8096cbfba77161abfe75e7242a
 updated: 2020-07-15T12:25:50.462150483+05:30
+=======
+hash: 721bab006d880b97996f61d8060113ed2d2de9eafcdf27d48cce8e181478d99c
+updated: 2020-07-20T15:40:03.885343016-04:00
+>>>>>>> e792124a71dde2630bd692553d694bdb7f169478
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -33,6 +38,19 @@ imports:
   - quantile
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
+- name: github.com/cli-playground/devfile-parser
+  version: 1cd46714a13d8589ea01b66f41bf1218544aa0c9
+  subpackages:
+  - pkg/devfile/parser
+  - pkg/devfile/parser/context
+  - pkg/devfile/parser/data
+  - pkg/devfile/parser/data/1.0.0
+  - pkg/devfile/parser/data/2.0.0
+  - pkg/devfile/parser/data/common
+  - pkg/devfile/validate
+  - pkg/errors
+  - pkg/testingutil/filesystem
+  - pkg/util
 - name: github.com/containerd/containerd
   version: d76c121f76a5fc8a462dc64594aea72fe18e1178
   subpackages:
@@ -302,7 +320,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/opencontainers/go-digest
-  version: a6d0ee40d4207ea02364bd3b9e8e77b9159ba1eb
+  version: ea51bea511f75cfa3ef6098cc253c5c3609b037a
 - name: github.com/opencontainers/image-spec
   version: 79b036d80240ae530a8de15e1d21c7ab9292c693
   subpackages:
@@ -380,7 +398,11 @@ imports:
   - pkg/helpers/term
   - pkg/helpers/tokencmd
 - name: github.com/operator-framework/operator-lifecycle-manager
+<<<<<<< HEAD
   version: 0326066b8b2f87a1feec4c2bd9fdc8622ef5e1a0
+=======
+  version: 41f827112045feae903c51be4f7ec223ad16164b
+>>>>>>> e792124a71dde2630bd692553d694bdb7f169478
   subpackages:
   - pkg/api/apis/operators
   - pkg/api/apis/operators/v1
@@ -407,6 +429,7 @@ imports:
   subpackages:
   - prometheus
   - prometheus/internal
+  - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: fd36f4220a901265f90734c3183c5f0c91daa0b8
   subpackages:
@@ -436,7 +459,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
-  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
+  version: 6699a89a232f3db797f2e280639854bbc4b89725
 - name: github.com/spf13/afero
   version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
@@ -638,6 +661,7 @@ imports:
   - pkg/runtime/serializer/recognizer
   - pkg/runtime/serializer/streaming
   - pkg/runtime/serializer/versioning
+  - pkg/runtime/serializer/yaml
   - pkg/selection
   - pkg/types
   - pkg/util/cache
@@ -668,7 +692,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 79427f02047f9189a75b8cdaadccaf65a126853e
+  version: 72adfd25871125d01371b50a779d2a25dd5521a8
   subpackages:
   - pkg/authentication/authenticator
   - pkg/authentication/request/x509
@@ -832,6 +856,8 @@ imports:
 - name: k8s.io/component-base
   version: e22fc98bf46cf388fdc8cb047daf7a6b4f208954
   subpackages:
+  - metrics
+  - metrics/legacyregistry
   - version
 - name: k8s.io/klog
   version: 2ca9ad30301bf30a8a6e0fa2110db6b8df699a91
