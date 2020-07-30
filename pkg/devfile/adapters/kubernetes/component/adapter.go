@@ -351,26 +351,21 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		return err
 	}
 
-	useKanikoBuild := true
+	isBuildConfigSupported, err := client.IsBuildConfigSupported()
+	if err != nil {
+		return err
+	}
 
-	if useKanikoBuild {
+	if isBuildConfigSupported && !parameters.Rootless {
+		return a.runBuildConfig(client, parameters)
+	} else {
 		// perform kaniko build
 		err := a.BuildWithKaniko(parameters)
 		if err != nil {
 			return err
 		}
-	} else {
-		isBuildConfigSupported, err := client.IsBuildConfigSupported()
-		if err != nil {
-			return err
-		}
-		if isBuildConfigSupported {
-			return a.runBuildConfig(client, parameters)
-		}
-
-		return errors.New("unable to build image, only Openshift BuildConfig build is supported")
+		return nil
 	}
-	return nil
 }
 
 func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) {

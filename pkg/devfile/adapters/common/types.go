@@ -36,6 +36,7 @@ type BuildParameters struct {
 	Tag                      string                  // Tag refers to the image tag of the image being built
 	DockerConfigJSONFilename string                  // Credentials refers to the path to the dockerconfig file containing external registry credentials
 	IgnoredFiles             []string                // IgnoredFiles is the list of files to not push up to a component
+	Rootless                 bool                    // Rootless/Unprivileged builder pod
 }
 
 // DeployParameters is a struct containing the parameters to be used when building the image for a devfile component
