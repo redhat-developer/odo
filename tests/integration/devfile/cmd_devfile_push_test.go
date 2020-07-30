@@ -525,19 +525,15 @@ var _ = Describe("odo devfile push command tests", func() {
 			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
-			// Only testing this in Kubernetes because odo OpenShift CI
-			// sets the min pvc storage size to 100Gi
-			if os.Getenv("KUBERNETES") == "true" {
-				// Verify the pvc size for firstvol
-				storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
-				// should be the default size
-				Expect(storageSize).To(ContainSubstring("5Gi"))
+			// Verify the pvc size for firstvol
+			storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
+			// should be the default size
+			Expect(storageSize).To(ContainSubstring("5Gi"))
 
-				// Verify the pvc size for secondvol
-				storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)
-				// should be the specified size in the devfile volume component
-				Expect(storageSize).To(ContainSubstring("3Gi"))
-			}
+			// Verify the pvc size for secondvol
+			storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)
+			// should be the specified size in the devfile volume component
+			Expect(storageSize).To(ContainSubstring("3Gi"))
 		})
 
 	})
