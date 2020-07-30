@@ -489,7 +489,7 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	klog.V(4).Infof("Copying files to pod")
 	err = a.Client.ExtractProjectToComponent(compInfo, destinationDirectory, syncFolder)
 	if err != nil {
-		return errors.Wrapf(err, "failed to stream tarball into init container")
+		return errors.Wrapf(err, "failed to stream tarball into file transfer container")
 	}
 
 	return
@@ -571,6 +571,7 @@ func (a Adapter) waitForManifestDeployCompletion(applicationName string, gvr sch
 
 // Build image for devfile project
 func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
+
 	namespace := a.Client.Namespace
 	applicationName := a.ComponentName + "-deploy"
 	deploymentManifest := &unstructured.Unstructured{}
