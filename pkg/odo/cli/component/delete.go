@@ -40,6 +40,7 @@ type DeleteOptions struct {
 	componentForceDeleteFlag bool
 	componentDeleteAllFlag   bool
 	componentDeleteWaitFlag  bool
+	componentDeleteS2iFlag   bool
 	componentContext         string
 	isCmpExists              bool
 	*ComponentOptions
@@ -52,15 +53,21 @@ type DeleteOptions struct {
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, false, "", false, &ComponentOptions{}, "", "", nil}
+	return &DeleteOptions{false, false, false, false, "", false, &ComponentOptions{}, "", "", nil}
 }
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
+	if do.componentContext == "" {
+		do.componentContext = LocalDirectoryDefaultLocation
+	}
+
 	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
+	ConfigFilePath = filepath.Join(do.componentContext, configFile)
 
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if !do.componentDeleteS2iFlag && experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
 		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
 		if err != nil {
 			return err
@@ -78,16 +85,14 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 	do.Context = genericclioptions.NewContext(cmd)
 	err = do.ComponentOptions.Complete(name, cmd, args)
 
-	if do.componentContext == "" {
-		do.componentContext = LocalDirectoryDefaultLocation
-	}
 	return
 }
 
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
+
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if !do.componentDeleteS2iFlag && experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
 		return nil
 	}
 
@@ -106,6 +111,7 @@ func (do *DeleteOptions) Validate() (err error) {
 		}
 	}
 	return
+
 }
 
 // Run has the logic to perform the required actions as part of command
@@ -113,10 +119,15 @@ func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if !do.componentDeleteS2iFlag && experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
 		return do.DevFileRun()
 	}
 
+	return do.s2iRun()
+}
+
+// s2iRun implements delete Run for s2i components
+func (do *DeleteOptions) s2iRun() (err error) {
 	if do.isCmpExists {
 		err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
 		if err != nil {
@@ -192,7 +203,6 @@ func (do *DeleteOptions) Run() (err error) {
 			return fmt.Errorf("Aborting deletion of config for component: %s", do.componentName)
 		}
 	}
-
 	return
 }
 
@@ -286,6 +296,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteAllFlag, "all", "a", false, "Delete component and local config")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteWaitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
+	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteS2iFlag, "s2i", "", false, "Delete s2i component if devfile and s2i both component present with same name")
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
