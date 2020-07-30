@@ -571,7 +571,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	log.Infof("\nGathering information for component %s", a.ComponentName)
-	podSpinner := log.Spinnerf("Checking status for component %s", a.ComponentName)
+	podSpinner := log.Spinner("Checking status for component")
 	defer podSpinner.End(false)
 
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
@@ -604,8 +604,8 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 		}
 	}
 
-	log.Infof("\nDeleting devfile component %s", a.ComponentName)
-	spinner := log.Spinnerf("Deleting Kubernetes resources for component %s", a.ComponentName)
+	log.Infof("\nDeleting component %s", a.ComponentName)
+	spinner := log.Spinner("Deleting Kubernetes resources for component")
 	defer spinner.End(false)
 
 	err = a.Client.DeleteDeployment(labels)
