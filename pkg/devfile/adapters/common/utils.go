@@ -61,8 +61,8 @@ const (
 	// Default volume size for volumes defined in a devfile
 	volumeSize = "5Gi"
 
-	// EnvCheProjectsRoot is the env defined for /projects where component mountSources=true
-	EnvCheProjectsRoot = "CHE_PROJECTS_ROOT"
+	// EnvProjectsRoot is the env defined for /projects where component mountSources=true
+	EnvProjectsRoot = "PROJECTS_ROOT"
 
 	// EnvOdoCommandRunWorkingDir is the env defined in the runtime component container which holds the work dir for the run command
 	EnvOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
@@ -234,4 +234,15 @@ func GetCommandsMap(commands []common.DevfileCommand) map[string]common.DevfileC
 		commandsMap[command.GetID()] = command
 	}
 	return commandsMap
+}
+
+// GetComponentEnvVar returns true if a list of env vars contains the specified env var
+// If the env exists, it returns the value of it
+func GetComponentEnvVar(env string, envs []common.Env) string {
+	for _, envVar := range envs {
+		if envVar.Name == env {
+			return envVar.Value
+		}
+	}
+	return ""
 }

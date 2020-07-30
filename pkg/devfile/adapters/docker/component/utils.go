@@ -200,15 +200,18 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 
 	// If the component set `mountSources` to true, add the source volume and env CHE_PROJECTS_ROOT to it
 	if comp.Container.MountSources {
+		var syncFolder, projectsRoot string
 		if comp.Container.SourceMapping != "" {
-			utils.AddVolumeToContainer(a.projectVolumeName, comp.Container.SourceMapping, &hostConfig)
+			syncFolder = comp.Container.SourceMapping
+		} else if projectsRoot = common.GetComponentEnvVar(common.EnvProjectsRoot, comp.Container.Env); projectsRoot != "" {
+			syncFolder = projectsRoot
 		} else {
-			utils.AddVolumeToContainer(a.projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+			syncFolder = lclient.OdoSourceVolumeMount
 		}
-
-		if !common.IsEnvPresent(comp.Container.Env, common.EnvCheProjectsRoot) {
-			envName := common.EnvCheProjectsRoot
-			envValue := lclient.OdoSourceVolumeMount
+		utils.AddVolumeToContainer(a.projectVolumeName, syncFolder, &hostConfig)
+		if projectsRoot != "" {
+			envName := common.EnvProjectsRoot
+			envValue := syncFolder
 			comp.Container.Env = append(comp.Container.Env, versionsCommon.Env{
 				Name:  envName,
 				Value: envValue,
