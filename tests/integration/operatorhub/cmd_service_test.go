@@ -57,6 +57,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "mongodb-enterprise", "etcdoperator"})
 		})
+
+		It("should not allow interactive mode command to be executed", func() {
+			stdOut := helper.CmdShouldFail("odo", "service", "create")
+			Expect(stdOut).To(ContainSubstring("please use a valid command to start an Operator backed service"))
+		})
 	})
 
 	Context("When creating and deleting an operator backed service", func() {
@@ -69,7 +74,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			cleanPreSetup()
 		})
 
-		It("should be able to create and then delete EtcdCluster from its alm example", func() {
+		It("should be able to create, list and then delete EtcdCluster from its alm example", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster")
@@ -84,12 +89,41 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, "Running")
 			})
 
+			// now test listing of the service using odo
+			stdOut := helper.CmdShouldPass("odo", "service", "list")
+			Expect(stdOut).To(ContainSubstring("EtcdCluster/example"))
+
 			// now test the deletion of the service using odo
 			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 
 			// now try deleting the same service again. It should fail with error message
-			stdOut := helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
+			stdOut = helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
 			Expect(stdOut).To(ContainSubstring("Couldn't find service named"))
+		})
+
+		It("should be able to create service with name passed on CLI", func() {
+			name := helper.RandString(6)
+			svcFullName := strings.Join([]string{"EtcdCluster", name}, "/")
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", name)
+
+			// now verify if the pods for the operator have started
+			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			// Look for pod with custom name because that's the name etcd will give to the pods.
+			compileString := name + `-.[a-z0-9]*`
+			etcdPod := regexp.MustCompile(compileString).FindString(pods)
+
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+			})
+
+			// now try creating service with same name again. it should fail
+			stdOut := helper.CmdShouldFail("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", name)
+			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
+
+			helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
 		})
 	})
 
@@ -185,6 +219,29 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 		})
+
+		It("should be able to create a service with name passed on CLI", func() {
+			name := helper.RandString(6)
+			// First let's grab the etcd operator's name from "odo catalog list services" output
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+
+			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+
+			// stdOut contains the yaml specification. Store it to a file
+			randomFileName := helper.RandString(6) + ".yaml"
+			fileName := filepath.Join(os.TempDir(), randomFileName)
+			if err := ioutil.WriteFile(fileName, []byte(stdOut), 0644); err != nil {
+				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+			}
+
+			// now create operator backed service
+			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, name)
+
+			// Attempting to create service with same name should fail
+			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name)
+			Expect(stdOut).To(ContainSubstring("please provide a different name or delete the existing service first"))
+		})
 	})
 
 	Context("When using from-file option", func() {
@@ -224,7 +281,7 @@ spec:
 
 			// now create operator backed service
 			stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName)
-			Expect(stdOut).To(ContainSubstring("Couldn't find \"metadata\" in the yaml"))
+			Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
 
 			invalidMetaFile := helper.RandString(6) + ".yaml"
 			fileName = filepath.Join("/tmp", invalidMetaFile)
@@ -234,7 +291,7 @@ spec:
 
 			// now create operator backed service
 			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName)
-			Expect(stdOut).To(ContainSubstring("Couldn't find metadata.name in the yaml"))
+			Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
 
 		})
 	})
