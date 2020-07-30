@@ -239,6 +239,7 @@ type CreateParameters struct {
 	host            string
 	secretName      string
 	urlKind         envinfo.URLKind
+	path            string
 }
 
 // Create creates a URL and returns url string and error if any
@@ -309,7 +310,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 		}
 
-		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName}
+		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
 		objectMeta.Name = parameters.urlName
@@ -357,7 +358,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		}
 
 		// Pass in the namespace name, link to the service (componentName) and labels to create a route
-		route, err := client.CreateRoute(parameters.urlName, serviceName, intstr.FromInt(parameters.portNumber), labels, parameters.secureURL, ownerReference)
+		route, err := client.CreateRoute(parameters.urlName, serviceName, intstr.FromInt(parameters.portNumber), labels, parameters.secureURL, parameters.path, ownerReference)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create route")
 		}
@@ -652,6 +653,7 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 			Port:   configURL.Port,
 			Secure: configURL.Secure,
 			Kind:   envinfo.ROUTE,
+			Path:   "/",
 		},
 	}
 }
@@ -777,7 +779,7 @@ func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Kind: envinfo.ROUTE},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: envinfo.ROUTE},
 	}
 
 }
@@ -797,7 +799,7 @@ func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
 	url := URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Kind: envinfo.INGRESS},
+		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: envinfo.INGRESS},
 	}
 	if i.Spec.TLS != nil {
 		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
@@ -828,7 +830,7 @@ func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv
 						HTTP: &iextensionsv1.HTTPIngressRuleValue{
 							Paths: []iextensionsv1.HTTPIngressPath{
 								{
-									Path: "/",
+									Path: ingressURL.Spec.Path,
 									Backend: iextensionsv1.IngressBackend{
 										ServiceName: serviceName,
 										ServicePort: port,
@@ -894,13 +896,22 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
 					return fmt.Errorf("Port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry. ", url.Port, url.Name)
 				}
+				secure := false
+				if endpoint.Secure == true || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+					secure = true
+				}
+				path := "/"
+				if endpoint.Path != "" {
+					path = endpoint.Path
+				}
 				urlLOCAL[url.Name] = URL{
 					Spec: URLSpec{
 						Host:      url.Host,
 						Port:      url.Port,
-						Secure:    url.Secure,
+						Secure:    secure,
 						TLSSecret: url.TLSSecret,
 						Kind:      url.Kind,
+						Path:      path,
 					},
 				}
 			}
@@ -908,6 +919,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	} else {
 		urls := parameters.ConfigURLs
 		for _, url := range urls {
+			var secure bool
+			path := "/"
 			if parameters.IsExperimentalModeEnabled {
 				exist := false
 				var endpoint parsercommon.Endpoint
@@ -917,12 +930,24 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
 					return fmt.Errorf("Port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry. ", url.Port, url.Name)
 				}
+				secure = false
+				if endpoint.Secure == true || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+					secure = true
+				}
+				if endpoint.Path != "" {
+					path = endpoint.Path
+				}
+			} else {
+				secure = url.Secure
 			}
+
+			secure = url.Secure
 			urlLOCAL[url.Name] = URL{
 				Spec: URLSpec{
 					Port:   url.Port,
-					Secure: url.Secure,
+					Secure: secure,
 					Kind:   envinfo.ROUTE,
+					Path:   path,
 				},
 			}
 		}
@@ -946,11 +971,20 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if !exist {
 				// create route against Openshift
 				if parameters.IsRouteSupported {
+					secure := false
+					if endpoint.Secure == true || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+						secure = true
+					}
+					path := "/"
+					if endpoint.Path != "" {
+						path = endpoint.Path
+					}
 					urlLOCAL[endpoint.Name] = URL{
 						Spec: URLSpec{
 							Port:   int(port),
-							Secure: endpoint.Secure,
+							Secure: secure,
 							Kind:   envinfo.ROUTE,
+							Path:   path,
 						},
 					}
 				} else {
@@ -974,6 +1008,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					Port:   url.Spec.Port,
 					Kind:   envinfo.INGRESS,
 					Secure: url.Spec.Secure,
+					Path:   url.Spec.Path,
 				},
 			}
 		}
@@ -990,6 +1025,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					Port:   urlRoute.Spec.Port,
 					Kind:   envinfo.ROUTE,
 					Secure: urlRoute.Spec.Secure,
+					Path:   urlRoute.Spec.Path,
 				},
 			}
 		}
@@ -1048,6 +1084,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				host:            urlInfo.Spec.Host,
 				secretName:      urlInfo.Spec.TLSSecret,
 				urlKind:         urlInfo.Spec.Kind,
+				path:            urlInfo.Spec.Path,
 			}
 			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
 			if err != nil {

@@ -22,6 +22,7 @@ type URLSpec struct {
 	Kind         envinfo.URLKind `json:"kind,omitempty"`
 	TLSSecret    string          `json:"tlssecret,omitempty"`
 	ExternalPort int             `json:"externalport,omitempty"`
+	Path         string          `json:"path,omitempty"`
 }
 
 // URLList is a list of applications

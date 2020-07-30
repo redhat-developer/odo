@@ -41,6 +41,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		name          string
 		componentType versionsCommon.DevfileComponentType
 		envInfo       envinfo.EnvSpecificInfo
+		endpointMap   map[int32]versionsCommon.Endpoint
 		running       bool
 		wantErr       bool
 	}{
@@ -48,6 +49,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:          "Case 1: Invalid devfile",
 			componentType: "",
 			envInfo:       envinfo.EnvSpecificInfo{},
+			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       false,
 			wantErr:       true,
 		},
@@ -55,6 +57,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:          "Case 2: Valid devfile",
 			componentType: versionsCommon.ContainerComponentType,
 			envInfo:       envinfo.EnvSpecificInfo{},
+			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       false,
 			wantErr:       false,
 		},
@@ -62,6 +65,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:          "Case 3: Invalid devfile, already running component",
 			componentType: "",
 			envInfo:       envinfo.EnvSpecificInfo{},
+			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       true,
 			wantErr:       true,
 		},
@@ -69,6 +73,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:          "Case 4: Valid devfile, already running component",
 			componentType: versionsCommon.ContainerComponentType,
 			envInfo:       envinfo.EnvSpecificInfo{},
+			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       true,
 			wantErr:       false,
 		},
@@ -104,7 +109,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, tt.endpointMap)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -276,6 +281,7 @@ func TestDoesComponentExist(t *testing.T) {
 		componentName    string
 		getComponentName string
 		envInfo          envinfo.EnvSpecificInfo
+		endpointMap      map[int32]versionsCommon.Endpoint
 		want             bool
 		wantErr          bool
 	}{
@@ -284,6 +290,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
+			endpointMap:      map[int32]versionsCommon.Endpoint{},
 			want:             true,
 			wantErr:          false,
 		},
@@ -292,6 +299,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "fake-component",
 			envInfo:          envinfo.EnvSpecificInfo{},
+			endpointMap:      map[int32]versionsCommon.Endpoint{},
 			want:             false,
 			wantErr:          false,
 		},
@@ -300,6 +308,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
+			endpointMap:      map[int32]versionsCommon.Endpoint{},
 			want:             false,
 			wantErr:          true,
 		},
@@ -327,7 +336,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, tt.endpointMap)
 
 			// Checks for unexpected error cases
 			if err != nil {
