@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/go-homedir"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/secret"
@@ -49,8 +50,10 @@ import (
 )
 
 const (
-	DeployWaitTimeout = 60 * time.Second
-	regcredName       = "regcred"
+	DeployWaitTimeout     = 60 * time.Second
+	regcredName           = "regcred"
+	DeployComponentSuffix = "-deploy"
+	BuildTimeout          = 5 * time.Minute
 )
 
 // New instantiantes a component adapter
@@ -170,77 +173,64 @@ func (a Adapter) generateBuildContainers(containerName string, dockerfileBytes [
 func (a Adapter) createBuildDeployment(labels map[string]string, containerKaniko, containerNginx corev1.Container) (err error) {
 
 	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
-	//podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
+	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{containerNginx, containerKaniko})
 	//hostPathType := corev1.HostPathDirectoryOrCreate
 	//hostPathType := corev1.HostPathFileOrCreate
 
-	podTemplateSpec := &corev1.PodTemplateSpec{
-		ObjectMeta: objectMeta,
-		Spec: corev1.PodSpec{
-			// InitContainers: []corev1.Container{initContainer},
-			Containers: []corev1.Container{containerNginx, containerKaniko},
-			Volumes: []corev1.Volume{
-				{Name: "kaniko-secret",
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: regcredName,
-							Items: []corev1.KeyToPath{
-								{
-									Key:  ".dockerconfigjson",
-									Path: "config.json",
-								},
-							},
-						},
-					},
-				},
-				{Name: "build-context",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
+	// podTemplateSpec := &corev1.PodTemplateSpec{
+	// 	ObjectMeta: objectMeta,
+	// 	Spec: corev1.PodSpec{
+	// 		// InitContainers: []corev1.Container{initContainer},
+	// 		Containers: []corev1.Container{containerNginx, containerKaniko},
+	// 		Volumes: []corev1.Volume{
+	// 			{Name: "kaniko-secret",
+	// 				VolumeSource: corev1.VolumeSource{
+	// 					Secret: &corev1.SecretVolumeSource{
+	// 						SecretName: regcredName,
+	// 						Items: []corev1.KeyToPath{
+	// 							{
+	// 								Key:  ".dockerconfigjson",
+	// 								Path: "config.json",
+	// 							},
+	// 						},
+	// 					},
+	// 				},
+	// 			},
+	// 			{Name: "build-context",
+	// 				VolumeSource: corev1.VolumeSource{
+	// 					EmptyDir: &corev1.EmptyDirVolumeSource{},
+	// 				},
+	// 			},
+	// 		},
+	// 	},
+	// }
+
+	buildContextVolume := corev1.Volume{
+		Name: "build-context",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+
+	kanikoSecretVolume := corev1.Volume{
+		Name: "kaniko-secret",
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: regcredName,
+				Items: []corev1.KeyToPath{
+					{
+						Key:  ".dockerconfigjson",
+						Path: "config.json",
 					},
 				},
 			},
 		},
 	}
 
-	/*
-		buildContextVolume := corev1.Volume{
-			Name: "build-context",
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		}
+	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, buildContextVolume)
+	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, kanikoSecretVolume)
 
-		kanikoSecretVolume := corev1.Volume{
-			Name: "kaniko-secret",
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: regcredName,
-					Items: []corev1.KeyToPath{
-						{
-							Key:  ".dockerconfigjson",
-							Path: "config.json",
-						},
-					},
-				},
-			},
-		}
-
-		podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, buildContextVolume)
-		podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, kanikoSecretVolume)
-		podTemplateSpec.Spec.InitContainers = []corev1.Container{initContainer}
-	*/
-	// podTemplateSpec.Spec.SecurityContext.RunAsUser = &runAsUser
-	// if podTemplateSpec.Spec.SecurityContext == nil {
-	// 	podTemplateSpec.Spec.SecurityContext = &corev1.PodSecurityContext{}
-	// }
-	// zero := int64(0)
-	// podTemplateSpec.Spec.SecurityContext.RunAsUser = &zero
-	// podTemplateSpec.Spec.SecurityContext.RunAsNonRoot = nil
-
-	// fmt.Printf("%v\n", podTemplateSpec.Spec.SecurityContext)
-	// fmt.Printf("%v\n", podTemplateSpec.Spec.SecurityContext.RunAsUser)
-
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
+	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, labels)
 	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	_, err = a.Client.CreateDeployment(*deploymentSpec)
 	if err != nil {

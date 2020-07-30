@@ -43,8 +43,5 @@ func init() {
 	devfileApiVersionToJSONSchema = make(map[supportedApiVersion]string)
 	devfileApiVersionToJSONSchema[apiVersion100] = v100.JsonSchema100
 	devfileApiVersionToJSONSchema[apiVersion200] = v200.JsonSchema200
-<<<<<<< HEAD
-=======
 	devfileApiVersionToJSONSchema[apiVersion210] = v210.JsonSchema210
->>>>>>> e792124a71dde2630bd692553d694bdb7f169478
 }

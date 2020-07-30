@@ -2714,15 +2714,6 @@ const JsonSchema200 = `{
           "type": "string",
           "description": "Optional devfile name"
 		},
-<<<<<<< HEAD
-		"alpha.build-dockerfile": {
-			"type":"string",
-			"description": "Optional URL to remote Dockerfile"
-		},
-		"alpha.deployment-manifest":  {
-			"type":"string",
-			"description": "Optional URL to remote Deployment Manifest"
-=======
 		"type": "array"
 	  },
 	  "components": {
@@ -3289,7 +3280,6 @@ const JsonSchema200 = `{
 			  "type":"string",
 			  "description": "Optional URL to remote Deployment Manifest"
 		  }
->>>>>>> e792124a71dde2630bd692553d694bdb7f169478
 		}
       }
     },

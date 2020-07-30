@@ -8,12 +8,6 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
-<<<<<<< HEAD
-=======
-	//	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser"
-
->>>>>>> e792124a71dde2630bd692553d694bdb7f169478
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
