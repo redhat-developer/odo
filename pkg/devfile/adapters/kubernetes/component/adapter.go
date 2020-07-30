@@ -83,47 +83,45 @@ type Adapter struct {
 
 const dockerfilePath string = "Dockerfile"
 
-func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []byte, imageTag string) corev1.Container {
-	// buildImage := "gcr.io/kaniko-project/executor:latest"
+func (a Adapter) generateBuildContainers(containerName string, dockerfileBytes []byte, imageTag string) (corev1.Container, corev1.Container) {
+	buildImage := "gcr.io/kaniko-project/executor:latest"
 
-	// TODO(Optional): Init container before the buildah bud to copy over the files.
+	command := []string{}
+	commandArgs := []string{"--dockerfile=/kaniko/build-context/Dockerfile",
+		"--context=dir:///kaniko/build-context",
+		"--destination=" + imageTag,
+		"--skip-tls-verify"}
 
-	/*
-		command := []string{}
-		commandArgs := []string{"--dockerfile=/kaniko/build-context/Dockerfile",
-			"--context=dir:///kaniko/build-context",
-			"--destination=" + imageTag,
-			"--skip-tls-verify"}
-	*/
-	/*
-		envVars := []corev1.EnvVar{
-			{Name: "DOCKER_CONFIG", Value: "/kaniko/.docker"},
-			{Name: "AWS_ACCESS_KEY_ID", Value: "NOT_SET"},
-			{Name: "AWS_SECRET_KEY", Value: "NOT_SET"},
-		}
-	*/
+	envVars := []corev1.EnvVar{
+		{Name: "DOCKER_CONFIG", Value: "/kaniko/.docker"},
+		{Name: "AWS_ACCESS_KEY_ID", Value: "NOT_SET"},
+		{Name: "AWS_SECRET_KEY", Value: "NOT_SET"},
+	}
 
-	//isPrivileged := false
+	isPrivileged := true
+	resourceReqs := corev1.ResourceRequirements{}
+	containerKaniko := kclient.GenerateContainer(containerName, buildImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
 
-	//resourceReqs := corev1.ResourceRequirements{}
-
-	//	container := kclient.GenerateContainer(containerName, buildImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
-
-	container := kclient.GenerateContainer(containerName,
+	containerNginx := kclient.GenerateContainer(containerName+"-nginx",
 		//"busybox",
 		"nginx",
+		// "ubuntu",
 		true, // isPrivileged
 		[]string{},
 		//		[]string{"while true; do echo \"x\"; sleep 5; done"},
-
+		// []string{"while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"},
 		[]string{}, // command args
 		[]corev1.EnvVar{}, corev1.ResourceRequirements{},
 		nil) // ports
 
-	container.VolumeMounts = []corev1.VolumeMount{
+	containerKaniko.VolumeMounts = []corev1.VolumeMount{
 		//		{Name: "destination", MountPath: "/data"},
 		{Name: "build-context", MountPath: "/kaniko/build-context"},
 		{Name: "kaniko-secret", MountPath: "/kaniko/.docker"},
+	}
+
+	containerNginx.VolumeMounts = []corev1.VolumeMount{
+		{Name: "build-context", MountPath: "/kaniko/build-context"},
 	}
 
 	/*
@@ -133,41 +131,41 @@ func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []
 	*/
 	// priv := true
 	// container.SecurityContext.Privileged = &priv
-	return *container
+	return *containerKaniko, *containerNginx
 }
 
-func (a Adapter) generateInitContainer(initContainerName string) corev1.Container {
+// func (a Adapter) generateInitContainer(initContainerName string) corev1.Container {
 
-	//initImage := "ubuntu"
-	//command := []string{}
-	//commandArgs := []string{"/bin/sh", "-c", "while true; do sleep 1"}
-	// commandArgs := []string{}
-	//isPrivileged := false
-	//envVars := []corev1.EnvVar{}
-	//resourceReqs := corev1.ResourceRequirements{}
+// 	//initImage := "ubuntu"
+// 	//command := []string{}
+// 	//commandArgs := []string{"/bin/sh", "-c", "while true; do sleep 1"}
+// 	// commandArgs := []string{}
+// 	//isPrivileged := false
+// 	//envVars := []corev1.EnvVar{}
+// 	//resourceReqs := corev1.ResourceRequirements{}
 
-	container := kclient.GenerateContainer(initContainerName,
-		//"busybox",
-		"ngnix",
-		true, // privileged
-		//		[]string{"while true; do echo \"x\"; sleep 5; done"},
-		[]string{}, // comand
-		[]string{}, // comand args
+// 	container := kclient.GenerateContainer(initContainerName,
+// 		//"busybox",
+// 		"ngnix",
+// 		true, // privileged
+// 		//		[]string{"while true; do echo \"x\"; sleep 5; done"},
+// 		[]string{}, // comand
+// 		[]string{}, // comand args
 
-		[]corev1.EnvVar{}, corev1.ResourceRequirements{},
-		nil) // ports
+// 		[]corev1.EnvVar{}, corev1.ResourceRequirements{},
+// 		nil) // ports
 
-	/*
-		container.VolumeMounts = []corev1.VolumeMount{
-			{Name: "source", MountPath: "/src"},
-			{Name: "destination", MountPath: "/dst"},
-		}
-	*/
+// 	/*
+// 		container.VolumeMounts = []corev1.VolumeMount{
+// 			{Name: "source", MountPath: "/src"},
+// 			{Name: "destination", MountPath: "/dst"},
+// 		}
+// 	*/
 
-	return *container
-}
+// 	return *container
+// }
 
-func (a Adapter) createBuildDeployment(labels map[string]string, container, initContainer corev1.Container) (err error) {
+func (a Adapter) createBuildDeployment(labels map[string]string, containerKaniko, containerNginx corev1.Container) (err error) {
 
 	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
 	//podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
@@ -177,8 +175,8 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container, init
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
-			InitContainers: []corev1.Container{initContainer},
-			Containers:     []corev1.Container{container},
+			// InitContainers: []corev1.Container{initContainer},
+			Containers: []corev1.Container{containerNginx, containerKaniko},
 			Volumes: []corev1.Volume{
 				{Name: "kaniko-secret",
 					VolumeSource: corev1.VolumeSource{
@@ -421,54 +419,52 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	}
 
 	containerName := a.ComponentName + "-kaniko-build-container"
-	initContainerName := "kaniko-init"
-	buildContainer := a.generateBuildContainer(containerName, parameters.DockerfileBytes, parameters.Tag)
+	buildContainer, fileTransferContainer := a.generateBuildContainers(containerName, parameters.DockerfileBytes, parameters.Tag)
 	labels := map[string]string{
 		"component": a.ComponentName,
 	}
 
-	initContainer := a.generateInitContainer(initContainerName)
-	err = a.createBuildDeployment(labels, buildContainer, initContainer)
+	err = a.createBuildDeployment(labels, buildContainer, fileTransferContainer)
 	if err != nil {
 		return errors.Wrap(err, "error while creating kaniko deployment")
 	}
 
 	// Delete deployment
-	/*
-		defer func() {
-			derr := a.Delete(labels)
-			if err == nil {
-				err = errors.Wrapf(derr, "failed to delete build step for component with name: %s", a.ComponentName)
-			}
 
-			// rerr := os.Remove(parameters.DockerfilePath)
-			// if err == nil {
-			// 	err = errors.Wrapf(rerr, "failed to delete %s", parameters.DockerfilePath)
-			// }
-		}()
-	*/
+	defer func() {
+		// derr := a.Delete(labels)
+		// if err == nil {
+		// 	err = errors.Wrapf(derr, "failed to delete build step for component with name: %s", a.ComponentName)
+		// }
+
+		// rerr := os.Remove(parameters.DockerfilePath)
+		// if err == nil {
+		// 	err = errors.Wrapf(rerr, "failed to delete %s", parameters.DockerfilePath)
+		// }
+	}()
+
 	// _, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
 	// if err != nil {
 	// 	return errors.Wrap(err, "error while waiting for deployment rollout")
 	// }
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	// pod, err := a.waitAndGetComponentPod(true)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	pod, err := a.waitAndGetComponentPod(true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	// podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+	// watchOptions := metav1.ListOptions{
+	// 	LabelSelector: podSelector,
 	// }
 
-	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
-	watchOptions := metav1.ListOptions{
-		LabelSelector: podSelector,
-	}
+	// // pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodPending, "Waiting for component to start in waitAndGetComponentPod", false)
+	// pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start in waitAndGetComponentPod", false)
 
-	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodPending, "Waiting for component to start in waitAndGetComponentPod", false)
-	//	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start in waitAndGetComponentPod", false)
-
-	if err != nil {
-		return errors.Wrapf(err, "error while waiting for pod %s", podSelector)
-	}
+	// if err != nil {
+	// 	return errors.Wrapf(err, "error while waiting for pod %s", podSelector)
+	// }
 
 	// Need to wait for container to start
 	time.Sleep(5 * time.Second)
@@ -479,18 +475,15 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
 	compInfo := common.ComponentInfo{
 		//ContainerName: containerName,
-		ContainerName: initContainerName,
+		ContainerName: containerName + "-nginx",
 		PodName:       pod.GetName(),
 	}
 
-	// log.Spinner("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " + compInfo.PodName)
 	syncFolder, err := syncAdapter.SyncFilesBuild(parameters, dockerfilePath)
-	log.Spinner("~~~~~~~~~~~~ AFTER syncFilesBuild ~~~~~~~~~~~~~~~~~")
 
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
-	log.Spinner("~~~~~~~~~~~~ BEFORE inject ~~~~~~~~~~~~~~~~~")
 
 	destinationDirectory := "/kaniko/build-context"
 	klog.V(4).Infof("Copying files to pod")
@@ -498,19 +491,6 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	if err != nil {
 		return errors.Wrapf(err, "failed to stream tarball into init container")
 	}
-	// command := []string{"touch", "/tmp/complete"}
-	// var stdout bytes.Buffer
-	// var stderr bytes.Buffer
-	// err = a.Client.ExecCMDInContainer(compInfo, command, &stdout, &stderr, syncFolder, false)
-
-	// if err != nil {
-	// 	return errors.Wrapf(err, "failed to close init container")
-	// }
-
-	// err = exec.ExecuteCommand(&a.Client, compInfo, command, false, nil, nil)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "failed to close init container")
-	// }
 
 	return
 

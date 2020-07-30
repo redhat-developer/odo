@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	//	"github.com/openshift/odo/pkg/devfile/parser"
@@ -174,26 +175,28 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	}
 	log.Successf("Successfully built container image: %s", do.tag)
 
-	// deployParams := common.DeployParameters{
-	// 	EnvSpecificInfo: *do.EnvSpecificInfo,
-	// 	Tag:             do.tag,
-	// 	ManifestSource:  do.ManifestSource,
-	// 	DeploymentPort:  do.DeploymentPort,
-	// }
+	time.Sleep(5 * time.Second)
 
-	// warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
+	deployParams := common.DeployParameters{
+		EnvSpecificInfo: *do.EnvSpecificInfo,
+		Tag:             do.tag,
+		ManifestSource:  do.ManifestSource,
+		DeploymentPort:  do.DeploymentPort,
+	}
 
-	// log.Infof("\nDeploying component %s", componentName)
-	// // Deploy the application
-	// err = devfileHandler.Deploy(deployParams)
-	// if err != nil {
-	// 	log.Errorf(
-	// 		"Failed to deploy application with name %s.\nError: %v",
-	// 		componentName,
-	// 		err,
-	// 	)
-	// 	os.Exit(1)
-	// }
+	warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
+
+	log.Infof("\nDeploying component %s", componentName)
+	// Deploy the application
+	err = devfileHandler.Deploy(deployParams)
+	if err != nil {
+		log.Errorf(
+			"Failed to deploy application with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+		os.Exit(1)
+	}
 
 	return nil
 }
