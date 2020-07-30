@@ -425,6 +425,9 @@ type Dockerfile struct {
 
 	// Mandatory destination to registry to push built image
 	Destination string `json:"destination,omitempty"`
+
+	// Rootless/Unpriviled builder pod
+	Rootless bool `json:"rootless,omitempty"`
 }
 
 // Source represents source code for Dockerfile Component
