@@ -3049,11 +3049,15 @@ const JsonSchema200 = `{
 					"dockerfileLocation":{
 						"description":"path to dockerfile",
 						"type":"string"
-					},
+					},		
 					"destination":{
 						"description":"path to registry where the build image is to be pushed",
 						"type":"string"
-					}
+					},
+					"rootless":{
+						"description":"rootless/unprivileged builder pod",
+						"type":"boolean"
+					}					
 				},
 				"required":[
 					"name",

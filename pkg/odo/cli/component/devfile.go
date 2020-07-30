@@ -168,6 +168,7 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		Tag:                      do.tag,
 		DockerConfigJSONFilename: do.dockerConfigJSONFilename,
 		DockerfileBytes:          do.DockerfileBytes,
+		Rootless:                 do.Rootless,
 		EnvSpecificInfo:          *do.EnvSpecificInfo,
 	}
 

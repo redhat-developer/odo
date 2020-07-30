@@ -48,6 +48,7 @@ type DeployOptions struct {
 	dockerConfigJSONFilename string
 	ManifestSource           []byte
 	DeploymentPort           int
+	Rootless                 bool
 
 	*genericclioptions.Context
 }
@@ -111,6 +112,7 @@ func (do *DeployOptions) Validate() (err error) {
 	for _, component := range components {
 		if component.Dockerfile != nil {
 			dockerfileURL = component.Dockerfile.DockerfileLocation
+			do.Rootless = component.Dockerfile.Rootless
 			break
 		}
 	}
