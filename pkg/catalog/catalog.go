@@ -183,23 +183,33 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 
 // ListComponents lists all the available component types
 func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
-
-	catalogList, err := getDefaultBuilderImages(client)
+	supported, err := client.IsImageStreamSupported()
 	if err != nil {
-		return ComponentTypeList{}, errors.Wrap(err, "unable to get image streams")
+		return ComponentTypeList{}, err
 	}
 
-	if len(catalogList) == 0 {
-		return ComponentTypeList{}, errors.New("unable to retrieve any catalog images from the OpenShift cluster")
+	if supported {
+
+		catalogList, err := getDefaultBuilderImages(client)
+		if err != nil {
+			return ComponentTypeList{}, errors.Wrap(err, "unable to get image streams")
+		}
+
+		if len(catalogList) == 0 {
+			return ComponentTypeList{}, errors.New("unable to retrieve any catalog images from the OpenShift cluster")
+		}
+
+		return ComponentTypeList{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "List",
+				APIVersion: apiVersion,
+			},
+			Items: catalogList,
+		}, nil
+
 	}
 
-	return ComponentTypeList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		Items: catalogList,
-	}, nil
+	return ComponentTypeList{}, nil
 }
 
 // SearchComponent searches for the component
