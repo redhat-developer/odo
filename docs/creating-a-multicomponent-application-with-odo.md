@@ -30,7 +30,7 @@ and a back-end Java component.
   - `odo` is installed.
 
   - You have a running cluster. Developers can use [CodeReady Containers
-    (CRC)](https://cloud.redhat.com/openshift/install/crc/installer-provisioned?intcmp=7013a000002CtetAAC)
+    (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/)
     to deploy a local cluster quickly.
 
   - Maven is installed.

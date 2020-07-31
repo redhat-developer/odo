@@ -28,10 +28,16 @@ front-end application.
   - `oc` client is installed.
 
   - You have a running cluster. Developers can use [CodeReady Containers
-    (CRC)](https://cloud.redhat.com/openshift/install/crc/installer-provisioned?intcmp=7013a000002CtetAAC)
+    (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/)
     to deploy a local cluster quickly.
 
-  - Service Catalog is enabled.
+  - The Service Catalog is installed and enabled on your cluster.
+
+<div class="informalexample">
+
+Service Catalog is deprecated on OpenShift 4 and later.
+
+</div>
 
 # Creating a project
 

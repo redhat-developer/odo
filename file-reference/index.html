@@ -1,0 +1,1220 @@
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Odo Devfile Reference</title>
+    <link href="/img/favicon.ico" rel="icon" type="image/ico" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,500i,700,700i|Noto+Sans:400,400i,700,700i|Source+Code+Pro&amp;subset=latin-ext">
+
+    <style>
+      .highlight table td { padding: 5px; }
+.highlight table pre { margin: 0; }
+.highlight .gh {
+  color: #999999;
+}
+.highlight .sr {
+  color: #f6aa11;
+}
+.highlight .go {
+  color: #888888;
+}
+.highlight .gp {
+  color: #555555;
+}
+.highlight .gs {
+}
+.highlight .gu {
+  color: #aaaaaa;
+}
+.highlight .nb {
+  color: #f6aa11;
+}
+.highlight .cm {
+  color: #75715e;
+}
+.highlight .cp {
+  color: #75715e;
+}
+.highlight .c1 {
+  color: #75715e;
+}
+.highlight .cs {
+  color: #75715e;
+}
+.highlight .c, .highlight .cd {
+  color: #75715e;
+}
+.highlight .err {
+  color: #960050;
+}
+.highlight .gr {
+  color: #960050;
+}
+.highlight .gt {
+  color: #960050;
+}
+.highlight .gd {
+  color: #49483e;
+}
+.highlight .gi {
+  color: #49483e;
+}
+.highlight .ge {
+  color: #49483e;
+}
+.highlight .kc {
+  color: #66d9ef;
+}
+.highlight .kd {
+  color: #66d9ef;
+}
+.highlight .kr {
+  color: #66d9ef;
+}
+.highlight .no {
+  color: #66d9ef;
+}
+.highlight .kt {
+  color: #66d9ef;
+}
+.highlight .mf {
+  color: #ae81ff;
+}
+.highlight .mh {
+  color: #ae81ff;
+}
+.highlight .il {
+  color: #ae81ff;
+}
+.highlight .mi {
+  color: #ae81ff;
+}
+.highlight .mo {
+  color: #ae81ff;
+}
+.highlight .m, .highlight .mb, .highlight .mx {
+  color: #ae81ff;
+}
+.highlight .sc {
+  color: #ae81ff;
+}
+.highlight .se {
+  color: #ae81ff;
+}
+.highlight .ss {
+  color: #ae81ff;
+}
+.highlight .sd {
+  color: #e6db74;
+}
+.highlight .s2 {
+  color: #e6db74;
+}
+.highlight .sb {
+  color: #e6db74;
+}
+.highlight .sh {
+  color: #e6db74;
+}
+.highlight .si {
+  color: #e6db74;
+}
+.highlight .sx {
+  color: #e6db74;
+}
+.highlight .s1 {
+  color: #e6db74;
+}
+.highlight .s {
+  color: #e6db74;
+}
+.highlight .na {
+  color: #a6e22e;
+}
+.highlight .nc {
+  color: #a6e22e;
+}
+.highlight .nd {
+  color: #a6e22e;
+}
+.highlight .ne {
+  color: #a6e22e;
+}
+.highlight .nf {
+  color: #a6e22e;
+}
+.highlight .vc {
+  color: #ffffff;
+}
+.highlight .nn {
+  color: #ffffff;
+}
+.highlight .nl {
+  color: #ffffff;
+}
+.highlight .ni {
+  color: #ffffff;
+}
+.highlight .bp {
+  color: #ffffff;
+}
+.highlight .vg {
+  color: #ffffff;
+}
+.highlight .vi {
+  color: #ffffff;
+}
+.highlight .nv {
+  color: #ffffff;
+}
+.highlight .w {
+  color: #ffffff;
+}
+.highlight {
+  color: #ffffff;
+}
+.highlight .n, .highlight .py, .highlight .nx {
+  color: #ffffff;
+}
+.highlight .ow {
+  color: #f92672;
+}
+.highlight .nt {
+  color: #f92672;
+}
+.highlight .k, .highlight .kv {
+  color: #f92672;
+}
+.highlight .kn {
+  color: #f92672;
+}
+.highlight .kp {
+  color: #f92672;
+}
+.highlight .o {
+  color: #f92672;
+}
+    </style>
+    <link href="stylesheets/screen.css" rel="stylesheet" media="screen" />
+    <link href="stylesheets/print.css" rel="stylesheet" media="print" />
+      <script src="javascripts/all.js"></script>
+  </head>
+
+  <body class="index" data-languages="[&quot;yaml&quot;]">
+    <a href="#" id="nav-button">
+      <span>
+        NAV
+        <img src="images/navbar.png" alt="Navbar" />
+      </span>
+    </a>
+    <div class="toc-wrapper">
+      <!--<a href="/"><img src="images/logo.png" class="logo" alt="Logo" /></a>-->
+      <h2 style="text-align:center;color:#fff">Odo Devfile Reference</h2>
+
+        <div class="lang-selector">
+              <a href="#" data-language-name="yaml">yaml</a>
+        </div>
+        <div class="search">
+          <input type="text" class="search" id="input-search" placeholder="Search">
+        </div>
+        <ul class="search-results"></ul>
+      <div id="toc" class="toc-list-h1">
+          <li>
+            <a href="#introduction" class="toc-h1 toc-link" data-title="Introduction">Introduction</a>
+          </li>
+          <li>
+            <a href="#devfile-properties" class="toc-h1 toc-link" data-title="Devfile Properties">Devfile Properties</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#schemaversion" class="toc-h2 toc-link" data-title="schemaVersion">schemaVersion</a>
+                  </li>
+                  <li>
+                    <a href="#metadata" class="toc-h2 toc-link" data-title="metadata">metadata</a>
+                  </li>
+                  <li>
+                    <a href="#projects" class="toc-h2 toc-link" data-title="projects">projects</a>
+                  </li>
+                  <li>
+                    <a href="#components" class="toc-h2 toc-link" data-title="components">components</a>
+                  </li>
+                  <li>
+                    <a href="#commands" class="toc-h2 toc-link" data-title="commands">commands</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#metadata-object" class="toc-h1 toc-link" data-title="Metadata Object">Metadata Object</a>
+          </li>
+          <li>
+            <a href="#project-object" class="toc-h1 toc-link" data-title="Project Object">Project Object</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#gitobject" class="toc-h2 toc-link" data-title="gitObject">gitObject</a>
+                  </li>
+                  <li>
+                    <a href="#githubobject" class="toc-h2 toc-link" data-title="githubObject">githubObject</a>
+                  </li>
+                  <li>
+                    <a href="#zipobject" class="toc-h2 toc-link" data-title="zipObject">zipObject</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#component-object" class="toc-h1 toc-link" data-title="Component Object">Component Object</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#containerobject" class="toc-h2 toc-link" data-title="containerObject">containerObject</a>
+                  </li>
+                  <li>
+                    <a href="#endpointobject" class="toc-h2 toc-link" data-title="endpointObject">endpointObject</a>
+                  </li>
+                  <li>
+                    <a href="#volumemountsobject" class="toc-h2 toc-link" data-title="volumeMountsObject">volumeMountsObject</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#command-object" class="toc-h1 toc-link" data-title="Command Object">Command Object</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#execobject" class="toc-h2 toc-link" data-title="execObject">execObject</a>
+                  </li>
+                  <li>
+                    <a href="#groupobject" class="toc-h2 toc-link" data-title="groupObject">groupObject</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#universal-objects" class="toc-h1 toc-link" data-title="Universal objects">Universal objects</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#envobject" class="toc-h2 toc-link" data-title="envObject">envObject</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#unsupported-features" class="toc-h1 toc-link" data-title="Unsupported features">Unsupported features</a>
+          </li>
+      </div>
+        <ul class="toc-footer">
+            <li><a href='https://odo.dev'>Odo Homepage</a></li>
+            <li><a href='https://devfile.github.io/devfile/index.html'>Devfile GitHub Page</a></li>
+        </ul>
+    </div>
+    <div class="page-wrapper">
+      <div class="dark-box"></div>
+      <div class="content">
+        <h1 id='introduction'>Introduction</h1>
+<blockquote>
+<p>Download a starter application to get an example devfile.yaml</p>
+</blockquote>
+<pre class="highlight sh tab-shell"><code><span class="gp">$ </span>odo create nodejs --starter
+</code></pre>
+<p><strong>Installation:</strong></p>
+
+<p>Installing odo can be found at our <a href="https://odo.dev/docs/installing-odo/">installation page</a>.</p>
+
+<p><strong>Quick Start:</strong></p>
+
+<p>If you haven&#39;t used odo yet, we recommend going through our <a href="https://odo.dev/docs/deploying-a-devfile-using-odo/">Deploying a devfile using odo guide</a>. </p>
+<h1 id='devfile-properties'>Devfile Properties</h1>
+<blockquote>
+<p>All definable devfile properties</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">schemaVersion</span><span class="pi">:</span> <span class="s">&lt;string&gt;</span>
+<span class="na">metadata</span><span class="pi">:</span> <span class="s">&lt;metadataObject&gt;</span>
+<span class="na">projects</span><span class="pi">:</span> 
+<span class="pi">-</span> <span class="s">&lt;projectObject&gt;</span>
+<span class="na">components</span><span class="pi">:</span> 
+<span class="pi">-</span> <span class="s">&lt;componentObject&gt;</span>
+<span class="na">commands</span><span class="pi">:</span> 
+<span class="pi">-</span> <span class="s">&lt;commandObject&gt;</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>schemaVersion</td>
+<td>string</td>
+<td>yes</td>
+<td>Schema version of devfile</td>
+</tr>
+<tr>
+<td>metadata</td>
+<td><a href="#metadataobject">metadataObject</a></td>
+<td>no</td>
+<td>Metadata information that describes the project</td>
+</tr>
+<tr>
+<td>projects</td>
+<td>array of <a href="#project-object">projectObject</a></td>
+<td>no</td>
+<td>List of projects that devfile will use when creating your development environment</td>
+</tr>
+<tr>
+<td>components</td>
+<td>array of <a href="#component-object">componentObject</a></td>
+<td>no</td>
+<td>List of components to be used within your development environment</td>
+</tr>
+<tr>
+<td>commands</td>
+<td>array of <a href="#commandobject">commandObject</a></td>
+<td>no</td>
+<td>List of commands to be executed</td>
+</tr>
+</tbody></table>
+<h2 id='schemaversion'>schemaVersion</h2><pre class="highlight yaml tab-yaml"><code><span class="na">schemaVersion</span><span class="pi">:</span> <span class="s">2.0.0</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>schemaVersion</td>
+<td>string</td>
+<td>yes</td>
+<td>2.0.0 of the schema</td>
+</tr>
+</tbody></table>
+<h2 id='metadata'>metadata</h2><pre class="highlight yaml tab-yaml"><code><span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="s">1.0.0</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>metadataObject</td>
+<td><a href="#metadata-object">metadataObject</a></td>
+<td>Metadata to be used</td>
+</tr>
+</tbody></table>
+<h2 id='projects'>projects</h2>
+<blockquote>
+<p>Pulling from a git location</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">git</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
+</code></pre>
+<blockquote>
+<p>Pulling from a GitHub location</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">github</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
+</code></pre>
+<blockquote>
+<p>Pulling from a zip </p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">zip</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>projectObject</td>
+<td><a href="#project-object">projectObject</a></td>
+<td>List of projects to be used</td>
+</tr>
+</tbody></table>
+<h2 id='components'>components</h2>
+<blockquote>
+<p>Example using an <a href="https://github.com/odo-devfiles/registry/blob/master/devfiles/openLiberty/devfile.yaml">OpenLiberty</a> container</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+      <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
+      <span class="na">memoryLimit</span><span class="pi">:</span> <span class="s">1512Mi</span>
+      <span class="na">mountSources</span><span class="pi">:</span> <span class="s">true</span>
+      <span class="na">endpoints</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">9080/tcp</span>
+          <span class="na">exposure</span><span class="pi">:</span> <span class="s">public</span> 
+          <span class="na">public</span><span class="pi">:</span> <span class="s">true</span>
+          <span class="na">protocol</span><span class="pi">:</span> <span class="s">http</span>
+          <span class="na">targetPort</span><span class="pi">:</span> <span class="s">9080</span>
+      <span class="na">env</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">MODE2</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">TEST2</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">myprop2</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">myval2</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>componentObject</td>
+<td><a href="#component-object">componentObject</a></td>
+<td>List of components to be used</td>
+</tr>
+</tbody></table>
+<h2 id='commands'>commands</h2>
+<blockquote>
+<p>Example using the exec command</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/projects/springbootproject</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">devRun</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/start-server.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">run</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>commandObject</td>
+<td><a href="#command-object">commandObject</a></td>
+<td>Command to be executed in an existing component container</td>
+</tr>
+</tbody></table>
+<h1 id='metadata-object'>Metadata Object</h1>
+<blockquote>
+<p>Example using metadata</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="s">1.0.0</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>yes</td>
+<td>Name of your devfile. This name will propagate to the devfile registry if listed.</td>
+</tr>
+<tr>
+<td>version</td>
+<td>string</td>
+<td>yes</td>
+<td>Version of your devfile</td>
+</tr>
+</tbody></table>
+<h1 id='project-object'>Project Object</h1>
+<blockquote>
+<p>Pulling from a git location</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">git</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
+</code></pre>
+<blockquote>
+<p>Pulling from a GitHub location</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">github</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
+</code></pre>
+<blockquote>
+<p>Pulling from a zip </p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">zip</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+</code></pre>
+<p>Each project may contain three different objects, <code>git</code>, <code>github</code> or <code>zip</code>.</p>
+
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>Name of your devfile</td>
+</tr>
+<tr>
+<td>clonePath</td>
+<td>string</td>
+<td>Path relative the root of your projects to which the project should be cloned into</td>
+</tr>
+<tr>
+<td>git</td>
+<td><a href="#gitobject">gitObject</a></td>
+<td>Pull from a Git location</td>
+</tr>
+<tr>
+<td>github</td>
+<td><a href="#githubobject">githubObject</a></td>
+<td>Pull from GitHub</td>
+</tr>
+<tr>
+<td>zip</td>
+<td><a href="#zipobject">zipObject</a></td>
+<td>Get from a zip location</td>
+</tr>
+</tbody></table>
+<h2 id='gitobject'>gitObject</h2>
+<blockquote>
+<p>Using the gitObject</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">git</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>location</td>
+<td>string</td>
+<td>Location of the git repository</td>
+</tr>
+<tr>
+<td>branch</td>
+<td>string</td>
+<td>What branch to use</td>
+</tr>
+<tr>
+<td>spareCheckoutDir</td>
+<td>string</td>
+<td>What directory to use when pulling</td>
+</tr>
+<tr>
+<td>startPoint</td>
+<td>string</td>
+<td>Tag or commit to start from</td>
+</tr>
+</tbody></table>
+<h2 id='githubobject'>githubObject</h2>
+<blockquote>
+<p>Using the githubObject</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">github</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>location</td>
+<td>string</td>
+<td>Location of the git repository</td>
+</tr>
+<tr>
+<td>branch</td>
+<td>string</td>
+<td>What branch to use</td>
+</tr>
+<tr>
+<td>spareCheckoutDir</td>
+<td>string</td>
+<td>What directory to use when pulling</td>
+</tr>
+<tr>
+<td>startPoint</td>
+<td>string</td>
+<td>Tag or commit to start from</td>
+</tr>
+</tbody></table>
+<h2 id='zipobject'>zipObject</h2>
+<blockquote>
+<p>Using the zipObject</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">zip</span><span class="pi">:</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>location</td>
+<td>string</td>
+<td>Location of the zip</td>
+</tr>
+<tr>
+<td>spareCheckoutDir</td>
+<td>string</td>
+<td>What directory to use when pulling</td>
+</tr>
+</tbody></table>
+<h1 id='component-object'>Component Object</h1>
+<blockquote>
+<p>Example using a container using the minimum amount of keys</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+      <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
+</code></pre>
+<p>Each component must use the <code>container</code> object.</p>
+
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>container</td>
+<td><a href="#containerobject">containerObject</a></td>
+<td>List of containers to be used</td>
+</tr>
+</tbody></table>
+<h2 id='containerobject'>containerObject</h2>
+<blockquote>
+<p>Example using an <a href="https://github.com/odo-devfiles/registry/blob/master/devfiles/openLiberty/devfile.yaml">OpenLiberty</a> container</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+      <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
+      <span class="na">memoryLimit</span><span class="pi">:</span> <span class="s">1512Mi</span>
+      <span class="na">mountSources</span><span class="pi">:</span> <span class="s">true</span>
+      <span class="na">endpoints</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">9080/tcp</span>
+          <span class="na">exposure</span><span class="pi">:</span> <span class="s">public</span> 
+          <span class="na">public</span><span class="pi">:</span> <span class="s">true</span>
+          <span class="na">protocol</span><span class="pi">:</span> <span class="s">http</span>
+          <span class="na">targetPort</span><span class="pi">:</span> <span class="s">9080</span>
+      <span class="na">env</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">MODE2</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">TEST2</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">myprop2</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">myval2</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>yes</td>
+<td>Name of your container</td>
+</tr>
+<tr>
+<td>image</td>
+<td>string</td>
+<td>yes</td>
+<td>Image version</td>
+</tr>
+<tr>
+<td>memoryLimit</td>
+<td>string</td>
+<td>no</td>
+<td>Memory limit to be used with your container</td>
+</tr>
+<tr>
+<td>mountSources</td>
+<td>boolean</td>
+<td>no</td>
+<td>Mount the source or not</td>
+</tr>
+<tr>
+<td>sourceMapping</td>
+<td>string</td>
+<td>no</td>
+<td>Path in the container where project sources should be transferred / mounted when mountSource is set to true</td>
+</tr>
+<tr>
+<td>endpoints[]</td>
+<td><a href="#endpointobject">endpointObject</a></td>
+<td>no</td>
+<td>List of endpoints to use</td>
+</tr>
+<tr>
+<td>volumeMounts[]</td>
+<td><a href="#volumemountsobject">volumeMountsObject</a></td>
+<td>no</td>
+<td>List of volumes to mount</td>
+</tr>
+<tr>
+<td>env[]</td>
+<td><a href="#envobject">envObject</a></td>
+<td>no</td>
+<td>List of environment variables to use</td>
+</tr>
+</tbody></table>
+<h2 id='endpointobject'>endpointObject</h2>
+<blockquote>
+<p>Example using an endpoint</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+      <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
+      <span class="na">endpoints</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">9080/tcp</span>
+          <span class="na">exposure</span><span class="pi">:</span> <span class="s">public</span> 
+          <span class="na">public</span><span class="pi">:</span> <span class="s">true</span>
+          <span class="na">protocol</span><span class="pi">:</span> <span class="s">http</span>
+          <span class="na">targetPort</span><span class="pi">:</span> <span class="s">9080</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>yes</td>
+<td>Name of your endpoint</td>
+</tr>
+<tr>
+<td>targetPort</td>
+<td>integer</td>
+<td>yes</td>
+<td>Port number that you are targeting</td>
+</tr>
+<tr>
+<td>exposure</td>
+<td>string</td>
+<td>no</td>
+<td><code>public</code>, <code>internal</code> or <code>none</code>. Describes how the endpoint should be exposed on the network</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>no</td>
+<td>Path to the endpoint URL</td>
+</tr>
+<tr>
+<td>protocol</td>
+<td>string</td>
+<td>no</td>
+<td><code>http</code>, <code>https</code>, <code>ws</code>, <code>wss</code>, <code>tcp</code>, <code>udp</code>. Describes the application and transport protocols of the traffic that will go through the endpoint</td>
+</tr>
+<tr>
+<td>secure</td>
+<td>boolean</td>
+<td>no</td>
+<td>Whether or not the endpoint is defined as secure</td>
+</tr>
+</tbody></table>
+<h2 id='volumemountsobject'>volumeMountsObject</h2>
+<blockquote>
+<p>Example using a volume with a container</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">image</span><span class="pi">:</span> <span class="s">maysunfaisal/springbootbuild</span>
+      <span class="na">memoryLimit</span><span class="pi">:</span> <span class="s">768Mi</span>
+      <span class="na">command</span><span class="pi">:</span> <span class="pi">[</span><span class="s1">'</span><span class="s">tail'</span><span class="pi">]</span>
+      <span class="na">args</span><span class="pi">:</span> <span class="pi">[</span> <span class="s1">'</span><span class="s">-f'</span><span class="pi">,</span> <span class="s1">'</span><span class="s">/dev/null'</span><span class="pi">]</span>
+      <span class="na">mountSources</span><span class="pi">:</span> <span class="s">true</span>
+      <span class="na">volumeMounts</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">springbootpvc</span>
+          <span class="na">path</span><span class="pi">:</span> <span class="s">/data</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>yes</td>
+<td>Name of the volume</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>no</td>
+<td>Path in the component container where the volume should be mounted. Defaults to <code>/&lt;name&gt;</code> if blank</td>
+</tr>
+</tbody></table>
+<h1 id='command-object'>Command Object</h1>
+<blockquote>
+<p>Example using an exec command within a command object</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/projects/springbootproject</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+</code></pre>
+<p>Each command must use the <code>exec</code> object.</p>
+
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>exec</td>
+<td><a href="#execobject">execObject</a></td>
+<td>The CLI command to be ran</td>
+</tr>
+</tbody></table>
+<h2 id='execobject'>execObject</h2>
+<blockquote>
+<p>Example using exec command within a command object</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/projects/springbootproject</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+      <span class="na">env</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">FOO</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">BAR</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id</td>
+<td>string</td>
+<td>yes</td>
+<td>ID of the command</td>
+</tr>
+<tr>
+<td>commandLine</td>
+<td>string</td>
+<td>yes</td>
+<td>Command to be ran</td>
+</tr>
+<tr>
+<td>component</td>
+<td>string</td>
+<td>no</td>
+<td>What component that the actions relate to</td>
+</tr>
+<tr>
+<td>label</td>
+<td>string</td>
+<td>no</td>
+<td>Optional label to be used to describe the command</td>
+</tr>
+<tr>
+<td>workingDir</td>
+<td>string</td>
+<td>no</td>
+<td>Working directory where the command should be executed</td>
+</tr>
+<tr>
+<td>group</td>
+<td><a href="#groupObject">groupObject</a></td>
+<td>no</td>
+<td>Group that the command is part of</td>
+</tr>
+<tr>
+<td>env</td>
+<td><a href="#envObject">envObject</a></td>
+<td>no</td>
+<td>List of environment variables used</td>
+</tr>
+</tbody></table>
+<h2 id='groupobject'>groupObject</h2>
+<blockquote>
+<p>Example using the group object within exec </p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>kind</td>
+<td>string</td>
+<td>yes</td>
+<td>Kind of group the command is part of. Options: <code>build</code>, <code>run</code>, <code>test</code>, <code>debug</code></td>
+</tr>
+<tr>
+<td>isDefault</td>
+<td>boolean</td>
+<td>no</td>
+<td>Identifies that it is the default command to be ran. Only one default command can be defined for each group</td>
+</tr>
+</tbody></table>
+<h1 id='universal-objects'>Universal objects</h1>
+<p>List of objects which are found in multiple parts of devfile. For example, the <a href="#envobject">envObject</a> is found within <a href="#containerobject">containerObject</a> and <a href="#execobject">execObject</a>.</p>
+<h2 id='envobject'>envObject</h2>
+<blockquote>
+<p>Example using environment variables with a container</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+      <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
+          <span class="na">targetPort</span><span class="pi">:</span> <span class="s">9080</span>
+      <span class="na">env</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">MODE2</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">TEST2</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">myprop2</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">myval2</span>
+</code></pre>
+<blockquote>
+<p>Example using environment variables within the exec command</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
+      <span class="na">env</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">FOO</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s">BAR</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>yes</td>
+<td>Name of the environment variable</td>
+</tr>
+<tr>
+<td>value</td>
+<td>string</td>
+<td>yes</td>
+<td>Value of the environment variable</td>
+</tr>
+</tbody></table>
+<h1 id='unsupported-features'>Unsupported features</h1>
+<p><strong>PLEASE NOTE:</strong> Devfile v2 is still in its early stages and there are some parts of the schema that have not yet been implemented.</p>
+
+<p>Please refer to the below table for a list of features which are <em>not yet</em> implemented:</p>
+
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Key Description</th>
+<th>Status</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>projects[].github.startPoint</td>
+<td><a href="#githubObject">githubObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to issue: https://github.com/openshift/odo/issues/3002</td>
+</tr>
+<tr>
+<td>projects[].git.startPoint</td>
+<td><a href="#gitObject">gitObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to issue: https://github.com/openshift/odo/issues/3002</td>
+</tr>
+<tr>
+<td>projects[].zip</td>
+<td><a href="#zipobject">zipObject</a></td>
+<td>IN PROGRESS</td>
+<td>Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3442</td>
+</tr>
+<tr>
+<td>parent</td>
+<td><a href="#parent-object">parentObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to issue: https://github.com/openshift/odo/issues/2936</td>
+</tr>
+<tr>
+<td>events</td>
+<td><a href="#event-object">eventObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to issue: https://github.com/openshift/odo/issues/2919</td>
+</tr>
+<tr>
+<td>component[].kubernetes</td>
+<td><a href="#kubernetesobject">kubernetesObject</a></td>
+<td>IN PROGRESS</td>
+<td></td>
+</tr>
+<tr>
+<td>component[].openshift</td>
+<td><a href="#openshiftobject">openshiftObject</a></td>
+<td>IN PROGRESS</td>
+<td></td>
+</tr>
+<tr>
+<td>component[].volume</td>
+<td><a href="#volumeobject">volumeObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to: https://github.com/openshift/odo/issues/3407</td>
+</tr>
+<tr>
+<td>component[].plugin</td>
+<td><a href="#pluginobject">pluginObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to: https://github.com/openshift/odo/issues/3407</td>
+</tr>
+<tr>
+<td>component[].container.endpoints</td>
+<td><a href="#endpointobject">endpointObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to: https://github.com/openshift/odo/issues/3544</td>
+</tr>
+<tr>
+<td>component[].container.dedicatedPod</td>
+<td><a href="#containerobject">containerObject</a></td>
+<td>UNKNOWN</td>
+<td>In schema but not yet implemented.</td>
+</tr>
+<tr>
+<td>commands[].apply</td>
+<td><a href="#applyobject">applyObject</a></td>
+<td>UNKNOWN</td>
+<td>In schema but not yet implemented.</td>
+</tr>
+<tr>
+<td>commands[].composite</td>
+<td><a href="#compositeobject">compositeObject</a></td>
+<td>IN PROGRESS</td>
+<td>Refer to: https://github.com/openshift/odo/issues/3338</td>
+</tr>
+<tr>
+<td>commands[].vscodeLaunch</td>
+<td><a href="#vscodeLaunchobject">vscodeLaunchObject</a></td>
+<td>N/A</td>
+<td>Not applicable to odo.</td>
+</tr>
+<tr>
+<td>commands[].vscodeTask</td>
+<td><a href="#vscodeTaskobject">vscodeTaskObject</a></td>
+<td>N/A</td>
+<td>Not applicable to odo.</td>
+</tr>
+</tbody></table>
+
+      </div>
+      <div class="dark-box">
+          <div class="lang-selector">
+                <a href="#" data-language-name="yaml">yaml</a>
+          </div>
+      </div>
+    </div>
+  </body>
+</html>

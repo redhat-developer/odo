@@ -17,16 +17,14 @@ micro_nav: true
 What is a devfile?
 
 A [devfile](https://redhat-developer.github.io/devfile/) is a portable
-file that describes your development environment. It allows for a
-*portable* developmental environment without the need of
+file that describes your development environment. It allows reproducing
+a *portable* developmental environment without the need of
 reconfiguration.
 
 With a devfile you can describe:
 
-  - The source code being used
-
-  - Development components such as IDE tools (VSCode) and application
-    runtimes (Yarn / NPM)
+  - Development components such as container definition for build and
+    application runtimes
 
   - A list of pre-defined commands that can be run
 
@@ -36,16 +34,15 @@ Odo takes this devfile and transforms it into a workspace of multiple
 containers running on OpenShift, Kubernetes or Docker.
 
 Devfiles are YAML files with a defined
-[schema](https://github.com/redhat-developer/devfile/blob/master/docs/devfile.md).
+[schema](https://devfile.github.io/devfile/_attachments/api-reference.html).
 
 # Odo and devfile
 
 Odo can now create components from devfiles as recorded in registries.
-Odo automatically consults the default
-[devfile](https://github.com/elsony/devfile-registry)
-[registries](https://github.com/eclipse/che-devfile-registry/) but users
-can also add their own registries. Devfiles contribute new component
-types that users can pull to begin development immediately.
+Odo automatically consults the [default
+registry](https://github.com/odo-devfiles/registry) but users can also
+add their own registries. Devfiles contribute new component types that
+users can pull to begin development immediately.
 
 An example deployment scenario:
 
@@ -66,67 +63,77 @@ An example deployment scenario:
 
 # Deploying your first devfile
 
-**Prerequisites**
-
-  - Before proceeding, you must know your ingress domain cluster name.
-    For example: `apps-crc.testing` is the cluster domain name for [Red
-    Hat CodeReady Containers](https://github.com/code-ready/crc)
+**Prerequisites for an OpenShift Cluster**
 
   - Enable experimental mode for odo. This can be done by: `odo
     preference set experimental true`
 
-# Creating a project
-
-Create a project to keep your source code, tests, and libraries
-organized in a separate single unit.
-
-1.  Log in to a OpenShift cluster:
+  - Create a project to keep your source code, tests, and libraries
+    organized in a separate single unit.
     
-    ``` sh
-      $ odo login -u developer -p developer
-    ```
-
-2.  Create a project:
-    
-    ``` sh
-      $ odo project create myproject
-       ✓  Project 'myproject' is ready for use
-       ✓  New project created and now using project : myproject
-    ```
-    
-    \== Listing all available devfile components
-    
-      - Before deploying your first component, have a look at what is
-        available:
+    1.  Log in to an OpenShift cluster:
         
         ``` sh
-          $ odo catalog list components
-          Odo OpenShift Components:
-          NAME              PROJECT       TAGS                        SUPPORTED
-          java              openshift     11,8,latest                 YES
-          nodejs            openshift     10-SCL,8,8-RHOAR,latest     YES
-          dotnet            openshift     2.1,2.2,3.0,latest          NO
-          golang            openshift     1.11.5,latest               NO
-          httpd             openshift     2.4,latest                  NO
-          modern-webapp     openshift     10.x,latest                 NO
-          nginx             openshift     1.10,1.12,latest            NO
-          perl              openshift     5.24,5.26,latest            NO
-          php               openshift     7.0,7.1,7.2,latest          NO
-          python            openshift     2.7,3.6,latest              NO
-          ruby              openshift     2.4,2.5,latest              NO
+          $ odo login -u developer -p developer
+        ```
+    
+    2.  Create a project:
         
-          Odo Devfile Components:
-          NAME                 DESCRIPTION                           SUPPORTED
-          maven                Upstream Maven and OpenJDK 11         YES
-          nodejs               Stack with NodeJS 10                  YES
-          openLiberty          Open Liberty microservice in Java     YES
-          java-spring-boot     Spring Boot® using Java               YES
+        ``` sh
+          $ odo project create myproject
+           ✓  Project 'myproject' is ready for use
+           ✓  New project created and now using project : myproject
         ```
 
-In our example, we will be using `java-spring-boot` to deploy a sample
-[Springboot](https://spring.io/projects/spring-boot) component.
+## Prerequisites for a Kubernetes Cluster
 
-# Deploying a Java Spring Boot® component to an OpenShift cluster
+  - Enable experimental mode for odo. This can be done by: `odo
+    preference set experimental true`
+
+  - Before proceeding, you must know your ingress domain name or ingress
+    IP to specify `--host` for `odo url create`.
+    
+    Ingress IP is usually the external IP of ingress controller service,
+    for Minikube or CRC clusters running in a virtual machine you can
+    get it by `minikube ip` or `crc ip`. Checkout this
+    [document](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+    to know more about ingress.
+
+# Listing all available devfile components
+
+  - Before deploying your first component, have a look at what is
+    available:
+    
+    ``` sh
+      $ odo catalog list components
+      Odo OpenShift Components:
+      NAME              PROJECT       TAGS                        SUPPORTED
+      java              openshift     11,8,latest                 YES
+      nodejs            openshift     10-SCL,8,8-RHOAR,latest     YES
+      dotnet            openshift     2.1,2.2,3.0,latest          NO
+      golang            openshift     1.11.5,latest               NO
+      httpd             openshift     2.4,latest                  NO
+      modern-webapp     openshift     10.x,latest                 NO
+      nginx             openshift     1.10,1.12,latest            NO
+      perl              openshift     5.24,5.26,latest            NO
+      php               openshift     7.0,7.1,7.2,latest          NO
+      python            openshift     2.7,3.6,latest              NO
+      ruby              openshift     2.4,2.5,latest              NO
+    
+      Odo Devfile Components:
+      NAME                 DESCRIPTION                            REGISTRY
+      java-maven           Upstream Maven and OpenJDK 11          DefaultDevfileRegistry
+      java-openliberty     Open Liberty microservice in Java      DefaultDevfileRegistry
+      java-quarkus         Upstream Quarkus with Java+GraalVM     DefaultDevfileRegistry
+      java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
+      nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
+    ```
+
+In our example, we will be using `java-spring-boot` to deploy a sample
+[Springboot](https://spring.io/projects/spring-boot)
+component.
+
+# Deploying a Java Spring Boot® component to an OpenShift / Kubernetes cluster
 
 In this example we will be deploying an [example Spring Boot®
 component](https://github.com/odo-devfiles/springboot-ex) that uses
@@ -173,7 +180,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
 5.  Create a URL in order to access the deployed component:
     
     ``` sh
-     $ odo url create --host apps-crc.testing
+     $ odo url create
       ✓  URL myspring-8080.apps-crc.testing created for component: myspring
     
      To apply the URL configuration changes, please use odo push
@@ -181,7 +188,8 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
     
     > **Note**
     > 
-    > You must use your cluster host domain name when creating your URL.
+    > If deploying on Kubernetes, you need to pass ingress domain name
+    > via `--host` flag.
 
 6.  Push the component to the cluster:
     
@@ -233,7 +241,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
        ✓  Successfully deleted component
     ```
 
-# Deploying a Node.js® component to an OpenShift cluster
+# Deploying a Node.js® component to an OpenShift / Kubernetes cluster
 
 In this example we will be deploying an [example Node.js®
 component](https://github.com/odo-devfiles/nodejs-ex) that uses
@@ -277,7 +285,7 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
 5.  Create a URL in order to access the deployed component:
     
     ``` sh
-     $ odo url create --host apps-crc.testing
+     $ odo url create
       ✓  URL mynodejs-8080.apps-crc.testing created for component: mynodejs
     
      To apply the URL configuration changes, please use odo push
@@ -285,7 +293,8 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
     
     > **Note**
     > 
-    > You must use your cluster host domain name when creating your URL.
+    > If deploying on Kubernetes, you need to pass ingress domain name
+    > via `--host` flag.
 
 6.  Push the component to the cluster:
     
@@ -337,40 +346,23 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
         ✓  Successfully deleted component
     ```
 
-# Deploying a Java Spring Boot® component locally to Docker
+# Deploying a Quarkus Application to an OpenShift / Kubernetes cluster
 
-In this example, we will be deploying the same Java Spring Boot®
-component we did earlier, but to a locally running Docker instance.
+In this example we will be deploying a [Quarkus
+component](https://github.com/odo-devfiles/quarkus-ex) that uses GraalVM
+and JDK1.8+.
 
-**Prerequisites:** Docker `17.05` or higher installed
-
-1.  Enabling a separate push target, using the `pushtarget` preference:
+1.  Download the example Quarkus
+    component
     
     ``` sh
-     $ odo preference set pushtarget docker
-     Global preference was successfully updated
+     $ git clone https://github.com/odo-devfiles/quarkus-ex && cd quarkus-ex
     ```
 
-2.  Download the example Spring Boot® component.
+2.  Create a Quarkus odo component
     
     ``` sh
-     $ git clone https://github.com/odo-devfiles/springboot-ex
-    ```
-    
-    Alternatively, you can pass in `--starter` to `odo create` to have
-    odo download a project specified in the devfile.
-
-3.  Change the current directory to the component directory:
-    
-    ``` sh
-     $ cd <directory-name>
-    ```
-
-4.  Create a component configuration using the `java-spring-boot`
-    component-type named `mydockerspringboot`:
-    
-    ``` sh
-       $ odo create java-spring-boot mydockerspringboot
+       $ odo create java-quarkus myquarkus
        Experimental mode is enabled, use at your own risk
     
        Validation
@@ -381,62 +373,64 @@ component we did earlier, but to a locally running Docker instance.
         Please use odo push command to create the component with source deployed
     ```
 
-5.  Create a URL in order to access the deployed component:
+3.  Create a URL in order to access the deployed component:
     
     ``` sh
-     $ odo url create --port 8080
-      ✓  URL java-spring-boot-8080 created for component: java-spring-boot with exposed port: 59382
+     $ odo url create
+      ✓  URL myquarkus-8080.apps-crc.testing created for component: myquarkus
     
      To apply the URL configuration changes, please use odo push
     ```
     
-    In order to access the docker application, exposed ports are
-    required and automatically generated by odo.
+    > **Note**
+    > 
+    > If deploying on Kubernetes, you need to pass ingress domain name
+    > via `--host` flag.
 
-6.  Deploy the Spring Boot® devfile component to Docker:
+4.  Push the component to the cluster:
     
     ``` sh
       $ odo push
     
-      Validation
-       ✓  Validating the devfile [52685ns]
+    Validation
+     ✓  Validating the devfile [44008ns]
     
-      Creating Docker resources for component java-spring-boot
-       ✓  Pulling image maysunfaisal/springbootbuild [879ms]
-       ✓  Starting container for maysunfaisal/springbootbuild [397ms]
-       ✓  Pulling image maysunfaisal/springbootruntime [1s]
-       ✓  URL 127.0.0.1:59382 created
-       ✓  Starting container for maysunfaisal/springbootruntime [380ms]
+    Creating Kubernetes resources for component myquarkus
+     ✓  Waiting for component to start [10s]
     
-      Syncing to component java-spring-boot
-       ✓  Checking files for pushing [2ms]
-       ✓  Syncing files to the component [231ms]
+    Applying URL changes
+     ✓  URLs are synced with the cluster, no changes are required.
     
-      Executing devfile commands for component java-spring-boot
-       ✓  Executing devbuild command "/artifacts/bin/build-container-full.sh" [1m]
-       ✓  Executing devrun command "/artifacts/bin/start-server.sh" [1s]
+    Syncing to component myquarkus
+     ✓  Checking files for pushing [951138ns]
+     ✓  Syncing files to the component [204ms]
     
-      Pushing devfile component java-spring-boot
-       ✓  Changes successfully pushed to component
+    Executing devfile commands for component myquarkus
+     ✓  Executing init-compile command "mvn compile" [3m]
+     ✓  Executing dev-run command "mvn quarkus:dev" [1s]
+    
+    Pushing devfile component myquarkus
+     ✓  Changes successfully pushed to component
     ```
-    
-    When odo deploys a devfile component, it pulls the images for each
-    `dockercontainer` in `devfile.yaml` and deploys them.
-    
-    Each docker container that is deployed is labeled with the name of
-    the odo component.
-    
-    Docker volumes are created for the project source, and any other
-    volumes defined in the devfile and mounted to the necessary
-    containers.
 
-7.  View your deployed application using the generated URL:
+5.  View your deployed application in a browser using the generated url
     
     ``` sh
-       $ curl http://127.0.0.1:59382
+     $ odo url list
+     Found the following URLs for component myspring
+     NAME              URL                                       PORT     SECURE
+     myquarkus-8080     http://myquarkus-8080.apps-crc.testing     8080     false
     ```
 
-8.  To delete your deployed application:
+You can now continue developing your application. Just run `odo push`
+and refresh your browser to view the latest changes.
+
+You can also run `odo watch` to watch changes in the source code. Just
+refreshing the browser will render the source code changes.
+
+Run `odo delete` to delete the application from cluster.
+
+1.  To delete your deployed application:
     
     ``` sh
        $ odo delete

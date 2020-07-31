@@ -20,13 +20,17 @@ buttons:
 
 # Author box
 author:
-    title: Supported Languages
-    title_url: '/docs/understanding-odo/#officially-supported-languages-and-corresponding-container-images'
+    title: Official odo Devfile Registry
+    title_url: 'https://github.com/odo-devfiles/registry'
     external_url: true
-    description: "odo currently supports the following languages & frameworks:"
+    description: "odo has examples for multiple languages and frameworks. However, with Devfile, you can take any language or framework and deploy it."
     languages:
+      - title: Java (Maven)
+        url: https://github.com/odo-devfiles/registry/blob/master/devfiles/java-maven/devfile.yaml
+      - title: Java (Springboot)
+        url: https://github.com/odo-devfiles/registry/blob/master/devfiles/java-springboot/devfile.yaml
       - title: Node.JS
-      - title: Java
+        url: https://github.com/odo-devfiles/registry/blob/master/devfiles/nodejs/devfile.yaml
 
 # Micro navigation
 micro_nav: true
@@ -43,35 +47,26 @@ grid_navigation:
       cta: Read more
       url: 'docs/understanding-odo'
 
-    - title: Creating a single-component application with odo
-      excerpt: Get started deploying your first component
+    - title: Deploying a devfile using odo
+      excerpt: Deploying a portable devfile that decribes your development environment
       cta: Read more
-      url: 'docs/creating-a-single-component-application-with-odo'
+      url: 'docs/deploying-a-devfile-using-odo'
       openshift: true
+      kubernetes: true
 
-    - title: Creating a multicomponent application with odo
-      excerpt: Deploy a multicomponent application
+    - title: Devfile file reference
+      excerpt: Devfile reference documentation
       cta: Read more
-      url: 'docs/creating-a-multicomponent-application-with-odo'
+      url: 'file-reference/'
       openshift: true
-
-    - title: Creating an application with a database
-      excerpt: This example describes how to deploy and connect a database to a front-end application
-      cta: Read more
-      url: 'docs/creating-an-application-with-a-database'
-      openshift: true
-
-    - title: Using sample applications
-      excerpt: A list of sample applications to be used with odo
-      cta: Read more
-      url: 'docs/using-sample-applications'
-      openshift: true
+      kubernetes: true
 
     - title: Debugging applications in odo
       excerpt: Learn how to debug an application in odo
       cta: Read more
       url: 'docs/debugging-applications-in-odo'
       openshift: true
+      kubernetes: true
 
     - title: Managing environment variables
       excerpt: Manipulate both config and preference files to your liking
@@ -94,14 +89,6 @@ grid_navigation:
       excerpt: An overview of all the CLI commands related to odo
       cta: Read more
       url: 'docs/odo-cli-reference'
-
-    - title: Deploying a devfile using odo
-      excerpt: Deploying a portable devfile that decribes your development environment
-      cta: Read more
-      url: 'docs/deploying-a-devfile-using-odo'
-      openshift: true
-      kubernetes: true
-      docker: true
 
     - title: Introduction to Operators
       excerpt: Deploying an Operator from Operator Hub using odo.
