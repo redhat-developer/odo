@@ -897,7 +897,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					return fmt.Errorf("port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry", url.Port, url.Name)
 				}
 				secure := false
-				if endpoint.Secure == true || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+				if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
 					secure = true
 				}
 				path := "/"
@@ -949,7 +949,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				// create route against Openshift
 				if parameters.IsRouteSupported {
 					secure := false
-					if endpoint.Secure == true || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+					if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
 						secure = true
 					}
 					path := "/"
