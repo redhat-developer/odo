@@ -204,6 +204,15 @@ func convertV1ProjectToCommon(p Project) common.DevfileProject {
 
 }
 
+//GetStarterProjects returns the DevfileStarterProject parsed from devfile
+func (d *Devfile100) GetStarterProjects() []common.DevfileStarterProject {
+	return nil
+}
+
+func (d *Devfile100) AddStarterProjects(projects []common.DevfileStarterProject) error { return nil }
+
+func (d *Devfile100) UpdateStarterProject(project common.DevfileStarterProject) {}
+
 func getGroup(name string) *common.Group {
 
 	switch name {

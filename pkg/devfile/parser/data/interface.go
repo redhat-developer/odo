@@ -31,6 +31,11 @@ type DevfileData interface {
 	AddProjects(projects []common.DevfileProject) error
 	UpdateProject(project common.DevfileProject)
 
+	// starter projects related commands
+	GetStarterProjects() []common.DevfileStarterProject
+	AddStarterProjects(projects []common.DevfileStarterProject) error
+	UpdateStarterProject(project common.DevfileStarterProject)
+
 	// command related methods
 	GetCommands() []common.DevfileCommand
 	AddCommands(commands []common.DevfileCommand) error

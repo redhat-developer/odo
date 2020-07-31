@@ -3,12 +3,13 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
+
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"reflect"
-	"strings"
 )
 
 // Default filenames for create devfile
@@ -131,6 +132,36 @@ func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) erro
 				}
 
 				d.Data.UpdateProject(updatedProject)
+			}
+		}
+		if !found {
+			return fmt.Errorf("the command to override is not found in the parent")
+		}
+	}
+	return nil
+}
+
+// OverrideStarterProjects overrides the projects of the parent devfile
+// overridePatch contains the patches to be applied to the parent's projects
+func (d DevfileObj) OverrideStarterProjects(overridePatch []common.DevfileStarterProject) error {
+	for _, patchProject := range overridePatch {
+		found := false
+		for _, originalProject := range d.Data.GetStarterProjects() {
+			if strings.ToLower(patchProject.Name) == originalProject.Name {
+				found = true
+				var updatedProject common.DevfileStarterProject
+
+				merged, err := handleMerge(originalProject, patchProject, common.DevfileStarterProject{})
+				if err != nil {
+					return err
+				}
+
+				err = json.Unmarshal(merged, &updatedProject)
+				if err != nil {
+					return err
+				}
+
+				d.Data.UpdateStarterProject(updatedProject)
 			}
 		}
 		if !found {

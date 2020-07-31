@@ -173,6 +173,38 @@ func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
 	}
 }
 
+//GetStarterProjects returns the DevfileStarterProject parsed from devfile
+func (d *Devfile200) GetStarterProjects() []common.DevfileStarterProject {
+	return d.StarterProjects
+}
+
+// AddStarterProjects adss the slice of Devfile projects to the Devfile's project list
+// if a project is already defined, error out
+func (d *Devfile200) AddStarterProjects(projects []common.DevfileStarterProject) error {
+	projectsMap := make(map[string]bool)
+	for _, project := range d.StarterProjects {
+		projectsMap[project.Name] = true
+	}
+
+	for _, project := range projects {
+		if _, ok := projectsMap[project.Name]; !ok {
+			d.StarterProjects = append(d.StarterProjects, project)
+		} else {
+			return &common.AlreadyExistError{Name: project.Name, Field: "starterProject"}
+		}
+	}
+	return nil
+}
+
+// UpdateStarterProject updates the slice of DevfileCommand projects parsed from the Devfile
+func (d *Devfile200) UpdateStarterProject(project common.DevfileStarterProject) {
+	for i := range d.StarterProjects {
+		if d.StarterProjects[i].Name == strings.ToLower(project.Name) {
+			d.StarterProjects[i] = project
+		}
+	}
+}
+
 // GetEvents returns the Events Object parsed from devfile
 func (d *Devfile200) GetEvents() common.DevfileEvents {
 	return d.Events

@@ -141,7 +141,7 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 # Create new Node.js component and download the sample project named nodejs-starter
 %[1]s nodejs --starter=nodejs-starter`)
 
-const defaultProjectName = "devfile-project-name"
+const defaultStarterProjectName = "devfile-starter-project-name"
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
@@ -888,41 +888,33 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
-// Downloads first project from list of projects in devfile
+// Downloads first starter project from list of starter projects in devfile
 // Currenty type git with a non github url is not supported
-func (co *CreateOptions) downloadProject(projectPassed string) error {
-	var project common.DevfileProject
+func (co *CreateOptions) downloadStarterProject(projectPassed string, interactive bool) error {
+	if projectPassed == "" && !interactive {
+		return nil
+	}
+
+	var project *common.DevfileStarterProject
 	// Parse devfile and validate
 	devObj, err := devfile.ParseAndValidate(DevfilePath)
 	if err != nil {
 		return err
 	}
+	// Retrieve starter projects
+	projects := devObj.Data.GetStarterProjects()
 
-	// Retrieve projects
-	projects := devObj.Data.GetProjects()
-	nOfProjects := len(projects)
-	if nOfProjects == 0 {
-		return errors.Errorf("No project found in devfile component.")
+	if interactive {
+		project = getStarterProjectInteractiveMode(projects)
+	} else {
+		project, err = getStarterProjectFromFlag(projects, projectPassed)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Determine what project to be used
-	if nOfProjects == 1 && projectPassed == defaultProjectName {
-		project = projects[0]
-	} else if nOfProjects > 1 && projectPassed == defaultProjectName {
-		project = projects[0]
-		log.Warning("There are multiple projects in this devfile but none have been specified in --starter. Downloading the first: " + project.Name)
-	} else { //If the user has specified a project
-		projectFound := false
-		for indexOfProject, projectInfo := range projects {
-			if projectInfo.Name == projectPassed { //Get the index
-				project = projects[indexOfProject]
-				projectFound = true
-			}
-		}
-
-		if !projectFound {
-			return errors.Errorf("The project: %s specified in --starter does not exist", projectPassed)
-		}
+	if project == nil {
+		return nil
 	}
 
 	// Retrieve the working directory in order to clone correctly
@@ -981,8 +973,8 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Errorf("Project type not supported")
 	}
 
-	log.Info("\nProject")
-	downloadSpinner := log.Spinnerf("Downloading project from %s", logUrl)
+	log.Info("\nStarter Project")
+	downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", project.Name, logUrl)
 	err = checkoutProject(sparseDir, url, path)
 
 	if err != nil {
@@ -1052,8 +1044,8 @@ func (co *CreateOptions) Run() (err error) {
 				}
 			}
 
-			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.starter != "" {
-				err = co.downloadProject(co.devfileMetadata.starter)
+			if util.CheckPathExists(DevfilePath) {
+				err = co.downloadStarterProject(co.devfileMetadata.starter, co.interactive)
 				if err != nil {
 					return errors.Wrap(err, "failed to download project for devfile component")
 				}
@@ -1154,6 +1146,56 @@ func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
 	return nil
 }
 
+func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) (project *common.DevfileStarterProject) {
+	projectName := ui.SelectStarterProject(projects)
+
+	// if user do not wish to download starter project or there are no projects in devfile, project name would be empty
+	if projectName == "" {
+		return nil
+	}
+
+	for _, value := range projects {
+		if value.Name == projectName {
+			project = &value
+			break
+		}
+	}
+
+	return project
+}
+
+func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectPassed string) (project *common.DevfileStarterProject, err error) {
+
+	nOfProjects := len(projects)
+
+	if nOfProjects == 0 {
+		return nil, errors.Errorf("No starter project found in devfile component.")
+	}
+
+	// Determine what project to be used
+	if nOfProjects == 1 && projectPassed == defaultStarterProjectName {
+		project = &projects[0]
+	} else if nOfProjects > 1 && projectPassed == defaultStarterProjectName {
+		project = &projects[0]
+		log.Warning("There are multiple projects in this devfile but none have been specified in --starter. Downloading the first: " + project.Name)
+	} else { //If the user has specified a project
+		projectFound := false
+		for indexOfProject, projectInfo := range projects {
+			if projectInfo.Name == projectPassed { //Get the index
+				project = &projects[indexOfProject]
+				projectFound = true
+			}
+		}
+
+		if !projectFound {
+			return nil, errors.Errorf("The project: %s specified in --starter does not exist", projectPassed)
+		}
+	}
+
+	return project, err
+
+}
+
 // NewCmdCreate implements the create odo command
 func NewCmdCreate(name, fullName string) *cobra.Command {
 	co := NewCreateOptions()
@@ -1177,7 +1219,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
-		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
+		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultStarterProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
