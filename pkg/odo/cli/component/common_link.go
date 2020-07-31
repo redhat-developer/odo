@@ -32,6 +32,8 @@ var (
 	sbrResource = "servicebindingrequests"
 )
 
+const unlink = "unlink"
+
 type commonLinkOptions struct {
 	wait             bool
 	port             string
@@ -82,7 +84,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 			return err
 		}
 
-		if o.operationName == "unlink" {
+		if o.operationName == unlink {
 			// rest of the code is specific to link operation
 			return nil
 		}
@@ -177,7 +179,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			return fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", svcFullName, "odo service list")
 		}
 
-		if o.operationName == "unlink" {
+		if o.operationName == unlink {
 			componentName := o.EnvSpecificInfo.GetName()
 			sbrName := getSBRName(componentName, o.serviceType, o.serviceName)
 			links := o.EnvSpecificInfo.GetLink()
@@ -186,6 +188,22 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			if !linked {
 				// user's trying to unlink a service that's not linked with the component
 				return fmt.Errorf("failed to unlink the service %q since it's not linked with the component %q", svcFullName, componentName)
+			}
+
+			// Verify if the underlying service binding request actually exists
+			sbrSvcFullName := strings.Join([]string{sbrKind, sbrName}, "/")
+			sbrExists, err := svc.OperatorSvcExists(o.KClient, sbrSvcFullName)
+			if err != nil {
+				return err
+			}
+			if !sbrExists {
+				// This could have happened if the service binding request was deleted outside odo workflow (eg: oc delete sbr/<sbr-name>)
+				// we must remove entry of the link from env.yaml in this case
+				err = o.Context.EnvSpecificInfo.DeleteLink(sbrName)
+				if err != nil {
+					return fmt.Errorf("component's link with %q has been deleted outside odo; unable to delete odo's state of the link", svcFullName)
+				}
+				return fmt.Errorf("component's link with %q has been deleted outside odo", svcFullName)
 			}
 			return nil
 		}
@@ -246,10 +264,10 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 
 func (o *commonLinkOptions) run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		if o.operationName == "unlink" {
+		if o.operationName == unlink {
 			sbrName := getSBRName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
 			svcFullName := getSvcFullName(sbrKind, sbrName)
-			err = svc.DeleteOperatorService(o.KClient, svcFullName)
+			err = svc.DeleteServiceBindingRequest(o.KClient, svcFullName)
 			if err != nil {
 				return err
 			}
@@ -390,6 +408,8 @@ func getSBRName(componentName, serviceType, serviceName string) string {
 	return strings.Join([]string{componentName, strings.ToLower(serviceType), serviceName}, "-")
 }
 
+// isComponentLinked checks if link with "sbrName" exists in the component's
+// config. It confirms if the component is linked with the service
 func isComponentLinked(sbrName string, links []envinfo.EnvInfoLink) bool {
 	for _, link := range links {
 		if link.Name == sbrName {
