@@ -145,9 +145,9 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 // TODO: make it unlink the service from component as a part of
 // https://github.com/openshift/odo/issues/3563
 func DeleteOperatorService(client *kclient.Client, serviceName string) error {
-	kind, name, err := splitServiceKindName(serviceName)
+	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
 	}
 
 	csv, err := client.GetCSVWithCR(kind)
@@ -514,9 +514,9 @@ func SvcExists(client *occlient.Client, serviceName, applicationName string) (bo
 // It doesn't bother about application since
 // https://github.com/openshift/odo/issues/2801 is blocked
 func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error) {
-	kind, name, err := splitServiceKindName(serviceName)
+	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
 	}
 
 	// Get the CSV (Operator) that provides the CR
@@ -552,12 +552,12 @@ func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error)
 	return false, nil
 }
 
-// splitServiceKindName splits the service name provided for deletion by the
+// SplitServiceKindName splits the service name provided for deletion by the
 // user. It has to be of the format <service-kind>/<service-name>. Example: EtcdCluster/myetcd
-func splitServiceKindName(serviceName string) (string, string, error) {
+func SplitServiceKindName(serviceName string) (string, string, error) {
 	sn := strings.SplitN(serviceName, "/", 2)
 	if len(sn) != 2 || sn[0] == "" || sn[1] == "" {
-		return "", "", fmt.Errorf("Invalid service name. Refer %q to see list of running services", "odo service list")
+		return "", "", fmt.Errorf("couldn't split %q into exactly two", serviceName)
 	}
 
 	kind := sn[0]

@@ -77,7 +77,7 @@ In this example, we will be deploying our link:https://operatorhub.io/operator/e
 +
 [source,sh]
 ----
-  $ odo service create etcdoperator.v0.9.4 --crd EtcdCluster
+  $ odo service create etcdoperator.v0.9.4/EtcdCluster
 ----
 
 . Confirm the Operator backed service was deployed:
@@ -105,7 +105,7 @@ Deploying via YAML is a **temporary** feature as we add support for link:https:/
 +
 [source,shell]
 ----
-  $ odo service create etcdoperator.v0.9.4 --crd EtcdCluster --dry-run > etcd.yaml
+  $ odo service create etcdoperator.v0.9.4/EtcdCluster --dry-run > etcd.yaml
 ----
 
 . Modify the YAML file by redefining the name and size:
