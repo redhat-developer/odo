@@ -1,9 +1,7 @@
 package common
 
 import (
-	//devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 )
