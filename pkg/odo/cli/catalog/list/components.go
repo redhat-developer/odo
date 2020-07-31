@@ -45,15 +45,21 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 
 	if !pushtarget.IsPushTargetDocker() {
 		o.Context = genericclioptions.NewContext(cmd)
+		supported, err := o.Client.IsImageStreamSupported()
+		if err != nil {
+			return err
+		}
 
-		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			o.catalogList, err = catalog.ListComponents(o.Client)
-			if err != nil {
-				errChannel <- err
-			} else {
-				o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
-			}
-		}})
+		if supported {
+			tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+				o.catalogList, err = catalog.ListComponents(o.Client)
+				if err != nil {
+					errChannel <- err
+				} else {
+					o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
+				}
+			}})
+		}
 	}
 
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
