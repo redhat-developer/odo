@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
@@ -38,6 +37,8 @@ type commonLinkOptions struct {
 	secretName       string
 	isTargetAService bool
 
+	devfilePath string
+
 	suppliedName  string
 	operation     func(secretName, componentName, applicationName string) error
 	operationName string
@@ -55,12 +56,13 @@ func newCommonLinkOptions() *commonLinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []string) (err error) {
+
 	o.operationName = name
 
 	suppliedName := args[0]
 	o.suppliedName = suppliedName
 
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(o.devfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		oclient, err := occlient.New()
@@ -161,7 +163,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(o.devfilePath) {
 		// let's validate if the service exists
 		svcFullName := strings.Join([]string{o.serviceType, o.serviceName}, "/")
 		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
@@ -227,7 +229,8 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 }
 
 func (o *commonLinkOptions) run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+
+	if util.CheckPathExists(o.devfilePath) {
 		// convert service binding request into a ma[string]interface{} type so
 		// as to use it with dynamic client
 		sbrMap := make(map[string]interface{})

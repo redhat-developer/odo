@@ -25,7 +25,6 @@ import (
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/storage"
@@ -564,10 +563,10 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
+//  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool) (err error) {
-	isExperimentalModeEnabled := experimental.IsExperimentalModeEnabled()
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, isS2I bool) (err error) {
 
 	if client == nil {
 		var err error
@@ -578,7 +577,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		client.Namespace = envSpecificInfo.GetNamespace()
 	}
 
-	if !isExperimentalModeEnabled {
+	if isS2I {
 		// if component exist then only call the update function
 		if cmpExist {
 			if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
@@ -589,7 +588,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 
 	var componentName string
 	var applicationName string
-	if !isExperimentalModeEnabled || kClient == nil {
+	if isS2I || kClient == nil {
 		componentName = componentConfig.GetName()
 		applicationName = componentConfig.GetApplication()
 	} else {
@@ -603,12 +602,12 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	}
 
 	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
-		ComponentName:             componentName,
-		ApplicationName:           applicationName,
-		ConfigURLs:                componentConfig.GetURL(),
-		EnvURLS:                   envSpecificInfo.GetURL(),
-		IsRouteSupported:          isRouteSupported,
-		IsExperimentalModeEnabled: isExperimentalModeEnabled,
+		ComponentName:    componentName,
+		ApplicationName:  applicationName,
+		ConfigURLs:       componentConfig.GetURL(),
+		EnvURLS:          envSpecificInfo.GetURL(),
+		IsRouteSupported: isRouteSupported,
+		IsS2I:            isS2I,
 	})
 }
 

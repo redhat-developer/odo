@@ -73,6 +73,8 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
 	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd, execCmd)
+
+	// Experimental feature to be added, "odo test" command.
 	if experimental.IsExperimentalModeEnabled() {
 		componentCmd.AddCommand(testCmd)
 	}
