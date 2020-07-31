@@ -2,13 +2,14 @@ package url
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -31,6 +32,8 @@ type URLDeleteOptions struct {
 	urlName            string
 	urlForceDeleteFlag bool
 	now                bool
+	componentContext   string
+	devfilePath        string
 }
 
 // NewURLDeleteOptions creates a new URLDeleteOptions instance
@@ -40,9 +43,9 @@ func NewURLDeleteOptions() *URLDeleteOptions {
 
 // Complete completes URLDeleteOptions after they've been Deleted
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.devfilePath = filepath.Join(o.componentContext, component.DevfilePath)
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-
+	if util.CheckPathExists(o.devfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.urlName = args[0]
 		err = o.InitEnvInfoFromContext()
@@ -77,7 +80,7 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 // Validate validates the URLDeleteOptions based on completed values
 func (o *URLDeleteOptions) Validate() (err error) {
 	var exists bool
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(o.devfilePath) {
 		urls := o.EnvSpecificInfo.GetURL()
 		componentName := o.EnvSpecificInfo.GetName()
 		for _, url := range urls {
@@ -113,7 +116,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo url delete command
 func (o *URLDeleteOptions) Run() (err error) {
 	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
-		if experimental.IsExperimentalModeEnabled() {
+		if util.CheckPathExists(o.devfilePath) {
 			err = o.EnvSpecificInfo.DeleteURL(o.urlName)
 			if err != nil {
 				return err
@@ -162,10 +165,12 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(urlDeleteExample, fullName),
 	}
 	urlDeleteCmd.Flags().BoolVarP(&o.urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
-	o.AddContextFlag(urlDeleteCmd)
+
+	genericclioptions.AddContextFlag(urlDeleteCmd, &o.componentContext)
 	urlDeleteCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	genericclioptions.AddNowFlag(urlDeleteCmd, &o.now)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
+
 	return urlDeleteCmd
 }

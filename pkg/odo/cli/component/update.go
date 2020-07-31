@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -78,10 +77,7 @@ func NewUpdateOptions() *UpdateOptions {
 func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	uo.devfilePath = filepath.Join(uo.componentContext, DevfilePath)
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(uo.devfilePath) {
-		// Add a disclaimer that we are in *experimental mode*
-		log.Experimental("Experimental mode is enabled, use at your own risk")
-
+	if util.CheckPathExists(uo.devfilePath) {
 		// Configure the devfile context
 		uo.Context = genericclioptions.NewDevfileContext(cmd)
 		return
@@ -99,7 +95,7 @@ func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string
 func (uo *UpdateOptions) Validate() (err error) {
 
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(uo.devfilePath) {
+	if util.CheckPathExists(uo.devfilePath) {
 		return nil
 	}
 
@@ -171,8 +167,8 @@ func (uo *UpdateOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (uo *UpdateOptions) Run() (err error) {
 
-	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(uo.devfilePath) {
+	// if devfile is present
+	if util.CheckPathExists(uo.devfilePath) {
 		return errors.New(devfileErrorString)
 	}
 
