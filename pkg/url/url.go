@@ -894,7 +894,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					endpoint, exist = parameters.EndpointMap[int32(url.Port)]
 				}
 				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
-					return fmt.Errorf("Port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry. ", url.Port, url.Name)
+					return fmt.Errorf("port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry", url.Port, url.Name)
 				}
 				secure := false
 				if endpoint.Secure == true || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
@@ -919,35 +919,12 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	} else {
 		urls := parameters.ConfigURLs
 		for _, url := range urls {
-			var secure bool
-			path := "/"
-			if parameters.IsExperimentalModeEnabled {
-				exist := false
-				var endpoint parsercommon.Endpoint
-				if parameters.EndpointMap != nil {
-					endpoint, exist = parameters.EndpointMap[int32(url.Port)]
-				}
-				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
-					return fmt.Errorf("Port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry. ", url.Port, url.Name)
-				}
-				secure = false
-				if endpoint.Secure == true || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
-					secure = true
-				}
-				if endpoint.Path != "" {
-					path = endpoint.Path
-				}
-			} else {
-				secure = url.Secure
-			}
-
-			secure = url.Secure
 			urlLOCAL[url.Name] = URL{
 				Spec: URLSpec{
 					Port:   url.Port,
-					Secure: secure,
+					Secure: url.Secure,
 					Kind:   envinfo.ROUTE,
-					Path:   path,
+					Path:   "/",
 				},
 			}
 		}
@@ -979,7 +956,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					if endpoint.Path != "" {
 						path = endpoint.Path
 					}
-					urlLOCAL[endpoint.Name] = URL{
+					name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
+					urlLOCAL[name] = URL{
 						Spec: URLSpec{
 							Port:   int(port),
 							Secure: secure,
@@ -1090,7 +1068,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if err != nil {
 				return err
 			}
-			log.Successf("URL %s: %s created", urlName, host)
+			log.Successf("URL %s: %s%s created", urlName, host, urlInfo.Spec.Path)
 			urlChange = true
 		}
 	}
