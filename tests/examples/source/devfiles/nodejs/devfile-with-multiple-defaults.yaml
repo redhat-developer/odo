@@ -19,7 +19,7 @@ commands:
       id: firstbuild
       component: runtime
       commandLine: npm install
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
@@ -27,7 +27,7 @@ commands:
       id: secondbuild
       component: runtime
       commandLine: npm install
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
@@ -35,19 +35,19 @@ commands:
       id: thirdbuild
       component: runtime
       commandLine: npm install
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
   - exec:
       id: firstrun
       component: runtime
       commandLine: npm start
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
   - exec:
       id: secondrun
       component: runtime
       commandLine: npm start
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
   - exec:
@@ -57,7 +57,7 @@ commands:
       env:
        - name: ENV1
          value: "test_env_variable"
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
   - exec:
@@ -69,7 +69,7 @@ commands:
          value: "test_env_variable1"
        - name: ENV2
          value: "test_env_variable2"
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
   - exec:
@@ -79,14 +79,14 @@ commands:
       env:
        - name: ENV1
          value: "env with space"
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
   - exec:
       id: test1
       component: runtime
       commandLine: "mkdir test1"
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: test
         isDefault: true
@@ -94,7 +94,7 @@ commands:
       id: test2
       component: runtime
       commandLine: "mkdir test2"
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: test
         isDefault: true

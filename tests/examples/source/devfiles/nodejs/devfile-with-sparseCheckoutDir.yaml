@@ -26,22 +26,22 @@ commands:
       - type: exec
         component: runtime
         command: npm install
-        workdir: ${PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}
   - name: devbuild
     actions:
       - type: exec
         component: runtime
         command: npm install
-        workdir: ${PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}
   - name: run
     actions:
       - type: exec
         component: runtime
         command: npm start
-        workdir: ${PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}
   - name: devrun
     actions:
       - type: exec
         component: runtime
         command: npm start
-        workdir: ${PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}

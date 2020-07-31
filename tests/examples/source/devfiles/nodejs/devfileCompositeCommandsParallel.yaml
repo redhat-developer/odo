@@ -20,7 +20,7 @@ commands:
       id: install
       component: runtime
       commandLine: npm install
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: false
@@ -28,7 +28,7 @@ commands:
       id: mkdir
       component: runtime
       commandLine: mkdir /projects/testfolder
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: false
@@ -36,7 +36,7 @@ commands:
       id: run
       component: runtime
       commandLine: npm start
-      workingDir: ${PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
