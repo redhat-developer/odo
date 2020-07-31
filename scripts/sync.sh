@@ -19,6 +19,8 @@ docs="docs"
 openshift_docs_repo="github.com/openshift/openshift-docs"
 odo_repo="github.com/openshift/odo"
 
+file_reference_doc="/docs/file-reference/index.md"
+
 
 #########################
 # PLEASE READ           #
@@ -106,7 +108,8 @@ done
 shout "Merging files to /docs"
 
 # Delete everything in /docs so it's clean for copying files over
-rm -rf $docs/* || true
+# same for _site and file-reference
+rm -rf $docs/* _site file-reference || true
 
 # Go through and "merge" the documentation if we have a template file available (this means we actually want to use the docs.openshift.com documentation
 # everything else, we ignore.
@@ -137,3 +140,15 @@ for f in $upstream_docs/*.md; do
       exit 0
   fi
 done
+
+#################################################
+# GENERATE FILE-REFERENCE / SLATE DOCUMENTATION #
+#################################################
+
+shout "Generating file reference documentation"
+
+index_file=$tmp_public_docs_dir$file_reference_doc
+cp $index_file slate/source/index.html.md
+cd slate
+docker run --rm -v $PWD:/usr/src/app/source -w /usr/src/app/source cdrage/slate bundle exec middleman build --clean && cp -r build ../file-reference
+cd ..

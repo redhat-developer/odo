@@ -25,7 +25,7 @@ With `odo`, you can create and deploy applications on clusters.
   - `odo` is installed.
 
   - You have a running cluster. You can use [CodeReady Containers
-    (CRC)](https://cloud.redhat.com/openshift/install/crc/installer-provisioned?intcmp=7013a000002CtetAAC)
+    (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/)
     to deploy a local cluster quickly.
 
 # Creating a project

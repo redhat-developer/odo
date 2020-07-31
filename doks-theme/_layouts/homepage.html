@@ -55,7 +55,7 @@
                   <ul>
                     {% for item in page.author.languages %}
                     <li>
-                      {{ item.title }}
+                      <a href="{{ item.url }}" target="_blank">{{ item.title }}</a>
                     </li>
                     {% endfor %}
                   </ul>

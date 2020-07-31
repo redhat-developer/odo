@@ -44,9 +44,6 @@ features:
 
   - Official support for Node.js and Java components.
 
-  - Partial compatibility with languages and frameworks such as Ruby,
-    Perl, PHP, and Python.
-
   - Detects changes to local code and deploys it to the cluster
     automatically, giving instant feedback to validate changes in real
     time.
@@ -72,55 +69,46 @@ features:
 
   - Service  
     A service is software that your component links to or depends on.
-    Examples of services: MariaDB, Jenkins, MySQL. In `odo`, services
-    are provisioned from the OpenShift Service Catalog and must be
-    enabled within your
-cluster.
+    Examples of services: MariaDB, Jenkins, MySQL.
 
-## Officially supported languages and corresponding container images
+  - Devfile  
+    A portable file responsible for your entire reproducable development
+    environment.
 
-| Language    | Container image                                                                                                                                  | Package manager |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
-| **Node.js** | [centos/nodejs-8-centos7](https://github.com/sclorg/s2i-nodejs-container)                                                                        | NPM             |
-|             | [rhoar-nodejs/nodejs-8](https://access.redhat.com/articles/3376841)                                                                              | NPM             |
-|             | [bucharestgold/centos7-s2i-nodejs](https://www.github.com/bucharest-gold/centos7-s2i-nodejs)                                                     | NPM             |
-|             | [rhscl/nodejs-8-rhel7](https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-8-rhel7)                                   | NPM             |
-|             | [rhscl/nodejs-10-rhel7](https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-10-rhel7)                                 | NPM             |
-| **Java**    | [redhat-openjdk-18/openjdk18-openshift](https://access.redhat.com/containers/#/registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift) | Maven, Gradle   |
-|             | [openjdk/openjdk-11-rhel8](https://access.redhat.com/containers/#/registry.access.redhat.com/openjdk/openjdk-11-rhel8)                           | Maven, Gradle   |
-|             | [openjdk/openjdk-11-rhel7](https://access.redhat.com/containers/#/registry.access.redhat.com/openjdk/openjdk-11-rhel7)                           | Maven, Gradle   |
+## Official Devfiles
 
-Supported languages, container images, and package managers
+Devfiles describe your development environment link. [Click here for
+more information on
+Devfile.](https://odo.dev/docs/deploying-a-devfile-using-odo/)
 
-### Listing available container images
+All official example Devfiles are hosted on the
+[registry](https://github.com/odo-devfiles/registry).
+
+| Language | Devfile Name     | Description                        | Devfile Source                                                                                                               |
+| -------- | ---------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Java     | java-maven       | Upstream Maven and OpenJDK 11      | [java-maven/devfile.yaml](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-maven/devfile.yaml)             |
+| Java     | java-openliberty | Open Liberty microservice in Java  | [java-openliberty/devfile.yaml](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-openliberty/devfile.yaml) |
+| Java     | java-quarkus     | Upstream Quarkus with Java+GraalVM | [java-quarkus/devfile.yaml](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-quarkus/devfile.yaml)         |
+| Java     | java-springboot  | Spring Boot® using Java            | [java-springboot/devfile.yaml](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-springboot/devfile.yaml)   |
+| Node.JS  | nodejs           | Stack with NodeJS 12               | [nodejs/devfile.yaml](https://github.com/odo-devfiles/registry/blob/master/devfiles/nodejs/devfile.yaml)                     |
+
+List of Devfiles which are officially supported by odo
+
+### Listing available Devfiles
 
 > **Note**
 > 
-> The list of available container images is sourced from the cluster’s
-> internal container registry and external registries associated with
-> the cluster.
+> The list of available Devfiles is sourced from the official [odo
+> registry](https://github.com/odo-devfiles/registry) as well as any
+> other registies added via `odo registry add`.
 
-To list the available components and associated container images for
-your cluster:
+To list the available Devfiles:
 
-1.  Log in to the cluster with `odo`:
-    
-        $ odo login -u developer -p developer
-
-2.  List the available `odo` supported and unsupported components and
-    corresponding container images:
-    
-        $ odo catalog list components
-        Odo Supported OpenShift Components:
-        NAME        PROJECT      TAGS
-        java       openshift     8,latest
-        nodejs     openshift     10,8,8-RHOAR,latest
-        
-        Odo Unsupported OpenShift Components:
-        NAME                      PROJECT       TAGS
-        dotnet                    openshift     1.0,1.1,2.1,2.2,latest
-        fuse7-eap-openshift       openshift     1.3
-    
-    The `TAGS` column represents the available image versions, for
-    example, `10` represents the `rhoar-nodejs/nodejs-10` container
-    image.
+    $ odo catalog list components
+    Odo Devfile Components:
+    NAME                 DESCRIPTION                            REGISTRY
+    java-maven           Upstream Maven and OpenJDK 11          DefaultDevfileRegistry
+    java-openliberty     Open Liberty microservice in Java      DefaultDevfileRegistry
+    java-quarkus         Upstream Quarkus with Java+GraalVM     DefaultDevfileRegistry
+    java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
+    nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry

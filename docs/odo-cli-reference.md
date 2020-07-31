@@ -192,7 +192,7 @@ deployed.
   # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
   odo create nodejs --env key=value,key1=value1
 
-  # For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.adoc
+  # Create a new Python component with the source in a Git repository
   odo create python --git https://github.com/openshift/django-ex.git
 
   # Passing memory limits
@@ -270,13 +270,30 @@ provided, the current active component is assumed.
 
 ## list
 
-List all the components in the current application.
+List all the components in the current application and the states of the
+components.
 
-**Example using list.**
+  - Pushed  
+    A component is pushed to the cluster.
+
+  - Not Pushed  
+    A component is not pushed to the cluster.
+
+  - Locally Deleted  
+    URL or Storage are deleted in the local configuration but are not
+    pushed to the cluster.
+
+  - Unknown  
+    `odo` is disconnected from the cluster.
+
+**Example using the list command.**
 
 ``` 
   # List all components in the application
   odo list
+
+  # List all the components in a given path
+  odo list --path <path_to_your_component>
 ```
 
 ## log

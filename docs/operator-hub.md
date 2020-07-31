@@ -110,7 +110,7 @@ Kubernetes cluster.
 1.  Create a etcd service from the `etcdoperator.v0.9.4` Operator:
     
     ``` sh
-      $ odo service create etcdoperator.v0.9.4 --crd EtcdCluster
+      $ odo service create etcdoperator.v0.9.4/EtcdCluster
     ```
 
 2.  Confirm the Operator backed service was deployed:
@@ -142,7 +142,7 @@ However, we will be using the YAML definition where we modify the
     operator:
     
     ``` shell
-      $ odo service create etcdoperator.v0.9.4 --crd EtcdCluster --dry-run > etcd.yaml
+      $ odo service create etcdoperator.v0.9.4/EtcdCluster --dry-run > etcd.yaml
     ```
 
 2.  Modify the YAML file by redefining the name and size:
