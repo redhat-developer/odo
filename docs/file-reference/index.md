@@ -13,109 +13,17 @@ search: true
 
 # Introduction
 
-> A full odo devfile example using Spring Boot
-
-```yaml
- 
-schemaVersion: 2.0.0
-metadata:
-  name: springBoot
-  version: 1.0.0
-projects:
-  - name: springbootproject
-    git:
-      location: "https://github.com/odo-devfiles/springboot-ex.git"
-components:
-  - container:
-      name: tools
-      image: maysunfaisal/springbootbuild
-      memoryLimit: 768Mi
-      command: ['tail']
-      args: [ '-f', '/dev/null']
-      mountSources: true
-      volumeMounts:
-        - name: springbootpvc
-          path: /data
-  - container:
-      name: runtime
-      image: maysunfaisal/springbootruntime
-      memoryLimit: 768Mi
-      command: ['tail']
-      args: [ '-f', '/dev/null']
-      endpoints:
-        - name: '8080/tcp'
-          exposure: public
-          targetPort: 8080
-          protocol: https
-          secure: true
-      mountSources: false
-      volumeMounts:
-        - name: springbootpvc
-          path: /data
-commands:
-  - exec:
-      id: devBuild
-      commandLine: "/artifacts/bin/build-container-full.sh"
-      component: tools
-      workingDir: /projects/springbootproject
-      group:
-        kind: build
-        isDefault: true
-  - exec:
-      id: devRun
-      commandLine: "/artifacts/bin/start-server.sh"
-      component: runtime
-      workingDir: /
-      group:
-        kind: run
-        isDefault: true
-```
-
-> Download the application
+> Download a starter application to get an example devfile.yaml
 
 ```sh
 $ odo create nodejs --starter
 ```
 
-> Create a URL and push the service
-
-```sh
-$ odo url create
-
-$ odo push
-```
-
-## Unsupported features
-
-**PLEASE NOTE:** Devfile v2 is still in its early stages and there are some parts of the schema that have not yet been implemented.
-
-Please refer to the below table for a list of features which are *not yet* implemented:
-
-| Key                                | Key Description                           | Status      | Description                                                                                     |
-|------------------------------------|-------------------------------------------|-------------|-------------------------------------------------------------------------------------------------|
-| projects[].github.startPoint       | [githubObject](#githubObject)             | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
-| projects[].git.startPoint          | [gitObject](#gitObject)                   | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
-| projects[].zip                     | [zipObject](#zipobject)                   | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3442 |
-| parent                             | [parentObject](#parent-object)            | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
-| events                             | [eventObject](#event-object)              | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2919                                    |
-| component[].kubernetes             | [kubernetesObject](#kubernetesobject)     | IN PROGRESS |                                                                                                 |
-| component[].openshift              | [openshiftObject](#openshiftobject)       | IN PROGRESS |                                                                                                 |
-| component[].volume                 | [volumeObject](#volumeobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
-| component[].plugin                 | [pluginObject](#pluginobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
-| component[].container.endpoints    | [endpointObject](#endpointobject)         | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
-| component[].container.dedicatedPod | [containerObject](#containerobject)       | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].apply                   | [applyObject](#applyobject)               | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].composite               | [compositeObject](#compositeobject)       | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
-| commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject) | N/A         | Not applicable to odo.                                                                          |
-| commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)     | N/A         | Not applicable to odo.                                                                          |
-
-
-
-## Installation
+**Installation:**
 
 Installing odo can be found at our [installation page](https://odo.dev/docs/installing-odo/).
 
-## Quick Start
+**Quick Start:**
 
 If you haven't used odo yet, we recommend going through our [Deploying a devfile using odo guide](https://odo.dev/docs/deploying-a-devfile-using-odo/). 
 
@@ -604,3 +512,28 @@ commands:
 |-------|--------|----------|-----------------------------------|
 | name  | string | yes      | Name of the environment variable  |
 | value | string | yes      | Value of the environment variable |
+
+# Unsupported features
+
+**PLEASE NOTE:** Devfile v2 is still in its early stages and there are some parts of the schema that have not yet been implemented.
+
+Please refer to the below table for a list of features which are *not yet* implemented:
+
+| Key                                | Key Description                           | Status      | Description                                                                                     |
+|------------------------------------|-------------------------------------------|-------------|-------------------------------------------------------------------------------------------------|
+| projects[].github.startPoint       | [githubObject](#githubObject)             | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
+| projects[].git.startPoint          | [gitObject](#gitObject)                   | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
+| projects[].zip                     | [zipObject](#zipobject)                   | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3442 |
+| parent                             | [parentObject](#parent-object)            | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
+| events                             | [eventObject](#event-object)              | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2919                                    |
+| component[].kubernetes             | [kubernetesObject](#kubernetesobject)     | IN PROGRESS |                                                                                                 |
+| component[].openshift              | [openshiftObject](#openshiftobject)       | IN PROGRESS |                                                                                                 |
+| component[].volume                 | [volumeObject](#volumeobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
+| component[].plugin                 | [pluginObject](#pluginobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
+| component[].container.endpoints    | [endpointObject](#endpointobject)         | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
+| component[].container.dedicatedPod | [containerObject](#containerobject)       | UNKNOWN     | In schema but not yet implemented.                                                              |
+| commands[].apply                   | [applyObject](#applyobject)               | UNKNOWN     | In schema but not yet implemented.                                                              |
+| commands[].composite               | [compositeObject](#compositeobject)       | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
+| commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject) | N/A         | Not applicable to odo.                                                                          |
+| commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)     | N/A         | Not applicable to odo.                                                                          |
+
