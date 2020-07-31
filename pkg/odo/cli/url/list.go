@@ -3,23 +3,24 @@ package url
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"text/tabwriter"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/util"
 
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
@@ -41,6 +42,7 @@ var (
 type URLListOptions struct {
 	componentContext string
 	*genericclioptions.Context
+	devfilePath string
 }
 
 // NewURLListOptions creates a new URLCreateOptions instance
@@ -50,7 +52,9 @@ func NewURLListOptions() *URLListOptions {
 
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	o.devfilePath = filepath.Join(o.componentContext, component.DevfilePath)
+
+	if util.CheckPathExists(o.devfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
@@ -65,12 +69,12 @@ func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the URLListOptions based on completed values
 func (o *URLListOptions) Validate() (err error) {
-	return util.CheckOutputFlag(o.OutputFlag)
+	return odoutil.CheckOutputFlag(o.OutputFlag)
 }
 
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(o.devfilePath) {
 		if pushtarget.IsPushTargetDocker() {
 			componentName := o.EnvSpecificInfo.GetName()
 			client, err := lclient.New()
@@ -143,9 +147,9 @@ func (o *URLListOptions) Run() (err error) {
 				outOfSync := false
 				for _, u := range urls.Items {
 					if u.Spec.Kind == envinfo.ROUTE {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 					} else {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 					}
 					if u.Status.State != url.StateTypePushed {
 						outOfSync = true
@@ -176,7 +180,7 @@ func (o *URLListOptions) Run() (err error) {
 			// are there changes between local and cluster states?
 			outOfSync := false
 			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", true), "\t", u.Spec.Port, "\t", u.Spec.Secure)
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}

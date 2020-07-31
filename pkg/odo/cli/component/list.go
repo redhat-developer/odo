@@ -27,7 +27,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -51,7 +50,6 @@ type ListOptions struct {
 	hasDCSupport         bool
 	hasDevfileComponents bool
 	hasS2IComponents     bool
-	isExperimentalMode   bool
 	devfilePath          string
 	*genericclioptions.Context
 }
@@ -63,11 +61,10 @@ func NewListOptions() *ListOptions {
 
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	lo.isExperimentalMode = experimental.IsExperimentalModeEnabled()
+
 	lo.devfilePath = filepath.Join(lo.componentContext, DevfilePath)
-	if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
-		// Add a disclaimer that we are in *experimental mode*
-		log.Experimental("Experimental mode is enabled, use at your own risk")
+
+	if util.CheckPathExists(lo.devfilePath) {
 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
 		lo.Client = genericclioptions.Client(cmd)
@@ -113,7 +110,7 @@ func (lo *ListOptions) Validate() (err error) {
 		klog.V(4).Infof("either --app and --all-apps both provided or provided --all-apps in a folder has app, use --all-apps anyway")
 	}
 
-	if lo.isExperimentalMode {
+	if util.CheckPathExists(lo.devfilePath) {
 		if lo.Context.Application == "" && lo.Context.KClient.Namespace == "" {
 			return odoutil.ThrowContextError()
 		}
@@ -144,7 +141,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	if len(lo.pathFlag) != 0 {
 
-		if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
+		if util.CheckPathExists(lo.devfilePath) {
 			log.Experimental("--path flag is not supported for devfile components")
 		}
 		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
@@ -176,7 +173,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	// experimental workflow
 
-	if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
+	if util.CheckPathExists(lo.devfilePath) {
 
 		var deploymentList *appsv1.DeploymentList
 		var err error

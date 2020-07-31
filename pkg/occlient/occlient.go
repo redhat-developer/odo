@@ -22,7 +22,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
@@ -751,11 +750,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 			}
 		}
 		if e != nil && err != nil {
-			// Imagestream not found in openshift and current namespaces
-			if experimental.IsExperimentalModeEnabled() {
-				return nil, fmt.Errorf("component type %q not found", imageName)
-			}
-			return nil, err
+			return nil, fmt.Errorf("component type %q not found", imageName)
 		}
 
 		// Required tag not in openshift and current namespaces

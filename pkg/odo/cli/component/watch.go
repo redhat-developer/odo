@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
@@ -14,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -38,10 +38,6 @@ var watchExampleWithDevfile = ktemplates.Examples(`  # Watch for changes in dire
 
 # Watch source code changes with custom devfile commands using --build-command and --run-command for experimental mode
 %[1]s --build-command="mybuild" --run-command="myrun"
-  `)
-
-var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
-%[1]s
   `)
 
 // WatchOptions contains attributes of the watch command
@@ -78,7 +74,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	wo.devfilePath = filepath.Join(wo.componentContext, DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+	if util.CheckPathExists(wo.devfilePath) {
 		wo.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Set the source path to either the context or current working directory (if context not set)
@@ -157,7 +153,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	}
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+	if util.CheckPathExists(wo.devfilePath) {
 		exists, err := wo.devfileHandler.DoesComponentExist(wo.componentName)
 		if err != nil {
 			return err
@@ -199,7 +195,7 @@ func (wo *WatchOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (wo *WatchOptions) Run() (err error) {
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+	if util.CheckPathExists(wo.devfilePath) {
 
 		err = watch.DevfileWatchAndPush(
 			os.Stdout,
@@ -249,12 +245,10 @@ func (wo *WatchOptions) Run() (err error) {
 func NewCmdWatch(name, fullName string) *cobra.Command {
 	wo := NewWatchOptions()
 
-	example := fmt.Sprintf(watchExample, fullName)
 	usage := name
 
-	if experimental.IsExperimentalModeEnabled() {
-		example = fmt.Sprintf(watchExampleWithDevfile, fullName)
-	}
+	// Add information on Devfile
+	example := fmt.Sprintf(watchExampleWithDevfile, fullName)
 
 	var watchCmd = &cobra.Command{
 		Use:         usage,
@@ -274,12 +268,9 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		watchCmd.Flags().StringVar(&wo.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
-		watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
-		watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
-	}
+	watchCmd.Flags().StringVar(&wo.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
+	watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
+	watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
 
 	// Adding context flag
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)
