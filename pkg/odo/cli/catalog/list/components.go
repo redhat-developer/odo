@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -47,7 +48,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 		o.Context = genericclioptions.NewContext(cmd)
 		supported, err := o.Client.IsImageStreamSupported()
 		if err != nil {
-			return err
+			klog.V(4).Info("ignoring error while checking imagestream support:", err.Error())
 		}
 
 		if supported {
