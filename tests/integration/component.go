@@ -192,8 +192,8 @@ func componentTests(args ...string) {
 		})
 
 		It("should list the component", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
-			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing", "MaxMemory,300Mi")
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing")
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", project)...)
@@ -207,15 +207,15 @@ func componentTests(args ...string) {
 		})
 
 		It("should list the component when it is not pushed", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
-			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing", "MinCPU,100m")
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing")
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
 			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "Not Pushed"})
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 		It("should list the state as unknown for disconnected cluster", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
-			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing", "MinCPU,100m")
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing")
 			kubeconfigOrig := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context, "--v", "9")...)
@@ -602,12 +602,8 @@ func componentTests(args ...string) {
 
 		It("should be able to create a git component and update it from local to git", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
-			getCPULimit := oc.MaxCPU("cmp-git", "testing", project)
-			Expect(getCPULimit).To(ContainSubstring("2"))
-			getCPURequest := oc.MinCPU("cmp-git", "testing", project)
-			Expect(getCPURequest).To(ContainSubstring("100m"))
 
 			helper.CmdShouldPass("odo", "update", "--git", "https://github.com/openshift/nodejs-ex.git", "--context", context)
 			// check the source location and type in the deployment config
@@ -618,22 +614,13 @@ func componentTests(args ...string) {
 		})
 
 		It("should be able to update a component from git to local", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
-			getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-			getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
-			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
 
 			// update the component config according to the git component
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
 			helper.CmdShouldPass("odo", "update", "--local", "./", "--context", context)
-
-			getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-			getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
-			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
 
 			// check the source location and type in the deployment config
 			getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
@@ -761,20 +748,6 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", contextNumeric, "--app", "testing")...)
 			helper.ValidateLocalCmpExist(contextNumeric, "Type,nodejs", "Application,testing")
 			helper.CmdShouldPass("odo", append(args, "push", "--context", contextNumeric, "-v4")...)
-		})
-	})
-
-	Context("when creating component with improper memory quantities", func() {
-		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-		})
-		It("should fail gracefully with proper error message", func() {
-			stdError := helper.CmdShouldFail("odo", append(args, "create", "java:8", "backend", "--memory", "1GB", "--project", project, "--context", context)...)
-			Expect(stdError).ToNot(ContainSubstring("panic: cannot parse"))
-			Expect(stdError).To(ContainSubstring("quantities must match the regular expression"))
 		})
 	})
 
