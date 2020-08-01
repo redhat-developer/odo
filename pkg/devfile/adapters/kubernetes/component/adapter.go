@@ -32,7 +32,8 @@ import (
 // New instantiantes a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	adapter := Adapter{Client: client}
-	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext, adapter.ComponentInfo, adapter.SupervisorComponentInfo)
+	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
+	adapter.GenericAdapter.InitWith(adapter)
 	return adapter
 }
 
@@ -77,7 +78,7 @@ func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
 	Client kclient.Client
-	common.GenericAdapter
+	*common.GenericAdapter
 
 	devfileInitCmd   string
 	devfileBuildCmd  string

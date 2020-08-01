@@ -24,14 +24,17 @@ type GenericAdapter struct {
 }
 
 // NewGenericAdapter creates a new GenericAdapter instance based on the provided parameters
-func NewGenericAdapter(client ExecClient, context AdapterContext, ciFactory ComponentInfoFactory, supervisorFactory ComponentInfoFactory) GenericAdapter {
-	return GenericAdapter{
-		AdapterContext:           context,
-		client:                   client,
-		logger:                   machineoutput.NewMachineEventLoggingClient(),
-		componentInfo:            ciFactory,
-		supervisordComponentInfo: supervisorFactory,
+func NewGenericAdapter(client ExecClient, context AdapterContext) *GenericAdapter {
+	return &GenericAdapter{
+		AdapterContext: context,
+		client:         client,
+		logger:         machineoutput.NewMachineEventLoggingClient(),
 	}
+}
+
+func (a *GenericAdapter) InitWith(executor commandExecutor) {
+	a.componentInfo = executor.ComponentInfo
+	a.supervisordComponentInfo = executor.SupervisorComponentInfo
 }
 
 func (a GenericAdapter) ExecCMDInContainer(info ComponentInfo, cmd []string, stdOut io.Writer, stdErr io.Writer, stdIn io.Reader, show bool) error {

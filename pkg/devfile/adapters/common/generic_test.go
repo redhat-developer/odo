@@ -228,7 +228,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 	}
 }
 
-func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif func(command common.DevfileCommand) (ComponentInfo, error)) GenericAdapter {
+func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif func(command common.DevfileCommand) (ComponentInfo, error)) *GenericAdapter {
 	devObj := devfileParser.DevfileObj{
 		Data: testingutil.TestDevfileData{
 			Commands: commands,
@@ -237,7 +237,11 @@ func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif fu
 	ctx := AdapterContext{
 		Devfile: devObj,
 	}
-	return NewGenericAdapter(fakeExecClient, ctx, cif, cif)
+	a := NewGenericAdapter(fakeExecClient, ctx)
+	a.supervisordComponentInfo = cif
+	a.componentInfo = cif
+	a.InitWith(a)
+	return a
 }
 
 func createFrom(composite common.Composite) common.DevfileCommand {
