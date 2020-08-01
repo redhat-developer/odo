@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -57,10 +56,9 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 // GetRunningPodNameByComponent executes kubectl command and returns the running pod name of a delopyed
 // devfile component by passing component name as a argument
 func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
-	stdOut := CmdShouldPass(kubectl.path, "get", "pods", "--namespace", namespace, "--show-labels")
-	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*component=` + compName)
-	podName := re.FindStringSubmatch(stdOut)[1]
-	return strings.TrimSpace(podName)
+	selector := fmt.Sprintf("--selector=component=%s", compName)
+	stdOut := CmdShouldPass(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}")
+	return strings.TrimSpace(stdOut)
 }
 
 // GetPVCSize executes kubectl command and returns the bound storage size
