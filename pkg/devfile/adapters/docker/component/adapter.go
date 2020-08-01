@@ -78,7 +78,7 @@ func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) 
 			}, nil
 		}
 	}
-	return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord container for odo component %s", a.ComponentName)
+	return common.ComponentInfo{}, errors.Errorf("couldn't find supervisord container for odo component %s", a.ComponentName)
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
