@@ -240,7 +240,6 @@ func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif fu
 	a := NewGenericAdapter(fakeExecClient, ctx)
 	a.supervisordComponentInfo = cif
 	a.componentInfo = cif
-	a.InitWith(a)
 	return a
 }
 
