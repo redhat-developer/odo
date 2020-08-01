@@ -23,7 +23,8 @@ type GenericAdapter struct {
 	supervisordComponentInfo ComponentInfoFactory
 }
 
-// NewGenericAdapter creates a new GenericAdapter instance based on the provided parameters
+// NewGenericAdapter creates a new GenericAdapter instance based on the provided parameters. Client code must call InitWith on
+// the newly created instance to finish the setup, providing the child implementation as parameter
 func NewGenericAdapter(client ExecClient, context AdapterContext) *GenericAdapter {
 	return &GenericAdapter{
 		AdapterContext: context,
@@ -32,6 +33,8 @@ func NewGenericAdapter(client ExecClient, context AdapterContext) *GenericAdapte
 	}
 }
 
+// InitWith finishes the GenericAdapter setup after the rest of the adapter is created. This must be called before the adapter
+// implementation is used and the specific implementation must be passed as parameter.
 func (a *GenericAdapter) InitWith(executor commandExecutor) {
 	a.componentInfo = executor.ComponentInfo
 	a.supervisordComponentInfo = executor.SupervisorComponentInfo
