@@ -140,13 +140,11 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		if !componentExists && !info.IsEmpty() {
 			// Check if the devfile run component containers have supervisord as the entrypoint.
 			// Start the supervisord if the odo component does not exist
-			if !componentExists {
-				cmd, err := newSupervisorCommand([]string{"-c", SupervisordConfFile, "-d"}, info, a)
-				if err != nil {
-					return err
-				}
-				commands = append(commands, cmd)
+			cmd, err := newSupervisorCommand([]string{"-c", SupervisordConfFile, "-d"}, info, a)
+			if err != nil {
+				return err
 			}
+			commands = append(commands, cmd)
 		}
 
 		// if we need to restart, issue supervisor command to stop all running commands first
