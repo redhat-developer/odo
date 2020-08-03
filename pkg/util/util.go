@@ -726,6 +726,8 @@ func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
 		},
 		Timeout: HTTPRequestTimeout,
 	}
+	klog.V(4).Infof("HTTPGetRequest on  %s", req.URL.String())
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
