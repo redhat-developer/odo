@@ -1146,7 +1146,7 @@ func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
 	return nil
 }
 
-func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) (project *common.DevfileStarterProject) {
+func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) *common.DevfileStarterProject {
 	projectName := ui.SelectStarterProject(projects)
 
 	// if user do not wish to download starter project or there are no projects in devfile, project name would be empty
@@ -1154,14 +1154,16 @@ func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) (
 		return nil
 	}
 
+	var project common.DevfileStarterProject
+
 	for _, value := range projects {
 		if value.Name == projectName {
-			project = &value
+			project = value
 			break
 		}
 	}
 
-	return project
+	return &project
 }
 
 func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectPassed string) (project *common.DevfileStarterProject, err error) {
