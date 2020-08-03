@@ -127,20 +127,9 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 	}
 
 	if command, ok := commandsMap[group]; ok {
-
-		if command.Exec == nil {
-			return fmt.Errorf("cannot execute composite supervisord commands")
-		}
-		info, err := a.SupervisorComponentInfo(command)
-		if err != nil {
-			a.Logger().ReportError(err, machineoutput.TimestampNow())
-			return err
-		}
-
-		if !componentExists && !info.IsEmpty() {
-			// Check if the devfile run component containers have supervisord as the entrypoint.
-			// Start the supervisord if the odo component does not exist
-			cmd, err := newSupervisorCommand([]string{"-c", SupervisordConfFile, "-d"}, info, a)
+		// if the component doesn't exist, initialize the supervisor if needed
+		if !componentExists {
+			cmd, err := newSupervisorInitCommand(command, a)
 			if err != nil {
 				return err
 			}
@@ -148,9 +137,9 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		}
 
 		// if we need to restart, issue supervisor command to stop all running commands first
-		if IsRestartRequired(command) {
+		if componentExists && IsRestartRequired(command) {
 			klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
-			cmd, err := newSupervisorCommand([]string{SupervisordCtlSubCommand, "stop", "all"}, info, a)
+			cmd, err := newSupervisorStopCommand(command, a)
 			if err != nil {
 				return err
 			}
@@ -161,7 +150,7 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 
 		// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
 		// if the command is failed or not running supervisord would start it.
-		cmd, err := newSupervisorCommand([]string{SupervisordCtlSubCommand, "start", defaultCmd}, info, a)
+		cmd, err := newSupervisorStartCommand(command, defaultCmd, a)
 		if err != nil {
 			return err
 		}
@@ -171,7 +160,7 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		return c.Execute(params.Show)
 	}
 
-	return
+	return nil
 }
 
 func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType common.DevfileCommandGroupType, devfileCommandMap map[string]common.DevfileCommand, commands []command) ([]command, error) {
