@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
@@ -166,10 +165,10 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	buildParams := common.BuildParameters{
 		Path:                     do.sourcePath,
 		Tag:                      do.tag,
-		DockerConfigJSONFilename: do.dockerConfigJSONFilename,
 		DockerfileBytes:          do.DockerfileBytes,
-		Rootless:                 do.Rootless,
 		EnvSpecificInfo:          *do.EnvSpecificInfo,
+		DockerConfigJSONFilename: do.dockerConfigJSONFilename,
+		Rootless:                 do.rootless,
 	}
 
 	log.Infof("\nBuilding component %s", componentName)
@@ -183,8 +182,6 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		)
 		os.Exit(1)
 	}
-
-	time.Sleep(5 * time.Second)
 
 	deployParams := common.DeployParameters{
 		EnvSpecificInfo: *do.EnvSpecificInfo,

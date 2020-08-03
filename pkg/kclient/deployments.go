@@ -53,7 +53,7 @@ func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
 func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
 	klog.V(4).Infof("Waiting for %s deployment rollout", deploymentName)
-	s := log.Spinner("Waiting for component to start in WaitForDeploymentRollout")
+	s := log.Spinner("Waiting for component to start")
 	defer s.End(false)
 
 	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})

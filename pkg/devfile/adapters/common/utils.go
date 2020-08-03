@@ -82,9 +82,6 @@ const (
 	// ShellExecutable is the shell executable
 	ShellExecutable = "/bin/sh"
 
-	// BusyboxExecutable is the buysbox executable
-	BusyboxExecutable = "/busybox/sh"
-
 	// SupervisordCtlSubCommand is the supervisord sub command ctl
 	SupervisordCtlSubCommand = "ctl"
 )

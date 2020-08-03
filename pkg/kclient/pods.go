@@ -85,6 +85,63 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 	}
 }
 
+// WaitAndGetPodOnInitContainerStarted blocks and waits until the named initiContainer is started.
+func (c *Client) WaitAndGetPodOnInitContainerStarted(watchOptions metav1.ListOptions, initContainerName, waitMessage string, hideSpinner bool) (*corev1.Pod, error) {
+	klog.V(4).Infof("Waiting for %s pod init container %s to start", watchOptions.LabelSelector, initContainerName)
+	var s *log.Status
+	if !hideSpinner {
+		s = log.Spinner(waitMessage)
+		defer s.End(false)
+	}
+
+	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(watchOptions)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch pod")
+	}
+	defer w.Stop()
+
+	podChannel := make(chan *corev1.Pod)
+	watchErrorChannel := make(chan error)
+
+	go func() {
+		defer close(podChannel)
+		defer close(watchErrorChannel)
+
+		for {
+			val, ok := <-w.ResultChan()
+			if !ok {
+				watchErrorChannel <- errors.New("watch channel was closed")
+				return
+			}
+			if e, ok := val.Object.(*corev1.Pod); ok {
+				for _, v := range e.Status.InitContainerStatuses {
+					if v.Name == initContainerName && v.State.Running != nil {
+						if !hideSpinner {
+							s.End(true)
+						}
+						klog.V(4).Infof("InitiContainer %s started at %v", v.Name, v.State.Running.StartedAt)
+						podChannel <- e
+						return
+					}
+				}
+			} else {
+				watchErrorChannel <- errors.New("unable to convert event object to Pod")
+				return
+			}
+		}
+	}()
+
+	select {
+	case val := <-podChannel:
+		return val, nil
+	case err := <-watchErrorChannel:
+		return nil, err
+	case <-time.After(waitForPodTimeOut):
+		return nil, errors.Errorf("waited %s but couldn't find running pod matching selector: '%s' with started initContainer: '%s'",
+			waitForPodTimeOut, watchOptions.LabelSelector, initContainerName)
+	}
+}
+
 // ExecCMDInContainer execute command in the container of a pod, pass an empty string for containerName to execute in the first container of the pod
 func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	podExecOptions := corev1.PodExecOptions{
