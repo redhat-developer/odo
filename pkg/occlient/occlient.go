@@ -99,9 +99,6 @@ const (
 	OpenShiftNameSpace              = "openshift"
 	waitForComponentDeletionTimeout = 120 * time.Second
 
-	// timeout for getting the default service account
-	getDefaultServiceAccTimeout = 1 * time.Minute
-
 	// timeout for waiting for project deletion
 	waitForProjectDeletionTimeOut = 3 * time.Minute
 
@@ -488,20 +485,6 @@ func (c *Client) GetProjectNames() ([]string, error) {
 	return projectNames, nil
 }
 
-// GetNamespaces return list of existing namespaces that user has access to.
-func (c *Client) GetNamespaces() ([]string, error) {
-	namespaces, err := c.kubeClient.CoreV1().Namespaces().List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list namespaces")
-	}
-
-	var names []string
-	for _, p := range namespaces.Items {
-		names = append(names, p.Name)
-	}
-	return names, nil
-}
-
 // GetProject returns project based on the name of the project.Errors related to
 // project not being found or forbidden are translated to nil project for compatibility
 func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
@@ -519,26 +502,6 @@ func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
 
 	}
 	return prj, err
-
-}
-
-// GetNamespace returns Namespace based on the name of the project.
-//Errors related to project not being found or forbidden are translated to nil project for compatibility
-func (c *Client) GetNamespace(name string) (*corev1.Namespace, error) {
-	ns, err := c.kubeClient.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
-	if err != nil {
-		istatus, ok := err.(kerrors.APIStatus)
-		if ok {
-			status := istatus.Status()
-			if status.Reason == metav1.StatusReasonNotFound || status.Reason == metav1.StatusReasonForbidden {
-				return nil, nil
-			}
-		} else {
-			return nil, err
-		}
-
-	}
-	return ns, err
 
 }
 
@@ -592,39 +555,6 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 		}
 	}
 
-	return nil
-}
-
-// WaitForServiceAccountInNamespace waits for the given service account to be ready
-func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error {
-	if namespace == "" || serviceAccountName == "" {
-		return errors.New("namespace and serviceAccountName cannot be empty")
-	}
-	watcher, err := c.kubeClient.CoreV1().ServiceAccounts(namespace).Watch(metav1.SingleObject(metav1.ObjectMeta{Name: serviceAccountName}))
-	if err != nil {
-		return err
-	}
-
-	timeout := time.After(getDefaultServiceAccTimeout)
-	if watcher != nil {
-		defer watcher.Stop()
-		for {
-			select {
-			case val, ok := <-watcher.ResultChan():
-				if !ok {
-					break
-				}
-				if serviceAccount, ok := val.Object.(*corev1.ServiceAccount); ok {
-					if serviceAccount.Name == serviceAccountName {
-						klog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
-						return nil
-					}
-				}
-			case <-timeout:
-				return errors.New("Timed out waiting for service to be ready")
-			}
-		}
-	}
 	return nil
 }
 

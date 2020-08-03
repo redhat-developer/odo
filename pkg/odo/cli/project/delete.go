@@ -56,7 +56,7 @@ func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args 
 // Validate validates the parameters of the ProjectDeleteOptions
 func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	// Validate existence of the project to be deleted
-	isValidProject, err := project.Exists(pdo.Context.Client, pdo.projectName)
+	isValidProject, err := project.Exists(pdo.Context, pdo.projectName)
 	if !isValidProject {
 		return fmt.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
 	}
@@ -70,7 +70,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 	s := &log.Status{}
 
 	// This to set the project in the file and runtime
-	err = project.SetCurrent(pdo.Context.Client, pdo.projectName)
+	err = project.SetCurrent(pdo.Context, pdo.projectName)
 	if err != nil {
 		return
 	}
@@ -78,7 +78,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 	// Prints out what will be deleted
 	// This function doesn't support devfile components.
 	// TODO: fix this once we have proper abstraction layer on top of devfile components
-	//err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
+	//err = printDeleteProjectInfo(pdo.Context, pdo.projectName)
 	//if err != nil {
 	//	return err
 	//}
@@ -92,7 +92,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 			defer s.End(false)
 		}
 
-		err := project.Delete(pdo.Context.Client, pdo.projectName, pdo.wait)
+		err := project.Delete(pdo.Context, pdo.projectName, pdo.wait)
 		if err != nil {
 			return err
 		}
