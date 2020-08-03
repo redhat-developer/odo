@@ -243,7 +243,10 @@ func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
 				Path: path,
 			})
 		} else if component.Volume != nil && component.Volume.Name == volume.Name {
-			return fmt.Errorf("volume %s already exists", volume.Name)
+			return &common.AlreadyExistError{
+				Field: "volume",
+				Name:  volume.Name,
+			}
 		}
 	}
 
@@ -275,7 +278,10 @@ func (d *Devfile200) DeleteVolume(name string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("volume %s is not found", name)
+		return &common.NotFoundError{
+			Field: "volume",
+			Name:  name,
+		}
 	}
 
 	return nil
@@ -301,8 +307,11 @@ func (d *Devfile200) GetVolumeMountPath(name string) (string, error) {
 	}
 	if volumeFound && mountFound {
 		return path, nil
-	} else if !mountFound {
+	} else if !mountFound && volumeFound {
 		return "", fmt.Errorf("volume not mounted to any component")
 	}
-	return "", fmt.Errorf("volume not found")
+	return "", &common.NotFoundError{
+		Field: "volume",
+		Name:  "name",
+	}
 }
