@@ -56,9 +56,13 @@ func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 // Validate validates the ServiceDeleteOptions based on completed values
 func (o *ServiceDeleteOptions) Validate() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		_, err := svc.OperatorSvcExists(o.KClient, o.serviceName)
+		svcExists, err := svc.OperatorSvcExists(o.KClient, o.serviceName)
 		if err != nil {
 			return err
+		}
+
+		if !svcExists {
+			return fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", o.serviceName, "odo service list")
 		}
 		return nil
 	}

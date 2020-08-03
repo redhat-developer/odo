@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -191,17 +190,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	// Determine which folder we need to sync to
-	var syncFolder string
-	if compInfo.SourceMount != kclient.OdoSourceVolumeMount {
-		syncFolder = compInfo.SourceMount
-	} else {
-		// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-		syncFolder, err = getSyncFolder(a.Devfile.Data.GetProjects())
-		if err != nil {
-			return errors.Wrapf(err, "unable to determine sync folder")
-		}
-	}
+	syncFolder := compInfo.SourceMount
 
 	if syncFolder != kclient.OdoSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
@@ -242,31 +231,6 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s.End(true)
 
 	return nil
-}
-
-// getSyncFolder returns the folder that we need to sync the source files to
-// If there's exactly one project defined in the devfile, and clonePath isn't set return `/projects/<projectName>`
-// If there's exactly one project, and clonePath is set, return `/projects/<clonePath>`
-// If the clonePath is an absolute path or contains '..', return an error
-// Otherwise (zero projects or many), return `/projects`
-func getSyncFolder(projects []versionsCommon.DevfileProject) (string, error) {
-	if len(projects) == 1 {
-		project := projects[0]
-		// If the clonepath is set to a value, set it to be the sync folder
-		// As some devfiles rely on the code being synced to the folder in the clonepath
-		if project.ClonePath != "" {
-			if strings.HasPrefix(project.ClonePath, "/") {
-				return "", fmt.Errorf("the clonePath in the devfile must be a relative path")
-			}
-			if strings.Contains(project.ClonePath, "..") {
-				return "", fmt.Errorf("the clonePath in the devfile cannot escape the projects root. Don't use .. to try and do that")
-			}
-			return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, project.ClonePath)), nil
-		}
-		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)), nil
-	}
-	return kclient.OdoSourceVolumeMount, nil
-
 }
 
 // getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container
