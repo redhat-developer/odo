@@ -129,32 +129,35 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 	if command, ok := commandsMap[group]; ok {
 		// if the component doesn't exist, initialize the supervisor if needed
 		if !componentExists {
-			cmd, err := newSupervisorInitCommand(command, a)
-			if err != nil {
-				return err
+			if cmd, err := newSupervisorInitCommand(command, a); cmd != nil {
+				if err != nil {
+					return err
+				}
+				commands = append(commands, cmd)
 			}
-			commands = append(commands, cmd)
 		}
 
 		// if we need to restart, issue supervisor command to stop all running commands first
 		if componentExists && IsRestartRequired(command) {
 			klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
-			cmd, err := newSupervisorStopCommand(command, a)
-			if err != nil {
-				return err
+			if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
+				if err != nil {
+					return err
+				}
+				commands = append(commands, cmd)
 			}
-			commands = append(commands, cmd)
 		} else {
 			klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
 		}
 
 		// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
 		// if the command is failed or not running supervisord would start it.
-		cmd, err := newSupervisorStartCommand(command, defaultCmd, a)
-		if err != nil {
-			return err
+		if cmd, err := newSupervisorStartCommand(command, defaultCmd, a); cmd != nil {
+			if err != nil {
+				return err
+			}
+			commands = append(commands, cmd)
 		}
-		commands = append(commands, cmd)
 
 		c := newCompositeCommand(commands...)
 		return c.Execute(params.Show)
