@@ -296,7 +296,7 @@ func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) 
 				return nil, nil, err
 			}
 			portmap[port] = []nat.PortBinding{
-				nat.PortBinding{
+				{
 					HostIP:   LocalhostIP,
 					HostPort: strconv.Itoa(url.ExposedPort),
 				},
@@ -319,7 +319,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
-		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
+		return errors.New("error executing devfile commands - there should be at least 1 command")
 	}
 
 	// Only add runinit to the expected commands if the component doesn't already exist

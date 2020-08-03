@@ -396,7 +396,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
-		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
+		return errors.New("error executing devfile commands - there should be at least 1 command")
 	}
 
 	compInfo := common.ComponentInfo{
