@@ -22,7 +22,7 @@ commands:
       id: devrun
       component: runtime
       commandLine: "npm install && npm start"
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
