@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	imagev1 "github.com/openshift/api/image/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/library-go/pkg/apps/appsutil"
 	"github.com/openshift/odo/pkg/config"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 )
 
