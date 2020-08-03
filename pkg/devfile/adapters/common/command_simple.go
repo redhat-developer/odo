@@ -16,6 +16,7 @@ type simpleCommand struct {
 	component   string
 	originalCmd string
 	group       string
+	msg         string
 }
 
 func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
@@ -41,26 +42,32 @@ func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (
 		cmd = []string{ShellExecutable, "-c", cmdLine}
 	}
 
+	return newOverridenSimpleCommand(command, executor, cmd)
+}
+
+func newOverridenSimpleCommand(command common.DevfileCommand, executor commandExecutor, cmd []string) (*simpleCommand, error) {
 	// create the component info associated with the command
 	info, err := executor.ComponentInfo(command)
 	if err != nil {
 		return nil, err
 	}
 
-	return simpleCommand{
+	id := command.GetID()
+	originalCmd := command.Exec.CommandLine
+	return &simpleCommand{
 		info:        info,
 		adapter:     executor,
 		cmd:         cmd,
-		id:          command.GetID(),
-		component:   exe.Component,
-		originalCmd: exe.CommandLine,
-		group:       convertGroupKindToString(exe),
+		id:          id,
+		component:   command.Exec.Component,
+		originalCmd: originalCmd,
+		group:       convertGroupKindToString(command.Exec),
+		msg:         fmt.Sprintf("Executing %s command %q, if not running", id, originalCmd),
 	}, nil
 }
 
 func (s simpleCommand) Execute(show bool) error {
-	msg := fmt.Sprintf("Executing %s command %q, if not running", s.id, s.originalCmd)
-	spinner := log.ExplicitSpinner(msg, show)
+	spinner := log.ExplicitSpinner(s.msg, show)
 	defer spinner.End(false)
 
 	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
