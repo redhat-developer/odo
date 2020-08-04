@@ -29,7 +29,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// New instantiantes a component adapter
+// New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	adapter := Adapter{Client: client}
 	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
@@ -37,6 +37,7 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	return adapter
 }
 
+// getPod lazily records and retrieves the pod associated with the component associated with this adapter
 func (a Adapter) getPod() (*corev1.Pod, error) {
 	if a.pod == nil {
 		pod, err := waitAndGetPod(true, a.ComponentName, a.Client)

@@ -6,12 +6,15 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 )
 
+// supervisorCommand encapsulates a supervisor-specific command
 type supervisorCommand struct {
 	adapter commandExecutor
 	cmd     []string
 	info    ComponentInfo
 }
 
+// newSupervisorInitCommand creates a command that initializes the supervisor for the specified devfile if needed
+// nil is returned if no devfile-specified container needing supervisor initialization is found
 func newSupervisorInitCommand(command common.DevfileCommand, adapter commandExecutor) (command, error) {
 	cmd := []string{SupervisordBinaryPath, "-c", SupervisordConfFile, "-d"}
 	info, err := adapter.SupervisorComponentInfo(command)
@@ -29,6 +32,7 @@ func newSupervisorInitCommand(command common.DevfileCommand, adapter commandExec
 	return nil, nil
 }
 
+// newSupervisorStopCommand creates a command implementation that stops the specified command via the supervisor
 func newSupervisorStopCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
 	cmd := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "stop", "all"}
 	if stop, err := newOverridenSimpleCommand(command, executor, cmd); err == nil {
@@ -40,6 +44,7 @@ func newSupervisorStopCommand(command common.DevfileCommand, executor commandExe
 	}
 }
 
+// newSupervisorStartCommand creates a command implementation that starts the specified command via the supervisor
 func newSupervisorStartCommand(command common.DevfileCommand, cmd string, adapter commandExecutor) (command, error) {
 	cmdLine := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "start", cmd}
 	return newOverridenSimpleCommand(command, adapter, cmdLine)

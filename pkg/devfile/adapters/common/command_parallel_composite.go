@@ -5,12 +5,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+// newParallelCompositeCommand creates a new command implementation which will execute the provided commands in parallel
 func newParallelCompositeCommand(cmds ...command) command {
 	return parallelCompositeCommand{
 		cmds: cmds,
 	}
 }
 
+// parallelCompositeCommand is a command implementation that represents parallel composite commands
 type parallelCompositeCommand struct {
 	cmds []command
 }

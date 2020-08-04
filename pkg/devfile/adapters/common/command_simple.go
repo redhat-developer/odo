@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// simpleCommand is a command implementation for non-composite commands
 type simpleCommand struct {
 	info        ComponentInfo
 	adapter     commandExecutor
@@ -19,6 +20,7 @@ type simpleCommand struct {
 	msg         string
 }
 
+// newSimpleCommand creates a new simpleCommand instance
 func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
 	exe := command.Exec
 
@@ -45,6 +47,8 @@ func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (
 	return newOverridenSimpleCommand(command, executor, cmd)
 }
 
+// newOverridenSimpleCommand creates a new simpleCommand albeit overriding the command specified in the devfile with the specified one
+// returning a pointer to the newly created instance so that clients can further modify it if needed
 func newOverridenSimpleCommand(command common.DevfileCommand, executor commandExecutor, cmd []string) (*simpleCommand, error) {
 	// create the component info associated with the command
 	info, err := executor.ComponentInfo(command)

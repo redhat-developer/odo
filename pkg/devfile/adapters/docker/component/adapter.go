@@ -45,6 +45,7 @@ type Adapter struct {
 	containers                []types.Container
 }
 
+// getPod lazily records and retrieves the containers associated with the component associated with this adapter
 func (a *Adapter) getContainers() ([]types.Container, error) {
 	if a.containers == nil {
 		containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
