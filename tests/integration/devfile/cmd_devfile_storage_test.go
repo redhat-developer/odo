@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"github.com/openshift/odo/tests/helper"
 	"os"
 	"path/filepath"
@@ -27,6 +28,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 		helper.Chdir(context)
 
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+
+		// Devfile push requires experimental mode to be set
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
@@ -123,6 +127,17 @@ var _ = Describe("odo devfile storage command tests", func() {
 			Expect(len(PVCs)).To(Equal(1))
 		})
 
+		It("should create and output in json format", func() {
+			args := []string{"create", "nodejs", cmpName, "--context", context}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			actualJSONStorage := helper.CmdShouldPass("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", context, "-o", "json")
+			desiredJSONStorage := `{"kind":"storage","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"}}`
+			Expect(desiredJSONStorage).Should(MatchJSON(actualJSONStorage))
+		})
 	})
 
 	Context("When devfile storage delete command is executed", func() {
@@ -168,6 +183,20 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			pvcNames := cliRunner.GetAllPVCNames(namespace)
 			Expect(len(pvcNames)).To(Equal(0))
+		})
+
+		It("should delete the storage and output in json format", func() {
+			args := []string{"create", "nodejs", cmpName, "--context", context}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "storage", "create", "store-1", "--path", "/path", "--size", "1Gi", "--context", context)
+
+			actualJSONStorage := helper.CmdShouldPass("odo", "storage", "delete", "store-1", "-f", "--context", context, "-o", "json")
+			desiredJSONStorage := fmt.Sprintf(`{"kind": "storage","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "store-1","creationTimestamp": null},"message": "Deleted storage store-1 from %s"}`, cmpName)
+			Expect(desiredJSONStorage).Should(MatchJSON(actualJSONStorage))
 		})
 	})
 

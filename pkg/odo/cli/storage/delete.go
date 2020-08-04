@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/openshift/odo/pkg/devfile"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/log"
@@ -92,7 +93,7 @@ func (o *StorageDeleteOptions) Run() (err error) {
 
 	deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.componentName)
 
-	if o.storageForceDeleteFlag || ui.Proceed(deleteMsg) {
+	if log.IsJSON() || o.storageForceDeleteFlag || ui.Proceed(deleteMsg) {
 		if o.isDevfile {
 			err = devFile.Data.DeleteVolume(o.storageName)
 			if err != nil {
@@ -109,8 +110,14 @@ func (o *StorageDeleteOptions) Run() (err error) {
 			}
 		}
 
-		log.Infof("Deleted storage %v from %v", o.storageName, o.componentName)
-		log.Italic("\nPlease use `odo push` command to delete the storage from the cluster")
+		successMessage := fmt.Sprintf("Deleted storage %v from %v", o.storageName, o.componentName)
+
+		if log.IsJSON() {
+			storage.MachineReadableSuccessOutput(o.storageName, successMessage)
+		} else {
+			log.Infof(successMessage)
+			log.Italic("\nPlease use `odo push` command to delete the storage from the cluster")
+		}
 	} else {
 		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)
 	}
@@ -122,11 +129,12 @@ func (o *StorageDeleteOptions) Run() (err error) {
 func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 	o := NewStorageDeleteOptions()
 	storageDeleteCmd := &cobra.Command{
-		Use:     name,
-		Short:   storageDeleteShortDesc,
-		Long:    storageDeleteLongDesc,
-		Example: fmt.Sprintf(storageDeleteExample, fullName),
-		Args:    cobra.ExactArgs(1),
+		Use:         name,
+		Short:       storageDeleteShortDesc,
+		Long:        storageDeleteLongDesc,
+		Example:     fmt.Sprintf(storageDeleteExample, fullName),
+		Args:        cobra.ExactArgs(1),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
