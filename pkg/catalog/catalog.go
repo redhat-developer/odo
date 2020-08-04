@@ -115,7 +115,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 		}
 		request.Token = token
 	}
-	jsonBytes, err := util.HTTPGetRequest(request)
+	jsonBytes, err := util.HTTPGetRequest(request, true)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}

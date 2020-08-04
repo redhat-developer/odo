@@ -30,6 +30,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
+	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache/diskcache"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -38,13 +40,16 @@ import (
 	"k8s.io/klog"
 )
 
-// HTTPRequestTimeout configures timeout of all HTTP requests
 const (
 	HTTPRequestTimeout    = 30 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
 	ResponseHeaderTimeout = 30 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
 	ModeReadWriteFile     = 0600             // default Permission for a file
 	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
+	httpCacheTime         = 15 * time.Minute // httpCacheTime configures for how long odo will keep HTTP responses in cache
 )
+
+// httpCacheDir determies directory where odo will cache HTTP respones
+var httpCacheDir = filepath.Join(os.TempDir(), "odohttpcache")
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
@@ -708,7 +713,7 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 }
 
 // HTTPGetRequest gets resource contents given URL and token (if applicable)
-func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
+func HTTPGetRequest(request HTTPRequestParams, useCache bool) ([]byte, error) {
 	// Build http request
 	req, err := http.NewRequest("GET", request.URL, nil)
 	if err != nil {
@@ -719,20 +724,35 @@ func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
 		req.Header.Add("Authorization", bearer)
 	}
 
-	// Initialize http client and send http request
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			ResponseHeaderTimeout: ResponseHeaderTimeout,
 		},
 		Timeout: HTTPRequestTimeout,
 	}
-	klog.V(4).Infof("HTTPGetRequest on  %s", req.URL.String())
+
+	klog.V(4).Infof("HTTPGetRequest: %s", req.URL.String())
+
+	if useCache {
+		_ = os.Mkdir(httpCacheDir, 0755)
+		err = cleanHttpCache(httpCacheDir, httpCacheTime)
+		if err != nil {
+			return nil, err
+		}
+		httpClient.Transport = httpcache.NewTransport(diskcache.New(httpCacheDir))
+		klog.V(4).Infof("Response will be cached in %s for %s", httpCacheDir, httpCacheTime)
+
+	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.Header.Get(httpcache.XFromCache) != "" {
+		klog.V(4).Infof("Using cached response.")
+	}
 
 	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
@@ -892,7 +912,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 			},
 			Filepath: pathToZip,
 		}
-		err := DownloadFile(params)
+		err := DownloadFile(params, false)
 		if err != nil {
 			return err
 		}
@@ -1020,9 +1040,10 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 }
 
 // DownloadFile downloads the file to the filepath given URL and token (if applicable)
-func DownloadFile(params DownloadParams) error {
+// if useCache is set to true, the response will be cached localy
+func DownloadFile(params DownloadParams, useCache bool) error {
 	// Get the data
-	data, err := HTTPGetRequest(params.Request)
+	data, err := HTTPGetRequest(params.Request, useCache)
 	if err != nil {
 		return err
 	}

@@ -923,7 +923,7 @@ func (co *CreateOptions) Run() (err error) {
 						},
 						Filepath: DevfilePath,
 					}
-					err = util.DownloadFile(params)
+					err = util.DownloadFile(params, false)
 					if err != nil {
 						return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 					}
@@ -955,7 +955,7 @@ func (co *CreateOptions) Run() (err error) {
 					}
 					params.Request.Token = token
 				}
-				err := util.DownloadFile(params)
+				err := util.DownloadFile(params, true)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 				}
