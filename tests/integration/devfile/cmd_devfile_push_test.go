@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("odo devfile push command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-	var sourcePath = "/projects/nodejs-starter"
+	var sourcePath = "/projects"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -241,6 +241,17 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("cannot indirectly reference itself"))
 		})
 
+		It("should throw a validation error for composite command that has invalid exec subcommand", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeInvalidComponent.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("references an invalid command"))
+		})
+
 		It("checks that odo push works outside of the context directory", func() {
 			helper.Chdir(currentWorkingDirectory)
 
@@ -311,7 +322,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/nodejs-starter/server.js"},
+				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -325,14 +336,14 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/nodejs-starter/server.js"},
+				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
-			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/nodejs-starter/server.js': No such file or directory"))
+			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/server.js': No such file or directory"))
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {

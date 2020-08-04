@@ -37,7 +37,7 @@ commands:
       id: defaultBuild
       component: tools
       commandLine: "/artifacts/bin/build-container-full.sh"
-      workingDir: /projects/springbootproject
+      workingDir: /projects
       group:
         kind: build
         isDefault: true

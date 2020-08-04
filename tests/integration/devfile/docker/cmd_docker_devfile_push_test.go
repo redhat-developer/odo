@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("odo docker devfile push command tests", func() {
 	var context, currentWorkingDirectory, cmpName string
-	var sourcePath = "/projects/nodejs-starter"
+	var sourcePath = "/projects"
 
 	dockerClient := helper.NewDockerRunner("docker")
 

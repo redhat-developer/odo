@@ -587,3 +587,68 @@ func TestGetCommandsMap(t *testing.T) {
 	}
 
 }
+
+func TestGetComponentEnvVar(t *testing.T) {
+
+	tests := []struct {
+		name string
+		env  string
+		envs []common.Env
+		want string
+	}{
+		{
+			name: "Case 1: No env vars",
+			env:  "test",
+			envs: nil,
+			want: "",
+		},
+		{
+			name: "Case 2: Has env",
+			env:  "PROJECTS_ROOT",
+			envs: []common.Env{
+				{
+					Name:  "SOME_ENV",
+					Value: "test",
+				},
+				{
+					Name:  "TESTER",
+					Value: "tester",
+				},
+				{
+					Name:  "PROJECTS_ROOT",
+					Value: "/test",
+				},
+			},
+			want: "/test",
+		},
+		{
+			name: "Case 3: No env, multiple values",
+			env:  "PROJECTS_ROOT",
+			envs: []common.Env{
+				{
+					Name:  "TESTER",
+					Value: "fake",
+				},
+				{
+					Name:  "FAKE",
+					Value: "fake",
+				},
+				{
+					Name:  "ENV",
+					Value: "fake",
+				},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value := GetComponentEnvVar(tt.env, tt.envs)
+			if value != tt.want {
+				t.Errorf("TestGetComponentEnvVar error: env value mismatch, expected: %v got: %v", tt.want, value)
+			}
+
+		})
+	}
+
+}
