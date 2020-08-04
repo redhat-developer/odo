@@ -208,7 +208,7 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 				return err
 			}
 		} else {
-			err := validateCommand(data, subCommand)
+			err := ValidateCommand(data, subCommand)
 			if err != nil {
 				return errors.Wrapf(err, "the composite command %q references an invalid command %q", compositeCommand.Id, subCommand.GetID())
 			}
