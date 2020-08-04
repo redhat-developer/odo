@@ -56,7 +56,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[2]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[2],
 				Commands: []string{commands[0], commands[1]},
 				Parallel: false,
@@ -77,7 +77,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[2]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[2],
 				Commands: []string{commands[0], commands[1]},
 				Parallel: false,
@@ -98,7 +98,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[2]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[2],
 				Commands: []string{commands[0], commands[1]},
 				Parallel: true,
@@ -119,7 +119,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[2]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[2],
 				Commands: []string{commands[0], commands[1]},
 				Parallel: true,
@@ -140,7 +140,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[2]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[2],
 				Commands: []string{commands[0], "fake-command"},
 				Parallel: false,
@@ -161,7 +161,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[2]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[2],
 				Commands: []string{commands[0], "fake-command"},
 				Parallel: true,
@@ -185,7 +185,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[3]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[3],
 				Commands: []string{commands[0], commands[2]},
 				Parallel: false,
@@ -209,7 +209,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 					Composite: &common.Composite{Id: commands[3]},
 				},
 			},
-			cmd: createFrom(common.Composite{
+			cmd: createCommandFrom(common.Composite{
 				Id:       commands[3],
 				Commands: []string{commands[0], commands[2]},
 				Parallel: true,
@@ -243,6 +243,6 @@ func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif fu
 	return a
 }
 
-func createFrom(composite common.Composite) common.DevfileCommand {
+func createCommandFrom(composite common.Composite) common.DevfileCommand {
 	return common.DevfileCommand{Composite: &composite}
 }
