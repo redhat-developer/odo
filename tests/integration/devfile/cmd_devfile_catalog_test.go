@@ -107,7 +107,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
 			output = helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
-			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: DefaultDevfileRegistry", "Registry: " + registryName})
+			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: " + registryName})
 		})
 	})
 	Context("When executing catalog describe component with a component name that does not have a devfile component", func() {
