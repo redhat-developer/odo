@@ -1,3 +1,5 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
 approvers:
 - lavalamp
 - smarterclayton
@@ -13,10 +15,12 @@ reviewers:
 - liggitt
 - sttts
 - ncdc
-- tallclair
 - enj
 - hzxuzhonghu
 - CaoShuFeng
+- jennybuckley
+- apelisse
+- jpbetz
 labels:
 - sig/api-machinery
 - area/apiserver
