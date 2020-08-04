@@ -2,29 +2,26 @@ package component
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"os/signal"
+
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/secret"
 	"github.com/openshift/odo/pkg/sync"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	runtimeUnstructured "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 )
 
 const (
-	regcredName           = "regcred"
 	kanikoSecret          = "kaniko-secret"
 	buildContext          = "build-context"
 	buildContextMountPath = "/root/build-context"
@@ -40,10 +37,8 @@ var (
 	defaultId                  = int64(0)
 )
 
-func (a Adapter) runKaniko(parameters common.BuildParameters) error {
-	if err := a.createSecret(parameters.EnvSpecificInfo.GetNamespace(), parameters.DockerConfigJSONFilename); err != nil {
-		return err
-	}
+func (a Adapter) runKaniko(parameters common.BuildParameters, isImageRegistryInternal bool) error {
+
 	containerName := "build"
 	initContainerName := "init"
 	labels := map[string]string{
@@ -94,7 +89,28 @@ func (a Adapter) runKaniko(parameters common.BuildParameters) error {
 		log.Errorf("err: %s\n", err.Error())
 		return err
 	}
-	return errors.New("WIP: Need to redirect log output the stdout and wait for build to complete")
+
+	log.Successf("Started builder pod %s using Kaniko Build strategy", pod.GetName())
+
+	reader, _ := io.Pipe()
+	controlC := make(chan os.Signal, 1)
+
+	var cmdOutput string
+
+	go utils.PipeStdOutput(cmdOutput, reader, controlC)
+
+	s := log.Spinner("Waiting for builder pod to complete")
+
+	if _, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodSucceeded, "Waiting for builder pod to complete", false); err != nil {
+		s.End(false)
+		return errors.Wrapf(err, "unable to build image using Kaniko, error: %s", cmdOutput)
+	}
+
+	s.End(true)
+	// Stop listening for a ^C so it doesnt perform terminateBuild during any later stages
+	signal.Stop(controlC)
+	log.Successf("Successfully built container image: %s", parameters.Tag)
+	return nil
 }
 
 func (a Adapter) createKanikoBuilderPod(labels map[string]string, init, builder *corev1.Container) error {
@@ -179,49 +195,4 @@ func initContainer(name string) *corev1.Container {
 			buildContextVolumeMount,
 		},
 	}
-}
-
-func (a Adapter) createSecret(ns, dcokerConfigFile string) error {
-	filename, err := homedir.Expand(dcokerConfigFile)
-	if err != nil {
-		return fmt.Errorf("failed to generate path to file for %s: %v", dcokerConfigFile, err)
-	}
-
-	f, err := os.Open(filename)
-	if err != nil {
-		return fmt.Errorf("failed to read Docker config %#v : %s", filename, err)
-	}
-	defer f.Close()
-
-	secret, err := secret.CreateDockerConfigSecret(types.NamespacedName{
-		Name:      regcredName,
-		Namespace: ns,
-	}, f)
-	if err != nil {
-		return err
-	}
-
-	secretData, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(secret)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := json.Marshal(secretData)
-	if err != nil {
-		return err
-	}
-
-	var secretUnstructured *unstructured.Unstructured
-	if err := json.Unmarshal(secretBytes, &secretUnstructured); err != nil {
-		return err
-	}
-
-	if _, err = a.Client.DynamicClient.Resource(secretGroupVersionResource).
-		Namespace(ns).
-		Create(secretUnstructured, metav1.CreateOptions{}); err != nil {
-		if errors.Cause(err).Error() != "secrets \""+regcredName+"\" already exists" {
-			return err
-		}
-	}
-	return nil
 }

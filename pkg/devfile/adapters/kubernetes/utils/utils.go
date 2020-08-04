@@ -1,20 +1,34 @@
 package utils
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
+	// "context"
+	"github.com/mitchellh/go-homedir"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/secret"
 	"github.com/openshift/odo/pkg/util"
-
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	// "sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeUnstructured "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 )
 
@@ -318,4 +332,77 @@ func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
 	}
 
 	return envFrom
+}
+
+// This function will automatically pipe the output from any function to
+// our logger.
+// We pass the controlC os.Signal in order to output the logs within the terminateBuild
+// function if the process is interrupted by the user performing a ^C. If we didn't pass it
+// The Scanner would consume the log, and only output it if there was an err within this
+// func.
+func PipeStdOutput(cmdOutput string, reader *io.PipeReader, controlC chan os.Signal) {
+	select {
+	case <-controlC:
+		return
+	default:
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if log.IsDebug() {
+				_, err := fmt.Fprintln(os.Stdout, line)
+				if err != nil {
+					log.Errorf("Unable to print to stdout: %v", err)
+				}
+			}
+
+			cmdOutput += fmt.Sprintln(line)
+		}
+	}
+}
+
+func CreateDockerConfigDataFromFilepath(DockerConfigJSONFilename string) ([]byte, error) {
+	filename, err := homedir.Expand(DockerConfigJSONFilename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate path to file for %s: %v", DockerConfigJSONFilename, err)
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read Docker config %#v : %s", filename, err)
+	}
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secret data: %v", err)
+	}
+	defer f.Close()
+	return data, nil
+}
+
+func CreateSecret(regcredName string, ns string, dockerConfigData []byte) (*unstructured.Unstructured, error) {
+
+	secret, err := secret.CreateDockerConfigSecret(types.NamespacedName{
+		Name:      regcredName,
+		Namespace: ns,
+	}, dockerConfigData)
+	if err != nil {
+		return nil, err
+	}
+
+	secretData, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(secret)
+	if err != nil {
+		return nil, err
+	}
+
+	secretBytes, err := json.Marshal(secretData)
+	if err != nil {
+		return nil, err
+	}
+
+	var secretUnstructured *unstructured.Unstructured
+	if err := json.Unmarshal(secretBytes, &secretUnstructured); err != nil {
+		return nil, err
+	}
+
+	return secretUnstructured, nil
 }

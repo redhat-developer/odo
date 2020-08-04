@@ -1,7 +1,6 @@
 package component
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -46,6 +45,7 @@ import (
 )
 
 const (
+	regcredName           = "regcred"
 	DeployComponentSuffix = "-deploy"
 	BuildTimeout          = 5 * time.Minute
 )
@@ -82,7 +82,7 @@ type Adapter struct {
 
 const dockerfilePath string = "Dockerfile"
 
-func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.BuildParameters) (err error) {
+func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.BuildParameters, isImageRegistryInternal bool) (err error) {
 	buildName := a.ComponentName
 
 	commonObjectMeta := metav1.ObjectMeta{
@@ -100,7 +100,11 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	signal.Notify(controlC, os.Interrupt, syscall.SIGTERM)
 	go a.terminateBuild(controlC, client, commonObjectMeta)
 
-	_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{}, buildOutput)
+	var secretName string
+	if !isImageRegistryInternal {
+		secretName = regcredName
+	}
+	_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{}, buildOutput, secretName)
 	if err != nil {
 		return err
 	}
@@ -125,38 +129,14 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	}
 	log.Successf("Started build %s using BuildConfig", bc.Name)
 
-	reader, writer := io.Pipe()
+	ioReader, ioWriter := io.Pipe()
 
 	var cmdOutput string
-	// This Go routine will automatically pipe the output from WaitForBuildToFinish to
-	// our logger.
-	// We pass the controlC os.Signal in order to output the logs within the terminateBuild
-	// function if the process is interrupted by the user performing a ^C. If we didn't pass it
-	// The Scanner would consume the log, and only output it if there was an err within this
-	// func.
-	go func(controlC chan os.Signal) {
-		select {
-		case <-controlC:
-			return
-		default:
-			scanner := bufio.NewScanner(reader)
-			for scanner.Scan() {
-				line := scanner.Text()
 
-				if log.IsDebug() {
-					_, err := fmt.Fprintln(os.Stdout, line)
-					if err != nil {
-						log.Errorf("Unable to print to stdout: %v", err)
-					}
-				}
-
-				cmdOutput += fmt.Sprintln(line)
-			}
-		}
-	}(controlC)
+	go utils.PipeStdOutput(cmdOutput, ioReader, controlC)
 
 	s := log.Spinner("Waiting for build to complete")
-	if err := client.WaitForBuildToFinish(bc.Name, writer, BuildTimeout); err != nil {
+	if err := client.WaitForBuildToFinish(bc.Name, ioWriter, BuildTimeout); err != nil {
 		s.End(false)
 		return errors.Wrapf(err, "unable to build image using BuildConfig %s, error: %s", buildName, cmdOutput)
 	}
@@ -196,10 +176,21 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		return err
 	}
 
+	isImageRegistryInternal, err := isInternalRegistry(parameters.Tag)
+	if err != nil {
+		return err
+	}
+
+	if !isImageRegistryInternal {
+		if err := a.createDockerConfigSecret(parameters); err != nil {
+			return err
+		}
+	}
+
 	if isBuildConfigSupported && !parameters.Rootless {
-		return a.runBuildConfig(client, parameters)
+		return a.runBuildConfig(client, parameters, isImageRegistryInternal)
 	} else {
-		return a.runKaniko(parameters)
+		return a.runKaniko(parameters, isImageRegistryInternal)
 	}
 }
 
@@ -1028,4 +1019,34 @@ func (a Adapter) Exec(command []string) error {
 	}
 
 	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
+}
+
+func (a Adapter) createDockerConfigSecret(parameters common.BuildParameters) error {
+	data, err := utils.CreateDockerConfigDataFromFilepath(parameters.DockerConfigJSONFilename)
+	if err != nil {
+		return err
+	}
+	secretUnstructured, err := utils.CreateSecret(regcredName, parameters.EnvSpecificInfo.GetNamespace(), data)
+	if err != nil {
+		return err
+	}
+	if _, err := a.Client.DynamicClient.Resource(secretGroupVersionResource).
+		Namespace(parameters.EnvSpecificInfo.GetNamespace()).
+		Create(secretUnstructured, metav1.CreateOptions{}); err != nil {
+		if errors.Cause(err).Error() != "secrets \""+regcredName+"\" already exists" {
+			return err
+		}
+	}
+	return nil
+}
+
+func isInternalRegistry(imageTag string) (bool, error) {
+	components := strings.Split(imageTag, "/")
+	if len(components) < 2 || len(components) > 3 {
+		return false, fmt.Errorf("Invalid image tag '%s', must contain at least 2 components", imageTag)
+	}
+	if len(components) == 2 || components[0] == "image-registry.openshift-image-registry.svc:5000" {
+		return true, nil
+	}
+	return false, nil
 }
