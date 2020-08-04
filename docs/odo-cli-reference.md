@@ -10,12 +10,6 @@ description: An overview of all the CLI commands related to odo
 
 # Micro navigation
 micro_nav: true
-
-# Page navigation
-page_nav:
-    prev:
-        content: Architecture of odo 
-        url: '/docs/odo-architecture'
 ---
 # Basic odo CLI commands
 
@@ -279,10 +273,6 @@ components.
   - Not Pushed  
     A component is not pushed to the cluster.
 
-  - Locally Deleted  
-    URL or Storage are deleted in the local configuration but are not
-    pushed to the cluster.
-
   - Unknown  
     `odo` is disconnected from the cluster.
 
@@ -420,6 +410,9 @@ Push source code to a component.
 
   # Push source code in ~/mycode to component called my-component
   odo push my-component --context ~/mycode
+
+  # Push source code and display event notifications in JSON format.
+  odo push -o json
 ```
 
 ## registry
