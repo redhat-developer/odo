@@ -209,6 +209,8 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 			syncFolder = lclient.OdoSourceVolumeMount
 		}
 		utils.AddVolumeToContainer(a.projectVolumeName, syncFolder, &hostConfig)
+
+		// Set PROJECTS_ROOT as an env var in the container if not already set
 		if projectsRoot == "" {
 			envName := common.EnvProjectsRoot
 			envValue := syncFolder
