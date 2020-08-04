@@ -11,6 +11,14 @@ description: Deploying a portable devfile that describes your development enviro
 # Micro navigation
 micro_nav: true
 
+# Page navigation
+page_nav:
+    prev:
+        content: Understanding odo
+        url: '/docs/understanding-odo'
+    next:
+        content: Devfile file reference
+        url: '/file-reference/'
 ---
 # Introduction to devfile
 

@@ -17,6 +17,6 @@ page_nav:
         content: Installing odo
         url: '/docs/installing-odo'
     next:
-        content: Creating a single-component application with odo
-        url: '/docs/creating-a-single-component-application-with-odo'
+        content: Deploying a devfile using odo
+        url: '/docs/deploying-a-devfile-using-odo/'
 ---
