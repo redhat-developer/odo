@@ -30,7 +30,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 
@@ -50,6 +49,7 @@ type CreateOptions struct {
 	appName           string
 	interactive       bool
 	now               bool
+	forceS2i          bool
 	*CommonPushOptions
 	devfileMetadata DevfileMetadata
 }
@@ -80,23 +80,11 @@ const CreateRecommendedCommandName = "create"
 // since the application will always be in the same directory as `.odo`, we will always set this as: ./
 const LocalDirectoryDefaultLocation = "./"
 
-// Constants for devfile component
-const (
-	devFile = "devfile.yaml"
-)
-
 var (
 	envFile    = filepath.Join(".odo", "env", "env.yaml")
 	configFile = filepath.Join(".odo", "config.yaml")
 	envDir     = filepath.Join(".odo", "env")
 )
-
-// DevfilePath is the devfile path that is used by odo,
-// which means odo can:
-// 1. Directly use the devfile in DevfilePath
-// 2. Download devfile from registry to DevfilePath then use the devfile in DevfilePath
-// 3. Copy user's own devfile (path is specified via --devfile flag) to DevfilePath then use the devfile in DevfilePath
-var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
 // EnvFilePath is the path of env file for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
@@ -200,7 +188,7 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
 	// Error out by default if no type of sources were passed..
 	default:
-		return fmt.Errorf("The source can be either --binary or --local or --git")
+		return fmt.Errorf("the source can be either --binary or --local or --git")
 
 	}
 
@@ -211,7 +199,7 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
 	// Error out if reference is passed but no --git flag passed
 	if len(co.componentGit) == 0 && len(co.componentGitRef) != 0 {
-		return fmt.Errorf("The --ref flag is only valid for --git flag")
+		return fmt.Errorf("the --ref flag is only valid for --git flag")
 	}
 
 	return
@@ -295,12 +283,76 @@ func createDefaultComponentName(context *genericclioptions.Context, componentTyp
 	return componentName, nil
 }
 
+func (co *CreateOptions) checkConflictingFlags() (err error) {
+	if err = co.checkConflictingS2IFlags(); err != nil {
+		return
+	}
+
+	if err = co.checkConflictingDevfileFlags(); err != nil {
+		return
+	}
+
+	return nil
+}
+
+func (co *CreateOptions) checkConflictingS2IFlags() error {
+	if !co.forceS2i {
+		errorString := "flag --%s, requires --s2i flag to be set true, when in experimental mode."
+
+		var flagName string
+		if co.now {
+			flagName = "now"
+		} else if len(co.componentBinary) != 0 {
+			flagName = "binary"
+		} else if len(co.componentGit) != 0 {
+			flagName = "git"
+		} else if len(co.componentEnvVars) != 0 {
+			flagName = "env"
+		} else if len(co.componentPorts) != 0 {
+			flagName = "port"
+		}
+
+		if len(flagName) != 0 {
+			return errors.New(fmt.Sprintf(errorString, flagName))
+		}
+	}
+	return nil
+}
+
+func (co *CreateOptions) checkConflictingDevfileFlags() error {
+	if co.forceS2i {
+		errorString := "you can't set --s2i flag as true if you want to use the %s via --%s"
+
+		var flagName string
+		if len(co.devfileMetadata.devfilePath.value) != 0 {
+			flagName = "devfile"
+		} else if len(co.devfileMetadata.devfileRegistry.Name) != 0 {
+			flagName = "registry"
+		} else if len(co.devfileMetadata.token) != 0 {
+			flagName = "token"
+		} else if len(co.devfileMetadata.starter) != 0 {
+			flagName = "starter"
+		}
+
+		if len(flagName) != 0 {
+			return errors.New(fmt.Sprintf(errorString, flagName, flagName))
+		}
+	}
+	return nil
+}
+
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
-		// Add a disclaimer that we are in *experimental mode*
-		log.Experimental("Experimental mode is enabled, use at your own risk")
+	// this populates the LocalConfigInfo as well
+	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+
+	// If not using --s2i
+	if !co.forceS2i {
+		err = co.checkConflictingFlags()
+		if err != nil {
+			return
+		}
 
 		// Configure the context
 		if co.componentContext != "" {
@@ -311,21 +363,33 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
-			return errors.New("This directory already contains a component")
+			return errors.New("this directory already contains a component")
 		}
 
 		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath.value) {
-			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
+			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 		}
 
 		co.appName = genericclioptions.ResolveAppFlag(cmd)
 
+		var catalogList catalog.ComponentTypeList
+		if co.forceS2i {
+			client := co.Client
+			catalogList, err = catalog.ListComponents(client)
+			if err != nil {
+				return err
+			}
+		}
+
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
+			if co.forceS2i {
+				return errors.New("You can't set --s2i flag as true if you want to use the devfile that is specified via --devfile")
+			}
 			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 			if fileErr != nil && urlErr != nil {
-				return errors.Errorf("The devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
+				return errors.Errorf("the devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
 			} else if fileErr == nil {
 				co.devfileMetadata.devfilePath.protocol = "file"
 			} else if urlErr == nil {
@@ -335,16 +399,21 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
+
+			if co.forceS2i {
+				return errors.New("You can't specify registry via --registry if you want to force the S2I build with --s2i")
+			}
+
 			if co.devfileMetadata.devfilePath.value != "" {
-				return errors.New("You can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
+				return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
 			}
 
 			registryList, err := catalog.GetDevfileRegistries(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
-				return errors.Wrap(err, "Failed to get registry")
+				return errors.Wrap(err, "failed to get registry")
 			}
 			if len(registryList) == 0 {
-				return errors.Errorf("Registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
+				return errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
 			}
 		}
 
@@ -371,7 +440,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		var catalogDevfileList catalog.DevfileComponentTypeList
 		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
 
-		if co.interactive {
+		if co.interactive && !co.forceS2i {
 			// Interactive mode
 
 			// Get available devfile components for checking devfile compatibility
@@ -409,8 +478,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 				// Use existing devfile directly
 
+				if co.forceS2i {
+					return errors.Errorf("existing devfile component detected. Please remove the devfile component before creating an s2i component")
+				}
+
 				if len(args) > 1 {
-					return errors.Errorf("Accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
+					return errors.Errorf("accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
 				}
 
 				// If user can use existing devfile directly, the first arg is component name instead of component type
@@ -426,7 +499,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 
 				co.devfileMetadata.devfileSupport = true
-			} else {
+			} else if len(args) > 0 {
 				// Download devfile from registry
 
 				// Component type: Get from full command's first argument (mandatory in direct mode)
@@ -445,7 +518,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return err
 				}
 				if co.devfileMetadata.devfileRegistry.Name != "" && catalogDevfileList.Items == nil {
-					return errors.Errorf("Can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
+					return errors.Errorf("can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
 				}
 
 				if len(catalogDevfileList.DevfileRegistries) == 0 {
@@ -504,7 +577,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return nil
 		}
 
-		if isDevfileRegistryPresent {
+		if isDevfileRegistryPresent && !co.forceS2i {
 			// Categorize the sections
 			log.Info("Validation")
 
@@ -521,6 +594,19 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					co.devfileMetadata.devfileLink = devfileComponent.Link
 					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
 					break
+				}
+			}
+
+			if co.forceS2i && hasComponent {
+				s2iOverride := false
+				for _, item := range catalogList.Items {
+					if item.Name == co.devfileMetadata.componentType {
+						s2iOverride = true
+						break
+					}
+				}
+				if !s2iOverride {
+					return errors.New("cannot select this devfile component type with --s2i flag")
 				}
 			}
 
@@ -551,20 +637,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// we should error out instead of running s2i componet code and throw warning message
 			if co.devfileMetadata.devfileRegistry.Name != "" {
 				return errors.Errorf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
-			} else {
-				log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 			}
+
+			log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 		}
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
 		co.interactive = true
-	}
-
-	// this populates the LocalConfigInfo as well
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-	if err != nil {
-		return errors.Wrap(err, "failed initiating local config")
 	}
 
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
@@ -586,8 +666,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	co.componentSettings = co.LocalConfigInfo.GetComponentSettings()
-
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	// Below code is for INTERACTIVE mode
 	if co.interactive {
@@ -756,29 +834,27 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
-		if co.devfileMetadata.devfileSupport {
-			// Validate if the devfile component that user wants to create already exists
-			spinner := log.Spinner("Validating devfile component")
-			defer spinner.End(false)
+	if !co.forceS2i && co.devfileMetadata.devfileSupport {
+		// Validate if the devfile component that user wants to create already exists
+		spinner := log.Spinner("Validating devfile component")
+		defer spinner.End(false)
 
-			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+		err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+		if err != nil {
+			return err
+		}
+
+		// Only validate namespace if pushtarget isn't docker
+		if !pushtarget.IsPushTargetDocker() {
+			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
 			if err != nil {
 				return err
 			}
-
-			// Only validate namespace if pushtarget isn't docker
-			if !pushtarget.IsPushTargetDocker() {
-				err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
-				if err != nil {
-					return err
-				}
-			}
-
-			spinner.End(true)
-
-			return nil
 		}
+
+		spinner.End(true)
+
+		return nil
 	}
 
 	log.Info("Validation")
@@ -910,92 +986,90 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		if co.devfileMetadata.devfileSupport {
-			// Use existing devfile directly from --devfile flag
-			if co.devfileMetadata.devfilePath.value != "" {
-				if co.devfileMetadata.devfilePath.protocol == "http(s)" {
-					// User specify devfile path is http(s) URL
-					params := util.DownloadParams{
-						Request: util.HTTPRequestParams{
-							URL:   co.devfileMetadata.devfilePath.value,
-							Token: co.devfileMetadata.token,
-						},
-						Filepath: DevfilePath,
-					}
-					err = util.DownloadFile(params)
-					if err != nil {
-						return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
-					}
-				} else if co.devfileMetadata.devfilePath.protocol == "file" {
-					// User specify devfile path is file system link
-					info, err := os.Stat(co.devfileMetadata.devfilePath.value)
-					if err != nil {
-						return err
-					}
-					err = util.CopyFile(co.devfileMetadata.devfilePath.value, DevfilePath, info)
-					if err != nil {
-						return errors.Wrapf(err, "failed to copy devfile from %s to %s", co.devfileMetadata.devfilePath, DevfilePath)
-					}
-				}
-			}
-
-			if !util.CheckPathExists(DevfilePath) {
-				// Download devfile from registry
+	if !co.forceS2i && co.devfileMetadata.devfileSupport {
+		// Use existing devfile directly from --devfile flag
+		if co.devfileMetadata.devfilePath.value != "" {
+			if co.devfileMetadata.devfilePath.protocol == "http(s)" {
+				// User specify devfile path is http(s) URL
 				params := util.DownloadParams{
 					Request: util.HTTPRequestParams{
-						URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+						URL:   co.devfileMetadata.devfilePath.value,
+						Token: co.devfileMetadata.token,
 					},
 					Filepath: DevfilePath,
 				}
-				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-					token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
-					if err != nil {
-						return errors.Wrap(err, "unable to get secure registry credential from keyring")
-					}
-					params.Request.Token = token
-				}
-				err := util.DownloadFile(params)
+				err = util.DownloadFile(params)
 				if err != nil {
-					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
+					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 				}
-			}
-
-			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.starter != "" {
-				err = co.downloadProject(co.devfileMetadata.starter)
+			} else if co.devfileMetadata.devfilePath.protocol == "file" {
+				// User specify devfile path is file system link
+				info, err := os.Stat(co.devfileMetadata.devfilePath.value)
 				if err != nil {
-					return errors.Wrap(err, "failed to download project for devfile component")
+					return err
+				}
+				err = util.CopyFile(co.devfileMetadata.devfilePath.value, DevfilePath, info)
+				if err != nil {
+					return errors.Wrapf(err, "failed to copy devfile from %s to %s", co.devfileMetadata.devfilePath, DevfilePath)
 				}
 			}
-
-			// Generate env file
-			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
-				Name:      co.devfileMetadata.componentName,
-				Namespace: co.devfileMetadata.componentNamespace,
-				AppName:   co.appName,
-			})
-			if err != nil {
-				return errors.Wrap(err, "failed to create env file for devfile component")
-			}
-
-			sourcePath, err := util.GetAbsPath(co.componentContext)
-			if err != nil {
-				return errors.Wrap(err, "unable to get source path")
-			}
-
-			ignoreFile, err := util.CheckGitIgnoreFile(sourcePath)
-			if err != nil {
-				return err
-			}
-
-			err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, envDir))
-			if err != nil {
-				return err
-			}
-
-			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
-			return nil
 		}
+
+		if !util.CheckPathExists(DevfilePath) {
+			// Download devfile from registry
+			params := util.DownloadParams{
+				Request: util.HTTPRequestParams{
+					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+				},
+				Filepath: DevfilePath,
+			}
+			if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+				token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+				if err != nil {
+					return errors.Wrap(err, "unable to get secure registry credential from keyring")
+				}
+				params.Request.Token = token
+			}
+			err := util.DownloadFile(params)
+			if err != nil {
+				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
+			}
+		}
+
+		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.starter != "" {
+			err = co.downloadProject(co.devfileMetadata.starter)
+			if err != nil {
+				return errors.Wrap(err, "failed to download project for devfile component")
+			}
+		}
+
+		// Generate env file
+		err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
+			Name:      co.devfileMetadata.componentName,
+			Namespace: co.devfileMetadata.componentNamespace,
+			AppName:   co.appName,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to create env file for devfile component")
+		}
+
+		sourcePath, err := util.GetAbsPath(co.componentContext)
+		if err != nil {
+			return errors.Wrap(err, "unable to get source path")
+		}
+
+		ignoreFile, err := util.CheckGitIgnoreFile(sourcePath)
+		if err != nil {
+			return err
+		}
+
+		err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, envDir))
+		if err != nil {
+			return err
+		}
+
+		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
+		return nil
 	}
 
 	err = co.LocalConfigInfo.SetComponentSettings(co.componentSettings)
@@ -1084,13 +1158,12 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
-	if experimental.IsExperimentalModeEnabled() {
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
-		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
-	}
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
+	componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
+	componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Path to the user specify devfile")
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 

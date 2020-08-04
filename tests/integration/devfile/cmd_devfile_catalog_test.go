@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"time"
@@ -127,4 +128,38 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, []string{"accepts 1 arg(s), received 0"})
 		})
 	})
+
+	Context("When executing catalog list components with experimental mode set to true", func() {
+
+		componentName := "nodejs"
+
+		It("should prove that nodejs is present in both S2I Component list and Devfile Component list", func() {
+
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+
+			wantOutput := []string{componentName}
+
+			var data map[string]interface{}
+
+			err := json.Unmarshal([]byte(output), &data)
+
+			if err != nil {
+				Expect(err).Should(BeNil())
+			}
+			outputBytes, err := json.Marshal(data["s2iItems"])
+			if err == nil {
+				output = string(outputBytes)
+			}
+
+			helper.MatchAllInOutput(output, wantOutput)
+
+			outputBytes, err = json.Marshal(data["devfileItems"])
+			if err == nil {
+				output = string(outputBytes)
+			}
+
+			helper.MatchAllInOutput(output, wantOutput)
+		})
+	})
+
 })
