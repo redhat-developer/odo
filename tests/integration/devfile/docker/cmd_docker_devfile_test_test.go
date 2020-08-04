@@ -13,7 +13,6 @@ import (
 
 var _ = Describe("odo docker devfile test command tests", func() {
 	var context, currentWorkingDirectory, cmpName string
-	var sourcePath = "/projects"
 
 	dockerClient := helper.NewDockerRunner("docker")
 
@@ -112,7 +111,7 @@ var _ = Describe("odo docker devfile test command tests", func() {
 	})
 
 	Context("Should run test command successfully", func() {
-
+		const sourcePath = "/projects"
 		It("Should run test command successfully with only one default specified", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 
