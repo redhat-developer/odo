@@ -20,39 +20,49 @@ page_nav:
 The following section describes how to install `odo` on different
 platforms using the CLI.
 
-> **Note**
-> 
-> Currently, `odo` does not support installation in a restricted network
-> environment.
+# Installing v2.0.0-alpha of odo
 
-You can also find the URL to the latest binaries from the OpenShift web
-console by clicking the **?** icon in the upper-right corner and
-selecting **Command Line
-    Tools**
+v2.0.0-alpha of odo uses **devfile** as its default deployment
+mechanism.
 
-# Installing odo on Linux
+## Installing odo on Linux
 
-## Binary installation
+### Binary installation
 
-    # curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-amd64 -o /usr/local/bin/odo
+    # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-alpha/odo-linux-amd64 -o /usr/local/bin/odo
     # chmod +x /usr/local/bin/odo
 
-## Tarball installation
+## Installing odo on macOS
 
-    # sh -c 'curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-amd64.tar.gz | gzip -d > /usr/local/bin/odo'
+### Binary installation
+
+    # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-alpha/odo-darwin-amd64 -o /usr/local/bin/odo
     # chmod +x /usr/local/bin/odo
 
-# Installing odo on Windows
+## Installing odo on Windows
 
-## Binary installation
+### Binary installation
 
 1.  Download the latest
-    [`odo.exe`](https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe)
+    [`odo.exe`](https://github.com/openshift/odo/releases/download/v2.0.0-alpha/odo-windows-amd64.exe)
     file.
 
 2.  Add the location of your `odo.exe` to your `GOPATH/bin` directory.
 
-**Setting the `PATH` variable for Windows 7/8**
+### Setting the `PATH` variable for Windows 10
+
+Edit `Environment Variables` using search:
+
+1.  Click **Search** and type `env` or `environment`.
+
+2.  Select **Edit environment variables for your account**.
+
+3.  Select **Path** from the **Variable** section and click **Edit**.
+
+4.  Click **New** and type `C:\go-bin` into the field or click
+    **Browse** and select the directory, and click **OK**.
+
+### Setting the `PATH` variable for Windows 7/8
 
 The following example demonstrates how to set up a path variable. Your
 binaries can be located in any location, but this example uses
@@ -72,28 +82,11 @@ C:\\go-bin as the location.
 6.  Click **New** and type `C:\go-bin` into the field or click
     **Browse** and select the directory, and click **OK**.
 
-**Setting the `PATH` variable for Windows 10**
+# Installing v1.2.5 of odo
 
-Edit `Environment Variables` using search:
+v1.2.5 of odo uses **Source-to-Image** as its default deployment
+mechanism.
 
-1.  Click **Search** and type `env` or `environment`.
-
-2.  Select **Edit environment variables for your account**.
-
-3.  Select **Path** from the **Variable** section and click **Edit**.
-
-4.  Click **New** and type `C:\go-bin` into the field or click
-    **Browse** and select the directory, and click
-    **OK**.
-
-# Installing odo on macOS
-
-## Binary installation
-
-    # curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64 -o /usr/local/bin/odo
-    # chmod +x /usr/local/bin/odo
-
-## Tarball installation
-
-    # sh -c 'curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64.tar.gz | gzip -d > /usr/local/bin/odo'
-    # chmod +x /usr/local/bin/odo
+Visit the latest [OpenShift
+documentation](https://docs.openshift.com/container-platform/4.5/cli_reference/developer_cli_odo/installing-odo.html)
+for installation details.
