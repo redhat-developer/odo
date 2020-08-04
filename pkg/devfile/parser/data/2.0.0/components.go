@@ -231,11 +231,14 @@ func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []strin
 
 // AddVolume adds the volume to the devFile and mounts it to all the container components
 func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
+	volumeExists := false
+	var pathErrorContainers []string
 	for _, component := range d.Components {
 		if component.Container != nil {
 			for _, volumeMount := range component.Container.VolumeMounts {
 				if volumeMount.Path == path {
-					return fmt.Errorf("another volume, %s, is mounted to the same path: %s, on the container: %s", volumeMount.Name, path, component.Container.Name)
+					var err = fmt.Errorf("another volume, %s, is mounted to the same path: %s, on the container: %s", volumeMount.Name, path, component.Container.Name)
+					pathErrorContainers = append(pathErrorContainers, err.Error())
 				}
 			}
 			component.Container.VolumeMounts = append(component.Container.VolumeMounts, common.VolumeMount{
@@ -243,11 +246,20 @@ func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
 				Path: path,
 			})
 		} else if component.Volume != nil && component.Volume.Name == volume.Name {
-			return &common.AlreadyExistError{
-				Field: "volume",
-				Name:  volume.Name,
-			}
+			volumeExists = true
+			break
 		}
+	}
+
+	if volumeExists {
+		return &common.AlreadyExistError{
+			Field: "volume",
+			Name:  volume.Name,
+		}
+	}
+
+	if len(pathErrorContainers) > 0 {
+		return fmt.Errorf("errors while creating volume:\n%s", strings.Join(pathErrorContainers, "\n"))
 	}
 
 	d.Components = append(d.Components, common.DevfileComponent{
