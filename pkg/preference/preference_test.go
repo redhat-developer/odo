@@ -463,6 +463,20 @@ func TestSetConfiguration(t *testing.T) {
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
+		{
+			name:           "Case 25: set RegistryCacheTime to 1",
+			parameter:      "RegistryCacheTime",
+			value:          "1",
+			existingConfig: Preference{},
+			wantErr:        false,
+		},
+		{
+			name:           "Case 26: set RegistryCacheTime to non int value",
+			parameter:      "RegistryCacheTime",
+			value:          "a",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -493,6 +507,10 @@ func TestSetConfiguration(t *testing.T) {
 				case "pushtarget":
 					if *cfg.OdoSettings.PushTarget != tt.want {
 						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.PushTarget, tt.want)
+					}
+				case "registrycachetime":
+					if *cfg.OdoSettings.RegistryCacheTime != tt.want {
+						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", *cfg.OdoSettings.RegistryCacheTime, tt.want)
 					}
 				}
 			} else if tt.wantErr && err != nil {
