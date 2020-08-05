@@ -581,7 +581,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 		podSpinner.End(false)
 		log.Warningf("%v", err)
 		return nil
-	} else if e, ok := err.(*kclient.NoPodFoundError); ok {
+	} else if e, ok := err.(*kclient.PodNotFoundError); ok {
 		podSpinner.End(false)
 		log.Warningf("%v", e)
 		return nil

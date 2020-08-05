@@ -542,7 +542,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("list", "pods", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				if tt.componentName == "nocomponent" {
-					return true, emptyPods, &kclient.NoPodFoundError{Selector: "somegarbage"}
+					return true, emptyPods, &kclient.PodNotFoundError{Selector: "somegarbage"}
 				} else if tt.componentName == "resourceforbidden" {
 					return true, emptyPods, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
 				} else if tt.componentName == "componenterror" {
