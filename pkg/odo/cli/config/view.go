@@ -10,11 +10,14 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"sigs.k8s.io/yaml"
 )
 
 const viewCommandName = "view"
@@ -78,8 +81,17 @@ func (o *ViewOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 
 	if o.IsDevfile {
-		// TODO - not sure yet
-		return
+		repr := o.devfileObj.ToRepresentation()
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(o.devfileObj.WrapFroJSONOutput(repr))
+			return
+		}
+		representation, err := yaml.Marshal(o.devfileObj.ToRepresentation())
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(w, string(representation))
+		return err
 	}
 
 	cs := o.lci.GetComponentSettings()
@@ -147,11 +159,12 @@ func formatArray(arr *[]string) string {
 func NewCmdView(name, fullName string) *cobra.Command {
 	o := NewViewOptions()
 	configurationViewCmd := &cobra.Command{
-		Use:     name,
-		Short:   "View current configuration values",
-		Long:    "View current configuration values",
-		Example: fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
-		Args:    cobra.ExactArgs(0),
+		Use:         name,
+		Short:       "View current configuration values",
+		Long:        "View current configuration values",
+		Annotations: map[string]string{"machineoutput": "json"},
+		Example:     fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
+		Args:        cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
