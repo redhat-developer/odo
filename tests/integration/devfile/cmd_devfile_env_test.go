@@ -102,6 +102,19 @@ var _ = Describe("odo devfile env command tests", func() {
 			helper.MatchAllInOutput(output, wantOutput)
 		})
 
+		It("Should successfully unset the parameters after set the parameters", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs")
+			helper.CmdShouldPass("odo", "env", "set", "DebugPort", testDebugPort, "-f")
+			helper.CmdShouldPass("odo", "env", "unset", "DebugPort", "-f")
+			output := helper.CmdShouldPass("odo", "env", "view")
+			wantOutput := []string{
+				"PARAMETER NAME",
+				"PARAMETER VALUE",
+				"DebugPort",
+			}
+			helper.MatchAllInOutput(output, wantOutput)
+		})
+
 		It("Should fail to unset the invalid parameter", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
 			helper.CmdShouldFail("odo", "env", "unset", fakeParameter, "-f")

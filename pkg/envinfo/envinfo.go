@@ -238,7 +238,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to set a valid parameter", parameter)
+	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to see valid parameters", parameter)
 
 }
 

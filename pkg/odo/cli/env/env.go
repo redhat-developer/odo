@@ -2,6 +2,7 @@ package env
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/openshift/odo/pkg/odo/util"
 
@@ -56,8 +57,10 @@ func printSupportedParameters(supportedParameters map[string]string) string {
 }
 
 func isSupportedParameter(parameter string, supportedParameters map[string]string) bool {
-	if _, ok := supportedParameters[parameter]; ok {
-		return true
+	for supportedParameter := range supportedParameters {
+		if strings.ToLower(supportedParameter) == strings.ToLower(parameter) {
+			return true
+		}
 	}
 
 	return false
