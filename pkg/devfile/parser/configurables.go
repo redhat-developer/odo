@@ -38,12 +38,12 @@ func (d DevfileObj) SetConfiguration(parameter string, value interface{}) error 
 	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
 		switch parameter {
 		case "name":
-			return d.SetMetadataName(strValue)
+			return d.setMetadataName(strValue)
 		case "ports":
 			arrValue := strings.Split(strValue, ",")
-			return d.SetPorts(arrValue...)
+			return d.setPorts(arrValue...)
 		case "memory":
-			return d.SetMemory(strValue)
+			return d.setMemory(strValue)
 		}
 
 	}
@@ -55,11 +55,11 @@ func (d DevfileObj) DeleteConfiguration(parameter string) error {
 	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
 		switch parameter {
 		case "name":
-			return d.SetMetadataName("")
+			return d.setMetadataName("")
 		case "ports":
-			return d.RemovePorts()
+			return d.removePorts()
 		case "memory":
-			return d.SetMemory("")
+			return d.setMemory("")
 		}
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
@@ -70,18 +70,18 @@ func (d DevfileObj) IsSet(parameter string) bool {
 	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
 		switch parameter {
 		case "name":
-			return d.GetMetadataName() != ""
+			return d.getMetadataName() != ""
 		case "ports":
 			return d.hasPorts()
 		case "memory":
-			return d.GetMemory() != ""
+			return d.getMemory() != ""
 		}
 	}
 	return false
 
 }
 
-func (d DevfileObj) SetMetadataName(name string) error {
+func (d DevfileObj) setMetadataName(name string) error {
 	metadata := d.Data.GetMetadata()
 	d.Data.SetMetadata(name, metadata.Version)
 	return d.WriteYamlDevfile()
@@ -116,7 +116,7 @@ func (d DevfileObj) RemoveEnvVars(keys []string) error {
 	return d.WriteYamlDevfile()
 }
 
-func (d DevfileObj) SetPorts(ports ...string) error {
+func (d DevfileObj) setPorts(ports ...string) error {
 	components := d.Data.GetComponents()
 	endpoints, err := portsToEndpoints(ports...)
 	if err != nil {
@@ -131,7 +131,7 @@ func (d DevfileObj) SetPorts(ports ...string) error {
 	return d.WriteYamlDevfile()
 }
 
-func (d DevfileObj) RemovePorts() error {
+func (d DevfileObj) removePorts() error {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
@@ -152,7 +152,7 @@ func (d DevfileObj) hasPorts() bool {
 	return false
 }
 
-func (d DevfileObj) SetMemory(memory string) error {
+func (d DevfileObj) setMemory(memory string) error {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
@@ -162,7 +162,7 @@ func (d DevfileObj) SetMemory(memory string) error {
 	}
 	return d.WriteYamlDevfile()
 }
-func (d DevfileObj) GetMemory() string {
+func (d DevfileObj) getMemory() string {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container.MemoryLimit != "" {
@@ -172,7 +172,7 @@ func (d DevfileObj) GetMemory() string {
 	return ""
 }
 
-func (d DevfileObj) GetMetadataName() string {
+func (d DevfileObj) getMetadataName() string {
 	return d.Data.GetMetadata().Name
 }
 

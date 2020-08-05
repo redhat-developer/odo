@@ -7,8 +7,8 @@ import (
 
 func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 	confRepr := ConfigurableRepr{
-		Name:   d.GetMetadataName(),
-		Memory: d.GetMemory(),
+		Name:   d.getMetadataName(),
+		Memory: d.getMemory(),
 	}
 	var contReprs []ContainerRepr
 	components := d.Data.GetComponents()
