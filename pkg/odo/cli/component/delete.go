@@ -54,7 +54,19 @@ type DeleteOptions struct {
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, false, false, "", false, &ComponentOptions{}, "", "", false, nil}
+	return &DeleteOptions{
+		componentForceDeleteFlag: false,
+		componentDeleteAllFlag:   false,
+		componentDeleteWaitFlag:  false,
+		componentDeleteS2iFlag:   false,
+		componentContext:         "",
+		isCmpExists:              false,
+		ComponentOptions:         &ComponentOptions{},
+		devfilePath:              "",
+		namespace:                "",
+		show:                     false,
+		EnvSpecificInfo:          nil,
+	}
 }
 
 // Complete completes log args
