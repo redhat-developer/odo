@@ -20,15 +20,15 @@ commands:
       id: install
       component: runtime
       commandLine: npm install
-      workingDir: ${PROJECTS_ROOT}
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: build
         isDefault: false
   - exec:
       id: mkdir
-      component: runtime
+      component: fakecomponent
       commandLine: mkdir /projects/testfolder
-      workingDir: ${PROJECTS_ROOT}
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: build
         isDefault: false
@@ -36,20 +36,10 @@ commands:
       id: run
       component: runtime
       commandLine: npm start
-      workingDir: ${PROJECTS_ROOT}
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: run
         isDefault: true
-  - composite:
-         id: nestedcommand
-         label: Build and Echo
-         commands:
-           - buildAndMkdir
-           - install
-         parallel: true
-         group: 
-            kind: build
-            isDefault: true
   - composite:
          id: buildAndMkdir
          label: Build and Mkdir
@@ -59,4 +49,4 @@ commands:
          parallel: false
          group: 
             kind: build
-            isDefault: false
+            isDefault: true

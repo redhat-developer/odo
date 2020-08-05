@@ -70,7 +70,7 @@ func TestServicePlanCompletionHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		client, fakeClientSet := occlient.FakeNew()
-		context := genericclioptions.NewFakeContext("project", "app", "component", client)
+		context := genericclioptions.NewFakeContext("project", "app", "component", client, nil)
 
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 			return true, tt.returnedServiceClass, nil
@@ -192,7 +192,7 @@ func TestServiceParameterCompletionHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		client, fakeClientSet := occlient.FakeNew()
-		context := genericclioptions.NewFakeContext("project", "app", "component", client)
+		context := genericclioptions.NewFakeContext("project", "app", "component", client, nil)
 
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 			return true, tt.returnedServiceClass, nil
@@ -342,7 +342,7 @@ func TestLinkCompletionHandler(t *testing.T) {
 		parsedArgs := parsedArgs{
 			commands: make(map[string]bool),
 		}
-		context := genericclioptions.NewFakeContext("project", "app", tt.component, client)
+		context := genericclioptions.NewFakeContext("project", "app", tt.component, client, nil)
 
 		fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 			return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
@@ -542,7 +542,7 @@ func TestUnlinkCompletionHandler(t *testing.T) {
 		parsedArgs := parsedArgs{
 			commands: make(map[string]bool),
 		}
-		context := genericclioptions.NewFakeContext("project", "app", tt.component, client)
+		context := genericclioptions.NewFakeContext("project", "app", tt.component, client, nil)
 
 		//fake the services
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -643,7 +643,7 @@ func TestServiceCompletionHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		client, fakeClientSet := occlient.FakeNew()
-		context := genericclioptions.NewFakeContext("project", "app", "component", client)
+		context := genericclioptions.NewFakeContext("project", "app", "component", client, nil)
 
 		//fake the services
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -728,7 +728,7 @@ func TestServiceClassCompletionHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		client, fakeClientSet := occlient.FakeNew()
-		context := genericclioptions.NewFakeContext("project", "app", "component", client)
+		context := genericclioptions.NewFakeContext("project", "app", "component", client, nil)
 
 		//fake the services
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (bool, runtime.Object, error) {

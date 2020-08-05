@@ -159,6 +159,11 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	_ = pflag.CommandLine.MarkHidden("log_dir")
 	_ = pflag.CommandLine.MarkHidden("logtostderr")
 	_ = pflag.CommandLine.MarkHidden("stderrthreshold")
+	_ = pflag.CommandLine.MarkHidden("add_dir_header")
+	_ = pflag.CommandLine.MarkHidden("log_file")
+	_ = pflag.CommandLine.MarkHidden("log_file_max_size")
+	_ = pflag.CommandLine.MarkHidden("skip_headers")
+	_ = pflag.CommandLine.MarkHidden("skip_log_headers")
 
 	// We will mark the command as hidden and then re-enable if the command
 	// supports json output

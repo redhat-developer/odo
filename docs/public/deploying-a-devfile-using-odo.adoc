@@ -2,12 +2,11 @@
 
 What is a devfile?
 
-A https://redhat-developer.github.io/devfile/[devfile] is a portable file that describes your development environment. It allows for a _portable_ developmental environment without the need of reconfiguration.
+A https://redhat-developer.github.io/devfile/[devfile] is a portable file that describes your development environment. It allows reproducing a _portable_ developmental environment without the need of reconfiguration.
 
 With a devfile you can describe:
 
-* The source code being used
-* Development components such as IDE tools (VSCode) and application runtimes (Yarn / NPM)
+* Development components such as container definition for build and application runtimes
 * A list of pre-defined commands that can be run
 * Projects to initially clone
 
@@ -394,3 +393,13 @@ You can now continue developing your application. Just run `odo push` and refres
 You can also run `odo watch` to watch changes in the source code. Just refreshing the browser will render the source code changes.
 
 Run `odo delete` to delete the application from cluster.
+
+. To delete your deployed application:
++
+[source,sh]
+----
+   $ odo delete
+   ? Are you sure you want to delete the devfile component: java-spring-boot? Yes
+    ✓  Deleting devfile component java-spring-boot [139ms]
+    ✓  Successfully deleted component
+----

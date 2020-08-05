@@ -7,29 +7,29 @@ const JsonSchema200 = `{
       "description": "Predefined, ready-to-use, workspace-related commands",
       "items": {
         "properties": {
-          "composite": {
-            "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+          "apply": {
+            "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
             "properties": {
               "attributes": {
                 "additionalProperties": {
                   "type": "string"
                 },
                 "description": "Optional map of free-form additional command attributes",
-                "type": "object"
+                "type": "object",
+                "markdownDescription": "Optional map of free-form additional command attributes"
               },
-              "commands": {
-                "description": "The commands that comprise this composite command",
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
+              "component": {
+                "description": "Describes component that will be applied",
+                "type": "string",
+                "markdownDescription": "Describes component that will be applied"
               },
               "group": {
                 "description": "Defines the group this command is part of",
                 "properties": {
                   "isDefault": {
                     "description": "Identifies the default command for a given group kind",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "markdownDescription": "Identifies the default command for a given group kind"
                   },
                   "kind": {
                     "description": "Kind of group the command is part of",
@@ -39,51 +39,124 @@ const JsonSchema200 = `{
                       "test",
                       "debug"
                     ],
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Kind of group the command is part of"
                   }
                 },
                 "required": [
                   "kind"
                 ],
                 "type": "object",
+                "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
               "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                "type": "string"
+                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                "type": "string",
+                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
               },
               "label": {
                 "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                "type": "string"
-              },
-              "parallel": {
-                "description": "Indicates if the sub-commands should be executed concurrently",
-                "type": "boolean"
+                "type": "string",
+                "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
               }
             },
             "required": [
               "id"
             ],
             "type": "object",
+            "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
             "additionalProperties": false
           },
-          "exec": {
-            "description": "CLI Command executed in a component container",
+          "composite": {
+            "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
             "properties": {
               "attributes": {
                 "additionalProperties": {
                   "type": "string"
                 },
                 "description": "Optional map of free-form additional command attributes",
-                "type": "object"
+                "type": "object",
+                "markdownDescription": "Optional map of free-form additional command attributes"
+              },
+              "commands": {
+                "description": "The commands that comprise this composite command",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "markdownDescription": "The commands that comprise this composite command"
+              },
+              "group": {
+                "description": "Defines the group this command is part of",
+                "properties": {
+                  "isDefault": {
+                    "description": "Identifies the default command for a given group kind",
+                    "type": "boolean",
+                    "markdownDescription": "Identifies the default command for a given group kind"
+                  },
+                  "kind": {
+                    "description": "Kind of group the command is part of",
+                    "enum": [
+                      "build",
+                      "run",
+                      "test",
+                      "debug"
+                    ],
+                    "type": "string",
+                    "markdownDescription": "Kind of group the command is part of"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "type": "object",
+                "markdownDescription": "Defines the group this command is part of",
+                "additionalProperties": false
+              },
+              "id": {
+                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                "type": "string",
+                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
+              },
+              "label": {
+                "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
+                "type": "string",
+                "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
+              },
+              "parallel": {
+                "description": "Indicates if the sub-commands should be executed concurrently",
+                "type": "boolean",
+                "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "type": "object",
+            "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+            "additionalProperties": false
+          },
+          "exec": {
+            "description": "CLI Command executed in an existing component container",
+            "properties": {
+              "attributes": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Optional map of free-form additional command attributes",
+                "type": "object",
+                "markdownDescription": "Optional map of free-form additional command attributes"
               },
               "commandLine": {
                 "description": "The actual command-line string",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "The actual command-line string"
               },
               "component": {
                 "description": "Describes component to which given action relates",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Describes component to which given action relates"
               },
               "env": {
                 "description": "Optional list of environment variables that have to be set before running the command",
@@ -103,14 +176,16 @@ const JsonSchema200 = `{
                   "type": "object",
                   "additionalProperties": false
                 },
-                "type": "array"
+                "type": "array",
+                "markdownDescription": "Optional list of environment variables that have to be set before running the command"
               },
               "group": {
                 "description": "Defines the group this command is part of",
                 "properties": {
                   "isDefault": {
                     "description": "Identifies the default command for a given group kind",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "markdownDescription": "Identifies the default command for a given group kind"
                   },
                   "kind": {
                     "description": "Kind of group the command is part of",
@@ -120,26 +195,31 @@ const JsonSchema200 = `{
                       "test",
                       "debug"
                     ],
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Kind of group the command is part of"
                   }
                 },
                 "required": [
                   "kind"
                 ],
                 "type": "object",
+                "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
               "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                "type": "string"
+                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                "type": "string",
+                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
               },
               "label": {
                 "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
               },
               "workingDir": {
                 "description": "Working directory where the command should be executed",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Working directory where the command should be executed"
               }
             },
             "required": [
@@ -147,6 +227,7 @@ const JsonSchema200 = `{
               "commandLine"
             ],
             "type": "object",
+            "markdownDescription": "CLI Command executed in an existing component container",
             "additionalProperties": false
           },
           "vscodeLaunch": {
@@ -157,14 +238,16 @@ const JsonSchema200 = `{
                   "type": "string"
                 },
                 "description": "Optional map of free-form additional command attributes",
-                "type": "object"
+                "type": "object",
+                "markdownDescription": "Optional map of free-form additional command attributes"
               },
               "group": {
                 "description": "Defines the group this command is part of",
                 "properties": {
                   "isDefault": {
                     "description": "Identifies the default command for a given group kind",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "markdownDescription": "Identifies the default command for a given group kind"
                   },
                   "kind": {
                     "description": "Kind of group the command is part of",
@@ -174,32 +257,38 @@ const JsonSchema200 = `{
                       "test",
                       "debug"
                     ],
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Kind of group the command is part of"
                   }
                 },
                 "required": [
                   "kind"
                 ],
                 "type": "object",
+                "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
               "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                "type": "string"
+                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                "type": "string",
+                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
               },
               "inlined": {
                 "description": "Inlined content of the VsCode configuration",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Inlined content of the VsCode configuration"
               },
               "uri": {
                 "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
               }
             },
             "required": [
               "id"
             ],
             "type": "object",
+            "markdownDescription": "Command providing the definition of a VsCode launch action",
             "additionalProperties": false,
             "oneOf": [
               {
@@ -222,14 +311,16 @@ const JsonSchema200 = `{
                   "type": "string"
                 },
                 "description": "Optional map of free-form additional command attributes",
-                "type": "object"
+                "type": "object",
+                "markdownDescription": "Optional map of free-form additional command attributes"
               },
               "group": {
                 "description": "Defines the group this command is part of",
                 "properties": {
                   "isDefault": {
                     "description": "Identifies the default command for a given group kind",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "markdownDescription": "Identifies the default command for a given group kind"
                   },
                   "kind": {
                     "description": "Kind of group the command is part of",
@@ -239,32 +330,38 @@ const JsonSchema200 = `{
                       "test",
                       "debug"
                     ],
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Kind of group the command is part of"
                   }
                 },
                 "required": [
                   "kind"
                 ],
                 "type": "object",
+                "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
               "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                "type": "string"
+                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                "type": "string",
+                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
               },
               "inlined": {
                 "description": "Inlined content of the VsCode configuration",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Inlined content of the VsCode configuration"
               },
               "uri": {
                 "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
               }
             },
             "required": [
               "id"
             ],
             "type": "object",
+            "markdownDescription": "Command providing the definition of a VsCode Task",
             "additionalProperties": false,
             "oneOf": [
               {
@@ -290,6 +387,11 @@ const JsonSchema200 = `{
           },
           {
             "required": [
+              "apply"
+            ]
+          },
+          {
+            "required": [
               "vscodeTask"
             ]
           },
@@ -305,7 +407,8 @@ const JsonSchema200 = `{
           }
         ]
       },
-      "type": "array"
+      "type": "array",
+      "markdownDescription": "Predefined, ready-to-use, workspace-related commands"
     },
     "components": {
       "description": "List of the workspace components, such as editor and plugins, user-provided containers, or other types of components",
@@ -315,18 +418,25 @@ const JsonSchema200 = `{
             "description": "Allows adding and configuring workspace-related containers",
             "properties": {
               "args": {
-                "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command. Defaults to an empty array, meaning use whatever is defined in the image.",
+                "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                 "items": {
                   "type": "string"
                 },
-                "type": "array"
+                "type": "array",
+                "markdownDescription": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
               },
               "command": {
-                "description": "The command to run in the dockerimage component instead of the default one provided in the image. Defaults to an empty array, meaning use whatever is defined in the image.",
+                "description": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                 "items": {
                   "type": "string"
                 },
-                "type": "array"
+                "type": "array",
+                "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
+              },
+              "dedicatedPod": {
+                "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                "type": "boolean",
+                "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
               },
               "endpoints": {
                 "items": {
@@ -335,47 +445,37 @@ const JsonSchema200 = `{
                       "additionalProperties": {
                         "type": "string"
                       },
-                      "type": "object"
-                    },
-                    "configuration": {
-                      "properties": {
-                        "cookiesAuthEnabled": {
-                          "type": "boolean"
-                        },
-                        "discoverable": {
-                          "type": "boolean"
-                        },
-                        "path": {
-                          "type": "string"
-                        },
-                        "protocol": {
-                          "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
-                          "type": "string"
-                        },
-                        "public": {
-                          "type": "boolean"
-                        },
-                        "scheme": {
-                          "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
-                          "type": "string"
-                        },
-                        "secure": {
-                          "type": "boolean"
-                        },
-                        "type": {
-                          "enum": [
-                            "ide",
-                            "terminal",
-                            "ide-dev"
-                          ],
-                          "type": "string"
-                        }
-                      },
+                      "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                       "type": "object",
-                      "additionalProperties": false
+                      "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                    },
+                    "exposure": {
+                      "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                      "enum": [
+                        "public",
+                        "internal",
+                        "none"
+                      ],
+                      "type": "string",
+                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
                     },
                     "name": {
                       "type": "string"
+                    },
+                    "path": {
+                      "description": "Path of the endpoint URL",
+                      "type": "string",
+                      "markdownDescription": "Path of the endpoint URL"
+                    },
+                    "protocol": {
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                      "type": "string",
+                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                    },
+                    "secure": {
+                      "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                      "type": "boolean",
+                      "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
                     },
                     "targetPort": {
                       "type": "integer"
@@ -408,7 +508,8 @@ const JsonSchema200 = `{
                   "type": "object",
                   "additionalProperties": false
                 },
-                "type": "array"
+                "type": "array",
+                "markdownDescription": "Environment variables used in this container"
               },
               "image": {
                 "type": "string"
@@ -423,8 +524,9 @@ const JsonSchema200 = `{
                 "type": "string"
               },
               "sourceMapping": {
-                "description": "Optional specification of the path in the container where project sources should be transferred/mounted when ` + `mountSources` + ` is ` + `true` + `. When omitted, the value of the ` + `PROJECTS_ROOT` + ` environment variable is used.",
-                "type": "string"
+                "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                "type": "string",
+                "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
               },
               "volumeMounts": {
                 "description": "List of volumes mounts that should be mounted is this container.",
@@ -432,12 +534,79 @@ const JsonSchema200 = `{
                   "description": "Volume that should be mounted to a component container",
                   "properties": {
                     "name": {
-                      "description": "The volume mount name is the name of an existing ` + `Volume` + ` component. If no corresponding ` + `Volume` + ` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                      "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                      "type": "string",
+                      "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                    },
+                    "path": {
+                      "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                      "type": "string",
+                      "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ],
+                  "type": "object",
+                  "markdownDescription": "Volume that should be mounted to a component container",
+                  "additionalProperties": false
+                },
+                "type": "array",
+                "markdownDescription": "List of volumes mounts that should be mounted is this container."
+              }
+            },
+            "required": [
+              "name",
+              "image"
+            ],
+            "type": "object",
+            "markdownDescription": "Allows adding and configuring workspace-related containers",
+            "additionalProperties": false
+          },
+          "kubernetes": {
+            "description": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
+            "properties": {
+              "endpoints": {
+                "items": {
+                  "properties": {
+                    "attributes": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                      "type": "object",
+                      "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                    },
+                    "exposure": {
+                      "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                      "enum": [
+                        "public",
+                        "internal",
+                        "none"
+                      ],
+                      "type": "string",
+                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                    },
+                    "name": {
                       "type": "string"
                     },
                     "path": {
-                      "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is ` + `/<name>` + `.",
-                      "type": "string"
+                      "description": "Path of the endpoint URL",
+                      "type": "string",
+                      "markdownDescription": "Path of the endpoint URL"
+                    },
+                    "protocol": {
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                      "type": "string",
+                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                    },
+                    "secure": {
+                      "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                      "type": "boolean",
+                      "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                    },
+                    "targetPort": {
+                      "type": "integer"
                     }
                   },
                   "required": [
@@ -447,35 +616,28 @@ const JsonSchema200 = `{
                   "additionalProperties": false
                 },
                 "type": "array"
-              }
-            },
-            "required": [
-              "name",
-              "image"
-            ],
-            "type": "object",
-            "additionalProperties": false
-          },
-          "kubernetes": {
-            "description": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
-            "properties": {
+              },
               "inlined": {
                 "description": "Inlined manifest",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Inlined manifest"
               },
               "name": {
                 "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
               },
               "uri": {
                 "description": "Location in a file fetched from a uri.",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Location in a file fetched from a uri."
               }
             },
             "required": [
               "name"
             ],
             "type": "object",
+            "markdownDescription": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
             "additionalProperties": false,
             "oneOf": [
               {
@@ -493,23 +655,78 @@ const JsonSchema200 = `{
           "openshift": {
             "description": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
             "properties": {
+              "endpoints": {
+                "items": {
+                  "properties": {
+                    "attributes": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                      "type": "object",
+                      "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                    },
+                    "exposure": {
+                      "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                      "enum": [
+                        "public",
+                        "internal",
+                        "none"
+                      ],
+                      "type": "string",
+                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "Path of the endpoint URL",
+                      "type": "string",
+                      "markdownDescription": "Path of the endpoint URL"
+                    },
+                    "protocol": {
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                      "type": "string",
+                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                    },
+                    "secure": {
+                      "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                      "type": "boolean",
+                      "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                    },
+                    "targetPort": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ],
+                  "type": "object",
+                  "additionalProperties": false
+                },
+                "type": "array"
+              },
               "inlined": {
                 "description": "Inlined manifest",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Inlined manifest"
               },
               "name": {
                 "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
               },
               "uri": {
                 "description": "Location in a file fetched from a uri.",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Location in a file fetched from a uri."
               }
             },
             "required": [
               "name"
             ],
             "type": "object",
+            "markdownDescription": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
             "additionalProperties": false,
             "oneOf": [
               {
@@ -525,35 +742,35 @@ const JsonSchema200 = `{
             ]
           },
           "plugin": {
-            "description": "Allows importing a plugin. Plugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as ` + `DevWorkspaceTemplate` + ` Kubernetes Custom Resources",
+            "description": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
             "properties": {
               "commands": {
                 "description": "Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge",
                 "items": {
                   "properties": {
-                    "composite": {
-                      "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+                    "apply": {
+                      "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                       "properties": {
                         "attributes": {
                           "additionalProperties": {
                             "type": "string"
                           },
                           "description": "Optional map of free-form additional command attributes",
-                          "type": "object"
+                          "type": "object",
+                          "markdownDescription": "Optional map of free-form additional command attributes"
                         },
-                        "commands": {
-                          "description": "The commands that comprise this composite command",
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
+                        "component": {
+                          "description": "Describes component that will be applied",
+                          "type": "string",
+                          "markdownDescription": "Describes component that will be applied"
                         },
                         "group": {
                           "description": "Defines the group this command is part of",
                           "properties": {
                             "isDefault": {
                               "description": "Identifies the default command for a given group kind",
-                              "type": "boolean"
+                              "type": "boolean",
+                              "markdownDescription": "Identifies the default command for a given group kind"
                             },
                             "kind": {
                               "description": "Kind of group the command is part of",
@@ -563,51 +780,124 @@ const JsonSchema200 = `{
                                 "test",
                                 "debug"
                               ],
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Kind of group the command is part of"
                             }
                           },
                           "required": [
                             "kind"
                           ],
                           "type": "object",
+                          "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
                         "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                          "type": "string"
+                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                          "type": "string",
+                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                         },
                         "label": {
                           "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                          "type": "string"
-                        },
-                        "parallel": {
-                          "description": "Indicates if the sub-commands should be executed concurrently",
-                          "type": "boolean"
+                          "type": "string",
+                          "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                         }
                       },
                       "required": [
                         "id"
                       ],
                       "type": "object",
+                      "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                       "additionalProperties": false
                     },
-                    "exec": {
-                      "description": "CLI Command executed in a component container",
+                    "composite": {
+                      "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
                       "properties": {
                         "attributes": {
                           "additionalProperties": {
                             "type": "string"
                           },
                           "description": "Optional map of free-form additional command attributes",
-                          "type": "object"
+                          "type": "object",
+                          "markdownDescription": "Optional map of free-form additional command attributes"
+                        },
+                        "commands": {
+                          "description": "The commands that comprise this composite command",
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array",
+                          "markdownDescription": "The commands that comprise this composite command"
+                        },
+                        "group": {
+                          "description": "Defines the group this command is part of",
+                          "properties": {
+                            "isDefault": {
+                              "description": "Identifies the default command for a given group kind",
+                              "type": "boolean",
+                              "markdownDescription": "Identifies the default command for a given group kind"
+                            },
+                            "kind": {
+                              "description": "Kind of group the command is part of",
+                              "enum": [
+                                "build",
+                                "run",
+                                "test",
+                                "debug"
+                              ],
+                              "type": "string",
+                              "markdownDescription": "Kind of group the command is part of"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ],
+                          "type": "object",
+                          "markdownDescription": "Defines the group this command is part of",
+                          "additionalProperties": false
+                        },
+                        "id": {
+                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                          "type": "string",
+                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
+                        },
+                        "label": {
+                          "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
+                          "type": "string",
+                          "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
+                        },
+                        "parallel": {
+                          "description": "Indicates if the sub-commands should be executed concurrently",
+                          "type": "boolean",
+                          "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ],
+                      "type": "object",
+                      "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+                      "additionalProperties": false
+                    },
+                    "exec": {
+                      "description": "CLI Command executed in an existing component container",
+                      "properties": {
+                        "attributes": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Optional map of free-form additional command attributes",
+                          "type": "object",
+                          "markdownDescription": "Optional map of free-form additional command attributes"
                         },
                         "commandLine": {
                           "description": "The actual command-line string",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "The actual command-line string"
                         },
                         "component": {
                           "description": "Describes component to which given action relates",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Describes component to which given action relates"
                         },
                         "env": {
                           "description": "Optional list of environment variables that have to be set before running the command",
@@ -627,14 +917,16 @@ const JsonSchema200 = `{
                             "type": "object",
                             "additionalProperties": false
                           },
-                          "type": "array"
+                          "type": "array",
+                          "markdownDescription": "Optional list of environment variables that have to be set before running the command"
                         },
                         "group": {
                           "description": "Defines the group this command is part of",
                           "properties": {
                             "isDefault": {
                               "description": "Identifies the default command for a given group kind",
-                              "type": "boolean"
+                              "type": "boolean",
+                              "markdownDescription": "Identifies the default command for a given group kind"
                             },
                             "kind": {
                               "description": "Kind of group the command is part of",
@@ -644,32 +936,38 @@ const JsonSchema200 = `{
                                 "test",
                                 "debug"
                               ],
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Kind of group the command is part of"
                             }
                           },
                           "required": [
                             "kind"
                           ],
                           "type": "object",
+                          "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
                         "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                          "type": "string"
+                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                          "type": "string",
+                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                         },
                         "label": {
                           "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                         },
                         "workingDir": {
                           "description": "Working directory where the command should be executed",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Working directory where the command should be executed"
                         }
                       },
                       "required": [
                         "id"
                       ],
                       "type": "object",
+                      "markdownDescription": "CLI Command executed in an existing component container",
                       "additionalProperties": false
                     },
                     "vscodeLaunch": {
@@ -680,14 +978,16 @@ const JsonSchema200 = `{
                             "type": "string"
                           },
                           "description": "Optional map of free-form additional command attributes",
-                          "type": "object"
+                          "type": "object",
+                          "markdownDescription": "Optional map of free-form additional command attributes"
                         },
                         "group": {
                           "description": "Defines the group this command is part of",
                           "properties": {
                             "isDefault": {
                               "description": "Identifies the default command for a given group kind",
-                              "type": "boolean"
+                              "type": "boolean",
+                              "markdownDescription": "Identifies the default command for a given group kind"
                             },
                             "kind": {
                               "description": "Kind of group the command is part of",
@@ -697,32 +997,38 @@ const JsonSchema200 = `{
                                 "test",
                                 "debug"
                               ],
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Kind of group the command is part of"
                             }
                           },
                           "required": [
                             "kind"
                           ],
                           "type": "object",
+                          "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
                         "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                          "type": "string"
+                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                          "type": "string",
+                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                         },
                         "inlined": {
                           "description": "Inlined content of the VsCode configuration",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Inlined content of the VsCode configuration"
                         },
                         "uri": {
                           "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                         }
                       },
                       "required": [
                         "id"
                       ],
                       "type": "object",
+                      "markdownDescription": "Command providing the definition of a VsCode launch action",
                       "additionalProperties": false,
                       "oneOf": [
                         {
@@ -745,14 +1051,16 @@ const JsonSchema200 = `{
                             "type": "string"
                           },
                           "description": "Optional map of free-form additional command attributes",
-                          "type": "object"
+                          "type": "object",
+                          "markdownDescription": "Optional map of free-form additional command attributes"
                         },
                         "group": {
                           "description": "Defines the group this command is part of",
                           "properties": {
                             "isDefault": {
                               "description": "Identifies the default command for a given group kind",
-                              "type": "boolean"
+                              "type": "boolean",
+                              "markdownDescription": "Identifies the default command for a given group kind"
                             },
                             "kind": {
                               "description": "Kind of group the command is part of",
@@ -762,32 +1070,38 @@ const JsonSchema200 = `{
                                 "test",
                                 "debug"
                               ],
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Kind of group the command is part of"
                             }
                           },
                           "required": [
                             "kind"
                           ],
                           "type": "object",
+                          "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
                         "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                          "type": "string"
+                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                          "type": "string",
+                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                         },
                         "inlined": {
                           "description": "Inlined content of the VsCode configuration",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Inlined content of the VsCode configuration"
                         },
                         "uri": {
                           "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                         }
                       },
                       "required": [
                         "id"
                       ],
                       "type": "object",
+                      "markdownDescription": "Command providing the definition of a VsCode Task",
                       "additionalProperties": false,
                       "oneOf": [
                         {
@@ -813,6 +1127,11 @@ const JsonSchema200 = `{
                     },
                     {
                       "required": [
+                        "apply"
+                      ]
+                    },
+                    {
+                      "required": [
                         "vscodeTask"
                       ]
                     },
@@ -828,7 +1147,8 @@ const JsonSchema200 = `{
                     }
                   ]
                 },
-                "type": "array"
+                "type": "array",
+                "markdownDescription": "Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge"
               },
               "components": {
                 "description": "Overrides of components encapsulated in a plugin. Overriding is done using a strategic merge",
@@ -838,18 +1158,25 @@ const JsonSchema200 = `{
                       "description": "Configuration overriding for a Container component",
                       "properties": {
                         "args": {
-                          "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command. Defaults to an empty array, meaning use whatever is defined in the image.",
+                          "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                           "items": {
                             "type": "string"
                           },
-                          "type": "array"
+                          "type": "array",
+                          "markdownDescription": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
                         },
                         "command": {
-                          "description": "The command to run in the dockerimage component instead of the default one provided in the image. Defaults to an empty array, meaning use whatever is defined in the image.",
+                          "description": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                           "items": {
                             "type": "string"
                           },
-                          "type": "array"
+                          "type": "array",
+                          "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
+                        },
+                        "dedicatedPod": {
+                          "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                          "type": "boolean",
+                          "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
                         },
                         "endpoints": {
                           "items": {
@@ -858,47 +1185,37 @@ const JsonSchema200 = `{
                                 "additionalProperties": {
                                   "type": "string"
                                 },
-                                "type": "object"
-                              },
-                              "configuration": {
-                                "properties": {
-                                  "cookiesAuthEnabled": {
-                                    "type": "boolean"
-                                  },
-                                  "discoverable": {
-                                    "type": "boolean"
-                                  },
-                                  "path": {
-                                    "type": "string"
-                                  },
-                                  "protocol": {
-                                    "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
-                                    "type": "string"
-                                  },
-                                  "public": {
-                                    "type": "boolean"
-                                  },
-                                  "scheme": {
-                                    "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
-                                    "type": "string"
-                                  },
-                                  "secure": {
-                                    "type": "boolean"
-                                  },
-                                  "type": {
-                                    "enum": [
-                                      "ide",
-                                      "terminal",
-                                      "ide-dev"
-                                    ],
-                                    "type": "string"
-                                  }
-                                },
+                                "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                                 "type": "object",
-                                "additionalProperties": false
+                                "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                              },
+                              "exposure": {
+                                "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                "enum": [
+                                  "public",
+                                  "internal",
+                                  "none"
+                                ],
+                                "type": "string",
+                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
                               },
                               "name": {
                                 "type": "string"
+                              },
+                              "path": {
+                                "description": "Path of the endpoint URL",
+                                "type": "string",
+                                "markdownDescription": "Path of the endpoint URL"
+                              },
+                              "protocol": {
+                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                "type": "string",
+                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                              },
+                              "secure": {
+                                "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                                "type": "boolean",
+                                "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
                               },
                               "targetPort": {
                                 "type": "integer"
@@ -930,7 +1247,8 @@ const JsonSchema200 = `{
                             "type": "object",
                             "additionalProperties": false
                           },
-                          "type": "array"
+                          "type": "array",
+                          "markdownDescription": "Environment variables used in this container"
                         },
                         "image": {
                           "type": "string"
@@ -945,8 +1263,9 @@ const JsonSchema200 = `{
                           "type": "string"
                         },
                         "sourceMapping": {
-                          "description": "Optional specification of the path in the container where project sources should be transferred/mounted when ` + `mountSources` + ` is ` + `true` + `. When omitted, the value of the ` + `PROJECTS_ROOT` + ` environment variable is used.",
-                          "type": "string"
+                          "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                          "type": "string",
+                          "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
                         },
                         "volumeMounts": {
                           "description": "List of volumes mounts that should be mounted is this container.",
@@ -954,12 +1273,78 @@ const JsonSchema200 = `{
                             "description": "Volume that should be mounted to a component container",
                             "properties": {
                               "name": {
-                                "description": "The volume mount name is the name of an existing ` + `Volume` + ` component. If no corresponding ` + `Volume` + ` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                                "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                                "type": "string",
+                                "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                              },
+                              "path": {
+                                "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                                "type": "string",
+                                "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                              }
+                            },
+                            "required": [
+                              "name"
+                            ],
+                            "type": "object",
+                            "markdownDescription": "Volume that should be mounted to a component container",
+                            "additionalProperties": false
+                          },
+                          "type": "array",
+                          "markdownDescription": "List of volumes mounts that should be mounted is this container."
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "type": "object",
+                      "markdownDescription": "Configuration overriding for a Container component",
+                      "additionalProperties": false
+                    },
+                    "kubernetes": {
+                      "description": "Configuration overriding for a Kubernetes component",
+                      "properties": {
+                        "endpoints": {
+                          "items": {
+                            "properties": {
+                              "attributes": {
+                                "additionalProperties": {
+                                  "type": "string"
+                                },
+                                "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                                "type": "object",
+                                "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                              },
+                              "exposure": {
+                                "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                "enum": [
+                                  "public",
+                                  "internal",
+                                  "none"
+                                ],
+                                "type": "string",
+                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                              },
+                              "name": {
                                 "type": "string"
                               },
                               "path": {
-                                "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is ` + `/<name>` + `.",
-                                "type": "string"
+                                "description": "Path of the endpoint URL",
+                                "type": "string",
+                                "markdownDescription": "Path of the endpoint URL"
+                              },
+                              "protocol": {
+                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                "type": "string",
+                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                              },
+                              "secure": {
+                                "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                                "type": "boolean",
+                                "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                              },
+                              "targetPort": {
+                                "type": "integer"
                               }
                             },
                             "required": [
@@ -969,34 +1354,28 @@ const JsonSchema200 = `{
                             "additionalProperties": false
                           },
                           "type": "array"
-                        }
-                      },
-                      "required": [
-                        "name"
-                      ],
-                      "type": "object",
-                      "additionalProperties": false
-                    },
-                    "kubernetes": {
-                      "description": "Configuration overriding for a Kubernetes component",
-                      "properties": {
+                        },
                         "inlined": {
                           "description": "Inlined manifest",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Inlined manifest"
                         },
                         "name": {
                           "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
                         },
                         "uri": {
                           "description": "Location in a file fetched from a uri.",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Location in a file fetched from a uri."
                         }
                       },
                       "required": [
                         "name"
                       ],
                       "type": "object",
+                      "markdownDescription": "Configuration overriding for a Kubernetes component",
                       "additionalProperties": false,
                       "oneOf": [
                         {
@@ -1014,23 +1393,78 @@ const JsonSchema200 = `{
                     "openshift": {
                       "description": "Configuration overriding for an OpenShift component",
                       "properties": {
+                        "endpoints": {
+                          "items": {
+                            "properties": {
+                              "attributes": {
+                                "additionalProperties": {
+                                  "type": "string"
+                                },
+                                "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                                "type": "object",
+                                "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                              },
+                              "exposure": {
+                                "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                "enum": [
+                                  "public",
+                                  "internal",
+                                  "none"
+                                ],
+                                "type": "string",
+                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "path": {
+                                "description": "Path of the endpoint URL",
+                                "type": "string",
+                                "markdownDescription": "Path of the endpoint URL"
+                              },
+                              "protocol": {
+                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                "type": "string",
+                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                              },
+                              "secure": {
+                                "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                                "type": "boolean",
+                                "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                              },
+                              "targetPort": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "name"
+                            ],
+                            "type": "object",
+                            "additionalProperties": false
+                          },
+                          "type": "array"
+                        },
                         "inlined": {
                           "description": "Inlined manifest",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Inlined manifest"
                         },
                         "name": {
                           "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
                         },
                         "uri": {
                           "description": "Location in a file fetched from a uri.",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Location in a file fetched from a uri."
                         }
                       },
                       "required": [
                         "name"
                       ],
                       "type": "object",
+                      "markdownDescription": "Configuration overriding for an OpenShift component",
                       "additionalProperties": false,
                       "oneOf": [
                         {
@@ -1050,17 +1484,20 @@ const JsonSchema200 = `{
                       "properties": {
                         "name": {
                           "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
                         },
                         "size": {
                           "description": "Size of the volume",
-                          "type": "string"
+                          "type": "string",
+                          "markdownDescription": "Size of the volume"
                         }
                       },
                       "required": [
                         "name"
                       ],
                       "type": "object",
+                      "markdownDescription": "Configuration overriding for a Volume component",
                       "additionalProperties": false
                     }
                   },
@@ -1089,11 +1526,13 @@ const JsonSchema200 = `{
                     }
                   ]
                 },
-                "type": "array"
+                "type": "array",
+                "markdownDescription": "Overrides of components encapsulated in a plugin. Overriding is done using a strategic merge"
               },
               "id": {
                 "description": "Id in a registry that contains a Devfile yaml file",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Id in a registry that contains a Devfile yaml file"
               },
               "kubernetes": {
                 "description": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
@@ -1109,21 +1548,25 @@ const JsonSchema200 = `{
                   "name"
                 ],
                 "type": "object",
+                "markdownDescription": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
                 "additionalProperties": false
               },
               "name": {
                 "description": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)"
               },
               "registryUrl": {
                 "type": "string"
               },
               "uri": {
                 "description": "Uri of a Devfile yaml file",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Uri of a Devfile yaml file"
               }
             },
             "type": "object",
+            "markdownDescription": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
             "additionalProperties": false,
             "oneOf": [
               {
@@ -1148,17 +1591,20 @@ const JsonSchema200 = `{
             "properties": {
               "name": {
                 "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
               },
               "size": {
                 "description": "Size of the volume",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Size of the volume"
               }
             },
             "required": [
               "name"
             ],
             "type": "object",
+            "markdownDescription": "Allows specifying the definition of a volume shared by several other components",
             "additionalProperties": false
           }
         },
@@ -1192,7 +1638,8 @@ const JsonSchema200 = `{
           }
         ]
       },
-      "type": "array"
+      "type": "array",
+      "markdownDescription": "List of the workspace components, such as editor and plugins, user-provided containers, or other types of components"
     },
     "events": {
       "description": "Bindings of commands to events. Each command is referred-to by its name.",
@@ -1202,31 +1649,36 @@ const JsonSchema200 = `{
           "items": {
             "type": "string"
           },
-          "type": "array"
+          "type": "array",
+          "markdownDescription": "Names of commands that should be executed after the workspace is completely started. In the case of Che-Theia, these commands should be executed after all plugins and extensions have started, including project cloning. This means that those commands are not triggered until the user opens the IDE in his browser."
         },
         "postStop": {
           "description": "Names of commands that should be executed after stopping the workspace.",
           "items": {
             "type": "string"
           },
-          "type": "array"
+          "type": "array",
+          "markdownDescription": "Names of commands that should be executed after stopping the workspace."
         },
         "preStart": {
           "description": "Names of commands that should be executed before the workspace start. Kubernetes-wise, these commands would typically be executed in init containers of the workspace POD.",
           "items": {
             "type": "string"
           },
-          "type": "array"
+          "type": "array",
+          "markdownDescription": "Names of commands that should be executed before the workspace start. Kubernetes-wise, these commands would typically be executed in init containers of the workspace POD."
         },
         "preStop": {
           "description": "Names of commands that should be executed before stopping the workspace.",
           "items": {
             "type": "string"
           },
-          "type": "array"
+          "type": "array",
+          "markdownDescription": "Names of commands that should be executed before stopping the workspace."
         }
       },
       "type": "object",
+      "markdownDescription": "Bindings of commands to events. Each command is referred-to by its name.",
       "additionalProperties": false
     },
     "parent": {
@@ -1236,29 +1688,29 @@ const JsonSchema200 = `{
           "description": "Predefined, ready-to-use, workspace-related commands",
           "items": {
             "properties": {
-              "composite": {
-                "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+              "apply": {
+                "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                 "properties": {
                   "attributes": {
                     "additionalProperties": {
                       "type": "string"
                     },
                     "description": "Optional map of free-form additional command attributes",
-                    "type": "object"
+                    "type": "object",
+                    "markdownDescription": "Optional map of free-form additional command attributes"
                   },
-                  "commands": {
-                    "description": "The commands that comprise this composite command",
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array"
+                  "component": {
+                    "description": "Describes component that will be applied",
+                    "type": "string",
+                    "markdownDescription": "Describes component that will be applied"
                   },
                   "group": {
                     "description": "Defines the group this command is part of",
                     "properties": {
                       "isDefault": {
                         "description": "Identifies the default command for a given group kind",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "markdownDescription": "Identifies the default command for a given group kind"
                       },
                       "kind": {
                         "description": "Kind of group the command is part of",
@@ -1268,51 +1720,124 @@ const JsonSchema200 = `{
                           "test",
                           "debug"
                         ],
-                        "type": "string"
+                        "type": "string",
+                        "markdownDescription": "Kind of group the command is part of"
                       }
                     },
                     "required": [
                       "kind"
                     ],
                     "type": "object",
+                    "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
                   "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                    "type": "string"
+                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                    "type": "string",
+                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                   },
                   "label": {
                     "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                    "type": "string"
-                  },
-                  "parallel": {
-                    "description": "Indicates if the sub-commands should be executed concurrently",
-                    "type": "boolean"
+                    "type": "string",
+                    "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                   }
                 },
                 "required": [
                   "id"
                 ],
                 "type": "object",
+                "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                 "additionalProperties": false
               },
-              "exec": {
-                "description": "CLI Command executed in a component container",
+              "composite": {
+                "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
                 "properties": {
                   "attributes": {
                     "additionalProperties": {
                       "type": "string"
                     },
                     "description": "Optional map of free-form additional command attributes",
-                    "type": "object"
+                    "type": "object",
+                    "markdownDescription": "Optional map of free-form additional command attributes"
+                  },
+                  "commands": {
+                    "description": "The commands that comprise this composite command",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "markdownDescription": "The commands that comprise this composite command"
+                  },
+                  "group": {
+                    "description": "Defines the group this command is part of",
+                    "properties": {
+                      "isDefault": {
+                        "description": "Identifies the default command for a given group kind",
+                        "type": "boolean",
+                        "markdownDescription": "Identifies the default command for a given group kind"
+                      },
+                      "kind": {
+                        "description": "Kind of group the command is part of",
+                        "enum": [
+                          "build",
+                          "run",
+                          "test",
+                          "debug"
+                        ],
+                        "type": "string",
+                        "markdownDescription": "Kind of group the command is part of"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "type": "object",
+                    "markdownDescription": "Defines the group this command is part of",
+                    "additionalProperties": false
+                  },
+                  "id": {
+                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                    "type": "string",
+                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
+                  },
+                  "label": {
+                    "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
+                    "type": "string",
+                    "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
+                  },
+                  "parallel": {
+                    "description": "Indicates if the sub-commands should be executed concurrently",
+                    "type": "boolean",
+                    "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "type": "object",
+                "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+                "additionalProperties": false
+              },
+              "exec": {
+                "description": "CLI Command executed in an existing component container",
+                "properties": {
+                  "attributes": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Optional map of free-form additional command attributes",
+                    "type": "object",
+                    "markdownDescription": "Optional map of free-form additional command attributes"
                   },
                   "commandLine": {
                     "description": "The actual command-line string",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "The actual command-line string"
                   },
                   "component": {
                     "description": "Describes component to which given action relates",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Describes component to which given action relates"
                   },
                   "env": {
                     "description": "Optional list of environment variables that have to be set before running the command",
@@ -1332,14 +1857,16 @@ const JsonSchema200 = `{
                       "type": "object",
                       "additionalProperties": false
                     },
-                    "type": "array"
+                    "type": "array",
+                    "markdownDescription": "Optional list of environment variables that have to be set before running the command"
                   },
                   "group": {
                     "description": "Defines the group this command is part of",
                     "properties": {
                       "isDefault": {
                         "description": "Identifies the default command for a given group kind",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "markdownDescription": "Identifies the default command for a given group kind"
                       },
                       "kind": {
                         "description": "Kind of group the command is part of",
@@ -1349,32 +1876,38 @@ const JsonSchema200 = `{
                           "test",
                           "debug"
                         ],
-                        "type": "string"
+                        "type": "string",
+                        "markdownDescription": "Kind of group the command is part of"
                       }
                     },
                     "required": [
                       "kind"
                     ],
                     "type": "object",
+                    "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
                   "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                    "type": "string"
+                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                    "type": "string",
+                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                   },
                   "label": {
                     "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                   },
                   "workingDir": {
                     "description": "Working directory where the command should be executed",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Working directory where the command should be executed"
                   }
                 },
                 "required": [
                   "id"
                 ],
                 "type": "object",
+                "markdownDescription": "CLI Command executed in an existing component container",
                 "additionalProperties": false
               },
               "vscodeLaunch": {
@@ -1385,14 +1918,16 @@ const JsonSchema200 = `{
                       "type": "string"
                     },
                     "description": "Optional map of free-form additional command attributes",
-                    "type": "object"
+                    "type": "object",
+                    "markdownDescription": "Optional map of free-form additional command attributes"
                   },
                   "group": {
                     "description": "Defines the group this command is part of",
                     "properties": {
                       "isDefault": {
                         "description": "Identifies the default command for a given group kind",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "markdownDescription": "Identifies the default command for a given group kind"
                       },
                       "kind": {
                         "description": "Kind of group the command is part of",
@@ -1402,32 +1937,38 @@ const JsonSchema200 = `{
                           "test",
                           "debug"
                         ],
-                        "type": "string"
+                        "type": "string",
+                        "markdownDescription": "Kind of group the command is part of"
                       }
                     },
                     "required": [
                       "kind"
                     ],
                     "type": "object",
+                    "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
                   "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                    "type": "string"
+                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                    "type": "string",
+                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                   },
                   "inlined": {
                     "description": "Inlined content of the VsCode configuration",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Inlined content of the VsCode configuration"
                   },
                   "uri": {
                     "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                   }
                 },
                 "required": [
                   "id"
                 ],
                 "type": "object",
+                "markdownDescription": "Command providing the definition of a VsCode launch action",
                 "additionalProperties": false,
                 "oneOf": [
                   {
@@ -1450,14 +1991,16 @@ const JsonSchema200 = `{
                       "type": "string"
                     },
                     "description": "Optional map of free-form additional command attributes",
-                    "type": "object"
+                    "type": "object",
+                    "markdownDescription": "Optional map of free-form additional command attributes"
                   },
                   "group": {
                     "description": "Defines the group this command is part of",
                     "properties": {
                       "isDefault": {
                         "description": "Identifies the default command for a given group kind",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "markdownDescription": "Identifies the default command for a given group kind"
                       },
                       "kind": {
                         "description": "Kind of group the command is part of",
@@ -1467,32 +2010,38 @@ const JsonSchema200 = `{
                           "test",
                           "debug"
                         ],
-                        "type": "string"
+                        "type": "string",
+                        "markdownDescription": "Kind of group the command is part of"
                       }
                     },
                     "required": [
                       "kind"
                     ],
                     "type": "object",
+                    "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
                   "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                    "type": "string"
+                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                    "type": "string",
+                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                   },
                   "inlined": {
                     "description": "Inlined content of the VsCode configuration",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Inlined content of the VsCode configuration"
                   },
                   "uri": {
                     "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                   }
                 },
                 "required": [
                   "id"
                 ],
                 "type": "object",
+                "markdownDescription": "Command providing the definition of a VsCode Task",
                 "additionalProperties": false,
                 "oneOf": [
                   {
@@ -1518,6 +2067,11 @@ const JsonSchema200 = `{
               },
               {
                 "required": [
+                  "apply"
+                ]
+              },
+              {
+                "required": [
                   "vscodeTask"
                 ]
               },
@@ -1533,7 +2087,8 @@ const JsonSchema200 = `{
               }
             ]
           },
-          "type": "array"
+          "type": "array",
+          "markdownDescription": "Predefined, ready-to-use, workspace-related commands"
         },
         "components": {
           "description": "List of the workspace components, such as editor and plugins, user-provided containers, or other types of components",
@@ -1543,18 +2098,25 @@ const JsonSchema200 = `{
                 "description": "Allows adding and configuring workspace-related containers",
                 "properties": {
                   "args": {
-                    "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command. Defaults to an empty array, meaning use whatever is defined in the image.",
+                    "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                     "items": {
                       "type": "string"
                     },
-                    "type": "array"
+                    "type": "array",
+                    "markdownDescription": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
                   },
                   "command": {
-                    "description": "The command to run in the dockerimage component instead of the default one provided in the image. Defaults to an empty array, meaning use whatever is defined in the image.",
+                    "description": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                     "items": {
                       "type": "string"
                     },
-                    "type": "array"
+                    "type": "array",
+                    "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
+                  },
+                  "dedicatedPod": {
+                    "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                    "type": "boolean",
+                    "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
                   },
                   "endpoints": {
                     "items": {
@@ -1563,47 +2125,37 @@ const JsonSchema200 = `{
                           "additionalProperties": {
                             "type": "string"
                           },
-                          "type": "object"
-                        },
-                        "configuration": {
-                          "properties": {
-                            "cookiesAuthEnabled": {
-                              "type": "boolean"
-                            },
-                            "discoverable": {
-                              "type": "boolean"
-                            },
-                            "path": {
-                              "type": "string"
-                            },
-                            "protocol": {
-                              "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
-                              "type": "string"
-                            },
-                            "public": {
-                              "type": "boolean"
-                            },
-                            "scheme": {
-                              "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
-                              "type": "string"
-                            },
-                            "secure": {
-                              "type": "boolean"
-                            },
-                            "type": {
-                              "enum": [
-                                "ide",
-                                "terminal",
-                                "ide-dev"
-                              ],
-                              "type": "string"
-                            }
-                          },
+                          "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                           "type": "object",
-                          "additionalProperties": false
+                          "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                        },
+                        "exposure": {
+                          "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                          "enum": [
+                            "public",
+                            "internal",
+                            "none"
+                          ],
+                          "type": "string",
+                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "path": {
+                          "description": "Path of the endpoint URL",
+                          "type": "string",
+                          "markdownDescription": "Path of the endpoint URL"
+                        },
+                        "protocol": {
+                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                          "type": "string",
+                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                        },
+                        "secure": {
+                          "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                          "type": "boolean",
+                          "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
                         },
                         "targetPort": {
                           "type": "integer"
@@ -1635,7 +2187,8 @@ const JsonSchema200 = `{
                       "type": "object",
                       "additionalProperties": false
                     },
-                    "type": "array"
+                    "type": "array",
+                    "markdownDescription": "Environment variables used in this container"
                   },
                   "image": {
                     "type": "string"
@@ -1650,8 +2203,9 @@ const JsonSchema200 = `{
                     "type": "string"
                   },
                   "sourceMapping": {
-                    "description": "Optional specification of the path in the container where project sources should be transferred/mounted when ` + `mountSources` + ` is ` + `true` + `. When omitted, the value of the ` + `PROJECTS_ROOT` + ` environment variable is used.",
-                    "type": "string"
+                    "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                    "type": "string",
+                    "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
                   },
                   "volumeMounts": {
                     "description": "List of volumes mounts that should be mounted is this container.",
@@ -1659,12 +2213,78 @@ const JsonSchema200 = `{
                       "description": "Volume that should be mounted to a component container",
                       "properties": {
                         "name": {
-                          "description": "The volume mount name is the name of an existing ` + `Volume` + ` component. If no corresponding ` + `Volume` + ` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                          "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                          "type": "string",
+                          "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                        },
+                        "path": {
+                          "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                          "type": "string",
+                          "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "type": "object",
+                      "markdownDescription": "Volume that should be mounted to a component container",
+                      "additionalProperties": false
+                    },
+                    "type": "array",
+                    "markdownDescription": "List of volumes mounts that should be mounted is this container."
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object",
+                "markdownDescription": "Allows adding and configuring workspace-related containers",
+                "additionalProperties": false
+              },
+              "kubernetes": {
+                "description": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
+                "properties": {
+                  "endpoints": {
+                    "items": {
+                      "properties": {
+                        "attributes": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                          "type": "object",
+                          "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                        },
+                        "exposure": {
+                          "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                          "enum": [
+                            "public",
+                            "internal",
+                            "none"
+                          ],
+                          "type": "string",
+                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                        },
+                        "name": {
                           "type": "string"
                         },
                         "path": {
-                          "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is ` + `/<name>` + `.",
-                          "type": "string"
+                          "description": "Path of the endpoint URL",
+                          "type": "string",
+                          "markdownDescription": "Path of the endpoint URL"
+                        },
+                        "protocol": {
+                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                          "type": "string",
+                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                        },
+                        "secure": {
+                          "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                          "type": "boolean",
+                          "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                        },
+                        "targetPort": {
+                          "type": "integer"
                         }
                       },
                       "required": [
@@ -1674,34 +2294,28 @@ const JsonSchema200 = `{
                       "additionalProperties": false
                     },
                     "type": "array"
-                  }
-                },
-                "required": [
-                  "name"
-                ],
-                "type": "object",
-                "additionalProperties": false
-              },
-              "kubernetes": {
-                "description": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
-                "properties": {
+                  },
                   "inlined": {
                     "description": "Inlined manifest",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Inlined manifest"
                   },
                   "name": {
                     "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
                   },
                   "uri": {
                     "description": "Location in a file fetched from a uri.",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Location in a file fetched from a uri."
                   }
                 },
                 "required": [
                   "name"
                 ],
                 "type": "object",
+                "markdownDescription": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
                 "additionalProperties": false,
                 "oneOf": [
                   {
@@ -1719,23 +2333,78 @@ const JsonSchema200 = `{
               "openshift": {
                 "description": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
                 "properties": {
+                  "endpoints": {
+                    "items": {
+                      "properties": {
+                        "attributes": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                          "type": "object",
+                          "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                        },
+                        "exposure": {
+                          "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                          "enum": [
+                            "public",
+                            "internal",
+                            "none"
+                          ],
+                          "type": "string",
+                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "description": "Path of the endpoint URL",
+                          "type": "string",
+                          "markdownDescription": "Path of the endpoint URL"
+                        },
+                        "protocol": {
+                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                          "type": "string",
+                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                        },
+                        "secure": {
+                          "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                          "type": "boolean",
+                          "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                        },
+                        "targetPort": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "type": "object",
+                      "additionalProperties": false
+                    },
+                    "type": "array"
+                  },
                   "inlined": {
                     "description": "Inlined manifest",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Inlined manifest"
                   },
                   "name": {
                     "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
                   },
                   "uri": {
                     "description": "Location in a file fetched from a uri.",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Location in a file fetched from a uri."
                   }
                 },
                 "required": [
                   "name"
                 ],
                 "type": "object",
+                "markdownDescription": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
                 "additionalProperties": false,
                 "oneOf": [
                   {
@@ -1751,35 +2420,35 @@ const JsonSchema200 = `{
                 ]
               },
               "plugin": {
-                "description": "Allows importing a plugin. Plugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as ` + `DevWorkspaceTemplate` + ` Kubernetes Custom Resources",
+                "description": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
                 "properties": {
                   "commands": {
                     "description": "Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge",
                     "items": {
                       "properties": {
-                        "composite": {
-                          "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+                        "apply": {
+                          "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                           "properties": {
                             "attributes": {
                               "additionalProperties": {
                                 "type": "string"
                               },
                               "description": "Optional map of free-form additional command attributes",
-                              "type": "object"
+                              "type": "object",
+                              "markdownDescription": "Optional map of free-form additional command attributes"
                             },
-                            "commands": {
-                              "description": "The commands that comprise this composite command",
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
+                            "component": {
+                              "description": "Describes component that will be applied",
+                              "type": "string",
+                              "markdownDescription": "Describes component that will be applied"
                             },
                             "group": {
                               "description": "Defines the group this command is part of",
                               "properties": {
                                 "isDefault": {
                                   "description": "Identifies the default command for a given group kind",
-                                  "type": "boolean"
+                                  "type": "boolean",
+                                  "markdownDescription": "Identifies the default command for a given group kind"
                                 },
                                 "kind": {
                                   "description": "Kind of group the command is part of",
@@ -1789,51 +2458,124 @@ const JsonSchema200 = `{
                                     "test",
                                     "debug"
                                   ],
-                                  "type": "string"
+                                  "type": "string",
+                                  "markdownDescription": "Kind of group the command is part of"
                                 }
                               },
                               "required": [
                                 "kind"
                               ],
                               "type": "object",
+                              "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
                             "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                              "type": "string"
+                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                              "type": "string",
+                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                             },
                             "label": {
                               "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                              "type": "string"
-                            },
-                            "parallel": {
-                              "description": "Indicates if the sub-commands should be executed concurrently",
-                              "type": "boolean"
+                              "type": "string",
+                              "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                             }
                           },
                           "required": [
                             "id"
                           ],
                           "type": "object",
+                          "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                           "additionalProperties": false
                         },
-                        "exec": {
-                          "description": "CLI Command executed in a component container",
+                        "composite": {
+                          "description": "Composite command that allows executing several sub-commands either sequentially or concurrently",
                           "properties": {
                             "attributes": {
                               "additionalProperties": {
                                 "type": "string"
                               },
                               "description": "Optional map of free-form additional command attributes",
-                              "type": "object"
+                              "type": "object",
+                              "markdownDescription": "Optional map of free-form additional command attributes"
+                            },
+                            "commands": {
+                              "description": "The commands that comprise this composite command",
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array",
+                              "markdownDescription": "The commands that comprise this composite command"
+                            },
+                            "group": {
+                              "description": "Defines the group this command is part of",
+                              "properties": {
+                                "isDefault": {
+                                  "description": "Identifies the default command for a given group kind",
+                                  "type": "boolean",
+                                  "markdownDescription": "Identifies the default command for a given group kind"
+                                },
+                                "kind": {
+                                  "description": "Kind of group the command is part of",
+                                  "enum": [
+                                    "build",
+                                    "run",
+                                    "test",
+                                    "debug"
+                                  ],
+                                  "type": "string",
+                                  "markdownDescription": "Kind of group the command is part of"
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ],
+                              "type": "object",
+                              "markdownDescription": "Defines the group this command is part of",
+                              "additionalProperties": false
+                            },
+                            "id": {
+                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                              "type": "string",
+                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
+                            },
+                            "label": {
+                              "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
+                              "type": "string",
+                              "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
+                            },
+                            "parallel": {
+                              "description": "Indicates if the sub-commands should be executed concurrently",
+                              "type": "boolean",
+                              "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "type": "object",
+                          "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
+                          "additionalProperties": false
+                        },
+                        "exec": {
+                          "description": "CLI Command executed in an existing component container",
+                          "properties": {
+                            "attributes": {
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "Optional map of free-form additional command attributes",
+                              "type": "object",
+                              "markdownDescription": "Optional map of free-form additional command attributes"
                             },
                             "commandLine": {
                               "description": "The actual command-line string",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "The actual command-line string"
                             },
                             "component": {
                               "description": "Describes component to which given action relates",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Describes component to which given action relates"
                             },
                             "env": {
                               "description": "Optional list of environment variables that have to be set before running the command",
@@ -1853,14 +2595,16 @@ const JsonSchema200 = `{
                                 "type": "object",
                                 "additionalProperties": false
                               },
-                              "type": "array"
+                              "type": "array",
+                              "markdownDescription": "Optional list of environment variables that have to be set before running the command"
                             },
                             "group": {
                               "description": "Defines the group this command is part of",
                               "properties": {
                                 "isDefault": {
                                   "description": "Identifies the default command for a given group kind",
-                                  "type": "boolean"
+                                  "type": "boolean",
+                                  "markdownDescription": "Identifies the default command for a given group kind"
                                 },
                                 "kind": {
                                   "description": "Kind of group the command is part of",
@@ -1870,32 +2614,38 @@ const JsonSchema200 = `{
                                     "test",
                                     "debug"
                                   ],
-                                  "type": "string"
+                                  "type": "string",
+                                  "markdownDescription": "Kind of group the command is part of"
                                 }
                               },
                               "required": [
                                 "kind"
                               ],
                               "type": "object",
+                              "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
                             "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                              "type": "string"
+                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                              "type": "string",
+                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                             },
                             "label": {
                               "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                             },
                             "workingDir": {
                               "description": "Working directory where the command should be executed",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Working directory where the command should be executed"
                             }
                           },
                           "required": [
                             "id"
                           ],
                           "type": "object",
+                          "markdownDescription": "CLI Command executed in an existing component container",
                           "additionalProperties": false
                         },
                         "vscodeLaunch": {
@@ -1906,14 +2656,16 @@ const JsonSchema200 = `{
                                 "type": "string"
                               },
                               "description": "Optional map of free-form additional command attributes",
-                              "type": "object"
+                              "type": "object",
+                              "markdownDescription": "Optional map of free-form additional command attributes"
                             },
                             "group": {
                               "description": "Defines the group this command is part of",
                               "properties": {
                                 "isDefault": {
                                   "description": "Identifies the default command for a given group kind",
-                                  "type": "boolean"
+                                  "type": "boolean",
+                                  "markdownDescription": "Identifies the default command for a given group kind"
                                 },
                                 "kind": {
                                   "description": "Kind of group the command is part of",
@@ -1923,32 +2675,38 @@ const JsonSchema200 = `{
                                     "test",
                                     "debug"
                                   ],
-                                  "type": "string"
+                                  "type": "string",
+                                  "markdownDescription": "Kind of group the command is part of"
                                 }
                               },
                               "required": [
                                 "kind"
                               ],
                               "type": "object",
+                              "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
                             "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                              "type": "string"
+                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                              "type": "string",
+                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                             },
                             "inlined": {
                               "description": "Inlined content of the VsCode configuration",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Inlined content of the VsCode configuration"
                             },
                             "uri": {
                               "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                             }
                           },
                           "required": [
                             "id"
                           ],
                           "type": "object",
+                          "markdownDescription": "Command providing the definition of a VsCode launch action",
                           "additionalProperties": false,
                           "oneOf": [
                             {
@@ -1971,14 +2729,16 @@ const JsonSchema200 = `{
                                 "type": "string"
                               },
                               "description": "Optional map of free-form additional command attributes",
-                              "type": "object"
+                              "type": "object",
+                              "markdownDescription": "Optional map of free-form additional command attributes"
                             },
                             "group": {
                               "description": "Defines the group this command is part of",
                               "properties": {
                                 "isDefault": {
                                   "description": "Identifies the default command for a given group kind",
-                                  "type": "boolean"
+                                  "type": "boolean",
+                                  "markdownDescription": "Identifies the default command for a given group kind"
                                 },
                                 "kind": {
                                   "description": "Kind of group the command is part of",
@@ -1988,32 +2748,38 @@ const JsonSchema200 = `{
                                     "test",
                                     "debug"
                                   ],
-                                  "type": "string"
+                                  "type": "string",
+                                  "markdownDescription": "Kind of group the command is part of"
                                 }
                               },
                               "required": [
                                 "kind"
                               ],
                               "type": "object",
+                              "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
                             "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.",
-                              "type": "string"
+                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                              "type": "string",
+                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                             },
                             "inlined": {
                               "description": "Inlined content of the VsCode configuration",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Inlined content of the VsCode configuration"
                             },
                             "uri": {
                               "description": "Location as an absolute of relative URI the VsCode configuration will be fetched from",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                             }
                           },
                           "required": [
                             "id"
                           ],
                           "type": "object",
+                          "markdownDescription": "Command providing the definition of a VsCode Task",
                           "additionalProperties": false,
                           "oneOf": [
                             {
@@ -2039,6 +2805,11 @@ const JsonSchema200 = `{
                         },
                         {
                           "required": [
+                            "apply"
+                          ]
+                        },
+                        {
+                          "required": [
                             "vscodeTask"
                           ]
                         },
@@ -2054,7 +2825,8 @@ const JsonSchema200 = `{
                         }
                       ]
                     },
-                    "type": "array"
+                    "type": "array",
+                    "markdownDescription": "Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge"
                   },
                   "components": {
                     "description": "Overrides of components encapsulated in a plugin. Overriding is done using a strategic merge",
@@ -2064,18 +2836,25 @@ const JsonSchema200 = `{
                           "description": "Configuration overriding for a Container component",
                           "properties": {
                             "args": {
-                              "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command. Defaults to an empty array, meaning use whatever is defined in the image.",
+                              "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                               "items": {
                                 "type": "string"
                               },
-                              "type": "array"
+                              "type": "array",
+                              "markdownDescription": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
                             },
                             "command": {
-                              "description": "The command to run in the dockerimage component instead of the default one provided in the image. Defaults to an empty array, meaning use whatever is defined in the image.",
+                              "description": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                               "items": {
                                 "type": "string"
                               },
-                              "type": "array"
+                              "type": "array",
+                              "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
+                            },
+                            "dedicatedPod": {
+                              "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                              "type": "boolean",
+                              "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
                             },
                             "endpoints": {
                               "items": {
@@ -2084,47 +2863,37 @@ const JsonSchema200 = `{
                                     "additionalProperties": {
                                       "type": "string"
                                     },
-                                    "type": "object"
-                                  },
-                                  "configuration": {
-                                    "properties": {
-                                      "cookiesAuthEnabled": {
-                                        "type": "boolean"
-                                      },
-                                      "discoverable": {
-                                        "type": "boolean"
-                                      },
-                                      "path": {
-                                        "type": "string"
-                                      },
-                                      "protocol": {
-                                        "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
-                                        "type": "string"
-                                      },
-                                      "public": {
-                                        "type": "boolean"
-                                      },
-                                      "scheme": {
-                                        "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
-                                        "type": "string"
-                                      },
-                                      "secure": {
-                                        "type": "boolean"
-                                      },
-                                      "type": {
-                                        "enum": [
-                                          "ide",
-                                          "terminal",
-                                          "ide-dev"
-                                        ],
-                                        "type": "string"
-                                      }
-                                    },
+                                    "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                                     "type": "object",
-                                    "additionalProperties": false
+                                    "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                                  },
+                                  "exposure": {
+                                    "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                    "enum": [
+                                      "public",
+                                      "internal",
+                                      "none"
+                                    ],
+                                    "type": "string",
+                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
                                   },
                                   "name": {
                                     "type": "string"
+                                  },
+                                  "path": {
+                                    "description": "Path of the endpoint URL",
+                                    "type": "string",
+                                    "markdownDescription": "Path of the endpoint URL"
+                                  },
+                                  "protocol": {
+                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                    "type": "string",
+                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                  },
+                                  "secure": {
+                                    "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                                    "type": "boolean",
+                                    "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
                                   },
                                   "targetPort": {
                                     "type": "integer"
@@ -2156,7 +2925,8 @@ const JsonSchema200 = `{
                                 "type": "object",
                                 "additionalProperties": false
                               },
-                              "type": "array"
+                              "type": "array",
+                              "markdownDescription": "Environment variables used in this container"
                             },
                             "image": {
                               "type": "string"
@@ -2171,8 +2941,9 @@ const JsonSchema200 = `{
                               "type": "string"
                             },
                             "sourceMapping": {
-                              "description": "Optional specification of the path in the container where project sources should be transferred/mounted when ` + `mountSources` + ` is ` + `true` + `. When omitted, the value of the ` + `PROJECTS_ROOT` + ` environment variable is used.",
-                              "type": "string"
+                              "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                              "type": "string",
+                              "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
                             },
                             "volumeMounts": {
                               "description": "List of volumes mounts that should be mounted is this container.",
@@ -2180,12 +2951,78 @@ const JsonSchema200 = `{
                                 "description": "Volume that should be mounted to a component container",
                                 "properties": {
                                   "name": {
-                                    "description": "The volume mount name is the name of an existing ` + `Volume` + ` component. If no corresponding ` + `Volume` + ` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                                    "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                                    "type": "string",
+                                    "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                                  },
+                                  "path": {
+                                    "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                                    "type": "string",
+                                    "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "type": "object",
+                                "markdownDescription": "Volume that should be mounted to a component container",
+                                "additionalProperties": false
+                              },
+                              "type": "array",
+                              "markdownDescription": "List of volumes mounts that should be mounted is this container."
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "type": "object",
+                          "markdownDescription": "Configuration overriding for a Container component",
+                          "additionalProperties": false
+                        },
+                        "kubernetes": {
+                          "description": "Configuration overriding for a Kubernetes component",
+                          "properties": {
+                            "endpoints": {
+                              "items": {
+                                "properties": {
+                                  "attributes": {
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                                    "type": "object",
+                                    "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                                  },
+                                  "exposure": {
+                                    "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                    "enum": [
+                                      "public",
+                                      "internal",
+                                      "none"
+                                    ],
+                                    "type": "string",
+                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                  },
+                                  "name": {
                                     "type": "string"
                                   },
                                   "path": {
-                                    "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is ` + `/<name>` + `.",
-                                    "type": "string"
+                                    "description": "Path of the endpoint URL",
+                                    "type": "string",
+                                    "markdownDescription": "Path of the endpoint URL"
+                                  },
+                                  "protocol": {
+                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                    "type": "string",
+                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                  },
+                                  "secure": {
+                                    "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                                    "type": "boolean",
+                                    "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                                  },
+                                  "targetPort": {
+                                    "type": "integer"
                                   }
                                 },
                                 "required": [
@@ -2195,34 +3032,28 @@ const JsonSchema200 = `{
                                 "additionalProperties": false
                               },
                               "type": "array"
-                            }
-                          },
-                          "required": [
-                            "name"
-                          ],
-                          "type": "object",
-                          "additionalProperties": false
-                        },
-                        "kubernetes": {
-                          "description": "Configuration overriding for a Kubernetes component",
-                          "properties": {
+                            },
                             "inlined": {
                               "description": "Inlined manifest",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Inlined manifest"
                             },
                             "name": {
                               "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
                             },
                             "uri": {
                               "description": "Location in a file fetched from a uri.",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Location in a file fetched from a uri."
                             }
                           },
                           "required": [
                             "name"
                           ],
                           "type": "object",
+                          "markdownDescription": "Configuration overriding for a Kubernetes component",
                           "additionalProperties": false,
                           "oneOf": [
                             {
@@ -2240,23 +3071,78 @@ const JsonSchema200 = `{
                         "openshift": {
                           "description": "Configuration overriding for an OpenShift component",
                           "properties": {
+                            "endpoints": {
+                              "items": {
+                                "properties": {
+                                  "attributes": {
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
+                                    "type": "object",
+                                    "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
+                                  },
+                                  "exposure": {
+                                    "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                    "enum": [
+                                      "public",
+                                      "internal",
+                                      "none"
+                                    ],
+                                    "type": "string",
+                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "path": {
+                                    "description": "Path of the endpoint URL",
+                                    "type": "string",
+                                    "markdownDescription": "Path of the endpoint URL"
+                                  },
+                                  "protocol": {
+                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                    "type": "string",
+                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                  },
+                                  "secure": {
+                                    "description": "Describes whether the endpoint should be secured and protected by some authentication process",
+                                    "type": "boolean",
+                                    "markdownDescription": "Describes whether the endpoint should be secured and protected by some authentication process"
+                                  },
+                                  "targetPort": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "type": "object",
+                                "additionalProperties": false
+                              },
+                              "type": "array"
+                            },
                             "inlined": {
                               "description": "Inlined manifest",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Inlined manifest"
                             },
                             "name": {
                               "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
                             },
                             "uri": {
                               "description": "Location in a file fetched from a uri.",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Location in a file fetched from a uri."
                             }
                           },
                           "required": [
                             "name"
                           ],
                           "type": "object",
+                          "markdownDescription": "Configuration overriding for an OpenShift component",
                           "additionalProperties": false,
                           "oneOf": [
                             {
@@ -2276,17 +3162,20 @@ const JsonSchema200 = `{
                           "properties": {
                             "name": {
                               "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
                             },
                             "size": {
                               "description": "Size of the volume",
-                              "type": "string"
+                              "type": "string",
+                              "markdownDescription": "Size of the volume"
                             }
                           },
                           "required": [
                             "name"
                           ],
                           "type": "object",
+                          "markdownDescription": "Configuration overriding for a Volume component",
                           "additionalProperties": false
                         }
                       },
@@ -2315,11 +3204,13 @@ const JsonSchema200 = `{
                         }
                       ]
                     },
-                    "type": "array"
+                    "type": "array",
+                    "markdownDescription": "Overrides of components encapsulated in a plugin. Overriding is done using a strategic merge"
                   },
                   "id": {
                     "description": "Id in a registry that contains a Devfile yaml file",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Id in a registry that contains a Devfile yaml file"
                   },
                   "kubernetes": {
                     "description": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
@@ -2335,21 +3226,25 @@ const JsonSchema200 = `{
                       "name"
                     ],
                     "type": "object",
+                    "markdownDescription": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
                     "additionalProperties": false
                   },
                   "name": {
                     "description": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)"
                   },
                   "registryUrl": {
                     "type": "string"
                   },
                   "uri": {
                     "description": "Uri of a Devfile yaml file",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Uri of a Devfile yaml file"
                   }
                 },
                 "type": "object",
+                "markdownDescription": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
                 "additionalProperties": false,
                 "oneOf": [
                   {
@@ -2374,17 +3269,20 @@ const JsonSchema200 = `{
                 "properties": {
                   "name": {
                     "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
                   },
                   "size": {
                     "description": "Size of the volume",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Size of the volume"
                   }
                 },
                 "required": [
                   "name"
                 ],
                 "type": "object",
+                "markdownDescription": "Allows specifying the definition of a volume shared by several other components",
                 "additionalProperties": false
               }
             },
@@ -2418,7 +3316,8 @@ const JsonSchema200 = `{
               }
             ]
           },
-          "type": "array"
+          "type": "array",
+          "markdownDescription": "List of the workspace components, such as editor and plugins, user-provided containers, or other types of components"
         },
         "events": {
           "description": "Bindings of commands to events. Each command is referred-to by its name.",
@@ -2428,36 +3327,42 @@ const JsonSchema200 = `{
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": "array",
+              "markdownDescription": "Names of commands that should be executed after the workspace is completely started. In the case of Che-Theia, these commands should be executed after all plugins and extensions have started, including project cloning. This means that those commands are not triggered until the user opens the IDE in his browser."
             },
             "postStop": {
               "description": "Names of commands that should be executed after stopping the workspace.",
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": "array",
+              "markdownDescription": "Names of commands that should be executed after stopping the workspace."
             },
             "preStart": {
               "description": "Names of commands that should be executed before the workspace start. Kubernetes-wise, these commands would typically be executed in init containers of the workspace POD.",
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": "array",
+              "markdownDescription": "Names of commands that should be executed before the workspace start. Kubernetes-wise, these commands would typically be executed in init containers of the workspace POD."
             },
             "preStop": {
               "description": "Names of commands that should be executed before stopping the workspace.",
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": "array",
+              "markdownDescription": "Names of commands that should be executed before stopping the workspace."
             }
           },
           "type": "object",
+          "markdownDescription": "Bindings of commands to events. Each command is referred-to by its name.",
           "additionalProperties": false
         },
         "id": {
           "description": "Id in a registry that contains a Devfile yaml file",
-          "type": "string"
+          "type": "string",
+          "markdownDescription": "Id in a registry that contains a Devfile yaml file"
         },
         "kubernetes": {
           "description": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
@@ -2473,6 +3378,7 @@ const JsonSchema200 = `{
             "name"
           ],
           "type": "object",
+          "markdownDescription": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
           "additionalProperties": false
         },
         "projects": {
@@ -2481,29 +3387,35 @@ const JsonSchema200 = `{
             "properties": {
               "clonePath": {
                 "description": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name."
               },
               "git": {
                 "description": "Project's Git source",
                 "properties": {
                   "branch": {
                     "description": "The branch to check",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "The branch to check"
                   },
                   "location": {
                     "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
                   },
                   "sparseCheckoutDir": {
                     "description": "Part of project to populate in the working directory.",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
                   },
                   "startPoint": {
                     "description": "The tag or commit id to reset the checked out branch to",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "The tag or commit id to reset the checked out branch to"
                   }
                 },
                 "type": "object",
+                "markdownDescription": "Project's Git source",
                 "additionalProperties": false
               },
               "github": {
@@ -2511,41 +3423,50 @@ const JsonSchema200 = `{
                 "properties": {
                   "branch": {
                     "description": "The branch to check",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "The branch to check"
                   },
                   "location": {
                     "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
                   },
                   "sparseCheckoutDir": {
                     "description": "Part of project to populate in the working directory.",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
                   },
                   "startPoint": {
                     "description": "The tag or commit id to reset the checked out branch to",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "The tag or commit id to reset the checked out branch to"
                   }
                 },
                 "type": "object",
+                "markdownDescription": "Project's GitHub source",
                 "additionalProperties": false
               },
               "name": {
                 "description": "Project name",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Project name"
               },
               "zip": {
                 "description": "Project's Zip source",
                 "properties": {
                   "location": {
                     "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
                   },
                   "sparseCheckoutDir": {
                     "description": "Part of project to populate in the working directory.",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
                   }
                 },
                 "type": "object",
+                "markdownDescription": "Project's Zip source",
                 "additionalProperties": false
               }
             },
@@ -2572,17 +3493,145 @@ const JsonSchema200 = `{
               }
             ]
           },
-          "type": "array"
+          "type": "array",
+          "markdownDescription": "Projects worked on in the workspace, containing names and sources locations"
         },
         "registryUrl": {
           "type": "string"
         },
+        "starterProjects": {
+          "description": "StarterProjects is a project that can be used as a starting point when bootstrapping new projects",
+          "items": {
+            "properties": {
+              "clonePath": {
+                "description": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.",
+                "type": "string",
+                "markdownDescription": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name."
+              },
+              "description": {
+                "description": "Description of a starter project",
+                "type": "string",
+                "markdownDescription": "Description of a starter project"
+              },
+              "git": {
+                "description": "Project's Git source",
+                "properties": {
+                  "branch": {
+                    "description": "The branch to check",
+                    "type": "string",
+                    "markdownDescription": "The branch to check"
+                  },
+                  "location": {
+                    "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
+                    "type": "string",
+                    "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
+                  },
+                  "sparseCheckoutDir": {
+                    "description": "Part of project to populate in the working directory.",
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
+                  },
+                  "startPoint": {
+                    "description": "The tag or commit id to reset the checked out branch to",
+                    "type": "string",
+                    "markdownDescription": "The tag or commit id to reset the checked out branch to"
+                  }
+                },
+                "type": "object",
+                "markdownDescription": "Project's Git source",
+                "additionalProperties": false
+              },
+              "github": {
+                "description": "Project's GitHub source",
+                "properties": {
+                  "branch": {
+                    "description": "The branch to check",
+                    "type": "string",
+                    "markdownDescription": "The branch to check"
+                  },
+                  "location": {
+                    "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
+                    "type": "string",
+                    "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
+                  },
+                  "sparseCheckoutDir": {
+                    "description": "Part of project to populate in the working directory.",
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
+                  },
+                  "startPoint": {
+                    "description": "The tag or commit id to reset the checked out branch to",
+                    "type": "string",
+                    "markdownDescription": "The tag or commit id to reset the checked out branch to"
+                  }
+                },
+                "type": "object",
+                "markdownDescription": "Project's GitHub source",
+                "additionalProperties": false
+              },
+              "name": {
+                "description": "Project name",
+                "type": "string",
+                "markdownDescription": "Project name"
+              },
+              "zip": {
+                "description": "Project's Zip source",
+                "properties": {
+                  "location": {
+                    "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
+                    "type": "string",
+                    "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
+                  },
+                  "sparseCheckoutDir": {
+                    "description": "Part of project to populate in the working directory.",
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
+                  }
+                },
+                "type": "object",
+                "markdownDescription": "Project's Zip source",
+                "additionalProperties": false
+              },
+              "markdownDescription": {
+                "description": "Description of a starter project",
+                "type": "string",
+                "markdownDescription": "Description of a starter project"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object",
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "required": [
+                  "git"
+                ]
+              },
+              {
+                "required": [
+                  "github"
+                ]
+              },
+              {
+                "required": [
+                  "zip"
+                ]
+              }
+            ]
+          },
+          "type": "array",
+          "markdownDescription": "StarterProjects is a project that can be used as a starting point when bootstrapping new projects"
+        },
         "uri": {
           "description": "Uri of a Devfile yaml file",
-          "type": "string"
+          "type": "string",
+          "markdownDescription": "Uri of a Devfile yaml file"
         }
       },
       "type": "object",
+      "markdownDescription": "Parent workspace template",
       "additionalProperties": false,
       "oneOf": [
         {
@@ -2608,29 +3657,35 @@ const JsonSchema200 = `{
         "properties": {
           "clonePath": {
             "description": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.",
-            "type": "string"
+            "type": "string",
+            "markdownDescription": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name."
           },
           "git": {
             "description": "Project's Git source",
             "properties": {
               "branch": {
                 "description": "The branch to check",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "The branch to check"
               },
               "location": {
                 "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
               },
               "sparseCheckoutDir": {
                 "description": "Part of project to populate in the working directory.",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Part of project to populate in the working directory."
               },
               "startPoint": {
                 "description": "The tag or commit id to reset the checked out branch to",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "The tag or commit id to reset the checked out branch to"
               }
             },
             "type": "object",
+            "markdownDescription": "Project's Git source",
             "additionalProperties": false
           },
           "github": {
@@ -2638,41 +3693,50 @@ const JsonSchema200 = `{
             "properties": {
               "branch": {
                 "description": "The branch to check",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "The branch to check"
               },
               "location": {
                 "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
               },
               "sparseCheckoutDir": {
                 "description": "Part of project to populate in the working directory.",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Part of project to populate in the working directory."
               },
               "startPoint": {
                 "description": "The tag or commit id to reset the checked out branch to",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "The tag or commit id to reset the checked out branch to"
               }
             },
             "type": "object",
+            "markdownDescription": "Project's GitHub source",
             "additionalProperties": false
           },
           "name": {
             "description": "Project name",
-            "type": "string"
+            "type": "string",
+            "markdownDescription": "Project name"
           },
           "zip": {
             "description": "Project's Zip source",
             "properties": {
               "location": {
                 "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
               },
               "sparseCheckoutDir": {
                 "description": "Part of project to populate in the working directory.",
-                "type": "string"
+                "type": "string",
+                "markdownDescription": "Part of project to populate in the working directory."
               }
             },
             "type": "object",
+            "markdownDescription": "Project's Zip source",
             "additionalProperties": false
           }
         },
@@ -2699,7 +3763,133 @@ const JsonSchema200 = `{
           }
         ]
       },
-      "type": "array"
+      "type": "array",
+      "markdownDescription": "Projects worked on in the workspace, containing names and sources locations"
+    },
+    "starterProjects": {
+      "description": "StarterProjects is a project that can be used as a starting point when bootstrapping new projects",
+      "items": {
+        "properties": {
+          "clonePath": {
+            "description": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.",
+            "type": "string",
+            "markdownDescription": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name."
+          },
+          "description": {
+            "description": "Description of a starter project",
+            "type": "string",
+            "markdownDescription": "Description of a starter project"
+          },
+          "git": {
+            "description": "Project's Git source",
+            "properties": {
+              "branch": {
+                "description": "The branch to check",
+                "type": "string",
+                "markdownDescription": "The branch to check"
+              },
+              "location": {
+                "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
+                "type": "string",
+                "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
+              },
+              "sparseCheckoutDir": {
+                "description": "Part of project to populate in the working directory.",
+                "type": "string",
+                "markdownDescription": "Part of project to populate in the working directory."
+              },
+              "startPoint": {
+                "description": "The tag or commit id to reset the checked out branch to",
+                "type": "string",
+                "markdownDescription": "The tag or commit id to reset the checked out branch to"
+              }
+            },
+            "type": "object",
+            "markdownDescription": "Project's Git source",
+            "additionalProperties": false
+          },
+          "github": {
+            "description": "Project's GitHub source",
+            "properties": {
+              "branch": {
+                "description": "The branch to check",
+                "type": "string",
+                "markdownDescription": "The branch to check"
+              },
+              "location": {
+                "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
+                "type": "string",
+                "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
+              },
+              "sparseCheckoutDir": {
+                "description": "Part of project to populate in the working directory.",
+                "type": "string",
+                "markdownDescription": "Part of project to populate in the working directory."
+              },
+              "startPoint": {
+                "description": "The tag or commit id to reset the checked out branch to",
+                "type": "string",
+                "markdownDescription": "The tag or commit id to reset the checked out branch to"
+              }
+            },
+            "type": "object",
+            "markdownDescription": "Project's GitHub source",
+            "additionalProperties": false
+          },
+          "name": {
+            "description": "Project name",
+            "type": "string",
+            "markdownDescription": "Project name"
+          },
+          "zip": {
+            "description": "Project's Zip source",
+            "properties": {
+              "location": {
+                "description": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip",
+                "type": "string",
+                "markdownDescription": "Project's source location address. Should be URL for git and github located projects, or; file:// for zip"
+              },
+              "sparseCheckoutDir": {
+                "description": "Part of project to populate in the working directory.",
+                "type": "string",
+                "markdownDescription": "Part of project to populate in the working directory."
+              }
+            },
+            "type": "object",
+            "markdownDescription": "Project's Zip source",
+            "additionalProperties": false
+          },
+          "markdownDescription": {
+            "description": "Description of a starter project",
+            "type": "string",
+            "markdownDescription": "Description of a starter project"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "git"
+            ]
+          },
+          {
+            "required": [
+              "github"
+            ]
+          },
+          {
+            "required": [
+              "zip"
+            ]
+          }
+        ]
+      },
+      "type": "array",
+      "markdownDescription": "StarterProjects is a project that can be used as a starting point when bootstrapping new projects"
     },
     "metadata": {
       "type": "object",
@@ -2723,6 +3913,7 @@ const JsonSchema200 = `{
     }
   },
   "type": "object",
+  "markdownDescription": "Structure of the workspace. This is also the specification of a workspace template.",
   "additionalProperties": false,
   "required": [
     "schemaVersion"

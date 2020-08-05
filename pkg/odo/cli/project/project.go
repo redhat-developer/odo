@@ -3,19 +3,9 @@ package project
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/config"
-
-	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/service"
-	"github.com/openshift/odo/pkg/url"
-	"github.com/pkg/errors"
-	"k8s.io/klog"
 
 	"github.com/spf13/cobra"
 )
@@ -76,73 +66,75 @@ func AddProjectFlag(cmd *cobra.Command) {
 	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }
 
-// printDeleteProjectInfo prints objects affected by project deletion
-func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
-	localConfig, err := config.New()
-	if err != nil {
-		return errors.Wrapf(err, "unable to get the local config")
-	}
-	// Fetch and List the applications
-	applicationList, err := application.ListInProject(client)
-	if err != nil {
-		return errors.Wrap(err, "failed to get application list")
-	}
-	if len(applicationList) != 0 {
-		log.Info("This project contains the following applications, which will be deleted")
-		for _, app := range applicationList {
-			log.Info("Application", app)
+// TODO: The following function should work with devfile components, and use good abstraction that will make it possible to share
+// code with 'odo describe' and 'odo list'
+// printDeleteProjectInfo prints objects affected by project deletionria
+// func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
+// 	localConfig, err := config.New()
+// 	if err != nil {
+// 		return errors.Wrapf(err, "unable to get the local config")
+// 	}
+// 	// Fetch and List the applications
+// 	applicationList, err := application.ListInProject(client)
+// 	if err != nil {
+// 		return errors.Wrap(err, "failed to get application list")
+// 	}
+// 	if len(applicationList) != 0 {
+// 		log.Info("This project contains the following applications, which will be deleted")
+// 		for _, app := range applicationList {
+// 			log.Info("Application", app)
 
-			// List the components
-			componentList, err := component.List(client, app, nil)
-			if err != nil {
-				return errors.Wrap(err, "failed to get Component list")
-			}
-			if len(componentList.Items) != 0 {
-				log.Info("This application has following components that will be deleted")
+// 			// List the components
+// 			componentList, err := component.List(client, app, nil)
+// 			if err != nil {
+// 				return errors.Wrap(err, "failed to get Component list")
+// 			}
+// 			if len(componentList.Items) != 0 {
+// 				log.Info("This application has following components that will be deleted")
 
-				for _, currentComponent := range componentList.Items {
-					componentDesc, err := component.GetComponent(client, currentComponent.Name, app, projectName)
-					if err != nil {
-						return errors.Wrap(err, "unable to get component description")
-					}
-					log.Info("component named", componentDesc.Name)
+// 				for _, currentComponent := range componentList.Items {
+// 					componentDesc, err := component.GetComponent(client, currentComponent.Name, app, projectName)
+// 					if err != nil {
+// 						return errors.Wrap(err, "unable to get component description")
+// 					}
+// 					log.Info("component named", componentDesc.Name)
 
-					if len(componentDesc.Spec.URL) != 0 {
-						ul, err := url.ListPushed(client, componentDesc.Name, app)
-						if err != nil {
-							return errors.Wrap(err, "Could not get url list")
-						}
-						log.Info("This component has following urls that will be deleted with component")
-						for _, u := range ul.Items {
-							log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
-						}
-					}
+// 					if len(componentDesc.Spec.URL) != 0 {
+// 						ul, err := url.ListPushed(client, componentDesc.Name, app)
+// 						if err != nil {
+// 							return errors.Wrap(err, "Could not get url list")
+// 						}
+// 						log.Info("This component has following urls that will be deleted with component")
+// 						for _, u := range ul.Items {
+// 							log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
+// 						}
+// 					}
 
-					storages, err := localConfig.StorageList()
-					odoutil.LogErrorAndExit(err, "")
-					if len(storages) != 0 {
-						log.Info("This component has following storages which will be deleted with the component")
-						for _, store := range storages {
-							log.Info("Storage named", store.Name, "of size", store.Size)
-						}
-					}
-				}
-			}
+// 					storages, err := localConfig.StorageList()
+// 					odoutil.LogErrorAndExit(err, "")
+// 					if len(storages) != 0 {
+// 						log.Info("This component has following storages which will be deleted with the component")
+// 						for _, store := range storages {
+// 							log.Info("Storage named", store.Name, "of size", store.Size)
+// 						}
+// 					}
+// 				}
+// 			}
 
-			// List services that will be removed
-			serviceList, err := service.List(client, app)
-			if err != nil {
-				log.Info("No services / could not get services")
-				klog.V(4).Info(err.Error())
-			}
+// 			// List services that will be removed
+// 			serviceList, err := service.List(client, app)
+// 			if err != nil {
+// 				log.Info("No services / could not get services")
+// 				klog.V(4).Info(err.Error())
+// 			}
 
-			if len(serviceList.Items) != 0 {
-				log.Info("This application has following service that will be deleted")
-				for _, ser := range serviceList.Items {
-					log.Info("service named", ser.ObjectMeta.Name, "of type", ser.Spec.Type)
-				}
-			}
-		}
-	}
-	return nil
-}
+// 			if len(serviceList.Items) != 0 {
+// 				log.Info("This application has following service that will be deleted")
+// 				for _, ser := range serviceList.Items {
+// 					log.Info("service named", ser.ObjectMeta.Name, "of type", ser.Spec.Type)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }

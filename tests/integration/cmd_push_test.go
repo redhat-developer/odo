@@ -53,6 +53,72 @@ var _ = Describe("odo push command tests", func() {
 
 	})
 
+	Context("Check memory and cpu config before odo push", func() {
+		It("Should work when memory is set..", func() {
+
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+
+			helper.CmdShouldPass("odo", "config", "set", "Memory", "300Mi", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+		})
+
+		It("Should fail if minMemory is set but maxmemory is not set..", func() {
+
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+
+			helper.CmdShouldPass("odo", "config", "set", "minmemory", "100Mi", "--context", context)
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("`minmemory` should accompany `maxmemory` or use `odo config set memory` to use same value for both min and max"))
+		})
+
+		It("should fail if maxmemory is set but minmemory is not set..", func() {
+
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+
+			helper.CmdShouldPass("odo", "config", "set", "maxmemory", "400Mi", "--context", context)
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("`minmemory` should accompany `maxmemory` or use `odo config set memory` to use same value for both min and max"))
+		})
+
+		It("Should work when cpu is set", func() {
+
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+
+			helper.CmdShouldPass("odo", "config", "set", "cpu", "0.4", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+		})
+
+		It("Should fail if mincpu is set but maxcpu is not set..", func() {
+
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+
+			helper.CmdShouldPass("odo", "config", "set", "mincpu", "0.4", "--context", context)
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("`mincpu` should accompany `maxcpu` or use `odo config set cpu` to use same value for both min and max"))
+		})
+
+		It("should fail if maxcpu is set but mincpu is not set..", func() {
+
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+
+			helper.CmdShouldPass("odo", "config", "set", "maxcpu", "0.5", "--context", context)
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("`mincpu` should accompany `maxcpu` or use `odo config set cpu` to use same value for both min and max"))
+		})
+	})
+
 	Context("Check for label propagation after pushing", func() {
 
 		It("Check for labels", func() {

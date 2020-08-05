@@ -9,7 +9,7 @@ commands:
       id: devBuild
       component: runtime
       commandLine: touch blah.js
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: false

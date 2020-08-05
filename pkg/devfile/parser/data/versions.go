@@ -12,8 +12,8 @@ type supportedApiVersion string
 
 // Supported devfile API versions in odo
 const (
-	apiVersion100 supportedApiVersion = "1.0.0"
-	apiVersion200 supportedApiVersion = "2.0.0"
+	APIVersion100 supportedApiVersion = "1.0.0"
+	APIVersion200 supportedApiVersion = "2.0.0"
 )
 
 // ------------- Init functions ------------- //
@@ -24,8 +24,8 @@ var apiVersionToDevfileStruct map[supportedApiVersion]reflect.Type
 // Initializes a map of supported devfile api versions and devfile structs
 func init() {
 	apiVersionToDevfileStruct = make(map[supportedApiVersion]reflect.Type)
-	apiVersionToDevfileStruct[apiVersion100] = reflect.TypeOf(v100.Devfile100{})
-	apiVersionToDevfileStruct[apiVersion200] = reflect.TypeOf(v200.Devfile200{})
+	apiVersionToDevfileStruct[APIVersion100] = reflect.TypeOf(v100.Devfile100{})
+	apiVersionToDevfileStruct[APIVersion200] = reflect.TypeOf(v200.Devfile200{})
 
 }
 
@@ -35,6 +35,7 @@ var devfileApiVersionToJSONSchema map[supportedApiVersion]string
 // init initializes a map of supported devfile apiVersions with it's respective devfile JSON schema
 func init() {
 	devfileApiVersionToJSONSchema = make(map[supportedApiVersion]string)
-	devfileApiVersionToJSONSchema[apiVersion100] = v100.JsonSchema100
-	devfileApiVersionToJSONSchema[apiVersion200] = v200.JsonSchema200
+	devfileApiVersionToJSONSchema[APIVersion100] = v100.JsonSchema100
+	devfileApiVersionToJSONSchema[APIVersion200] = v200.JsonSchema200
+
 }

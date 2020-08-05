@@ -373,18 +373,16 @@ func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) st
 // GetRunningPodNameByComponent executes oc command and returns the running pod name of a delopyed
 // devfile component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
-	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
-	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*component=` + compName)
-	podName := re.FindStringSubmatch(stdOut)[1]
-	return strings.TrimSpace(podName)
+	selector := fmt.Sprintf("--selector=component=%s", compName)
+	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}")
+	return strings.TrimSpace(stdOut)
 }
 
 // GetPVCSize executes oc command and returns the bound storage size
 func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
-	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, "--show-labels")
-	re := regexp.MustCompile(storageName + `-\S+\s+Bound\s+\S+\s+(\S+).*component=` + compName + `,storage-name=` + storageName)
-	storageSize := re.FindStringSubmatch(stdOut)[1]
-	return strings.TrimSpace(storageSize)
+	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
+	return strings.TrimSpace(stdOut)
 }
 
 // GetRoute returns route URL

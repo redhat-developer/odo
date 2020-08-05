@@ -200,6 +200,7 @@ func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
 		},
 		Items: catalogList,
 	}, nil
+
 }
 
 // SearchComponent searches for the component

@@ -25,7 +25,6 @@ import (
 const provisionedAndBoundStatus = "ProvisionedAndBound"
 const provisionedAndLinkedStatus = "ProvisionedAndLinked"
 const apiVersion = "odo.dev/v1alpha1"
-const serviceListCmd = "odo service list"
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
@@ -66,11 +65,42 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 	return nil
 }
 
+// GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
+// It returns a CR (string representation) and CSV (Operator) upon successfully
+// able to find them, an error otherwise.
+func GetCSV(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
+	cr := crd["kind"].(string)
+	csvs, err := client.GetClusterServiceVersionList()
+	if err != nil {
+		return cr, olm.ClusterServiceVersion{}, err
+	}
+
+	csv, err := doesCRExist(cr, csvs)
+	if err != nil {
+		return cr, olm.ClusterServiceVersion{},
+			fmt.Errorf("could not find specified service/custom resource: %s; please check the \"kind\" field in the yaml (it's case-sensitive)", cr)
+	}
+	return cr, csv, nil
+}
+
+// doesCRExist checks if the CR exists in the CSV
+func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterServiceVersion, error) {
+	for _, csv := range csvs.Items {
+		for _, operatorCR := range csv.Spec.CustomResourceDefinitions.Owned {
+			if kind == operatorCR.Kind {
+				return csv, nil
+			}
+		}
+	}
+	return olm.ClusterServiceVersion{}, errors.New("could not find the requested cluster resource")
+
+}
+
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
 func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
 	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
 	if err != nil {
-		return errors.Wrap(err, "Unable to create operator backed service")
+		return errors.Wrap(err, "unable to create operator backed service")
 	}
 	return nil
 }
@@ -115,9 +145,9 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 // TODO: make it unlink the service from component as a part of
 // https://github.com/openshift/odo/issues/3563
 func DeleteOperatorService(client *kclient.Client, serviceName string) error {
-	kind, name, err := splitServiceKindName(serviceName)
+	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
 	}
 
 	csv, err := client.GetCSVWithCR(kind)
@@ -140,7 +170,7 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 		}
 	}
 
-	group, version, resource, err := getGVRFromCR(cr)
+	group, version, resource, err := GetGVRFromCR(cr)
 	if err != nil {
 		return err
 	}
@@ -275,7 +305,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	// let's get the Services a.k.a Custom Resources (CR) defined by each operator, one by one
 	for _, csv := range csvs.Items {
 		clusterServiceVersion := csv
-		klog.V(4).Infof("Getting services started from operator: %s\n", clusterServiceVersion.Name)
+		klog.V(4).Infof("Getting services started from operator: %s", clusterServiceVersion.Name)
 		customResources := client.GetCustomResourcesFromCSV(&clusterServiceVersion)
 
 		// list and write active instances of each service/CR
@@ -291,10 +321,6 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	return allCRInstances, nil
 }
 
-func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
-	return getGVRFromCR(cr)
-}
-
 // GetGVKRFromCR returns values for group, version, kind and resource for a
 // given Custom Resource (CR)
 func GetGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
@@ -307,7 +333,7 @@ func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	resource = gr[0]
@@ -316,14 +342,24 @@ func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string
 	return
 }
 
-// getGVRFromCR parses and returns the values for group, version and resource
+func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, version, resource string, err error) {
+	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
+		custRes := customresource
+		if custRes.Kind == cr {
+			return GetGVRFromCR(&custRes)
+		}
+	}
+	return "", "", "", fmt.Errorf("couldn't parse group, version, resource from Operator %q", csv.Name)
+}
+
+// GetGVRFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
-func getGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
+func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
 	version = cr.Version
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	resource = gr[0]
@@ -344,12 +380,48 @@ func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err erro
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	group = gr[1]
 
 	return
+}
+
+// GetAlmExample fetches the ALM example from an Operator's definition. This
+// example contains the example yaml to be used to spin up a service for a
+// given CR in an Operator
+func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almExample map[string]interface{}, err error) {
+	var almExamples []map[string]interface{}
+
+	val, ok := csv.Annotations["alm-examples"]
+	if ok {
+		err = json.Unmarshal([]byte(val), &almExamples)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to unmarshal alm-examples")
+		}
+	} else {
+		// There's no alm examples in the CSV's definition
+		return nil,
+			fmt.Errorf("could not find alm-examples in %q Operator's definition.", cr)
+	}
+
+	almExample, err = getAlmExample(almExamples, cr, serviceType)
+	if err != nil {
+		return nil, err
+	}
+
+	return almExample, nil
+}
+
+// getAlmExample returns the alm-example for exact service of an Operator
+func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (map[string]interface{}, error) {
+	for _, example := range almExamples {
+		if example["kind"].(string) == crd {
+			return example, nil
+		}
+	}
+	return nil, errors.Errorf("could not find example yaml definition for %q service in %q Operator's definition.", crd, operator)
 }
 
 // GetInstancesOfCustomResources returns active instances of given Custom Resource (service in
@@ -375,7 +447,7 @@ func GetInstancesOfCustomResources(client *kclient.Client, customResources *[]ol
 func GetCRInstances(client *kclient.Client, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
-	group, version, resource, err := getGVRFromCR(customResource)
+	group, version, resource, err := GetGVRFromCR(customResource)
 	if err != nil {
 		return nil, err
 	}
@@ -442,9 +514,9 @@ func SvcExists(client *occlient.Client, serviceName, applicationName string) (bo
 // It doesn't bother about application since
 // https://github.com/openshift/odo/issues/2801 is blocked
 func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error) {
-	kind, name, err := splitServiceKindName(serviceName)
+	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
 	}
 
 	// Get the CSV (Operator) that provides the CR
@@ -477,15 +549,15 @@ func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error)
 		}
 	}
 
-	return false, fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", serviceName, serviceListCmd)
+	return false, nil
 }
 
-// splitServiceKindName splits the service name provided for deletion by the
+// SplitServiceKindName splits the service name provided for deletion by the
 // user. It has to be of the format <service-kind>/<service-name>. Example: EtcdCluster/myetcd
-func splitServiceKindName(serviceName string) (string, string, error) {
+func SplitServiceKindName(serviceName string) (string, string, error) {
 	sn := strings.SplitN(serviceName, "/", 2)
 	if len(sn) != 2 || sn[0] == "" || sn[1] == "" {
-		return "", "", fmt.Errorf("Invalid service name. Refer %q to see list of running services", serviceListCmd)
+		return "", "", fmt.Errorf("couldn't split %q into exactly two", serviceName)
 	}
 
 	kind := sn[0]
