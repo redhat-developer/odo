@@ -712,7 +712,7 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 }
 
 // HTTPGetRequest gets resource contents given URL and token (if applicable)
-// cacheFor determines how long the response should be cached (in minutes), 0 for caching
+// cacheFor determines how long the response should be cached (in minutes), 0 for no caching
 func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 	// Build http request
 	req, err := http.NewRequest("GET", request.URL, nil)
@@ -735,7 +735,10 @@ func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 
 	if cacheFor > 0 {
 		httpCacheTime := time.Duration(cacheFor) * time.Minute
-		_ = os.Mkdir(httpCacheDir, 0750)
+		err = os.MkdirAll(httpCacheDir, 0750)
+		if err != nil {
+			return nil, err
+		}
 		err = cleanHttpCache(httpCacheDir, httpCacheTime)
 		if err != nil {
 			return nil, err
@@ -1041,7 +1044,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 }
 
 // DownloadFileWithCache downloads the file to the filepath given URL and token (if applicable)
-// cacheFor determines how long the response should be cached (in minutes), 0 for caching
+// cacheFor determines how long the response should be cached (in minutes), 0 for no caching
 func DownloadFileWithCache(params DownloadParams, cacheFor int) error {
 	// Get the data
 	data, err := HTTPGetRequest(params.Request, cacheFor)
