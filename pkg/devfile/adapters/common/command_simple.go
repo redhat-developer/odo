@@ -12,15 +12,16 @@ import (
 type simpleCommand struct {
 	info        ComponentInfo
 	adapter     commandExecutor
-	cmd         []string
+	cmd         []string // cmd represents the effective command that will be run in the container
 	id          string
 	component   string
-	originalCmd string
+	originalCmd string // originalCmd records the command as defined in the devfile
 	group       string
 	msg         string
 }
 
-// newSimpleCommand creates a new simpleCommand instance
+// newSimpleCommand creates a new simpleCommand instance, adapting the devfile-defined command to run in the target component's
+// container, modifying it to add environment variables or adapting the path as needed.
 func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
 	exe := command.Exec
 
@@ -48,7 +49,10 @@ func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (
 }
 
 // newOverriddenSimpleCommand creates a new simpleCommand albeit overriding the command specified in the devfile with the specified one
-// returning a pointer to the newly created instance so that clients can further modify it if needed
+// returning a pointer to the newly created instance so that clients can further modify it if needed.
+// Note that the specified command will be run as-is in the target component's container so needs to be set accordingly as
+// opposed to the implementation provided by newSimpleCommand which will take the devfile's command definition and adapt it to
+// run in the container.
 func newOverriddenSimpleCommand(command common.DevfileCommand, executor commandExecutor, cmd []string) (*simpleCommand, error) {
 	// create the component info associated with the command
 	info, err := executor.ComponentInfo(command)
