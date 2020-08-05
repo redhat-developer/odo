@@ -57,7 +57,7 @@ type JSONConfigRepr struct {
 type ConfigurableRepr struct {
 	Name    string          `yaml:"ComponentName,omitempty" json:"ComponentName,omitempty"`
 	Memory  string          `yaml:"Memory,omitempty" json:"Memory,omitempty"`
-	Configs []ContainerRepr `json:"Configs,omitempty" json:"Configs,omitempty"`
+	Configs []ContainerRepr `yaml:"Configs,omitempty" json:"Configs,omitempty"`
 }
 
 type ContainerRepr struct {
