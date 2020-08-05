@@ -693,6 +693,7 @@ Available Parameters:
 %s - %s
 %s - %s
 %s - %s
+%s - %s
 `
 	expected = fmt.Sprintf(expected,
 		BuildTimeoutSetting, BuildTimeoutSettingDescription,
@@ -700,8 +701,10 @@ Available Parameters:
 		NamePrefixSetting, NamePrefixSettingDescription,
 		PushTargetSetting, PushTargetDescription,
 		PushTimeoutSetting, PushTimeoutSettingDescription,
+		RegistryCacheTimeSetting, RegistryCacheTimeDescription,
 		TimeoutSetting, TimeoutSettingDescription,
-		UpdateNotificationSetting, UpdateNotificationSettingDescription)
+		UpdateNotificationSetting, UpdateNotificationSettingDescription,
+	)
 	actual := FormatSupportedParameters()
 	if expected != actual {
 		t.Errorf("expected '%s', got '%s'", expected, actual)
@@ -709,7 +712,16 @@ Available Parameters:
 }
 
 func TestLowerCaseParameters(t *testing.T) {
-	expected := map[string]bool{"nameprefix": true, "buildtimeout": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true, "pushtarget": true}
+	expected := map[string]bool{
+		"nameprefix":         true,
+		"buildtimeout":       true,
+		"pushtimeout":        true,
+		"registrycachetime":  true,
+		"timeout":            true,
+		"updatenotification": true,
+		"experimental":       true,
+		"pushtarget":         true,
+	}
 	actual := util.GetLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
