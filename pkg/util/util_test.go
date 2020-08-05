@@ -1249,7 +1249,7 @@ func TestHTTPGetRequest(t *testing.T) {
 			request := HTTPRequestParams{
 				URL: tt.url,
 			}
-			got, err := HTTPGetRequest(request, false)
+			got, err := HTTPGetRequest(request, 0)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -1370,7 +1370,7 @@ func TestDownloadFile(t *testing.T) {
 				},
 				Filepath: tt.filepath,
 			}
-			err := DownloadFile(params, false)
+			err := DownloadFile(params, 0)
 			if err != nil {
 				gotErr = true
 			}

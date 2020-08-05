@@ -45,7 +45,6 @@ const (
 	ResponseHeaderTimeout = 30 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
 	ModeReadWriteFile     = 0600             // default Permission for a file
 	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
-	httpCacheTime         = 15 * time.Minute // httpCacheTime configures for how long odo will keep HTTP responses in cache
 )
 
 // httpCacheDir determies directory where odo will cache HTTP respones
@@ -713,7 +712,8 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 }
 
 // HTTPGetRequest gets resource contents given URL and token (if applicable)
-func HTTPGetRequest(request HTTPRequestParams, useCache bool) ([]byte, error) {
+// cacheFor determines how long the response should be cached (in minutes), 0 for caching
+func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 	// Build http request
 	req, err := http.NewRequest("GET", request.URL, nil)
 	if err != nil {
@@ -733,8 +733,9 @@ func HTTPGetRequest(request HTTPRequestParams, useCache bool) ([]byte, error) {
 
 	klog.V(4).Infof("HTTPGetRequest: %s", req.URL.String())
 
-	if useCache {
-		_ = os.Mkdir(httpCacheDir, 0755)
+	if cacheFor > 0 {
+		httpCacheTime := time.Duration(cacheFor) * time.Minute
+		_ = os.Mkdir(httpCacheDir, 0750)
 		err = cleanHttpCache(httpCacheDir, httpCacheTime)
 		if err != nil {
 			return nil, err
@@ -912,7 +913,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 			},
 			Filepath: pathToZip,
 		}
-		err := DownloadFile(params, false)
+		err := DownloadFile(params, 0)
 		if err != nil {
 			return err
 		}
@@ -1040,10 +1041,10 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 }
 
 // DownloadFile downloads the file to the filepath given URL and token (if applicable)
-// if useCache is set to true, the response will be cached localy
-func DownloadFile(params DownloadParams, useCache bool) error {
+// cacheFor determines how long the response should be cached (in minutes), 0 for caching
+func DownloadFile(params DownloadParams, cacheFor int) error {
 	// Get the data
-	data, err := HTTPGetRequest(params.Request, useCache)
+	data, err := HTTPGetRequest(params.Request, cacheFor)
 	if err != nil {
 		return err
 	}
