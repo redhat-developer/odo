@@ -1370,7 +1370,7 @@ func TestDownloadFile(t *testing.T) {
 				},
 				Filepath: tt.filepath,
 			}
-			err := DownloadFile(params, 0)
+			err := DownloadFile(params)
 			if err != nil {
 				gotErr = true
 			}

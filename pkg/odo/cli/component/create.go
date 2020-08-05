@@ -924,7 +924,7 @@ func (co *CreateOptions) Run() (err error) {
 						},
 						Filepath: DevfilePath,
 					}
-					err = util.DownloadFile(params, 0)
+					err = util.DownloadFile(params)
 					if err != nil {
 						return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 					}
@@ -961,7 +961,7 @@ func (co *CreateOptions) Run() (err error) {
 				if err != nil {
 					return err
 				}
-				err = util.DownloadFile(params, cfg.GetRegistryCacheTime())
+				err = util.DownloadFileWithCache(params, cfg.GetRegistryCacheTime())
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 				}

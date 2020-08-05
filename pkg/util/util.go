@@ -913,7 +913,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 			},
 			Filepath: pathToZip,
 		}
-		err := DownloadFile(params, 0)
+		err := DownloadFile(params)
 		if err != nil {
 			return err
 		}
@@ -1040,9 +1040,9 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	return filenames, nil
 }
 
-// DownloadFile downloads the file to the filepath given URL and token (if applicable)
+// DownloadFileWithCache downloads the file to the filepath given URL and token (if applicable)
 // cacheFor determines how long the response should be cached (in minutes), 0 for caching
-func DownloadFile(params DownloadParams, cacheFor int) error {
+func DownloadFileWithCache(params DownloadParams, cacheFor int) error {
 	// Get the data
 	data, err := HTTPGetRequest(params.Request, cacheFor)
 	if err != nil {
@@ -1063,6 +1063,11 @@ func DownloadFile(params DownloadParams, cacheFor int) error {
 	}
 
 	return nil
+}
+
+// DownloadFile downloads the file to the filepath given URL and token (if applicable)
+func DownloadFile(params DownloadParams) error {
+	return DownloadFileWithCache(params, 0)
 }
 
 // DownloadFileInMemory uses the url to download the file and return bytes
