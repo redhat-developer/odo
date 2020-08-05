@@ -44,12 +44,12 @@ func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (
 		cmd = []string{ShellExecutable, "-c", cmdLine}
 	}
 
-	return newOverridenSimpleCommand(command, executor, cmd)
+	return newOverriddenSimpleCommand(command, executor, cmd)
 }
 
-// newOverridenSimpleCommand creates a new simpleCommand albeit overriding the command specified in the devfile with the specified one
+// newOverriddenSimpleCommand creates a new simpleCommand albeit overriding the command specified in the devfile with the specified one
 // returning a pointer to the newly created instance so that clients can further modify it if needed
-func newOverridenSimpleCommand(command common.DevfileCommand, executor commandExecutor, cmd []string) (*simpleCommand, error) {
+func newOverriddenSimpleCommand(command common.DevfileCommand, executor commandExecutor, cmd []string) (*simpleCommand, error) {
 	// create the component info associated with the command
 	info, err := executor.ComponentInfo(command)
 	if err != nil {
