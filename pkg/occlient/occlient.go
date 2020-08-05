@@ -98,9 +98,6 @@ const (
 	OpenShiftNameSpace              = "openshift"
 	waitForComponentDeletionTimeout = 120 * time.Second
 
-	// timeout for getting the default service account
-	getDefaultServiceAccTimeout = 1 * time.Minute
-
 	// timeout for waiting for project deletion
 	waitForProjectDeletionTimeOut = 3 * time.Minute
 
@@ -211,8 +208,12 @@ type Client struct {
 	routeClient          routeclientset.RouteV1Interface
 	userClient           userclientset.UserV1Interface
 	KubeConfig           clientcmd.ClientConfig
-	discoveryClient      discovery.DiscoveryClient
+	discoveryClient      discovery.DiscoveryInterface
 	Namespace            string
+}
+
+func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
+	c.discoveryClient = client
 }
 
 // New creates a new client
@@ -282,7 +283,7 @@ func New() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.discoveryClient = *discoveryClient
+	client.discoveryClient = discoveryClient
 
 	namespace, _, err := client.KubeConfig.Namespace()
 	if err != nil {
@@ -553,39 +554,6 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 		}
 	}
 
-	return nil
-}
-
-// WaitForServiceAccountInNamespace waits for the given service account to be ready
-func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error {
-	if namespace == "" || serviceAccountName == "" {
-		return errors.New("namespace and serviceAccountName cannot be empty")
-	}
-	watcher, err := c.kubeClient.CoreV1().ServiceAccounts(namespace).Watch(metav1.SingleObject(metav1.ObjectMeta{Name: serviceAccountName}))
-	if err != nil {
-		return err
-	}
-
-	timeout := time.After(getDefaultServiceAccTimeout)
-	if watcher != nil {
-		defer watcher.Stop()
-		for {
-			select {
-			case val, ok := <-watcher.ResultChan():
-				if !ok {
-					break
-				}
-				if serviceAccount, ok := val.Object.(*corev1.ServiceAccount); ok {
-					if serviceAccount.Name == serviceAccountName {
-						klog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
-						return nil
-					}
-				}
-			case <-timeout:
-				return errors.New("Timed out waiting for service to be ready")
-			}
-		}
-	}
 	return nil
 }
 
@@ -3274,6 +3242,11 @@ func isSubDir(baseDir, otherDir string) bool {
 func (c *Client) IsRouteSupported() (bool, error) {
 
 	return c.isResourceSupported("route.openshift.io", "v1", "routes")
+}
+
+// IsProjectSupported checks if Project resource type is present on the cluster
+func (c *Client) IsProjectSupported() (bool, error) {
+	return c.isResourceSupported("project.openshift.io", "v1", "projects")
 }
 
 // IsImageStreamSupported checks if imagestream resource type is present on the cluster

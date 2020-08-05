@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/openshift/odo/pkg/testingutil"
 	"sort"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil"
 
 	"github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -69,7 +70,7 @@ func TestCompletions(t *testing.T) {
 			},
 		}, nil
 	})
-	context := genericclioptions.NewFakeContext("", "", "", client)
+	context := genericclioptions.NewFakeContext("", "", "", client, nil)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := complete.Args{Last: tt.last}

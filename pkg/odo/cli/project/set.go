@@ -53,7 +53,7 @@ func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []s
 // Validate validates the parameters of the ProjectSetOptions
 func (pso *ProjectSetOptions) Validate() (err error) {
 
-	exists, err := project.Exists(pso.Client, pso.projectName)
+	exists, err := project.Exists(pso.Context, pso.projectName)
 
 	if !exists {
 		return fmt.Errorf("The project %s does not exist", pso.projectName)
@@ -65,7 +65,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 // Run runs the project set command
 func (pso *ProjectSetOptions) Run() (err error) {
 	current := pso.Project
-	err = project.SetCurrent(pso.Client, pso.projectName)
+	err = project.SetCurrent(pso.Context, pso.projectName)
 	if err != nil {
 		return err
 	}
