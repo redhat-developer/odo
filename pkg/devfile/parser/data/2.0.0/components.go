@@ -119,10 +119,15 @@ func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
 
 // UpdateComponent updates the component with the given name
 func (d *Devfile200) UpdateComponent(component common.DevfileComponent) {
+	index := -1
 	for i := range d.Components {
 		if d.Components[i].Container.Name == strings.ToLower(component.Container.Name) {
-			d.Components[i] = component
+			index = i
+			break
 		}
+	}
+	if index != -1 {
+		d.Components[index] = component
 	}
 }
 

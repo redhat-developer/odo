@@ -2,14 +2,17 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/validation"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
@@ -49,6 +52,9 @@ type SetOptions struct {
 	configForceFlag bool
 	envArray        []string
 	now             bool
+	devfilePath     string
+	devfileObj      parser.DevfileObj
+	IsDevfile       bool
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -59,35 +65,55 @@ func NewSetOptions() *SetOptions {
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
+	context := genericclioptions.GetContextFlagValue(cmd)
+	devfilePath := filepath.Join(context, "devfile.yaml")
+	if util.CheckPathExists(devfilePath) {
+		o.devfilePath = devfilePath
+		o.IsDevfile = true
+		o.devfileObj, err = parser.Parse(o.devfilePath)
+		if err != nil {
+			return err
+		}
+	}
+
 	if o.envArray == nil {
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
 
-	// we initialize the context irrespective of --now flag being provided
-	if o.now {
-		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-		prjName := o.LocalConfigInfo.GetProject()
-		o.ResolveSrcAndConfigFlags()
-		err = o.ResolveProject(prjName)
-		if err != nil {
-			return err
+	if !o.IsDevfile {
+
+		// we initialize the context irrespective of --now flag being provided
+		if o.now {
+			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			prjName := o.LocalConfigInfo.GetProject()
+			o.ResolveSrcAndConfigFlags()
+			err = o.ResolveProject(prjName)
+			if err != nil {
+				return err
+			}
+		} else {
+			o.Context = genericclioptions.NewConfigContext(cmd)
 		}
-	} else {
-		o.Context = genericclioptions.NewConfigContext(cmd)
 	}
+
 	return
 }
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
-	if !o.LocalConfigInfo.ConfigFileExists() {
-		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	if !o.IsDevfile {
+		if !o.LocalConfigInfo.ConfigFileExists() {
+			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+		}
 	}
-	if o.now {
-		err = o.ValidateComponentCreate()
-		if err != nil {
-			return err
+
+	if !o.IsDevfile {
+		if o.now {
+			err = o.ValidateComponentCreate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return
@@ -102,13 +128,22 @@ func (o *SetOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
+
+		if o.IsDevfile {
+			err := o.devfileObj.AddEnvVars(newEnvVarList)
+			if err != nil {
+				return err
+			}
+			log.Success("Environment variables were successfully updated")
+			log.Italic("\nRun `odo push` command to apply changes to the cluster")
+			return err
+		}
 		// keeping the old env vars as well
 		presentEnvVarList := o.LocalConfigInfo.GetEnvVars()
 		newEnvVarList = presentEnvVarList.Merge(newEnvVarList)
 		if err := o.LocalConfigInfo.SetEnvVars(newEnvVarList); err != nil {
 			return err
 		}
-		log.Success("Environment variables were successfully updated")
 		if o.now {
 			err = o.Push()
 			if err != nil {
@@ -122,19 +157,40 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	if !o.configForceFlag {
-		if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
-			if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" || strings.ToLower(o.paramName) == "application" {
-				if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetApplication(), o.LocalConfigInfo.GetProject())) {
-					fmt.Println("Aborted by the user.")
-					return nil
-				}
-			} else {
-				if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
+
+		if o.IsDevfile {
+			if o.devfileObj.IsSet(o.paramName) {
+				if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
 					fmt.Println("Aborted by the user.")
 					return nil
 				}
 			}
+		} else {
+			if o.LocalConfigInfo.IsSet(o.paramName) {
+				if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" || strings.ToLower(o.paramName) == "application" {
+					if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetApplication(), o.LocalConfigInfo.GetProject())) {
+						fmt.Println("Aborted by the user.")
+						return nil
+					}
+				} else {
+					if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
+						fmt.Println("Aborted by the user.")
+						return nil
+					}
+				}
+			}
 		}
+
+	}
+
+	if o.IsDevfile {
+		err := o.devfileObj.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+		if err != nil {
+			return err
+		}
+		log.Success("Devfile successfully updated")
+		log.Italic("\nRun `odo push` command to apply changes to the cluster")
+		return err
 	}
 
 	err = o.LocalConfigInfo.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
@@ -212,5 +268,6 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
 	o.AddContextFlag(configurationSetCmd)
 	genericclioptions.AddNowFlag(configurationSetCmd, &o.now)
+
 	return configurationSetCmd
 }

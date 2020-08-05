@@ -2,9 +2,12 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -48,6 +51,9 @@ type UnsetOptions struct {
 	configForceFlag bool
 	envArray        []string
 	now             bool
+	devfilePath     string
+	devfileObj      parser.DevfileObj
+	IsDevfile       bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -57,33 +63,51 @@ func NewUnsetOptions() *UnsetOptions {
 
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	context := genericclioptions.GetContextFlagValue(cmd)
+	devfilePath := filepath.Join(context, "devfile.yaml")
+	if util.CheckPathExists(devfilePath) {
+		o.devfilePath = devfilePath
+		o.IsDevfile = true
+		o.devfileObj, err = parser.Parse(o.devfilePath)
+		if err != nil {
+			return err
+		}
+	}
+
 	if o.envArray == nil {
 		o.paramName = args[0]
 	}
 
-	if o.now {
-		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-		prjName := o.LocalConfigInfo.GetProject()
-		o.ResolveSrcAndConfigFlags()
-		err = o.ResolveProject(prjName)
-		if err != nil {
-			return err
+	if !o.IsDevfile {
+		if o.now {
+			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			prjName := o.LocalConfigInfo.GetProject()
+			o.ResolveSrcAndConfigFlags()
+			err = o.ResolveProject(prjName)
+			if err != nil {
+				return err
+			}
+		} else {
+			o.Context = genericclioptions.NewConfigContext(cmd)
 		}
-	} else {
-		o.Context = genericclioptions.NewConfigContext(cmd)
 	}
 	return
 }
 
 // Validate validates the UnsetOptions based on completed values
 func (o *UnsetOptions) Validate() (err error) {
-	if !o.LocalConfigInfo.ConfigFileExists() {
-		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	if !o.IsDevfile {
+		if !o.LocalConfigInfo.ConfigFileExists() {
+			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+		}
 	}
-	if o.now {
-		err = o.ValidateComponentCreate()
-		if err != nil {
-			return err
+
+	if !o.IsDevfile {
+		if o.now {
+			err = o.ValidateComponentCreate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return
@@ -94,6 +118,15 @@ func (o *UnsetOptions) Run() (err error) {
 
 	// env variables have been provided
 	if o.envArray != nil {
+
+		if o.IsDevfile {
+			if err := o.devfileObj.RemoveEnvVars(o.envArray); err != nil {
+				return err
+			}
+			log.Success("Environment variables were successfully updated")
+			log.Italic("\nRun `odo push` command to apply changes to the cluster")
+			return err
+		}
 
 		envList := o.LocalConfigInfo.GetEnvVars()
 		newEnvList, err := config.RemoveEnvVarsFromList(envList, o.envArray)
@@ -117,6 +150,19 @@ func (o *UnsetOptions) Run() (err error) {
 		return nil
 	}
 
+	if o.IsDevfile {
+		if isSet := o.devfileObj.IsSet(o.paramName); isSet {
+			if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
+				fmt.Println("Aborted by the user.")
+				return nil
+			}
+			err = o.devfileObj.DeleteConfiguration(strings.ToLower(o.paramName))
+			log.Success("Devfile was successfully updated.")
+			return err
+		}
+		return errors.New("config already unset, cannot unset a configuration which is not set")
+	}
+
 	if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
 			fmt.Println("Aborted by the user.")
@@ -127,7 +173,7 @@ func (o *UnsetOptions) Run() (err error) {
 			return err
 		}
 
-		fmt.Println("Local config was successfully updated.")
+		log.Success("Local config was successfully updated.")
 		if o.now {
 			err = o.Push()
 			if err != nil {

@@ -163,19 +163,35 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 	return envInfo, nil
 }
 
+func GetContextFlagValue(command *cobra.Command) string {
+	contextDir := FlagValueIfSet(command, ContextFlagName)
+
+	// Grab the absolute path of the configuration
+	if contextDir != "" {
+		fAbs, err := pkgUtil.GetAbsPath(contextDir)
+		util.LogErrorAndExit(err, "")
+		contextDir = fAbs
+	} else {
+		fAbs, err := pkgUtil.GetAbsPath(".")
+		util.LogErrorAndExit(err, "")
+		contextDir = fAbs
+	}
+	return contextDir
+}
+
 func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*config.LocalConfigInfo, error) {
 
 	// Get details from the local config file
-	configFileName := FlagValueIfSet(command, ContextFlagName)
+	contextDir := FlagValueIfSet(command, ContextFlagName)
 
 	// Grab the absolute path of the configuration
-	if configFileName != "" {
-		fAbs, err := pkgUtil.GetAbsPath(configFileName)
+	if contextDir != "" {
+		fAbs, err := pkgUtil.GetAbsPath(contextDir)
 		util.LogErrorAndExit(err, "")
-		configFileName = fAbs
+		contextDir = fAbs
 	}
 	// Access the local configuration
-	localConfiguration, err := config.NewLocalConfigInfo(configFileName)
+	localConfiguration, err := config.NewLocalConfigInfo(contextDir)
 	if err != nil {
 		return nil, err
 	}
@@ -427,6 +443,7 @@ type internalCxt struct {
 	Application     string
 	cmp             string
 	OutputFlag      string
+	IsDevfile       string
 	LocalConfigInfo *config.LocalConfigInfo
 	KClient         *kclient.Client
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
