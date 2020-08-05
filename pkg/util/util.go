@@ -47,7 +47,7 @@ const (
 	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
 )
 
-// httpCacheDir determies directory where odo will cache HTTP respones
+// httpCacheDir determines directory where odo will cache HTTP respones
 var httpCacheDir = filepath.Join(os.TempDir(), "odohttpcache")
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -734,18 +734,29 @@ func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 	klog.V(4).Infof("HTTPGetRequest: %s", req.URL.String())
 
 	if cacheFor > 0 {
+		// if there is an error during cache setup we show warning and continue without using cache
+		cacheError := false
 		httpCacheTime := time.Duration(cacheFor) * time.Minute
+
+		// make sure that cache directory exists
 		err = os.MkdirAll(httpCacheDir, 0750)
 		if err != nil {
-			return nil, err
+			cacheError = true
+			klog.WarningDepth(4, "Unable to setup cache: ", err)
+			klog.V(4).Info("Request will be executed without cache")
+
 		}
 		err = cleanHttpCache(httpCacheDir, httpCacheTime)
 		if err != nil {
-			return nil, err
+			cacheError = true
+			klog.WarningDepth(4, "Unable to clean up cache directory: ", err)
+			klog.V(4).Info("Request will be executed without cache")
 		}
-		httpClient.Transport = httpcache.NewTransport(diskcache.New(httpCacheDir))
-		klog.V(4).Infof("Response will be cached in %s for %s", httpCacheDir, httpCacheTime)
 
+		if !cacheError {
+			httpClient.Transport = httpcache.NewTransport(diskcache.New(httpCacheDir))
+			klog.V(4).Infof("Response will be cached in %s for %s", httpCacheDir, httpCacheTime)
+		}
 	}
 
 	resp, err := httpClient.Do(req)
@@ -755,7 +766,7 @@ func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.Header.Get(httpcache.XFromCache) != "" {
-		klog.V(4).Infof("Using cached response.")
+		klog.V(4).Infof("Cached response used.")
 	}
 
 	// We have a non 1xx / 2xx status, return an error
