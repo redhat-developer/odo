@@ -743,19 +743,18 @@ func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 		if err != nil {
 			cacheError = true
 			klog.WarningDepth(4, "Unable to setup cache: ", err)
-			klog.V(4).Info("Request will be executed without cache")
-
 		}
 		err = cleanHttpCache(httpCacheDir, httpCacheTime)
 		if err != nil {
 			cacheError = true
 			klog.WarningDepth(4, "Unable to clean up cache directory: ", err)
-			klog.V(4).Info("Request will be executed without cache")
 		}
 
 		if !cacheError {
 			httpClient.Transport = httpcache.NewTransport(diskcache.New(httpCacheDir))
 			klog.V(4).Infof("Response will be cached in %s for %s", httpCacheDir, httpCacheTime)
+		} else {
+			klog.V(4).Info("Response won't be cached.")
 		}
 	}
 
