@@ -66,7 +66,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	}
 
 	// Create the project & end the spinner (if there is any..)
-	err = project.Create(pco.Client, pco.projectName, pco.wait)
+	err = project.Create(pco.Context, pco.projectName, pco.wait)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	log.Successf(successMessage)
 
 	// Set the current project when created. If it's json output, we output a json output error
-	err = project.SetCurrent(pco.Client, pco.projectName)
+	err = project.SetCurrent(pco.Context, pco.projectName)
 	if err != nil {
 		return err
 	}
