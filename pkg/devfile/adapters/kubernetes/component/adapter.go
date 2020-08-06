@@ -48,6 +48,7 @@ const (
 	regcredName           = "regcred"
 	DeployComponentSuffix = "-deploy"
 	BuildTimeout          = 5 * time.Minute
+	internalRegistryHost  = "image-registry.openshift-image-registry.svc:5000"
 )
 
 // New instantiantes a component adapter
@@ -1033,19 +1034,18 @@ func (a Adapter) createDockerConfigSecret(parameters common.BuildParameters) err
 	if _, err := a.Client.DynamicClient.Resource(secretGroupVersionResource).
 		Namespace(parameters.EnvSpecificInfo.GetNamespace()).
 		Create(secretUnstructured, metav1.CreateOptions{}); err != nil {
-		if errors.Cause(err).Error() != "secrets \""+regcredName+"\" already exists" {
-			return err
-		}
+		return err
 	}
 	return nil
 }
 
+// NOTE: we assume internal registry host is: image-registry.openshift-image-registry.svc:5000
 func isInternalRegistry(imageTag string) (bool, error) {
 	components := strings.Split(imageTag, "/")
-	if len(components) < 2 || len(components) > 3 {
-		return false, fmt.Errorf("Invalid image tag '%s', must contain at least 2 components", imageTag)
+	if len(components) != 3 {
+		return false, fmt.Errorf("Invalid image tag '%s', must contain 3 components", imageTag)
 	}
-	if len(components) == 2 || components[0] == "image-registry.openshift-image-registry.svc:5000" {
+	if components[0] == internalRegistryHost {
 		return true, nil
 	}
 	return false, nil

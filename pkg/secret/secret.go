@@ -83,7 +83,7 @@ func availablePorts(secrets []corev1.Secret) []string {
 }
 
 func CreateDockerConfigSecret(name types.NamespacedName, dockerConfigData []byte) (*corev1.Secret, error) {
-	return createSecret(name, ".dockerconfigjson", corev1.SecretTypeDockerConfigJson, dockerConfigData)
+	return createSecret(name, corev1.DockerConfigJsonKey, corev1.SecretTypeDockerConfigJson, dockerConfigData)
 }
 
 func createSecret(name types.NamespacedName, key string, st corev1.SecretType, dockerConfigData []byte) (*corev1.Secret, error) {

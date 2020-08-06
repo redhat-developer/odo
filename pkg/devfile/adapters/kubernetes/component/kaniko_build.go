@@ -2,13 +2,15 @@ package component
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
-
+	"strconv"
 	"strings"
 
+	"github.com/docker/docker/api/types"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/kclient"
@@ -27,6 +29,9 @@ const (
 	buildContextMountPath = "/root/build-context"
 	kanikoSecretMountPath = "/root/.docker"
 	completionFile        = "/tmp/complete"
+	builderServiceAccount = "builder"
+	containerName         = "build"
+	initContainerName     = "init"
 )
 
 var (
@@ -38,14 +43,17 @@ var (
 )
 
 func (a Adapter) runKaniko(parameters common.BuildParameters, isImageRegistryInternal bool) error {
+	if isImageRegistryInternal {
+		if err := a.createDockerCfgSecretForInternalRegistry(parameters.EnvSpecificInfo.GetNamespace()); err != nil {
+			return err
+		}
+	}
 
-	containerName := "build"
-	initContainerName := "init"
 	labels := map[string]string{
 		"component": a.ComponentName,
 	}
 
-	if err := a.createKanikoBuilderPod(labels, initContainer(initContainerName), builderContainer(containerName, parameters.Tag)); err != nil {
+	if err := a.createKanikoBuilderPod(labels, initContainer(initContainerName), builderContainer(containerName, parameters.Tag, isImageRegistryInternal), regcredName); err != nil {
 		return errors.Wrap(err, "error while creating kaniko builder pod")
 	}
 
@@ -79,6 +87,7 @@ func (a Adapter) runKaniko(parameters common.BuildParameters, isImageRegistryInt
 		return errors.Wrapf(err, "failed to stream tarball into file transfer container")
 	}
 
+	// Executing remote command to trigger closing of init container
 	cmd := []string{"touch", completionFile}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -113,8 +122,72 @@ func (a Adapter) runKaniko(parameters common.BuildParameters, isImageRegistryInt
 	return nil
 }
 
-func (a Adapter) createKanikoBuilderPod(labels map[string]string, init, builder *corev1.Container) error {
-	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
+func (a Adapter) createDockerCfgSecretForInternalRegistry(ns string) error {
+	// The builder serviceaccount's dockercfg secret as it does not work when it is used
+	// as internal registry pull secret.  However, if the secret only contains
+	// auth token (no username/password), then it works.  So, what we are doing here
+	// is to retrieve the auth token from builder's serviceaccount dockercfg secret.
+	// Then, we use the auth token to construct a new docker confg secret to be used as
+	// internal registry credentials.
+	secret, err := a.getServiceAccountSecret(ns, builderServiceAccount, corev1.SecretTypeDockercfg)
+	if err != nil {
+		return errors.Wrap(err, "failed to get docker secret")
+	}
+	if err := a.createDockerConfigSecretFrom(secret); err != nil {
+		return errors.Wrap(err, "failed to create docker secret")
+	}
+	return nil
+}
+
+func (a Adapter) getServiceAccountSecret(ns, saName string, secretType corev1.SecretType) (*corev1.Secret, error) {
+	sa, err := a.Client.KubeClient.CoreV1().ServiceAccounts(ns).Get(saName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get serviceaccount '%s': %v", saName, err)
+	}
+	for _, secretRef := range sa.Secrets {
+		secret, err := a.Client.KubeClient.CoreV1().Secrets(ns).Get(secretRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve secret '%s': %v", secretRef.Name, err)
+		}
+		if secret.Type == secretType {
+			return secret, nil
+		}
+	}
+	return nil, fmt.Errorf("serviceacccount '%s' does not have '%s' type secret", saName, secretType)
+}
+
+type dockerCfg struct {
+	Auths map[string]*types.AuthConfig `json:"auths,omitempty"`
+}
+
+func (a Adapter) createDockerConfigSecretFrom(source *corev1.Secret) error {
+	token, err := getAuthTokenFromDockerCfgSecret(source)
+	if err != nil {
+		return err
+	}
+	outCfg := &dockerCfg{
+		Auths: map[string]*types.AuthConfig{
+			internalRegistryHost: {Auth: token},
+		},
+	}
+	outBytes, err := json.Marshal(&outCfg)
+	if err != nil {
+		return err
+	}
+	secretUnstructured, err := utils.CreateSecret(regcredName, source.GetNamespace(), outBytes)
+	if err != nil {
+		return err
+	}
+	if _, err := a.Client.DynamicClient.Resource(secretGroupVersionResource).
+		Namespace(source.GetNamespace()).
+		Create(secretUnstructured, metav1.CreateOptions{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a Adapter) createKanikoBuilderPod(labels map[string]string, init, builder *corev1.Container, secretName string) error {
+	objectMeta := kclient.CreateObjectMeta(a.ComponentName+"-build", a.Client.Namespace, labels, nil)
 	pod := &corev1.Pod{
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
@@ -128,10 +201,10 @@ func (a Adapter) createKanikoBuilderPod(labels map[string]string, init, builder 
 				{Name: kanikoSecret,
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
-							SecretName: regcredName,
+							SecretName: secretName,
 							Items: []corev1.KeyToPath{
 								{
-									Key:  ".dockerconfigjson",
+									Key:  corev1.DockerConfigJsonKey,
 									Path: "config.json",
 								},
 							},
@@ -156,10 +229,14 @@ func (a Adapter) createKanikoBuilderPod(labels map[string]string, init, builder 
 	return nil
 }
 
-func builderContainer(name, imageTag string) *corev1.Container {
+func builderContainer(name, imageTag string, isImageRegistryInternal bool) *corev1.Container {
 	commandArgs := []string{"--dockerfile=" + buildContextMountPath + "/Dockerfile",
 		"--context=dir://" + buildContextMountPath,
 		"--destination=" + imageTag}
+
+	if isImageRegistryInternal {
+		commandArgs = append(commandArgs, "--skip-tls-verify")
+	}
 	envVars := []corev1.EnvVar{
 		{Name: "DOCKER_CONFIG", Value: kanikoSecretMountPath},
 		{Name: "AWS_ACCESS_KEY_ID", Value: "NOT_SET"},
@@ -195,4 +272,27 @@ func initContainer(name string) *corev1.Container {
 			buildContextVolumeMount,
 		},
 	}
+}
+
+type authCfg struct {
+	InternalRegistryAuthToken *token `json:"image-registry.openshift-image-registry.svc:5000"`
+}
+type token struct {
+	Auth string `json:"auth,omitempty"`
+}
+
+// NOTE: we assume internal registry host is image-registry.openshift-image-registry.svc:5000
+func getAuthTokenFromDockerCfgSecret(source *corev1.Secret) (string, error) {
+	data := fmt.Sprintf("%v", source.Data[corev1.DockerConfigKey])
+
+	var bytes []byte
+	for _, ps := range strings.Split(strings.Trim(data, "[]"), " ") {
+		pi, _ := strconv.Atoi(ps)
+		bytes = append(bytes, byte(pi))
+	}
+	var cfg authCfg
+	if err := json.Unmarshal(bytes, &cfg); err != nil {
+		return "", err
+	}
+	return cfg.InternalRegistryAuthToken.Auth, nil
 }

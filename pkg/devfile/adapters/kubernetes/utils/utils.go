@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	// "context"
 	"github.com/mitchellh/go-homedir"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 
@@ -26,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	// "sigs.k8s.io/controller-runtime/pkg/client"
 	runtimeUnstructured "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
@@ -379,17 +377,17 @@ func CreateDockerConfigDataFromFilepath(DockerConfigJSONFilename string) ([]byte
 	return data, nil
 }
 
-func CreateSecret(regcredName string, ns string, dockerConfigData []byte) (*unstructured.Unstructured, error) {
+func CreateSecret(secretName string, ns string, dockerConfigData []byte) (*unstructured.Unstructured, error) {
 
-	secret, err := secret.CreateDockerConfigSecret(types.NamespacedName{
-		Name:      regcredName,
+	dockerCfgSecret, err := secret.CreateDockerConfigSecret(types.NamespacedName{
+		Name:      secretName,
 		Namespace: ns,
 	}, dockerConfigData)
 	if err != nil {
 		return nil, err
 	}
 
-	secretData, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(secret)
+	secretData, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(dockerCfgSecret)
 	if err != nil {
 		return nil, err
 	}
