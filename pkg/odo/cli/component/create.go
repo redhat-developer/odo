@@ -189,7 +189,7 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
 	// Error out by default if no type of sources were passed..
 	default:
-		return fmt.Errorf("The source can be either --binary or --local or --git")
+		return fmt.Errorf("the source can be either --binary or --local or --git")
 
 	}
 
@@ -200,7 +200,7 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
 	// Error out if reference is passed but no --git flag passed
 	if len(co.componentGit) == 0 && len(co.componentGitRef) != 0 {
-		return fmt.Errorf("The --ref flag is only valid for --git flag")
+		return fmt.Errorf("the --ref flag is only valid for --git flag")
 	}
 
 	return
@@ -284,14 +284,79 @@ func createDefaultComponentName(context *genericclioptions.Context, componentTyp
 	return componentName, nil
 }
 
+func (co *CreateOptions) checkConflictingFlags() (err error) {
+	if err = co.checkConflictingS2IFlags(); err != nil {
+		return
+	}
+
+	if err = co.checkConflictingDevfileFlags(); err != nil {
+		return
+	}
+
+	return nil
+}
+
+func (co *CreateOptions) checkConflictingS2IFlags() error {
+	if !co.forceS2i {
+		errorString := "flag --%s, requires --s2i flag to be set, when in experimental mode."
+
+		var flagName string
+		if co.now {
+			flagName = "now"
+		} else if len(co.componentBinary) != 0 {
+			flagName = "binary"
+		} else if len(co.componentGit) != 0 {
+			flagName = "git"
+		} else if len(co.componentEnvVars) != 0 {
+			flagName = "env"
+		} else if len(co.componentPorts) != 0 {
+			flagName = "port"
+		}
+
+		if len(flagName) != 0 {
+			return errors.New(fmt.Sprintf(errorString, flagName))
+		}
+	}
+	return nil
+}
+
+func (co *CreateOptions) checkConflictingDevfileFlags() error {
+	if co.forceS2i {
+		errorString := "you can't set --s2i flag as true if you want to use the %s via --%s flag"
+
+		var flagName string
+		if len(co.devfileMetadata.devfilePath.value) != 0 {
+			flagName = "devfile"
+		} else if len(co.devfileMetadata.devfileRegistry.Name) != 0 {
+			flagName = "registry"
+		} else if len(co.devfileMetadata.token) != 0 {
+			flagName = "token"
+		} else if len(co.devfileMetadata.starter) != 0 {
+			flagName = "starter"
+		}
+
+		if len(flagName) != 0 {
+			return errors.New(fmt.Sprintf(errorString, flagName, flagName))
+		}
+	}
+	return nil
+}
+
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	// this populates the LocalConfigInfo as well
+	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	// this populates the LocalConfigInfo as well
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	// If not using --s2i
 	if !co.forceS2i {
+		err = co.checkConflictingFlags()
+		if err != nil {
+			return
+		}
+
 		err = co.checkConflictingFlags()
 		if err != nil {
 			return
@@ -306,21 +371,30 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
-			return errors.New("This directory already contains a component")
+			return errors.New("this directory already contains a component")
 		}
 
 		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath.value) {
-			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
+			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 		}
 
 		co.appName = genericclioptions.ResolveAppFlag(cmd)
+
+		var catalogList catalog.ComponentTypeList
+		if co.forceS2i {
+			client := co.Client
+			catalogList, err = catalog.ListComponents(client)
+			if err != nil {
+				return err
+			}
+		}
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
 			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 			if fileErr != nil && urlErr != nil {
-				return errors.Errorf("The devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
+				return errors.Errorf("the devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
 			} else if fileErr == nil {
 				co.devfileMetadata.devfilePath.protocol = "file"
 			} else if urlErr == nil {
@@ -330,16 +404,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
+
 			if co.devfileMetadata.devfilePath.value != "" {
-				return errors.New("You can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
+				return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
 			}
 
 			registryList, err := catalog.GetDevfileRegistries(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
-				return errors.Wrap(err, "Failed to get registry")
+				return errors.Wrap(err, "failed to get registry")
 			}
 			if len(registryList) == 0 {
-				return errors.Errorf("Registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
+				return errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
 			}
 		}
 
@@ -366,7 +441,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		var catalogDevfileList catalog.DevfileComponentTypeList
 		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
 
-		if co.interactive {
+		if co.interactive && !co.forceS2i {
 			// Interactive mode
 
 			// Get available devfile components for checking devfile compatibility
@@ -404,8 +479,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 				// Use existing devfile directly
 
+				if co.forceS2i {
+					return errors.Errorf("existing devfile component detected. Please remove the devfile component before creating an s2i component")
+				}
+
 				if len(args) > 1 {
-					return errors.Errorf("Accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
+					return errors.Errorf("accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
 				}
 
 				// If user can use existing devfile directly, the first arg is component name instead of component type
@@ -421,7 +500,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 
 				co.devfileMetadata.devfileSupport = true
-			} else {
+			} else if len(args) > 0 {
 				// Download devfile from registry
 
 				// Component type: Get from full command's first argument (mandatory in direct mode)
@@ -440,7 +519,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return err
 				}
 				if co.devfileMetadata.devfileRegistry.Name != "" && catalogDevfileList.Items == nil {
-					return errors.Errorf("Can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
+					return errors.Errorf("can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
 				}
 
 				if len(catalogDevfileList.DevfileRegistries) == 0 {
@@ -499,7 +578,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return nil
 		}
 
-		if isDevfileRegistryPresent {
+		if isDevfileRegistryPresent && !co.forceS2i {
 			// Categorize the sections
 			log.Info("Validation")
 
@@ -516,6 +595,19 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					co.devfileMetadata.devfileLink = devfileComponent.Link
 					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
 					break
+				}
+			}
+
+			if co.forceS2i && hasComponent {
+				s2iOverride := false
+				for _, item := range catalogList.Items {
+					if item.Name == co.devfileMetadata.componentType {
+						s2iOverride = true
+						break
+					}
+				}
+				if !s2iOverride {
+					return errors.New("cannot select this devfile component type with --s2i flag")
 				}
 			}
 
@@ -546,20 +638,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// we should error out instead of running s2i componet code and throw warning message
 			if co.devfileMetadata.devfileRegistry.Name != "" {
 				return errors.Errorf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
-			} else {
-				log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 			}
+
+			log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 		}
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
 		co.interactive = true
-	}
-
-	// this populates the LocalConfigInfo as well
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-	if err != nil {
-		return errors.Wrap(err, "failed initiating local config")
 	}
 
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
@@ -581,8 +667,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	co.componentSettings = co.LocalConfigInfo.GetComponentSettings()
-
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	// Below code is for INTERACTIVE mode
 	if co.interactive {
