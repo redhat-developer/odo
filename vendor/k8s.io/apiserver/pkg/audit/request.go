@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"reflect"
 	"time"
 
-	"github.com/pborman/uuid"
-	"k8s.io/klog"
+	"github.com/google/uuid"
+	"k8s.io/klog/v2"
 
-	"reflect"
-
+	authnv1 "k8s.io/api/authentication/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -57,7 +58,7 @@ func NewEventFromRequest(req *http.Request, level auditinternal.Level, attribs a
 	if ids != "" {
 		ev.AuditID = types.UID(ids)
 	} else {
-		ev.AuditID = types.UID(uuid.NewRandom().String())
+		ev.AuditID = types.UID(uuid.New().String())
 	}
 
 	ips := utilnet.SourceIPs(req)
@@ -68,9 +69,9 @@ func NewEventFromRequest(req *http.Request, level auditinternal.Level, attribs a
 
 	if user := attribs.GetUser(); user != nil {
 		ev.User.Username = user.GetName()
-		ev.User.Extra = map[string]auditinternal.ExtraValue{}
+		ev.User.Extra = map[string]authnv1.ExtraValue{}
 		for k, v := range user.GetExtra() {
-			ev.User.Extra[k] = auditinternal.ExtraValue(v)
+			ev.User.Extra[k] = authnv1.ExtraValue(v)
 		}
 		ev.User.Groups = user.GetGroups()
 		ev.User.UID = user.GetUID()
@@ -87,6 +88,10 @@ func NewEventFromRequest(req *http.Request, level auditinternal.Level, attribs a
 		}
 	}
 
+	for _, kv := range auditAnnotationsFrom(req.Context()) {
+		LogAnnotation(ev, kv.key, kv.value)
+	}
+
 	return ev, nil
 }
 
@@ -95,14 +100,14 @@ func LogImpersonatedUser(ae *auditinternal.Event, user user.Info) {
 	if ae == nil || ae.Level.Less(auditinternal.LevelMetadata) {
 		return
 	}
-	ae.ImpersonatedUser = &auditinternal.UserInfo{
+	ae.ImpersonatedUser = &authnv1.UserInfo{
 		Username: user.GetName(),
 	}
 	ae.ImpersonatedUser.Groups = user.GetGroups()
 	ae.ImpersonatedUser.UID = user.GetUID()
-	ae.ImpersonatedUser.Extra = map[string]auditinternal.ExtraValue{}
+	ae.ImpersonatedUser.Extra = map[string]authnv1.ExtraValue{}
 	for k, v := range user.GetExtra() {
-		ae.ImpersonatedUser.Extra[k] = auditinternal.ExtraValue(v)
+		ae.ImpersonatedUser.Extra[k] = authnv1.ExtraValue(v)
 	}
 }
 
@@ -117,8 +122,9 @@ func LogRequestObject(ae *auditinternal.Event, obj runtime.Object, gvr schema.Gr
 	if ae.ObjectRef == nil {
 		ae.ObjectRef = &auditinternal.ObjectReference{}
 	}
-	if acc, ok := obj.(metav1.ObjectMetaAccessor); ok {
-		meta := acc.GetObjectMeta()
+
+	// meta.Accessor is more general than ObjectMetaAccessor, but if it fails, we can just skip setting these bits
+	if meta, err := meta.Accessor(obj); err == nil {
 		if len(ae.ObjectRef.Namespace) == 0 {
 			ae.ObjectRef.Namespace = meta.GetNamespace()
 		}
@@ -196,22 +202,22 @@ func LogResponseObject(ae *auditinternal.Event, obj runtime.Object, gv schema.Gr
 }
 
 func encodeObject(obj runtime.Object, gv schema.GroupVersion, serializer runtime.NegotiatedSerializer) (*runtime.Unknown, error) {
-	supported := serializer.SupportedMediaTypes()
-	for i := range supported {
-		if supported[i].MediaType == "application/json" {
-			enc := serializer.EncoderForVersion(supported[i].Serializer, gv)
-			var buf bytes.Buffer
-			if err := enc.Encode(obj, &buf); err != nil {
-				return nil, fmt.Errorf("encoding failed: %v", err)
-			}
-
-			return &runtime.Unknown{
-				Raw:         buf.Bytes(),
-				ContentType: runtime.ContentTypeJSON,
-			}, nil
-		}
+	const mediaType = runtime.ContentTypeJSON
+	info, ok := runtime.SerializerInfoForMediaType(serializer.SupportedMediaTypes(), mediaType)
+	if !ok {
+		return nil, fmt.Errorf("unable to locate encoder -- %q is not a supported media type", mediaType)
 	}
-	return nil, fmt.Errorf("no json encoder found")
+
+	enc := serializer.EncoderForVersion(info.Serializer, gv)
+	var buf bytes.Buffer
+	if err := enc.Encode(obj, &buf); err != nil {
+		return nil, fmt.Errorf("encoding failed: %v", err)
+	}
+
+	return &runtime.Unknown{
+		Raw:         buf.Bytes(),
+		ContentType: runtime.ContentTypeJSON,
+	}, nil
 }
 
 // LogAnnotation fills in the Annotations according to the key value pair.
@@ -227,16 +233,6 @@ func LogAnnotation(ae *auditinternal.Event, key, value string) {
 		return
 	}
 	ae.Annotations[key] = value
-}
-
-// LogAnnotations fills in the Annotations according to the annotations map.
-func LogAnnotations(ae *auditinternal.Event, annotations map[string]string) {
-	if ae == nil || ae.Level.Less(auditinternal.LevelMetadata) {
-		return
-	}
-	for key, value := range annotations {
-		LogAnnotation(ae, key, value)
-	}
 }
 
 // truncate User-Agent if too long, otherwise return it directly.

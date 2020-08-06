@@ -47,11 +47,11 @@ func (plo *ProjectListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo project list command
 func (plo *ProjectListOptions) Run() (err error) {
-
-	projects, err := project.List(plo.Client)
+	projects, err := project.List(plo.Context)
 	if err != nil {
 		return err
 	}
+
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(projects)
 	} else {

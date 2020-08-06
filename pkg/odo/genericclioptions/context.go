@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -208,16 +207,17 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 func resolveProject(command *cobra.Command, client *occlient.Client, localConfiguration *config.LocalConfigInfo) string {
 	var namespace string
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	var err error
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
-		_, err := project.Exists(client, projectFlag)
-		util.LogErrorAndExit(err, "")
+		project, err := client.GetProject(projectFlag)
+		if err != nil || project == nil {
+			util.LogErrorAndExit(err, "")
+		}
 		namespace = projectFlag
 	} else {
 		namespace = localConfiguration.GetProject()
 		if namespace == "" {
-			namespace = project.GetCurrent(client)
+			namespace = client.Namespace
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
@@ -225,7 +225,7 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 		}
 
 		// check that the specified project exists
-		_, err = project.Exists(client, namespace)
+		_, err := client.GetProject(namespace)
 		if err != nil {
 			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")

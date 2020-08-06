@@ -889,10 +889,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					return nil
 				}
 				exist := false
-				var endpoint parsercommon.Endpoint
-				if parameters.EndpointMap != nil {
-					endpoint, exist = parameters.EndpointMap[int32(url.Port)]
-				}
+				endpoint, exist = parameters.EndpointMap[int32(url.Port)]
 				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
 					return fmt.Errorf("port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry", url.Port, url.Name)
 				}

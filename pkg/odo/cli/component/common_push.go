@@ -140,12 +140,12 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 	// check if project exist
-	isPrjExists, err := project.Exists(cpo.Context.Client, prjName)
+	isPrjExists, err := project.Exists(cpo.Context, prjName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
-		err = project.Create(cpo.Context.Client, prjName, true)
+		err = project.Create(cpo.Context, prjName, true)
 		if err != nil {
 			return errors.Wrapf(
 				err,

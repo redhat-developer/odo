@@ -121,7 +121,7 @@ var _ = Describe("odo url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure", "--context", context)
 
 			actualURLDescribeJSON := helper.CmdShouldPass("odo", "url", "describe", "myurl", "-o", "json", "--context", context)
-			desiredURLDescribeJSON := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{"port": 8080,"secure": true,"path": "/","kind": "route"},"status": {"state": "Not Pushed"}}`)
+			desiredURLDescribeJSON := `{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{"port": 8080,"secure": true,"path": "/", "kind": "route"},"status": {"state": "Not Pushed"}}`
 			Expect(desiredURLDescribeJSON).Should(MatchJSON(actualURLDescribeJSON))
 
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -162,7 +162,7 @@ var _ = Describe("odo url command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure")
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"port":8080,"secure":true,"path": "/","kind": "route"},"status":{"state": "Not Pushed"}}]}`)
+			desiredURLListJSON := `{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"port":8080,"secure":true,"path": "/","kind": "route"},"status":{"state": "Not Pushed"}}]}`
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 
 			helper.CmdShouldPass("odo", "push")

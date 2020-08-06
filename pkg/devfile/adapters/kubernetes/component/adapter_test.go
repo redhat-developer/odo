@@ -437,63 +437,85 @@ func TestAdapterDelete(t *testing.T) {
 		labels map[string]string
 	}
 
-	emptyDeployment := testingutil.CreateFakeDeployment("")
+	emptyPods := &corev1.PodList{
+		Items: []corev1.Pod{},
+	}
 
 	tests := []struct {
-		name               string
-		args               args
-		existingDeployment *v1.Deployment
-		componentName      string
-		componentExists    bool
-		wantErr            bool
+		name            string
+		args            args
+		existingPod     *corev1.PodList
+		componentName   string
+		componentExists bool
+		wantErr         bool
 	}{
 		{
 			name: "case 1: component exists and given labels are valid",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "component",
-			componentExists:    true,
-			wantErr:            false,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "component",
+			componentExists: true,
+			wantErr:         false,
 		},
 		{
-			name:               "case 2: component exists and given labels are not valid",
-			args:               args{labels: nil},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "component",
-			componentExists:    true,
-			wantErr:            true,
+			name: "case 2: component exists and given labels are not valid",
+			args: args{labels: nil},
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "component",
+			componentExists: true,
+			wantErr:         true,
 		},
 		{
 			name: "case 3: component doesn't exists",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "component",
-			componentExists:    false,
-			wantErr:            false,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "nocomponent",
+			componentExists: false,
+			wantErr:         false,
 		},
 		{
 			name: "case 4: resource forbidden",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "resourceforbidden",
-			componentExists:    false,
-			wantErr:            false,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "resourceforbidden",
+			componentExists: false,
+			wantErr:         false,
 		},
 		{
 			name: "case 5: component check error",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "componenterror",
-			componentExists:    true,
-			wantErr:            true,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "componenterror",
+			componentExists: true,
+			wantErr:         true,
 		},
 	}
 	for _, tt := range tests {
@@ -527,18 +549,18 @@ func TestAdapterDelete(t *testing.T) {
 				return true, nil, nil
 			})
 
-			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if action.(ktesting.GetAction).GetName() != tt.componentName {
-					return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+			fkclientset.Kubernetes.PrependReactor("list", "pods", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				if tt.componentName == "nocomponent" {
+					return true, emptyPods, &kclient.PodNotFoundError{Selector: "somegarbage"}
 				} else if tt.componentName == "resourceforbidden" {
-					return true, emptyDeployment, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
+					return true, emptyPods, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
 				} else if tt.componentName == "componenterror" {
-					return true, emptyDeployment, errors.Errorf("component check error")
+					return true, emptyPods, errors.Errorf("pod check error")
 				}
-				return true, tt.existingDeployment, nil
+				return true, tt.existingPod, nil
 			})
 
-			if err := a.Delete(tt.args.labels); (err != nil) != tt.wantErr {
+			if err := a.Delete(tt.args.labels, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

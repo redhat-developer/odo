@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
@@ -71,6 +72,22 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("Disabling experimental preference should error out on providing --s2i flag", func() {
+		JustBeforeEach(func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("Skipping test because s2i image is not supported on Kubernetes cluster")
+			}
+		})
+		It("checks that the --s2i flag is unrecognised when Experimental is set to false for create", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			// Check that it will contain the experimental mode output
+			s2iFlagUnknownMsg := "Error: unknown flag: --s2i"
+			Expect(helper.CmdShouldFail("odo", "create", "nodejs", "--s2i")).To(ContainSubstring(s2iFlagUnknownMsg))
+		})
+	})
+
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component", func() {
 			helper.CmdShouldPass("odo", "create", "java-openliberty")
@@ -113,6 +130,91 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with component type argument and --s2i flag", func() {
+
+		JustBeforeEach(func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("Skipping test because s2i image is not supported on Kubernetes cluster")
+			}
+		})
+
+		componentType := "nodejs"
+
+		It("should successfully create the localconfig component", func() {
+			componentName := helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", componentType), context)
+			helper.CmdShouldPass("odo", "create", componentType, componentName, "--s2i")
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+componentName, "Application,app")
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
+
+			// clean up
+			helper.CmdShouldPass("odo", "app", "delete", "app", "-f")
+			helper.CmdShouldFail("odo", "app", "delete", "app", "-f")
+			helper.CmdShouldFail("odo", "delete", componentName, "-f")
+
+		})
+
+		It("should successfully create the localconfig component with --git flag", func() {
+			componentName := "cmp-git"
+			helper.CmdShouldPass("odo", "create", componentType, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--s2i", "true", "--app", "testing")
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
+
+			// clean up
+			helper.CmdShouldPass("odo", "app", "delete", "testing", "-f")
+			helper.CmdShouldFail("odo", "app", "delete", "testing", "-f")
+			helper.CmdShouldFail("odo", "delete", componentName, "-f")
+		})
+
+		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
+			componentName := helper.RandString(6)
+
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+
+			wantOutput := []string{"java-openliberty"}
+
+			var data map[string]interface{}
+
+			err := json.Unmarshal([]byte(output), &data)
+
+			if err != nil {
+				Expect(err).Should(BeNil())
+			}
+			outputBytes, err := json.Marshal(data["s2iItems"])
+			if err == nil {
+				output = string(outputBytes)
+			}
+
+			helper.DontMatchAllInOutput(output, wantOutput)
+
+			outputBytes, err = json.Marshal(data["devfileItems"])
+			if err == nil {
+				output = string(outputBytes)
+			}
+
+			helper.MatchAllInOutput(output, wantOutput)
+
+			helper.CmdShouldFail("odo", "create", "java-openliberty", componentName, "--s2i")
+		})
+
+		It("should fail the create command as --git flag, which is specific to s2i component creation, is used without --s2i flag", func() {
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")
+			Expect(output).Should(ContainSubstring("flag --git, requires --s2i flag to be set, when in experimental mode."))
+		})
+
+		It("should fail the create command as --binary flag, which is specific to s2i component creation, is used without --s2i flag", func() {
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
+
+			output := helper.CmdShouldFail("odo", "create", "java:8", "sb-jar-test", "--binary", filepath.Join(context, "sb.jar"), "--context", context)
+			Expect(output).Should(ContainSubstring("flag --binary, requires --s2i flag to be set, when in experimental mode."))
+		})
+
+		It("should fail the create command as --now flag, which is specific to s2i component creation, is used without --s2i flag", func() {
+			componentName := helper.RandString(6)
+			output := helper.CmdShouldFail("odo", "create", "nodejs", componentName, "--now")
+			Expect(output).Should(ContainSubstring("flag --now, requires --s2i flag to be set, when in experimental mode."))
+		})
+	})
+
 	Context("When executing odo create with devfile component type argument and --project flag", func() {
 		It("should successfully create the devfile component", func() {
 			componentNamespace := helper.RandString(6)
@@ -129,7 +231,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail to create the devfile component if specified registry is invalid", func() {
 			componentRegistry := "fake"
 			output := helper.CmdShouldFail("odo", "create", "java-openliberty", "--registry", componentRegistry)
-			helper.MatchAllInOutput(output, []string{"Registry fake doesn't exist, please specify a valid registry via --registry"})
+			helper.MatchAllInOutput(output, []string{"registry fake doesn't exist, please specify a valid registry via --registry"})
 		})
 	})
 

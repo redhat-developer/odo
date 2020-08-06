@@ -116,7 +116,7 @@ func componentTests(args ...string) {
 
 		It("should show an error when ref flag is provided with sources except git", func() {
 			outputErr := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "--project", project, "cmp-git", "--ref", "test")...)
-			Expect(outputErr).To(ContainSubstring("The --ref flag is only valid for --git flag"))
+			Expect(outputErr).To(ContainSubstring("the --ref flag is only valid for --git flag"))
 		})
 
 		It("create component twice fails from same directory", func() {

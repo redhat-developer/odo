@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -95,6 +96,23 @@ var _ = Describe("odo devfile delete command tests", func() {
 			files := helper.ListFilesInDir(context)
 			Expect(files).To(Not(ContainElement(".odo")))
 			Expect(files).To(Not(ContainElement("devfile.yaml")))
+		})
+
+		It("should execute preStop events if present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
+
+			output := helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
+			helper.MatchAllInOutput(output, []string{
+				fmt.Sprintf("Executing preStop event commands for component %s", componentName),
+				"Executing myprestop command",
+				"Executing secondprestop command",
+				"Executing thirdprestop command",
+			})
+
 		})
 	})
 
