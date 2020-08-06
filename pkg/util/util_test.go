@@ -1249,7 +1249,7 @@ func TestHTTPGetRequest(t *testing.T) {
 			request := HTTPRequestParams{
 				URL: tt.url,
 			}
-			got, err := HTTPGetRequest(request)
+			got, err := HTTPGetRequest(request, 0)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)

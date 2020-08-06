@@ -31,6 +31,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -918,9 +919,12 @@ func (co *CreateOptions) Run() (err error) {
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 				}
-			} else if co.devfileMetadata.devfilePath.protocol == "file" {
-				// User specify devfile path is file system link
-				info, err := os.Stat(co.devfileMetadata.devfilePath.value)
+
+				cfg, err := preference.New()
+				if err != nil {
+					return err
+				}
+				err = util.DownloadFileWithCache(params, cfg.GetRegistryCacheTime())
 				if err != nil {
 					return err
 				}
