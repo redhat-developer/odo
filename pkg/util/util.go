@@ -30,6 +30,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
+	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache/diskcache"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -38,13 +40,15 @@ import (
 	"k8s.io/klog"
 )
 
-// HTTPRequestTimeout configures timeout of all HTTP requests
 const (
 	HTTPRequestTimeout    = 30 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
 	ResponseHeaderTimeout = 30 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
 	ModeReadWriteFile     = 0600             // default Permission for a file
 	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
 )
+
+// httpCacheDir determines directory where odo will cache HTTP respones
+var httpCacheDir = filepath.Join(os.TempDir(), "odohttpcache")
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
@@ -708,7 +712,8 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 }
 
 // HTTPGetRequest gets resource contents given URL and token (if applicable)
-func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
+// cacheFor determines how long the response should be cached (in minutes), 0 for no caching
+func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 	// Build http request
 	req, err := http.NewRequest("GET", request.URL, nil)
 	if err != nil {
@@ -719,18 +724,49 @@ func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
 		req.Header.Add("Authorization", bearer)
 	}
 
-	// Initialize http client and send http request
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			ResponseHeaderTimeout: ResponseHeaderTimeout,
 		},
 		Timeout: HTTPRequestTimeout,
 	}
+
+	klog.V(4).Infof("HTTPGetRequest: %s", req.URL.String())
+
+	if cacheFor > 0 {
+		// if there is an error during cache setup we show warning and continue without using cache
+		cacheError := false
+		httpCacheTime := time.Duration(cacheFor) * time.Minute
+
+		// make sure that cache directory exists
+		err = os.MkdirAll(httpCacheDir, 0750)
+		if err != nil {
+			cacheError = true
+			klog.WarningDepth(4, "Unable to setup cache: ", err)
+		}
+		err = cleanHttpCache(httpCacheDir, httpCacheTime)
+		if err != nil {
+			cacheError = true
+			klog.WarningDepth(4, "Unable to clean up cache directory: ", err)
+		}
+
+		if !cacheError {
+			httpClient.Transport = httpcache.NewTransport(diskcache.New(httpCacheDir))
+			klog.V(4).Infof("Response will be cached in %s for %s", httpCacheDir, httpCacheTime)
+		} else {
+			klog.V(4).Info("Response won't be cached.")
+		}
+	}
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.Header.Get(httpcache.XFromCache) != "" {
+		klog.V(4).Infof("Cached response used.")
+	}
 
 	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
@@ -1017,10 +1053,11 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	return filenames, nil
 }
 
-// DownloadFile downloads the file to the filepath given URL and token (if applicable)
-func DownloadFile(params DownloadParams) error {
+// DownloadFileWithCache downloads the file to the filepath given URL and token (if applicable)
+// cacheFor determines how long the response should be cached (in minutes), 0 for no caching
+func DownloadFileWithCache(params DownloadParams, cacheFor int) error {
 	// Get the data
-	data, err := HTTPGetRequest(params.Request)
+	data, err := HTTPGetRequest(params.Request, cacheFor)
 	if err != nil {
 		return err
 	}
@@ -1039,6 +1076,11 @@ func DownloadFile(params DownloadParams) error {
 	}
 
 	return nil
+}
+
+// DownloadFile downloads the file to the filepath given URL and token (if applicable)
+func DownloadFile(params DownloadParams) error {
+	return DownloadFileWithCache(params, 0)
 }
 
 // DownloadFileInMemory uses the url to download the file and return bytes
