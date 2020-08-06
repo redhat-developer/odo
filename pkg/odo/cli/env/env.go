@@ -48,9 +48,9 @@ func NewCmdEnv(name, fullName string) *cobra.Command {
 }
 
 func printSupportedParameters(supportedParameters map[string]string) string {
-	output := "\n\nAvailable parameters:\n"
-	for parameter, paparameterDescription := range supportedParameters {
-		output = output + "  " + parameter + ": " + paparameterDescription + "\n"
+	output := fmt.Sprint("\n\nAvailable parameters:\n")
+	for parameter, parameterDescription := range supportedParameters {
+		output = fmt.Sprintf("%s  %s: %s\n", output, parameter, parameterDescription)
 	}
 
 	return output

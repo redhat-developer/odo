@@ -46,7 +46,7 @@ func TestPrintSupportedParameters(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := strings.TrimSpace(printSupportedParameters(tt.supportedParameters))
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got asd %s asd, want asd %s asd", got, tt.want)
+				t.Errorf("Got %s, want %s", got, tt.want)
 			}
 		})
 	}
