@@ -34,11 +34,6 @@ odo login -u developer -p developer
 # Check login user name for debugging purpose
 oc whoami
 
-# import the odo-init-image for s390x arch
-if [ "${ARCH}" == "s390x" ] || [ "${ARCH}" == "ppc64le" ]; then
-    export ODO_BOOTSTRAPPER_IMAGE=registry.redhat.io/ocp-tools-4/odo-init-container-rhel8:1.1.4
-fi
-
 if [ "${ARCH}" == "s390x" ]; then
     # Integration tests
     make test-generic
@@ -56,7 +51,7 @@ if [ "${ARCH}" == "s390x" ]; then
     make test-e2e-beta
 elif  [ "${ARCH}" == "ppc64le" ]; then
     # Integration tests
-    #make test-generic
+    make test-generic
     make test-cmd-link-unlink
     make test-cmd-pref-config
     make test-cmd-watch
