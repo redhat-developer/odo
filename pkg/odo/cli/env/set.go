@@ -95,6 +95,10 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	log.Info("Environment was successfully updated")
+	if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "namespace" {
+		log.Warningf("Updated %q would create a new component", o.paramName)
+	}
+
 	return nil
 }
 

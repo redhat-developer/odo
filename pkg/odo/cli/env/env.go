@@ -58,7 +58,7 @@ func printSupportedParameters(supportedParameters map[string]string) string {
 
 func isSupportedParameter(parameter string, supportedParameters map[string]string) bool {
 	for supportedParameter := range supportedParameters {
-		if strings.ToLower(supportedParameter) == strings.ToLower(parameter) {
+		if strings.EqualFold(supportedParameter, parameter) {
 			return true
 		}
 	}
