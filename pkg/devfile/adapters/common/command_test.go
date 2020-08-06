@@ -943,7 +943,7 @@ func TestValidateCommand(t *testing.T) {
 			} else {
 				cmd = common.DevfileCommand{Exec: &tt.exec[0]}
 			}
-			err := validateCommand(devObj.Data, cmd)
+			err := ValidateCommand(devObj.Data, cmd)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return

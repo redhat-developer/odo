@@ -19,6 +19,11 @@ func ValidateDevfileData(data interface{}) error {
 		components = d.GetComponents()
 	case *v200.Devfile200:
 		components = d.GetComponents()
+
+		// Validate Events
+		if err := validateEvents(d); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown devfile type %T", d)
 	}

@@ -468,7 +468,7 @@ func TestAdapterDelete(t *testing.T) {
 				}
 			}
 
-			if err := a.Delete(tt.args.labels); (err != nil) != tt.wantErr {
+			if err := a.Delete(tt.args.labels, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -814,7 +814,7 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 				mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), deleteExpected, gomock.Any()).Return(nil)
 			}
 
-			err := a.Delete(arg)
+			err := a.Delete(arg, false)
 			if err != nil {
 				t.Errorf("Delete() unexpected error = %v", err)
 			}

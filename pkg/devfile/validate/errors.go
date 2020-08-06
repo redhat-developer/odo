@@ -49,3 +49,13 @@ type MissingVolumeMountError struct {
 func (e *MissingVolumeMountError) Error() string {
 	return fmt.Sprintf("unable to find volume mount %s in devfile volume components", e.volumeName)
 }
+
+// InvalidEventError returns an error if the devfile event type has invalid events
+type InvalidEventError struct {
+	eventType string
+	errorMsg  string
+}
+
+func (e *InvalidEventError) Error() string {
+	return fmt.Sprintf("%s type events is invalid: %s", e.eventType, e.errorMsg)
+}
