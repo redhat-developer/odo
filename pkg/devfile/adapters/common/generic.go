@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 	"io"
@@ -180,8 +181,9 @@ func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType co
 // ExecDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
-func (a GenericAdapter) ExecDevfileEvent(events []string) error {
+func (a GenericAdapter) ExecDevfileEvent(events []string, eventType DevfileEventType, show bool) error {
 	if len(events) > 0 {
+		log.Infof("\nExecuting %s event commands for component %s", string(eventType), a.ComponentName)
 		commandMap := GetCommandsMap(a.Devfile.Data.GetCommands())
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
@@ -195,7 +197,7 @@ func (a GenericAdapter) ExecDevfileEvent(events []string) error {
 				return err
 			}
 			// Execute command in container
-			err = c.Execute(false)
+			err = c.Execute(show)
 			if err != nil {
 				return errors.Wrapf(err, "unable to execute devfile command %s", commandName)
 			}

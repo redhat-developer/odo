@@ -191,9 +191,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// didn't previously exist
 	postStartEvents := a.Devfile.Data.GetEvents().PostStart
 	if !componentExists && len(postStartEvents) > 0 {
-		// log only when there are post start events present in devfile
-		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
-		err = a.ExecDevfileEvent(postStartEvents)
+		err = a.ExecDevfileEvent(postStartEvents, common.PostStart, parameters.Show)
 		if err != nil {
 			return err
 
@@ -467,7 +465,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", a.ComponentName)
 		}
 
-		err = a.execDevfileEvent(preStopEvents, string(common.PreStop), a.ComponentName, pod.GetName(), show)
+		err = a.ExecDevfileEvent(preStopEvents, common.PreStop, show)
 		if err != nil {
 			return err
 		}

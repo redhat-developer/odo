@@ -164,8 +164,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// didn't previously exist
 	postStartEvents := a.Devfile.Data.GetEvents().PostStart
 	if !componentExists && len(postStartEvents) > 0 {
-		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
-		err = a.ExecDevfileEvent(postStartEvents)
+		err = a.ExecDevfileEvent(postStartEvents, common.PostStart, parameters.Show)
 		if err != nil {
 			return err
 		}
