@@ -75,8 +75,12 @@ func newOverriddenSimpleCommand(command common.DevfileCommand, executor commandE
 }
 
 func (s simpleCommand) Execute(show bool) error {
-	spinner := log.ExplicitSpinner(s.msg, show)
-	defer spinner.End(false)
+	var spinner *log.Status
+	showSpinner := len(s.msg) > 0
+	if showSpinner {
+		spinner = log.ExplicitSpinner(s.msg, show)
+		defer spinner.End(false)
+	}
 
 	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
 	logger := s.adapter.Logger()
@@ -97,7 +101,9 @@ func (s simpleCommand) Execute(show bool) error {
 		return errors.Wrapf(err, "unable to execute the run command")
 	}
 
-	spinner.End(true)
+	if showSpinner {
+		spinner.End(true)
+	}
 
 	return nil
 }
