@@ -79,7 +79,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 // GeneratePVCNameFromDevfileVol generates a PVC name from the Devfile volume name and component name
 func GeneratePVCNameFromDevfileVol(volName, componentName string) (string, error) {
 
-	pvcName := fmt.Sprintf("%v-%v", volName, componentName)
+	pvcName := fmt.Sprintf("%s-%s", volName, componentName)
 	pvcName = util.TruncateString(pvcName, pvcNameMaxLen)
 	randomChars := util.GenerateRandomString(4)
 	pvcName, err := util.NamespaceOpenShiftObject(pvcName, randomChars)

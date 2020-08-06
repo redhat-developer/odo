@@ -289,6 +289,26 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
+	// if there are preStart events, add them as init containers to the podTemplateSpec
+	preStartEvents := a.Devfile.Data.GetEvents().PreStart
+	if len(preStartEvents) > 0 {
+		var eventCommands []string
+		// execCommandInfo := make(map[string]common.ExecCommandInfo)
+		commandsMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
+		containersMap := utils.GetContainersMap(containers)
+
+		for _, event := range preStartEvents {
+			eventSubCommands := utils.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
+			eventCommands = append(eventCommands, eventSubCommands...)
+		}
+
+		klog.V(3).Infof(">>> >>> MJF preStart events commands are: %v", strings.Join(eventCommands, ","))
+		utils.AddPreStartEventInitContainer(podTemplateSpec, commandsMap, eventCommands, containersMap)
+		if len(eventCommands) > 0 {
+			log.Successf("preStart commands will be executed during pod startup: %s", strings.Join(eventCommands, ","))
+		}
+	}
+
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage

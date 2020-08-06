@@ -19,6 +19,10 @@ import (
 	"k8s.io/klog"
 )
 
+const (
+	containerNameMaxLen = 55
+)
+
 // ComponentExists checks whether a deployment by the given name exists
 func ComponentExists(client kclient.Client, name string) (bool, error) {
 	deployment, err := client.GetDeploymentByName(name)
@@ -279,7 +283,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 func GetResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
 	reqs := corev1.ResourceRequirements{}
 	limits := make(corev1.ResourceList)
-	if comp.Container.MemoryLimit != "" {
+	if &comp.Container.MemoryLimit != nil {
 		memoryLimit, err := resource.ParseQuantity(comp.Container.MemoryLimit)
 		if err == nil {
 			limits[corev1.ResourceMemory] = memoryLimit
@@ -330,4 +334,77 @@ func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
 	}
 
 	return envFrom
+}
+
+// GetCommandsFromEvent returns the list of commands from the event name.
+// If the event is a composite command, it returns the sub-commands from the tree
+func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventName string) []string {
+	var commands []string
+
+	if command, ok := commandsMap[eventName]; ok {
+		if command.IsComposite() {
+			klog.V(4).Infof("%s is a composite command", command.GetID())
+			for _, compositeSubCmd := range command.Composite.Commands {
+				klog.V(4).Infof("checking if sub-command %s is either an exec or a composite command ", compositeSubCmd)
+				subCommands := GetCommandsFromEvent(commandsMap, strings.ToLower(compositeSubCmd))
+				commands = append(commands, subCommands...)
+			}
+		} else {
+			klog.V(4).Infof("%s is an exec command", command.GetID())
+			commands = append(commands, command.GetID())
+		}
+	}
+
+	return commands
+}
+
+// GetContainersMap gets the map of container name to containers
+func GetContainersMap(containers []corev1.Container) map[string]corev1.Container {
+	containersMap := make(map[string]corev1.Container)
+
+	for _, container := range containers {
+		containersMap[container.Name] = container
+	}
+	return containersMap
+}
+
+// AddPreStartEventInitContainer adds an init container for every preStart devfile event
+func AddPreStartEventInitContainer(podTemplateSpec *corev1.PodTemplateSpec, commandsMap map[string]common.DevfileCommand, eventCommands []string, containersMap map[string]corev1.Container) {
+
+	for _, commandName := range eventCommands {
+		if command, ok := commandsMap[commandName]; ok {
+			component := command.GetExecComponent()
+			commandLine := command.GetExecCommandLine()
+			workingDir := command.GetExecWorkingDir()
+
+			var cmdArr []string
+			if workingDir != "" {
+				// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
+				cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + workingDir + " && " + commandLine}
+			} else {
+				cmdArr = []string{adaptersCommon.ShellExecutable, "-c", commandLine}
+			}
+
+			// Get the container info for the given component
+			if container, ok := containersMap[component]; ok {
+				// override any container command and args with our event command cmdArr
+				container.Command = cmdArr
+				container.Args = []string{}
+
+				// Override the init container name since there cannot be two containers with the same
+				// name in a pod. This applies to pod container and pod init container. The convention
+				// for init container here is, containername-eventname-<4 random chars>
+				// If there are two events referencing the same init container, then we will have
+				// tools-event1-abcd & tools-event2-efgh. And if in the edge case, the same event is
+				// executed twice by preStart, then we will have tools-event1-abcd & tools-event1-efgh
+				randomChars := util.GenerateRandomString(4)
+				initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
+				initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
+				initContainerName = fmt.Sprintf("%s-%s", initContainerName, randomChars)
+				container.Name = initContainerName
+
+				podTemplateSpec.Spec.InitContainers = append(podTemplateSpec.Spec.InitContainers, container)
+			}
+		}
+	}
 }
