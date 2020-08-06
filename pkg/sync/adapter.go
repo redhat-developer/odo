@@ -220,7 +220,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		// If isForcePush is set, then the entire local directory contents will be copied over by CopyFile(...), thus
 		// we first need to clear the remote target folder.
 
-		err = exec.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, true, nil, nil)
+		err = exec.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, false, nil, nil)
 		if err != nil {
 			// This command will return a non-zero error code if 'syncFolder' cannot be removed; this occurs
 			// if the folder is owned by a different container user (for example, if it is a source volume mount) or
