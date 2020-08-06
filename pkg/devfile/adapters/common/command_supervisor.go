@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/machineoutput"
 )
@@ -36,8 +35,8 @@ func newSupervisorInitCommand(command common.DevfileCommand, adapter commandExec
 func newSupervisorStopCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
 	cmd := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "stop", "all"}
 	if stop, err := newOverriddenSimpleCommand(command, executor, cmd); err == nil {
-		// override spinner message
-		stop.msg = fmt.Sprintf("Stopping %s command %q, if running", command.GetID(), command.Exec.CommandLine)
+		// use empty spinner message to avoid showing it altogether
+		stop.msg = ""
 		return stop, err
 	} else {
 		return nil, err
