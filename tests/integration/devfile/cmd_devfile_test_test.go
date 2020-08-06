@@ -52,7 +52,7 @@ var _ = Describe("odo devfile test command tests", func() {
 
 			output := helper.CmdShouldFail("odo", "test", "--context", context)
 
-			Expect(output).To(ContainSubstring("error occurred while getting the pod: no Pod was found for the selector"))
+			Expect(output).To(ContainSubstring("error occurred while getting the pod: pod not found for the selector"))
 		})
 
 		It("should show error if no test group is defined", func() {

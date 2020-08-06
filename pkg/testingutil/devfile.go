@@ -10,6 +10,7 @@ type TestDevfileData struct {
 	Components        []versionsCommon.DevfileComponent
 	ExecCommands      []versionsCommon.Exec
 	CompositeCommands []versionsCommon.Composite
+	Events            common.DevfileEvents
 }
 
 // GetComponents is a mock function to get the components from a devfile
@@ -24,7 +25,7 @@ func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
 
 // GetEvents is a mock function to get events from devfile
 func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
-	return versionsCommon.DevfileEvents{}
+	return d.Events
 }
 
 // GetParent is a mock function to get parent from devfile
