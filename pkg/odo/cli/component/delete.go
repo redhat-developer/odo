@@ -226,7 +226,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 
 	if do.componentDeleteAllFlag {
 		// Prompt and delete env folder
-		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
+		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete env folder?") {
 			if !do.EnvSpecificInfo.EnvInfoFileExists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
 			}
@@ -257,7 +257,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		}
 
 		// Prompt and delete devfile.yaml
-		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete devfile.yaml?")) {
+		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete devfile.yaml?") {
 			if !util.CheckPathExists(DevfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
