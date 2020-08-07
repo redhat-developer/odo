@@ -888,8 +888,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					klog.V(4).Infof("No Endpoint entry defined in devfile.")
 					return nil
 				}
-				exist := false
-				endpoint, exist = parameters.EndpointMap[int32(url.Port)]
+				endpoint, exist := parameters.EndpointMap[int32(url.Port)]
 				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
 					return fmt.Errorf("port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry", url.Port, url.Name)
 				}
