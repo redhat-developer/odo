@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -40,7 +41,7 @@ func NewURLDeleteOptions() *URLDeleteOptions {
 // Complete completes URLDeleteOptions after they've been Deleted
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.urlName = args[0]

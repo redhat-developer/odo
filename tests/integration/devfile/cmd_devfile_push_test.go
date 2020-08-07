@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("odo devfile push command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-	var sourcePath = "/projects/nodejs-starter"
+	var sourcePath = "/projects"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -311,7 +311,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/nodejs-starter/server.js"},
+				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -325,14 +325,14 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/nodejs-starter/server.js"},
+				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
-			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/nodejs-starter/server.js': No such file or directory"))
+			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/server.js': No such file or directory"))
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
@@ -525,19 +525,15 @@ var _ = Describe("odo devfile push command tests", func() {
 			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
-			// Only testing this in Kubernetes because odo OpenShift CI
-			// sets the min pvc storage size to 100Gi
-			if os.Getenv("KUBERNETES") == "true" {
-				// Verify the pvc size for firstvol
-				storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
-				// should be the default size
-				Expect(storageSize).To(ContainSubstring("5Gi"))
+			// Verify the pvc size for firstvol
+			storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
+			// should be the default size
+			Expect(storageSize).To(ContainSubstring("5Gi"))
 
-				// Verify the pvc size for secondvol
-				storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)
-				// should be the specified size in the devfile volume component
-				Expect(storageSize).To(ContainSubstring("3Gi"))
-			}
+			// Verify the pvc size for secondvol
+			storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)
+			// should be the specified size in the devfile volume component
+			Expect(storageSize).To(ContainSubstring("3Gi"))
 		})
 
 	})
@@ -682,56 +678,61 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
-	Context("Handle devfiles with parent", func() {
-		It("should handle a devfile with a parent and add a extra command", func() {
-			utils.ExecPushToTestParent(context, cmpName, namespace)
-			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-			listDir := cliRunner.ExecListDir(podName, namespace, "/projects/nodejs-starter")
-			Expect(listDir).To(ContainSubstring("blah.js"))
+	/*
+		Disabled test due to issue https://github.com/openshift/odo/issues/3638
+
+		Context("Handle devfiles with parent", func() {
+			It("should handle a devfile with a parent and add a extra command", func() {
+				utils.ExecPushToTestParent(context, cmpName, namespace)
+				podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+				listDir := cliRunner.ExecListDir(podName, namespace, "/projects/nodejs-starter")
+				Expect(listDir).To(ContainSubstring("blah.js"))
+			})
+
+			It("should handle a parent and override/append it's envs", func() {
+				utils.ExecPushWithParentOverride(context, cmpName, namespace)
+
+				envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+				value, ok := envMap["MODE2"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("TEST2-override"))
+
+				value, ok = envMap["myprop-3"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("myval-3"))
+
+				value, ok = envMap["myprop2"]
+				Expect(ok).To(BeTrue())
+				Expect(value).To(Equal("myval2"))
+			})
+
+
+				It("should handle a multi layer parent", func() {
+					utils.ExecPushWithMultiLayerParent(context, cmpName, namespace)
+
+					podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+					listDir := cliRunner.ExecListDir(podName, namespace, "/projects/user-app")
+					helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
+
+					envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+					value, ok := envMap["MODE2"]
+					Expect(ok).To(BeTrue())
+					Expect(value).To(Equal("TEST2-override"))
+
+					value, ok = envMap["myprop3"]
+					Expect(ok).To(BeTrue())
+					Expect(value).To(Equal("myval3"))
+
+					value, ok = envMap["myprop2"]
+					Expect(ok).To(BeTrue())
+					Expect(value).To(Equal("myval2"))
+
+					value, ok = envMap["myprop4"]
+					Expect(ok).To(BeTrue())
+					Expect(value).To(Equal("myval4"))
+				})
 		})
-
-		It("should handle a parent and override/append it's envs", func() {
-			utils.ExecPushWithParentOverride(context, cmpName, namespace)
-
-			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
-
-			value, ok := envMap["MODE2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("TEST2-override"))
-
-			value, ok = envMap["myprop-3"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval-3"))
-
-			value, ok = envMap["myprop2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval2"))
-		})
-
-		It("should handle a multi layer parent", func() {
-			utils.ExecPushWithMultiLayerParent(context, cmpName, namespace)
-
-			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-			listDir := cliRunner.ExecListDir(podName, namespace, "/projects/user-app")
-			helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
-
-			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
-
-			value, ok := envMap["MODE2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("TEST2-override"))
-
-			value, ok = envMap["myprop3"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval3"))
-
-			value, ok = envMap["myprop2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval2"))
-
-			value, ok = envMap["myprop4"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("myval4"))
-		})
-	})
+	*/
 })

@@ -4,8 +4,11 @@ import (
 	"fmt"
 
 	appsv1 "github.com/openshift/api/apps/v1"
+	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/library-go/pkg/apps/appsutil"
+	"github.com/openshift/odo/pkg/config"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 )
@@ -109,4 +112,43 @@ func getNamedConditionFromObjectStatus(baseObject *unstructured.Unstructured, co
 		}
 	}
 	return nil
+}
+
+// GetS2IEnvForDevfile gets environment variable for builder image to be added in devfiles
+func GetS2IEnvForDevfile(sourceType string, env config.EnvVarList, imageStreamImage imagev1.ImageStreamImage) (config.EnvVarList, error) {
+
+	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(&imageStreamImage)
+	if err != nil {
+		return nil, err
+	}
+
+	inputEnvs, err := GetInputEnvVarsFromStrings(env.ToStringSlice())
+	if err != nil {
+		return nil, err
+	}
+	// Append s2i related parameters extracted above to env
+	inputEnvs = injectS2IPaths(inputEnvs, s2iPaths)
+
+	if sourceType == string(config.LOCAL) {
+		inputEnvs = uniqueAppendOrOverwriteEnvVars(
+			inputEnvs,
+			corev1.EnvVar{
+				Name:  EnvS2ISrcBackupDir,
+				Value: s2iPaths.SrcBackupPath,
+			},
+		)
+	}
+
+	var configEnvs config.EnvVarList
+
+	for _, env := range inputEnvs {
+		configEnv := config.EnvVar{
+			Name:  env.Name,
+			Value: env.Value,
+		}
+
+		configEnvs = append(configEnvs, configEnv)
+	}
+
+	return configEnvs, nil
 }

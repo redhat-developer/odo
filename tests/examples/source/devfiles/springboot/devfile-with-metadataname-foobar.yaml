@@ -25,9 +25,6 @@ components:
       args: [ '-f', '/dev/null']
       endpoints:
         - name: "8080/tcp"
-          configuration:
-            protocol: tcp
-            scheme: http
           targetPort: 8080
       volumeMounts:
         - name: springbootpvc
@@ -40,7 +37,7 @@ commands:
       id: defaultBuild
       component: tools
       commandLine: "/artifacts/bin/build-container-full.sh"
-      workingDir: /projects/springbootproject
+      workingDir: /projects
       group:
         kind: build
         isDefault: true

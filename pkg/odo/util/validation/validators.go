@@ -2,10 +2,11 @@ package validation
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/util"
-	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
 	"strings"
+
+	"github.com/openshift/odo/pkg/util"
+	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 // NameValidator provides a Validator view of the ValidateName function.
@@ -38,6 +39,16 @@ func IntegerValidator(ans interface{}) error {
 	}
 
 	return fmt.Errorf("don't know how to convert %v into an integer", ans)
+}
+
+// NonNegativeValidator validates whether the given value is not negative or not
+func NonNegativeValidator(arg interface{}) error {
+	if s, ok := arg.(string); ok {
+		if strings.HasPrefix(s, "-") {
+			return fmt.Errorf("negative value is not acceptable")
+		}
+	}
+	return nil
 }
 
 // PathValidator validates whether the given path exists on the file system

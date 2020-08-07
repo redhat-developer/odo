@@ -164,9 +164,12 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		// let's validate if the service exists
 		svcFullName := strings.Join([]string{o.serviceType, o.serviceName}, "/")
-		_, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
 		if err != nil {
 			return err
+		}
+		if !svcExists {
+			return fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", svcFullName, "odo service list")
 		}
 
 		// since the service exists, let's get more info to populate service binding request

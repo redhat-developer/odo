@@ -16,7 +16,7 @@ commands:
       id: devbuild
       component: runtime
       commandLine: npm install
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
@@ -24,7 +24,7 @@ commands:
       id: devrun
       component: runtime
       commandLine: npm start
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
@@ -32,7 +32,7 @@ commands:
       id: test1
       component: runtime
       commandLine: "mkdir test1"
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: test
         isDefault: true
@@ -40,7 +40,7 @@ commands:
       id: test2
       component: runtime
       commandLine: "mkdir test2"
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: test
   - composite:
