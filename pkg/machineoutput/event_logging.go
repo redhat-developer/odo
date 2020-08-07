@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/openshift/odo/pkg/log"
 	"io"
 	"time"
 
@@ -20,6 +21,14 @@ func formatTime(time time.Time) string {
 // TimestampNow returns timestamp in format of (seconds since UTC Unix epoch).(microseconds time component)
 func TimestampNow() string {
 	return formatTime(time.Now())
+}
+
+func NewMachineEventLoggingClient() MachineEventLoggingClient {
+	if log.IsJSON() {
+		return NewConsoleMachineEventLoggingClient()
+	} else {
+		return NewNoOpMachineEventLoggingClient()
+	}
 }
 
 // NewNoOpMachineEventLoggingClient creates a new instance of NoOpMachineEventLoggingClient,

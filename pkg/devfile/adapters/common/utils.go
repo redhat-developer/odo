@@ -1,10 +1,9 @@
 package common
 
 import (
+	"k8s.io/klog"
 	"os"
 	"strconv"
-
-	"k8s.io/klog"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
