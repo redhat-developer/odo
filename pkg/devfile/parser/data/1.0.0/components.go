@@ -204,15 +204,6 @@ func convertV1ProjectToCommon(p Project) common.DevfileProject {
 
 }
 
-//GetStarterProjects returns the DevfileStarterProject parsed from devfile
-func (d *Devfile100) GetStarterProjects() []common.DevfileStarterProject {
-	return nil
-}
-
-func (d *Devfile100) AddStarterProjects(projects []common.DevfileStarterProject) error { return nil }
-
-func (d *Devfile100) UpdateStarterProject(project common.DevfileStarterProject) {}
-
 func getGroup(name string) *common.Group {
 
 	switch name {
@@ -268,3 +259,9 @@ func (d *Devfile100) AddVolume(volume common.Volume, path string) error { return
 func (d *Devfile100) DeleteVolume(name string) error { return nil }
 
 func (d *Devfile100) GetVolumeMountPath(name string) (string, error) { return "", nil }
+
+func (d *Devfile100) GetStarterProjects() []common.DevfileStarterProject { return nil }
+
+func (d *Devfile100) AddStarterProjects(projects []common.DevfileStarterProject) error { return nil }
+
+func (d *Devfile100) UpdateStarterProject(project common.DevfileStarterProject) {}

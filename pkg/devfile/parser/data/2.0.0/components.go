@@ -178,7 +178,7 @@ func (d *Devfile200) GetStarterProjects() []common.DevfileStarterProject {
 	return d.StarterProjects
 }
 
-// AddStarterProjects adss the slice of Devfile projects to the Devfile's project list
+// AddStarterProjects adds the slice of Devfile projects to the Devfile's project list
 // if a project is already defined, error out
 func (d *Devfile200) AddStarterProjects(projects []common.DevfileStarterProject) error {
 	projectsMap := make(map[string]bool)
