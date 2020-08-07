@@ -377,6 +377,20 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
 		})
 
+		It("should execute PreStart commands if present on every pod startup", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"preStart commands will be executed during pod startup"})
+
+			// Need to force so build and run get triggered again with the component already created.
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
+			helper.MatchAllInOutput(output, []string{"preStart commands will be executed during pod startup"})
+		})
+
 		It("should execute PostStart commands if present and not execute when component already exists", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 

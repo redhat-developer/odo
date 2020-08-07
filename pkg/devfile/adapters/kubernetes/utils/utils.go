@@ -336,28 +336,6 @@ func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
 	return envFrom
 }
 
-// GetCommandsFromEvent returns the list of commands from the event name.
-// If the event is a composite command, it returns the sub-commands from the tree
-func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventName string) []string {
-	var commands []string
-
-	if command, ok := commandsMap[eventName]; ok {
-		if command.IsComposite() {
-			klog.V(4).Infof("%s is a composite command", command.GetID())
-			for _, compositeSubCmd := range command.Composite.Commands {
-				klog.V(4).Infof("checking if sub-command %s is either an exec or a composite command ", compositeSubCmd)
-				subCommands := GetCommandsFromEvent(commandsMap, strings.ToLower(compositeSubCmd))
-				commands = append(commands, subCommands...)
-			}
-		} else {
-			klog.V(4).Infof("%s is an exec command", command.GetID())
-			commands = append(commands, command.GetID())
-		}
-	}
-
-	return commands
-}
-
 // GetContainersMap gets the map of container name to containers
 func GetContainersMap(containers []corev1.Container) map[string]corev1.Container {
 	containersMap := make(map[string]corev1.Container)

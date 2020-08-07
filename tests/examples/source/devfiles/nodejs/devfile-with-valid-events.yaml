@@ -21,6 +21,22 @@ components:
       memoryLimit: 1024Mi
 commands:
   - exec:
+      id: myPreStart
+      commandLine: echo I am a myPreStart
+      component: tools
+  - exec:
+      id: secondPreStart
+      commandLine: echo I am also a myPreStart
+      component: runtime
+      workingDir: /
+  - composite:
+      id: preStartComp
+      label: pre start composite
+      commands:
+        - myPreStart
+        - secondPreStart
+      parallel: true
+  - exec:
       id: myPostStart
       commandLine: echo I am a PostStart
       component: tools
@@ -95,6 +111,9 @@ commands:
       group:
         kind: run
 events:
+  preStart:
+    - "myPreStart" 
+    - "preStartComp"
   postStart:
     - "myPostStart" 
     - "secondpoststart"

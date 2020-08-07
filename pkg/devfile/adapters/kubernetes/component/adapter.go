@@ -298,11 +298,11 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		containersMap := utils.GetContainersMap(containers)
 
 		for _, event := range preStartEvents {
-			eventSubCommands := utils.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
+			eventSubCommands := common.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
 			eventCommands = append(eventCommands, eventSubCommands...)
 		}
 
-		klog.V(3).Infof(">>> >>> MJF preStart events commands are: %v", strings.Join(eventCommands, ","))
+		klog.V(4).Infof("preStart events commands are: %v", strings.Join(eventCommands, ","))
 		utils.AddPreStartEventInitContainer(podTemplateSpec, commandsMap, eventCommands, containersMap)
 		if len(eventCommands) > 0 {
 			log.Successf("preStart commands will be executed during pod startup: %s", strings.Join(eventCommands, ","))
