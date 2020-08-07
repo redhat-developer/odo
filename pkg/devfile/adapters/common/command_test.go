@@ -430,7 +430,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 					return
 				}
 
-				if cmd.GetID() != tt.retCommandName {
+				if len(tt.retCommandName) > 0 && cmd.GetID() != tt.retCommandName {
 					t.Errorf("TestGetCommandFromDevfile error: command names do not match expected: %v actual: %v", tt.retCommandName, cmd.GetID())
 				}
 			}
@@ -1522,7 +1522,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 
 	wrongCompTypeCmd := common.Exec{
 
-		Id:          "run command",
+		Id:          "wrong",
 		CommandLine: command,
 		Component:   "",
 		WorkingDir:  workDir,

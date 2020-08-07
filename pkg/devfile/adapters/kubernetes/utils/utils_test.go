@@ -339,12 +339,14 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			},
 			execCommands: []versionsCommon.Exec{
 				{
+					Id:          "run",
 					CommandLine: command,
 					Component:   component,
 					WorkingDir:  workDir,
 					Group:       &execRunGroup,
 				},
 				{
+					Id:          "debug",
 					CommandLine: debugCommand,
 					Component:   debugComponent,
 					WorkingDir:  workDir,
@@ -379,7 +381,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					WorkingDir:  workDir,
 					Group:       &execRunGroup,
 					Env: []versionsCommon.Env{
-						versionsCommon.Env{
+						{
 							Name:  "env1",
 							Value: "value1",
 						},
@@ -410,11 +412,11 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					WorkingDir:  workDir,
 					Group:       &execRunGroup,
 					Env: []versionsCommon.Env{
-						versionsCommon.Env{
+						{
 							Name:  "env1",
 							Value: "value1",
 						},
-						versionsCommon.Env{
+						{
 							Name:  "env2",
 							Value: "value2 with space",
 						},
@@ -453,7 +455,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					WorkingDir:  workDir,
 					Group:       &execDebugGroup,
 					Env: []versionsCommon.Env{
-						versionsCommon.Env{
+						{
 							Name:  "env1",
 							Value: "value1",
 						},
@@ -493,11 +495,11 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					WorkingDir:  workDir,
 					Group:       &execDebugGroup,
 					Env: []versionsCommon.Env{
-						versionsCommon.Env{
+						{
 							Name:  "env1",
 							Value: "value1",
 						},
-						versionsCommon.Env{
+						{
 							Name:  "env2",
 							Value: "value2 with space",
 						},
@@ -514,7 +516,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
 							Container: &versionsCommon.Container{

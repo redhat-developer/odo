@@ -113,13 +113,17 @@ func (d TestDevfileData) AddComponents(components []common.DevfileComponent) err
 
 func (d TestDevfileData) UpdateComponent(component common.DevfileComponent) {}
 
-func (d TestDevfileData) AddCommands(commands ...common.DevfileCommand) error {
+func (d *TestDevfileData) AddCommands(commands ...common.DevfileCommand) error {
+	if d.Commands == nil {
+		d.Commands = make(map[string]common.DevfileCommand, 7)
+	}
+
 	for _, command := range commands {
 		id := command.GetID()
 		if _, ok := d.Commands[id]; !ok {
 			d.Commands[id] = command
 		} else {
-			panic("command with id " + id + " already exists in this TestDevfileData")
+			panic("command with id '" + id + "' already exists in this TestDevfileData")
 		}
 	}
 	return nil
