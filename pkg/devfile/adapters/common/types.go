@@ -10,6 +10,7 @@ import (
 type AdapterContext struct {
 	ComponentName string                   // ComponentName is the odo component name, it is NOT related to any devfile components
 	Context       string                   // Context is the given directory containing the source code and configs
+	AppName       string                   // the application name associated to a component
 	Devfile       devfileParser.DevfileObj // Devfile is the object returned by the Devfile parser
 }
 
@@ -56,6 +57,10 @@ type ComponentInfo struct {
 	PodName       string
 	ContainerName string
 	SourceMount   string
+}
+
+func (ci ComponentInfo) IsEmpty() bool {
+	return len(ci.ContainerName) == 0
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.

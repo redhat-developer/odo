@@ -6,6 +6,11 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
+//SetSchemaVersion sets devfile api version
+func (d *Devfile100) SetSchemaVersion(version string) {
+	d.ApiVersion = ApiVersion(version)
+}
+
 // GetMetadata returns the struct of DevfileMetadata objects parsed from the Devfile
 func (d *Devfile100) GetMetadata() common.DevfileMetadata {
 	// No GenerateName field in V2
@@ -13,6 +18,11 @@ func (d *Devfile100) GetMetadata() common.DevfileMetadata {
 		Name: d.Metadata.Name,
 		//Version: No field in V1
 	}
+}
+
+// SetMetadata sets the metadata for devfile
+func (d *Devfile100) SetMetadata(name, version string) {
+
 }
 
 /// GetComponents returns the slice of DevfileComponent objects parsed from the Devfile
@@ -67,16 +77,6 @@ func (d *Devfile100) GetCommands() []common.DevfileCommand {
 	}
 
 	return commands
-}
-
-func (d *Devfile100) GetParent() common.DevfileParent {
-	return common.DevfileParent{}
-
-}
-
-func (d *Devfile100) GetEvents() common.DevfileEvents {
-	return common.DevfileEvents{}
-
 }
 
 func convertV1CommandToCommon(c Command) (d common.DevfileCommand) {
@@ -231,3 +231,25 @@ func getGroup(name string) *common.Group {
 
 	return nil
 }
+
+func (d *Devfile100) AddProjects(projects []common.DevfileProject) error { return nil }
+
+func (d *Devfile100) UpdateProject(project common.DevfileProject) {}
+
+func (d *Devfile100) AddComponents(components []common.DevfileComponent) error { return nil }
+
+func (d *Devfile100) UpdateComponent(component common.DevfileComponent) {}
+
+func (d *Devfile100) AddCommands(commands []common.DevfileCommand) error { return nil }
+
+func (d *Devfile100) UpdateCommand(command common.DevfileCommand) {}
+
+func (d *Devfile100) GetParent() common.DevfileParent { return common.DevfileParent{} }
+
+func (d *Devfile100) SetParent(parent common.DevfileParent) {}
+
+func (d *Devfile100) GetEvents() common.DevfileEvents { return common.DevfileEvents{} }
+
+func (d *Devfile100) AddEvents(events common.DevfileEvents) error { return nil }
+
+func (d *Devfile100) UpdateEvents(postStart, postStop, preStart, preStop []string) {}

@@ -285,8 +285,8 @@ func TestDoesComponentExist(t *testing.T) {
 			name:   "Case 1: Valid component name",
 			client: fakeClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
-				testingutil.GetFakeComponent("alias2"),
+				testingutil.GetFakeContainerComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias2"),
 			},
 			componentName:    "golang",
 			getComponentName: "golang",
@@ -297,7 +297,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:   "Case 2: Non-existent component name",
 			client: fakeClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			componentName:    "test",
 			getComponentName: "fake-component",
@@ -317,7 +317,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:   "Case 4: Docker client error",
 			client: fakeErrorClient,
 			components: []common.DevfileComponent{
-				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			componentName:    "test",
 			getComponentName: "fake-component",
@@ -420,10 +420,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclient, mockDockerClient := lclient.FakeNewMockClient(ctrl)
 
-			a := Adapter{
-				Client:         *fkclient,
-				AdapterContext: adapterCtx,
-			}
+			a := New(adapterCtx, *fkclient)
 
 			labeledContainers := []types.Container{}
 
@@ -468,7 +465,7 @@ func TestAdapterDelete(t *testing.T) {
 				}
 			}
 
-			if err := a.Delete(tt.args.labels); (err != nil) != tt.wantErr {
+			if err := a.Delete(tt.args.labels, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -793,10 +790,7 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 
 			fkclient, mockDockerClient := lclient.FakeNewMockClient(ctrl)
 
-			a := Adapter{
-				Client:         *fkclient,
-				AdapterContext: adapterCtx,
-			}
+			a := New(adapterCtx, *fkclient)
 
 			arg := map[string]string{
 				"component": componentName,
@@ -814,7 +808,7 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 				mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), deleteExpected, gomock.Any()).Return(nil)
 			}
 
-			err := a.Delete(arg)
+			err := a.Delete(arg, false)
 			if err != nil {
 				t.Errorf("Delete() unexpected error = %v", err)
 			}

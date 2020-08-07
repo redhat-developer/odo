@@ -1,0 +1,15 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+parent:
+  uri: https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml
+commands:
+  - exec:
+      id: devBuild
+      component: runtime
+      commandLine: touch blah.js
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: false

@@ -281,16 +281,24 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 		parameters.StartChan <- true
 	}
 
+	var ticker *time.Ticker
 	delay := time.Duration(parameters.PushDiffDelay) * time.Second
-	ticker := time.NewTicker(delay)
+
+	// don't create a ticker if delay is 0 as it will trigger panic
+	if delay != 0 {
+		ticker = time.NewTicker(delay)
+		defer ticker.Stop()
+	}
 	showWaitingMessage := true
-	defer ticker.Stop()
 	for {
 		changeLock.Lock()
 		if watchError != nil {
 			return watchError
 		}
 		if showWaitingMessage {
+			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
+				fmt.Fprintf(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal\n")
+			}
 			fmt.Fprintf(out, "Waiting for something to change in %s\n", parameters.Path)
 			showWaitingMessage = false
 		}
@@ -322,6 +330,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							DevfileBuildCmd:   parameters.DevfileBuildCmd,
 							DevfileRunCmd:     parameters.DevfileRunCmd,
 							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
+							Debug:             parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
+							DebugPort:         parameters.EnvSpecificInfo.GetDebugPort(),
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams)
@@ -343,6 +353,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							DevfileBuildCmd:   parameters.DevfileBuildCmd,
 							DevfileRunCmd:     parameters.DevfileRunCmd,
 							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
+							Debug:             parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
+							DebugPort:         parameters.EnvSpecificInfo.GetDebugPort(),
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams)
@@ -365,7 +377,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			}
 		}
 		changeLock.Unlock()
-		<-ticker.C
+		if ticker != nil {
+			<-ticker.C
+		}
 	}
 }
 

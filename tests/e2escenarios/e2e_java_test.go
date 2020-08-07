@@ -3,6 +3,7 @@ package e2escenarios
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -40,6 +41,10 @@ var _ = Describe("odo java e2e tests", func() {
 	// Test Java
 	Context("odo component creation", func() {
 		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
+			if runtime.GOARCH == "s390x" {
+				Skip("Skipping test because there is no supported wildfly builder image.")
+			}
+
 			helper.CmdShouldPass("odo", "create", "wildfly", "wo-wait-javaee-git-test", "--project",
 				project, "--ref", "master", "--git", warGitRepo, "--context", context)
 
@@ -104,7 +109,7 @@ var _ = Describe("odo java e2e tests", func() {
 			routeURL := helper.DetermineRouteURL(context)
 
 			// Ping said URL
-			helper.HttpWaitFor(routeURL, "HTTP Booster", 90, 1)
+			helper.HttpWaitFor(routeURL, "HTTP Booster", 300, 1)
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", context)

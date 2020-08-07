@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -1249,7 +1250,7 @@ func TestHTTPGetRequest(t *testing.T) {
 			request := HTTPRequestParams{
 				URL: tt.url,
 			}
-			got, err := HTTPGetRequest(request)
+			got, err := HTTPGetRequest(request, 0)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -1463,20 +1464,69 @@ func TestConvertGitSSHRemotetoHTTPS(t *testing.T) {
 	}
 }
 
-// TODO: FIX THIS
-/*
 func TestUnzip(t *testing.T) {
 	tests := []struct {
 		name          string
-		zipURL        string
-		zipDst        string
+		src           string
+		pathToUnzip   string
 		expectedFiles []string
+		expectedError string
 	}{
 		{
-			name:          "Case 1: Valid zip ",
-			zipURL:        "https://github.com/che-samples/web-nodejs-sample/archive/master.zip",
-			zipDst:        "master.zip",
-			expectedFiles: []string{"package.json", "package-lock.json", "app", ".gitignore", "LICENSE", "README.md"},
+			name:          "Case 1: Invalid source zip",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/invalid.zip",
+			pathToUnzip:   "",
+			expectedFiles: []string{},
+			expectedError: "open ../../tests/examples/source/devfiles/nodejs-zip/invalid.zip:",
+		},
+		{
+			name:          "Case 2: Valid source zip, no pathToUnzip",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "",
+			expectedFiles: []string{"package.json", "package-lock.json", "app", "app/app.js", ".gitignore", "LICENSE", "README.md"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 3: Valid source zip with pathToUnzip",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "app",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 4: Valid source zip with pathToUnzip - trailing /",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "app/",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 5: Valid source zip with pathToUnzip - leading /",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "app/",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 6: Valid source zip with pathToUnzip - leading and trailing /",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "/app/",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 7: Valid source zip with pathToUnzip - pattern",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "p*",
+			expectedFiles: []string{"package.json", "package-lock.json"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 8: Valid source zip with pathToUnzip - pattern and extension",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "*.json",
+			expectedFiles: []string{"package.json", "package-lock.json"},
+			expectedError: "",
 		},
 	}
 
@@ -1486,28 +1536,25 @@ func TestUnzip(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error creating temp dir: %s", err)
 			}
-			//defer os.RemoveAll(dir)
+			defer os.RemoveAll(dir)
 			t.Logf(dir)
 
-			tt.zipDst = filepath.Join(dir, tt.zipDst)
-			err = DownloadFile(tt.zipURL, tt.zipDst)
+			_, err = Unzip(filepath.FromSlash(tt.src), dir, tt.pathToUnzip)
 			if err != nil {
-				t.Errorf("Error downloading zip: %s", err)
-			}
-			_, err = Unzip(tt.zipDst, dir)
-			if err != nil {
-				t.Errorf("Error unzipping: %s", err)
-			}
-
-			for _, file := range tt.expectedFiles {
-				if _, err := os.Stat(filepath.Join(dir, file)); os.IsNotExist(err) {
-					t.Errorf("Expected file %s does not exist in directory after unzipping", file)
+				tt.expectedError = strings.ReplaceAll(tt.expectedError, "/", string(filepath.Separator))
+				if !strings.HasPrefix(err.Error(), tt.expectedError) {
+					t.Errorf("Got err: '%s'\n expected err: '%s'", err.Error(), tt.expectedError)
+				}
+			} else {
+				for _, file := range tt.expectedFiles {
+					if _, err := os.Stat(filepath.Join(dir, file)); os.IsNotExist(err) {
+						t.Errorf("Expected file %s does not exist in directory after unzipping", file)
+					}
 				}
 			}
 		})
 	}
 }
-*/
 
 func TestIsValidProjectDir(t *testing.T) {
 	tests := []struct {
@@ -1536,35 +1583,35 @@ func TestIsValidProjectDir(t *testing.T) {
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{"file1.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder contains one element and it's not the devfile used.",
+			expectedError: "Folder %s contains one element and it's not the devfile used.",
 		},
 		{
 			name:          "Case 4: Folder contains a hidden file which is not the devfile",
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{".file1.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder contains one element and it's not the devfile used.",
+			expectedError: "Folder %s contains one element and it's not the devfile used.",
 		},
 		{
 			name:          "Case 5: Folder contains devfile.yaml and more files",
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{"devfile.yaml", "file1.yaml", "file2.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder is not empty. It can only contain the devfile used.",
+			expectedError: "Folder %s is not empty. It can only contain the devfile used.",
 		},
 		{
 			name:          "Case 6: Folder contains a directory",
 			devfilePath:   "",
 			filesToCreate: []string{},
 			dirToCreate:   []string{"dir"},
-			expectedError: "Folder is not empty. It contains a subfolder.",
+			expectedError: "Folder %s is not empty. It contains a subfolder.",
 		},
 		{
 			name:          "Case 7: Folder contains a hidden directory",
 			devfilePath:   "",
 			filesToCreate: []string{},
 			dirToCreate:   []string{".dir"},
-			expectedError: "Folder is not empty. It contains a subfolder.",
+			expectedError: "Folder %s is not empty. It contains a subfolder.",
 		},
 	}
 
@@ -1593,8 +1640,13 @@ func TestIsValidProjectDir(t *testing.T) {
 			}
 
 			err = IsValidProjectDir(tmpDir, tt.devfilePath)
-			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
-				t.Errorf("Got err: %s, expected err %s", err.Error(), tt.expectedError)
+			expectedError := tt.expectedError
+			if expectedError != "" {
+				expectedError = fmt.Sprintf(expectedError, tmpDir)
+			}
+
+			if err != nil && !reflect.DeepEqual(err.Error(), expectedError) {
+				t.Errorf("Got err: %s, expected err %s", err.Error(), expectedError)
 			}
 		})
 	}

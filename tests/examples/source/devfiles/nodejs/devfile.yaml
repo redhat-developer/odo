@@ -1,6 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: test-devfile
+  name: nodejs
 projects:
   - name: nodejs-starter
     git:
@@ -12,9 +12,6 @@ components:
       memoryLimit: 1024Mi
       endpoints:
         - name: "3000/tcp"
-          configuration:
-            protocol: tcp
-            scheme: http
           targetPort: 3000
       mountSources: true
 commands:
@@ -22,7 +19,7 @@ commands:
       id: devbuild
       component: runtime
       commandLine: npm install
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
@@ -30,14 +27,14 @@ commands:
       id: build
       component: runtime
       commandLine: npm install
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
   - exec:
       id: devrun
       component: runtime
       commandLine: npm start
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
@@ -45,6 +42,6 @@ commands:
       id: run
       component: runtime
       commandLine: npm start
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run

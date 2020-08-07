@@ -373,10 +373,16 @@ func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) st
 // GetRunningPodNameByComponent executes oc command and returns the running pod name of a delopyed
 // devfile component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
-	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
-	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*component=` + compName)
-	podName := re.FindStringSubmatch(stdOut)[1]
-	return strings.TrimSpace(podName)
+	selector := fmt.Sprintf("--selector=component=%s", compName)
+	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}")
+	return strings.TrimSpace(stdOut)
+}
+
+// GetPVCSize executes oc command and returns the bound storage size
+func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
+	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
+	return strings.TrimSpace(stdOut)
 }
 
 // GetRoute returns route URL
@@ -456,6 +462,22 @@ func (oc OcRunner) GetEnvs(componentName string, appName string, projectName str
 	var mapOutput = make(map[string]string)
 
 	output := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
+		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, ":")
+		name := splits[0]
+		value := strings.Join(splits[1:], ":")
+		mapOutput[name] = value
+	}
+	return mapOutput
+}
+
+func (oc OcRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := CmdShouldPass(oc.path, "get", "deployment", componentName, "--namespace", projectName,
 		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
 
 	for _, line := range strings.Split(output, "\n") {

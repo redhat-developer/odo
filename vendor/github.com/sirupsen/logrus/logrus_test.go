@@ -539,7 +539,7 @@ func TestParseLevel(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, TraceLevel, l)
 
-	l, err = ParseLevel("invalid")
+	_, err = ParseLevel("invalid")
 	assert.Equal(t, "not a valid logrus Level: \"invalid\"", err.Error())
 }
 
@@ -656,11 +656,14 @@ func TestEntryWriter(t *testing.T) {
 	log := New()
 	log.Out = cw
 	log.Formatter = new(JSONFormatter)
-	log.WithField("foo", "bar").WriterLevel(WarnLevel).Write([]byte("hello\n"))
+	_, err := log.WithField("foo", "bar").WriterLevel(WarnLevel).Write([]byte("hello\n"))
+	if err != nil {
+		t.Error("unexecpted error", err)
+	}
 
 	bs := <-cw
 	var fields Fields
-	err := json.Unmarshal(bs, &fields)
+	err = json.Unmarshal(bs, &fields)
 	assert.Nil(t, err)
 	assert.Equal(t, fields["foo"], "bar")
 	assert.Equal(t, fields["level"], "warning")

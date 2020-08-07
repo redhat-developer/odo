@@ -81,8 +81,14 @@ func newTestWatchCache(capacity int, indexers *cache.Indexers) *watchCache {
 	}
 	versioner := etcd3.APIObjectVersioner{}
 	mockHandler := func(*watchCacheEvent) {}
-	wc := newWatchCache(capacity, keyFunc, mockHandler, getAttrsFunc, versioner, indexers, reflect.TypeOf(&example.Pod{}))
-	wc.clock = clock.NewFakeClock(time.Now())
+	wc := newWatchCache(keyFunc, mockHandler, getAttrsFunc, versioner, indexers, clock.NewFakeClock(time.Now()), reflect.TypeOf(&example.Pod{}))
+	// To preserve behavior of tests that assume a given capacity,
+	// resize it to th expected size.
+	wc.capacity = capacity
+	wc.cache = make([]*watchCacheEvent, capacity)
+	wc.lowerBoundCapacity = min(capacity, defaultLowerBoundCapacity)
+	wc.upperBoundCapacity = max(capacity, defaultUpperBoundCapacity)
+
 	return wc
 }
 
@@ -780,6 +786,38 @@ func checkCacheElements(cache *watchCache) bool {
 		}
 	}
 	return true
+}
+
+func TestCacheIncreaseDoesNotBreakWatch(t *testing.T) {
+	store := newTestWatchCache(2, &cache.Indexers{})
+
+	now := store.clock.Now()
+	addEvent := func(key string, rv uint64, t time.Time) {
+		event := &watchCacheEvent{
+			Key:             key,
+			ResourceVersion: rv,
+			RecordTime:      t,
+		}
+		store.updateCache(event)
+	}
+
+	// Initial LIST comes from the moment of RV=10.
+	store.Replace(nil, "10")
+
+	addEvent("key1", 20, now)
+
+	// Force "key1" to rotate our of cache.
+	later := now.Add(2 * eventFreshDuration)
+	addEvent("key2", 30, later)
+	addEvent("key3", 40, later)
+
+	// Force cache resize.
+	addEvent("key4", 50, later.Add(time.Second))
+
+	_, err := store.GetAllEventsSince(15)
+	if err == nil || !strings.Contains(err.Error(), "too old resource version") {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func BenchmarkWatchCache_updateCache(b *testing.B) {

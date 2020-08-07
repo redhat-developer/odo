@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
@@ -10,7 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
-func TestGetSupportedComponents(t *testing.T) {
+func TestGetDevfileContainerComponents(t *testing.T) {
 
 	tests := []struct {
 		name                 string
@@ -36,13 +37,13 @@ func TestGetSupportedComponents(t *testing.T) {
 
 		{
 			name:                 "Case 4 : Valid devfile with correct component type (Container)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("comp1"), testingutil.GetFakeComponent("comp2")},
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
 			expectedMatchesCount: 2,
 		},
 
 		{
 			name:                 "Case 5: Valid devfile with correct component type (Container) without name",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("comp1"), testingutil.GetFakeComponent("")},
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("")},
 			expectedMatchesCount: 1,
 		},
 	}
@@ -54,10 +55,167 @@ func TestGetSupportedComponents(t *testing.T) {
 				},
 			}
 
-			devfileComponents := GetSupportedComponents(devObj.Data)
+			devfileComponents := GetDevfileContainerComponents(devObj.Data)
 
 			if len(devfileComponents) != tt.expectedMatchesCount {
-				t.Errorf("TestGetSupportedComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
+				t.Errorf("TestGetDevfileContainerComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
+			}
+		})
+	}
+
+}
+
+func TestGetDevfileVolumeComponents(t *testing.T) {
+
+	tests := []struct {
+		name                 string
+		component            []versionsCommon.DevfileComponent
+		alias                []string
+		expectedMatchesCount int
+	}{
+		{
+			name:                 "Case 1: Invalid devfile",
+			component:            []versionsCommon.DevfileComponent{},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
+			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
+			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
+			expectedMatchesCount: 0,
+		},
+
+		{
+			name:                 "Case 4 : Valid devfile with wrong component type (Container)",
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
+			expectedMatchesCount: 0,
+		},
+
+		{
+			name:                 "Case 5: Valid devfile with correct component type (Volume)",
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol")},
+			expectedMatchesCount: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components: tt.component,
+				},
+			}
+
+			devfileComponents := GetDevfileVolumeComponents(devObj.Data)
+
+			if len(devfileComponents) != tt.expectedMatchesCount {
+				t.Errorf("TestGetDevfileVolumeComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
+			}
+		})
+	}
+
+}
+
+func TestGetVolumes(t *testing.T) {
+
+	tests := []struct {
+		name                       string
+		component                  []versionsCommon.DevfileComponent
+		wantContainerNameToVolumes map[string][]DevfileVolume
+	}{
+		{
+			name:      "Case 1: Valid devfile with container referencing a volume component",
+			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1")},
+			wantContainerNameToVolumes: map[string][]DevfileVolume{
+				"comp1": {
+					{
+						Name:          "myvolume1",
+						Size:          "4Gi",
+						ContainerPath: "/my/volume/mount/path1",
+					},
+				},
+			},
+		},
+		{
+			name: "Case 2: Valid devfile with container referencing multiple volume components",
+			component: []versionsCommon.DevfileComponent{
+				testingutil.GetFakeVolumeComponent("myvolume1"),
+				testingutil.GetFakeVolumeComponent("myvolume2"),
+				testingutil.GetFakeVolumeComponent("myvolume3"),
+				{
+					Container: &versionsCommon.Container{
+						Name:  "mycontainer",
+						Image: "image",
+						VolumeMounts: []versionsCommon.VolumeMount{
+							{
+								Name: "myvolume1",
+								Path: "/myvolume1",
+							},
+							{
+								Name: "myvolume2",
+								Path: "/myvolume2",
+							},
+						},
+					},
+				},
+			},
+			wantContainerNameToVolumes: map[string][]DevfileVolume{
+				"mycontainer": {
+					{
+						Name:          "myvolume1",
+						Size:          "4Gi",
+						ContainerPath: "/myvolume1",
+					},
+					{
+						Name:          "myvolume2",
+						Size:          "4Gi",
+						ContainerPath: "/myvolume2",
+					},
+				},
+			},
+		},
+		{
+			name:      "Case 3: Valid devfile with container referencing no volume component",
+			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2")},
+			wantContainerNameToVolumes: map[string][]DevfileVolume{
+				"comp1": {
+					{
+						Name:          "myvolume1",
+						Size:          "5Gi",
+						ContainerPath: "/my/volume/mount/path1",
+					},
+				},
+			},
+		},
+		{
+			name: "Case 4: Valid devfile with no container volume mounts",
+			component: []versionsCommon.DevfileComponent{
+				testingutil.GetFakeVolumeComponent("myvolume2"),
+				{
+					Container: &versionsCommon.Container{
+						Name:  "mycontainer",
+						Image: "image",
+					},
+				},
+			},
+			wantContainerNameToVolumes: map[string][]DevfileVolume{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components: tt.component,
+				},
+			}
+
+			containerNameToVolumes := GetVolumes(devObj)
+
+			if !reflect.DeepEqual(containerNameToVolumes, tt.wantContainerNameToVolumes) {
+				t.Errorf("TestGetVolumes error - got %v wanted %v", containerNameToVolumes, tt.wantContainerNameToVolumes)
 			}
 		})
 	}
@@ -177,7 +335,7 @@ func TestGetBootstrapperImage(t *testing.T) {
 
 }
 
-func TestIsComponentSupported(t *testing.T) {
+func TestIsContainer(t *testing.T) {
 
 	tests := []struct {
 		name            string
@@ -185,12 +343,12 @@ func TestIsComponentSupported(t *testing.T) {
 		wantIsSupported bool
 	}{
 		{
-			name:            "Case 1: Supported component",
-			component:       testingutil.GetFakeComponent("comp1"),
+			name:            "Case 1: Container component",
+			component:       testingutil.GetFakeContainerComponent("comp1"),
 			wantIsSupported: true,
 		},
 		{
-			name: "Case 2: Unsupported component",
+			name: "Case 2: Not a container component",
 			component: common.DevfileComponent{
 				Openshift: &versionsCommon.Openshift{},
 			},
@@ -199,9 +357,40 @@ func TestIsComponentSupported(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isSupported := isComponentSupported(tt.component)
+			isSupported := isContainer(tt.component)
 			if isSupported != tt.wantIsSupported {
-				t.Errorf("TestIsComponentSupported error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
+				t.Errorf("TestIsContainer error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
+			}
+		})
+	}
+
+}
+
+func TestIsVolume(t *testing.T) {
+
+	tests := []struct {
+		name            string
+		component       common.DevfileComponent
+		wantIsSupported bool
+	}{
+		{
+			name:            "Case 1: Volume component",
+			component:       testingutil.GetFakeVolumeComponent("myvol"),
+			wantIsSupported: true,
+		},
+		{
+			name: "Case 2: Not a volume component",
+			component: common.DevfileComponent{
+				Openshift: &versionsCommon.Openshift{},
+			},
+			wantIsSupported: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isSupported := isVolume(tt.component)
+			if isSupported != tt.wantIsSupported {
+				t.Errorf("TestIsVolume error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
 			}
 		})
 	}
@@ -211,7 +400,7 @@ func TestIsComponentSupported(t *testing.T) {
 func TestGetCommandsForGroup(t *testing.T) {
 
 	component := []versionsCommon.DevfileComponent{
-		testingutil.GetFakeComponent("alias1"),
+		testingutil.GetFakeContainerComponent("alias1"),
 	}
 	componentName := "alias1"
 	command := "ls -la"
@@ -308,6 +497,157 @@ func TestGetCommandsForGroup(t *testing.T) {
 					t.Errorf("TestGetCommandsForGroup error: command group mismatch, expected: %v got: %v", string(tt.groupType), string(command.Exec.Group.Kind))
 				}
 			}
+		})
+	}
+
+}
+
+func TestGetCommandsMap(t *testing.T) {
+
+	component := []versionsCommon.DevfileComponent{
+		testingutil.GetFakeContainerComponent("alias1"),
+	}
+
+	tests := []struct {
+		name             string
+		execCommands     []common.Exec
+		compCommands     []common.Composite
+		expectedCommands []versionsCommon.DevfileCommand
+	}{
+		{
+			name: "Case 1: One command",
+			execCommands: []common.Exec{
+				{
+					Id: "somecommand",
+				},
+			},
+			expectedCommands: []versionsCommon.DevfileCommand{
+				{
+					Exec: &common.Exec{
+						Id: "somecommand",
+					},
+				},
+			},
+		},
+		{
+			name: "Case 2: Multiple commands",
+			execCommands: []common.Exec{
+				{
+					Id: "somecommand",
+				},
+				{
+					Id: "somecommand2",
+				},
+			},
+			compCommands: []common.Composite{
+				{
+					Id: "mycomposite",
+				},
+			},
+			expectedCommands: []versionsCommon.DevfileCommand{
+				{
+					Exec: &common.Exec{
+						Id: "somecommand",
+					},
+				},
+				{
+					Exec: &common.Exec{
+						Id: "somecommand2",
+					},
+				},
+				{
+					Composite: &common.Composite{
+						Id: "mycomposite",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components:        component,
+					ExecCommands:      tt.execCommands,
+					CompositeCommands: tt.compCommands,
+				},
+			}
+
+			commandsMap := GetCommandsMap(devObj.Data.GetCommands())
+			if len(commandsMap) != len(tt.expectedCommands) {
+				t.Errorf("TestGetCommandsMap error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
+			}
+			for _, command := range tt.expectedCommands {
+				_, ok := commandsMap[command.GetID()]
+				if !ok {
+					t.Errorf("TestGetCommandsMap error: command %v not found in map", command.GetID())
+				}
+			}
+		})
+	}
+
+}
+
+func TestGetComponentEnvVar(t *testing.T) {
+
+	tests := []struct {
+		name string
+		env  string
+		envs []common.Env
+		want string
+	}{
+		{
+			name: "Case 1: No env vars",
+			env:  "test",
+			envs: nil,
+			want: "",
+		},
+		{
+			name: "Case 2: Has env",
+			env:  "PROJECTS_ROOT",
+			envs: []common.Env{
+				{
+					Name:  "SOME_ENV",
+					Value: "test",
+				},
+				{
+					Name:  "TESTER",
+					Value: "tester",
+				},
+				{
+					Name:  "PROJECTS_ROOT",
+					Value: "/test",
+				},
+			},
+			want: "/test",
+		},
+		{
+			name: "Case 3: No env, multiple values",
+			env:  "PROJECTS_ROOT",
+			envs: []common.Env{
+				{
+					Name:  "TESTER",
+					Value: "fake",
+				},
+				{
+					Name:  "FAKE",
+					Value: "fake",
+				},
+				{
+					Name:  "ENV",
+					Value: "fake",
+				},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value := GetComponentEnvVar(tt.env, tt.envs)
+			if value != tt.want {
+				t.Errorf("TestGetComponentEnvVar error: env value mismatch, expected: %v got: %v", tt.want, value)
+			}
+
 		})
 	}
 

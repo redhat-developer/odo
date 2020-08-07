@@ -8,14 +8,14 @@ import (
 // This is the top level parse code which has validation code specific to odo hence it cannot be kept inside the
 // devfile/parser package. That package is supposed to be independent of odo.
 
-// ParseInMemoryAndValidate func parses the devfile data in memory
+// ParseFromURLAndValidate func parses the devfile data from the url
 // and validates the devfile integrity with the schema
 // and validates the devfile data.
 // Creates devfile context and runtime objects.
-func ParseInMemoryAndValidate(data []byte) (d parser.DevfileObj, err error) {
+func ParseFromURLAndValidate(url string) (d parser.DevfileObj, err error) {
 
-	// read and parse devfile from given data
-	d, err = parser.ParseInMemory(data)
+	// read and parse devfile from the given URL
+	d, err = parser.ParseFromURL(url)
 	if err != nil {
 		return d, err
 	}

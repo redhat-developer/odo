@@ -22,7 +22,6 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -530,7 +529,29 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 		}
 	}
 
+	if err := ensureAndLogProperResourceUsage(componentSettings.MinMemory, componentSettings.MaxMemory, "memory"); err != nil {
+		return err
+	}
+
+	if err := ensureAndLogProperResourceUsage(componentSettings.MinCPU, componentSettings.MaxCPU, "cpu"); err != nil {
+		return err
+	}
+
 	return
+}
+
+func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceName string) error {
+	klog.V(4).Infof("Validating configured %v values", resourceName)
+
+	err := fmt.Errorf("`min%s` should accompany `max%s` or use `odo config set %s` to use same value for both min and max", resourceName, resourceName, resourceName)
+
+	if (resourceMin == nil) != (resourceMax == nil) {
+		return err
+	}
+	if (resourceMin != nil && *resourceMin == "") != (resourceMax != nil && *resourceMax == "") {
+		return err
+	}
+	return nil
 }
 
 // ApplyConfig applies the component config onto component dc
@@ -695,7 +716,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	compInfo := common.ComponentInfo{
 		PodName: pod.Name,
 	}
-	err = exec.ExecuteCommand(client, compInfo, cmdArr, show, nil, nil)
+	err = common.ExecuteCommand(client, compInfo, cmdArr, show, nil, nil)
 
 	if err != nil {
 		s.End(false)

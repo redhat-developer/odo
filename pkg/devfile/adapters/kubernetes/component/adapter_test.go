@@ -3,6 +3,7 @@ package component
 import (
 	"testing"
 
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -39,30 +40,35 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 	tests := []struct {
 		name          string
 		componentType versionsCommon.DevfileComponentType
+		envInfo       envinfo.EnvSpecificInfo
 		running       bool
 		wantErr       bool
 	}{
 		{
 			name:          "Case 1: Invalid devfile",
 			componentType: "",
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       false,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 2: Valid devfile",
 			componentType: versionsCommon.ContainerComponentType,
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       false,
 			wantErr:       false,
 		},
 		{
 			name:          "Case 3: Invalid devfile, already running component",
 			componentType: "",
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       true,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 4: Valid devfile, already running component",
 			componentType: versionsCommon.ContainerComponentType,
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       true,
 			wantErr:       false,
 		},
@@ -71,7 +77,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp versionsCommon.DevfileComponent
 			if tt.componentType != "" {
-				comp = testingutil.GetFakeComponent("component")
+				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
@@ -98,7 +104,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -269,6 +275,7 @@ func TestDoesComponentExist(t *testing.T) {
 		componentType    versionsCommon.DevfileComponentType
 		componentName    string
 		getComponentName string
+		envInfo          envinfo.EnvSpecificInfo
 		want             bool
 		wantErr          bool
 	}{
@@ -276,6 +283,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:             "Case 1: Valid component name",
 			componentName:    "test-name",
 			getComponentName: "test-name",
+			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             true,
 			wantErr:          false,
 		},
@@ -283,6 +291,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:             "Case 2: Non-existent component name",
 			componentName:    "test-name",
 			getComponentName: "fake-component",
+			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             false,
 			wantErr:          false,
 		},
@@ -290,6 +299,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:             "Case 3: Error condition",
 			componentName:    "test-name",
 			getComponentName: "test-name",
+			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             false,
 			wantErr:          true,
 		},
@@ -298,7 +308,7 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("component")},
+					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
 					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
 			}
@@ -317,7 +327,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(false)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if err != nil {
@@ -380,7 +390,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("component")},
+					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
 				},
 			}
 
@@ -418,63 +428,85 @@ func TestAdapterDelete(t *testing.T) {
 		labels map[string]string
 	}
 
-	emptyDeployment := testingutil.CreateFakeDeployment("")
+	emptyPods := &corev1.PodList{
+		Items: []corev1.Pod{},
+	}
 
 	tests := []struct {
-		name               string
-		args               args
-		existingDeployment *v1.Deployment
-		componentName      string
-		componentExists    bool
-		wantErr            bool
+		name            string
+		args            args
+		existingPod     *corev1.PodList
+		componentName   string
+		componentExists bool
+		wantErr         bool
 	}{
 		{
 			name: "case 1: component exists and given labels are valid",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "component",
-			componentExists:    true,
-			wantErr:            false,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "component",
+			componentExists: true,
+			wantErr:         false,
 		},
 		{
-			name:               "case 2: component exists and given labels are not valid",
-			args:               args{labels: nil},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "component",
-			componentExists:    true,
-			wantErr:            true,
+			name: "case 2: component exists and given labels are not valid",
+			args: args{labels: nil},
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "component",
+			componentExists: true,
+			wantErr:         true,
 		},
 		{
 			name: "case 3: component doesn't exists",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "component",
-			componentExists:    false,
-			wantErr:            false,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "nocomponent",
+			componentExists: false,
+			wantErr:         false,
 		},
 		{
 			name: "case 4: resource forbidden",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "resourceforbidden",
-			componentExists:    false,
-			wantErr:            false,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "resourceforbidden",
+			componentExists: false,
+			wantErr:         false,
 		},
 		{
 			name: "case 5: component check error",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
-			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
-			componentName:      "componenterror",
-			componentExists:    true,
-			wantErr:            true,
+			existingPod: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePod("component", "component"),
+				},
+			},
+			componentName:   "componenterror",
+			componentExists: true,
+			wantErr:         true,
 		},
 	}
 	for _, tt := range tests {
@@ -496,10 +528,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclient, fkclientset := kclient.FakeNew()
 
-			a := Adapter{
-				Client:         *fkclient,
-				AdapterContext: adapterCtx,
-			}
+			a := New(adapterCtx, *fkclient)
 
 			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
@@ -508,18 +537,18 @@ func TestAdapterDelete(t *testing.T) {
 				return true, nil, nil
 			})
 
-			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if action.(ktesting.GetAction).GetName() != tt.componentName {
-					return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+			fkclientset.Kubernetes.PrependReactor("list", "pods", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				if tt.componentName == "nocomponent" {
+					return true, emptyPods, &kclient.PodNotFoundError{Selector: "somegarbage"}
 				} else if tt.componentName == "resourceforbidden" {
-					return true, emptyDeployment, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
+					return true, emptyPods, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
 				} else if tt.componentName == "componenterror" {
-					return true, emptyDeployment, errors.Errorf("component check error")
+					return true, emptyPods, errors.Errorf("pod check error")
 				}
-				return true, tt.existingDeployment, nil
+				return true, tt.existingPod, nil
 			})
 
-			if err := a.Delete(tt.args.labels); (err != nil) != tt.wantErr {
+			if err := a.Delete(tt.args.labels, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

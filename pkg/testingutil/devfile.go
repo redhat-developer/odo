@@ -7,13 +7,16 @@ import (
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
-	Components   []versionsCommon.DevfileComponent
-	ExecCommands []versionsCommon.Exec
+	Components        []versionsCommon.DevfileComponent
+	ExecCommands      []versionsCommon.Exec
+	CompositeCommands []versionsCommon.Composite
+	Commands          []versionsCommon.DevfileCommand
+	Events            common.DevfileEvents
 }
 
 // GetComponents is a mock function to get the components from a devfile
 func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
-	return d.GetAliasedComponents()
+	return d.Components
 }
 
 // GetMetadata is a mock function to get metadata from devfile
@@ -23,7 +26,7 @@ func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
 
 // GetEvents is a mock function to get events from devfile
 func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
-	return versionsCommon.DevfileEvents{}
+	return d.Events
 }
 
 // GetParent is a mock function to get parent from devfile
@@ -73,15 +76,21 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 
 // GetCommands is a mock function to get the commands from a devfile
 func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
+	if d.Commands == nil {
+		var commands []versionsCommon.DevfileCommand
 
-	var commands []versionsCommon.DevfileCommand
+		for i := range d.ExecCommands {
+			commands = append(commands, versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
+		}
 
-	for i := range d.ExecCommands {
-		commands = append(commands, versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
+		for i := range d.CompositeCommands {
+			commands = append(commands, versionsCommon.DevfileCommand{Composite: &d.CompositeCommands[i]})
+		}
+
+		return commands
+	} else {
+		return d.Commands
 	}
-
-	return commands
-
 }
 
 // Validate is a mock validation that always validates without error
@@ -89,8 +98,34 @@ func (d TestDevfileData) Validate() error {
 	return nil
 }
 
-// GetFakeComponent returns fake component for testing
-func GetFakeComponent(name string) versionsCommon.DevfileComponent {
+// SetMetadata sets metadata for devfile
+func (d TestDevfileData) SetMetadata(name, version string) {}
+
+// SetSchemaVersion sets schema version for devfile
+func (d TestDevfileData) SetSchemaVersion(version string) {}
+
+func (d TestDevfileData) AddComponents(components []common.DevfileComponent) error { return nil }
+
+func (d TestDevfileData) UpdateComponent(component common.DevfileComponent) {}
+
+func (d TestDevfileData) AddCommands(commands []common.DevfileCommand) error { return nil }
+
+func (d TestDevfileData) UpdateCommand(command common.DevfileCommand) {}
+
+func (d TestDevfileData) SetEvents(events common.DevfileEvents) {}
+
+func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { return nil }
+
+func (d TestDevfileData) UpdateProject(project common.DevfileProject) {}
+
+func (d TestDevfileData) AddEvents(events common.DevfileEvents) error { return nil }
+
+func (d TestDevfileData) UpdateEvents(postStart, postStop, preStart, preStop []string) {}
+
+func (d TestDevfileData) SetParent(parent common.DevfileParent) {}
+
+// GetFakeContainerComponent returns a fake container component for testing
+func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
 	image := "docker.io/maven:latest"
 	memoryLimit := "128Mi"
 	volumeName := "myvolume1"
@@ -111,6 +146,18 @@ func GetFakeComponent(name string) versionsCommon.DevfileComponent {
 
 }
 
+// GetFakeVolumeComponent returns a fake volume component for testing
+func GetFakeVolumeComponent(name string) versionsCommon.DevfileComponent {
+	size := "4Gi"
+
+	return versionsCommon.DevfileComponent{
+		Volume: &versionsCommon.Volume{
+			Name: name,
+			Size: size,
+		}}
+
+}
+
 // GetFakeExecRunCommands returns fake commands for testing
 func GetFakeExecRunCommands() []versionsCommon.Exec {
 	return []versionsCommon.Exec{
@@ -122,5 +169,21 @@ func GetFakeExecRunCommands() []versionsCommon.Exec {
 			},
 			WorkingDir: "/root",
 		},
+	}
+}
+
+// GetFakeExecRunCommands returns a fake env for testing
+func GetFakeEnv(name, value string) versionsCommon.Env {
+	return versionsCommon.Env{
+		Name:  name,
+		Value: value,
+	}
+}
+
+// GetFakeVolumeMount returns a fake volume mount for testing
+func GetFakeVolumeMount(name, path string) versionsCommon.VolumeMount {
+	return versionsCommon.VolumeMount{
+		Name: name,
+		Path: path,
 	}
 }

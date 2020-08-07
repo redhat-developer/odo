@@ -1,0 +1,28 @@
+schemaVersion: 2.0.0
+metadata:
+  name: openLiberty
+  version: 1.0.0
+  description: Java application stack using Open Liberty runtime
+parent:
+  uri: https://gist.githubusercontent.com/mik-dass/6f88d133b73e90bc52ffcda92833b625/raw/cc46d1ba348cd085855f163b269c0f1be87226c4/devfile-middle.yaml
+  components:
+    - container:
+        name: appsodyrun
+        env:
+          - name: MODE2
+            value: TEST2-override
+          - name: myprop4
+            value: myval4
+  commands:
+    - exec:
+        id: devBuild
+        commandLine: touch blah.js
+commands:
+  - exec:
+      id: build
+      component: appsodyrun
+      commandLine: touch new-blah.js
+      workingDir: /projects/user-app
+      group:
+        kind: build
+        isDefault: false

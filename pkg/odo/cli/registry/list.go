@@ -8,6 +8,8 @@ import (
 	"text/tabwriter"
 
 	// Third-party packages
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -58,6 +60,12 @@ func (o *ListOptions) Run() (err error) {
 	if len(*registryList) == 0 {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
 	}
+
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(machineoutput.NewRegistryListOutput(registryList))
+		return
+	}
+
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "URL", "\t", "SECURE")
 	o.printRegistryList(w, registryList)
@@ -83,11 +91,12 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 func NewCmdList(name, fullName string) *cobra.Command {
 	o := NewListOptions()
 	registryListCmd := &cobra.Command{
-		Use:     name,
-		Short:   listDesc,
-		Long:    listDesc,
-		Example: fmt.Sprintf(fmt.Sprint(listExample), fullName),
-		Args:    cobra.ExactArgs(0),
+		Use:         name,
+		Short:       listDesc,
+		Long:        listDesc,
+		Example:     fmt.Sprintf(fmt.Sprint(listExample), fullName),
+		Annotations: map[string]string{"machineoutput": "json"},
+		Args:        cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

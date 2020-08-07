@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ExampleCustomFormatter() {
+func ExampleJSONFormatter_CallerPrettyfier() {
 	l := logrus.New()
 	l.SetReportCaller(true)
 	l.Out = os.Stdout
@@ -24,5 +24,5 @@ func ExampleCustomFormatter() {
 	}
 	l.Info("example of custom format caller")
 	// Output:
-	// {"file":"example_custom_caller_test.go","func":"ExampleCustomFormatter","level":"info","msg":"example of custom format caller"}
+	// {"file":"example_custom_caller_test.go","func":"ExampleJSONFormatter_CallerPrettyfier","level":"info","msg":"example of custom format caller"}
 }

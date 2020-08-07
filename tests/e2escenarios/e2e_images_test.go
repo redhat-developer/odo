@@ -41,7 +41,10 @@ var _ = Describe("odo supported images e2e tests", func() {
 
 		// create the component
 		helper.CopyExample(filepath.Join("source", srcType), context)
-		helper.CmdShouldPass("odo", "create", cmpType, srcType+"-app", "--project", project, "--context", context, "--app", appName, "--min-memory", "400Mi", "--max-memory", "700Mi")
+		helper.CmdShouldPass("odo", "create", cmpType, srcType+"-app", "--project", project, "--context", context, "--app", appName)
+
+		helper.CmdShouldPass("odo", "config", "set", "minmemory", "400Mi", "--context", context)
+		helper.CmdShouldPass("odo", "config", "set", "maxmemory", "700Mi", "--context", context)
 
 		// push component and validate
 		helper.CmdShouldPass("odo", "push", "--context", context)
@@ -113,4 +116,24 @@ var _ = Describe("odo supported images e2e tests", func() {
 			verifySupportedImage(filepath.Join("rhscl", "nodejs-10-rhel7:latest"), "nodejs", "nodejs:latest", project, appName, context)
 		})
 	})
+
+	Context("odo supported private registry images deployment", func() {
+		JustBeforeEach(func() {
+			// Issue for configuring login secret for travis CI https://github.com/openshift/odo/issues/3640
+			if os.Getenv("CI") != "openshift" {
+				Skip("Skipping it on travis CI, skipping")
+			}
+		})
+
+		It("Should be able to verify the openjdk-11-rhel8 image", func() {
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "java:8", project)
+			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "openjdk", "java:8", project, appName, context)
+		})
+
+		It("Should be able to verify the nodejs-12-rhel7 image", func() {
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs:latest", project)
+			verifySupportedImage(filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs", "nodejs:latest", project, appName, context)
+		})
+	})
+
 })

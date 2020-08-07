@@ -1,6 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: test-devfile
+  name: nodejs
 projects:
   - name: nodejs-starter
     git:
@@ -15,9 +15,6 @@ components:
           value: "bar"
       endpoints:
         - name: "3000/tcp"
-          configuration:
-            protocol: tcp
-            scheme: http
           targetPort: 3000
       mountSources: true
 commands:
@@ -25,7 +22,7 @@ commands:
       id: devrun
       component: runtime
       commandLine: "npm install && npm start"
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true

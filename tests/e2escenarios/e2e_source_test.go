@@ -3,6 +3,7 @@ package e2escenarios
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -77,6 +78,9 @@ var _ = Describe("odo source e2e tests", func() {
 		})
 
 		It("Should be able to deploy a wildfly source application", func() {
+			if runtime.GOARCH == "s390x" {
+				Skip("Skipping test because there is no supported wildfly builder image.")
+			}
 			helper.CopyExample(filepath.Join("source", "wildfly"), context)
 			helper.CmdShouldPass("odo", "create", "wildfly", "wildfly-app", "--project",
 				project, "--context", context)
@@ -121,6 +125,9 @@ var _ = Describe("odo source e2e tests", func() {
 		})
 
 		It("Should be able to deploy a dotnet source application", func() {
+			if runtime.GOARCH == "s390x" {
+				Skip("Skipping test because there is no supported wildfly builder image.")
+			}
 			oc.ImportDotnet20IS(project)
 			helper.CopyExample(filepath.Join("source", "dotnet"), context)
 			helper.CmdShouldPass("odo", "create", "dotnet:2.0", "dotnet-app", "--project",

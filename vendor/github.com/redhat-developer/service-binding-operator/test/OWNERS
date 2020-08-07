@@ -1,0 +1,19 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
+approvers:
+- sbose78
+- baijum
+- otaviof
+- pmacik
+- ldimaggi
+
+reviewers:
+- sbose78
+- baijum
+- otaviof
+- akashshinde
+- DhritiShikhar
+- Avni-Sharma
+- pmacik
+- ldimaggi
+- pratikjagrut

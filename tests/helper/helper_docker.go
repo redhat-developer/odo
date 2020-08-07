@@ -31,14 +31,14 @@ func (d *DockerRunner) Run(cmd string) *gexec.Session {
 
 // ListRunningContainers runs 'docker ps' to list all running images
 func (d *DockerRunner) ListRunningContainers() string {
-	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images")
+	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images\n")
 	output := CmdShouldPass(d.path, "ps")
 	return output
 }
 
 // GetRunningContainersByLabel lists all running images with the label (of the form "key=value")
 func (d *DockerRunner) GetRunningContainersByLabel(label string) []string {
-	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with label %s", label)
+	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with label %s\n", label)
 	filterLabel := "label=" + label
 	output := strings.TrimSpace(CmdShouldPass(d.path, "ps", "-q", "--filter", filterLabel))
 
@@ -49,7 +49,7 @@ func (d *DockerRunner) GetRunningContainersByLabel(label string) []string {
 
 // GetRunningContainersByCompAlias returns the list of containers labeled with the specified component and alias
 func (d *DockerRunner) GetRunningContainersByCompAlias(comp string, alias string) []string {
-	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with comp %s and alias %s", comp, alias)
+	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with comp %s and alias %s\n", comp, alias)
 	compLabel := "label=component=" + comp
 	aliasLabel := "label=alias=" + alias
 	output := strings.TrimSpace(CmdShouldPass(d.path, "ps", "-q", "--filter", compLabel, "--filter", aliasLabel))
@@ -60,7 +60,7 @@ func (d *DockerRunner) GetRunningContainersByCompAlias(comp string, alias string
 
 // ListVolumes lists all volumes on the cluster
 func (d *DockerRunner) ListVolumes() []string {
-	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker volumes")
+	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker volumes\n")
 	output := CmdShouldPass(d.path, "volume", "ls", "-q")
 
 	volumes := strings.Fields(output)
@@ -74,9 +74,24 @@ func (d *DockerRunner) ExecContainer(containerID, command string) string {
 	return stdOut
 }
 
+func (d *DockerRunner) GetEnvsDevFileDeployment(containerID, command string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := d.ExecContainer(containerID, command)
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, "=")
+		name := splits[0]
+		value := strings.Join(splits[1:], "=")
+		mapOutput[name] = value
+	}
+	return mapOutput
+}
+
 // GetVolumesByLabel returns a list of volumes with the label (of the form "key=value")
 func (d *DockerRunner) GetVolumesByLabel(label string) []string {
-	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with label %s", label)
+	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with label %s\n", label)
 	filterLabel := "label=" + label
 	output := strings.TrimSpace(CmdShouldPass(d.path, "volume", "ls", "-q", "--filter", filterLabel))
 
@@ -100,7 +115,7 @@ func (d *DockerRunner) VolumeExists(name string) bool {
 
 // GetVolumesByCompStorageName returns the list of volumes associated with a specific devfile volume in a component
 func (d *DockerRunner) GetVolumesByCompStorageName(component string, storageName string) []string {
-	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with comp %s and storage name %s", component, storageName)
+	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with comp %s and storage name %s\n", component, storageName)
 	compLabel := "label=component=" + component
 	storageLabel := "label=storage-name=" + storageName
 	output := strings.TrimSpace(CmdShouldPass(d.path, "volume", "ls", "-q", "--filter", compLabel, "--filter", storageLabel))
@@ -113,7 +128,7 @@ func (d *DockerRunner) GetVolumesByCompStorageName(component string, storageName
 // InspectVolume returns a map-representation of the JSON returned by the 'docker inspect volume' command
 func (d *DockerRunner) InspectVolume(volumeName string) []map[string]interface{} {
 
-	fmt.Fprintf(GinkgoWriter, "Inspecting volume %s", volumeName)
+	fmt.Fprintf(GinkgoWriter, "Inspecting volume %s\n", volumeName)
 	output := CmdShouldPass(d.path, "inspect", volumeName)
 
 	var result []map[string]interface{}
@@ -146,7 +161,7 @@ func (d *DockerRunner) GetSourceAndStorageVolumesByComponent(componentLabel stri
 		return result
 	}
 
-	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s", componentLabel)
+	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s\n", componentLabel)
 
 	for _, volumeName := range volumeList {
 
@@ -173,7 +188,7 @@ func (d *DockerRunner) GetSourceAndStorageVolumesByComponent(componentLabel stri
 
 // RemoveVolumeByName removes a specific volume by name
 func (d *DockerRunner) RemoveVolumeByName(volumeName string) *gexec.Session {
-	fmt.Fprintf(GinkgoWriter, "Removing volume with ID %s", volumeName)
+	fmt.Fprintf(GinkgoWriter, "Removing volume with ID %s\n", volumeName)
 
 	session := CmdRunner(d.path, "volume", "rm", "-f", volumeName)
 	session.Wait()
@@ -189,7 +204,7 @@ func (d *DockerRunner) RemoveVolumesByComponent(componentLabel string) string {
 		return ""
 	}
 
-	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s", componentLabel)
+	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s\n", componentLabel)
 
 	output := ""
 
@@ -202,7 +217,7 @@ func (d *DockerRunner) RemoveVolumesByComponent(componentLabel string) string {
 		if session.ExitCode() == 0 {
 			output += sessionOut + " "
 		} else {
-			fmt.Fprintf(GinkgoWriter, "Non-zero error code on removing volume with component label %s, output: %s", componentLabel, sessionOut)
+			fmt.Fprintf(GinkgoWriter, "Non-zero error code on removing volume with component label %s, output: %s\n", componentLabel, sessionOut)
 		}
 
 	}
@@ -212,7 +227,7 @@ func (d *DockerRunner) RemoveVolumesByComponent(componentLabel string) string {
 
 // StopContainers kills and stops all running containers with the specified label (such as component=nodejs)
 func (d *DockerRunner) StopContainers(label string) {
-	fmt.Fprintf(GinkgoWriter, "Removing locally running Docker images with label %s", label)
+	fmt.Fprintf(GinkgoWriter, "Removing locally running Docker images with label %s\n", label)
 
 	// Get the container IDs matching the specified label
 	containerIDs := d.GetRunningContainersByLabel(label)
@@ -227,7 +242,7 @@ func (d *DockerRunner) StopContainers(label string) {
 
 // CreateVolume creates an empty volume with the given name and labels
 func (d *DockerRunner) CreateVolume(volumeName string, labels []string) {
-	fmt.Fprintf(GinkgoWriter, "Creating volume %s with labels %v", volumeName, labels)
+	fmt.Fprintf(GinkgoWriter, "Creating volume %s with labels %v\n", volumeName, labels)
 
 	args := []string{"volume", "create"}
 

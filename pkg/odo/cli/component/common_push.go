@@ -139,12 +139,12 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 	// check if project exist
-	isPrjExists, err := project.Exists(cpo.Context.Client, prjName)
+	isPrjExists, err := project.Exists(cpo.Context, prjName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
-		err = project.Create(cpo.Context.Client, prjName, true)
+		err = project.Create(cpo.Context, prjName, true)
 		if err != nil {
 			return errors.Wrapf(
 				err,
@@ -231,7 +231,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		}
 
 		if cpo.doesComponentExist {
-			// apply the glob rules from the .gitignore/.odo file
+			// apply the glob rules from the .gitignore/.odoignore file
 			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := filterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 

@@ -65,6 +65,9 @@ const (
 	// PushTargetDescription is human-readable description for the pushtarget setting
 	PushTargetDescription = "Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube)"
 
+	// RegistryCacheTimeSetting is human-readable description for the registrycachetime setting
+	RegistryCacheTimeSetting = "RegistryCacheTime"
+
 	// Constants for PushTarget values
 
 	// DockerPushTarget represents the value of the push target when it's set to Docker
@@ -78,6 +81,9 @@ const (
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
 	DefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
+
+	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
+	DefaultRegistryCacheTime = 15
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -88,6 +94,9 @@ var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for wa
 
 // BuildTimeoutSettingDescription adds a description for BuildTimeout
 var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for waiting for a build of the git component to complete (Default: %d)", DefaultBuildTimeout)
+
+// RegistryCacheTimeDescription adds a description for RegistryCacheTime
+var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo will cache information from Devfile registry (Default: %d)", DefaultRegistryCacheTime)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -103,6 +112,7 @@ var (
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
 		ExperimentalSetting:       ExperimentalDescription,
 		PushTargetSetting:         PushTargetDescription,
+		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -141,6 +151,9 @@ type OdoSettings struct {
 
 	// RegistryList for telling odo to connect to all the registries in the registry list
 	RegistryList *[]Registry `yaml:"RegistryList,omitempty"`
+
+	// RegistryCacheTime how long odo should cache information from registry
+	RegistryCacheTime *int `yaml:"RegistryCacheTime,omitempty"`
 }
 
 // Registry includes the registry metadata
@@ -367,6 +380,16 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			}
 			c.OdoSettings.PushTimeout = &typedval
 
+		case "registrycachetime":
+			typedval, err := strconv.Atoi(value)
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			if typedval < 0 {
+				return errors.Errorf("cannot set timeout to less than 0")
+			}
+			c.OdoSettings.RegistryCacheTime = &typedval
+
 		case "updatenotification":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
@@ -444,6 +467,11 @@ func (c *PreferenceInfo) GetBuildTimeout() int {
 func (c *PreferenceInfo) GetPushTimeout() int {
 	// default timeout value is 1
 	return util.GetIntOrDefault(c.OdoSettings.PushTimeout, DefaultPushTimeout)
+}
+
+// GetRegistryCacheTime gets the value set by RegistryCacheTime
+func (c *PreferenceInfo) GetRegistryCacheTime() int {
+	return util.GetIntOrDefault(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from preferences

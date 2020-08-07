@@ -1,0 +1,11 @@
+# Ref. https://github.com/operator-framework/operator-lifecycle-manager
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: my-catalog
+  namespace: openshift-operator-lifecycle-manager
+spec:
+  sourceType: grpc
+  image: REPLACE_IMAGE
+  displayName: Community Operators
+  publisher: Red Hat

@@ -6,7 +6,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/openshift/odo/pkg/exec"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/envinfo"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,40 +24,69 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// New instantiantes a component adapter
+// New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
+	adapter := Adapter{Client: client}
+	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
+	adapter.GenericAdapter.InitWith(adapter)
+	return adapter
+}
 
-	var loggingClient machineoutput.MachineEventLoggingClient
-
-	if log.IsJSON() {
-		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
-	} else {
-		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
+// getPod lazily records and retrieves the pod associated with the component associated with this adapter
+func (a Adapter) getPod() (*corev1.Pod, error) {
+	if a.pod == nil {
+		pod, err := waitAndGetPod(true, a.ComponentName, a.Client)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		}
+		a.pod = pod
 	}
+	return a.pod, nil
+}
 
-	return Adapter{
-		Client:             client,
-		AdapterContext:     adapterContext,
-		machineEventLogger: loggingClient,
+func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	pod, err := a.getPod()
+	if err != nil {
+		return common.ComponentInfo{}, err
 	}
+	return common.ComponentInfo{
+		PodName:       pod.Name,
+		ContainerName: command.Exec.Component,
+	}, nil
+}
+
+func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	pod, err := a.getPod()
+	if err != nil {
+		return common.ComponentInfo{}, err
+	}
+	for _, container := range pod.Spec.Containers {
+		if container.Name == command.Exec.Component && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
+			return common.ComponentInfo{
+				ContainerName: command.Exec.Component,
+				PodName:       pod.Name,
+			}, nil
+		}
+	}
+	return common.ComponentInfo{}, nil
 }
 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
 	Client kclient.Client
-	common.AdapterContext
-	devfileInitCmd     string
-	devfileBuildCmd    string
-	devfileRunCmd      string
-	devfileDebugCmd    string
-	devfileDebugPort   int
-	machineEventLogger machineoutput.MachineEventLoggingClient
+	*common.GenericAdapter
+
+	devfileInitCmd   string
+	devfileBuildCmd  string
+	devfileRunCmd    string
+	devfileDebugCmd  string
+	devfileDebugPort int
+	pod              *corev1.Pod
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -106,7 +136,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		parameters.ForceBuild = true
 	}
 
-	err = a.createOrUpdateComponent(componentExists)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -159,17 +189,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentExists {
-		log.Infof("\nExecuting preStart lifecycle event commands for component %s", a.ComponentName)
-		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, pod.GetName())
+	postStartEvents := a.Devfile.Data.GetEvents().PostStart
+	if !componentExists && len(postStartEvents) > 0 {
+		err = a.ExecDevfileEvent(postStartEvents, common.PostStart, parameters.Show)
 		if err != nil {
 			return err
+
 		}
 	}
 
 	if execRequired {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
-		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers, parameters.Debug)
+		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
 			return err
 		}
@@ -194,7 +225,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
-	err = a.execTestCmd(testCommand, pod.GetName(), show)
+	err = a.ExecuteDevfileCommand(testCommand, show)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}
@@ -206,12 +237,14 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
 	componentName := a.ComponentName
 
-	labels := map[string]string{
-		"component": componentName,
-	}
+	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
+
+	labels := componentlabels.GetLabels(componentName, a.AppName, true)
+	labels["component"] = componentName
+	labels[componentlabels.ComponentTypeLabel] = componentType
 
 	containers, err := utils.GetContainers(a.Devfile)
 	if err != nil {
@@ -227,19 +260,28 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		return err
 	}
 
+	// set EnvFrom to the container that's supposed to have link to the Operator backed service
+	containers, err = utils.UpdateContainerWithEnvFrom(containers, a.Devfile, a.devfileRunCmd, ei)
+	if err != nil {
+		return err
+	}
+
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
-	componentAliasToVolumes := common.GetVolumes(a.Devfile)
+	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
 
 	// Get a list of all the unique volume names and generate their PVC names
-	for _, volumes := range componentAliasToVolumes {
+	// we do not use the volume components which are unique here because
+	// not all volume components maybe referenced by a container component.
+	// We only want to create PVCs which are going to be used by a container
+	for _, volumes := range containerNameToVolumes {
 		for _, vol := range volumes {
 			if _, ok := processedVolumes[vol.Name]; !ok {
 				processedVolumes[vol.Name] = true
@@ -272,12 +314,14 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	}
 
 	// Add PVC and Volume Mounts to the podTemplateSpec
-	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, componentAliasToVolumes)
+	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
 
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
+	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
+		"component": componentName,
+	})
 	var containerPorts []corev1.ContainerPort
 	for _, c := range deploymentSpec.Template.Spec.Containers {
 		if len(containerPorts) == 0 {
@@ -357,149 +401,20 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 }
 
 func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
-	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+	return waitAndGetPod(hideSpinner, a.ComponentName, a.Client)
+}
+
+func waitAndGetPod(hideSpinner bool, componentName string, client kclient.Client) (*corev1.Pod, error) {
+	podSelector := fmt.Sprintf("component=%s", componentName)
 	watchOptions := metav1.ListOptions{
 		LabelSelector: podSelector,
 	}
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
+	pod, err := client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 	}
 	return pod, nil
-}
-
-// Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
-// Init only runs once when the component is created.
-func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, podName string, containers []corev1.Container, isDebug bool) (err error) {
-	// If nothing has been passed, then the devfile is missing the required run command
-	if len(commandsMap) == 0 {
-		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
-	}
-
-	compInfo := common.ComponentInfo{
-		PodName: podName,
-	}
-
-	// only execute Init command, if it is first run of container.
-	if !componentExists {
-
-		// Get Init Command
-		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
-		if ok {
-			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			if err != nil {
-				return err
-			}
-
-		}
-
-	}
-
-	// Get Build Command
-	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
-	if ok {
-		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Get Run or Debug Command
-	if isDebug {
-		command, ok = commandsMap[versionsCommon.DebugCommandGroupType]
-	} else {
-		command, ok = commandsMap[versionsCommon.RunCommandGroupType]
-	}
-	if ok {
-		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
-		compInfo.ContainerName = command.Exec.Component
-
-		// Check if the devfile debug component containers have supervisord as the entrypoint.
-		// Start the supervisord if the odo component does not exist
-		if !componentExists {
-			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
-			if err != nil {
-				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
-				return
-			}
-		}
-
-		if componentExists && !common.IsRestartRequired(command) {
-			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
-			if isDebug {
-				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			} else {
-				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			}
-			return
-		}
-		if isDebug {
-			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		} else {
-			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		}
-
-	}
-
-	return
-}
-
-// TODO: Support Composite
-// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
-// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
-// in the command
-func (a Adapter) execDevfileEvent(events []string, podName string) error {
-	if len(events) > 0 {
-		commandMap := common.GetCommandMap(a.Devfile.Data)
-		for _, commandName := range events {
-			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command := commandMap[strings.ToLower(commandName)]
-
-			compInfo := common.ComponentInfo{
-				ContainerName: command.Exec.Component,
-				PodName:       podName,
-			}
-
-			// If composite would go here & recursive loop
-
-			// Execute command in pod
-			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
-			if err != nil {
-				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
-			}
-		}
-	}
-	return nil
-}
-
-// Executes the test command in the pod
-func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName string, show bool) (err error) {
-	compInfo := common.ComponentInfo{
-		PodName: podName,
-	}
-	compInfo.ContainerName = testCmd.Exec.Component
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
-	return
-}
-
-// InitRunContainerSupervisord initializes the supervisord in the container if
-// the container has entrypoint that is not supervisord
-func (a Adapter) InitRunContainerSupervisord(containerName, podName string, containers []corev1.Container) (err error) {
-	for _, container := range containers {
-		if container.Name == containerName && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
-			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
-			compInfo := common.ComponentInfo{
-				ContainerName: containerName,
-				PodName:       podName,
-			}
-			err = exec.ExecuteCommand(&a.Client, compInfo, command, true, nil, nil)
-		}
-	}
-
-	return
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well
@@ -520,26 +435,45 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 }
 
 // Delete deletes the component
-func (a Adapter) Delete(labels map[string]string) error {
-	spinner := log.Spinnerf("Deleting devfile component %s", a.ComponentName)
-	defer spinner.End(false)
+func (a Adapter) Delete(labels map[string]string, show bool) error {
 
-	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	log.Infof("\nGathering information for component %s", a.ComponentName)
+	podSpinner := log.Spinner("Checking status for component")
+	defer podSpinner.End(false)
+
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if kerrors.IsForbidden(err) {
 		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
-		spinner.End(false)
+		podSpinner.End(false)
 		log.Warningf("%v", err)
+		return nil
+	} else if e, ok := err.(*kclient.PodNotFoundError); ok {
+		podSpinner.End(false)
+		log.Warningf("%v", e)
 		return nil
 	} else if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 
-	if !componentExists {
-		spinner.End(false)
-		log.Warningf("Component %s does not exist", a.ComponentName)
-		return nil
+	podSpinner.End(true)
+
+	// if there are preStop events, execute them before deleting the deployment
+	preStopEvents := a.Devfile.Data.GetEvents().PreStop
+	if len(preStopEvents) > 0 {
+		if pod.Status.Phase != corev1.PodRunning {
+			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", a.ComponentName)
+		}
+
+		err = a.ExecDevfileEvent(preStopEvents, common.PreStop, show)
+		if err != nil {
+			return err
+		}
 	}
+
+	log.Infof("\nDeleting component %s", a.ComponentName)
+	spinner := log.Spinner("Deleting Kubernetes resources for component")
+	defer spinner.End(false)
 
 	err = a.Client.DeleteDeployment(labels)
 	if err != nil {
@@ -617,5 +551,5 @@ func (a Adapter) Exec(command []string) error {
 		ContainerName: containerName,
 	}
 
-	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
+	return a.ExecuteCommand(componentInfo, command, true, nil, nil)
 }

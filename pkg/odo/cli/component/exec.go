@@ -2,15 +2,19 @@ package component
 
 import (
 	"fmt"
+
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"path/filepath"
 )
 
 // ExecRecommendedCommandName is the recommended exec command name
@@ -104,6 +108,9 @@ func NewCmdExec(name, fullName string) *cobra.Command {
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(execCmd)
+
+	// Adding `--app` flag
+	appCmd.AddApplicationFlag(execCmd)
 
 	return execCmd
 }

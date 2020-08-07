@@ -292,7 +292,7 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	Context("prevent the user from creating a URL with name that has more than 63 characters", func() {
+	Context("prevent the user from creating invalid URLs", func() {
 		var originalDir string
 
 		JustBeforeEach(func() {
@@ -312,7 +312,7 @@ var _ = Describe("odo generic", func() {
 		It("should not allow creating a URL with long name", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
-			Expect(stdOut).To(ContainSubstring("url name must be shorter than 63 characters"))
+			Expect(stdOut).To(ContainSubstring("must be shorter than 63 characters"))
 		})
 	})
 
@@ -357,4 +357,63 @@ var _ = Describe("odo generic", func() {
 			helper.CmdShouldPass("oc", "get", "is", dc, "--namespace", project)
 		})
 	})
+
+	Context("When using cpu or memory flag with odo create", func() {
+		var originalDir string
+		cmpName := "nodejs"
+
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
+
+		It("should not allow using any memory or cpu flag", func() {
+
+			cases := []struct {
+				paramName  string
+				paramValue string
+			}{
+				{
+					paramName:  "cpu",
+					paramValue: "0.4",
+				},
+				{
+					paramName:  "mincpu",
+					paramValue: "0.2",
+				},
+				{
+					paramName:  "maxcpu",
+					paramValue: "0.4",
+				},
+				{
+					paramName:  "memory",
+					paramValue: "200Mi",
+				},
+				{
+					paramName:  "minmemory",
+					paramValue: "100Mi",
+				},
+				{
+					paramName:  "maxmemory",
+					paramValue: "200Mi",
+				},
+			}
+			for _, testCase := range cases {
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+				output := helper.CmdShouldFail("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--"+testCase.paramName, testCase.paramValue)
+				Expect(output).To(ContainSubstring("unknown flag: --" + testCase.paramName))
+			}
+		})
+	})
+
 })

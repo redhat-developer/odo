@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("odo devfile test command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-	var sourcePath = "/projects/nodejs-starter"
+	var sourcePath = "/projects"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -52,18 +52,7 @@ var _ = Describe("odo devfile test command tests", func() {
 
 			output := helper.CmdShouldFail("odo", "test", "--context", context)
 
-			Expect(output).To(ContainSubstring("error occurred while getting the pod: no Pod was found for the selector"))
-		})
-
-		It("should show error for devfile v1", func() {
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--context", context, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldFail("odo", "test", "--context", context)
-
-			Expect(output).To(ContainSubstring("'odo test' is not supported in devfile 1.0.0"))
+			Expect(output).To(ContainSubstring("error occurred while getting the pod: pod not found for the selector"))
 		})
 
 		It("should show error if no test group is defined", func() {
@@ -176,6 +165,21 @@ var _ = Describe("odo devfile test command tests", func() {
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
 			Expect(output).To(ContainSubstring("test2"))
+		})
+
+		It("Should run composite test command successfully", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			output := helper.CmdShouldPass("odo", "test", "--test-command", "compositetest", "--context", context)
+			helper.MatchAllInOutput(output, []string{"Executing test1 command", "mkdir test1", "Executing test2 command", "mkdir test2"})
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
+			helper.MatchAllInOutput(output, []string{"test1", "test2"})
 		})
 	})
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
+
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,6 +76,29 @@ func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServi
 		},
 		Items: result,
 	}, nil
+}
+
+// GetCustomResource returns the CR matching the name
+func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, error) {
+	// Get all csvs in the namespace
+	csvs, err := c.GetClusterServiceVersionList()
+	if err != nil {
+		return &olm.CRDDescription{}, err
+	}
+
+	// iterate of csvs to find if CR of our interest is provided by any of those
+	for _, csv := range csvs.Items {
+		clusSerVer := csv
+		crs := c.GetCustomResourcesFromCSV(&clusSerVer)
+
+		for _, cr := range *crs {
+			if cr.Kind == customResource {
+				return &cr, nil
+			}
+		}
+	}
+
+	return &olm.CRDDescription{}, fmt.Errorf("Couldn't find a Custom Resource named %q in the namespace", customResource)
 }
 
 // GetCSVWithCR returns the CSV (Operator) that contains the CR (service)

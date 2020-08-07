@@ -170,6 +170,11 @@ func isValidArgumentList(args []string) error {
 	}
 
 	switch param {
+	case "memory", "minmemory", "maxmemory", "cpu", "mincpu", "maxcpu":
+		err = validation.NonNegativeValidator(args[1])
+		if err != nil {
+			err = errors.Errorf("%s is invalid %v", param, err)
+		}
 	case "ports", "debugport":
 		err = validation.PortsValidator(args[1])
 	}

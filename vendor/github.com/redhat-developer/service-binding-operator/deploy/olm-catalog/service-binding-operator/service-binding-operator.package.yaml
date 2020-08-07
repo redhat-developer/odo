@@ -1,0 +1,5 @@
+channels:
+- currentCSV: service-binding-operator.vBUNDLE_VERSION
+  name: alpha
+defaultChannel: alpha
+packageName: PACKAGE_NAME

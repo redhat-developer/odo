@@ -49,7 +49,17 @@ func (po *PushOptions) DevfilePush() error {
 		os.Exit(1)
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	// push is successful, save the runMode used
+	runMode := envinfo.Run
+	if po.debugRun {
+		runMode = envinfo.Debug
+	}
+
+	return po.EnvSpecificInfo.SetRunMode(runMode)
 }
 
 func (po *PushOptions) devfilePushInner() (err error) {
@@ -87,7 +97,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -146,7 +156,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, lo.Application, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -207,12 +217,12 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	labels := map[string]string{
 		"component": componentName,
 	}
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.Application, devObj, kc)
 	if err != nil {
 		return err
 	}
 
-	return devfileHandler.Delete(labels)
+	return devfileHandler.Delete(labels, do.show)
 }
 
 // RunTestCommand runs the specific test command in devfile
@@ -232,7 +242,7 @@ func (to *TestOptions) RunTestCommand() error {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.Application, to.devObj, platformContext)
 	if err != nil {
 		return err
 	}
@@ -278,7 +288,7 @@ func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 		Namespace: eo.namespace,
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, eo.componentOptions.Application, devObj, kc)
 	if err != nil {
 		return err
 	}

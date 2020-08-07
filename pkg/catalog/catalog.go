@@ -115,7 +115,13 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 		}
 		request.Token = token
 	}
-	jsonBytes, err := util.HTTPGetRequest(request)
+
+	cfg, err := preference.New()
+	if err != nil {
+		return nil, err
+	}
+
+	jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}
@@ -200,6 +206,7 @@ func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
 		},
 		Items: catalogList,
 	}, nil
+
 }
 
 // SearchComponent searches for the component
@@ -466,16 +473,7 @@ func isSupportedImage(imgName string) bool {
 		"centos/nodejs-12-centos7:latest",
 		"rhscl/nodejs-10-rhel7:latest",
 		"rhscl/nodejs-12-rhel7:latest",
-		"bucharestgold/centos7-s2i-nodejs:latest",
-		"nodeshift/centos7-s2i-nodejs:latest",
-
-		// older images which we should remove soon
-		"rhoar-nodejs/nodejs-8:latest",
 		"rhoar-nodejs/nodejs-10:latest",
-		"bucharestgold/centos7-s2i-nodejs:8.x",
-		"bucharestgold/centos7-s2i-nodejs:10.x",
-		"centos/nodejs-8-centos7:latest",
-		"rhscl/nodejs-8-rhel7:latest",
 	}
 	for _, supImage := range supportedImages {
 		if supImage == imgName {

@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	utiltrace "k8s.io/utils/trace"
 )
 
@@ -47,17 +47,16 @@ const (
 	resourceVersionTooHighRetrySeconds = 1
 
 	// eventFreshDuration is time duration of events we want to keep.
-	eventFreshDuration = 5 * time.Minute
+	// We set it to `defaultBookmarkFrequency` plus epsilon to maximize
+	// chances that last bookmark was sent within kept history, at the
+	// same time, minimizing the needed memory usage.
+	eventFreshDuration = 75 * time.Second
 
 	// defaultLowerBoundCapacity is a default value for event cache capacity's lower bound.
-	// 100 is minimum in NewHeuristicWatchCacheSizes.
 	// TODO: Figure out, to what value we can decreased it.
 	defaultLowerBoundCapacity = 100
 
 	// defaultUpperBoundCapacity  should be able to keep eventFreshDuration of history.
-	// With the current 102400 value though, it's not enough for leases in 5k-node cluster,
-	// but that is conscious decision.
-	// TODO: Validate if the current value is high enough for large scale clusters.
 	defaultUpperBoundCapacity = 100 * 1024
 )
 
@@ -193,28 +192,27 @@ type watchCache struct {
 }
 
 func newWatchCache(
-	capacity int,
 	keyFunc func(runtime.Object) (string, error),
 	eventHandler func(*watchCacheEvent),
 	getAttrsFunc func(runtime.Object) (labels.Set, fields.Set, error),
 	versioner storage.Versioner,
 	indexers *cache.Indexers,
+	clock clock.Clock,
 	objectType reflect.Type) *watchCache {
 	wc := &watchCache{
-		capacity:     capacity,
-		keyFunc:      keyFunc,
-		getAttrsFunc: getAttrsFunc,
-		cache:        make([]*watchCacheEvent, capacity),
-		// TODO get rid of them once we stop passing capacity as a parameter to watch cache.
-		lowerBoundCapacity:  min(capacity, defaultLowerBoundCapacity),
-		upperBoundCapacity:  max(capacity, defaultUpperBoundCapacity),
+		capacity:            defaultLowerBoundCapacity,
+		keyFunc:             keyFunc,
+		getAttrsFunc:        getAttrsFunc,
+		cache:               make([]*watchCacheEvent, defaultLowerBoundCapacity),
+		lowerBoundCapacity:  defaultLowerBoundCapacity,
+		upperBoundCapacity:  defaultUpperBoundCapacity,
 		startIndex:          0,
 		endIndex:            0,
 		store:               cache.NewIndexer(storeElementKey, storeElementIndexers(indexers)),
 		resourceVersion:     0,
 		listResourceVersion: 0,
 		eventHandler:        eventHandler,
-		clock:               clock.RealClock{},
+		clock:               clock,
 		versioner:           versioner,
 		objectType:          objectType,
 	}
@@ -534,19 +532,16 @@ func (w *watchCache) GetAllEventsSinceThreadUnsafe(resourceVersion uint64) ([]*w
 	size := w.endIndex - w.startIndex
 	var oldest uint64
 	switch {
-	case size >= w.capacity:
-		// Once the watch event buffer is full, the oldest watch event we can deliver
-		// is the first one in the buffer.
-		oldest = w.cache[w.startIndex%w.capacity].ResourceVersion
-	case w.listResourceVersion > 0:
-		// If the watch event buffer isn't full, the oldest watch event we can deliver
-		// is one greater than the resource version of the last full list.
+	case w.listResourceVersion > 0 && w.startIndex == 0:
+		// If no event was removed from the buffer since last relist, the oldest watch
+		// event we can deliver is one greater than the resource version of the list.
 		oldest = w.listResourceVersion + 1
 	case size > 0:
-		// If we've never completed a list, use the resourceVersion of the oldest event
-		// in the buffer.
-		// This should only happen in unit tests that populate the buffer without
-		// performing list/replace operations.
+		// If the previous condition is not satisfied: either some event was already
+		// removed from the buffer or we've never completed a list (the latter can
+		// only happen in unit tests that populate the buffer without performing
+		// list/replace operations), the oldest watch event we can deliver is the first
+		// one in the buffer.
 		oldest = w.cache[w.startIndex%w.capacity].ResourceVersion
 	default:
 		return nil, fmt.Errorf("watch cache isn't correctly initialized")

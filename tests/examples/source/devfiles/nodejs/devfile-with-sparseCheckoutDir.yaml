@@ -1,6 +1,6 @@
 apiVersion: 1.0.0
 metadata:
-  name: test-devfile
+  name: nodejs
 projects:
   -
     name: nodejs-starter
@@ -26,22 +26,22 @@ commands:
       - type: exec
         component: runtime
         command: npm install
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}
   - name: devbuild
     actions:
       - type: exec
         component: runtime
         command: npm install
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}
   - name: run
     actions:
       - type: exec
         component: runtime
         command: npm start
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}
   - name: devrun
     actions:
       - type: exec
         component: runtime
         command: npm start
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+        workdir: ${PROJECTS_ROOT}
