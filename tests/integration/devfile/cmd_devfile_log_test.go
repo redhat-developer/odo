@@ -59,7 +59,7 @@ var _ = Describe("odo devfile log command tests", func() {
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
 
 			// test with follow flag
-			output = helper.CmdShouldRunWithTimeout(1*time.Second, "odo", "log", "-f")
+			output = helper.CmdShouldRunWithTimeout(10*time.Second, "odo", "log", "-f")
 			Expect(output).To(ContainSubstring("program=devrun"))
 
 		})
@@ -83,7 +83,7 @@ var _ = Describe("odo devfile log command tests", func() {
 			Expect(output).To(ContainSubstring("ODO_COMMAND_DEBUG"))
 
 			// test with follow flag
-			output = helper.CmdShouldRunWithTimeout(1*time.Second, "odo", "log", "-f")
+			output = helper.CmdShouldRunWithTimeout(10*time.Second, "odo", "log", "-f")
 			Expect(output).To(ContainSubstring("program=debugrun"))
 
 		})
