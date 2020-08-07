@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
@@ -41,7 +42,7 @@ type StorageCreateOptions struct {
 
 // NewStorageCreateOptions creates a new StorageCreateOptions instance
 func NewStorageCreateOptions() *StorageCreateOptions {
-	return &StorageCreateOptions{devfilePath: "./devfile.yaml"}
+	return &StorageCreateOptions{devfilePath: component.DevfilePath}
 }
 
 // Complete completes StorageCreateOptions after they've been created
@@ -61,7 +62,7 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	if len(args) != 0 {
 		o.storageName = args[0]
 	} else {
-		o.storageName = o.componentName + "-" + util.GenerateRandomString(4)
+		o.storageName = fmt.Sprintf("%s-%s", o.componentName, util.GenerateRandomString(4))
 	}
 	return
 }

@@ -258,6 +258,4 @@ func (d *Devfile100) AddVolume(volume common.Volume, path string) error { return
 
 func (d *Devfile100) DeleteVolume(name string) error { return nil }
 
-func (d *Devfile100) GetVolumeMountPath(name string) (string, error) {
-	return "", nil
-}
+func (d *Devfile100) GetVolumeMountPath(name string) (string, error) { return "", nil }

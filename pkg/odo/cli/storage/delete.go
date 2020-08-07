@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/openshift/odo/pkg/devfile"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/util"
 
@@ -39,7 +40,7 @@ type StorageDeleteOptions struct {
 
 // NewStorageDeleteOptions creates a new StorageDeleteOptions instance
 func NewStorageDeleteOptions() *StorageDeleteOptions {
-	return &StorageDeleteOptions{devfilePath: "./devfile.yaml"}
+	return &StorageDeleteOptions{devfilePath: component.DevfilePath}
 }
 
 // Complete completes StorageDeleteOptions after they've been created
@@ -49,7 +50,7 @@ func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 
 		o.componentName = o.EnvSpecificInfo.GetName()
 	} else {
-		// this initializes the LocalConfigInfo as well
+		// This initializes the LocalConfigInfo as well
 		o.Context = genericclioptions.NewContext(cmd)
 
 		o.componentName = o.LocalConfigInfo.GetName()
