@@ -588,11 +588,7 @@ func DeleteLocalConfig(args ...string) {
 }
 
 // VerifyCatalogListComponent verifies component exists in both S2I Component list and Devfile Component list
-func VerifyCatalogListComponent(output string) error {
-
-	componentName := "nodejs"
-	wantOutput := []string{componentName}
-
+func VerifyCatalogListComponent(output string, componentName []string) error {
 	var data map[string]interface{}
 	listItems := []string{"devfileItems"}
 
@@ -611,7 +607,7 @@ func VerifyCatalogListComponent(output string) error {
 			return err
 		}
 		output = string(outputBytes)
-		helper.MatchAllInOutput(output, wantOutput)
+		helper.MatchAllInOutput(output, componentName)
 	}
 	return err
 }
