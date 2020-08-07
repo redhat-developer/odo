@@ -157,7 +157,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			// File should exist, and its content should match what we initially set it to
-			execResult := cliRunner.Exec(podName, namespace, "cat", "/projects/nodejs-starter/"+filepath.Base(fileAPath))
+			execResult := cliRunner.Exec(podName, namespace, "cat", "/projects/"+filepath.Base(fileAPath))
 			Expect(execResult).To(ContainSubstring(fileAText))
 
 		})
