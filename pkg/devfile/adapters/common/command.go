@@ -11,6 +11,37 @@ import (
 	"k8s.io/klog"
 )
 
+// command encapsulates a command meant to be executed either directly or as part of a composite
+type command interface {
+	Execute(show bool) error
+}
+
+// New returns a new command implementation based on the specified devfile command and the known commands
+func New(devfile common.DevfileCommand, knowCommands map[string]common.DevfileCommand, executor commandExecutor) (command, error) {
+	composite := devfile.Composite
+	if composite != nil {
+		cmds := composite.Commands
+		components := make([]command, 0, len(cmds))
+		for _, cmd := range cmds {
+			if devfileCommand, ok := knowCommands[strings.ToLower(cmd)]; ok {
+				c, err := New(devfileCommand, knowCommands, executor)
+				if err != nil {
+					return nil, errors.Wrapf(err, "couldn't create command %s", cmd)
+				}
+				components = append(components, c)
+			} else {
+				return nil, fmt.Errorf("composite command %q has command %v not found in devfile", cmd, devfile)
+			}
+		}
+		if composite.Parallel {
+			return newParallelCompositeCommand(components...), nil
+		}
+		return newCompositeCommand(components...), nil
+	} else {
+		return newSimpleCommand(devfile, executor)
+	}
+}
+
 // getCommand iterates through the devfile commands and returns the devfile command associated with the group
 // commands mentioned via the flags are passed via commandName, empty otherwise
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
