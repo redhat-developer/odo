@@ -522,7 +522,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
 	serviceCreateCmd.Short = createShortDescExperimental
 	serviceCreateCmd.Long = createLongDescExperimental
-	serviceCreateCmd.Example += fmt.Sprintf("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
+	serviceCreateCmd.Example += "\n\n" + fmt.Sprintf(createOperatorExample, fullName)
 	serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
 	// remove this feature after enabling service create interactive mode for operator backed services
 	serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")

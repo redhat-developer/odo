@@ -391,6 +391,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
+			if co.forceS2i {
+				return errors.New("You can't set --s2i flag as true if you want to use the devfile that is specified via --devfile")
+			}
 			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 			if fileErr != nil && urlErr != nil {
@@ -404,6 +407,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
+
+			if co.forceS2i {
+				return errors.New("You can't specify registry via --registry if you want to force the S2I build with --s2i")
+			}
 
 			if co.devfileMetadata.devfilePath.value != "" {
 				return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
@@ -1034,6 +1041,23 @@ func (co *CreateOptions) Run() (err error) {
 				}
 				params.Request.Token = token
 			}
+		}
+
+		if !util.CheckPathExists(DevfilePath) {
+			// Download devfile from registry
+			params := util.DownloadParams{
+				Request: util.HTTPRequestParams{
+					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+				},
+				Filepath: DevfilePath,
+			}
+			if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+				token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+				if err != nil {
+					return errors.Wrap(err, "unable to get secure registry credential from keyring")
+				}
+				params.Request.Token = token
+			}
 			err := util.DownloadFile(params)
 			if err != nil {
 				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
@@ -1063,11 +1087,6 @@ func (co *CreateOptions) Run() (err error) {
 		}
 
 		ignoreFile, err := util.CheckGitIgnoreFile(sourcePath)
-		if err != nil {
-			return err
-		}
-
-		err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, envDir))
 		if err != nil {
 			return err
 		}
@@ -1162,11 +1181,6 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
-	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
-	componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
-	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
-	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
-	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
 	componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")

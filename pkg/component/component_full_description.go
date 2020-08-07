@@ -189,8 +189,8 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 	if len(cfd.Spec.URL.Items) > 0 {
 		var output string
 
-		// For S2I Only..
-		// if the component is not pushed
+		// FOR S2I ONLY.
+		// This part *needs* to be edited before merge.. This will still try to output S2I info
 		for i, componentURL := range cfd.Spec.URL.Items {
 			if componentURL.Status.State == urlpkg.StateTypePushed {
 				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, "", true), componentURL.Spec.Port)

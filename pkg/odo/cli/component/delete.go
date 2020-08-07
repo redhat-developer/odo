@@ -78,7 +78,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
 	ConfigFilePath = filepath.Join(do.componentContext, configFile)
 
-	// if experimental mode is enabled and devfile is present
+	// If devfile is present
 	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
 		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
 		if err != nil {
@@ -103,7 +103,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
 
-	// if experimental mode is enabled and devfile is present
+	// If devfile is present
 	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
 		return nil
 	}
@@ -311,10 +311,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteWaitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteS2iFlag, "s2i", "", false, "Delete s2i component if devfile and s2i both component present with same name")
 
-	// enable show flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		componentDeleteCmd.Flags().BoolVar(&do.show, "show-log", false, "If enabled, logs will be shown when deleted")
-	}
+	componentDeleteCmd.Flags().BoolVar(&do.show, "show-log", false, "If enabled, logs will be shown when deleted")
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
