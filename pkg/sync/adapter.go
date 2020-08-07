@@ -220,7 +220,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		// If isForcePush is set, then the entire local directory contents will be copied over by CopyFile(...), thus
 		// we first need to clear the remote target folder.
 
-		err = exec.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, false, nil, nil)
+		err = common.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, false, nil, nil)
 		if err != nil {
 			// This command will return a non-zero error code if 'syncFolder' cannot be removed; this occurs
 			// if the folder is owned by a different container user (for example, if it is a source volume mount) or
@@ -235,7 +235,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		}
 
 		// (Re)create the folder
-		err = exec.ExecuteCommand(a.Client, compInfo, getCmdToCreateSyncFolder(syncFolder), false, nil, nil)
+		err = common.ExecuteCommand(a.Client, compInfo, getCmdToCreateSyncFolder(syncFolder), false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -326,10 +326,10 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 // isRemoteFolderEmpty returns true if the 'syncFolder' path in the pod contains no files/folders, false otherwise
 func isRemoteFolderEmpty(a Adapter, compInfo common.ComponentInfo, syncFolder string) (bool, error) {
 
-	stdoutWriter, stdoutOutputChan := exec.CreateConsoleOutputWriterAndChannel()
-	stderrWriter, stderrOutputChan := exec.CreateConsoleOutputWriterAndChannel()
+	stdoutWriter, stdoutOutputChan := common.CreateConsoleOutputWriterAndChannel()
+	stderrWriter, stderrOutputChan := common.CreateConsoleOutputWriterAndChannel()
 
-	if err := exec.ExecuteCommand(a.Client, compInfo, []string{"ls", "-a", syncFolder}, false, stdoutWriter, stderrWriter); err != nil {
+	if err := common.ExecuteCommand(a.Client, compInfo, []string{"ls", "-a", syncFolder}, false, stdoutWriter, stderrWriter); err != nil {
 		return false, err
 	}
 
