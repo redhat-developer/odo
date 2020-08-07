@@ -50,7 +50,7 @@ func TestGetDevfileContainerComponents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: tt.component,
 				},
 			}
@@ -104,7 +104,7 @@ func TestGetDevfileVolumeComponents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: tt.component,
 				},
 			}
@@ -209,7 +209,7 @@ func TestGetVolumes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: tt.component,
 				},
 			}
@@ -449,7 +449,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 	}
 
 	devObj := devfileParser.DevfileObj{
-		Data: testingutil.TestDevfileData{
+		Data: &testingutil.TestDevfileData{
 			Components:   component,
 			ExecCommands: execCommands,
 		},
@@ -568,14 +568,14 @@ func TestGetCommandsMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components:        component,
 					ExecCommands:      tt.execCommands,
 					CompositeCommands: tt.compCommands,
 				},
 			}
 
-			commandsMap := GetCommandsMap(devObj.Data.GetCommands())
+			commandsMap := devObj.Data.GetCommands()
 			if len(commandsMap) != len(tt.expectedCommands) {
 				t.Errorf("TestGetCommandsMap error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}

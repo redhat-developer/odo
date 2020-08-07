@@ -297,7 +297,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 	}
 
 	// Ignoring error as we are writing new file
-	_ = d.AddCommands([]common.DevfileCommand{buildCommand, runCommand})
+	_ = d.AddCommands(buildCommand, runCommand)
 
 }
 
