@@ -206,3 +206,14 @@ func GetCliRunner() CliRunner {
 func Suffocate(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "\t", "")
 }
+
+// Find takes a slice and looks for the element in it.
+// return a bool accordingly.
+func Find(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}

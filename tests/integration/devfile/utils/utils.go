@@ -587,8 +587,9 @@ func DeleteLocalConfig(args ...string) {
 	helper.MatchAllInOutput(output, expectedOutput)
 }
 
-// VerifyCatalogListComponent verifies component exists in both S2I Component list and Devfile Component list
-func VerifyCatalogListComponent(output string, componentName []string) error {
+// VerifyCatalogListComponent verifies components inside wantOutput exists or not
+// in both S2I Component list and Devfile Component list
+func VerifyCatalogListComponent(output string, wantOutput []string) error {
 	var data map[string]interface{}
 	listItems := []string{"devfileItems"}
 
@@ -607,7 +608,11 @@ func VerifyCatalogListComponent(output string, componentName []string) error {
 			return err
 		}
 		output = string(outputBytes)
-		helper.MatchAllInOutput(output, componentName)
+		if items != "devfileItems" && helper.Find(wantOutput, "java-openliberty") {
+			helper.DontMatchAllInOutput(output, wantOutput)
+			return err
+		}
+		helper.MatchAllInOutput(output, wantOutput)
 	}
 	return err
 }
