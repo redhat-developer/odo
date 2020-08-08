@@ -132,8 +132,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	Context("When executing catalog list components with experimental mode set to true", func() {
 		It("should prove that nodejs is present in both S2I Component list and Devfile Component list", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
-			wantOutput := []string{"nodejs"}
-			err := utils.VerifyCatalogListComponent(output, wantOutput)
+			cmpName := []string{"nodejs"}
+			err := utils.VerifyCatalogListComponent(output, cmpName)
 			Expect(err).Should(BeNil())
 		})
 	})

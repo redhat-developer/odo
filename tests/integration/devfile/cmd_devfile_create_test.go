@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
 )
 
 var _ = Describe("odo devfile create command tests", func() {
@@ -166,12 +165,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
-			componentName := helper.RandString(6)
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
-			wantOutput := []string{"java-openliberty"}
-			err := utils.VerifyCatalogListComponent(output, wantOutput)
-			Expect(err).Should(BeNil())
-			helper.CmdShouldFail("odo", "create", "java-openliberty", componentName, "--s2i")
+			helper.CmdShouldFail("odo", "create", "java-openliberty", cmpName, "--s2i")
 		})
 
 		It("should fail the create command as --git flag, which is specific to s2i component creation, is used without --s2i flag", func() {
