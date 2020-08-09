@@ -128,9 +128,22 @@ func (d *Devfile210) UpdateProject(project common.DevfileProject) {
 	}
 }
 
+//SetSchemaVersion sets devfile schema version
+func (d *Devfile210) SetSchemaVersion(version string) {
+	d.SchemaVersion = version
+}
+
 // GetMetadata returns the DevfileMetadata Object parsed from devfile
 func (d *Devfile210) GetMetadata() common.DevfileMetadata {
 	return d.Metadata
+}
+
+// SetMetadata sets the metadata for devfile
+func (d *Devfile210) SetMetadata(name, version string) {
+	d.Metadata = common.DevfileMetadata{
+		Name:    name,
+		Version: version,
+	}
 }
 
 // GetEvents returns the Events Object parsed from devfile
