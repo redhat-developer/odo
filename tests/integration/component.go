@@ -185,12 +185,6 @@ func componentTests(args ...string) {
 
 		})
 
-		It("should create the component from the branch ref when provided", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "ruby", "ref-test", "--project", project, "--git", "https://github.com/girishramnani/ruby-ex.git", "--ref", "develop")...)
-			helper.ValidateLocalCmpExist(context, "Type,ruby", "Name,ref-test", "Application,app")
-			helper.CmdShouldPass("odo", append(args, "push")...)
-		})
-
 		It("should list the component", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing")
