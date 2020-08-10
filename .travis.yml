@@ -128,13 +128,15 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete, registry, test, log and docker devfile url command integration tests"
+      name: "devfile catalog, create, push, delete, registry, test and log command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-url-pushtarget
+        # Commenting out the docker test target (though test-cmd-docker-devfile-url-pushtarget is not broken)
+        # to avoid regression failure due to https://github.com/openshift/odo/issues/3714
+        # - travis_wait make test-cmd-docker-devfile-url-pushtarget
         # These tests need cluster login as they will be interacting with a Kube environment
         - odo login -u developer
         - travis_wait make test-cmd-devfile-catalog
