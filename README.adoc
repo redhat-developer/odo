@@ -187,3 +187,4 @@ Want to try out the odo experimental mode? Please read the link:https://github.c
 *Service:* Typically a service is a database or a service that a
 component links to or depends on. For example: MariaDB, Jenkins, MySQL.
 This comes from the OpenShift Service Catalog and must be enabled within your cluster.
+
