@@ -16,35 +16,23 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
-	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/sync"
 )
 
-// New instantiantes a component adapter
+// New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
-
-	var loggingClient machineoutput.MachineEventLoggingClient
-
-	if log.IsJSON() {
-		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
-	} else {
-		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
-	}
-
-	return Adapter{
-		Client:             client,
-		AdapterContext:     adapterContext,
-		machineEventLogger: loggingClient,
-	}
+	adapter := Adapter{Client: client}
+	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
+	adapter.GenericAdapter.InitWith(adapter)
+	return adapter
 }
 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
 	Client lclient.Client
-	common.AdapterContext
+	*common.GenericAdapter
 
 	containerNameToVolumes    map[string][]common.DevfileVolume
 	uniqueStorage             []common.Storage
@@ -54,7 +42,44 @@ type Adapter struct {
 	devfileRunCmd             string
 	supervisordVolumeName     string
 	projectVolumeName         string
-	machineEventLogger        machineoutput.MachineEventLoggingClient
+	containers                []types.Container
+}
+
+// getPod lazily records and retrieves the containers associated with the component associated with this adapter
+func (a *Adapter) getContainers() ([]types.Container, error) {
+	if a.containers == nil {
+		containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+		}
+		a.containers = containers
+	}
+	return a.containers, nil
+}
+
+func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	containers, err := a.getContainers()
+	if err != nil {
+		return common.ComponentInfo{}, err
+	}
+	containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+	compInfo := common.ComponentInfo{ContainerName: containerID}
+	return compInfo, nil
+}
+
+func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	containers, err := a.getContainers()
+	if err != nil {
+		return common.ComponentInfo{}, err
+	}
+	for _, container := range containers {
+		if container.Labels["alias"] == a.ComponentName && !strings.Contains(container.Command, common.SupervisordBinaryPath) {
+			return common.ComponentInfo{
+				ContainerName: container.ID,
+			}, nil
+		}
+	}
+	return common.ComponentInfo{}, nil
 }
 
 func (a Adapter) Build(parameters common.BuildParameters) (err error) { return nil }
@@ -145,8 +170,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// didn't previously exist
 	postStartEvents := a.Devfile.Data.GetEvents().PostStart
 	if !componentExists && len(postStartEvents) > 0 {
-		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
-		err = a.execDevfileEvent(postStartEvents, containers)
+		err = a.ExecDevfileEvent(postStartEvents, common.PostStart, parameters.Show)
 		if err != nil {
 			return err
 		}
@@ -154,7 +178,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	if execRequired {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
-		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, containers)
+		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
 			return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 		}
@@ -173,17 +197,13 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
 	}
 
-	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
-	if err != nil {
-		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
-	}
 	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
 	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
 
-	err = a.execTestCmd(testCommand, containers, show)
+	err = a.ExecuteDevfileCommand(testCommand, show)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}
@@ -202,9 +222,9 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 // container to sync to, so return an error
 func getFirstContainerWithSourceVolume(containers []types.Container) (string, string, error) {
 	for _, c := range containers {
-		for _, mount := range c.Mounts {
-			if strings.Contains(mount.Name, lclient.ProjectSourceVolumeName) {
-				return c.ID, mount.Destination, nil
+		for _, mnt := range c.Mounts {
+			if strings.Contains(mnt.Name, lclient.ProjectSourceVolumeName) {
+				return c.ID, mnt.Destination, nil
 			}
 		}
 	}
@@ -213,7 +233,7 @@ func getFirstContainerWithSourceVolume(containers []types.Container) (string, st
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
-func (a Adapter) Delete(labels map[string]string) error {
+func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	componentName, exists := labels["component"]
 	if !exists {
@@ -240,8 +260,8 @@ func (a Adapter) Delete(labels map[string]string) error {
 			continue
 		}
 
-		for _, mount := range container.Mounts {
-			volumesNotToDelete[mount.Name] = mount.Name
+		for _, m := range container.Mounts {
+			volumesNotToDelete[m.Name] = m.Name
 		}
 	}
 
@@ -396,5 +416,5 @@ func (a Adapter) Exec(command []string) error {
 		ContainerName: containerID,
 	}
 
-	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
+	return a.ExecuteCommand(componentInfo, command, true, nil, nil)
 }

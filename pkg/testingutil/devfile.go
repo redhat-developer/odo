@@ -10,6 +10,8 @@ type TestDevfileData struct {
 	Components        []versionsCommon.DevfileComponent
 	ExecCommands      []versionsCommon.Exec
 	CompositeCommands []versionsCommon.Composite
+	Commands          []versionsCommon.DevfileCommand
+	Events            common.DevfileEvents
 }
 
 // GetComponents is a mock function to get the components from a devfile
@@ -24,7 +26,7 @@ func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
 
 // GetEvents is a mock function to get events from devfile
 func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
-	return versionsCommon.DevfileEvents{}
+	return d.Events
 }
 
 // GetParent is a mock function to get parent from devfile
@@ -74,19 +76,21 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 
 // GetCommands is a mock function to get the commands from a devfile
 func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
+	if d.Commands == nil {
+		var commands []versionsCommon.DevfileCommand
 
-	var commands []versionsCommon.DevfileCommand
+		for i := range d.ExecCommands {
+			commands = append(commands, versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
+		}
 
-	for i := range d.ExecCommands {
-		commands = append(commands, versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
+		for i := range d.CompositeCommands {
+			commands = append(commands, versionsCommon.DevfileCommand{Composite: &d.CompositeCommands[i]})
+		}
+
+		return commands
+	} else {
+		return d.Commands
 	}
-
-	for i := range d.CompositeCommands {
-		commands = append(commands, versionsCommon.DevfileCommand{Composite: &d.CompositeCommands[i]})
-	}
-
-	return commands
-
 }
 
 // Validate is a mock validation that always validates without error

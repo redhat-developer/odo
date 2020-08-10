@@ -106,7 +106,7 @@ goget-tools:
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
 	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.23.6
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
 
 
 # Run unit tests and collect coverage

@@ -943,7 +943,7 @@ func TestValidateCommand(t *testing.T) {
 			} else {
 				cmd = common.DevfileCommand{Exec: &tt.exec[0]}
 			}
-			err := validateCommand(devObj.Data, cmd)
+			err := ValidateCommand(devObj.Data, cmd)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return
@@ -1868,6 +1868,33 @@ func TestValidateCompositeCommand(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Case 6: Invalid composite command, points to invalid exec command",
+			compositeCommands: []common.Composite{
+				{
+					Id:       id[3],
+					Commands: []string{id[0], id[1]},
+					Group:    &versionsCommon.Group{Kind: buildGroup},
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id:          id[0],
+					CommandLine: command[0],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[0],
+				},
+				{
+					Id:          id[1],
+					CommandLine: command[1],
+					Component:   "some-fake-component",
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[1],
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		devObj := devfileParser.DevfileObj{
@@ -1882,7 +1909,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 			commandsMap := GetCommandsMap(devObj.Data.GetCommands())
 			parentCommands := make(map[string]string)
 
-			err := validateCompositeCommand(cmd.Composite, parentCommands, commandsMap)
+			err := validateCompositeCommand(devObj.Data, cmd.Composite, parentCommands, commandsMap)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return

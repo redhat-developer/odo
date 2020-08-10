@@ -536,7 +536,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto",
-			"Rev": "bac4c82f6975"
+			"Rev": "75b288015ac9"
 		},
 		{
 			"ImportPath": "golang.org/x/exp",
@@ -560,7 +560,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net",
-			"Rev": "d3edc9973b7e"
+			"Rev": "ab3426394381"
 		},
 		{
 			"ImportPath": "golang.org/x/oauth2",
@@ -668,19 +668,19 @@
 		},
 		{
 			"ImportPath": "k8s.io/api",
-			"Rev": "e4973e079a11"
+			"Rev": "4859c9473977"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery",
-			"Rev": "cc2fa4f57325"
+			"Rev": "945d4ebf362b"
 		},
 		{
 			"ImportPath": "k8s.io/client-go",
-			"Rev": "319dbfd0ed29"
+			"Rev": "00dbcca6ee44"
 		},
 		{
 			"ImportPath": "k8s.io/component-base",
-			"Rev": "8085c015d167"
+			"Rev": "756196c2cad2"
 		},
 		{
 			"ImportPath": "k8s.io/gengo",
@@ -696,7 +696,7 @@
 		},
 		{
 			"ImportPath": "k8s.io/utils",
-			"Rev": "6e3d28b6ed19"
+			"Rev": "d5654de09c73"
 		},
 		{
 			"ImportPath": "rsc.io/binaryregexp",

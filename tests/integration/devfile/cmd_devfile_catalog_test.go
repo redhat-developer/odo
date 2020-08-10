@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/tests/integration/devfile/utils"
 )
 
 var _ = Describe("odo devfile catalog command tests", func() {
@@ -106,7 +107,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
 			output = helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
-			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: DefaultDevfileRegistry", "Registry: " + registryName})
+			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: " + registryName})
 		})
 	})
 	Context("When executing catalog describe component with a component name that does not have a devfile component", func() {
@@ -127,4 +128,14 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, []string{"accepts 1 arg(s), received 0"})
 		})
 	})
+
+	Context("When executing catalog list components with experimental mode set to true", func() {
+		It("should prove that nodejs is present in both S2I Component list and Devfile Component list", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			cmpName := []string{"nodejs"}
+			err := utils.VerifyCatalogListComponent(output, cmpName)
+			Expect(err).Should(BeNil())
+		})
+	})
+
 })

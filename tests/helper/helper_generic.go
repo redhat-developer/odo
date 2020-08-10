@@ -121,7 +121,8 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 		cmdStrParts = append(cmdStrParts, trimedPart)
 	}
 	cmdName := cmdStrParts[0]
-	fmt.Println("Running command: ", cmdStrParts)
+	_, err := fmt.Fprintln(GinkgoWriter, "Running command: ", cmdStrParts)
+	Expect(err).To(BeNil())
 	if len(cmdStrParts) > 1 {
 		cmdStrParts = cmdStrParts[1:]
 		cmd = exec.Command(cmdName, cmdStrParts...)
@@ -147,9 +148,18 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 	for {
 		select {
 		case <-timeoutCh:
+			if buf.String() != "" {
+				_, err := fmt.Fprintln(GinkgoWriter, "Output from stdout:")
+				Expect(err).To(BeNil())
+				_, err = fmt.Fprintln(GinkgoWriter, buf.String())
+				Expect(err).To(BeNil())
+			}
 			errBufStr := errBuf.String()
 			if errBufStr != "" {
-				fmt.Println(errBufStr)
+				_, err = fmt.Fprintln(GinkgoWriter, "Output from stderr:")
+				Expect(err).To(BeNil())
+				_, err = fmt.Fprintln(GinkgoWriter, errBufStr)
+				Expect(err).To(BeNil())
 			}
 			Fail(fmt.Sprintf("Timeout after %.2f minutes", timeout.Minutes()))
 		case <-ticker.C:

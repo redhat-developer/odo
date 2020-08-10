@@ -165,19 +165,20 @@ jobs:
         - travis_wait make test-e2e-images
         - odo logout
     
-    - <<: *base-test
-      stage: test
-      name: "docker devfile push, watch, url, test, catalog, exec and delete command integration tests"
-      script:
-        - make bin
-        - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-push
-        - travis_wait make test-cmd-docker-devfile-watch
-        - travis_wait make test-cmd-docker-devfile-catalog
-        - travis_wait make test-cmd-docker-devfile-delete
-        - travis_wait make test-cmd-docker-devfile-url
-        - travis_wait make test-cmd-docker-devfile-test
-        - travis_wait make test-cmd-docker-devfile-exec
+    # Fix https://github.com/openshift/odo/issues/3714 to uncomment tests
+    # - <<: *base-test
+    #   stage: test
+    #   name: "docker devfile push, watch, url, test, catalog, exec and delete command integration tests"
+    #   script:
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - travis_wait make test-cmd-docker-devfile-push
+    #     - travis_wait make test-cmd-docker-devfile-watch
+    #     - travis_wait make test-cmd-docker-devfile-catalog
+    #     - travis_wait make test-cmd-docker-devfile-delete
+    #     - travis_wait make test-cmd-docker-devfile-url
+    #     - travis_wait make test-cmd-docker-devfile-test
+    #     - travis_wait make test-cmd-docker-devfile-exec
 
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
@@ -205,6 +206,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - export KUBERNETES=true
+        - travis_wait make test-cmd-project
         - travis_wait make test-cmd-devfile-catalog
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-push

@@ -2,9 +2,8 @@ package project
 
 import (
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/pkg/errors"
-
-	"github.com/openshift/odo/pkg/occlient"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -12,30 +11,43 @@ import (
 const apiVersion = "odo.dev/v1alpha1"
 
 // GetCurrent return current project
-func GetCurrent(client *occlient.Client) string {
-	project := client.GetCurrentProjectName()
-	return project
+func GetCurrent(context *genericclioptions.Context) string {
+	return context.KClient.GetCurrentNamespace()
 }
 
 // SetCurrent sets the projectName as current project
-func SetCurrent(client *occlient.Client, projectName string) error {
-	err := client.SetCurrentProject(projectName)
+func SetCurrent(context *genericclioptions.Context, projectName string) error {
+	err := context.KClient.SetCurrentNamespace(projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current project to"+projectName)
 	}
 	return nil
 }
 
-func Create(client *occlient.Client, projectName string, wait bool) error {
+func Create(context *genericclioptions.Context, projectName string, wait bool) error {
 	if projectName == "" {
 		return errors.Errorf("no project name given")
 	}
-	err := client.CreateNewProject(projectName, wait)
+
+	projectSupport, err := context.Client.IsProjectSupported()
 	if err != nil {
-		return errors.Wrap(err, "unable to create new project")
+		return errors.Wrap(err, "unable to detect project support")
 	}
+	if projectSupport {
+		err := context.Client.CreateNewProject(projectName, wait)
+		if err != nil {
+			return errors.Wrap(err, "unable to create new project")
+		}
+
+	} else {
+		_, err := context.KClient.CreateNamespace(projectName)
+		if err != nil {
+			return errors.Wrap(err, "unable to create new project")
+		}
+	}
+
 	if wait {
-		err = client.WaitForServiceAccountInNamespace(projectName, "default")
+		err = context.KClient.WaitForServiceAccountInNamespace(projectName, "default")
 		if err != nil {
 			return errors.Wrap(err, "unable to wait for service account")
 		}
@@ -44,26 +56,52 @@ func Create(client *occlient.Client, projectName string, wait bool) error {
 }
 
 // Delete deletes the project with name projectName and returns errors if any
-func Delete(client *occlient.Client, projectName string, wait bool) error {
+func Delete(context *genericclioptions.Context, projectName string, wait bool) error {
 	if projectName == "" {
 		return errors.Errorf("no project name given")
 	}
 
-	// Delete the requested project
-	err := client.DeleteProject(projectName, wait)
+	projectSupport, err := context.Client.IsProjectSupported()
 	if err != nil {
-		return errors.Wrap(err, "unable to delete project")
+		return errors.Wrap(err, "unable to detect project support")
+	}
+
+	if projectSupport {
+		// Delete the requested project
+		err := context.Client.DeleteProject(projectName, wait)
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete project %s", projectName)
+		}
+	} else {
+		err := context.KClient.DeleteNamespace(projectName, wait)
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete namespace %s", projectName)
+		}
 	}
 	return nil
 }
 
 // List lists all the projects on the cluster
 // returns a list of the projects or the error if any
-func List(client *occlient.Client) (ProjectList, error) {
-	currentProject := client.GetCurrentProjectName()
-	allProjects, err := client.GetProjectNames()
+func List(context *genericclioptions.Context) (ProjectList, error) {
+	currentProject := context.KClient.GetCurrentNamespace()
+
+	projectSupport, err := context.Client.IsProjectSupported()
 	if err != nil {
-		return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
+		return ProjectList{}, errors.Wrap(err, "unable to detect project support")
+	}
+
+	var allProjects []string
+	if projectSupport {
+		allProjects, err = context.Client.GetProjectNames()
+		if err != nil {
+			return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
+		}
+	} else {
+		allProjects, err = context.KClient.GetNamespaces()
+		if err != nil {
+			return ProjectList{}, errors.Wrap(err, "cannot get all the namespaces")
+		}
 	}
 	// Get apps from project
 	var projects []Project
@@ -82,10 +120,22 @@ func List(client *occlient.Client) (ProjectList, error) {
 // projectName is the project name to perform check for
 // The first returned parameter is a bool indicating if a project with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
-func Exists(client *occlient.Client, projectName string) (bool, error) {
-	project, err := client.GetProject(projectName)
-	if err != nil || project == nil {
-		return false, err
+func Exists(context *genericclioptions.Context, projectName string) (bool, error) {
+	projectSupport, err := context.Client.IsProjectSupported()
+	if err != nil {
+		return false, errors.Wrap(err, "unable to detect project support")
+	}
+
+	if projectSupport {
+		project, err := context.Client.GetProject(projectName)
+		if err != nil || project == nil {
+			return false, err
+		}
+	} else {
+		namespace, err := context.KClient.GetNamespace(projectName)
+		if err != nil || namespace == nil {
+			return false, err
+		}
 	}
 
 	return true, nil
