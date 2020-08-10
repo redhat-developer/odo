@@ -250,7 +250,7 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 * Avoid logic implementation within the test files as it unnecessarily overloads the tests. Always create a new function with all the required logics within the helper package. Check for code duplicacy within helper and test files.
 +
 
-* If you are looking for delay with a specific feature test, don't use `time.Sleep()` function, Instead use `timeout`
+* If you are looking for delay with a specific feature test, don't use `time.Sleep()` function, Instead use `timeout`.
 +
 
 * The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.
