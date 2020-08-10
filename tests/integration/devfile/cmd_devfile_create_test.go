@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
@@ -166,34 +165,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
-			componentName := helper.RandString(6)
-
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
-
-			wantOutput := []string{"java-openliberty"}
-
-			var data map[string]interface{}
-
-			err := json.Unmarshal([]byte(output), &data)
-
-			if err != nil {
-				Expect(err).Should(BeNil())
-			}
-			outputBytes, err := json.Marshal(data["s2iItems"])
-			if err == nil {
-				output = string(outputBytes)
-			}
-
-			helper.DontMatchAllInOutput(output, wantOutput)
-
-			outputBytes, err = json.Marshal(data["devfileItems"])
-			if err == nil {
-				output = string(outputBytes)
-			}
-
-			helper.MatchAllInOutput(output, wantOutput)
-
-			helper.CmdShouldFail("odo", "create", "java-openliberty", componentName, "--s2i")
+			helper.CmdShouldFail("odo", "create", "java-openliberty", cmpName, "--s2i")
 		})
 
 		It("should fail the create command as --git flag, which is specific to s2i component creation, is used without --s2i flag", func() {
