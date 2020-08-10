@@ -44,8 +44,15 @@ var _ = Describe("odo project command tests", func() {
 
 	Context("when running help for project command", func() {
 		It("should display the help", func() {
-			appHelp := helper.CmdShouldPass("odo", "project", "-h")
-			Expect(appHelp).To(ContainSubstring("Perform project operations"))
+			projectHelp := helper.CmdShouldPass("odo", "project", "-h")
+			Expect(projectHelp).To(ContainSubstring("Perform project operations"))
+		})
+	})
+
+	Context("when running get command with -q flag", func() {
+		It("should display only the project name", func() {
+			projectName := helper.CmdShouldPass("odo", "project", "get", "-q")
+			Expect(projectName).Should(Equal(project))
 		})
 	})
 
