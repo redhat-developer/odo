@@ -187,7 +187,7 @@ Context("when running help for storage command", func() {
 * Don't create a new test spec for the steps which can be run with the existing specs. Also try to avoid adding the functionality which are part of another feature test file, only add if it is a key requirement.
 + 
 
-* Spec level conditions, pre and post requirements should be run in ginkgo in build functions `JustBeforeEach` and `JustAfterEach`
+* Spec level conditions, pre and post requirements should be run in ginkgo built-in tear down steps `JustBeforeEach` and `JustAfterEach`
 +
 
 * Due to parallel test run support make sure that the spec should run in isolation, otherwise the test result will lead to race condition. To achieve this ginkgo provides some in build functions `BeforeEach`, `AfterEach` etc.
