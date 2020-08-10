@@ -346,9 +346,7 @@ func Askf(format string, a ...interface{}) {
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)
 func Spinner(status string) *Status {
-	s := NewStatus(GetStdout())
-	s.Start(status, IsDebug())
-	return s
+	return ExplicitSpinner(status, false)
 }
 
 // Spinnerf creates a spinner, sets the prefix then returns it.
@@ -363,8 +361,17 @@ func Spinnerf(format string, a ...interface{}) *Status {
 
 // SpinnerNoSpin is the same as the "Spinner" function but forces no spinning
 func SpinnerNoSpin(status string) *Status {
+	return ExplicitSpinner(status, true)
+}
+
+// ExplicitSpinner creates a spinner that can or not spin based on the value of the preventSpinning parameter
+func ExplicitSpinner(status string, preventSpinning bool) *Status {
+	doNotSpin := true
+	if !preventSpinning {
+		doNotSpin = IsDebug()
+	}
 	s := NewStatus(GetStdout())
-	s.Start(status, true)
+	s.Start(status, doNotSpin)
 	return s
 }
 

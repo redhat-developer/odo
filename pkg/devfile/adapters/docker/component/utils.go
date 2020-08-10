@@ -2,14 +2,11 @@ package component
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	"os"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -19,10 +16,8 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
 )
 
 const (
@@ -266,7 +261,7 @@ func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Endpoint) (
 
 func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) (nat.PortMap, map[nat.Port]string, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
-	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
+	// Todo: Use context to get the appropriate envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}
 	namePortMapping := make(map[nat.Port]string)
 
@@ -279,9 +274,6 @@ func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) 
 		}
 	} else {
 		dir = context
-	}
-	if err != nil {
-		return nil, nil, err
 	}
 
 	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
@@ -313,125 +305,6 @@ func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) 
 	}
 
 	return portmap, namePortMapping, nil
-}
-
-// Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
-// Init only runs once when the component is created.
-func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, containers []types.Container) (err error) {
-
-	// If nothing has been passed, then the devfile is missing the required run command
-	if len(commandsMap) == 0 {
-		return errors.New("error executing devfile commands - there should be at least 1 command")
-	}
-
-	// Only add runinit to the expected commands if the component doesn't already exist
-	// This would be the case when first running the container
-	if !componentExists {
-		// Get Init Command
-		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
-		if ok {
-
-			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
-			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// Get Build Command
-	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
-	if ok {
-		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
-		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Get Run command
-	command, ok = commandsMap[versionsCommon.RunCommandGroupType]
-	if ok {
-		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
-
-		// Check if the devfile run component containers have supervisord as the entrypoint.
-		// Start the supervisord if the odo component does not exist
-		if !componentExists {
-			err = a.initRunContainerSupervisord(command.Exec.Component, containers)
-			if err != nil {
-				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
-				return
-			}
-		}
-
-		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
-		compInfo := common.ComponentInfo{ContainerName: containerID}
-		if componentExists && !common.IsRestartRequired(command) {
-			klog.V(4).Info("restart:false, Not restarting DevRun Command")
-			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			return
-		}
-		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-	}
-
-	return
-}
-
-// TODO: Support Composite
-// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
-// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
-// in the command
-func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
-
-	commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
-
-	for _, commandName := range events {
-		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-		command, ok := commandMap[strings.ToLower(commandName)]
-		if !ok {
-			return errors.New("unable to find devfile command " + commandName)
-		}
-
-		// If composite would go here & recursive loop
-
-		// Get container for command
-		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
-		compInfo := common.ComponentInfo{ContainerName: containerID}
-
-		// Execute command in container
-		err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger, false)
-		if err != nil {
-			return errors.Wrapf(err, "unable to execute devfile command "+commandName)
-		}
-
-	}
-	return nil
-}
-
-// Executes the test command in the container
-func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
-	containerID := utils.GetContainerIDForAlias(containers, testCmd.Exec.Component)
-	compInfo := common.ComponentInfo{ContainerName: containerID}
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
-	return
-}
-
-// initRunContainerSupervisord initializes the supervisord in the container if
-// the container has entrypoint that is not supervisord
-func (a Adapter) initRunContainerSupervisord(component string, containers []types.Container) (err error) {
-	for _, container := range containers {
-		if container.Labels["alias"] == component && !strings.Contains(container.Command, common.SupervisordBinaryPath) {
-			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
-			compInfo := common.ComponentInfo{
-				ContainerName: container.ID,
-			}
-			err = exec.ExecuteCommand(&a.Client, compInfo, command, true, nil, nil)
-		}
-	}
-
-	return
 }
 
 // createProjectVolumeIfReqd creates a project volume if absent and returns the

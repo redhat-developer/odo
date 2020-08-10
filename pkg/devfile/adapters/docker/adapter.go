@@ -1,6 +1,8 @@
 package docker
 
 import (
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"io"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -58,4 +60,19 @@ func (d Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 // Exec executes a command in the component
 func (d Adapter) Exec(command []string) error {
 	return d.componentAdapter.Exec(command)
+}
+
+func (d Adapter) ExecCMDInContainer(info common.ComponentInfo, cmd []string, stdOut io.Writer, stdErr io.Writer, stdIn io.Reader, show bool) error {
+	return d.componentAdapter.ExecCMDInContainer(info, cmd, stdOut, stdErr, stdIn, show)
+}
+func (d Adapter) Logger() machineoutput.MachineEventLoggingClient {
+	return d.componentAdapter.Logger()
+}
+
+func (d Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	return d.componentAdapter.ComponentInfo(command)
+}
+
+func (d Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	return d.componentAdapter.SupervisorComponentInfo(command)
 }

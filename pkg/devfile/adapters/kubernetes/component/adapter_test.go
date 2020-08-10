@@ -537,10 +537,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclient, fkclientset := kclient.FakeNew()
 
-			a := Adapter{
-				Client:         *fkclient,
-				AdapterContext: adapterCtx,
-			}
+			a := New(adapterCtx, *fkclient)
 
 			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {

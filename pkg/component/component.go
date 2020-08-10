@@ -23,7 +23,6 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -720,7 +719,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	compInfo := common.ComponentInfo{
 		PodName: pod.Name,
 	}
-	err = exec.ExecuteCommand(client, compInfo, cmdArr, show, nil, nil)
+	err = common.ExecuteCommand(client, compInfo, cmdArr, show, nil, nil)
 
 	if err != nil {
 		s.End(false)

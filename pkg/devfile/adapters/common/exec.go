@@ -1,4 +1,4 @@
-package exec
+package common
 
 import (
 	"bufio"
@@ -8,17 +8,16 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 )
 
 // ExecClient  is a wrapper around ExecCMDInContainer which executes a command in a specific container of a pod.
 type ExecClient interface {
-	ExecCMDInContainer(common.ComponentInfo, []string, io.Writer, io.Writer, io.Reader, bool) error
+	ExecCMDInContainer(ComponentInfo, []string, io.Writer, io.Writer, io.Reader, bool) error
 }
 
 // ExecuteCommand executes the given command in the pod's container
-func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
+func ExecuteCommand(client ExecClient, compInfo ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
 	stdoutReader, stdoutWriter := io.Pipe()
 	stderrReader, stderrWriter := io.Pipe()
 
