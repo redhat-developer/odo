@@ -47,7 +47,7 @@ const (
 	// StateTypePushed means that Storage is present both locally and on cluster
 	StateTypePushed State = "Pushed"
 	// StateTypeNotPushed means that Storage is only in local config, but not on the cluster
-	StateTypeNotPushed = "Not Pushed"
+	StateTypeNotPushed State = "Not Pushed"
 	// StateTypeUnknown means that odo cannot tell its state
-	StateTypeUnknown = "Unknown"
+	StateTypeUnknown State = "Unknown"
 )

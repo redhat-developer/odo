@@ -7,8 +7,40 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
+
+// command encapsulates a command meant to be executed either directly or as part of a composite
+type command interface {
+	Execute(show bool) error
+}
+
+// New returns a new command implementation based on the specified devfile command and the known commands
+func New(devfile common.DevfileCommand, knowCommands map[string]common.DevfileCommand, executor commandExecutor) (command, error) {
+	composite := devfile.Composite
+	if composite != nil {
+		cmds := composite.Commands
+		components := make([]command, 0, len(cmds))
+		for _, cmd := range cmds {
+			if devfileCommand, ok := knowCommands[strings.ToLower(cmd)]; ok {
+				c, err := New(devfileCommand, knowCommands, executor)
+				if err != nil {
+					return nil, errors.Wrapf(err, "couldn't create command %s", cmd)
+				}
+				components = append(components, c)
+			} else {
+				return nil, fmt.Errorf("composite command %q has command %v not found in devfile", cmd, devfile)
+			}
+		}
+		if composite.Parallel {
+			return newParallelCompositeCommand(components...), nil
+		}
+		return newCompositeCommand(components...), nil
+	} else {
+		return newSimpleCommand(devfile, executor)
+	}
+}
 
 // getCommand iterates through the devfile commands and returns the devfile command associated with the group
 // commands mentioned via the flags are passed via commandName, empty otherwise
@@ -43,7 +75,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 		cmdGroup := command.GetGroup()
 		if cmdGroup != nil && cmdGroup.Kind == groupType {
 			if cmdGroup.IsDefault {
-				return command, validateCommand(data, command)
+				return command, ValidateCommand(data, command)
 			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
 				// return the only remaining command for the group if there is no default command
 				// NOTE: we return outside the for loop since the next iteration can have a default command
@@ -54,7 +86,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 
 	// if default command is not found return the first command found for the matching type.
 	if !reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
-		return onlyCommand, validateCommand(data, onlyCommand)
+		return onlyCommand, ValidateCommand(data, onlyCommand)
 	}
 
 	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
@@ -89,7 +121,7 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
 
-			return command, validateCommand(data, command)
+			return command, ValidateCommand(data, command)
 		}
 	}
 
@@ -128,11 +160,12 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 	return nil
 }
 
-// validateCommand validates the given command
-// 1. command has to be of type exec or composite
+// ValidateCommand validates the given command
+// 1. command has to be of type exec or composite, if composite command is validated further
 // 2. component should be present
-// 4. command must have group
-func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
+// 3. commandline should be present
+// 4. command must map to a valid container component
+func ValidateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
 	// type must be exec or composite
 	if command.Exec == nil && command.Composite == nil {
@@ -143,7 +176,7 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	if command.Composite != nil {
 		parentCommands := make(map[string]string)
 		commandsMap := GetCommandsMap(data.GetCommands())
-		return validateCompositeCommand(command.Composite, parentCommands, commandsMap)
+		return validateCompositeCommand(data, command.Composite, parentCommands, commandsMap)
 	}
 
 	// component must be specified
@@ -173,7 +206,7 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 }
 
 // validateCompositeCommand checks that the specified composite command is valid
-func validateCompositeCommand(compositeCommand *common.Composite, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
+func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
 	if compositeCommand.Group != nil && compositeCommand.Group.Kind == common.RunCommandGroupType {
 		return fmt.Errorf("composite commands of run Kind are not supported currently")
 	}
@@ -200,12 +233,16 @@ func validateCompositeCommand(compositeCommand *common.Composite, parentCommands
 
 		if subCommand.Composite != nil {
 			// Recursively validate the composite subcommand
-			err := validateCompositeCommand(subCommand.Composite, parentCommands, devfileCommands)
+			err := validateCompositeCommand(data, subCommand.Composite, parentCommands, devfileCommands)
 			if err != nil {
 				// Don't wrap the error message here to make the error message more readable to the user
 				return err
 			}
-
+		} else {
+			err := ValidateCommand(data, subCommand)
+			if err != nil {
+				return errors.Wrapf(err, "the composite command %q references an invalid command %q", compositeCommand.Id, subCommand.GetID())
+			}
 		}
 	}
 	return nil

@@ -115,7 +115,13 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 		}
 		request.Token = token
 	}
-	jsonBytes, err := util.HTTPGetRequest(request)
+
+	cfg, err := preference.New()
+	if err != nil {
+		return nil, err
+	}
+
+	jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}
@@ -200,6 +206,7 @@ func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
 		},
 		Items: catalogList,
 	}, nil
+
 }
 
 // SearchComponent searches for the component

@@ -1,0 +1,103 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+projects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: "3000/tcp"
+          targetPort: 3000 
+      mountSources: true
+  - container:
+      name: "tools"
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      mountSources: true
+      memoryLimit: 1024Mi
+commands:
+  - exec:
+      id: myPostStart
+      commandLine: echo I am a PostStart
+      component: tools
+      workingDir: /
+  - exec:
+      id: secondPostStart
+      commandLine: echo I am also a PostStart
+      component: runtime
+      workingDir: /
+  - exec:
+      id: wrongPostStart
+      commandLine: echo I am also a PostStart
+      component: wrongruntime
+      workingDir: /
+  - exec:
+      id: myPreStop
+      commandLine: echo I am a PreStop
+      component: tools
+      workingDir: /
+  - exec:
+      id: secondPreStop
+      commandLine: echo I am also a PreStop
+      component: runtime
+      workingDir: /
+  - exec:
+      id: thirdPreStop
+      commandLine: echo I am a third PreStop
+      component: runtime
+      workingDir: /
+  - composite:
+      id: myCompCmd
+      label: Build and Mkdir
+      commands:
+        - secondPreStop
+        - thirdPreStop
+      parallel: true
+  - composite:
+      id: myWrongCompCmd
+      label: Build and Mkdir
+      commands:
+        - secondPreStopisWrong
+        - thirdPreStop
+      parallel: true
+  - exec:
+      id: devbuild
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: build
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+  - exec:
+      id: devrun
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+        isDefault: true
+  - exec:
+      id: run
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+events:
+  postStart:
+    - "myPostStart" 
+    - "secondpoststart"
+  preStop:
+    - "myCompCmd" 
+    - "myPreStop"

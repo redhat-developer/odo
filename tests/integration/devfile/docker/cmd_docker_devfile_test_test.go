@@ -13,7 +13,6 @@ import (
 
 var _ = Describe("odo docker devfile test command tests", func() {
 	var context, currentWorkingDirectory, cmpName string
-	var sourcePath = "/projects"
 
 	dockerClient := helper.NewDockerRunner("docker")
 
@@ -111,68 +110,72 @@ var _ = Describe("odo docker devfile test command tests", func() {
 		})
 	})
 
-	Context("Should run test command successfully", func() {
+	/*
 
-		It("Should run test command successfully with only one default specified", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+		// commented out because of https://github.com/openshift/odo/issues/3685
+		Context("Should run test command successfully", func() {
+			const sourcePath = "/projects"
+			It("Should run test command successfully with only one default specified", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--context", context)
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+				helper.CmdShouldPass("odo", "push", "--context", context)
 
-			output := helper.CmdShouldPass("odo", "test", "--context", context)
-			helper.MatchAllInOutput(output, []string{"Executing test1 command", "mkdir test1"})
+				output := helper.CmdShouldPass("odo", "test", "--context", context)
+				helper.MatchAllInOutput(output, []string{"Executing test1 command", "mkdir test1"})
 
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
-			Expect(len(containers)).To(Equal(1))
-			output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
-			Expect(output).To(ContainSubstring("test1"))
+				containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+				Expect(len(containers)).To(Equal(1))
+				output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
+				Expect(output).To(ContainSubstring("test1"))
+			})
+
+			It("Should run test command successfully with test-command specified", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+				helper.CmdShouldPass("odo", "push", "--context", context)
+
+				output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
+				helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
+
+				containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+				Expect(len(containers)).To(Equal(1))
+				output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
+				Expect(output).To(ContainSubstring("test2"))
+			})
+
+			It("should run test command successfully with test-command specified if devfile has no default test command", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+				helper.ReplaceString("devfile.yaml", "isDefault: true", "")
+				helper.CmdShouldPass("odo", "push", "--context", context)
+				output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
+				helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
+
+				containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+				Expect(len(containers)).To(Equal(1))
+				output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
+				Expect(output).To(ContainSubstring("test2"))
+			})
+
+			It("should run test command successfully with test-command specified if devfile has multiple default test command", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
+				helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "secondrun", "--context", context)
+				output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
+				helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
+
+				containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+				Expect(len(containers)).To(Equal(1))
+				output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
+				Expect(output).To(ContainSubstring("test2"))
+			})
 		})
-
-		It("Should run test command successfully with test-command specified", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--context", context)
-
-			output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
-			helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
-
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
-			Expect(len(containers)).To(Equal(1))
-			output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
-			Expect(output).To(ContainSubstring("test2"))
-		})
-
-		It("should run test command successfully with test-command specified if devfile has no default test command", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.ReplaceString("devfile.yaml", "isDefault: true", "")
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
-			helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
-
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
-			Expect(len(containers)).To(Equal(1))
-			output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
-			Expect(output).To(ContainSubstring("test2"))
-		})
-
-		It("should run test command successfully with test-command specified if devfile has multiple default test command", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "secondrun", "--context", context)
-			output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
-			helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
-
-			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
-			Expect(len(containers)).To(Equal(1))
-			output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
-			Expect(output).To(ContainSubstring("test2"))
-		})
-	})
+	*/
 
 })

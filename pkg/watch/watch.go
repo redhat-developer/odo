@@ -281,10 +281,15 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 		parameters.StartChan <- true
 	}
 
+	var ticker *time.Ticker
 	delay := time.Duration(parameters.PushDiffDelay) * time.Second
-	ticker := time.NewTicker(delay)
+
+	// don't create a ticker if delay is 0 as it will trigger panic
+	if delay != 0 {
+		ticker = time.NewTicker(delay)
+		defer ticker.Stop()
+	}
 	showWaitingMessage := true
-	defer ticker.Stop()
 	for {
 		changeLock.Lock()
 		if watchError != nil {
@@ -372,7 +377,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			}
 		}
 		changeLock.Unlock()
-		<-ticker.C
+		if ticker != nil {
+			<-ticker.C
+		}
 	}
 }
 

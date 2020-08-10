@@ -48,12 +48,25 @@ type DeleteOptions struct {
 	// devfile path
 	devfilePath     string
 	namespace       string
+	show            bool
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, false, false, "", false, &ComponentOptions{}, "", "", nil}
+	return &DeleteOptions{
+		componentForceDeleteFlag: false,
+		componentDeleteAllFlag:   false,
+		componentDeleteWaitFlag:  false,
+		componentDeleteS2iFlag:   false,
+		componentContext:         "",
+		isCmpExists:              false,
+		ComponentOptions:         &ComponentOptions{},
+		devfilePath:              "",
+		namespace:                "",
+		show:                     false,
+		EnvSpecificInfo:          nil,
+	}
 }
 
 // Complete completes log args
@@ -225,8 +238,9 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 	}
 
 	if do.componentDeleteAllFlag {
+		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
-		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
+		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete env folder?") {
 			if !do.EnvSpecificInfo.EnvInfoFileExists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
 			}
@@ -257,7 +271,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		}
 
 		// Prompt and delete devfile.yaml
-		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete devfile.yaml?")) {
+		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete devfile.yaml?") {
 			if !util.CheckPathExists(DevfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
@@ -297,6 +311,11 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteAllFlag, "all", "a", false, "Delete component and local config")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteWaitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteS2iFlag, "s2i", "", false, "Delete s2i component if devfile and s2i both component present with same name")
+
+	// enable show flag if experimental mode is enabled
+	if experimental.IsExperimentalModeEnabled() {
+		componentDeleteCmd.Flags().BoolVar(&do.show, "show-log", false, "If enabled, logs will be shown when deleted")
+	}
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)

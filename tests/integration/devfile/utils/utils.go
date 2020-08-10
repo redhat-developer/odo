@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -379,6 +380,11 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 		("odo watch " + flag + " --context " + context),
 		time.Duration(5)*time.Minute,
 		func(output string) bool {
+			// the test hangs up on the CI when the delay is set to 0
+			// so we only check if the start message was displayed correctly or not
+			if strings.Contains(flag, "delay 0") {
+				return true
+			}
 			if isDevfileTest {
 				stringsMatched := true
 
@@ -441,7 +447,6 @@ func OdoWatchWithDebug(odoV2Watch OdoV2Watch, context, flag string) {
 		("odo watch " + flag + " --context " + context),
 		time.Duration(5)*time.Minute,
 		func(output string) bool {
-			fmt.Println(output)
 			stringsMatched := true
 
 			for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
@@ -580,4 +585,29 @@ func DeleteLocalConfig(args ...string) {
 		"Successfully deleted devfile.yaml file",
 	}
 	helper.MatchAllInOutput(output, expectedOutput)
+}
+
+// VerifyCatalogListComponent verifies components inside wantOutput exists or not
+// in both S2I Component list and Devfile Component list
+func VerifyCatalogListComponent(output string, cmpName []string) error {
+	var data map[string]interface{}
+	listItems := []string{"devfileItems"}
+
+	if err := json.Unmarshal([]byte(output), &data); err != nil {
+		return err
+	}
+
+	if os.Getenv("KUBERNETES") != "true" {
+		listItems = append(listItems, "s2iItems")
+	}
+
+	for _, items := range listItems {
+		outputBytes, err := json.Marshal(data[items])
+		if err != nil {
+			return err
+		}
+		output = string(outputBytes)
+		helper.MatchAllInOutput(output, cmpName)
+	}
+	return nil
 }

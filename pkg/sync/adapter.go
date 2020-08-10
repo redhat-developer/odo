@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
@@ -197,7 +196,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
+		err = common.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -206,7 +205,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
+		err = common.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
 		if err != nil {
 			return err
 		}

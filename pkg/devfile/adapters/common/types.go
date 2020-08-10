@@ -76,6 +76,10 @@ type ComponentInfo struct {
 	SourceMount   string
 }
 
+func (ci ComponentInfo) IsEmpty() bool {
+	return len(ci.ContainerName) == 0
+}
+
 // PushCommandsMap stores the commands to be executed as per their types.
 type PushCommandsMap map[common.DevfileCommandGroupType]common.DevfileCommand
 
