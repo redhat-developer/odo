@@ -364,5 +364,21 @@ var _ = Describe("odo devfile url command tests", func() {
 			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
 			Expect(output).Should(ContainSubstring(url1))
 		})
+
+		// remove once https://github.com/openshift/odo/issues/3550 is resolved
+		It("should list URLs for s2i components", func() {
+			url1 := helper.RandString(5)
+			url2 := helper.RandString(5)
+
+			componentName := helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName, "--s2i")
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "8080", "--context", context, "--ingress", "--host", "com")
+
+			stdout := helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url1, url2})
+		})
 	})
 })
