@@ -1121,7 +1121,7 @@ func LoadFileIntoMemory(URL string) (fileBytes []byte, err error) {
 			return nil, errors.New(fmt.Sprintf("unable to download url: %s, %s", URL, err))
 		}
 		return fileBytes, nil
-  }
+	}
 }
 
 // DownloadFile downloads the file to the filepath given URL and token (if applicable)
