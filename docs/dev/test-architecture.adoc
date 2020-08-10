@@ -184,7 +184,13 @@ Context("when running help for storage command", func() {
 ----
 +
 
-* Due to parallel test run support make sure that the should run in isolation, otherwise the test result will lead to race condition. To achieve this ginkgo provides some in build functions `BeforeEach`, `AfterEach` etc.
+* Don't create a new test spec for the steps which can be run with the existing specs. Also try to avoid adding the functionality which are part of another feature test file, only add if it is a key requirement.
++ 
+
+* Spec level conditions, pre and post requirements should be run in ginkgo in build functions `JustBeforeEach` and `JustAfterEach`
++
+
+* Due to parallel test run support make sure that the spec should run in isolation, otherwise the test result will lead to race condition. To achieve this ginkgo provides some in build functions `BeforeEach`, `AfterEach` etc.
 +
 
 ----
@@ -238,7 +244,13 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 ----
 +
 
-* If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement.
+* If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. 
++
+
+* Avoid logic implementation within the test files as it unnecessarily overloads the tests. Always create a new function with all the required logics within the helper package. Check for code duplicacy within helper and test files.
++
+
+* If you are looking for delay with a specific feature test, don't use `time.Sleep()` function, Instead use `timeout`
 +
 
 * The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.
