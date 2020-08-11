@@ -153,21 +153,21 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			var otherDefaultCmd string
 			if params.Debug {
 				// Stop Run command if we are running debug
-				if otherCommand, ok = commandsMap[common.RunCommandGroupType]; ok {
-					otherDefaultCmd = string(DefaultDevfileRunCommand)
-				}
-
+				otherCommand, ok = commandsMap[common.RunCommandGroupType]
+				otherDefaultCmd = string(DefaultDevfileRunCommand)
 			} else {
 				// Stop Debug command if we are running run
-				if otherCommand, ok = commandsMap[common.DebugCommandGroupType]; ok {
-					otherDefaultCmd = string(DefaultDevfileDebugCommand)
-				}
+				otherCommand, ok = commandsMap[common.DebugCommandGroupType]
+				otherDefaultCmd = string(DefaultDevfileDebugCommand)
 			}
-			if cmd, err := newSupervisorStopCommand(otherCommand, otherDefaultCmd, a); cmd != nil && ok {
-				if err != nil {
-					return err
+
+			if ok {
+				if cmd, err := newSupervisorStopCommand(otherCommand, otherDefaultCmd, a); cmd != nil {
+					if err != nil {
+						return err
+					}
+					commands = append(commands, cmd)
 				}
-				commands = append(commands, cmd)
 			}
 			klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
 		}
