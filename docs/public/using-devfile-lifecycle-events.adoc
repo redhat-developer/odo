@@ -71,6 +71,8 @@ preStart events are executed as init containers for the project pod in the order
 
 In the above example, preStart is going to execute the devfile command `connectDB` as an init container for the odo component's main pod.
 
+Caution should be exercised when using preStart with devfile container component that mount sources. File operations with preStart on the project sync directory may result in inconsistent behaviour.
+
 ### postStart
 
 postStart events are executed when the Kubernetes deployment for the odo component is created. 
