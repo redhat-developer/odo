@@ -189,6 +189,7 @@ func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, pr
 
 	command := exec.Command(program, args...)
 	command.Stdout = &buf
+	command.Stderr = &buf
 
 	timeoutCh := time.After(timeoutAfter)
 	matchOutputCh := make(chan bool)
@@ -226,10 +227,12 @@ func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, pr
 	for {
 		select {
 		case <-timeoutCh:
+			fmt.Fprintln(GinkgoWriter, buf.String())
 			return false, errors.New("Timeout waiting for the conditon")
 		case <-matchOutputCh:
 			return true, nil
 		case <-errorCh:
+			fmt.Fprintln(GinkgoWriter, buf.String())
 			return false, <-errorCh
 		}
 	}
