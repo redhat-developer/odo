@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -584,4 +585,29 @@ func DeleteLocalConfig(args ...string) {
 		"Successfully deleted devfile.yaml file",
 	}
 	helper.MatchAllInOutput(output, expectedOutput)
+}
+
+// VerifyCatalogListComponent verifies components inside wantOutput exists or not
+// in both S2I Component list and Devfile Component list
+func VerifyCatalogListComponent(output string, cmpName []string) error {
+	var data map[string]interface{}
+	listItems := []string{"devfileItems"}
+
+	if err := json.Unmarshal([]byte(output), &data); err != nil {
+		return err
+	}
+
+	if os.Getenv("KUBERNETES") != "true" {
+		listItems = append(listItems, "s2iItems")
+	}
+
+	for _, items := range listItems {
+		outputBytes, err := json.Marshal(data[items])
+		if err != nil {
+			return err
+		}
+		output = string(outputBytes)
+		helper.MatchAllInOutput(output, cmpName)
+	}
+	return nil
 }

@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"time"
@@ -9,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/tests/integration/devfile/utils"
 )
 
 var _ = Describe("odo devfile catalog command tests", func() {
@@ -130,35 +130,11 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	})
 
 	Context("When executing catalog list components with experimental mode set to true", func() {
-
-		componentName := "nodejs"
-
 		It("should prove that nodejs is present in both S2I Component list and Devfile Component list", func() {
-
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
-
-			wantOutput := []string{componentName}
-
-			var data map[string]interface{}
-
-			err := json.Unmarshal([]byte(output), &data)
-
-			if err != nil {
-				Expect(err).Should(BeNil())
-			}
-			outputBytes, err := json.Marshal(data["s2iItems"])
-			if err == nil {
-				output = string(outputBytes)
-			}
-
-			helper.MatchAllInOutput(output, wantOutput)
-
-			outputBytes, err = json.Marshal(data["devfileItems"])
-			if err == nil {
-				output = string(outputBytes)
-			}
-
-			helper.MatchAllInOutput(output, wantOutput)
+			cmpName := []string{"nodejs"}
+			err := utils.VerifyCatalogListComponent(output, cmpName)
+			Expect(err).Should(BeNil())
 		})
 	})
 

@@ -38,13 +38,15 @@ var _ = Describe("odo java e2e tests", func() {
 	// contains a minimal javalin app
 	const jarGitRepo = "https://github.com/geoand/javalin-helloworld"
 
-	// Test Java
-	Context("odo component creation", func() {
-		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
+	// Test wildfly
+	Context("odo wildfly component creation ", func() {
+		JustBeforeEach(func() {
 			if runtime.GOARCH == "s390x" {
 				Skip("Skipping test because there is no supported wildfly builder image.")
 			}
+		})
 
+		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
 			helper.CmdShouldPass("odo", "create", "wildfly", "wo-wait-javaee-git-test", "--project",
 				project, "--ref", "master", "--git", warGitRepo, "--context", context)
 
@@ -59,7 +61,9 @@ var _ = Describe("odo java e2e tests", func() {
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "wo-wait-javaee-git-test", "-f", "--context", context)
 		})
-
+	})
+	// Test Java
+	Context("odo component creation", func() {
 		It("Should be able to deploy a .war file using wildfly", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "wildfly"), context)
 			helper.CmdShouldPass("odo", "create", "wildfly", "javaee-war-test", "--project",
