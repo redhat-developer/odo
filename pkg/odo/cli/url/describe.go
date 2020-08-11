@@ -114,6 +114,9 @@ func (o *URLDescribeOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
+			// route/ingress name is defined as <urlName>-<componentName>
+			// to avoid error due to deplicate ingress name defined in different devfile components
+			// urlName := fmt.Sprintf("%s-%s", o.url, componentName)
 			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, componentName, routeSupported)
 			if err != nil {
 				return err

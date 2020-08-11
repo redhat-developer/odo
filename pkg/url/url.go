@@ -93,11 +93,12 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
 	var getRouteErr error
+	remoteURLName := fmt.Sprintf("%s-%s", urlName, componentName)
 	// Check whether remote already created the ingress
-	ingress, getIngressErr := kClient.GetIngress(urlName)
+	ingress, getIngressErr := kClient.GetIngress(remoteURLName)
 	if kerrors.IsNotFound(getIngressErr) && routeSupported {
 		// Check whether remote already created the route
-		route, getRouteErr = client.GetRoute(urlName)
+		route, getRouteErr = client.GetRoute(remoteURLName)
 	}
 	if kerrors.IsNotFound(getIngressErr) && (!routeSupported || kerrors.IsNotFound(getRouteErr)) {
 		remoteExist = false
@@ -313,7 +314,8 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
-		objectMeta.Name = parameters.urlName
+		// to avoid error due to deplicate ingress name defined in different devfile components
+		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
 		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
@@ -348,6 +350,8 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 			ownerReference = occlient.GenerateOwnerReference(dc)
 		} else {
+			// to avoid error due to deplicate ingress name defined in different devfile components
+			parameters.urlName = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 			serviceName = parameters.componentName
 
 			deployment, err := kClient.GetDeploymentByName(parameters.componentName)
@@ -1030,7 +1034,13 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				continue
 			}
 			// delete the url
-			err := Delete(client, kClient, urlName, parameters.ApplicationName, urlSpec.Spec.Kind)
+			deleteURLName := urlName
+			if parameters.IsExperimentalModeEnabled && kClient != nil {
+				// route/ingress name is defined as <urlName>-<componentName>
+				// to avoid error due to deplicate ingress name defined in different devfile components
+				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
+			}
+			err := Delete(client, kClient, deleteURLName, parameters.ApplicationName, urlSpec.Spec.Kind)
 			if err != nil {
 				return err
 			}
@@ -1048,7 +1058,11 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if urlInfo.Spec.Kind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
-
+			// if parameters.IsExperimentalModeEnabled && kClient != nil {
+			// 	// route/ingress name is defined as <urlName>-<componentName>
+			// 	// to avoid error due to deplicate ingress name defined in different devfile components
+			// 	urlName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
+			// }
 			createParameters := CreateParameters{
 				urlName:         urlName,
 				portNumber:      urlInfo.Spec.Port,
@@ -1060,6 +1074,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				urlKind:         urlInfo.Spec.Kind,
 				path:            urlInfo.Spec.Path,
 			}
+
 			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
 			if err != nil {
 				return err

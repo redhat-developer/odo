@@ -3,6 +3,7 @@ package url
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -179,7 +180,7 @@ func TestCreate(t *testing.T) {
 				isExperimentalModeEnabled: true,
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress: fake.GetSingleIngress("nodejs", "nodejs"),
+			returnedIngress: fake.GetSingleIngress("nodejs-nodejs", "nodejs"),
 			want:            "http://nodejs.com",
 			wantErr:         false,
 		},
@@ -203,7 +204,7 @@ func TestCreate(t *testing.T) {
 						applabels.App:                "app",
 						applabels.OdoManagedBy:       "odo",
 						applabels.OdoVersion:         version.VERSION,
-						"odo.openshift.io/url-name":  "nodejs",
+						"odo.openshift.io/url-name":  "nodejs-nodejs",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -216,7 +217,7 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			returnedIngress: fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress: fake.GetSingleIngress("example-nodejs", "nodejs"),
 			want:            "http://example.com",
 			wantErr:         false,
 		},
@@ -232,7 +233,7 @@ func TestCreate(t *testing.T) {
 				secure:                    true,
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress:  fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists: true,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -249,7 +250,7 @@ func TestCreate(t *testing.T) {
 				secure:                    true,
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress:  fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists: false,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -286,7 +287,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:                 "user-secret",
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "https://example.com",
@@ -306,7 +307,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:                 "user-secret",
 				urlKind:                   "blah",
 			},
-			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "",
@@ -455,9 +456,9 @@ func TestCreate(t *testing.T) {
 						}
 					}
 					createdIngress = fakeKClientSet.Kubernetes.Actions()[createIngressActionNo].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
-
+					tt.returnedIngress.Labels["odo.openshift.io/url-name"] = tt.args.urlName
 					if !reflect.DeepEqual(createdIngress.Name, tt.returnedIngress.Name) {
-						t.Errorf("ingress name not matching, expected: %s, got %s", tt.returnedRoute.Name, createdIngress.Name)
+						t.Errorf("ingress name not matching, expected: %s, got %s", tt.returnedIngress.Name, createdIngress.Name)
 					}
 					if !reflect.DeepEqual(createdIngress.Labels, tt.returnedIngress.Labels) {
 						t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.returnedIngress.Labels, createdIngress.Labels))
@@ -930,7 +931,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -941,7 +942,7 @@ func TestPush(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   9090,
@@ -962,12 +963,12 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0",
+						Name: "example-0-nodejs",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-nodejs",
 					},
 				},
 			},
@@ -1007,7 +1008,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-wildfly",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1018,7 +1019,7 @@ func TestPush(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1",
+						Name: "example-local-1-wildfly",
 					},
 					Spec: URLSpec{
 						Port:   9090,
@@ -1031,12 +1032,12 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0",
+						Name: "example-0-wildfly",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-wildfly",
 					},
 				},
 			},
@@ -1100,7 +1101,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1110,7 +1111,7 @@ func TestPush(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1",
+						Name: "example-local-1-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   9090,
@@ -1123,12 +1124,12 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0",
+						Name: "example-0-nodejs",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-nodejs",
 					},
 				},
 			},
@@ -1158,7 +1159,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:      8080,
@@ -1198,7 +1199,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1210,7 +1211,7 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-nodejs",
 					},
 				},
 			},
@@ -1279,7 +1280,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1313,7 +1314,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1349,7 +1350,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:      8080,
@@ -1559,7 +1560,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1595,7 +1596,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1626,7 +1627,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1663,7 +1664,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1766,11 +1767,12 @@ func TestPush(t *testing.T) {
 							createdObject, ok := value.GetObject().(*extensionsv1.Ingress)
 							if ok {
 								createdURLMap[createdObject.Name] = true
+								expectedHost := fmt.Sprintf("%v.%v", strings.Split(url.Name, "-"+tt.componentName)[0], url.Spec.Host)
 								if createdObject.Name == url.Name &&
 									(createdObject.Spec.TLS != nil) == url.Spec.Secure &&
 									int(createdObject.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal) == url.Spec.Port &&
 									envinfo.INGRESS == url.Spec.Kind &&
-									fmt.Sprintf("%v.%v", url.Name, url.Spec.Host) == createdObject.Spec.Rules[0].Host {
+									expectedHost == createdObject.Spec.Rules[0].Host {
 
 									if url.Spec.Secure {
 										secretName := tt.componentName + "-tlssecret"
