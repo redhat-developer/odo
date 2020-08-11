@@ -73,6 +73,7 @@ type DevfileMetadata struct {
 	devfilePath        devfilePath
 	starter            string
 	token              string
+	starterToken       string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -889,7 +890,7 @@ func (co *CreateOptions) Validate() (err error) {
 }
 
 // Downloads first project from list of projects in devfile
-// Currenty type git with a non github url is not supported
+// Currently type git with a non github url is not supported
 func (co *CreateOptions) downloadProject(projectPassed string) error {
 	var project common.DevfileProject
 	// Parse devfile and validate
@@ -954,10 +955,18 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return err
 	}
 
+	if co.devfileMetadata.starterToken == "" && registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+		token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+		if err != nil {
+			return errors.Wrap(err, "Unable to get secure registry credential from keyring")
+		}
+		co.devfileMetadata.starterToken = token
+	}
+
 	var logUrl, url, sparseDir string
 	if project.Git != nil {
 		if strings.Contains(project.Git.Location, "github.com") {
-			url, err = util.GetGitHubZipURL(project.Git.Location, project.Git.Branch, project.Git.StartPoint)
+			url, err = util.GetGitHubZipURL(project.Git.Location, project.Git.Branch, project.Git.StartPoint, co.devfileMetadata.starterToken)
 			if err != nil {
 				return err
 			}
@@ -967,7 +976,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		}
 		logUrl = project.Git.Location
 	} else if project.Github != nil {
-		url, err = util.GetGitHubZipURL(project.Github.Location, project.Github.Branch, project.Github.StartPoint)
+		url, err = util.GetGitHubZipURL(project.Github.Location, project.Github.Branch, project.Github.StartPoint, co.devfileMetadata.starterToken)
 		if err != nil {
 			return err
 		}
@@ -983,7 +992,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 
 	log.Info("\nProject")
 	downloadSpinner := log.Spinnerf("Downloading project from %s", logUrl)
-	err = checkoutProject(sparseDir, url, path)
+	err = co.checkoutProject(sparseDir, url, path)
 
 	if err != nil {
 		downloadSpinner.End(false)
@@ -1137,16 +1146,15 @@ func (co *CreateOptions) Run() (err error) {
 	return
 }
 
-func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
-
+func (co *CreateOptions) checkoutProject(sparseCheckoutDir, zipURL, path string) error {
 	if sparseCheckoutDir != "" {
-		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir)
+		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir, co.devfileMetadata.starterToken)
 		if err != nil {
 			return errors.Wrap(err, "failed to download and extract project zip folder")
 		}
 	} else {
 		// extract project to current working directory
-		err := util.GetAndExtractZip(zipURL, path, "/")
+		err := util.GetAndExtractZip(zipURL, path, "/", co.devfileMetadata.starterToken)
 		if err != nil {
 			return errors.Wrap(err, "failed to download and extract project zip folder")
 		}
@@ -1181,6 +1189,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starterToken, "starter-token", "", "Token to be used when downloading start project")
 		componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Enforce S2I type components")
 	}
 

@@ -34,6 +34,7 @@ import (
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -840,7 +841,7 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 }
 
 // GetGitHubZipURL downloads a repo from a URL to a destination
-func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, error) {
+func GetGitHubZipURL(repoURL string, branch string, startPoint string, token string) (string, error) {
 	var url string
 	// Convert ssh remote to https
 	if strings.HasPrefix(repoURL, "git@") {
@@ -884,11 +885,18 @@ func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, 
 		ref = defaultGithubRef
 	}
 
-	client := github.NewClient(nil)
-
+	ctx := context.Background()
 	opt := &github.RepositoryContentGetOptions{Ref: ref}
+	var httpClient *http.Client = nil
+	if token != "" {
+		tokenSource := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		)
+		httpClient = oauth2.NewClient(ctx, tokenSource)
+	}
+	client := github.NewClient(httpClient)
 
-	URL, response, err := client.Repositories.GetArchiveLink(context.Background(), owner, repo, "zipball", opt, true)
+	URL, response, err := client.Repositories.GetArchiveLink(ctx, owner, repo, "zipball", opt, true)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting zip url. Response: %s.", response.Status)
 		return url, errors.New(errMessage)
@@ -900,7 +908,7 @@ func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, 
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
 // takes an absolute path prefixed with file:// and extracts it to a destination.
 // pathToUnzip specifies the path within the zip folder to extract
-func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) error {
+func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string) error {
 	if zipURL == "" {
 		return errors.Errorf("Empty zip url: %s", zipURL)
 	}
@@ -922,7 +930,8 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 
 		params := DownloadParams{
 			Request: HTTPRequestParams{
-				URL: zipURL,
+				URL:   zipURL,
+				Token: starterToken,
 			},
 			Filepath: pathToZip,
 		}
