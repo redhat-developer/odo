@@ -180,8 +180,8 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 }
 
 // RunCmdWithMatchOutputFromBuffer starts the command, and command stdout is attached to buffer.
-// we read data from buffer line by line, and if expected string is matcher it reutrns true
-// It is diffrent from WaitforCmdOut which gives stdout in one go usinf session.Out.Contents()
+// we read data from buffer line by line, and if expected string is matched it returns true
+// It is different from WaitforCmdOut which gives stdout in one go using session.Out.Contents()
 // for commands like odo log -f which streams continuous data and does not terminate by their own
 // we need to read the stream data from buffer.
 func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, program string, args ...string) (bool, error) {
@@ -223,7 +223,6 @@ func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, pr
 		}
 	}()
 
-	// if we do not expected output timeout.
 	for {
 		select {
 		case <-timeoutCh:
