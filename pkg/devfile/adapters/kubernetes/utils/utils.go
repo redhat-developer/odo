@@ -283,7 +283,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 func GetResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
 	reqs := corev1.ResourceRequirements{}
 	limits := make(corev1.ResourceList)
-	if &comp.Container.MemoryLimit != nil {
+	if comp.Container.MemoryLimit != "" {
 		memoryLimit, err := resource.ParseQuantity(comp.Container.MemoryLimit)
 		if err == nil {
 			limits[corev1.ResourceMemory] = memoryLimit

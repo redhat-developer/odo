@@ -389,6 +389,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Need to force so build and run get triggered again with the component already created.
 			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
 			helper.MatchAllInOutput(output, []string{"preStart commands will be executed during pod startup"})
+
+			initContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
+			// 3 preStart events + 1 supervisord init containers
+			Expect(len(initContainers)).To(Equal(4))
+			helper.MatchAllInOutput(strings.Join(initContainers, ","), []string{"tools-myprestart", "runtime-secondprestart"})
 		})
 
 		It("should execute PostStart commands if present and not execute when component already exists", func() {
