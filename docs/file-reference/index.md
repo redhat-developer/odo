@@ -153,6 +153,53 @@ commands:
 | commandObject | [commandObject](#command-object) | Command to be executed in an existing component container |
 
 
+## events
+
+> Example of various events
+
+```yaml
+commands:
+  - exec:
+      id: copy
+      commandLine: "cp /tools/myfile.txt tools.txt"
+      component: tools
+      workingDir: /
+  - exec:
+      id: initCache
+      commandLine: "./init_cache.sh"
+      component: tools
+      workingDir: /
+  - exec:
+      id: connectDB
+      commandLine: "./connect_db.sh"
+      component: runtime
+      workingDir: /
+  - exec:
+      id: disconnectDB
+      commandLine: "./disconnect_db.sh"
+      component: runtime
+      workingDir: /
+  - exec:
+      id: cleanup
+      commandLine: "./cleanup.sh"
+      component: tools
+      workingDir: /
+events:
+  preStart:
+    - "connectDB"
+  postStart:
+    - "copy" 
+    - "initCache"
+  preStop:
+    - "disconnectDB"
+  postStop:
+    - "cleanup"
+```
+
+| Key           | Type                             | Description                                      |
+|---------------|----------------------------------|--------------------------------------------------|
+| eventObject  | [eventObject](#event-object)     | Events to be executed during a project lifecycle |
+
 # Metadata Object
 
 > Example using metadata
@@ -460,6 +507,61 @@ commands:
 | kind      | string  | yes      | Kind of group the command is part of. Options: `build`, `run`, `test`, `debug`                              |
 | isDefault | boolean | no       | Identifies that it is the default command to be ran. Only one default command can be defined for each group |
 
+# Event Object
+
+> Example of using life cycle events where each event is an array of devfile commands to be executed of type `exec` or `composite`
+
+```yaml
+commands:
+  - exec:
+      id: copy
+      commandLine: "cp /tools/myfile.txt tools.txt"
+      component: tools
+      workingDir: /
+  - exec:
+      id: initCache
+      commandLine: "./init_cache.sh"
+      component: tools
+      workingDir: /
+  - exec:
+      id: connectDB
+      commandLine: "./connect_db.sh"
+      component: runtime
+      workingDir: /
+  - exec:
+      id: disconnectDB
+      commandLine: "./disconnect_db.sh"
+      component: runtime
+      workingDir: /
+  - exec:
+      id: cleanup
+      commandLine: "./cleanup.sh"
+      component: tools
+      workingDir: /
+events:
+  preStart:
+    - "connectDB"
+  postStart:
+    - "copy" 
+    - "initCache"
+  preStop:
+    - "disconnectDB"
+  postStop:
+    - "cleanup"
+```
+
+## preStartObject
+
+> preStart events are executed as init containers for the project pod in the order they are specified. The devfile command's `commandLine` and `workingDir` become the init container's command and as a result the devfile component container's `command` and `args` or the container image's `Command` and `Args` are overwritten. If a composite command with `parallel: true` is used, it will be executed sequentially as Kubernetes init containers only execute in sequence.
+
+## postStartObject
+
+> postStart events are executed when the Kubernetes deployment for the odo component is created. 
+
+## preStopObject
+
+> preStop events are executed before the Kubernetes deployment for the odo component is deleted. 
+
 # Universal objects
 
 List of objects which are found in multiple parts of devfile. For example, the [envObject](#envobject) is found within [containerObject](#containerobject) and [execObject](#execobject).
@@ -509,7 +611,7 @@ Please refer to the below table for a list of features which are *not yet* imple
 | starterProjects[].clonePath        | [starterProjectObject](#starterproject-object) | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3729                                     |
 | projects[]                         | [projectObject](#projectobject)                        | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798 |
 | parent                             | [parentObject](#parent-object)                 | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
-| events                             | [eventObject](#event-object)                   | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2919                                    |
+| events                             | [eventObject](#event-object)                   | IN PROGRESS | Refer to postStop issue: https://github.com/openshift/odo/issues/3577                                    |
 | component[].kubernetes             | [kubernetesObject](#kubernetesobject)          | IN PROGRESS |                                                                                                 |
 | component[].openshift              | [openshiftObject](#openshiftobject)            | IN PROGRESS |                                                                                                 |
 | component[].volume                 | [volumeObject](#volumeobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
