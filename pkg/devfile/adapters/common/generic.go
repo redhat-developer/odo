@@ -1,13 +1,14 @@
 package common
 
 import (
+	"io"
+	"strings"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
-	"io"
 	"k8s.io/klog"
-	"strings"
 )
 
 // ComponentInfoFactory defines a type for a function which creates a ComponentInfo based on the information provided by the specified DevfileCommand.
@@ -140,13 +141,34 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		// if we need to restart, issue supervisor command to stop all running commands first
 		if componentExists && IsRestartRequired(command) {
 			klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
-			if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
+			if cmd, err := newSupervisorStopCommand(command, "", a); cmd != nil {
 				if err != nil {
 					return err
 				}
 				commands = append(commands, cmd)
 			}
 		} else {
+			// if there is switch of commands from run<->, we need to stop the other command
+			var otherCommand common.DevfileCommand
+			var otherDefaultCmd string
+			if params.Debug {
+				// Stop Run command if we are running debug
+				if otherCommand, ok = commandsMap[common.RunCommandGroupType]; ok {
+					otherDefaultCmd = string(DefaultDevfileRunCommand)
+				}
+
+			} else {
+				// Stop Debug command if we are running run
+				if otherCommand, ok = commandsMap[common.DebugCommandGroupType]; ok {
+					otherDefaultCmd = string(DefaultDevfileDebugCommand)
+				}
+			}
+			if cmd, err := newSupervisorStopCommand(otherCommand, otherDefaultCmd, a); cmd != nil && ok {
+				if err != nil {
+					return err
+				}
+				commands = append(commands, cmd)
+			}
 			klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
 		}
 
