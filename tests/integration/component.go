@@ -116,7 +116,7 @@ func componentTests(args ...string) {
 
 		It("should show an error when ref flag is provided with sources except git", func() {
 			outputErr := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "--project", project, "cmp-git", "--ref", "test")...)
-			Expect(outputErr).To(ContainSubstring("The --ref flag is only valid for --git flag"))
+			Expect(outputErr).To(ContainSubstring("the --ref flag is only valid for --git flag"))
 		})
 
 		It("create component twice fails from same directory", func() {
@@ -183,12 +183,6 @@ func componentTests(args ...string) {
 			Expect(err).Should(BeNil())
 			Expect(actual).Should(ContainSubstring(expected))
 
-		})
-
-		It("should create the component from the branch ref when provided", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "ruby", "ref-test", "--project", project, "--git", "https://github.com/girishramnani/ruby-ex.git", "--ref", "develop")...)
-			helper.ValidateLocalCmpExist(context, "Type,ruby", "Name,ref-test", "Application,app")
-			helper.CmdShouldPass("odo", append(args, "push")...)
 		})
 
 		It("should list the component", func() {

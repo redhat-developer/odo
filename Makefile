@@ -106,7 +106,7 @@ goget-tools:
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
 	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.23.6
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
 
 
 # Run unit tests and collect coverage
@@ -142,6 +142,11 @@ configure-installer-tests-cluster:
 .PHONY: configure-installer-tests-cluster-s390x
 configure-installer-tests-cluster-s390x:
 	. ./scripts/configure-installer-tests-cluster-s390x.sh
+
+# configure cluster to run tests on ppc64le arch
+.PHONY: configure-installer-tests-cluster-ppc64le
+configure-installer-tests-cluster-ppc64le:
+	. ./scripts/configure-installer-tests-cluster-ppc64le.sh
 
 .PHONY: configure-supported-311-is
 configure-supported-311-is:

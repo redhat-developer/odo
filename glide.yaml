@@ -105,3 +105,5 @@ import:
 - package: github.com/openshift/custom-resource-status
 - package: sigs.k8s.io/controller-runtime/
   version: v0.6.0
+- package: github.com/gregjones/httpcache
+  version: 901d90724c7919163f472a9812253fb26761123d

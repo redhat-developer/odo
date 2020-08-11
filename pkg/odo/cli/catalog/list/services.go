@@ -2,6 +2,7 @@ package list
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
@@ -93,7 +94,7 @@ func (o *ListServicesOptions) Validate() (err error) {
 // Run contains the logic for the command associated with ListServicesOptions
 func (o *ListServicesOptions) Run() (err error) {
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(machineoutput.NewCatalogListOutput(&o.services, o.csvs))
+		machineoutput.OutputSuccess(newCatalogListOutput(&o.services, o.csvs))
 	} else {
 		if experimental.IsExperimentalModeEnabled() {
 			if len(o.csvs.Items) > 0 {
@@ -120,5 +121,24 @@ func NewCmdCatalogListServices(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
+	}
+}
+
+type catalogListOutput struct {
+	v1.TypeMeta   `json:",inline"`
+	v1.ObjectMeta `json:"metadata,omitempty"`
+	Services      *catalog.ServiceTypeList `json:"services,omitempty"`
+	// list of clusterserviceversions (installed by Operators)
+	Operators *olm.ClusterServiceVersionList `json:"operators,omitempty"`
+}
+
+func newCatalogListOutput(services *catalog.ServiceTypeList, operators *olm.ClusterServiceVersionList) catalogListOutput {
+	return catalogListOutput{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "List",
+			APIVersion: machineoutput.APIVersion,
+		},
+		Services:  services,
+		Operators: operators,
 	}
 }

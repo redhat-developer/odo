@@ -128,13 +128,15 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete, registry, test, log, env and docker devfile url command integration tests"
+      name: "devfile catalog, create, push, delete, registry, test, env and log command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-url-pushtarget
+        # Commenting out the docker test target (though test-cmd-docker-devfile-url-pushtarget is not broken)
+        # to avoid regression failure due to https://github.com/openshift/odo/issues/3714
+        # - travis_wait make test-cmd-docker-devfile-url-pushtarget
         # These tests need cluster login as they will be interacting with a Kube environment
         - odo login -u developer
         - travis_wait make test-cmd-devfile-catalog
@@ -164,19 +166,20 @@ jobs:
         - travis_wait make test-e2e-images
         - odo logout
     
-    - <<: *base-test
-      stage: test
-      name: "docker devfile push, watch, url, test, catalog, exec and delete command integration tests"
-      script:
-        - make bin
-        - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-push
-        - travis_wait make test-cmd-docker-devfile-watch
-        - travis_wait make test-cmd-docker-devfile-catalog
-        - travis_wait make test-cmd-docker-devfile-delete
-        - travis_wait make test-cmd-docker-devfile-url
-        - travis_wait make test-cmd-docker-devfile-test
-        - travis_wait make test-cmd-docker-devfile-exec
+    # Fix https://github.com/openshift/odo/issues/3714 to uncomment tests
+    # - <<: *base-test
+    #   stage: test
+    #   name: "docker devfile push, watch, url, test, catalog, exec and delete command integration tests"
+    #   script:
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - travis_wait make test-cmd-docker-devfile-push
+    #     - travis_wait make test-cmd-docker-devfile-watch
+    #     - travis_wait make test-cmd-docker-devfile-catalog
+    #     - travis_wait make test-cmd-docker-devfile-delete
+    #     - travis_wait make test-cmd-docker-devfile-url
+    #     - travis_wait make test-cmd-docker-devfile-test
+    #     - travis_wait make test-cmd-docker-devfile-exec
 
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test

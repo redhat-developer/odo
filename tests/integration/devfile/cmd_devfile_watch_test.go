@@ -81,6 +81,24 @@ var _ = Describe("odo devfile watch command tests", func() {
 			// odo watch and validate
 			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
 		})
+
+		It("should listen for file changes with delay set to 0", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			watchFlag := "--delay 0"
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
+			}
+			// odo watch and validate
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
+		})
 	})
 
 	Context("when executing odo watch after odo push with flag commands", func() {

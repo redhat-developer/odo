@@ -1,6 +1,5 @@
-// The Test package is used for testing logrus. It is here for backwards
-// compatibility from when logrus' organization was upper-case. Please use
-// lower-case logrus and the `null` package instead of this one.
+// The Test package is used for testing logrus.
+// It provides a simple hooks which register logged messages.
 package test
 
 import (
@@ -15,7 +14,7 @@ type Hook struct {
 	// Entries is an array of all entries that have been received by this hook.
 	// For safe access, use the AllEntries() method, rather than reading this
 	// value directly.
-	Entries []*logrus.Entry
+	Entries []logrus.Entry
 	mu      sync.RWMutex
 }
 
@@ -52,7 +51,7 @@ func NewNullLogger() (*logrus.Logger, *Hook) {
 func (t *Hook) Fire(e *logrus.Entry) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.Entries = append(t.Entries, e)
+	t.Entries = append(t.Entries, *e)
 	return nil
 }
 
@@ -68,9 +67,7 @@ func (t *Hook) LastEntry() *logrus.Entry {
 	if i < 0 {
 		return nil
 	}
-	// Make a copy, for safety
-	e := *t.Entries[i]
-	return &e
+	return &t.Entries[i]
 }
 
 // AllEntries returns all entries that were logged.
@@ -79,10 +76,9 @@ func (t *Hook) AllEntries() []*logrus.Entry {
 	defer t.mu.RUnlock()
 	// Make a copy so the returned value won't race with future log requests
 	entries := make([]*logrus.Entry, len(t.Entries))
-	for i, entry := range t.Entries {
+	for i := 0; i < len(t.Entries); i++ {
 		// Make a copy, for safety
-		e := *entry
-		entries[i] = &e
+		entries[i] = &t.Entries[i]
 	}
 	return entries
 }
@@ -91,5 +87,5 @@ func (t *Hook) AllEntries() []*logrus.Entry {
 func (t *Hook) Reset() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.Entries = make([]*logrus.Entry, 0)
+	t.Entries = make([]logrus.Entry, 0)
 }

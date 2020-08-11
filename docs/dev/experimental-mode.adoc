@@ -123,3 +123,30 @@ $ odo delete myspring
 The devfile registry can be accessed link:https://github.com/elsony/devfile-registry[here]. 
 
 For more information on how to develop and write a devfile, please read the link:https://docs.google.com/document/d/1piBG2Zu2PqPZSl0WySj25UouK3X5MKcFKqPrfC9ZAsc[Odo stack creation] document.
+
+#### Forcing s2i type component creation over devfile type components:
+
+If there is an s2i type component with the same name as a devfile type component, you can use `--s2i` flag to force the creation of s2i type component over devfile type.
+If there is a devfile type component with a given name but no s2i component, `odo create --s2i` will fail.
+Also, using flags specific to s2i component creation without using --s2i would also fail the `odo create` command.
+
+In the above example output of `odo catalog list components` command, you can observe that `nodejs` component type is available in both s2i and devfile categories.
+
+The following command should create an s2i type component.
+```
+$ odo create nodejs mynode --s2i
+Experimental mode is enabled, use at your own risk
+
+Validation
+ ✓  Validating component [3s]
+
+Please use `odo push` command to create the component with source deployed
+```
+
+The following command would fail for using `--s2i` flag as there is no s2i component type available with name "java-spring-boot".
+```
+$ odo create java-spring-boot myspring --s2i
+Experimental mode is enabled, use at your own risk
+
+  ✗  Cannot select this component with --s2i flag
+```
