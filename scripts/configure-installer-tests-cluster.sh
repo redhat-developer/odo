@@ -51,11 +51,15 @@ fi
 
 ## Create a new namesapce which will be used for OperatorHub checks
 oc new-project $CI_OPERATOR_HUB_PROJECT
-## Let developer user have access to the project
-oc adm policy add-role-to-user edit developer
-
 sh $SETUP_OPERATORS
 # OperatorHub setup complete
+
+## Create two namespace for authenticated registry e2e image test
+oc new-project openjdk-11-rhel8
+oc new-project nodejs-12-rhel7
+
+## Let developer user have access to the project
+oc adm policy add-role-to-user edit developer
 
 # Remove existing htpasswd file, if any
 if [ -f $HTPASSWD_FILE ]; then
@@ -74,6 +78,9 @@ done
 # Workarounds - Note we should find better soulutions asap
 ## Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
+## Applying pull sceret to the namespace which will be used for pulling images from authenticated registry
+oc get secret pull-secret -n openshift-config -o yaml | sed 's/openshift-config/openjdk-11-rhel8/g' | oc apply -f -
+oc get secret pull-secret -n openshift-config -o yaml | sed 's/openshift-config/nodejs-12-rhel7/g' | oc apply -f -
 
 # Create secret in cluster, removing if it already exists
 oc get secret $HTPASSWD_SECRET -n openshift-config &> /dev/null
@@ -134,6 +141,9 @@ fi
 oc new-project myproject
 sleep 4
 oc version
+
+# Project list
+oc projects
 
 # KUBECONFIG cleanup only if CI is set
 if [ ! -f $CI ]; then
