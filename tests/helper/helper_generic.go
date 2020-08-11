@@ -185,11 +185,11 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 // for commands like odo log -f which streams continuous data and does not terminate by their own
 // we need to read the stream data from buffer.
 func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, program string, args ...string) (bool, error) {
-	var buf bytes.Buffer
+	var buf, errBuf bytes.Buffer
 
 	command := exec.Command(program, args...)
 	command.Stdout = &buf
-	command.Stderr = &buf
+	command.Stderr = &errBuf
 
 	timeoutCh := time.After(timeoutAfter)
 	matchOutputCh := make(chan bool)
@@ -227,12 +227,12 @@ func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, pr
 	for {
 		select {
 		case <-timeoutCh:
-			fmt.Fprintln(GinkgoWriter, buf.String())
+			fmt.Fprintln(GinkgoWriter, errBuf.String())
 			return false, errors.New("Timeout waiting for the conditon")
 		case <-matchOutputCh:
 			return true, nil
 		case <-errorCh:
-			fmt.Fprintln(GinkgoWriter, buf.String())
+			fmt.Fprintln(GinkgoWriter, errBuf.String())
 			return false, <-errorCh
 		}
 	}
