@@ -2,8 +2,11 @@ package devfile
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/util"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -725,61 +728,78 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
-	/*
-		Disabled test due to issue https://github.com/openshift/odo/issues/3638
+	Context("Handle devfiles with parent", func() {
+		var server *http.Server
+		var freePort int
+		var parentTmpFolder string
 
-		Context("Handle devfiles with parent", func() {
-			It("should handle a devfile with a parent and add a extra command", func() {
-				utils.ExecPushToTestParent(context, cmpName, namespace)
-				podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-				listDir := cliRunner.ExecListDir(podName, namespace, "/projects/nodejs-starter")
-				Expect(listDir).To(ContainSubstring("blah.js"))
-			})
+		var _ = BeforeSuite(func() {
+			// get a free port
+			var err error
+			freePort, err = util.HTTPGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
 
-			It("should handle a parent and override/append it's envs", func() {
-				utils.ExecPushWithParentOverride(context, cmpName, namespace)
+			// move the parent devfiles to a tmp folder
+			parentTmpFolder = helper.CreateNewContext()
+			helper.CopyExample(filepath.Join("source", "devfiles", "parentSupport"), parentTmpFolder)
+			// update the port in the required devfile with the free port
+			helper.ReplaceString(filepath.Join(parentTmpFolder, "devfile-middle-layer.yaml"), "(-1)", strconv.Itoa(freePort))
 
-				envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+			// start the server and serve from the tmp folder of the devfiles
+			server = helper.HttpFileServer(freePort, parentTmpFolder)
 
-				value, ok := envMap["MODE2"]
-				Expect(ok).To(BeTrue())
-				Expect(value).To(Equal("TEST2-override"))
-
-				value, ok = envMap["myprop-3"]
-				Expect(ok).To(BeTrue())
-				Expect(value).To(Equal("myval-3"))
-
-				value, ok = envMap["myprop2"]
-				Expect(ok).To(BeTrue())
-				Expect(value).To(Equal("myval2"))
-			})
-
-
-				It("should handle a multi layer parent", func() {
-					utils.ExecPushWithMultiLayerParent(context, cmpName, namespace)
-
-					podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-					listDir := cliRunner.ExecListDir(podName, namespace, "/projects/user-app")
-					helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
-
-					envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
-
-					value, ok := envMap["MODE2"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("TEST2-override"))
-
-					value, ok = envMap["myprop3"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("myval3"))
-
-					value, ok = envMap["myprop2"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("myval2"))
-
-					value, ok = envMap["myprop4"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("myval4"))
-				})
+			// wait for the server to be respond with the desired result
+			helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
 		})
-	*/
+
+		var _ = AfterSuite(func() {
+			helper.DeleteDir(parentTmpFolder)
+			err := server.Close()
+			Expect(err).To(BeNil())
+		})
+
+		It("should handle a devfile with a parent and add a extra command", func() {
+			utils.ExecPushToTestParent(context, cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/project/")
+			Expect(listDir).To(ContainSubstring("blah.js"))
+		})
+
+		It("should handle a parent and override/append it's envs", func() {
+			utils.ExecPushWithParentOverride(context, cmpName, namespace, freePort)
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["ODO_TEST_ENV_0"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_0"))
+
+			value, ok = envMap["ODO_TEST_ENV_1"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_1_1"))
+		})
+
+		It("should handle a multi layer parent", func() {
+			utils.ExecPushWithMultiLayerParent(context, cmpName, namespace, freePort)
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/project")
+			helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["ODO_TEST_ENV_1"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_1_1"))
+
+			value, ok = envMap["ODO_TEST_ENV_2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_2"))
+
+			value, ok = envMap["ODO_TEST_ENV_3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_3"))
+
+		})
+	})
 })
