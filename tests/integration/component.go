@@ -785,7 +785,7 @@ func componentTests(args ...string) {
 			routeURL := helper.DetermineRouteURL(symLinkPath)
 
 			// Ping said URL
-			helper.HttpWaitFor(routeURL, "HTTP Booster", 90, 1)
+			helper.HttpWaitFor(routeURL, "HTTP Booster", 300, 1)
 
 			// Delete the component
 			helper.CmdShouldPass("odo", append(args, "delete", "sb-jar-test", "-f", "--context", symLinkPath)...)

@@ -36,19 +36,13 @@ oc whoami
 
 if [ "${ARCH}" == "s390x" ]; then
     # Integration tests
-    make test-generic
-    make test-cmd-link-unlink
-    make test-cmd-pref-config
-    make test-cmd-watch
-    make test-cmd-debug
+    make test-integration
     make test-cmd-login-logout
     make test-cmd-project
-    make test-cmd-app
-    make test-cmd-storage
-    make test-cmd-push
-    make test-cmd-watch
     # E2e tests
     make test-e2e-beta
+    make test-e2e-java
+    make test-e2e-source
 elif  [ "${ARCH}" == "ppc64le" ]; then
     # Integration tests
     make test-generic
