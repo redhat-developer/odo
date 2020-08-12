@@ -14,7 +14,8 @@ KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_D
 OC_STABLE_LOGIN="false"
 #CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 # Exported to current env
-export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
+ORIGINAL_KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
+export KUBECONFIG=$ORIGINAL_KUBECONFIG
 
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
@@ -74,30 +75,28 @@ done
 ## Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
 #oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
 oc import-image nodejs --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
-sleep 5
+sleep 15
 oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite
 oc import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
-sleep 5
+sleep 15
 oc annotate istag/java:8 --namespace=openshift tags=builder --overwrite
-oc import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
-oc annotate istag/java:latest --namespace=openshift tags=builder --overwrite
-oc import-image ruby --from=registry.redhat.io/ubi8/ruby-26 -n openshift --confirm
-sleep 5
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/ruby/imagestreams/ruby-rhel7.json
+sleep 15
 oc annotate istag/ruby:latest --namespace=openshift tags=builder --overwrite
-oc import-image wildfly --confirm \--from docker.io/clefos/wildfly-120-centos7:latest --insecure -n openshift
-sleep 5
+oc import-image wildfly:latest --confirm \--from docker.io/saomany/wildfly-120-centos7:ppc64le --insecure -n openshift
+sleep 15
 oc annotate istag/wildfly:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nginx/imagestreams/nginx-rhel7.json
-sleep 5
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/nginx/imagestreams/nginx-rhel7.json
+sleep 15
 oc annotate istag/nginx:latest --namespace=openshift tags=builder --overwrite
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/dotnet/imagestreams/dotnet-centos7.json
-sleep 5
+sleep 15
 oc annotate istag/dotnet:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/php/imagestreams/php-rhel7.json
-sleep 5
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/php/imagestreams/php-rhel7.json
+sleep 15
 oc annotate istag/php:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/python/imagestreams/python-rhel7.json
-sleep 5
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/python/imagestreams/python-rhel7.json
+sleep 15
 oc annotate istag/python:latest --namespace=openshift tags=builder --overwrite
 
 # Create secret in cluster, removing if it already exists
