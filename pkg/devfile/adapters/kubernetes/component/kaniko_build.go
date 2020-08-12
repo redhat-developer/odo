@@ -45,7 +45,7 @@ var (
 func (a Adapter) runKaniko(parameters common.BuildParameters, isImageRegistryInternal bool) error {
 	if isImageRegistryInternal {
 		if err := a.createDockerCfgSecretForInternalRegistry(parameters.EnvSpecificInfo.GetNamespace()); err != nil {
-			return err
+			return errors.Wrap(err, "failed to create dockerconfig secret")
 		}
 	}
 
@@ -66,6 +66,19 @@ func (a Adapter) runKaniko(parameters common.BuildParameters, isImageRegistryInt
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 	}
+
+	defer func() {
+		// This will clean up the builder pod after build is complete
+		if err := a.Client.KubeClient.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
+			log.Errorf("Failed to delete pod '%s': %v", pod.Name, err)
+		}
+
+		// This will clean up the created secret after build is complete
+		if err := a.Client.KubeClient.CoreV1().Secrets(parameters.EnvSpecificInfo.GetNamespace()).Delete(regcredName, &metav1.DeleteOptions{}); err != nil {
+			log.Errorf("Failed to delete secret '%s': %v", regcredName, err)
+		}
+
+	}()
 
 	// Sync files to volume
 	log.Infof("\nSyncing to component %s", a.ComponentName)
@@ -131,10 +144,11 @@ func (a Adapter) createDockerCfgSecretForInternalRegistry(ns string) error {
 	// internal registry credentials.
 	secret, err := a.getServiceAccountSecret(ns, builderServiceAccount, corev1.SecretTypeDockercfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to get docker secret")
+		return errors.Wrap(err, "failed to retrieve service account credentials")
 	}
-	if err := a.createDockerConfigSecretFrom(secret); err != nil {
-		return errors.Wrap(err, "failed to create docker secret")
+
+	if err := a.createDockerConfigSecretFrom(secret, regcredName); err != nil {
+		return errors.Wrap(err, "failed to create docker secret from service account credentials")
 	}
 	return nil
 }
@@ -160,28 +174,30 @@ type dockerCfg struct {
 	Auths map[string]*types.AuthConfig `json:"auths,omitempty"`
 }
 
-func (a Adapter) createDockerConfigSecretFrom(source *corev1.Secret) error {
+func (a Adapter) createDockerConfigSecretFrom(source *corev1.Secret, newSecretName string) error {
+
 	token, err := getAuthTokenFromDockerCfgSecret(source)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to extract auth token from service account secret")
 	}
 	outCfg := &dockerCfg{
 		Auths: map[string]*types.AuthConfig{
 			internalRegistryHost: {Auth: token},
 		},
 	}
-	outBytes, err := json.Marshal(&outCfg)
+	dockerConfigSecretBytes, err := json.Marshal(&outCfg)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to convert created dockerconfig to byte format")
 	}
-	secretUnstructured, err := utils.CreateSecret(regcredName, source.GetNamespace(), outBytes)
+
+	secretUnstructured, err := utils.CreateSecret(newSecretName, source.GetNamespace(), dockerConfigSecretBytes)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to convert created secret to unstructured format")
 	}
 	if _, err := a.Client.DynamicClient.Resource(secretGroupVersionResource).
 		Namespace(source.GetNamespace()).
 		Create(secretUnstructured, metav1.CreateOptions{}); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create secret on cluster")
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"testing"
@@ -13,12 +14,42 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/spf13/afero"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	runtimeUnstructured "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	ktesting "k8s.io/client-go/testing"
 )
+
+type objectMetaFunc func(om *metav1.ObjectMeta)
+
+func NewFilesystem() afero.Fs {
+	return afero.NewOsFs()
+}
+
+func TypeMeta(kind, apiVersion string) metav1.TypeMeta {
+	return metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: apiVersion,
+	}
+}
+
+func ObjectMeta(n types.NamespacedName, opts ...objectMetaFunc) metav1.ObjectMeta {
+	om := metav1.ObjectMeta{
+		Namespace: n.Namespace,
+		Name:      n.Name,
+	}
+	for _, o := range opts {
+		o(&om)
+	}
+	return om
+}
 
 func TestComponentExists(t *testing.T) {
 
@@ -617,6 +648,71 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found debug env: %v, found work dir env: %v, found debug port env: %v", component, envDebugMatched, envDebugWorkDirMatched, envDebugPortMatched)
 			}
 		})
+	}
+
+}
+
+func TestCreateDockerConfigDataFromFilepath(t *testing.T) {
+	testConfigJsonString := "{ \"auths\" : { \"https://index.docker.io/v1/\": { \"auth\": \"test-auth-token\", \"email\": \"test-email\"} },\"HttpHeaders\": {	\"User-Agent\": \"Docker-Client/19.03.8 (darwin)\"},\"experimental\": \"disabled\"}"
+	testFilename := "test-data/test-config-json"
+
+	got, err := CreateDockerConfigDataFromFilepath(testFilename)
+	if err != nil {
+		t.Errorf("unable to get dockeconfigdata from filepath")
+	}
+
+	want := []byte(testConfigJsonString)
+	diff := cmp.Diff(got, want)
+	if diff != "" {
+		t.Errorf("unexpected response: %s", diff)
+	}
+
+}
+
+func TestCreateSecret(t *testing.T) {
+	testConfigJsonString := "{ \"auths\" : { \"https://index.docker.io/v1/\": { \"auth\": \"test-auth-token\", \"email\": \"test-email\"} },\"HttpHeaders\": {	\"User-Agent\": \"Docker-Client/19.03.8 (darwin)\"},\"experimental\": \"disabled\"}"
+	testDockerConfigData := []byte(testConfigJsonString)
+	testSecretName := "test-secret"
+	testNs := "test-namespace"
+
+	testNamespacedName := types.NamespacedName{
+		Name:      testSecretName,
+		Namespace: testNs,
+	}
+
+	testSecret := corev1.Secret{
+		TypeMeta:   TypeMeta("Secret", "v1"),
+		ObjectMeta: ObjectMeta(testNamespacedName),
+		Type:       corev1.SecretTypeDockerConfigJson,
+		Data: map[string][]byte{
+			corev1.DockerConfigJsonKey: testDockerConfigData,
+		},
+	}
+
+	testSecretData, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(&testSecret)
+	if err != nil {
+		t.Error(err)
+	}
+
+	testSecretBytes, err := json.Marshal(testSecretData)
+	if err != nil {
+		t.Errorf("error while marshalling: %v", err)
+	}
+
+	var testSecretUnstructured *unstructured.Unstructured
+	if err := json.Unmarshal(testSecretBytes, &testSecretUnstructured); err != nil {
+		t.Errorf("error unmarshalling into unstructured %v", err)
+	}
+
+	want := testSecretUnstructured
+	got, err := CreateSecret(testSecretName, testNs, testDockerConfigData)
+	if err != nil {
+		t.Errorf("failed to get secret: %v", err)
+	}
+
+	diff := cmp.Diff(got, want)
+	if diff != "" {
+		t.Errorf("unexpected response: %s", diff)
 	}
 
 }

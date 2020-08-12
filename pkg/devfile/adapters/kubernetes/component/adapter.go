@@ -211,8 +211,9 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	}
 
 	if !isImageRegistryInternal {
-		if err := a.createDockerConfigSecret(parameters); err != nil {
-			return err
+
+		if err := a.createDockerConfigSecret(parameters.DockerConfigJSONFilename, regcredName, parameters.EnvSpecificInfo.GetNamespace()); err != nil {
+			return errors.Wrap(err, "failed to create dockerconfig secret")
 		}
 	}
 
@@ -907,19 +908,21 @@ func (a Adapter) Exec(command []string) error {
 	return a.ExecuteCommand(componentInfo, command, true, nil, nil)
 }
 
-func (a Adapter) createDockerConfigSecret(parameters common.BuildParameters) error {
-	data, err := utils.CreateDockerConfigDataFromFilepath(parameters.DockerConfigJSONFilename)
+func (a Adapter) createDockerConfigSecret(dockerConfigJSONFilename, secretName, namespace string) error {
+
+	dockerConfigSecretBytes, err := utils.CreateDockerConfigDataFromFilepath(dockerConfigJSONFilename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error retriving docker config secret bytes")
 	}
-	secretUnstructured, err := utils.CreateSecret(regcredName, parameters.EnvSpecificInfo.GetNamespace(), data)
+
+	secretUnstructured, err := utils.CreateSecret(secretName, namespace, dockerConfigSecretBytes)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to convert created secret to unstructured format")
 	}
 	if _, err := a.Client.DynamicClient.Resource(secretGroupVersionResource).
-		Namespace(parameters.EnvSpecificInfo.GetNamespace()).
+		Namespace(namespace).
 		Create(secretUnstructured, metav1.CreateOptions{}); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create secret on cluster")
 	}
 	return nil
 }

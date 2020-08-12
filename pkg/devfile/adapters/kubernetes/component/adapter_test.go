@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
+	"github.com/google/go-cmp/cmp"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -14,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 
+	"github.com/spf13/afero"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,7 +24,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
+
+	"encoding/json"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	runtimeUnstructured "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+
+	dynamicfakeclient "k8s.io/client-go/dynamic/fake"
 )
+
+func NewFilesystem() afero.Fs {
+	return afero.NewOsFs()
+}
 
 func TestCreateOrUpdateComponent(t *testing.T) {
 
@@ -550,6 +564,127 @@ func TestAdapterDelete(t *testing.T) {
 
 			if err := a.Delete(tt.args.labels, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreateDockerConfigSecret(t *testing.T) {
+	testConfigJsonString := "{ \"auths\" : { \"https://index.docker.io/v1/\": { \"auth\": \"test-auth-token\", \"email\": \"test-email\"} },\"HttpHeaders\": {	\"User-Agent\": \"Docker-Client/19.03.8 (darwin)\"},\"experimental\": \"disabled\"}"
+	testDockerConfigData := []byte(testConfigJsonString)
+	testFilename := "test-data/test-config-json"
+	testSecretName := "test-secret"
+	testNs := "test-namespace"
+
+	testNamespacedName := types.NamespacedName{
+		Name:      testSecretName,
+		Namespace: testNs,
+	}
+
+	testSecret := &corev1.Secret{
+
+		TypeMeta:   TypeMeta("Secret", "v1"),
+		ObjectMeta: SecretObjectMeta(testNamespacedName),
+		Type:       corev1.SecretTypeDockerConfigJson,
+		Data: map[string][]byte{
+			corev1.DockerConfigJsonKey: testDockerConfigData,
+		},
+	}
+
+	testSecretData, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(testSecret)
+	if err != nil {
+		t.Error(err)
+	}
+
+	testSecretBytes, err := json.Marshal(testSecretData)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("error while marshalling")
+	}
+
+	var testSecretUnstructured *unstructured.Unstructured
+	if err := json.Unmarshal(testSecretBytes, &testSecretUnstructured); err != nil {
+		t.Error(err)
+		t.Errorf("error unmarshalling into unstructured")
+	}
+
+	want := testSecretUnstructured
+
+	fkclient, _ := kclient.FakeNew()
+
+	scheme := runtime.NewScheme()
+	fkclient.DynamicClient = dynamicfakeclient.NewSimpleDynamicClient(scheme)
+
+	if err != nil {
+		t.Errorf("error generating fake dynamic client")
+	}
+
+	testAdapter := Adapter{
+		Client: *fkclient,
+	}
+
+	err = testAdapter.createDockerConfigSecret(testFilename, testSecretName, testNs)
+	if err != nil {
+		t.Error(err)
+	}
+	got, err := testAdapter.Client.DynamicClient.Resource(secretGroupVersionResource).
+		Namespace(testNs).
+		Get(testSecretName, metav1.GetOptions{})
+
+	if err != nil {
+		t.Error(err)
+		t.Errorf("failed to get secret")
+	}
+
+	diff := cmp.Diff(got, want)
+	if diff != "" {
+		t.Errorf("unexpected response: %s", diff)
+	}
+}
+
+func TestIsInternalRegistry(t *testing.T) {
+
+	imageTagInternal := "image-registry.openshift-image-registry.svc:5000/test-namespace/test-name"
+	imageTagExternal := "docker.io/test-username/test-imae-repository-name"
+	imageTagInvalid := "namespace/test-image-name"
+
+	tests := []struct {
+		name               string
+		imageTag           string
+		isInternalRegistry bool
+		wantErr            bool
+	}{
+		{
+			name:               "Case: ImageTag is for internal registry",
+			imageTag:           imageTagInternal,
+			isInternalRegistry: true,
+			wantErr:            false,
+		},
+		{
+			name:               "Case: ImageTag is for external registry",
+			imageTag:           imageTagExternal,
+			isInternalRegistry: false,
+			wantErr:            false,
+		},
+		{
+			name:               "Case: ImageTag is invalid",
+			imageTag:           imageTagInvalid,
+			isInternalRegistry: false,
+			wantErr:            true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isInternalRegistryResult, err := isInternalRegistry(tt.imageTag)
+			if err != nil && !tt.wantErr {
+				t.Errorf("returned error when it should not have")
+			} else if err == nil && tt.wantErr {
+				t.Errorf("should have returned an error but did not")
+			}
+
+			if isInternalRegistryResult != tt.isInternalRegistry {
+				t.Errorf("returned the wrong result")
 			}
 		})
 	}
