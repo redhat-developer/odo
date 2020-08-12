@@ -20,6 +20,9 @@ export KUBECONFIG=$ORIGINAL_KUBECONFIG
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
+# list of namespace to create
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7"
+
 # Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
     # Check if nessasary files exist
@@ -49,13 +52,23 @@ fi
 
 # Setup the cluster for Operator tests
 
-## Create a new namesapce which will be used for OperatorHub checks
+# Create a new namesapce which will be used for OperatorHub checks
 oc new-project $CI_OPERATOR_HUB_PROJECT
-## Let developer user have access to the project
+# Let developer user have access to the project
 oc adm policy add-role-to-user edit developer
 
 sh $SETUP_OPERATORS
 # OperatorHub setup complete
+
+# Create the namespace for e2e image test apply pull secret to the namespace
+for i in `echo $IMAGE_TEST_NAMESPACES`; do
+    # create the namespace
+    oc new-project $i
+    # Applying pull secret to the namespace which will be used for pulling images from authenticated registry
+    oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/$i/g" | oc apply -f -
+    # Let developer user have access to the project
+    oc adm policy add-role-to-user edit developer
+done
 
 # Remove existing htpasswd file, if any
 if [ -f $HTPASSWD_FILE ]; then
@@ -72,7 +85,7 @@ for i in `echo $USERS`; do
 done
 
 # Workarounds - Note we should find better soulutions asap
-## Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
+# Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
 
 # Create secret in cluster, removing if it already exists
@@ -134,6 +147,9 @@ fi
 oc new-project myproject
 sleep 4
 oc version
+
+# Project list
+oc projects
 
 # KUBECONFIG cleanup only if CI is set
 if [ ! -f $CI ]; then
