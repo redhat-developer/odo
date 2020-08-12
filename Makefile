@@ -277,6 +277,11 @@ test-cmd-devfile-debug:
 test-cmd-devfile-log:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile log command tests" tests/integration/devfile/
 
+# Run odo env devfile command tests
+.PHONY: test-cmd-devfile-env
+test-cmd-devfile-env:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile env command tests" tests/integration/devfile/
+
 # Run odo push docker devfile command tests
 .PHONY: test-cmd-docker-devfile-push
 test-cmd-docker-devfile-push:
