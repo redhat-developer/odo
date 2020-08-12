@@ -138,7 +138,7 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 *Test guidelines:*
 
-Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`].
+Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`]. For better understanding of writing test please refer ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation].
 
 * Before writing tests (Integration/e2e) scenario make sure that the test scenario (Integration or e2e) is identified properly.
 +
@@ -184,7 +184,7 @@ Context("when running help for storage command", func() {
 ----
 +
 
-* Don't create a new test spec for the steps which can be run with the existing specs. Also try to avoid adding the functionality which are part of another feature test file, only add if it is a key requirement.
+* Don't create a new test spec for the steps which can be run with the existing specs.
 + 
 
 * Spec level conditions, pre and post requirements should be run in ginkgo built-in tear down steps `JustBeforeEach` and `JustAfterEach`
@@ -244,10 +244,7 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 ----
 +
 
-* If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. 
-+
-
-* Avoid logic implementation within the test files as it unnecessarily overloads the tests. Always create a new function with all the required logics within the helper package. Check for code duplicacy within helper and test files.
+* If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. Avoid unnecessary function implementation within test files. Check to see if there is a helper function already implemented.
 +
 
 * If you are looking for delay with a specific feature test, don't use `time.Sleep()` function, Instead use `timeout`.
