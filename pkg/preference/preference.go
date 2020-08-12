@@ -218,26 +218,21 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 
 	// If the preference file doesn't exist then we return with default preference
 	if _, err = os.Stat(preferenceFile); os.IsNotExist(err) {
+		// Handle user has preference file but doesn't use dynamic registry before
+		defaultRegistryList := []Registry{
+			{
+				Name:   DefaultDevfileRegistryName,
+				URL:    DefaultDevfileRegistryURL,
+				Secure: false,
+			},
+		}
+		c.OdoSettings.RegistryList = &defaultRegistryList
 		return &c, nil
 	}
 
 	err = util.GetFromFile(&c.Preference, c.Filename)
 	if err != nil {
 		return nil, err
-	}
-
-	if c.OdoSettings.Experimental != nil && *c.OdoSettings.Experimental {
-		if c.OdoSettings.RegistryList == nil {
-			// Handle user has preference file but doesn't use dynamic registry before
-			defaultRegistryList := []Registry{
-				{
-					Name:   DefaultDevfileRegistryName,
-					URL:    DefaultDevfileRegistryURL,
-					Secure: false,
-				},
-			}
-			c.OdoSettings.RegistryList = &defaultRegistryList
-		}
 	}
 
 	return &c, nil
