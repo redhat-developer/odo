@@ -148,6 +148,31 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		restart := IsRestartRequired(command)
 
 		// if we need to restart, issue supervisor command to stop all running commands first
+		if componentExists {
+			if restart {
+				klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
+				if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
+					if err != nil {
+						return err
+					}
+					commands = append(commands, cmd)
+				}
+			} else if !restart && previousMode != currentMode {
+				// If we are switching from odo push to odo push --debug, even if restart:false
+				// We need to stop the previous command
+				klog.V(4).Infof("restart:false, switching modes stopping previous %s command", previousMode)
+				if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
+					if err != nil {
+						return err
+					}
+					commands = append(commands, cmd)
+				}
+			} else {
+				klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
+			}
+
+		}
+
 		if componentExists && restart {
 			klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
 			if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
