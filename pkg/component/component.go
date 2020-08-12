@@ -576,7 +576,8 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		if err != nil {
 			return err
 		}
-		client.Namespace = envSpecificInfo.GetNamespace()
+		// new client created to support route URLs for devfile components should use the same namespace as kClient's
+		client.Namespace = kClient.Namespace
 	}
 
 	if !isExperimentalModeEnabled {

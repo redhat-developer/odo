@@ -314,7 +314,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
-		// to avoid error due to deplicate ingress name defined in different devfile components
+		// to avoid error due to duplicate ingress name defined in different devfile components
 		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
@@ -350,7 +350,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 			ownerReference = occlient.GenerateOwnerReference(dc)
 		} else {
-			// to avoid error due to deplicate ingress name defined in different devfile components
+			// to avoid error due to duplicate ingress name defined in different devfile components
 			parameters.urlName = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 			serviceName = parameters.componentName
 
@@ -930,6 +930,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		}
 	}
 
+	log.Info("\nApplying URL changes")
+
 	// iterate through endpoints defined in devfile
 	// add the url defination into urlLOCAL if it's not defined in env.yaml
 	if parameters.IsExperimentalModeEnabled && parameters.EndpointMap != nil {
@@ -1009,7 +1011,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		}
 	}
 
-	log.Info("\nApplying URL changes")
 	urlChange := false
 
 	// find URLs to delete
@@ -1037,7 +1038,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			deleteURLName := urlName
 			if parameters.IsExperimentalModeEnabled && kClient != nil {
 				// route/ingress name is defined as <urlName>-<componentName>
-				// to avoid error due to deplicate ingress name defined in different devfile components
+				// to avoid error due to duplicate ingress name defined in different devfile components
 				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
 			}
 			err := Delete(client, kClient, deleteURLName, parameters.ApplicationName, urlSpec.Spec.Kind)
@@ -1058,11 +1059,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if urlInfo.Spec.Kind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
-			// if parameters.IsExperimentalModeEnabled && kClient != nil {
-			// 	// route/ingress name is defined as <urlName>-<componentName>
-			// 	// to avoid error due to deplicate ingress name defined in different devfile components
-			// 	urlName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
-			// }
 			createParameters := CreateParameters{
 				urlName:         urlName,
 				portNumber:      urlInfo.Spec.Port,
