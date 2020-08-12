@@ -1146,6 +1146,7 @@ func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
 	return nil
 }
 
+// getStarterProjectInteractiveMode gets starter project value by asking user in interactive mode.
 func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) *common.DevfileStarterProject {
 	projectName := ui.SelectStarterProject(projects)
 
@@ -1166,6 +1167,7 @@ func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) *
 	return &project
 }
 
+// getStarterProjectFromFlag gets starter project value from flag --starter.
 func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectPassed string) (project *common.DevfileStarterProject, err error) {
 
 	nOfProjects := len(projects)

@@ -135,14 +135,14 @@ func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) erro
 			}
 		}
 		if !found {
-			return fmt.Errorf("the command to override is not found in the parent")
+			return fmt.Errorf("the project to override is not found in the parent")
 		}
 	}
 	return nil
 }
 
-// OverrideStarterProjects overrides the projects of the parent devfile
-// overridePatch contains the patches to be applied to the parent's projects
+// OverrideStarterProjects overrides the starter projects of the parent devfile
+// overridePatch contains the patches to be applied to the parent's starter projects
 func (d DevfileObj) OverrideStarterProjects(overridePatch []common.DevfileStarterProject) error {
 	for _, patchProject := range overridePatch {
 		found := false
@@ -165,7 +165,7 @@ func (d DevfileObj) OverrideStarterProjects(overridePatch []common.DevfileStarte
 			}
 		}
 		if !found {
-			return fmt.Errorf("the command to override is not found in the parent")
+			return fmt.Errorf("the starterProject to override is not found in the parent")
 		}
 	}
 	return nil

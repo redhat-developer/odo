@@ -178,8 +178,8 @@ func (d *Devfile200) GetStarterProjects() []common.DevfileStarterProject {
 	return d.StarterProjects
 }
 
-// AddStarterProjects adds the slice of Devfile projects to the Devfile's project list
-// if a project is already defined, error out
+// AddStarterProjects adds the slice of Devfile starter projects to the Devfile's starter project list
+// if a starter project is already defined, error out
 func (d *Devfile200) AddStarterProjects(projects []common.DevfileStarterProject) error {
 	projectsMap := make(map[string]bool)
 	for _, project := range d.StarterProjects {
@@ -196,7 +196,7 @@ func (d *Devfile200) AddStarterProjects(projects []common.DevfileStarterProject)
 	return nil
 }
 
-// UpdateStarterProject updates the slice of DevfileCommand projects parsed from the Devfile
+// UpdateStarterProject updates the slice of Devfile starter projects parsed from the Devfile
 func (d *Devfile200) UpdateStarterProject(project common.DevfileStarterProject) {
 	for i := range d.StarterProjects {
 		if d.StarterProjects[i].Name == strings.ToLower(project.Name) {
