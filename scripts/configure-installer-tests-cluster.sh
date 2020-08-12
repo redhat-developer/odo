@@ -21,7 +21,7 @@ export KUBECONFIG=$ORIGINAL_KUBECONFIG
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
 # list of namespace to create
-NAMESPACE="openjdk-11-rhel8 nodejs-12-rhel7"
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7"
 
 # Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
@@ -61,7 +61,7 @@ sh $SETUP_OPERATORS
 # OperatorHub setup complete
 
 # Create the namespace for e2e inage test apply pull sceret to the namespace
-for i in `echo $NAMESPACE`; do
+for i in `echo $IMAGE_TEST_NAMESPACES`; do
     # create the namespace
     oc new-project $i
     # Applying pull sceret to the namespace which will be used for pulling images from authenticated registry
