@@ -32,12 +32,9 @@ func newSupervisorInitCommand(command common.DevfileCommand, adapter commandExec
 }
 
 // newSupervisorStopCommand creates a command implementation that stops the specified command via the supervisor
-func newSupervisorStopCommand(command common.DevfileCommand, cmd string, executor commandExecutor) (command, error) {
-	if cmd == "" {
-		cmd = "all"
-	}
-	cmdLine := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "stop", cmd}
-	if stop, err := newOverriddenSimpleCommand(command, executor, cmdLine); err == nil {
+func newSupervisorStopCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
+	cmd := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "stop", "all"}
+	if stop, err := newOverriddenSimpleCommand(command, executor, cmd); err == nil {
 		// use empty spinner message to avoid showing it altogether
 		stop.msg = ""
 		return stop, err

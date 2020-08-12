@@ -4,6 +4,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/openshift/odo/pkg/envinfo"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -120,11 +122,16 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		return err
 	}
 
+	previousMode := params.EnvSpecificInfo.GetRunMode()
+	currentMode := envinfo.Run
+
 	group := common.RunCommandGroupType
 	defaultCmd := string(DefaultDevfileRunCommand)
+
 	if params.Debug {
 		group = common.DebugCommandGroupType
 		defaultCmd = string(DefaultDevfileDebugCommand)
+		currentMode = envinfo.Debug
 	}
 
 	if command, ok := commandsMap[group]; ok {
@@ -138,37 +145,28 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			}
 		}
 
+		restart := IsRestartRequired(command)
+
 		// if we need to restart, issue supervisor command to stop all running commands first
-		if componentExists && IsRestartRequired(command) {
+		if componentExists && restart {
 			klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
-			if cmd, err := newSupervisorStopCommand(command, "", a); cmd != nil {
+			if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
+				if err != nil {
+					return err
+				}
+				commands = append(commands, cmd)
+			}
+		} else if componentExists && previousMode != currentMode && !restart {
+			// If we are switching from odo push to odo push --debug, even if restart:false
+			// We need to stop the previous command
+			klog.V(4).Infof("restart:false, switching modes stopping previous %s command", previousMode)
+			if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
 				if err != nil {
 					return err
 				}
 				commands = append(commands, cmd)
 			}
 		} else {
-			// if there is switch of commands from run<->, we need to stop the other command
-			var otherCommand common.DevfileCommand
-			var otherDefaultCmd string
-			if params.Debug {
-				// Stop Run command if we are running debug
-				otherCommand, ok = commandsMap[common.RunCommandGroupType]
-				otherDefaultCmd = string(DefaultDevfileRunCommand)
-			} else {
-				// Stop Debug command if we are running run
-				otherCommand, ok = commandsMap[common.DebugCommandGroupType]
-				otherDefaultCmd = string(DefaultDevfileDebugCommand)
-			}
-
-			if ok {
-				if cmd, err := newSupervisorStopCommand(otherCommand, otherDefaultCmd, a); cmd != nil {
-					if err != nil {
-						return err
-					}
-					commands = append(commands, cmd)
-				}
-			}
 			klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
 		}
 
