@@ -60,11 +60,11 @@ oc adm policy add-role-to-user edit developer
 sh $SETUP_OPERATORS
 # OperatorHub setup complete
 
-# Create the namespace for e2e inage test apply pull sceret to the namespace
+# Create the namespace for e2e image test apply pull secret to the namespace
 for i in `echo $IMAGE_TEST_NAMESPACES`; do
     # create the namespace
     oc new-project $i
-    # Applying pull sceret to the namespace which will be used for pulling images from authenticated registry
+    # Applying pull secret to the namespace which will be used for pulling images from authenticated registry
     oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/$i/g" | oc apply -f -
     # Let developer user have access to the project
     oc adm policy add-role-to-user edit developer
