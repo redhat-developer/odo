@@ -1,11 +1,12 @@
 package version200
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
-	"reflect"
-	"testing"
 )
 
 func TestDevfile200_AddVolume(t *testing.T) {
@@ -415,4 +416,75 @@ func TestDevfile200_GetVolumeMountPath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddStarterProjects(t *testing.T) {
+	currentProject := []common.DevfileStarterProject{
+		{
+			Name:        "java-starter",
+			Description: "starter project for java",
+		},
+		{
+			Name:        "quarkus-starter",
+			Description: "starter project for quarkus",
+		},
+	}
+
+	d := &Devfile200{
+		StarterProjects: currentProject,
+	}
+
+	tests := []struct {
+		name    string
+		wantErr bool
+		args    []common.DevfileStarterProject
+	}{
+		{
+			name:    "case:1 It should add starter project",
+			wantErr: false,
+			args: []common.DevfileStarterProject{
+				{
+					Name:        "nodejs",
+					Description: "starter project for nodejs",
+				},
+				{
+					Name:        "spring-pet-clinic",
+					Description: "starter project for springboot",
+				},
+			},
+		},
+
+		{
+			name:    "case:2 It should give error if tried to add already present starter project",
+			wantErr: true,
+			args: []common.DevfileStarterProject{
+				{
+					Name:        "quarkus-starter",
+					Description: "starter project for quarkus",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := d.AddStarterProjects(tt.args)
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("unexpected error: %v", err)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Errorf("expected error, got %v", err)
+				return
+			}
+			wantProjects := append(currentProject, tt.args...)
+
+			if !reflect.DeepEqual(d.StarterProjects, wantProjects) {
+				t.Errorf("wanted: %v, got: %v, difference at %v", wantProjects, d.StarterProjects, pretty.Compare(wantProjects, d.StarterProjects))
+			}
+		})
+	}
+
 }
