@@ -1173,7 +1173,7 @@ func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectP
 	nOfProjects := len(projects)
 
 	if nOfProjects == 0 {
-		return nil, errors.Errorf("no starter project found in devfile component.")
+		return nil, errors.Errorf("no starter project found in devfile.")
 	}
 
 	// Determine what project to be used

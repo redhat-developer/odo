@@ -287,6 +287,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		JustBeforeEach(func() {
 			contextDevfile = helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(contextDevfile, "devfile.yaml"))
 		})
 
 		JustAfterEach(func() {
@@ -308,16 +309,17 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with an invalid project specified in --starter", func() {
 		It("should fail with please run 'The project: invalid-project-name specified in --starter does not exist'", func() {
 			invalidProjectName := "invalid-project-name"
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter=invalid-project-name")
-			expectedString := "The project: " + invalidProjectName + " specified in --starter does not exist"
+			expectedString := "the project: " + invalidProjectName + " specified in --starter does not exist"
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
 
 	Context("When executing odo create using --starter with a devfile component that contains no projects", func() {
-		It("should fail with please run 'No project found in devfile component.'", func() {
+		It("should fail with please run 'no starter project found in devfile.'", func() {
 			output := helper.CmdShouldFail("odo", "create", "java-maven", "--starter")
-			expectedString := "No project found in devfile component."
+			expectedString := "no starter project found in devfile."
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
