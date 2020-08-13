@@ -138,7 +138,7 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 *Test guidelines:*
 
-Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`]. For better understanding of writing test please refer ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation].
+Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`]. For better understanding of writing test please refer Ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation] and Ginkgo's preferred matcher library Gomega link:http://onsi.github.io/gomega/[documentation].
 
 * Before writing tests (Integration/e2e) scenario make sure that the test scenario (Integration or e2e) is identified properly.
 +
