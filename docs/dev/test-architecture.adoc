@@ -247,7 +247,27 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 * If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. Avoid unnecessary function implementation within test files. Check to see if there is a helper function already implemented.
 +
 
-* If you are looking for delay with a specific feature test, don't use `time.Sleep()` function, Instead use `timeout`.
+* If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the link:https://github.com/openshift/odo/tree/master/tests/helper[`helper package`] for more such reference.
++
+
+----
+For example:
+func RetryInterval(maxRetry, intervalSeconds int, program string, args ...string) string {
+	for i := 0; i < maxRetry; i++ {
+		session := CmdRunner(program, args...)
+		session.Wait()
+		if session.ExitCode() == 0 {
+			time.Sleep(time.Duration(intervalSeconds) * time.Second)
+		} else {
+			Consistently(session).ShouldNot(gexec.Exit(0), runningCmd(session.Command))
+			return string(session.Err.Contents())
+		}
+	}
+	Fail(fmt.Sprintf("Failed after %d retries", maxRetry))
+	return ""
+}
+----
+or in Ginkgo there is an in-built link:http://onsi.github.io/ginkgo/#asynchronous-tests[`timeout feature`].
 +
 
 * The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.
