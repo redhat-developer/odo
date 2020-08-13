@@ -104,22 +104,6 @@ type Composite struct {
 	Parallel bool `json:"parallel,omitempty"`
 }
 
-// Configuration holds configuration for an endpoint
-type Configuration struct {
-	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty"`
-	Discoverable       bool   `json:"discoverable,omitempty"`
-	Path               string `json:"path,omitempty"`
-
-	// The is the low-level protocol of traffic coming through this endpoint. Default value is "tcp"
-	Protocol string `json:"protocol,omitempty"`
-	Public   bool   `json:"public,omitempty"`
-
-	// The is the URL scheme to use when accessing the endpoint. Default value is "http"
-	Scheme string `json:"scheme,omitempty"`
-	Secure bool   `json:"secure,omitempty"`
-	Type   string `json:"type,omitempty"`
-}
-
 // Container Allows adding and configuring workspace-related containers
 type Container struct {
 

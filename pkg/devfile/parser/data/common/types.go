@@ -62,22 +62,6 @@ type DevfileComponent struct {
 	Volume *Volume `json:"volume,omitempty" yaml:"volume,omitempty"`
 }
 
-// Configuration
-type Configuration struct {
-	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty" yaml:"cookiesAuthEnabled,omitempty"`
-	Discoverable       bool   `json:"discoverable,omitempty" yaml:"discoverable,omitempty"`
-	Path               string `json:"path,omitempty" yaml:"path,omitempty"`
-
-	// The is the low-level protocol of traffic coming through this endpoint. Default value is "tcp"
-	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Public   bool   `json:"public,omitempty" yaml:"public,omitempty"`
-
-	// The is the URL scheme to use when accessing the endpoint. Default value is "http"
-	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
-	Secure bool   `json:"secure,omitempty" yaml:"secure,omitempty" `
-	Type   string `json:"type,omitempty" yaml:"type,omitempty"`
-}
-
 // Container Allows adding and configuring workspace-related containers
 type Container struct {
 
@@ -103,12 +87,20 @@ type Container struct {
 	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty" yaml:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
-// Endpoint
+// Endpoint holds information about how an application is exposed
 type Endpoint struct {
-	Attributes    map[string]string `json:"attributes,omitempty" yaml:"attributes,omitempty" patchStrategy:"merge"`
-	Configuration *Configuration    `json:"configuration,omitempty" yaml:"configuration,omitempty"`
-	Name          string            `json:"name" yaml:"name"`
-	TargetPort    int32             `json:"targetPort" yaml:"targetPort"`
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Describes how the endpoint should be exposed on the network. public|internal|none. Default value is "public"
+	Exposure string `json:"exposure,omitempty"`
+
+	Path       string `json:"path,omitempty"`
+	Secure     bool   `json:"secure,omitempty"`
+	Name       string `json:"name"`
+	TargetPort int32  `json:"targetPort"`
+
+	// Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is "http"
+	Protocol string `json:"protocol,omitempty"`
 }
 
 // Env

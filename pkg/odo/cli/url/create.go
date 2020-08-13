@@ -2,9 +2,10 @@ package url
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/odo/util/validation"
 	"strconv"
 	"strings"
+
+	"github.com/openshift/odo/pkg/odo/util/validation"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
@@ -342,7 +343,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		} else {
 			urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
 			urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster IP for this URL")
-			urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "Create a secure HTTPS URL")
 			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}

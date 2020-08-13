@@ -559,6 +559,7 @@ func TestCreateRoute(t *testing.T) {
 		wantErr    bool
 		existingDC appsv1.DeploymentConfig
 		secureURL  bool
+		path       string
 	}{
 		{
 			name:       "Case : mailserver",
@@ -602,6 +603,21 @@ func TestCreateRoute(t *testing.T) {
 			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
 			secureURL:  true,
 		},
+
+		{
+			name:       "Case : specify a path",
+			urlName:    "example",
+			service:    "blog",
+			portNumber: intstr.FromInt(9100),
+			labels: map[string]string{
+				"SLA":                        "High",
+				"app.kubernetes.io/instance": "backend",
+				"app.kubernetes.io/name":     "golang",
+			},
+			wantErr:    false,
+			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
+			path:       "/testpath",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -614,7 +630,7 @@ func TestCreateRoute(t *testing.T) {
 				return true, &tt.existingDC, nil
 			})
 
-			createdRoute, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels, tt.secureURL, ownerReferences)
+			createdRoute, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels, tt.secureURL, tt.path, ownerReferences)
 
 			if tt.secureURL {
 				wantedTLSConfig := &routev1.TLSConfig{
@@ -627,6 +643,11 @@ func TestCreateRoute(t *testing.T) {
 			} else {
 				if createdRoute.Spec.TLS != nil {
 					t.Errorf("tls config is set for a non secure url")
+				}
+				if tt.path == "" && createdRoute.Spec.Path != "/" {
+					t.Errorf("expect path: /, but got path: %v", createdRoute.Spec.Path)
+				} else if tt.path != "" && createdRoute.Spec.Path != tt.path {
+					t.Errorf("expect path: %v, but got path: %v", tt.path, createdRoute.Spec.Path)
 				}
 			}
 

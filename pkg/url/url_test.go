@@ -3,6 +3,7 @@ package url
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -12,6 +13,7 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/fake"
@@ -178,7 +180,7 @@ func TestCreate(t *testing.T) {
 				isExperimentalModeEnabled: true,
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress: fake.GetSingleIngress("nodejs", "nodejs"),
+			returnedIngress: fake.GetSingleIngress("nodejs-nodejs", "nodejs"),
 			want:            "http://nodejs.com",
 			wantErr:         false,
 		},
@@ -202,7 +204,7 @@ func TestCreate(t *testing.T) {
 						applabels.App:                "app",
 						applabels.OdoManagedBy:       "odo",
 						applabels.OdoVersion:         version.VERSION,
-						"odo.openshift.io/url-name":  "nodejs",
+						"odo.openshift.io/url-name":  "nodejs-nodejs",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -215,7 +217,7 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			returnedIngress: fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress: fake.GetSingleIngress("example-nodejs", "nodejs"),
 			want:            "http://example.com",
 			wantErr:         false,
 		},
@@ -231,7 +233,7 @@ func TestCreate(t *testing.T) {
 				secure:                    true,
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress:  fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists: true,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -248,7 +250,7 @@ func TestCreate(t *testing.T) {
 				secure:                    true,
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress:  fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists: false,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -285,7 +287,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:                 "user-secret",
 				urlKind:                   envinfo.INGRESS,
 			},
-			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "https://example.com",
@@ -305,7 +307,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:                 "user-secret",
 				urlKind:                   "blah",
 			},
-			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "",
@@ -454,9 +456,9 @@ func TestCreate(t *testing.T) {
 						}
 					}
 					createdIngress = fakeKClientSet.Kubernetes.Actions()[createIngressActionNo].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
-
+					tt.returnedIngress.Labels["odo.openshift.io/url-name"] = tt.args.urlName
 					if !reflect.DeepEqual(createdIngress.Name, tt.returnedIngress.Name) {
-						t.Errorf("ingress name not matching, expected: %s, got %s", tt.returnedRoute.Name, createdIngress.Name)
+						t.Errorf("ingress name not matching, expected: %s, got %s", tt.returnedIngress.Name, createdIngress.Name)
 					}
 					if !reflect.DeepEqual(createdIngress.Labels, tt.returnedIngress.Labels) {
 						t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.returnedIngress.Labels, createdIngress.Labels))
@@ -753,6 +755,7 @@ func TestPush(t *testing.T) {
 		existingEnvInfoURLs []envinfo.EnvInfoURL
 		returnedRoutes      *routev1.RouteList
 		returnedIngress     *extensionsv1.IngressList
+		endpintMap          map[int32]versionsCommon.Endpoint
 		deletedURLs         []URL
 		createdURLs         []URL
 		wantErr             bool
@@ -899,18 +902,28 @@ func TestPush(t *testing.T) {
 			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
-					Name:   "example",
-					Port:   8080,
-					Secure: false,
-					Host:   "com",
-					Kind:   envinfo.INGRESS,
+					Name: "example",
+					Port: 8080,
+					Host: "com",
+					Kind: envinfo.INGRESS,
 				},
 				{
-					Name:   "example-1",
-					Port:   9090,
-					Secure: false,
-					Host:   "com",
-					Kind:   envinfo.INGRESS,
+					Name: "example-1",
+					Port: 9090,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+				9090: versionsCommon.Endpoint{
+					Name:       "example-1",
+					TargetPort: 9090,
+					Secure:     false,
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
@@ -918,7 +931,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -929,7 +942,7 @@ func TestPush(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   9090,
@@ -950,12 +963,12 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0",
+						Name: "example-0-nodejs",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-nodejs",
 					},
 				},
 			},
@@ -966,18 +979,28 @@ func TestPush(t *testing.T) {
 			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
-					Name:   "example-local-0",
-					Port:   8080,
-					Secure: false,
-					Host:   "com",
-					Kind:   envinfo.INGRESS,
+					Name: "example-local-0",
+					Port: 8080,
+					Host: "com",
+					Kind: envinfo.INGRESS,
 				},
 				{
-					Name:   "example-local-1",
-					Port:   9090,
-					Secure: false,
-					Host:   "com",
-					Kind:   envinfo.INGRESS,
+					Name: "example-local-1",
+					Port: 9090,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example-local-0",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+				9090: versionsCommon.Endpoint{
+					Name:       "example-local-1",
+					TargetPort: 9090,
+					Secure:     false,
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
@@ -985,7 +1008,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-wildfly",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -996,7 +1019,7 @@ func TestPush(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1",
+						Name: "example-local-1-wildfly",
 					},
 					Spec: URLSpec{
 						Port:   9090,
@@ -1009,12 +1032,12 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0",
+						Name: "example-0-wildfly",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-wildfly",
 					},
 				},
 			},
@@ -1050,17 +1073,27 @@ func TestPush(t *testing.T) {
 			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
-					Name:   "example-local-0",
-					Port:   8080,
-					Secure: false,
-					Kind:   envinfo.ROUTE,
+					Name: "example-local-0",
+					Port: 8080,
+					Kind: envinfo.ROUTE,
 				},
 				{
-					Name:   "example-local-1",
-					Port:   9090,
-					Secure: false,
-					Host:   "com",
-					Kind:   envinfo.INGRESS,
+					Name: "example-local-1",
+					Port: 9090,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example-local-0",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+				9090: versionsCommon.Endpoint{
+					Name:       "example-local-1",
+					TargetPort: 9090,
+					Secure:     false,
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
@@ -1068,7 +1101,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1078,7 +1111,7 @@ func TestPush(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1",
+						Name: "example-local-1-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   9090,
@@ -1091,12 +1124,12 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0",
+						Name: "example-0-nodejs",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1",
+						Name: "example-1-nodejs",
 					},
 				},
 			},
@@ -1109,10 +1142,16 @@ func TestPush(t *testing.T) {
 				{
 					Name:      "example",
 					Port:      8080,
-					Secure:    true,
 					Host:      "com",
 					TLSSecret: "secret",
 					Kind:      envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     true,
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
@@ -1120,7 +1159,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:      8080,
@@ -1139,10 +1178,16 @@ func TestPush(t *testing.T) {
 			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
-					Name:   "example-local-0",
-					Port:   8080,
-					Secure: false,
-					Kind:   envinfo.ROUTE,
+					Name: "example-local-0",
+					Port: 8080,
+					Kind: envinfo.ROUTE,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example-local-0",
+					TargetPort: 8080,
+					Secure:     false,
 				},
 			},
 			returnedRoutes: &routev1.RouteList{},
@@ -1154,7 +1199,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1166,7 +1211,7 @@ func TestPush(t *testing.T) {
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0",
+						Name: "example-local-0-nodejs",
 					},
 				},
 			},
@@ -1218,10 +1263,16 @@ func TestPush(t *testing.T) {
 			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
-					Name:   "example",
-					Port:   8080,
-					Secure: true,
-					Kind:   envinfo.ROUTE,
+					Name: "example",
+					Port: 8080,
+					Kind: envinfo.ROUTE,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     true,
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
@@ -1229,7 +1280,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1245,11 +1296,17 @@ func TestPush(t *testing.T) {
 			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
-					Name:   "example",
-					Port:   8080,
-					Secure: true,
-					Host:   "com",
-					Kind:   envinfo.INGRESS,
+					Name: "example",
+					Port: 8080,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     true,
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
@@ -1257,7 +1314,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:   8080,
@@ -1276,10 +1333,16 @@ func TestPush(t *testing.T) {
 				{
 					Name:      "example",
 					Port:      8080,
-					Secure:    true,
 					Host:      "com",
 					TLSSecret: "secret",
 					Kind:      envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     true,
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
@@ -1287,7 +1350,7 @@ func TestPush(t *testing.T) {
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "example",
+						Name: "example-nodejs",
 					},
 					Spec: URLSpec{
 						Port:      8080,
@@ -1295,6 +1358,320 @@ func TestPush(t *testing.T) {
 						Host:      "com",
 						TLSSecret: "secret",
 						Kind:      envinfo.INGRESS,
+					},
+				},
+			},
+		},
+		{
+			name:          "env ingress port does not match endpoint defined in devfile",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 9090,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:          "env route port does not match endpoint defined in devfile",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 9090,
+					Kind: envinfo.ROUTE,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:          "no endpoint defined in devfile",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 9090,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{},
+			wantErr:    true,
+		},
+		{
+			name:          "env has ingress defined with same port, but endpoint port defined in devfile is internally exposed",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 8080,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+					Exposure:   "internal",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:          "env has ingress defined with same port, endpoint port defined in devfile is not exposed",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 8080,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+					Exposure:   "none",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:          "env has route defined with same port, but endpoint port defined in devfile is internally exposed",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 8080,
+					Kind: envinfo.ROUTE,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+					Exposure:   "internal",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:          "env has route defined with same port, but endpoint port defined in devfile is internally exposed",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 8080,
+					Kind: envinfo.ROUTE,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+					Exposure:   "internal",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:          "env has route defined with same port, but endpoint port defined in devfile is not exposed",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 8080,
+					Kind: envinfo.ROUTE,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+					Exposure:   "none",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:                "no host defined for ingress should not create any URL",
+			componentName:       "nodejs",
+			args:                args{isRouteSupported: false, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+			},
+			wantErr:         false,
+			returnedRoutes:  &routev1.RouteList{},
+			returnedIngress: &extensionsv1.IngressList{},
+			createdURLs:     []URL{},
+		},
+		{
+			name:                "should create route in openshift cluster if endpoint is defined in devfile",
+			componentName:       "nodejs",
+			args:                args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+			},
+			wantErr:         false,
+			returnedRoutes:  &routev1.RouteList{},
+			returnedIngress: &extensionsv1.IngressList{},
+			createdURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-nodejs",
+					},
+					Spec: URLSpec{
+						Port:   8080,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
+						Path:   "/",
+					},
+				},
+			},
+		},
+		{
+			name:          "should create ingress if endpoint is defined in devfile",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 8080,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+				},
+			},
+			wantErr:         false,
+			returnedRoutes:  &routev1.RouteList{},
+			returnedIngress: &extensionsv1.IngressList{},
+			createdURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-nodejs",
+					},
+					Spec: URLSpec{
+						Port:   8080,
+						Secure: false,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
+						Path:   "/",
+					},
+				},
+			},
+		},
+		{
+			name:                "should create route in openshift cluster with path defined in devfile",
+			componentName:       "nodejs",
+			args:                args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+					Path:       "/testpath",
+				},
+			},
+			wantErr:         false,
+			returnedRoutes:  &routev1.RouteList{},
+			returnedIngress: &extensionsv1.IngressList{},
+			createdURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-nodejs",
+					},
+					Spec: URLSpec{
+						Port:   8080,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
+						Path:   "/testpath",
+					},
+				},
+			},
+		},
+		{
+			name:          "should create ingress with path defined in devfile",
+			componentName: "nodejs",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name: "example",
+					Port: 8080,
+					Host: "com",
+					Kind: envinfo.INGRESS,
+				},
+			},
+			endpintMap: map[int32]versionsCommon.Endpoint{
+				8080: versionsCommon.Endpoint{
+					Name:       "example",
+					TargetPort: 8080,
+					Secure:     false,
+					Path:       "/testpath",
+				},
+			},
+			wantErr:         false,
+			returnedRoutes:  &routev1.RouteList{},
+			returnedIngress: &extensionsv1.IngressList{},
+			createdURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-nodejs",
+					},
+					Spec: URLSpec{
+						Port:   8080,
+						Secure: false,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
+						Path:   "/testpath",
 					},
 				},
 			},
@@ -1344,6 +1721,7 @@ func TestPush(t *testing.T) {
 				EnvURLS:                   tt.existingEnvInfoURLs,
 				IsRouteSupported:          tt.args.isRouteSupported,
 				IsExperimentalModeEnabled: tt.args.isExperimentalModeEnabled,
+				EndpointMap:               tt.endpintMap,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
@@ -1389,11 +1767,12 @@ func TestPush(t *testing.T) {
 							createdObject, ok := value.GetObject().(*extensionsv1.Ingress)
 							if ok {
 								createdURLMap[createdObject.Name] = true
+								expectedHost := fmt.Sprintf("%v.%v", strings.Split(url.Name, "-"+tt.componentName)[0], url.Spec.Host)
 								if createdObject.Name == url.Name &&
 									(createdObject.Spec.TLS != nil) == url.Spec.Secure &&
 									int(createdObject.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal) == url.Spec.Port &&
 									envinfo.INGRESS == url.Spec.Kind &&
-									fmt.Sprintf("%v.%v", url.Name, url.Spec.Host) == createdObject.Spec.Rules[0].Host {
+									expectedHost == createdObject.Spec.Rules[0].Host {
 
 									if url.Spec.Secure {
 										secretName := tt.componentName + "-tlssecret"
@@ -1673,7 +2052,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
+					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS, Path: "/"},
 					Status: URLStatus{
 						State: StateTypeLocallyDeleted,
 					},
@@ -1681,7 +2060,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
+					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS, Path: "/"},
 					Status: URLStatus{
 						State: StateTypePushed,
 					},
@@ -1697,7 +2076,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
-					Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE},
+					Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE, Path: "/"},
 					Status: URLStatus{
 						State: StateTypePushed,
 					},
@@ -1713,7 +2092,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
-					Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE},
+					Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE, Path: "/"},
 					Status: URLStatus{
 						State: StateTypeLocallyDeleted,
 					},
@@ -1731,7 +2110,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
+					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS, Path: "/"},
 					Status: URLStatus{
 						State: StateTypeLocallyDeleted,
 					},
@@ -1739,7 +2118,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
+					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS, Path: "/"},
 					Status: URLStatus{
 						State: StateTypePushed,
 					},
@@ -1765,7 +2144,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
+					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS, Path: "/"},
 					Status: URLStatus{
 						State: StateTypeLocallyDeleted,
 					},
@@ -1773,7 +2152,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
+					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS, Path: "/"},
 					Status: URLStatus{
 						State: StateTypePushed,
 					},
@@ -1804,7 +2183,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
-					Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE},
+					Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE, Path: "/"},
 					Status: URLStatus{
 						State: StateTypePushed,
 					},
@@ -1820,7 +2199,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
-					Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE},
+					Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE, Path: "/"},
 					Status: URLStatus{
 						State: StateTypeLocallyDeleted,
 					},
@@ -1923,7 +2302,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
+				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS, Path: "/"},
 				Status: URLStatus{
 					State: StateTypeLocallyDeleted,
 				},
@@ -1940,7 +2319,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
+				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS, Path: "/"},
 				Status: URLStatus{
 					State: StateTypePushed,
 				},
@@ -1983,7 +2362,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
-				Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE},
+				Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE, Path: "/"},
 				Status: URLStatus{
 					State: StateTypePushed,
 				},
@@ -2017,7 +2396,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
-				Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE},
+				Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE, Path: "/"},
 				Status: URLStatus{
 					State: StateTypeLocallyDeleted,
 				},
@@ -2061,7 +2440,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
+				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS, Path: "/"},
 				Status: URLStatus{
 					State: StateTypePushed,
 				},
@@ -2078,7 +2457,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
+				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS, Path: "/"},
 				Status: URLStatus{
 					State: StateTypeLocallyDeleted,
 				},

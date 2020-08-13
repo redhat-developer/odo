@@ -145,10 +145,15 @@ type IngressParameter struct {
 	IngressDomain string
 	PortNumber    intstr.IntOrString
 	TLSSecretName string
+	Path          string
 }
 
 // GenerateIngressSpec creates an ingress spec
 func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpec {
+	path := "/"
+	if ingressParam.Path != "" {
+		path = ingressParam.Path
+	}
 	ingressSpec := &extensionsv1.IngressSpec{
 		Rules: []extensionsv1.IngressRule{
 			{
@@ -157,7 +162,7 @@ func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpe
 					HTTP: &extensionsv1.HTTPIngressRuleValue{
 						Paths: []extensionsv1.HTTPIngressPath{
 							{
-								Path: "/",
+								Path: path,
 								Backend: extensionsv1.IngressBackend{
 									ServiceName: ingressParam.ServiceName,
 									ServicePort: ingressParam.PortNumber,
