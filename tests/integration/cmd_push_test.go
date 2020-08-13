@@ -192,9 +192,12 @@ var _ = Describe("odo push command tests", func() {
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 		})
 
-		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
+		It("should be able to create a file, push, delete, then push again propagating the deletions and build", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// Create a new file that we plan on deleting later...
 			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
@@ -226,40 +229,6 @@ var _ = Describe("odo push command tests", func() {
 			// Then check to see if it's truly been deleted
 			stdOut = oc.ExecListDir(podName, project, dir)
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
-		})
-
-		It("should build when a new file and a new folder is added in the directory", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-
-			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
-
-			newFilePath := filepath.Join(context, "nodejs-ex", "new-example.html")
-			if err := helper.CreateFileWithContent(newFilePath, "<html>Hello</html>"); err != nil {
-				fmt.Printf("the new-example.html file was not created, reason %v", err.Error())
-			}
-
-			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
-
-			// get the name of running pod
-			podName := oc.GetRunningPodNameOfComp(cmpName, project)
-
-			// verify that the new file was pushed
-			envs := oc.GetEnvs(cmpName, appName, project)
-			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
-			stdOut := oc.ExecListDir(podName, project, dir)
-			Expect(stdOut).To(ContainSubstring(("README.md")))
-
-			// make a new folder and push
-			helper.MakeDir(filepath.Join(context, "nodejs-ex", "exampleDir"))
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-
-			// verify that the new file was pushed
-			stdOut = oc.ExecListDir(podName, project, dir)
-			Expect(stdOut).To(ContainSubstring(("exampleDir")))
 		})
 
 		It("should build when a file and a folder is renamed in the directory", func() {
@@ -299,27 +268,6 @@ var _ = Describe("odo push command tests", func() {
 			Expect(stdOut).To(Not(ContainSubstring("tests")))
 
 			Expect(stdOut).To(ContainSubstring("testing"))
-		})
-
-		It("should not build when changes are detected in a ignored file", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-
-			// create the .odoignore file and push
-			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".odoignore")
-			if err := helper.CreateFileWithContent(ignoreFilePath, ".git\n*.md"); err != nil {
-				fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
-			}
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-
-			// modify a ignored file and push
-			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "README.md"), "This example will serve a welcome page", "This is a example welcome page!")
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
-
-			// test ignores using the flag
-			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "--ignore", "*.md")
-			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
@@ -448,11 +396,11 @@ var _ = Describe("odo push command tests", func() {
 	})
 
 	Context("when .odoignore file exists", func() {
-		It("should create and push the contents of a named component excluding the contents in .odoignore file", func() {
+		It("should create and push the contents of a named component excluding the contents and changes detected in .odoignore file", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 
 			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".odoignore")
-			if err := helper.CreateFileWithContent(ignoreFilePath, ".git\ntests/\nREADME.md"); err != nil {
+			if err := helper.CreateFileWithContent(ignoreFilePath, ".git\n*.md"); err != nil {
 				fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
 			}
 
@@ -469,13 +417,18 @@ var _ = Describe("odo push command tests", func() {
 			stdOut1 := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut1).To(ContainSubstring("views"))
 
-			// verify that the tests was not pushed
-			stdOut2 := oc.ExecListDir(podName, project, dir)
-			Expect(stdOut2).To(Not(ContainSubstring(("tests"))))
-
 			// verify that the README.md file was not pushed
 			stdOut3 := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut3).To(Not(ContainSubstring(("README.md"))))
+
+			// modify a ignored file and push
+			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "README.md"), "This example will serve a welcome page", "This is a example welcome page!")
+			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
+
+			// test ignores using the flag
+			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "--ignore", "*.md")
+			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 		})
 	})
 
@@ -504,18 +457,18 @@ var _ = Describe("odo push command tests", func() {
 	})
 
 	Context("when running odo push with flag --show-log", func() {
-		It("should be able to spam odo push without anything breaking", func() {
+		It("should be able to execute odo push consecutively without breaking anything", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
-			// Iteration 1
+
+			// Run odo push in consecutive iteration
 			output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
-			// Iteration 2
-			output = helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
-			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
-			// Iteration 3
-			output = helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
-			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
+
+			for i := 0; i <= 1; i++ {
+				output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+				Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
+			}
 		})
 	})
 })
