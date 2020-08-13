@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -17,6 +19,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	svc "github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -107,6 +110,9 @@ type ServiceCreateOptions struct {
 	// Location of the file in which yaml specification of CR is stored.
 	// TODO: remove this after service create's interactive mode supports creating operator backed services
 	fromFile string
+
+	// Devfile
+	devfilePath string
 }
 
 // NewServiceCreateOptions creates a new ServiceCreateOptions instance
@@ -128,11 +134,13 @@ func NewDynamicCRD() *DynamicCRD {
 
 // Complete completes ServiceCreateOptions after they've been created
 func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.devfilePath = filepath.Join(o.componentContext, component.DevfilePath)
+
 	if len(args) == 0 || !cmd.HasFlags() {
 		o.interactive = true
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(o.devfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else if o.componentContext != "" {
 		o.Context = genericclioptions.NewContext(cmd)
@@ -144,8 +152,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 	var class scv1beta1.ClusterServiceClass
 
-	if experimental.IsExperimentalModeEnabled() {
-		// we don't support interactive mode for Operator Hub yet
+	if util.CheckPathExists(o.devfilePath) {
 		o.interactive = false
 
 		// if user has just used "odo service create", simply return
@@ -209,7 +216,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		}
 		// if only one arg is given, then it is considered as service name and service type both
 		// ONLY if not running in Experimental mode
-		if !experimental.IsExperimentalModeEnabled() {
+		if !util.CheckPathExists(o.devfilePath) {
 			// This is because an operator with name
 			// "etcdoperator.v0.9.4-clusterwide" would lead to creation of a
 			// serice with name like
@@ -277,7 +284,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	}
 
 	// we want to find an Operator only if something's passed to the crd flag on CLI
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(o.devfilePath) {
 		d := NewDynamicCRD()
 		// if the user wants to create service from a file, we check for
 		// existence of file and validate if the requested operator and CR
@@ -430,7 +437,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
 	s := &log.Status{}
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(o.devfilePath) {
 		// in case of an opertor backed service, name of the service is
 		// provided by the yaml specification in alm-examples. It might also
 		// happen that a user spins up Service Catalog based service in
@@ -445,7 +452,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 		log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
 	}
 
-	if experimental.IsExperimentalModeEnabled() && o.CustomResource != "" {
+	if util.CheckPathExists(o.devfilePath) && o.CustomResource != "" {
 		// if experimental mode is enabled and o.CustomResource is not empty, we're expected to create an Operator backed service
 		if o.DryRun {
 			// if it's dry run, only print the alm-example (o.CustomResourceDefinition) and exit
@@ -512,15 +519,13 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
-		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
-		serviceCreateCmd.Short = createShortDescExperimental
-		serviceCreateCmd.Long = createLongDescExperimental
-		serviceCreateCmd.Example += "\n\n" + fmt.Sprintf(createOperatorExample, fullName)
-		serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
-		// remove this feature after enabling service create interactive mode for operator backed services
-		serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
-	}
+	serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
+	serviceCreateCmd.Short = createShortDescExperimental
+	serviceCreateCmd.Long = createLongDescExperimental
+	serviceCreateCmd.Example += "\n\n" + fmt.Sprintf(createOperatorExample, fullName)
+	serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
+	// remove this feature after enabling service create interactive mode for operator backed services
+	serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
 
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringArrayVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")

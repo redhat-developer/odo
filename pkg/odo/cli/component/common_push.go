@@ -127,7 +127,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		}
 	}
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist)
+	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, true)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}

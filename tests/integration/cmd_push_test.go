@@ -45,7 +45,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("Check that pod timeout works and we time out immediately..", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "preference", "set", "PushTimeout", "1")
 			output := helper.CmdShouldFail("odo", "push", "--context", context+"/nodejs-ex")
 			Expect(output).To(ContainSubstring("waited 1s but couldn't find running pod matching selector"))
@@ -58,7 +58,7 @@ var _ = Describe("odo push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			helper.CmdShouldPass("odo", "config", "set", "Memory", "300Mi", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -68,7 +68,7 @@ var _ = Describe("odo push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			helper.CmdShouldPass("odo", "config", "set", "minmemory", "100Mi", "--context", context)
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
@@ -79,7 +79,7 @@ var _ = Describe("odo push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			helper.CmdShouldPass("odo", "config", "set", "maxmemory", "400Mi", "--context", context)
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
@@ -90,7 +90,7 @@ var _ = Describe("odo push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			helper.CmdShouldPass("odo", "config", "set", "cpu", "0.4", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -100,7 +100,7 @@ var _ = Describe("odo push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			helper.CmdShouldPass("odo", "config", "set", "mincpu", "0.4", "--context", context)
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
@@ -111,7 +111,7 @@ var _ = Describe("odo push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			helper.CmdShouldPass("odo", "config", "set", "maxcpu", "0.5", "--context", context)
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
@@ -123,7 +123,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("Check for labels", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// Check for all the labels
@@ -154,7 +154,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("Push, modify a file and then push outside of the working directory", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// Create a new file to test propagating changes
@@ -178,7 +178,7 @@ var _ = Describe("odo push command tests", func() {
 	Context("when push command is executed", func() {
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
 			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
@@ -194,7 +194,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 
 			// Create a new file that we plan on deleting later...
 			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
@@ -230,7 +230,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should build when a new file and a new folder is added in the directory", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
@@ -264,7 +264,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should build when a file and a folder is renamed in the directory", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
@@ -303,7 +303,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should not build when changes are detected in a ignored file", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 
 			// create the .odoignore file and push
 			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".odoignore")
@@ -324,7 +324,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
 
@@ -335,7 +335,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should push only the modified files", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
@@ -407,7 +407,7 @@ var _ = Describe("odo push command tests", func() {
 			oc.ImportJavaIS(project)
 			cmpName := "backend"
 			helper.CopyExample(filepath.Join("source", "openjdk"), context)
-			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "backend", "--project", project, "--context", context, "--app", appName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
@@ -456,7 +456,7 @@ var _ = Describe("odo push command tests", func() {
 				fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
 			}
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
 			// get the name of running pod
@@ -482,7 +482,7 @@ var _ = Describe("odo push command tests", func() {
 	Context("when .gitignore file exists", func() {
 		It("should create and push the contents of a named component and include odo-file-index.json path to .gitignore file to exclude the contents", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 
 			// push and include the odo-file-index.json path to .gitignore file
 			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context, "nodejs-ex"))
@@ -494,7 +494,7 @@ var _ = Describe("odo push command tests", func() {
 	Context("when .gitignore file does not exist", func() {
 		It("should create and push the contents of a named component and also create .gitignore then include odo-file-index.json path to .gitignore file to exclude the contents", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			// push and include the odo-file-index.json path to .gitignore file
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -506,7 +506,7 @@ var _ = Describe("odo push command tests", func() {
 	Context("when running odo push with flag --show-log", func() {
 		It("should be able to spam odo push without anything breaking", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
 			// Iteration 1
 			output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))

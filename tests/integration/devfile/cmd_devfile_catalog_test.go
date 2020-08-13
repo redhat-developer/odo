@@ -24,7 +24,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)

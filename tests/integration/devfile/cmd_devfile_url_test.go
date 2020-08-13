@@ -31,9 +31,6 @@ var _ = Describe("odo devfile url command tests", func() {
 		currentWorkingDirectory = helper.Getwd()
 		componentName = helper.RandString(6)
 		helper.Chdir(context)
-
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	// Clean up after the test

@@ -31,9 +31,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
-
-		// Set experimental mode to true
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	// Clean up after the test
