@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	kubeutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
@@ -88,11 +90,14 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 }
 
 // GetIngressOrRoute returns ingress/route spec for given URL name
-func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string, routeSupported bool) (URL, error) {
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, devfilePath string, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
 	var getRouteErr error
+
+	// route/ingress name is defined as <urlName>-<componentName>
+	// to avoid error due to duplicate ingress name defined in different devfile components
 	remoteURLName := fmt.Sprintf("%s-%s", urlName, componentName)
 	// Check whether remote already created the ingress
 	ingress, getIngressErr := kClient.GetIngress(remoteURLName)
@@ -109,34 +114,66 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 		return URL{}, errors.Wrap(getRouteErr, "unable to get route")
 	}
 
+	devObj, err := devfile.ParseAndValidate(devfilePath)
+	if err != nil {
+		return URL{}, errors.Wrap(err, "fail to parse the devfile")
+	}
+	endpointsMap, err := kubeutils.GetEndpoints(devObj.Data)
+	if err != nil {
+		return URL{}, errors.Wrap(err, "unable to get endpoints")
+	}
+
 	envinfoURLs := envSpecificInfo.GetURL()
-	for _, url := range envinfoURLs {
-		// ignore Docker URLs
-		if url.Kind == envinfo.DOCKER {
+	var devfileURL envinfo.EnvInfoURL
+	for _, localEndpoint := range endpointsMap {
+		if localEndpoint.Name != urlName {
 			continue
 		}
-		if !routeSupported && url.Kind == envinfo.ROUTE {
-			continue
+		if localEndpoint.Exposure == "none" || localEndpoint.Exposure == "local" {
+			return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
 		}
-		localURL := ConvertEnvinfoURL(url, componentName)
-		// search local URL, if it exist in local, update state with remote status
-		if localURL.Name == urlName {
-			if remoteExist {
-				if ingress != nil && ingress.Spec.Rules != nil {
-					// Remote exist, but not in local, so it's deleted status
-					clusterURL := getMachineReadableFormatIngress(*ingress)
-					clusterURL.Status.State = StateTypePushed
-					return clusterURL, nil
-				} else if route != nil {
-					clusterURL := getMachineReadableFormat(*route)
-					clusterURL.Status.State = StateTypePushed
-					return clusterURL, nil
-				}
-			} else {
-				localURL.Status.State = StateTypeNotPushed
+		for _, envURL := range envinfoURLs {
+			if envURL.Name != urlName {
+				continue
 			}
-			return localURL, nil
+			if envURL.Kind == envinfo.DOCKER {
+				return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Docker", urlName))
+			}
+			if !routeSupported && envURL.Kind == envinfo.ROUTE {
+				return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Route, but Route is not support in current cluster", urlName))
+			}
+			devfileURL = envURL
+			devfileURL.Port = int(localEndpoint.TargetPort)
+			devfileURL.Secure = localEndpoint.Secure
 		}
+		if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+			// Devfile endpoint by default should create a route if no host information is provided in env.yaml
+			// If it is not openshify cluster, should ignore the endpoint entry when executing url describe/list
+			if !routeSupported {
+				break
+			}
+			devfileURL.Name = urlName
+			devfileURL.Port = int(localEndpoint.TargetPort)
+			devfileURL.Secure = localEndpoint.Secure
+			devfileURL.Kind = envinfo.ROUTE
+
+		}
+		localURL := ConvertEnvinfoURL(devfileURL, componentName)
+		if remoteExist {
+			if ingress != nil && ingress.Spec.Rules != nil {
+				// Remote exist, but not in local, so it's deleted status
+				clusterURL := getMachineReadableFormatIngress(*ingress)
+				clusterURL.Status.State = StateTypePushed
+				return clusterURL, nil
+			} else if route != nil {
+				clusterURL := getMachineReadableFormat(*route)
+				clusterURL.Status.State = StateTypePushed
+				return clusterURL, nil
+			}
+		} else {
+			localURL.Status.State = StateTypeNotPushed
+		}
+		return localURL, nil
 	}
 
 	if remoteExist {

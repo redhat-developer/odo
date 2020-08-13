@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -20,6 +21,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/url"
+	pkgutil "github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -38,16 +40,21 @@ type URLDescribeOptions struct {
 	componentContext string
 	url              string
 	*genericclioptions.Context
+	DevfilePath string
+	isDevFile   bool
 }
 
 // NewURLDescribeOptions creates a new NewURLDescribeOptions instance
 func NewURLDescribeOptions() *URLDescribeOptions {
-	return &URLDescribeOptions{&config.LocalConfigInfo{}, "", "", &genericclioptions.Context{}}
+	return &URLDescribeOptions{&config.LocalConfigInfo{}, "", "", &genericclioptions.Context{}, "", false}
 }
 
 // Complete completes URLDescribeOptions after they've been Listed
 func (o *URLDescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	o.DevfilePath = clicomponent.DevfilePath
+
+	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.DevfilePath)
+	if o.isDevFile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
@@ -68,7 +75,7 @@ func (o *URLDescribeOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url describe command
 func (o *URLDescribeOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.isDevFile {
 		if pushtarget.IsPushTargetDocker() {
 			client, err := lclient.New()
 			if err != nil {
@@ -114,10 +121,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			// route/ingress name is defined as <urlName>-<componentName>
-			// to avoid error due to duplicate ingress name defined in different devfile components
-			// urlName := fmt.Sprintf("%s-%s", o.url, componentName)
-			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, componentName, routeSupported)
+			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, o.DevfilePath, componentName, routeSupported)
 			if err != nil {
 				return err
 			}
@@ -130,9 +134,9 @@ func (o *URLDescribeOptions) Run() (err error) {
 				// are there changes between local and cluster states?
 				outOfSync := false
 				if u.Spec.Kind == envinfo.ROUTE {
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 				} else {
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName)), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName)), "", u.Spec.Host, o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 				}
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
@@ -158,7 +162,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 
 			// are there changes between local and cluster states?
 			outOfSync := false
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port)
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port)
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
 			}
