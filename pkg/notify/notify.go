@@ -1,11 +1,10 @@
 package notify
 
 import (
-	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -18,12 +17,12 @@ const (
 // tag of the latest release
 func getLatestReleaseTag() (string, error) {
 
-	resp, err := http.Get(VersionFetchURL)
-	if err != nil {
-		return "", errors.Wrap(err, "error getting latest release")
+	request := util.HTTPRequestParams{
+		URL: VersionFetchURL,
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+
+	// Make request and cache response for 60 minutes
+	body, err := util.HTTPGetRequest(request, 60)
 	if err != nil {
 		return "", errors.Wrap(err, "error getting latest release")
 	}
