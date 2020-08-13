@@ -1,13 +1,16 @@
 package common
 
 import (
+	"io"
+	"strings"
+
+	"github.com/openshift/odo/pkg/envinfo"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
-	"io"
 	"k8s.io/klog"
-	"strings"
 )
 
 // ComponentInfoFactory defines a type for a function which creates a ComponentInfo based on the information provided by the specified DevfileCommand.
@@ -119,11 +122,16 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		return err
 	}
 
+	previousMode := params.EnvSpecificInfo.GetRunMode()
+	currentMode := envinfo.Run
+
 	group := common.RunCommandGroupType
 	defaultCmd := string(DefaultDevfileRunCommand)
+
 	if params.Debug {
 		group = common.DebugCommandGroupType
 		defaultCmd = string(DefaultDevfileDebugCommand)
+		currentMode = envinfo.Debug
 	}
 
 	if command, ok := commandsMap[group]; ok {
@@ -137,17 +145,21 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			}
 		}
 
+		restart := IsRestartRequired(command)
+
 		// if we need to restart, issue supervisor command to stop all running commands first
-		if componentExists && IsRestartRequired(command) {
-			klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
-			if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
-				if err != nil {
-					return err
+		if componentExists {
+			if restart || (previousMode != currentMode) {
+				klog.V(4).Infof("supervisord stop command %s to restart or start other command", previousMode)
+				if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
+					if err != nil {
+						return err
+					}
+					commands = append(commands, cmd)
 				}
-				commands = append(commands, cmd)
+			} else {
+				klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
 			}
-		} else {
-			klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
 		}
 
 		// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
