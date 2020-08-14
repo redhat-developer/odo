@@ -7,7 +7,6 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
-	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -243,10 +242,10 @@ func getSupervisordStatusInContainer(containerID string, a Adapter) []supervisor
 		ContainerName: containerID,
 	}
 
-	stdoutWriter, stdoutOutputChannel := exec.CreateConsoleOutputWriterAndChannel()
-	stderrWriter, stderrOutputChannel := exec.CreateConsoleOutputWriterAndChannel()
+	stdoutWriter, stdoutOutputChannel := common.CreateConsoleOutputWriterAndChannel()
+	stderrWriter, stderrOutputChannel := common.CreateConsoleOutputWriterAndChannel()
 
-	err := exec.ExecuteCommand(&a.Client, compInfo, command, false, stdoutWriter, stderrWriter)
+	err := common.ExecuteCommand(&a.Client, compInfo, command, false, stdoutWriter, stderrWriter)
 
 	// Close the writer and wait the console output
 	stdoutWriter.Close()

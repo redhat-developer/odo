@@ -15,7 +15,6 @@ import (
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/machineoutput"
 )
 
@@ -331,10 +330,10 @@ func getSupervisordStatusInContainer(podName string, containerName string, a Ada
 		PodName:       podName,
 	}
 
-	stdoutWriter, stdoutOutputChannel := exec.CreateConsoleOutputWriterAndChannel()
-	stderrWriter, stderrOutputChannel := exec.CreateConsoleOutputWriterAndChannel()
+	stdoutWriter, stdoutOutputChannel := common.CreateConsoleOutputWriterAndChannel()
+	stderrWriter, stderrOutputChannel := common.CreateConsoleOutputWriterAndChannel()
 
-	err := exec.ExecuteCommand(&a.Client, compInfo, command, false, stdoutWriter, stderrWriter)
+	err := common.ExecuteCommand(&a.Client, compInfo, command, false, stdoutWriter, stderrWriter)
 
 	// Close the writer and wait the console output
 	stdoutWriter.Close()

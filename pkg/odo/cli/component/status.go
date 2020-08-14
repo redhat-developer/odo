@@ -62,10 +62,6 @@ func NewStatusOptions() *StatusOptions {
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	so.devfilePath = filepath.Join(so.componentContext, DevfilePath)
 
-	if !experimental.IsExperimentalModeEnabled() {
-		return errors.New("the status command is only supported in experimental mode")
-	}
-
 	// if experimental mode is enabled and devfile is present
 	if util.CheckPathExists(so.devfilePath) {
 		envinfo, err := envinfo.NewEnvSpecificInfo(so.componentContext)
