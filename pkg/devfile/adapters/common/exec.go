@@ -9,6 +9,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // ExecClient  is a wrapper around ExecCMDInContainer which executes a command in a specific container of a pod.
@@ -39,9 +40,9 @@ func ExecuteCommand(client ExecClient, compInfo ComponentInfo, command []string,
 
 	if err != nil {
 		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
-		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
+		klog.V(4).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
 
-		return err
+		return errors.Wrapf(err, "Unable to exec command %v: \n%v", command, cmdOutput)
 	}
 
 	return
