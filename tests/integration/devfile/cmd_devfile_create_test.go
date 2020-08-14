@@ -1,9 +1,11 @@
 package devfile
 
 import (
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -249,6 +251,44 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 		})
 
+		Context("Handle devfiles with parent", func() {
+			var server *http.Server
+			var freePort int
+			var parentTmpFolder string
+
+			var _ = BeforeSuite(func() {
+				// get a free port
+				var err error
+				freePort, err = util.HTTPGetFreePort()
+				Expect(err).NotTo(HaveOccurred())
+
+				// move the parent devfiles to a tmp folder
+				parentTmpFolder = helper.CreateNewContext()
+				helper.CopyExample(filepath.Join("source", "devfiles", "parentSupport"), parentTmpFolder)
+				// update the port in the required devfile with the free port
+				helper.ReplaceString(filepath.Join(parentTmpFolder, "devfile-middle-layer.yaml"), "(-1)", strconv.Itoa(freePort))
+
+				// start the server and serve from the tmp folder of the devfiles
+				server = helper.HttpFileServer(freePort, parentTmpFolder)
+
+				// wait for the server to be respond with the desired result
+				helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
+			})
+
+			var _ = AfterSuite(func() {
+				helper.DeleteDir(parentTmpFolder)
+				err := server.Close()
+				Expect(err).To(BeNil())
+			})
+
+			It("should successfully create the devfile component with valid specifies URL path", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile",
+					"https://raw.githubusercontent.com/elsony/devfile-registry/master/devfiles/nodejs/devfile.yaml",
+					"--registry", "http://localhost:\"+strconv.Itoa(freePort)",
+				)
+			})
+		})
+
 		Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {
 			JustBeforeEach(func() {
 				newContext := path.Join(context, "newContext")
@@ -259,10 +299,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should successfully create the devfile component with valid file system path", func() {
 				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", devfilePath)
-			})
-
-			It("should successfully create the devfile component with valid specifies URL path", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/elsony/devfile-registry/master/devfiles/nodejs/devfile.yaml")
 			})
 
 			It("should fail to create the devfile component with invalid file system path", func() {
