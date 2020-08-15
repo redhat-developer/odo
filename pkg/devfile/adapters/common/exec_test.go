@@ -31,7 +31,10 @@ func TestCreateConsoleOutputWriterAndChannel(t *testing.T) {
 
 			// Write input text
 			for _, toSend := range tt.Input {
-				inputWriter.Write([]byte(toSend + "\n"))
+				_, err := inputWriter.Write([]byte(toSend + "\n"))
+				if err != nil {
+					t.Fatalf("Unable to write to channel %v", err)
+				}
 			}
 
 			// Close and wait for result
