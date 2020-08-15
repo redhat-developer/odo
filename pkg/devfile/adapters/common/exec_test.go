@@ -17,11 +17,11 @@ func TestCreateConsoleOutputWriterAndChannel(t *testing.T) {
 		},
 		{
 			Name:  "Close channel with a single line of text sent",
-			Input: []string{"hi"},
+			Input: []string{"one"},
 		},
 		{
 			Name:  "Close channel with multiple lines of text sent",
-			Input: []string{"hi"},
+			Input: []string{"one", "two", "three", "four", "five"},
 		},
 	}
 	for _, tt := range tests {

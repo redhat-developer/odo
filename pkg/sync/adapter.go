@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo-47/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -278,33 +277,6 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 	// Write the result
 	return util.WriteFile(fileIndex.Files, indexFilePath)
 
-}
-
-// isRemoteFolderEmpty returns true if the 'syncFolder' path in the pod contains no files/folders, false otherwise
-func isRemoteFolderEmpty(a Adapter, compInfo common.ComponentInfo, syncFolder string) (bool, error) {
-
-	stdoutWriter, stdoutOutputChan := common.CreateConsoleOutputWriterAndChannel()
-	stderrWriter, stderrOutputChan := common.CreateConsoleOutputWriterAndChannel()
-
-	if err := common.ExecuteCommand(a.Client, compInfo, []string{"ls", "-a", syncFolder}, false, stdoutWriter, stderrWriter); err != nil {
-		return false, err
-	}
-
-	stdoutWriter.Close()
-	stdout := <-stdoutOutputChan
-
-	stderrWriter.Close()
-	stderr := <-stderrOutputChan
-
-	// Count the number of lines from ls, should be 0 (excluding . and ..)
-	stdoutLinesFiltered := 0
-	for _, line := range stdout {
-		if line != ".." && line != "." {
-			stdoutLinesFiltered++
-		}
-	}
-
-	return stdoutLinesFiltered == 0 && len(stderr) == 0, nil
 }
 
 // getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container
