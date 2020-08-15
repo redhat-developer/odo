@@ -109,14 +109,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			}
 		}
 
-		if isForcePush {
-			//reset the index
-			err = util.DeleteIndexFile(pushParameters.Path)
-			if err != nil {
-				return false, errors.Wrap(err, "unable to reset the index file")
-			}
-
-		}
 		// run the indexer and find the modified/added/deleted/renamed files
 		ret, err = util.RunIndexer(pushParameters.Path, absIgnoreRules)
 		s.End(true)
@@ -143,7 +135,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		changedFiles = filesChangedFiltered
 		klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
-		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
+		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !isForcePush {
 			// no file was modified/added/deleted/renamed, thus return without synching files
 			log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 			return false, nil
@@ -213,41 +205,6 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 			// nothing to push
 			s.End(true)
 			return nil
-		}
-	}
-
-	if isForcePush {
-		// If isForcePush is set, then the entire local directory contents will be copied over by CopyFile(...), thus
-		// we first need to clear the remote target folder.
-
-		err = common.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, false, nil, nil)
-		if err != nil {
-			// This command will return a non-zero error code if 'syncFolder' cannot be removed; this occurs
-			// if the folder is owned by a different container user (for example, if it is a source volume mount) or
-			// if we do not have sufficient permissions to remove it.
-			//
-			// However, for this function, we do not want 'syncFolder' itself to be removed, we just want the
-			// contents inside of it removed.
-			//
-			// So, to verify that the files inside that directory are actually removed, we will call
-			// isDirectoryEmpty below.
-			klog.V(4).Infof("error on deleting sync folder, but this is most likely an expected error. error: %v", err)
-		}
-
-		// (Re)create the folder
-		err = common.ExecuteCommand(a.Client, compInfo, getCmdToCreateSyncFolder(syncFolder), false, nil, nil)
-		if err != nil {
-			return err
-		}
-
-		// The folder contents should be empty after we have cleared it; return an error if it's not
-		if isEmpty, err := isRemoteFolderEmpty(a, compInfo, syncFolder); err != nil || !isEmpty {
-
-			if err != nil {
-				return err
-			}
-			return errors.Errorf("remote directory '%s' should be empty, but is not", syncFolder)
-
 		}
 	}
 

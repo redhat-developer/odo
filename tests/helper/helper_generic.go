@@ -137,14 +137,14 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, success func(out
 		select {
 		case <-timeoutCh:
 			if buf.String() != "" {
-				_, err := fmt.Fprintln(GinkgoWriter, "Output from stdout:")
+				_, err := fmt.Fprintln(GinkgoWriter, "Output from stdout ["+cmdStr+"]:")
 				Expect(err).To(BeNil())
 				_, err = fmt.Fprintln(GinkgoWriter, buf.String())
 				Expect(err).To(BeNil())
 			}
 			errBufStr := errBuf.String()
 			if errBufStr != "" {
-				_, err := fmt.Fprintln(GinkgoWriter, "Output from stderr:")
+				_, err := fmt.Fprintln(GinkgoWriter, "Output from stderr ["+cmdStr+"]:")
 				Expect(err).To(BeNil())
 				_, err = fmt.Fprintln(GinkgoWriter, errBufStr)
 				Expect(err).To(BeNil())
