@@ -28,7 +28,7 @@ func SelectStarterProject(projects []common.DevfileStarterProject) string {
 
 	var download = false
 	var selectedProject string
-	prompt := &survey.Confirm{Message: "Do you want to download starter project"}
+	prompt := &survey.Confirm{Message: "Do you want to download a starter project"}
 	err := survey.AskOne(prompt, &download, nil)
 	ui.HandleError(err)
 
