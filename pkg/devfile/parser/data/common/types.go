@@ -318,25 +318,25 @@ type DevfileProject struct {
 type DevfileStarterProject struct {
 
 	// Project name
-	Name string `json:"name"`
+	Name string `json:"name" yaml:"name"`
 
 	// Description of a starter project
-	Description string `json:"description,omitempty"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	// Description of a starter project
-	MarkdownDescription string `json:"markdownDescription,omitempty"`
+	MarkdownDescription string `json:"markdownDescription,omitempty" yaml:"markdownDescription,omitempty"`
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
-	ClonePath string `json:"clonePath,omitempty"`
+	ClonePath string `json:"clonePath,omitempty" yaml:"clonePath,omitempty"`
 
 	// Project's Git source
-	Git *Git `json:"git,omitempty"`
+	Git *Git `json:"git,omitempty" yaml:"git,omitempty"`
 
 	// Project's GitHub source
-	Github *Github `json:"github,omitempty"`
+	Github *Github `json:"github,omitempty" yaml:"github,omitempty"`
 
 	// Project's Zip source
-	Zip *Zip `json:"zip,omitempty"`
+	Zip *Zip `json:"zip,omitempty" yaml:"zip,omitempty"`
 }
 
 // Volume Allows specifying the definition of a volume shared by several other components
