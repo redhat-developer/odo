@@ -46,6 +46,8 @@ var _ = Describe("odo storage command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
 			stdErr := helper.CmdShouldFail("odo", "storage", "create", "pv1")
 			Expect(stdErr).To(ContainSubstring("required flag"))
+			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--path", "/data")
+			helper.MatchAllInOutput(stdErr, []string{"size", "required"})
 			//helper.CmdShouldFail("odo", "storage", "create", "pv1", "-o", "json")
 		})
 	})

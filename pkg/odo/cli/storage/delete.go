@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"github.com/openshift/odo/pkg/devfile"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/util"
-
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"path/filepath"
 )
 
 const deleteRecommendedCommandName = "delete"
@@ -45,6 +45,8 @@ func NewStorageDeleteOptions() *StorageDeleteOptions {
 
 // Complete completes StorageDeleteOptions after they've been created
 func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.devfilePath = filepath.Join(o.componentContext, o.devfilePath)
+	o.isDevfile = util.CheckPathExists(o.devfilePath)
 	if o.isDevfile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
@@ -140,8 +142,6 @@ func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
-	o.isDevfile = util.CheckPathExists(o.devfilePath)
 
 	storageDeleteCmd.Flags().BoolVarP(&o.storageForceDeleteFlag, "force", "f", false, "Delete storage without prompting")
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)

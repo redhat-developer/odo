@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"path/filepath"
 )
 
 const createRecommendedCommandName = "create"
@@ -47,6 +48,8 @@ func NewStorageCreateOptions() *StorageCreateOptions {
 
 // Complete completes StorageCreateOptions after they've been created
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.devfilePath = filepath.Join(o.componentContext, o.devfilePath)
+	o.isDevfile = util.CheckPathExists(o.devfilePath)
 	if o.isDevfile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
@@ -57,6 +60,10 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
 		o.componentName = o.LocalConfigInfo.GetName()
+
+		if o.storageSize == "" {
+			return fmt.Errorf("\"size\" flag is required for s2i components")
+		}
 	}
 
 	if len(args) != 0 {
@@ -138,15 +145,10 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	o.isDevfile = util.CheckPathExists(o.devfilePath)
-
 	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
 
 	_ = storageCreateCmd.MarkFlagRequired("path")
-	if !o.isDevfile {
-		_ = storageCreateCmd.MarkFlagRequired("size")
-	}
 
 	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)

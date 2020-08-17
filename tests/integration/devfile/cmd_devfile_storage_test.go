@@ -25,8 +25,6 @@ var _ = Describe("odo devfile storage command tests", func() {
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 
-		helper.Chdir(context)
-
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
 		// Devfile push requires experimental mode to be set

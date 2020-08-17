@@ -40,7 +40,7 @@ func (d *DevfileObj) WriteYamlDevfile() error {
 
 	// Write to devfile.yaml
 	fs := d.Ctx.GetFs()
-	err = fs.WriteFile(OutputDevfileYamlPath, yamlData, 0644)
+	err = fs.WriteFile(d.Ctx.GetAbsPath(), yamlData, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create devfile yaml file")
 	}
