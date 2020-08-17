@@ -45,8 +45,20 @@ func TestPrintSupportedParameters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := strings.TrimSpace(printSupportedParameters(tt.supportedParameters))
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got %s, want %s", got, tt.want)
+
+			gotStrings := strings.Split(got, "\n")
+			wantStrings := strings.Split(tt.want, "\n")
+
+			gotStringMap := make(map[string]bool)
+			for _, gotString := range gotStrings {
+				gotStringMap[gotString] = true
+			}
+
+			for _, wantString := range wantStrings {
+				_, found := gotStringMap[wantString]
+				if !found {
+					t.Errorf("String %s not found in output %s", wantString, got)
+				}
 			}
 		})
 	}
