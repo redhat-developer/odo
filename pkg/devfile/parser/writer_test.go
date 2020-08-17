@@ -11,16 +11,18 @@ import (
 func TestWriteJsonDevfile(t *testing.T) {
 
 	var (
-		devfileTempPath = "devfile.yaml"
-		apiVersion      = "1.0.0"
-		testName        = "TestName"
+		apiVersion = "1.0.0"
+		testName   = "TestName"
 	)
 
 	t.Run("write json devfile", func(t *testing.T) {
 
+		// Use fakeFs
+		fs := filesystem.NewFakeFs()
+
 		// DevfileObj
 		devfileObj := DevfileObj{
-			Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+			Ctx: devfileCtx.FakeContext(fs, OutputDevfileJsonPath),
 			Data: &v100.Devfile100{
 				ApiVersion: v100.ApiVersion(apiVersion),
 				Metadata: v100.Metadata{
@@ -28,10 +30,6 @@ func TestWriteJsonDevfile(t *testing.T) {
 				},
 			},
 		}
-
-		// Use fakeFs
-		fs := filesystem.NewFakeFs()
-		devfileObj.Ctx.Fs = fs
 
 		// test func()
 		err := devfileObj.WriteJsonDevfile()
@@ -46,9 +44,12 @@ func TestWriteJsonDevfile(t *testing.T) {
 
 	t.Run("write yaml devfile", func(t *testing.T) {
 
+		// Use fakeFs
+		fs := filesystem.NewFakeFs()
+
 		// DevfileObj
 		devfileObj := DevfileObj{
-			Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+			Ctx: devfileCtx.FakeContext(fs, OutputDevfileYamlPath),
 			Data: &v100.Devfile100{
 				ApiVersion: v100.ApiVersion(apiVersion),
 				Metadata: v100.Metadata{
@@ -56,10 +57,6 @@ func TestWriteJsonDevfile(t *testing.T) {
 				},
 			},
 		}
-
-		// Use fakeFs
-		fs := filesystem.NewFakeFs()
-		devfileObj.Ctx.Fs = fs
 
 		// test func()
 		err := devfileObj.WriteYamlDevfile()

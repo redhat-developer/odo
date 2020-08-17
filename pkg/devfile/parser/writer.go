@@ -19,7 +19,7 @@ func (d *DevfileObj) WriteJsonDevfile() error {
 
 	// Write to devfile.json
 	fs := d.Ctx.GetFs()
-	err = fs.WriteFile(OutputDevfileJsonPath, jsonData, 0644)
+	err = fs.WriteFile(d.Ctx.GetAbsPath(), jsonData, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create devfile json file")
 	}
