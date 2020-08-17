@@ -18,19 +18,14 @@ var _ = Describe("Example of a clean test", func() {
 	var project string
 	var context string
 
-	// current directory and project (before any test runs) so that it can be restored  after all testing is done
+	// current directory and component name (before any test runs) so that it can be restored  after all testing is done
 	var originalDir string
-	var originalProject string
-	var oc helper.OcRunner
+	var cmpName string
 
 	BeforeEach(func() {
 		// Set default timeout for Eventually assertions
 		// commands like odo push, might take a long time
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-
-		// initialize oc runner
-		// right now it uses oc binary, but we should convert it to client-go
-		oc = helper.NewOcRunner("oc")
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()
@@ -50,38 +45,33 @@ var _ = Describe("Example of a clean test", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
-	Context("when project from KUBECONFIG is used", func() {
-		// Set active project for each test spec
-		JustBeforeEach(func() {
-			originalProject = oc.GetCurrentProject()
-			// WARNING: this project switching makes it impossible to run this in parallel
-			// it should set different KUBECONFIG before witching project
-			oc.SwitchProject(project)
-		})
-
-		// go back to original project after each test
-		JustAfterEach(func() {
-			oc.SwitchProject(originalProject)
-		})
-
-		It("create local nodejs component and push code", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs")
-			// verify that config was properly created
-			helper.ValidateLocalCmpExist(context, "Type,nodejs")
-			output := helper.CmdShouldPass("odo", "push")
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-		})
-	})
-
 	Context("when --project flag is used", func() {
+		JustBeforeEach(func() {
+			cmpName = "nodejs"
+		})
+
 		It("create local nodejs component and push code", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project)
 			// verify that config was properly created
-			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Project,"+project)
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Project,"+project, "Application,app")
 			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
+
+		It("create, push and list local nodejs component", func() {
+			appName := "testing"
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+
+			// verify that config was properly created
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Project,"+project, "Application,"+appName)
+			helper.CmdShouldPass("odo", "push")
+
+			// list the component name
+			cmpListOutput := helper.CmdShouldPass("odo", "list", "--app", appName, "--project", project)
+			Expect(cmpListOutput).To(ContainSubstring(cmpName))
+		})
+
 	})
 })
