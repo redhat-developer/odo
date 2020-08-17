@@ -601,7 +601,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					co.devfileMetadata.devfileSupport = true
 					co.devfileMetadata.devfileLink = devfileComponent.Link
 					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
-					break
 				}
 			}
 

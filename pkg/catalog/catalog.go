@@ -28,8 +28,8 @@ const (
 
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
-func GetDevfileRegistries(registryName string) (map[string]Registry, error) {
-	devfileRegistries := make(map[string]Registry)
+func GetDevfileRegistries(registryName string) ([]Registry, error) {
+	var devfileRegistries []Registry
 
 	cfg, err := preference.New()
 	if err != nil {
@@ -41,17 +41,21 @@ func GetDevfileRegistries(registryName string) (map[string]Registry, error) {
 		for _, registry := range *cfg.OdoSettings.RegistryList {
 			if hasName {
 				if registryName == registry.Name {
-					devfileRegistries[registry.Name] = Registry{
-						Name: registry.Name,
-						URL:  registry.URL,
+					reg := Registry{
+						Name:   registry.Name,
+						URL:    registry.URL,
+						Secure: registry.Secure,
 					}
+					devfileRegistries = append(devfileRegistries, reg)
 					return devfileRegistries, nil
 				}
 			} else {
-				devfileRegistries[registry.Name] = Registry{
-					Name: registry.Name,
-					URL:  registry.URL,
+				reg := Registry{
+					Name:   registry.Name,
+					URL:    registry.URL,
+					Secure: registry.Secure,
 				}
+				devfileRegistries = append(devfileRegistries, reg)
 			}
 		}
 	} else {
@@ -165,9 +169,14 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 	// first retrieve the indices for each registry, concurrently
 	devfileIndicesMutex := &sync.Mutex{}
 	retrieveRegistryIndices := util.NewConcurrentTasks(len(catalogDevfileList.DevfileRegistries))
-	for _, reg := range catalogDevfileList.DevfileRegistries {
+
+	// The 2D slice index is the priority of the registry (highest priority has highest index)
+	// and the element is the devfile slice that belongs to the registry
+	registrySlice := make([][]DevfileComponentType, len(catalogDevfileList.DevfileRegistries))
+	for regPriority, reg := range catalogDevfileList.DevfileRegistries {
 		// Load the devfile registry index.json
-		registry := reg // needed to prevent the lambda from capturing the value
+		registry := reg                 // Needed to prevent the lambda from capturing the value
+		registryPriority := regPriority // Needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			registryDevfiles, err := getRegistryDevfiles(registry)
 			if err != nil {
@@ -176,12 +185,16 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 			}
 
 			devfileIndicesMutex.Lock()
-			catalogDevfileList.Items = append(catalogDevfileList.Items, registryDevfiles...)
+			registrySlice[registryPriority] = registryDevfiles
 			devfileIndicesMutex.Unlock()
 		}})
 	}
 	if err := retrieveRegistryIndices.Run(); err != nil {
 		return *catalogDevfileList, err
+	}
+
+	for _, registryDevfiles := range registrySlice {
+		catalogDevfileList.Items = append(catalogDevfileList.Items, registryDevfiles...)
 	}
 
 	return *catalogDevfileList, nil
