@@ -114,6 +114,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 			})
 
 		})
+
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "delete", "--devfile", "invalid.yaml")
+		})
 	})
 
 	Context("when the project doesn't exist", func() {

@@ -541,6 +541,23 @@ func ExecCommand(context, cmpName string) {
 	helper.CmdShouldPass("odo", args...)
 }
 
+// ExecCommandWithoutComponentAndDevfileFlag executes odo exec without a component and with a devfile flag
+func ExecCommandWithoutComponentAndDevfileFlag(context, cmpName string) {
+	args := []string{"create", "nodejs", cmpName, "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+	args = []string{"exec", "--context", context}
+	args = append(args, []string{"--", "touch", "/projects/blah.js"}...)
+	helper.CmdShouldFail("odo", args...)
+
+	args = []string{"exec", "--context", context, "--devfile", "invalid.yaml"}
+	args = append(args, []string{"--", "touch", "/projects/blah.js"}...)
+	helper.CmdShouldFail("odo", args...)
+}
+
 //ExecWithoutCommand executes odo exec with no user command and fails
 func ExecWithoutCommand(context, cmpName string) {
 	args := []string{"create", "nodejs", cmpName, "--context", context}

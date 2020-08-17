@@ -67,7 +67,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
-			helper.CmdShouldPass("odo", "push", "--debug")
+			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
@@ -75,12 +75,12 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort)
+				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort, "--context", projectDirPath)
 			}()
 
 			// Make sure that the debug information output, outputs correctly.
 			// We do *not* check the json output since the debugProcessID will be different each time.
-			helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json"}, 1, false, func(output string) bool {
+			helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
 				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
 					strings.Contains(output, `"localPort": `+freePort) {
 					return true
@@ -96,8 +96,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
-			helper.CmdShouldPass("odo", "push")
-			helper.CmdShouldPass("odo", "push", "--debug")
+			helper.CmdShouldPass("odo", "push", "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 			// check the env for the runMode
 			envOutput, err := helper.ReadFile(filepath.Join(projectDirPath, ".odo/env/env.yaml"))
@@ -106,13 +106,18 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward")
+				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--context", projectDirPath)
 			}()
 
 			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 			// We are just using this to validate if nodejs agent is listening on the other side
 			helper.HttpWaitForWithStatus("http://localhost:5858", "WebSockets request was expected", 12, 5, 400)
 			stopChannel <- true
+		})
+
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "debug", "port-forward", "--context", projectDirPath, "--devfile", "invalid.yaml")
+			helper.CmdShouldFail("odo", "debug", "info", "--context", projectDirPath, "--devfile", "invalid.yaml")
 		})
 
 	})
@@ -127,7 +132,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
-			helper.CmdShouldPass("odo", "push", "--debug")
+			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
@@ -135,13 +140,13 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort)
+				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort, "--context", projectDirPath)
 			}()
 
 			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 			// We are just using this to validate if nodejs agent is listening on the other side
 			helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
-			runningString := helper.CmdShouldPass("odo", "debug", "info")
+			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", projectDirPath)
 			Expect(runningString).To(ContainSubstring(freePort))
 			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(namespace + "-nodejs-cmp-" + namespace + "-odo-debug.json"))
 			stopChannel <- true
@@ -152,7 +157,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
-			helper.CmdShouldPass("odo", "push", "--debug")
+			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
@@ -160,16 +165,16 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort)
+				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort, "--context", projectDirPath)
 			}()
 
 			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 			// We are just using this to validate if nodejs agent is listening on the other side
 			helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
-			runningString := helper.CmdShouldPass("odo", "debug", "info")
+			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", projectDirPath)
 			Expect(runningString).To(ContainSubstring(freePort))
 			stopChannel <- true
-			failString := helper.CmdShouldFail("odo", "debug", "info")
+			failString := helper.CmdShouldFail("odo", "debug", "info", "--context", projectDirPath)
 			Expect(failString).To(ContainSubstring("not running"))
 
 			// according to https://golang.org/pkg/os/#Signal On Windows, sending os.Interrupt to a process with os.Process.Signal is not implemented

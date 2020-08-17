@@ -39,7 +39,6 @@ type PortForwardOptions struct {
 	// ReadChannel is used to receive status of port forwarding ( ready or not ready )
 	ReadyChannel chan struct{}
 	*genericclioptions.Context
-	DevfilePath string
 
 	isExperimental bool
 }
@@ -65,6 +64,7 @@ const (
 	portforwardCommandName = "port-forward"
 )
 
+// NewPortForwardOptions returns the PortForwardOptions struct
 func NewPortForwardOptions() *PortForwardOptions {
 	return &PortForwardOptions{}
 }
@@ -76,7 +76,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 	o.isExperimental = experimental.IsExperimentalModeEnabled()
 
-	if o.isExperimental && util.CheckPathExists(o.DevfilePath) {
+	if o.isExperimental {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// a small shortcut
@@ -182,9 +182,6 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
-	if experimental.IsExperimentalModeEnabled() {
-		cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-	}
 	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", config.DefaultDebugPort, "Set the local port")
 
 	return cmd

@@ -234,6 +234,11 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{url1, "/testpath", "created"})
 		})
 
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "url", "create", "mynodejs", "--devfile", "invalid.yaml")
+			helper.CmdShouldFail("odo", "url", "delete", "mynodejs", "--devfile", "invalid.yaml")
+		})
+
 	})
 
 	Context("Describing urls", func() {

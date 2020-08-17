@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -41,7 +40,7 @@ func NewURLDeleteOptions() *URLDeleteOptions {
 // Complete completes URLDeleteOptions after they've been Deleted
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+	if experimental.IsExperimentalModeEnabled() {
 
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.urlName = args[0]
@@ -49,7 +48,6 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 		if err != nil {
 			return err
 		}
-		o.CompleteDevfilePath()
 	} else {
 		if o.now {
 			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
@@ -163,7 +161,6 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 	}
 	urlDeleteCmd.Flags().BoolVarP(&o.urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 	o.AddContextFlag(urlDeleteCmd)
-	urlDeleteCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	genericclioptions.AddNowFlag(urlDeleteCmd, &o.now)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
