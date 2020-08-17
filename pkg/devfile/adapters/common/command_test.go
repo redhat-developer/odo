@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"github.com/openshift/odo/pkg/util"
 	"reflect"
 	"testing"
@@ -2006,7 +2007,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 
 func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.Exec {
 	if len(id) == 0 {
-		id, _ = util.GetRandomName("cmd", 10, []string{}, 2)
+		id = fmt.Sprintf("%s-%s", "cmd", util.GenerateRandomString(10))
 	}
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}
