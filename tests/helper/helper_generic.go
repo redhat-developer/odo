@@ -259,3 +259,51 @@ func GetCliRunner() CliRunner {
 func Suffocate(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "\t", "")
 }
+
+type CommonVar struct {
+	// Project is new clean project/namespace for each test
+	Project string
+	// Context is a new temporary directory
+	Context string
+	// CliRunner is program commmand (oc or kubectl runner) according to cluster
+	CliRunner CliRunner
+	// original values to get restored after the test is done
+	OriginalWorkingDirectory string
+	OriginalKubeconfig       string
+}
+
+// CommonBeforeEach is common function runs before every test Spec (It)
+// returns CommonVar values that are used within the test script
+func CommonBeforeEach() CommonVar {
+	SetDefaultEventuallyTimeout(10 * time.Minute)
+	SetDefaultConsistentlyDuration(30 * time.Second)
+
+	commonVar := CommonVar{}
+	commonVar.Context = CreateNewContext()
+	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
+	commonVar.CliRunner = GetCliRunner()
+	commonVar.Project = commonVar.CliRunner.CreateRandNamespaceProject()
+	commonVar.OriginalWorkingDirectory = Getwd()
+
+	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "config.yaml"))
+	LocalKubeconfigSet(commonVar.Context)
+	Chdir(commonVar.Context)
+
+	return commonVar
+}
+
+// CommonAfterEach is common function that cleans up after every test Spec (It)
+func CommonAfterEach(commonVar CommonVar) {
+	// delete the random project/namespace created in CommonBeforeEach
+	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
+
+	// restores the original kubeconfig and working directory
+	Chdir(commonVar.OriginalWorkingDirectory)
+	err := os.Setenv("KUBECONFIG", commonVar.OriginalKubeconfig)
+	Expect(err).NotTo(HaveOccurred())
+
+	// delete the temporary context directory
+	DeleteDir(commonVar.Context)
+
+	os.Unsetenv("GLOBALODOCONFIG")
+}
