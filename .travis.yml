@@ -77,7 +77,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "preference, config, url and debug command integration tests"
+      name: "preference, config, url,storage and debug command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -89,6 +89,7 @@ jobs:
         - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-debug
         - travis_wait make test-cmd-devfile-debug
+        - travis_wait make test-cmd-devfile-storage
         - odo logout
 
     # Run service-catalog e2e tests
@@ -184,7 +185,7 @@ jobs:
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog,url, watch, push, debug, delete, exec, test, log and create command integration tests on kubernetes cluster"
+      name: "devfile catalog,url, watch, push, debug, delete, exec, test, log, storage and create command integration tests on kubernetes cluster"
       env:
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -218,3 +219,4 @@ jobs:
         - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-devfile-test
         - travis_wait make test-cmd-devfile-log
+        - travis_wait make test-cmd-devfile-storage

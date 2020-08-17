@@ -142,3 +142,13 @@ func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName string, proj
 	}
 	return mapOutput
 }
+
+func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
+	session := CmdRunner(kubectl.path, "get", "pvc", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	if output == "" {
+		return []string{}
+	}
+	return strings.Split(output, " ")
+}
