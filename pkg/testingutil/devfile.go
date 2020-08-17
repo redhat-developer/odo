@@ -1,6 +1,7 @@
 package testingutil
 
 import (
+	"fmt"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
@@ -123,7 +124,7 @@ func (d *TestDevfileData) AddCommands(commands ...common.DevfileCommand) error {
 		if _, ok := d.Commands[id]; !ok {
 			d.Commands[id] = command
 		} else {
-			panic("command with id '" + id + "' already exists in this TestDevfileData")
+			return fmt.Errorf("command with id '%s' already exists in this TestDevfileData", id)
 		}
 	}
 	return nil
