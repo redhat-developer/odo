@@ -504,7 +504,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 
 }
 
-func TestGetCommandsMap(t *testing.T) {
+func TestGetCommands(t *testing.T) {
 
 	component := []versionsCommon.DevfileComponent{
 		testingutil.GetFakeContainerComponent("alias1"),
@@ -577,12 +577,12 @@ func TestGetCommandsMap(t *testing.T) {
 
 			commandsMap := devObj.Data.GetCommands()
 			if len(commandsMap) != len(tt.expectedCommands) {
-				t.Errorf("TestGetCommandsMap error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
+				t.Errorf("TestGetCommands error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}
 			for _, command := range tt.expectedCommands {
 				_, ok := commandsMap[command.GetID()]
 				if !ok {
-					t.Errorf("TestGetCommandsMap error: command %v not found in map", command.GetID())
+					t.Errorf("TestGetCommands error: command %v not found in map", command.GetID())
 				}
 			}
 		})
