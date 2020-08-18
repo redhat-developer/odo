@@ -28,6 +28,8 @@ func (evl EnvVarList) ToStringSlice() []string {
 
 	return envSlice
 }
+
+// ToDevfileEnv converts the EnvVarList to the list of Envs supported by devfile
 func (evl EnvVarList) ToDevfileEnv() []common.Env {
 	var envList []common.Env
 	for _, ev := range evl {
@@ -93,6 +95,7 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 
 }
 
+// NewEnvVarListFromDevfileEnv creates an EnvVarList from the list of envs present in a devfile.
 func NewEnvVarListFromDevfileEnv(envList []common.Env) EnvVarList {
 	var envVarList EnvVarList
 	for _, env := range envList {

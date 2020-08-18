@@ -32,8 +32,12 @@ var (
 	lowerCaseDevfileParameters = util.GetLowerCaseParameters(GetDevfileSupportedParameters())
 )
 
+// SetConfiguration allows setting all the parameters that are configurable in a devfile
 func (d DevfileObj) SetConfiguration(parameter string, value interface{}) error {
 
+	// we are ignoring this error becase a developer is usually aware of the type of value that is
+	// being passed. So consider this a shortcut, if you know its a string value use this strValue
+	// else parse it inside the switch case.
 	strValue, _ := value.(string)
 	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
 		switch parameter {
@@ -51,6 +55,7 @@ func (d DevfileObj) SetConfiguration(parameter string, value interface{}) error 
 
 }
 
+// DeleteConfiguration allows deleting  the parameters that are configurable in a devfile
 func (d DevfileObj) DeleteConfiguration(parameter string) error {
 	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
 		switch parameter {
@@ -65,6 +70,7 @@ func (d DevfileObj) DeleteConfiguration(parameter string) error {
 	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
 }
 
+// IsSet checks if a parameter is set in the devfile
 func (d DevfileObj) IsSet(parameter string) bool {
 
 	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
@@ -87,6 +93,7 @@ func (d DevfileObj) setMetadataName(name string) error {
 	return d.WriteYamlDevfile()
 }
 
+// AddEnvVars adds environment variables to all the components in a devfile
 func (d DevfileObj) AddEnvVars(otherList config.EnvVarList) error {
 	components := d.Data.GetComponents()
 	for _, component := range components {
@@ -99,6 +106,7 @@ func (d DevfileObj) AddEnvVars(otherList config.EnvVarList) error {
 	return d.WriteYamlDevfile()
 }
 
+// RemoveEnvVars removes the environment variables which have the keys from all the components in a devfile
 func (d DevfileObj) RemoveEnvVars(keys []string) error {
 	components := d.Data.GetComponents()
 	for _, component := range components {

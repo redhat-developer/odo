@@ -83,7 +83,7 @@ func (o *ViewOptions) Run() (err error) {
 	if o.IsDevfile {
 		repr := o.devfileObj.ToRepresentation()
 		if log.IsJSON() {
-			machineoutput.OutputSuccess(o.devfileObj.WrapFroJSONOutput(repr))
+			machineoutput.OutputSuccess(o.devfileObj.WrapFromJSONOutput(repr))
 			return
 		}
 		representation, err := yaml.Marshal(o.devfileObj.ToRepresentation())

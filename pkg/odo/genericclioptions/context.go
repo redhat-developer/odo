@@ -443,7 +443,6 @@ type internalCxt struct {
 	Application     string
 	cmp             string
 	OutputFlag      string
-	IsDevfile       string
 	LocalConfigInfo *config.LocalConfigInfo
 	KClient         *kclient.Client
 	EnvSpecificInfo *envinfo.EnvSpecificInfo

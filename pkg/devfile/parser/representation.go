@@ -38,7 +38,7 @@ func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 	return confRepr
 }
 
-func (d DevfileObj) WrapFroJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr {
+func (d DevfileObj) WrapFromJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr {
 	return JSONConfigRepr{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DevfileConfiguration",
