@@ -3,7 +3,9 @@ package helper
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -166,6 +168,66 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, success func(out
 			}
 		}
 	}
+}
+
+// RunCmdWithMatchOutputFromBuffer starts the command, and command stdout is attached to buffer.
+// we read data from buffer line by line, and if expected string is matched it returns true
+// It is different from WaitforCmdOut which gives stdout in one go using session.Out.Contents()
+// for commands like odo log -f which streams continuous data and does not terminate by their own
+// we need to read the stream data from buffer.
+func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, program string, args ...string) (bool, error) {
+	var buf, errBuf bytes.Buffer
+
+	command := exec.Command(program, args...)
+	command.Stdout = &buf
+	command.Stderr = &errBuf
+
+	timeoutCh := time.After(timeoutAfter)
+	matchOutputCh := make(chan bool)
+	errorCh := make(chan error)
+
+	_, err := fmt.Fprintln(GinkgoWriter, runningCmd(command))
+	if err != nil {
+		return false, err
+	}
+
+	err = command.Start()
+	if err != nil {
+		return false, err
+	}
+
+	// go routine which is reading data from buffer until expected string matched
+	go func() {
+		for {
+			line, err := buf.ReadString('\n')
+			if err != nil && err != io.EOF {
+				errorCh <- err
+			}
+			if len(line) > 0 {
+				_, err = fmt.Fprintln(GinkgoWriter, line)
+				if err != nil {
+					errorCh <- err
+				}
+				if strings.Contains(line, matchString) {
+					matchOutputCh <- true
+				}
+			}
+		}
+	}()
+
+	for {
+		select {
+		case <-timeoutCh:
+			fmt.Fprintln(GinkgoWriter, errBuf.String())
+			return false, errors.New("Timeout waiting for the conditon")
+		case <-matchOutputCh:
+			return true, nil
+		case <-errorCh:
+			fmt.Fprintln(GinkgoWriter, errBuf.String())
+			return false, <-errorCh
+		}
+	}
+
 }
 
 // GetUserHomeDir gets the user home directory
