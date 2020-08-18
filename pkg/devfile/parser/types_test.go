@@ -810,7 +810,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			name: "case 1: override a starter project's fields",
+			name: "Case 1: override a starter projects fields",
 			devFileObj: DevfileObj{
 				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
 				Data: &v200.Devfile200{
@@ -853,7 +853,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 			},
 		},
 		{
-			name: "case 2: if multiple, override the correct starter project",
+			name: "Case 2: if multiple, override the correct starter project",
 			devFileObj: DevfileObj{
 				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
 				Data: &v200.Devfile200{
@@ -908,7 +908,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 			},
 		},
 		{
-			name: "case 3: throw error if starter project to override is not found",
+			name: "Case 3: throw error if starter project to override is not found",
 			devFileObj: DevfileObj{
 				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
 				Data: &v200.Devfile200{
