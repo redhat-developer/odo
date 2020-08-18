@@ -22,7 +22,7 @@ import (
 const setCommandName = "set"
 
 var (
-	setLongDesc = ktemplates.LongDesc(`Set an individual value in the odo configuration file.
+	setLongDesc = ktemplates.LongDesc(`Set an individual value in the devfile or odo configuration file.
 
 %[1]s`)
 	setExample = ktemplates.Examples(`
@@ -41,6 +41,16 @@ var (
 
    # Set a env variable in the local config
    %[1]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
+	`)
+
+	devfileSetExample = ktemplates.Examples(`
+	# Set a configuration value in the devfile
+	%[1]s %[2]s testapp
+	%[1]s %[3]s 8080/TCP,8443/TCP
+	%[1]s %[4]s 500M
+
+	# Set a env variable in the devfiles
+	%[1]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
 	`)
 )
 
@@ -250,15 +260,21 @@ func isValidArgumentList(args []string) error {
 	return err
 }
 
+func getSetExampleString(fullName string) string {
+	s2iExample := fmt.Sprintf(fmt.Sprint("\n", setExample), fullName, config.Type,
+		config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU, config.Ports)
+	devfileExample := fmt.Sprintf("\n"+devfileSetExample, fullName, config.Name, config.Ports, config.Memory)
+	return devfileExample + "\n" + s2iExample
+}
+
 // NewCmdSet implements the config set odo command
 func NewCmdSet(name, fullName string) *cobra.Command {
 	o := NewSetOptions()
 	configurationSetCmd := &cobra.Command{
-		Use:   name,
-		Short: "Set a value in odo config file",
-		Long:  fmt.Sprintf(setLongDesc, config.FormatLocallySupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName, config.Type,
-			config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU, config.Ports),
+		Use:     name,
+		Short:   "Set a value in odo config file",
+		Long:    fmt.Sprintf(setLongDesc, parser.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Example: getSetExampleString(fullName),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if o.envArray != nil {
 				// no args are needed

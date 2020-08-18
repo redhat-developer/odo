@@ -21,7 +21,7 @@ import (
 const unsetCommandName = "unset"
 
 var (
-	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the odo configuration file.
+	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the devfile or odo configuration file.
 
 %[1]s
 %[2]s
@@ -41,6 +41,16 @@ var (
 
    # Unset a env variable in the local config
     %[1]s --env KAFKA_HOST --env KAFKA_PORT
+	`)
+
+	devfileUnsetExample = ktemplates.Examples(`
+	# Unset a configuration value in the devfile
+	%[1]s %[2]s 
+	%[1]s %[3]s 
+	%[1]s %[4]s
+
+	# Unset a env variable in the devfiles
+	%[1]s --env KAFKA_HOST --env KAFKA_PORT
 	`)
 )
 
@@ -193,15 +203,21 @@ func (o *UnsetOptions) Run() (err error) {
 
 }
 
+func getUnSetExampleString(fullName string) string {
+	s2iExample := fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName, config.Type,
+		config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU, config.Ports)
+	devfileExample := fmt.Sprintf("\n"+devfileUnsetExample, fullName, config.Name, config.Ports, config.Memory)
+	return devfileExample + "\n" + s2iExample
+}
+
 // NewCmdUnset implements the config unset odo command
 func NewCmdUnset(name, fullName string) *cobra.Command {
 	o := NewUnsetOptions()
 	configurationUnsetCmd := &cobra.Command{
-		Use:   name,
-		Short: "Unset a value in odo config file",
-		Long:  fmt.Sprintf(unsetLongDesc, config.FormatLocallySupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
-			config.Type, config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
+		Use:     name,
+		Short:   "Unset a value in odo config file",
+		Long:    fmt.Sprintf(unsetLongDesc, parser.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Example: getUnSetExampleString(fullName),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if o.envArray != nil {
 				// no args are needed

@@ -22,7 +22,7 @@ import (
 
 const viewCommandName = "view"
 
-var viewExample = ktemplates.Examples(`# For viewing the current local configuration
+var viewExample = ktemplates.Examples(`# For viewing the current configuration from devfile or local config file
    %[1]s
    
   `)
