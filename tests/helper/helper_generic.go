@@ -288,12 +288,6 @@ func CommonBeforeEach() CommonVar {
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "config.yaml"))
 	LocalKubeconfigSet(commonVar.Context)
 
-	if os.Getenv("KUBERNETES") == "true" {
-		Chdir(commonVar.Context)
-		// Devfile requires experimental mode to be set
-		CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-	}
-
 	return commonVar
 }
 

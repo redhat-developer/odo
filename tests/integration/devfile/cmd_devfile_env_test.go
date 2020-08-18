@@ -1,12 +1,7 @@
 package devfile
 
 import (
-	"os"
-	"path/filepath"
-	"time"
-
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
 )
 
@@ -18,32 +13,20 @@ var _ = Describe("odo devfile env command tests", func() {
 		fakeParameter = "fakeParameter"
 	)
 
-	var project, context, currentWorkingDirectory, originalKubeconfig string
+	var commonVar helper.CommonVar
 
-	// Using program command according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
-
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		commonVar = helper.CommonBeforeEach()
 
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		project = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
+		helper.Chdir(commonVar.Context)
+		// Devfile requires experimental mode to be set
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(project)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("When executing env view", func() {
@@ -56,7 +39,7 @@ var _ = Describe("odo devfile env command tests", func() {
 				"NAME",
 				"nodejs",
 				"Namespace",
-				project,
+				commonVar.Project,
 				"DebugPort",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
@@ -88,7 +71,7 @@ var _ = Describe("odo devfile env command tests", func() {
 				testDebugPort,
 			}
 			helper.DontMatchAllInOutput(output, dontWantOutput)
-			helper.CmdShouldPass("odo", "push", "--project", project)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 		})
 
 		It("Should fail to set and unset an invalid parameter", func() {

@@ -1,9 +1,7 @@
 package devfile
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -12,38 +10,24 @@ import (
 )
 
 var _ = Describe("odo devfile log command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig, projectDirPath string
+	var cmpName, projectDirPath string
 	var projectDir = "/projectDir"
-	// Using program commmand according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
+	var commonVar helper.CommonVar
 
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		commonVar = helper.CommonBeforeEach()
 
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		namespace = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
-		helper.Chdir(context)
-		projectDirPath = context + projectDir
+		helper.Chdir(commonVar.Context)
+		projectDirPath = commonVar.Context + projectDir
+		// Devfile requires experimental mode to be set
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
-	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Verify odo log for devfile works", func() {
@@ -52,9 +36,9 @@ var _ = Describe("odo devfile log command tests", func() {
 			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			output := helper.CmdShouldPass("odo", "log")
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
 
@@ -68,7 +52,7 @@ var _ = Describe("odo devfile log command tests", func() {
 		})
 
 		It("should error out if component does not exist", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 			helper.CmdShouldFail("odo", "log")
 		})
 
@@ -77,7 +61,7 @@ var _ = Describe("odo devfile log command tests", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--debug")
@@ -98,9 +82,9 @@ var _ = Describe("odo devfile log command tests", func() {
 		// if there is no run command in devfile.
 		It("should give error if no debug command in devfile", func() {
 
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			helper.CmdShouldFail("odo", "log", "--debug")
 		})
 

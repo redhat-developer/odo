@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
@@ -14,98 +13,84 @@ import (
 )
 
 var _ = Describe("odo devfile delete command tests", func() {
-	var namespace, context, currentWorkingDirectory, componentName, originalKubeconfig, invalidNamespace string
+	var componentName, invalidNamespace string
 
-	// Using program commmand according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
+	var commonVar helper.CommonVar
 
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		commonVar = helper.CommonBeforeEach()
 
-		// Devfile commands require experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		namespace = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
 		componentName = helper.RandString(6)
-		helper.Chdir(context)
+		helper.Chdir(commonVar.Context)
+		// Devfile requires experimental mode to be set
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
-	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("when devfile delete command is executed", func() {
 		It("should not throw an error with an existing namespace when no component exists", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f")
 		})
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
 			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", commonVar.Context)
 
 			if os.Getenv("KUBERNETES") != "true" {
-				helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", context)
+				helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
 				resourceTypes = append(resourceTypes, "routes")
 			}
 
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 
-			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
+			helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f")
 
 			for _, resourceType := range resourceTypes {
-				cliRunner.WaitAndCheckForExistence(resourceType, namespace, 1)
+				commonVar.CliRunner.WaitAndCheckForExistence(resourceType, commonVar.Project, 1)
 			}
 		})
 
 		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file with all flag", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", commonVar.Context)
 
 			if os.Getenv("KUBERNETES") != "true" {
 				helper.CmdShouldPass("odo", "url", "create", "example-1")
 			}
 
-			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f", "--all")
+			helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f", "--all")
 
-			cliRunner.WaitAndCheckForExistence("deployments", namespace, 1)
+			commonVar.CliRunner.WaitAndCheckForExistence("deployments", commonVar.Project, 1)
 
-			files := helper.ListFilesInDir(context)
+			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(files).To(Not(ContainElement(".odo")))
 			Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
 
 		It("should execute preStop events if present", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 
-			output := helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
+			output := helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f")
 			helper.MatchAllInOutput(output, []string{
 				fmt.Sprintf("Executing preStop event commands for component %s", componentName),
 				"Executing myprestop command",
