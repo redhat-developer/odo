@@ -5,7 +5,6 @@ language: go
 
 jobs:
   include:
-    # YAML alias, for settings shared across the tests
     - &base-test
       stage: test
       go_import_path: github.com/openshift/odo
@@ -19,10 +18,8 @@ jobs:
         - make validate
         - make test-coverage
       after_success:
-        # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
       
-    # YAML alias, for settings shared across the tests on windows
     - &windows-test
       stage: Test
       name: "Unit test on windows"
@@ -43,7 +40,6 @@ jobs:
         - make test
       after_success: skip
 
-    # YAML alias, for settings shared across the tests on macOS
     - &osx-test
       stage: Test
       name: "Unit test on OSX"
@@ -63,7 +59,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "generic, login and component command integration tests"
+      name: "Generic test"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -71,13 +67,37 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-generic
+        - odo logout
+
+
+    - <<: *base-test
+      stage: test
+      name: "Login / Logout"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-login-logout
+        - odo logout
+
+
+    - <<: *base-test
+      stage: test
+      name: "Component"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-cmp
         - odo logout
 
     - <<: *base-test
       stage: test
-      name: "preference, config, url,storage and debug command integration tests"
+      name: "Preference"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -85,17 +105,76 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-pref-config
+        - odo logout
+
+
+    - <<: *base-test
+      stage: test
+      name: "URL"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-url
+        - odo logout
+
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: URL"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-url
+        - odo logout
+
+
+    - <<: *base-test
+      stage: test
+      name: "Debug"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-debug
+        - odo logout
+
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Debug"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-debug
+        - odo logout
+
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Storage"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-storage
         - odo logout
 
-    # Run service-catalog e2e tests
     - <<: *base-test
       stage: test
-      name: "service, link and component sub-commands command integration tests"
+      name: "Service"
       script:
         - ./scripts/oc-cluster.sh service-catalog
         - make configure-supported-311-is
@@ -103,13 +182,35 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-service
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Link / Unlink"
+      script:
+        - ./scripts/oc-cluster.sh service-catalog
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-link-unlink
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Subcommands"
+      script:
+        - ./scripts/oc-cluster.sh service-catalog
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-cmp-sub
         - odo logout
 
     - <<: *base-test
       stage: test
-      name: "watch, storage, app, project and push command integration tests"
+      name: "Watch"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -117,44 +218,179 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-watch
-        - travis_wait make test-cmd-storage
-        - travis_wait make test-cmd-app
-        - travis_wait make test-cmd-push
-        - travis_wait make test-cmd-project
         - odo logout
 
     - <<: *base-test
       stage: test
-      # Docker push target test command does not need a running cluster at all, however few test
-      # scenario of docker devfile url testing needs only Kube config file. So the test has been
-      # added here just to make sure docker devfile url command test gets a proper kube config file.
-      # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete, registry, test, env and log command integration tests"
+      name: "Storage"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
-        # Commenting out the docker test target (though test-cmd-docker-devfile-url-pushtarget is not broken)
-        # to avoid regression failure due to https://github.com/openshift/odo/issues/3714
-        # - travis_wait make test-cmd-docker-devfile-url-pushtarget
-        # These tests need cluster login as they will be interacting with a Kube environment
+        - odo login -u developer
+        - travis_wait make test-cmd-storage
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Application"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
+        - travis_wait make test-cmd-app
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Push"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
+        - travis_wait make test-cmd-push
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Project"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
+        - travis_wait make test-cmd-project
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Catalog"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-devfile-catalog
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Create"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-create
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Push"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-push
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Watch"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-watch
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Delete"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-delete
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Registry"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-registry
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Test"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-test
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Log"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-log
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Exec"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-exec
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "Devfile: Env"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-env
         - odo logout
 
     - <<: *base-test
       stage: test
-      name: "core beta, java, source e2e tests"
+      name: "End-to-End: Beta Test"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -162,30 +398,47 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-e2e-beta
+        - odo logout
+    
+    - <<: *base-test
+      stage: test
+      name: "End-to-End: Java Test"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-e2e-java
+        - odo logout
+    
+    - <<: *base-test
+      stage: test
+      name: "End-to-End: Source Test"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-e2e-source
+        - odo logout
+    
+    - <<: *base-test
+      stage: test
+      name: "End-to-End: Image Test"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-e2e-images
         - odo logout
     
-    # Fix https://github.com/openshift/odo/issues/3714 to uncomment tests
-    # - <<: *base-test
-    #   stage: test
-    #   name: "docker devfile push, watch, url, test, catalog, exec and delete command integration tests"
-    #   script:
-    #     - make bin
-    #     - sudo cp odo /usr/bin
-    #     - travis_wait make test-cmd-docker-devfile-push
-    #     - travis_wait make test-cmd-docker-devfile-watch
-    #     - travis_wait make test-cmd-docker-devfile-catalog
-    #     - travis_wait make test-cmd-docker-devfile-delete
-    #     - travis_wait make test-cmd-docker-devfile-url
-    #     - travis_wait make test-cmd-docker-devfile-test
-    #     - travis_wait make test-cmd-docker-devfile-exec
-
-    # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog,url, watch, push, debug, delete, exec, test, log, storage and create command integration tests on kubernetes cluster"
+      name: "Kubernetes - Project"
       env:
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -193,9 +446,7 @@ jobs:
         - CHANGE_MINIKUBE_NONE_USER=true
         - KUBECONFIG=$HOME/.kube/config
       before_script:
-        # Download kubectl, a cli tool for accessing Kubernetes cluster
         - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-        # Download minikube and set up Kubernetes single node cluster
         - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
         - mkdir -p $HOME/.kube $HOME/.minikube
         - touch $KUBECONFIG
@@ -209,14 +460,278 @@ jobs:
         - sudo cp odo /usr/bin
         - export KUBERNETES=true
         - travis_wait make test-cmd-project
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Catalog"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-catalog
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Watch"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-watch
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Push"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-push
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Debug"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-debug
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Exec"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-exec
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Delete"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-delete
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Create"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-create
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: URL"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-url
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Test"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-test
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Log"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-log
+    
+    - <<: *base-test
+      stage: test
+      name: "Kubernetes - Devfile: Storage"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
+      before_script:
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.11.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.1
+        - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-storage
