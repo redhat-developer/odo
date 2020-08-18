@@ -9,7 +9,6 @@ install_mongo_operator() {
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    generation: 1
     name: mongodb-enterprise
     namespace: openshift-operators
   spec:
@@ -18,6 +17,7 @@ install_mongo_operator() {
     name: mongodb-enterprise
     source: certified-operators
     sourceNamespace: openshift-marketplace
+    startingCSV: mongodb-enterprise.v1.6.0
 EOF
 }
 
@@ -35,6 +35,7 @@ install_etcd_operator(){
     name: etcd
     source: community-operators
     sourceNamespace: openshift-marketplace
+    startingCSV: etcdoperator.v0.9.4-clusterwide
 EOF
 }
 
@@ -43,7 +44,6 @@ install_service_binding_operator(){
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    generation: 1
     name: service-binding-operator
     namespace: openshift-operators
   spec:
@@ -52,6 +52,7 @@ install_service_binding_operator(){
     name: service-binding-operator
     source: community-operators
     sourceNamespace: openshift-marketplace
+    startingCSV: service-binding-operator.v0.1.1-352
 EOF
 }
 

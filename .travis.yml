@@ -77,7 +77,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "preference, config, url and debug command integration tests"
+      name: "preference, config, url,storage and debug command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -89,6 +89,7 @@ jobs:
         - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-debug
         - travis_wait make test-cmd-devfile-debug
+        - travis_wait make test-cmd-devfile-storage
         - odo logout
 
     # Run service-catalog e2e tests
@@ -128,7 +129,7 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete, registry, test and log command integration tests"
+      name: "devfile catalog, create, push, delete, registry, test, env and log command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -148,6 +149,7 @@ jobs:
         - travis_wait make test-cmd-devfile-test
         - travis_wait make test-cmd-devfile-log
         - travis_wait make test-cmd-devfile-exec
+        - travis_wait make test-cmd-devfile-env
         - odo logout
 
     - <<: *base-test
@@ -183,7 +185,7 @@ jobs:
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog,url, watch, push, debug, delete, exec, test, log and create command integration tests on kubernetes cluster"
+      name: "devfile catalog,url, watch, push, debug, delete, exec, test, log, storage and create command integration tests on kubernetes cluster"
       env:
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -217,3 +219,4 @@ jobs:
         - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-devfile-test
         - travis_wait make test-cmd-devfile-log
+        - travis_wait make test-cmd-devfile-storage

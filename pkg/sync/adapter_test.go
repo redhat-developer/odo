@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 )
 
@@ -166,6 +167,8 @@ func TestSyncFiles(t *testing.T) {
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        false,
+					// The first invocation of watch requires this to be true, see SyncFiles(...) in 'sync/adapter.go' for details.
+					DevfileScanIndexForWatch: true,
 				},
 				CompInfo: common.ComponentInfo{
 					ContainerName: "abcd",
@@ -335,5 +338,119 @@ func TestPushLocal(t *testing.T) {
 	err = os.RemoveAll(directory)
 	if err != nil {
 		t.Errorf("TestPushLocal error: error deleting the temp dir %s", directory)
+	}
+}
+
+func TestUpdateIndexWithWatchChanges(t *testing.T) {
+
+	tests := []struct {
+		name                 string
+		initialFilesToCreate []string
+		watchDeletedFiles    []string
+		watchAddedFiles      []string
+		expectedFilesInIndex []string
+	}{
+		{
+			name:                 "Case 1 - Watch file deleted should remove file from index",
+			initialFilesToCreate: []string{"file1", "file2"},
+			watchDeletedFiles:    []string{"file1"},
+			expectedFilesInIndex: []string{"file2"},
+		},
+		{
+			name:                 "Case 2 - Watch file added should add file to index",
+			initialFilesToCreate: []string{"file1"},
+			watchAddedFiles:      []string{"file2"},
+			expectedFilesInIndex: []string{"file1", "file2"},
+		},
+		{
+			name:                 "Case 3 - No watch changes should mean no index changes",
+			initialFilesToCreate: []string{"file1"},
+			expectedFilesInIndex: []string{"file1"},
+		},
+	}
+	for _, tt := range tests {
+
+		// create a temp dir for the fake component
+		directory, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: error creating temporary directory for the indexer: %v", err)
+		}
+
+		fileIndexPath, err := util.ResolveIndexFilePath(directory)
+		if err != nil {
+			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to resolve index file path: %v", err)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(fileIndexPath), 0750); err != nil {
+			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to create directories for %s: %v", fileIndexPath, err)
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			indexData := map[string]util.FileData{}
+
+			// Create initial files
+			for _, fileToCreate := range tt.initialFilesToCreate {
+				filePath := filepath.Join(directory, fileToCreate)
+
+				if err := ioutil.WriteFile(filePath, []byte("non-empty-string"), 0644); err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
+				}
+
+				key, fileDatum, err := util.GenerateNewFileDataEntry(filePath, directory)
+				if err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to generate new file: %v", err)
+				}
+				indexData[key] = *fileDatum
+			}
+
+			// Write the index based on those files
+			if err := util.WriteFile(indexData, fileIndexPath); err != nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write index file: %v", err)
+			}
+
+			pushParams := common.PushParameters{
+				Path: directory,
+			}
+
+			// Add deleted files to pushParams (also delete the files)
+			for _, deletedFile := range tt.watchDeletedFiles {
+				deletedFilePath := filepath.Join(directory, deletedFile)
+				pushParams.WatchDeletedFiles = append(pushParams.WatchDeletedFiles, deletedFilePath)
+
+				if err := os.Remove(deletedFilePath); err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to delete file %s %v", deletedFilePath, err)
+				}
+			}
+
+			// Add added files to pushParams (also create the files)
+			for _, addedFile := range tt.watchAddedFiles {
+				addedFilePath := filepath.Join(directory, addedFile)
+				pushParams.WatchFiles = append(pushParams.WatchFiles, addedFilePath)
+
+				if err := ioutil.WriteFile(addedFilePath, []byte("non-empty-string"), 0644); err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
+				}
+			}
+
+			if err := updateIndexWithWatchChanges(pushParams); err != nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal: unexpected error: %v", err)
+			}
+
+			postFileIndex, err := util.ReadFileIndex(fileIndexPath)
+			if err != nil || postFileIndex == nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: read new file index: %v", err)
+			}
+
+			// Locate expected files
+			if len(postFileIndex.Files) != len(tt.expectedFilesInIndex) {
+				t.Fatalf("Mismatch between number expected files and actual files in index, post-index: %v   expected: %v", postFileIndex.Files, tt.expectedFilesInIndex)
+			}
+			for _, expectedFile := range tt.expectedFilesInIndex {
+				if _, exists := postFileIndex.Files[expectedFile]; !exists {
+					t.Fatalf("Unable to find '%s' in post index file, %v", expectedFile, postFileIndex.Files)
+				}
+			}
+		})
 	}
 }

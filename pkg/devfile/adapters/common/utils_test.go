@@ -97,7 +97,7 @@ func TestGetDevfileVolumeComponents(t *testing.T) {
 
 		{
 			name:                 "Case 5: Valid devfile with correct component type (Volume)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol")},
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
 			expectedMatchesCount: 1,
 		},
 	}
@@ -121,6 +121,8 @@ func TestGetDevfileVolumeComponents(t *testing.T) {
 
 func TestGetVolumes(t *testing.T) {
 
+	size := "4Gi"
+
 	tests := []struct {
 		name                       string
 		component                  []versionsCommon.DevfileComponent
@@ -128,12 +130,12 @@ func TestGetVolumes(t *testing.T) {
 	}{
 		{
 			name:      "Case 1: Valid devfile with container referencing a volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1")},
+			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
 						Name:          "myvolume1",
-						Size:          "4Gi",
+						Size:          size,
 						ContainerPath: "/my/volume/mount/path1",
 					},
 				},
@@ -142,9 +144,9 @@ func TestGetVolumes(t *testing.T) {
 		{
 			name: "Case 2: Valid devfile with container referencing multiple volume components",
 			component: []versionsCommon.DevfileComponent{
-				testingutil.GetFakeVolumeComponent("myvolume1"),
-				testingutil.GetFakeVolumeComponent("myvolume2"),
-				testingutil.GetFakeVolumeComponent("myvolume3"),
+				testingutil.GetFakeVolumeComponent("myvolume1", size),
+				testingutil.GetFakeVolumeComponent("myvolume2", size),
+				testingutil.GetFakeVolumeComponent("myvolume3", size),
 				{
 					Container: &versionsCommon.Container{
 						Name:  "mycontainer",
@@ -166,12 +168,12 @@ func TestGetVolumes(t *testing.T) {
 				"mycontainer": {
 					{
 						Name:          "myvolume1",
-						Size:          "4Gi",
+						Size:          size,
 						ContainerPath: "/myvolume1",
 					},
 					{
 						Name:          "myvolume2",
-						Size:          "4Gi",
+						Size:          size,
 						ContainerPath: "/myvolume2",
 					},
 				},
@@ -179,7 +181,7 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name:      "Case 3: Valid devfile with container referencing no volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2")},
+			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
@@ -193,7 +195,7 @@ func TestGetVolumes(t *testing.T) {
 		{
 			name: "Case 4: Valid devfile with no container volume mounts",
 			component: []versionsCommon.DevfileComponent{
-				testingutil.GetFakeVolumeComponent("myvolume2"),
+				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				{
 					Container: &versionsCommon.Container{
 						Name:  "mycontainer",
@@ -375,7 +377,7 @@ func TestIsVolume(t *testing.T) {
 	}{
 		{
 			name:            "Case 1: Volume component",
-			component:       testingutil.GetFakeVolumeComponent("myvol"),
+			component:       testingutil.GetFakeVolumeComponent("myvol", "4Gi"),
 			wantIsSupported: true,
 		},
 		{

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -149,11 +150,10 @@ func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 
 // newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
-
-	// Retrieve the environment file
+	// Get the path of the environemt file
 	envInfoFile, err := getEnvInfoFile(envDir)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get odo envinfo file")
+		return nil, errors.Wrap(err, "failed to get the path of the environment file")
 	}
 
 	// Organize that information into a struct
@@ -205,6 +205,18 @@ func newProxyEnvInfo() proxyEnvInfo {
 func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
+		case "name":
+			val := value.(string)
+			esi.componentSettings.Name = val
+		case "namespace":
+			val := value.(string)
+			esi.componentSettings.Namespace = val
+		case "debugport":
+			val, err := strconv.Atoi(value.(string))
+			if err != nil {
+				return errors.Wrap(err, "failed to set debug port")
+			}
+			esi.componentSettings.DebugPort = &val
 		case "url":
 			urlValue := value.(EnvInfoURL)
 			if esi.componentSettings.URL != nil {
@@ -226,7 +238,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter :'%s' is not a parameter in envinfo", parameter)
+	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to see valid parameters", parameter)
 
 }
 
@@ -273,8 +285,22 @@ func (esi *EnvSpecificInfo) EnvInfoFileExists() bool {
 	return esi.envinfoFileExists
 }
 
+var (
+	// Mandatory parameters in the environment file (env.yaml)
+	manParams = []string{
+		"name",
+		"namespace",
+	}
+)
+
 // DeleteConfiguration is used to delete environment specific info from local odo envinfo
 func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
+	for _, manParam := range manParams {
+		if parameter == manParam {
+			return errors.Errorf("failed to unset %q: %q is mandatory parameter", parameter, parameter)
+		}
+	}
+
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 
 		switch parameter {
@@ -285,7 +311,7 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 		}
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter :'%s' is not a parameter in envinfo", parameter)
+	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
 
 }
 
@@ -381,13 +407,25 @@ func (ei *EnvInfo) GetLink() []EnvInfoLink {
 }
 
 const (
+	// Name is the name of the setting controlling the component name
+	Name = "Name"
+	// NameDescription is the human-readable description for name setting
+	NameDescription = "Set this value to user-defined component name to specify the component name"
+	// Namespace is the name of the setting controlling the component namespace
+	Namespace = "Namespace"
+	// NamespaceDescription is the human-readable description for namespace setting
+	NamespaceDescription = "Set this value to user-defined namespace to let the component create under the namespace"
+	// DebugPort is the name of the setting controlling the component debug port
+	DebugPort = "DebugPort"
+	// DebugPortDescription s the human-readable description for debug port setting
+	DebugPortDescription = "Set this value to user-defined debug port to assign the debug port to the component"
 	// URL parameter
 	URL = "URL"
 	// URLDescription is the description of URL
 	URLDescription = "URL to access the component"
 	// Push parameter
 	Push = "PUSH"
-	// PushDescription is the description of URL
+	// PushDescription is the description of push parameter
 	PushDescription = "Push parameter is the action to write devfile commands to env.yaml"
 	// Link parameter
 	Link = "LINK"
@@ -397,9 +435,12 @@ const (
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
-		URL:  URLDescription,
-		Push: PushDescription,
-		Link: LinkDescription,
+		Name:      NameDescription,
+		Namespace: NamespaceDescription,
+		DebugPort: DebugPortDescription,
+		URL:       URLDescription,
+		Push:      PushDescription,
+		Link:      LinkDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

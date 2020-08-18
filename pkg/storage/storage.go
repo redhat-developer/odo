@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/machineoutput"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -531,4 +532,21 @@ func ConvertListLocalToMachine(storageListConfig []config.ComponentStorageSettin
 	}
 
 	return GetMachineReadableFormatForList(storageListLocal)
+}
+
+// MachineReadableSuccessOutput outputs a success output that includes
+// storage information
+func MachineReadableSuccessOutput(storageName string, message string) {
+	machineOutput := machineoutput.GenericSuccess{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "storage",
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: storageName,
+		},
+		Message: message,
+	}
+
+	machineoutput.OutputSuccess(machineOutput)
 }

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 // HttpWaitForWithStatus periodically (every interval) calls GET to given url
@@ -52,4 +54,20 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 // ends when a 200 HTTP result response contains match string, or after the maxRetry
 func HttpWaitFor(url string, match string, maxRetry int, interval int) {
 	HttpWaitForWithStatus(url, match, maxRetry, interval, 200)
+}
+
+// HttpFileServer starts a http server with a file handler on the free port provided
+// the file handler uses the location provided for serving the requests
+func HttpFileServer(port int, location string) *http.Server {
+	addressLook := "localhost:" + strconv.Itoa(port)
+	fileHandler := http.FileServer(http.Dir(location))
+
+	server := &http.Server{Addr: addressLook, Handler: fileHandler}
+	go func() {
+		err := server.ListenAndServe()
+		if err != http.ErrServerClosed {
+			Expect(err).To(BeNil())
+		}
+	}()
+	return server
 }

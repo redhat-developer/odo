@@ -30,7 +30,7 @@ func FakePortListener(startedChan chan<- bool, stopChan <-chan bool, localPort i
 		testServer.Close()
 	case <-timeout:
 		testServer.Close()
-		return errors.New("timeout waiting for listerner to start")
+		return errors.New("timeout waiting for listener to start")
 	}
 	return nil
 }

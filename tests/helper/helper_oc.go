@@ -132,6 +132,17 @@ func (oc OcRunner) ExecListDir(podName string, projectName string, dir string) s
 	return stdOut
 }
 
+// Exec allows generic execution of commands, returning the contents of stdout
+func (oc OcRunner) Exec(podName string, projectName string, args ...string) string {
+
+	cmd := []string{"exec", podName, "--namespace", projectName}
+
+	cmd = append(cmd, args...)
+
+	stdOut := CmdShouldPass(oc.path, cmd...)
+	return stdOut
+}
+
 // CheckCmdOpInRemoteCmpPod runs the provided command on remote component pod and returns the return value of command output handler function passed to it
 func (oc OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool {
 	cmpDCName := fmt.Sprintf("%s-%s", cmpName, appName)
@@ -557,4 +568,14 @@ func (oc OcRunner) DeleteNamespaceProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "delete", projectName, "-f")
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
+}
+
+func (oc OcRunner) GetAllPVCNames(namespace string) []string {
+	session := CmdRunner(oc.path, "get", "pvc", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	if output == "" {
+		return []string{}
+	}
+	return strings.Split(output, " ")
 }

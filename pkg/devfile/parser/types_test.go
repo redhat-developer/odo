@@ -1,13 +1,14 @@
 package parser
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/kylelemons/godebug/pretty"
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
-	"reflect"
-	"testing"
 )
 
 const devfileTempPath = "devfile.yaml"
@@ -345,9 +346,8 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 											"key-0": "value-0",
 											"key-1": "value-1",
 										},
-										Configuration: nil,
-										Name:          "endpoint-0",
-										TargetPort:    8080,
+										Name:       "endpoint-0",
+										TargetPort: 8080,
 									},
 								},
 								Env: []common.Env{

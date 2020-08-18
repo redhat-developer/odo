@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
@@ -55,10 +56,13 @@ type WatchOptions struct {
 	componentContext string
 	client           *occlient.Client
 
-	componentName  string
-	devfilePath    string
-	namespace      string
-	devfileHandler common.ComponentAdapter
+	componentName string
+	devfilePath   string
+	namespace     string
+
+	// initialDevfileHandler is only used to do initial validation on the devfile.
+	// All subsequent uses of the devfile adapter are generated in regenerateAdapterAndPush.
+	initialDevfileHandler common.ComponentAdapter
 
 	// devfile commands
 	devfileInitCommand  string
@@ -115,7 +119,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		} else {
 			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
+		wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
 
 		return err
 	}
@@ -158,7 +162,7 @@ func (wo *WatchOptions) Validate() (err error) {
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
-		exists, err := wo.devfileHandler.DoesComponentExist(wo.componentName)
+		exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName)
 		if err != nil {
 			return err
 		}
@@ -210,7 +214,7 @@ func (wo *WatchOptions) Run() (err error) {
 				PushDiffDelay:       wo.delay,
 				StartChan:           nil,
 				ExtChan:             make(chan bool),
-				DevfileWatchHandler: wo.devfileHandler.Push,
+				DevfileWatchHandler: wo.regenerateAdapterAndPush,
 				Show:                wo.show,
 				DevfileInitCmd:      strings.ToLower(wo.devfileInitCommand),
 				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
@@ -228,15 +232,16 @@ func (wo *WatchOptions) Run() (err error) {
 		wo.Context.Client,
 		os.Stdout,
 		watch.WatchParameters{
-			ComponentName:   wo.LocalConfigInfo.GetName(),
-			ApplicationName: wo.Context.Application,
-			Path:            wo.sourcePath,
-			FileIgnores:     util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
-			PushDiffDelay:   wo.delay,
-			StartChan:       nil,
-			ExtChan:         make(chan bool),
-			WatchHandler:    component.PushLocal,
-			Show:            wo.show,
+			ComponentName:       wo.LocalConfigInfo.GetName(),
+			ApplicationName:     wo.Context.Application,
+			Path:                wo.sourcePath,
+			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
+			PushDiffDelay:       wo.delay,
+			StartChan:           nil,
+			ExtChan:             make(chan bool),
+			DevfileWatchHandler: nil,
+			WatchHandler:        component.PushLocal,
+			Show:                wo.show,
 		},
 	)
 	if err != nil {
@@ -291,4 +296,45 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	projectCmd.AddProjectFlag(watchCmd)
 
 	return watchCmd
+}
+
+// regenerateAdapterAndPush is used as a DevfileWatchHandler in WatchParameters; it is a wrapper around adapter.Push()
+// that first regenerates the component adapter before calling push. This ensures that it has picked up the latest
+// devfile.yaml changes
+func (wo *WatchOptions) regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+	var adapter common.ComponentAdapter
+
+	adapter, err := wo.regenerateComponentAdapterFromWatchParams(watchParams)
+	if err != nil {
+		return errors.Wrapf(err, "unable to generate component from watch parameters")
+	}
+
+	err = adapter.Push(pushParams)
+	if err != nil {
+		return errors.Wrapf(err, "watch command was unable to push component")
+	}
+
+	return err
+}
+
+// regenerateComponentAdapterFromWatchParams (re)generates a component adapter from the given watch parameters.
+func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+
+	// Parse devfile and validate
+	devObj, err := devfile.ParseAndValidate(wo.devfilePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to parse and validate '%s'", wo.devfilePath)
+	}
+
+	var platformContext interface{}
+	if !pushtarget.IsPushTargetDocker() {
+		platformContext = kubernetes.KubernetesContext{
+			Namespace: wo.namespace,
+		}
+	} else {
+		platformContext = nil
+	}
+
+	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+
 }

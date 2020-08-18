@@ -2573,8 +2573,13 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 // CreateRoute creates a route object for the given service and with the given labels
 // serviceName is the name of the service for the target reference
 // portNumber is the target port of the route
+// path is the path of the endpoint URL
 // secureURL indicates if the route is a secure one or not
-func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
+func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
+	routePath := "/"
+	if path != "" {
+		routePath = path
+	}
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -2588,6 +2593,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 			Port: &routev1.RoutePort{
 				TargetPort: portNumber,
 			},
+			Path: routePath,
 		},
 	}
 
