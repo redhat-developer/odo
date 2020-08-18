@@ -39,6 +39,7 @@ func GetDevfileRegistries(registryName string) ([]Registry, error) {
 	hasName := len(registryName) != 0
 	if cfg.OdoSettings.RegistryList != nil {
 		registryList := *cfg.OdoSettings.RegistryList
+		// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
 		for i := len(registryList) - 1; i >= 0; i-- {
 			registry := registryList[i]
 			if hasName {
