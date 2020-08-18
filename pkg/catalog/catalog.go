@@ -38,7 +38,9 @@ func GetDevfileRegistries(registryName string) ([]Registry, error) {
 
 	hasName := len(registryName) != 0
 	if cfg.OdoSettings.RegistryList != nil {
-		for _, registry := range *cfg.OdoSettings.RegistryList {
+		registryList := *cfg.OdoSettings.RegistryList
+		for i := len(registryList) - 1; i >= 0; i-- {
+			registry := registryList[i]
 			if hasName {
 				if registryName == registry.Name {
 					reg := Registry{
