@@ -21,7 +21,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoUtil "github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
@@ -71,7 +71,7 @@ func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the URLListOptions based on completed values
 func (o *URLListOptions) Validate() (err error) {
-	return odoUtil.CheckOutputFlag(o.OutputFlag)
+	return odoutil.CheckOutputFlag(o.OutputFlag)
 }
 
 // Run contains the logic for the odo url list command
