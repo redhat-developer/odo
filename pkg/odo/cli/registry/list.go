@@ -79,6 +79,7 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 	}
 
 	regList := *registryList
+	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
 	for i := len(regList) - 1; i >= 0; i-- {
 		registry := regList[i]
 		secure := "No"
