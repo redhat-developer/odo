@@ -70,9 +70,17 @@ for i in `echo $USERS`; do
     HTPASSWD_CREATED=""
 done
 
-# Workarounds - Note we should find better soulutions asap
-## Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
-#oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
+#Clear up the imagestreams out of date
+oc delete is/nodejs -n openshift
+oc delete is/java -n openshift
+oc delete istag/nodejs:10 -n openshift
+oc delete istag/nodejs:12 -n openshift
+oc delete istag/nodejs:latest -n openshift
+oc delete istag/java:11 -n openshift
+oc delete istag/java:8 -n openshift
+oc delete istag/java:latest -n openshift
+
+#Missing required images in OpenShift and Adding it manually to cluster
 oc import-image nodejs --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
 sleep 5
 oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite

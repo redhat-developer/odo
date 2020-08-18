@@ -5,6 +5,7 @@ package e2escenarios
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -85,15 +86,11 @@ var _ = Describe("odo supported images e2e tests", func() {
 		Expect(cmpLst).To(ContainSubstring("Not Pushed"))
 	}
 
-	Context("odo supported images deployment", func() {
-		It("Should be able to verify the openjdk18-openshift image", func() {
-			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "java:8", project)
-			verifySupportedImage(filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "openjdk", "java:8", project, appName, context)
-		})
-
-		It("Should be able to verify the openjdk-11-rhel7 image", func() {
-			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "java:8", project)
-			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "openjdk", "java:8", project, appName, context)
+	Context("odo supported images deployment on amd64", func() {
+		JustBeforeEach(func() {
+			if runtime.GOARCH != "amd64" {
+				Skip("Skipping test because these images are not supported.")
+			}
 		})
 
 		It("Should be able to verify the nodejs-10 image", func() {
@@ -109,6 +106,18 @@ var _ = Describe("odo supported images e2e tests", func() {
 		It("Should be able to verify the nodejs-12-centos7 image", func() {
 			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-12-centos7:latest"), "nodejs:latest", project)
 			verifySupportedImage(filepath.Join("centos", "nodejs-12-centos7:latest"), "nodejs", "nodejs:latest", project, appName, context)
+		})
+	})
+
+	Context("odo supported images deployment", func() {
+		It("Should be able to verify the openjdk18-openshift image", func() {
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "java:8", project)
+			verifySupportedImage(filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "openjdk", "java:8", project, appName, context)
+		})
+
+		It("Should be able to verify the openjdk-11-rhel7 image", func() {
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "java:8", project)
+			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "openjdk", "java:8", project, appName, context)
 		})
 
 		It("Should be able to verify the nodejs-10-rhel7 image", func() {
