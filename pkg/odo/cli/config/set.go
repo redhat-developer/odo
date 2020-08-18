@@ -23,8 +23,9 @@ const setCommandName = "set"
 
 var (
 	setLongDesc = ktemplates.LongDesc(`Set an individual value in the devfile or odo configuration file.
-
-%[1]s`)
+%[1]s
+%[2]s
+`)
 	setExample = ktemplates.Examples(`
    # Set a configuration value in the local config
    %[1]s %[2]s java

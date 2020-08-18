@@ -22,7 +22,6 @@ const unsetCommandName = "unset"
 
 var (
 	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the devfile or odo configuration file.
-
 %[1]s
 %[2]s
 `)
