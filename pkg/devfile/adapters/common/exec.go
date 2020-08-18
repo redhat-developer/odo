@@ -42,7 +42,7 @@ func ExecuteCommand(client ExecClient, compInfo ComponentInfo, command []string,
 		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
 		klog.V(4).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
 
-		return errors.Wrapf(err, "Unable to exec command %v: \n%v", command, cmdOutput)
+		return errors.Wrapf(err, "unable to exec command %v: \n%v", command, cmdOutput)
 	}
 
 	return
