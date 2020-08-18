@@ -22,6 +22,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		cmpName = helper.RandString(6)
 		commonVar = helper.CommonBeforeEach()
 
+		helper.Chdir(commonVar.Context)
 		// Devfile requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})

@@ -16,6 +16,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 
+		helper.Chdir(commonVar.Context)
 		// Devfile requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
