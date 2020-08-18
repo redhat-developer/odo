@@ -26,13 +26,22 @@ organized in a separate single unit.
 
 1.  Log in to an OpenShift cluster:
     
-        $ odo login -u developer -p developer
+    ``` terminal
+    $ odo login -u developer -p developer
+    ```
 
 2.  Create a project:
     
-        $ odo project create myproject
-         ✓  Project 'myproject' is ready for use
-         ✓  New project created and now using project : myproject
+    ``` terminal
+    $ odo project create myproject
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+     ✓  Project 'myproject' is ready for use
+     ✓  New project created and now using project : myproject
+    ```
 
 # Creating a Node.js application with odo
 
@@ -41,19 +50,27 @@ the source code to your cluster with `odo`.
 
 1.  Create a directory for your components:
     
-        $ mkdir my_components $$ cd my_components
+    ``` terminal
+    $ mkdir my_components $$ cd my_components
+    ```
 
 2.  Download the example Node.js application:
     
-        $ git clone https://github.com/openshift/nodejs-ex
+    ``` terminal
+    $ git clone https://github.com/openshift/nodejs-ex
+    ```
 
 3.  Change the current directory to the directory with your application:
     
-        $ cd <directory name>
+    ``` terminal
+    $ cd <directory name>
+    ```
 
 4.  Add a component of the type Node.js to your application:
     
-        $ odo create nodejs
+    ``` terminal
+    $ odo create nodejs
+    ```
     
     > **Note**
     > 
@@ -62,26 +79,36 @@ the source code to your cluster with `odo`.
 
 5.  Push the initial source code to the component:
     
-        $ odo push
+    ``` terminal
+    $ odo push
+    ```
     
     Your component is now deployed to OpenShift.
 
 6.  Create a URL and add an entry in the local configuration file as
     follows:
     
-        $ odo url create --port 8080
+    ``` terminal
+    $ odo url create --port 8080
+    ```
 
 7.  Push the changes. This creates a URL on the cluster.
     
-        $ odo push
+    ``` terminal
+    $ odo push
+    ```
 
 8.  List the URLs to check the desired URL for the component.
     
-        $ odo url list
+    ``` terminal
+    $ odo url list
+    ```
 
 9.  View your deployed application using the generated URL.
     
-        $ curl <URL>
+    ``` terminal
+    $ curl <URL>
+    ```
 
 # Modifying your application code
 
@@ -93,7 +120,9 @@ your application on OpenShift.
 
 2.  Update your component:
     
-        $ odo push
+    ``` terminal
+    $ odo push
+    ```
 
 3.  Refresh your application in the browser to see the changes.
 
@@ -103,9 +132,11 @@ Persistent storage keeps data available between restarts of odo. You can
 add storage to your components with the `odo storage` command.
 
   - Add storage to your
-        components:
+    components:
     
-        $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi
+    ``` terminal
+    $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi
+    ```
 
 Your component now has 1 GB storage.
 
@@ -123,18 +154,24 @@ The following example demonstrates the successful import and use of the
 
 1.  Import the image into OpenShift:
     
-        $ oc import-image openjdk18 \
-        --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift \
-        --confirm
+    ``` terminal
+    $ oc import-image openjdk18 \
+    --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift \
+    --confirm
+    ```
 
 2.  Tag the image to make it accessible to odo:
     
-        $ oc annotate istag/openjdk18:latest tags=builder
+    ``` terminal
+    $ oc annotate istag/openjdk18:latest tags=builder
+    ```
 
 3.  Deploy the image with odo:
     
-        $ odo create openjdk18 --git \
-        https://github.com/openshift-evangelists/Wild-West-Backend
+    ``` terminal
+    $ odo create openjdk18 --git \
+    https://github.com/openshift-evangelists/Wild-West-Backend
+    ```
 
 # Connecting your application to multiple services using OpenShift Service Catalog
 
@@ -150,11 +187,15 @@ applications deployed in OpenShift to a variety of services.
 
   - To list the services:
     
-        $ odo catalog list services
+    ``` terminal
+    $ odo catalog list services
+    ```
 
   - To use service catalog-related operations:
     
-        $ odo service <verb> <servicename>
+    ``` terminal
+    $ odo service <verb> <servicename>
+    ```
 
 # Deleting an application
 
@@ -165,22 +206,44 @@ applications deployed in OpenShift to a variety of services.
 
 1.  List the applications in the current project:
     
-        $ odo app list
-            The project '<project_name>' has the following applications:
-            NAME
-            app
+    ``` terminal
+    $ odo app list
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+        The project '<project_name>' has the following applications:
+        NAME
+        app
+    ```
 
 2.  List the components associated with the applications. These
     components will be deleted with the application:
     
-        $ odo component list
-            APP     NAME                      TYPE       SOURCE        STATE
-            app     nodejs-nodejs-ex-elyf     nodejs     file://./     Pushed
+    ``` terminal
+    $ odo component list
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+        APP     NAME                      TYPE       SOURCE        STATE
+        app     nodejs-nodejs-ex-elyf     nodejs     file://./     Pushed
+    ```
 
 3.  Delete the application:
     
-        $ odo app delete <application_name>
-            ? Are you sure you want to delete the application: <application_name> from project: <project_name>
+    ``` terminal
+    $ odo app delete <application_name>
+    ```
+    
+    **Example
+    output.**
+    
+    ``` terminal
+        ? Are you sure you want to delete the application: <application_name> from project: <project_name>
+    ```
 
 4.  Confirm the deletion with `Y`. You can suppress the confirmation
     prompt using the `-f` flag.

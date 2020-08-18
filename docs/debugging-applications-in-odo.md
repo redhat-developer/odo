@@ -42,7 +42,9 @@ You can debug your application on in `odo` with the `odo debug` command.
 1.  After an application is deployed, start the port forwarding for your
     component to debug the application:
     
-        $ odo debug port-forward
+    ``` terminal
+    $ odo debug port-forward
+    ```
 
 2.  Attach the debugger bundled in your IDE to the component.
     Instructions vary depending on your IDE.
@@ -54,7 +56,9 @@ with the `odo debug` command.
 
   - To set a remote port on which the debugging agent should run, run:
     
-        $ odo config set DebugPort 9292
+    ``` terminal
+    $ odo config set DebugPort 9292
+    ```
     
     > **Note**
     > 
@@ -63,7 +67,9 @@ with the `odo debug` command.
 
   - To set a local port to port forward, run:
     
-        $ odo debug port-forward --local-port 9292
+    ``` terminal
+    $ odo debug port-forward --local-port 9292
+    ```
     
     > **Note**
     > 

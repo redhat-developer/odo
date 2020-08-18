@@ -26,7 +26,9 @@ shell.
     
     1.  Run:
         
-            $ odo --complete
+        ``` terminal
+        $ odo --complete
+        ```
     
     2.  Press `y` when prompted to install the completion hook.
 
@@ -39,7 +41,9 @@ shell.
     
     1.  Run:
         
-            $ odo --uncomplete
+        ``` terminal
+        $ odo --uncomplete
+        ```
     
     2.  Press `y` when prompted to uninstall the completion hook.
 
