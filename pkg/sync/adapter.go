@@ -36,8 +36,9 @@ type Adapter struct {
 // changed and devfile execution is required
 func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired bool, err error) {
 
-	// force write the content to resolvePath
+	// Whether to write the indexer content to the index file path (resolvePath)
 	forceWrite := false
+
 	// Ret from Indexer function
 	var ret util.IndexerRet
 
@@ -45,15 +46,44 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	var changedFiles []string
 	pushParameters := syncParameters.PushParams
 	isForcePush := pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
-	compInfo := syncParameters.CompInfo
-	globExps := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
 
-	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
-	if isWatch && !isForcePush {
+	// When this function is invoked by watch, the logic is:
+	// 1) If this is the first time that watch has called Push (in this OS process), then generate the file index
+	//    using the file indexer, and use that to sync files (eg don't use changed/deleted files list from watch at
+	//    this stage; these will be found by the indexer run).
+	//    - In the watch scenario, we need to first run the indexer for two reasons:
+	// 	    - In cases where the index doesn't initially exist, we need to create it (so we can ADD to it in
+	//        later calls to SyncFiles(...) )
+	// 	    - Even if it does initially exist, there is no guarantee that the remote pod is consistent with it; so
+	//        on our first invocation we need to compare the index with the remote pod (by regenerating the index
+	//        and using the changes files list from that to sync the results.)
+	//
+	// 2) For every other push/sync call after the first, don't run the file indexer, instead we use
+	//    the watch events to determine what changed, and ensure that the index is then updated based
+	//    on the watch events (to ensure future 'odo push' calls are correct)
+
+	// True if the index was updated based on the deleted/changed files values from the watch (and
+	// thus the indexer doesn't need to run), false otherwise
+	indexRegeneratedByWatch := false
+
+	// If watch files are specified _and_ this is not the first call (by this process) to SyncFiles by the watch command, then insert the
+	// changed files into the existing file index, and delete removed files from the index
+	if isWatch && !syncParameters.PushParams.DevfileScanIndexForWatch {
+
+		err := updateIndexWithWatchChanges(pushParameters)
+
+		if err != nil {
+			return false, err
+		}
+
 		changedFiles = pushParameters.WatchFiles
 		deletedFiles = pushParameters.WatchDeletedFiles
-	} else {
+		indexRegeneratedByWatch = true
+
+	}
+
+	if !indexRegeneratedByWatch {
 		// Calculate the files to sync
 		// Tries to sync the deltas unless it is a forced push
 		// if it is a forced push (isForcePush) reset the index to do a full snync
@@ -123,8 +153,8 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		changedFiles,
 		deletedFiles,
 		isForcePush,
-		globExps,
-		compInfo,
+		util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles),
+		syncParameters.CompInfo,
 	)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
@@ -196,6 +226,65 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s.End(true)
 
 	return nil
+}
+
+// updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
+// the existing index file; the index file is required to exist when this function is called.
+func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
+	indexFilePath, err := util.ResolveIndexFilePath(pushParameters.Path)
+
+	if err != nil {
+		return errors.Wrapf(err, "unable to resolve path: %s", pushParameters.Path)
+	}
+
+	// Check that the path exists
+	_, err = os.Stat(indexFilePath)
+	if err != nil {
+		// This shouldn't happen: in the watch case, SyncFiles should first be called with 'DevfileScanIndexForWatch' set to true, which
+		// will generate the index. Then, all subsequent invocations of SyncFiles will run with 'DevfileScanIndexForWatch' set to false,
+		// which will not regenerate the index (merely updating it based on changed files.)
+		//
+		// If you see this error it means somehow watch's SyncFiles was called without the index being first generated (likely because the
+		// above mentioned pushParam wasn't set). See SyncFiles(...) for details.
+		return errors.Wrapf(err, "resolved path doesn't exist: %s", indexFilePath)
+	}
+
+	// Parse the existing index
+	fileIndex, err := util.ReadFileIndex(indexFilePath)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to read index from path: %s", indexFilePath)
+	}
+
+	rootDir := pushParameters.Path
+
+	// Remove deleted files from the existing index
+	for _, deletedFile := range pushParameters.WatchDeletedFiles {
+
+		relativePath, err := util.CalculateFileDataKeyFromPath(deletedFile, rootDir)
+
+		if err != nil {
+			klog.V(4).Infof("Error occurred for %s: %v", deletedFile, err)
+			continue
+		}
+		delete(fileIndex.Files, relativePath)
+		klog.V(4).Infof("Removing watch deleted file from index: %s", relativePath)
+	}
+
+	// Add changed files to the existing index
+	for _, addedOrModifiedFile := range pushParameters.WatchFiles {
+		relativePath, fileData, err := util.GenerateNewFileDataEntry(addedOrModifiedFile, rootDir)
+
+		if err != nil {
+			klog.V(4).Infof("Error occurred for %s: %v", addedOrModifiedFile, err)
+			continue
+		}
+		fileIndex.Files[relativePath] = *fileData
+		klog.V(4).Infof("Added/updated watched file in index: %s", relativePath)
+	}
+
+	// Write the result
+	return util.WriteFile(fileIndex.Files, indexFilePath)
+
 }
 
 // getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container
