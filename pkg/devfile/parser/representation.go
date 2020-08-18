@@ -25,8 +25,8 @@ func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 					Name:        endpoint.Name,
 					Protocol:    "tcp",
 				}
-				if endpoint.Configuration != nil && endpoint.Configuration.Protocol != "" {
-					port.Protocol = endpoint.Configuration.Protocol
+				if endpoint.Protocol != "" {
+					port.Protocol = endpoint.Protocol
 				}
 				cont.Ports = append(cont.Ports, port)
 			}

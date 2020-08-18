@@ -76,23 +76,29 @@ func (o *ViewOptions) Validate() (err error) {
 	return
 }
 
-// Run contains the logic for the command
-func (o *ViewOptions) Run() (err error) {
+// DevfileRun is ran when the context detects a devfile locally
+func (o *ViewOptions) DevfileRun() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-
-	if o.IsDevfile {
-		repr := o.devfileObj.ToRepresentation()
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(o.devfileObj.WrapFromJSONOutput(repr))
-			return
-		}
-		representation, err := yaml.Marshal(o.devfileObj.ToRepresentation())
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(w, string(representation))
+	repr := o.devfileObj.ToRepresentation()
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(o.devfileObj.WrapFromJSONOutput(repr))
+		return
+	}
+	representation, err := yaml.Marshal(o.devfileObj.ToRepresentation())
+	if err != nil {
 		return err
 	}
+	fmt.Fprintln(w, string(representation))
+	return err
+}
+
+// Run contains the logic for the command
+func (o *ViewOptions) Run() (err error) {
+
+	if o.IsDevfile {
+		return o.DevfileRun()
+	}
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 
 	cs := o.lci.GetComponentSettings()
 	envVarList := o.lci.GetEnvVars()

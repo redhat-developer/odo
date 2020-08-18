@@ -106,9 +106,7 @@ func (o *SetOptions) Validate() (err error) {
 		if !o.LocalConfigInfo.ConfigFileExists() {
 			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
 		}
-	}
 
-	if !o.IsDevfile {
 		if o.now {
 			err = o.ValidateComponentCreate()
 			if err != nil {
@@ -119,8 +117,46 @@ func (o *SetOptions) Validate() (err error) {
 	return
 }
 
+// DevfileRun is ran when the context detects a devfile locally
+func (o *SetOptions) DevfileRun() (err error) {
+	if o.envArray != nil {
+		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArray)
+		if err != nil {
+			return err
+		}
+		err = o.devfileObj.AddEnvVars(newEnvVarList)
+		if err != nil {
+			return err
+		}
+		log.Success("Environment variables were successfully updated")
+		log.Italic("\nRun `odo push` command to apply changes to the cluster")
+		return err
+	}
+	if !o.configForceFlag {
+
+		if o.devfileObj.IsSet(o.paramName) {
+			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
+				fmt.Println("Aborted by the user.")
+				return nil
+			}
+		}
+	}
+
+	err = o.devfileObj.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	if err != nil {
+		return err
+	}
+	log.Success("Devfile successfully updated")
+	log.Italic("\nRun `odo push` command to apply changes to the cluster")
+	return err
+}
+
 // Run contains the logic for the command
 func (o *SetOptions) Run() (err error) {
+
+	if o.IsDevfile {
+		return o.DevfileRun()
+	}
 
 	// env variables have been provided
 	if o.envArray != nil {
@@ -129,15 +165,6 @@ func (o *SetOptions) Run() (err error) {
 			return err
 		}
 
-		if o.IsDevfile {
-			err := o.devfileObj.AddEnvVars(newEnvVarList)
-			if err != nil {
-				return err
-			}
-			log.Success("Environment variables were successfully updated")
-			log.Italic("\nRun `odo push` command to apply changes to the cluster")
-			return err
-		}
 		// keeping the old env vars as well
 		presentEnvVarList := o.LocalConfigInfo.GetEnvVars()
 		newEnvVarList = presentEnvVarList.Merge(newEnvVarList)
@@ -158,39 +185,20 @@ func (o *SetOptions) Run() (err error) {
 
 	if !o.configForceFlag {
 
-		if o.IsDevfile {
-			if o.devfileObj.IsSet(o.paramName) {
-				if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
+		if o.LocalConfigInfo.IsSet(o.paramName) {
+			if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" || strings.ToLower(o.paramName) == "application" {
+				if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetApplication(), o.LocalConfigInfo.GetProject())) {
+					fmt.Println("Aborted by the user.")
+					return nil
+				}
+			} else {
+				if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
 					fmt.Println("Aborted by the user.")
 					return nil
 				}
 			}
-		} else {
-			if o.LocalConfigInfo.IsSet(o.paramName) {
-				if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" || strings.ToLower(o.paramName) == "application" {
-					if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetApplication(), o.LocalConfigInfo.GetProject())) {
-						fmt.Println("Aborted by the user.")
-						return nil
-					}
-				} else {
-					if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
-						fmt.Println("Aborted by the user.")
-						return nil
-					}
-				}
-			}
 		}
 
-	}
-
-	if o.IsDevfile {
-		err := o.devfileObj.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
-		if err != nil {
-			return err
-		}
-		log.Success("Devfile successfully updated")
-		log.Italic("\nRun `odo push` command to apply changes to the cluster")
-		return err
 	}
 
 	err = o.LocalConfigInfo.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)

@@ -113,20 +113,38 @@ func (o *UnsetOptions) Validate() (err error) {
 	return
 }
 
+// DevfileRun is ran when the context detects a devfile locally
+func (o *UnsetOptions) DevfileRun() (err error) {
+	if o.envArray != nil {
+
+		if err := o.devfileObj.RemoveEnvVars(o.envArray); err != nil {
+			return err
+		}
+		log.Success("Environment variables were successfully updated")
+		log.Italic("\nRun `odo push` command to apply changes to the cluster")
+		return err
+	}
+	if isSet := o.devfileObj.IsSet(o.paramName); isSet {
+		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
+			fmt.Println("Aborted by the user.")
+			return nil
+		}
+		err = o.devfileObj.DeleteConfiguration(strings.ToLower(o.paramName))
+		log.Success("Devfile was successfully updated.")
+		return err
+	}
+	return errors.New("config already unset, cannot unset a configuration which is not set")
+}
+
 // Run contains the logic for the command
 func (o *UnsetOptions) Run() (err error) {
 
+	if o.IsDevfile {
+		return o.DevfileRun()
+	}
+
 	// env variables have been provided
 	if o.envArray != nil {
-
-		if o.IsDevfile {
-			if err := o.devfileObj.RemoveEnvVars(o.envArray); err != nil {
-				return err
-			}
-			log.Success("Environment variables were successfully updated")
-			log.Italic("\nRun `odo push` command to apply changes to the cluster")
-			return err
-		}
 
 		envList := o.LocalConfigInfo.GetEnvVars()
 		newEnvList, err := config.RemoveEnvVarsFromList(envList, o.envArray)
@@ -148,19 +166,6 @@ func (o *UnsetOptions) Run() (err error) {
 			log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
 		}
 		return nil
-	}
-
-	if o.IsDevfile {
-		if isSet := o.devfileObj.IsSet(o.paramName); isSet {
-			if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
-				fmt.Println("Aborted by the user.")
-				return nil
-			}
-			err = o.devfileObj.DeleteConfiguration(strings.ToLower(o.paramName))
-			log.Success("Devfile was successfully updated.")
-			return err
-		}
-		return errors.New("config already unset, cannot unset a configuration which is not set")
 	}
 
 	if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
