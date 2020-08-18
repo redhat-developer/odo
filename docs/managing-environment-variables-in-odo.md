@@ -20,12 +20,18 @@ modify the `config` file.
 
   - To set an environment variable in a component:
     
-        $ odo config set --env <variable>=<value>
+    ``` terminal
+    $ odo config set --env <variable>=<value>
+    ```
 
   - To unset an environment variable in a component:
     
-        $ odo config unset --env <variable>
+    ``` terminal
+    $ odo config unset --env <variable>
+    ```
 
   - To list all environment variables in a component:
     
-        $ odo config view
+    ``` terminal
+    $ odo config view
+    ```

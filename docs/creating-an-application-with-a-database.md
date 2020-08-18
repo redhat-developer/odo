@@ -23,12 +23,10 @@ front-end application.
     to deploy a local cluster quickly.
 
   - The Service Catalog is installed and enabled on your cluster.
-
-<div class="informalexample">
-
-Service Catalog is deprecated on OpenShift 4 and later.
-
-</div>
+    
+    > **Note**
+    > 
+    > Service Catalog is deprecated on OpenShift 4 and later.
 
 # Creating a project
 
@@ -37,13 +35,22 @@ organized in a separate single unit.
 
 1.  Log in to an OpenShift cluster:
     
-        $ odo login -u developer -p developer
+    ``` terminal
+    $ odo login -u developer -p developer
+    ```
 
 2.  Create a project:
     
-        $ odo project create myproject
-         ✓  Project 'myproject' is ready for use
-         ✓  New project created and now using project : myproject
+    ``` terminal
+    $ odo project create myproject
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+     ✓  Project 'myproject' is ready for use
+     ✓  New project created and now using project : myproject
+    ```
 
 # Deploying the front-end component
 
@@ -52,17 +59,29 @@ application and push the source code to your cluster with `odo`.
 
 1.  Download the example front-end application:
     
-        $ git clone https://github.com/openshift/nodejs-ex
+    ``` terminal
+    $ git clone https://github.com/openshift/nodejs-ex
+    ```
 
 2.  Change the current directory to the front-end directory:
     
-        $ cd <directory-name>
+    ``` terminal
+    $ cd <directory-name>
+    ```
 
 3.  List the contents of the directory to see that the front end is a
     Node.js application.
     
-        $ ls
-        assets  bin  index.html  kwww-frontend.iml  package.json  package-lock.json  playfield.png  README.md  server.js
+    ``` terminal
+    $ ls
+    ```
+    
+    **Example
+    output.**
+    
+    ``` terminal
+    assets  bin  index.html  kwww-frontend.iml  package.json  package-lock.json  playfield.png  README.md  server.js
+    ```
     
     > **Note**
     > 
@@ -72,34 +91,55 @@ application and push the source code to your cluster with `odo`.
 4.  Create a component configuration of Node.js component-type named
     `frontend`:
     
-        $ odo create nodejs frontend
-         ✓  Validating component [5ms]
-        Please use `odo push` command to create the component with source deployed
+    ``` terminal
+    $ odo create nodejs frontend
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+     ✓  Validating component [5ms]
+    Please use `odo push` command to create the component with source deployed
+    ```
 
 5.  Create a URL to access the frontend interface.
     
-        $ odo url create myurl
-         ✓  URL myurl created for component: nodejs-nodejs-ex-pmdp
+    ``` terminal
+    $ odo url create myurl
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+     ✓  URL myurl created for component: nodejs-nodejs-ex-pmdp
+    ```
 
 6.  Push the component to the OpenShift cluster.
     
-        $ odo push
-        Validation
-         ✓  Checking component [7ms]
-        
-         Configuration changes
-         ✓  Initializing component
-         ✓  Creating component [134ms]
-        
-         Applying URL changes
-         ✓  URL myurl: http://myurl-app-myproject.192.168.42.79.nip.io created
-        
-         Pushing to component nodejs-nodejs-ex-mhbb of type local
-         ✓  Checking files for pushing [657850ns]
-         ✓  Waiting for component to start [6s]
-         ✓  Syncing files to the component [408ms]
-         ✓  Building component [7s]
-         ✓  Changes successfully pushed to component
+    ``` terminal
+    $ odo push
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    Validation
+     ✓  Checking component [7ms]
+    
+     Configuration changes
+     ✓  Initializing component
+     ✓  Creating component [134ms]
+    
+     Applying URL changes
+     ✓  URL myurl: http://myurl-app-myproject.192.168.42.79.nip.io created
+    
+     Pushing to component nodejs-nodejs-ex-mhbb of type local
+     ✓  Checking files for pushing [657850ns]
+     ✓  Waiting for component to start [6s]
+     ✓  Syncing files to the component [408ms]
+     ✓  Building component [7s]
+     ✓  Changes successfully pushed to component
+    ```
 
 # Deploying a database in interactive mode
 
@@ -108,22 +148,29 @@ deployment.
 
   - Run the interactive mode and answer the prompts:
     
-        $ odo service create
-        ? Which kind of service do you wish to create database
-        ? Which database service class should we use mongodb-persistent
-        ? Enter a value for string property DATABASE_SERVICE_NAME (Database Service Name): mongodb
-        ? Enter a value for string property MEMORY_LIMIT (Memory Limit): 512Mi
-        ? Enter a value for string property MONGODB_DATABASE (MongoDB Database Name): sampledb
-        ? Enter a value for string property MONGODB_VERSION (Version of MongoDB Image): 3.2
-        ? Enter a value for string property VOLUME_CAPACITY (Volume Capacity): 1Gi
-        ? Provide values for non-required properties No
-        ? How should we name your service  mongodb-persistent
-        ? Output the non-interactive version of the selected options No
-        ? Wait for the service to be ready No
-         ✓  Creating service [32ms]
-         ✓  Service 'mongodb-persistent' was created
-        Progress of the provisioning will not be reported and might take a long time.
-        You can see the current status by executing 'odo service list'
+    ``` terminal
+    $ odo service create
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    ? Which kind of service do you wish to create database
+    ? Which database service class should we use mongodb-persistent
+    ? Enter a value for string property DATABASE_SERVICE_NAME (Database Service Name): mongodb
+    ? Enter a value for string property MEMORY_LIMIT (Memory Limit): 512Mi
+    ? Enter a value for string property MONGODB_DATABASE (MongoDB Database Name): sampledb
+    ? Enter a value for string property MONGODB_VERSION (Version of MongoDB Image): 3.2
+    ? Enter a value for string property VOLUME_CAPACITY (Volume Capacity): 1Gi
+    ? Provide values for non-required properties No
+    ? How should we name your service  mongodb-persistent
+    ? Output the non-interactive version of the selected options No
+    ? Wait for the service to be ready No
+     ✓  Creating service [32ms]
+     ✓  Service 'mongodb-persistent' was created
+    Progress of the provisioning will not be reported and might take a long time.
+    You can see the current status by executing 'odo service list'
+    ```
 
 > **Note**
 > 
@@ -134,93 +181,147 @@ deployment.
 
 1.  List the available services:
     
-        $ odo catalog list services
-        NAME                         PLANS
-        django-psql-persistent       default
-        jenkins-ephemeral            default
-        jenkins-pipeline-example     default
-        mariadb-persistent           default
-        mongodb-persistent           default
-        mysql-persistent             default
-        nodejs-mongo-persistent      default
-        postgresql-persistent        default
-        rails-pgsql-persistent       default
+    ``` terminal
+    $ odo catalog list services
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    NAME                         PLANS
+    django-psql-persistent       default
+    jenkins-ephemeral            default
+    jenkins-pipeline-example     default
+    mariadb-persistent           default
+    mongodb-persistent           default
+    mysql-persistent             default
+    nodejs-mongo-persistent      default
+    postgresql-persistent        default
+    rails-pgsql-persistent       default
+    ```
 
 2.  Choose the `mongodb-persistent` type of service and see the required
     parameters:
     
-        $ odo catalog describe service mongodb-persistent
-          ***********************        | *****************************************************
-          Name                           | default
-          -----------------              | -----------------
-          Display Name                   |
-          -----------------              | -----------------
-          Short Description              | Default plan
-          -----------------              | -----------------
-          Required Params without a      |
-          default value                  |
-          -----------------              | -----------------
-          Required Params with a default | DATABASE_SERVICE_NAME
-          value                          | (default: 'mongodb'),
-                                         | MEMORY_LIMIT (default:
-                                         | '512Mi'), MONGODB_VERSION
-                                         | (default: '3.2'),
-                                         | MONGODB_DATABASE (default:
-                                         | 'sampledb'), VOLUME_CAPACITY
-                                         | (default: '1Gi')
-          -----------------              | -----------------
-          Optional Params                | MONGODB_ADMIN_PASSWORD,
-                                         | NAMESPACE, MONGODB_PASSWORD,
-                                         | MONGODB_USER
+    ``` terminal
+    $ odo catalog describe service mongodb-persistent
+    ```
+    
+    **Example
+    output.**
+    
+    ``` terminal
+      ***********************        | *****************************************************
+      Name                           | default
+      -----------------              | -----------------
+      Display Name                   |
+      -----------------              | -----------------
+      Short Description              | Default plan
+      -----------------              | -----------------
+      Required Params without a      |
+      default value                  |
+      -----------------              | -----------------
+      Required Params with a default | DATABASE_SERVICE_NAME
+      value                          | (default: 'mongodb'),
+                                     | MEMORY_LIMIT (default:
+                                     | '512Mi'), MONGODB_VERSION
+                                     | (default: '3.2'),
+                                     | MONGODB_DATABASE (default:
+                                     | 'sampledb'), VOLUME_CAPACITY
+                                     | (default: '1Gi')
+      -----------------              | -----------------
+      Optional Params                | MONGODB_ADMIN_PASSWORD,
+                                     | NAMESPACE, MONGODB_PASSWORD,
+                                     | MONGODB_USER
+    ```
 
 3.  Pass the required parameters as flags and wait for the deployment of
     the
-        database:
+    database:
     
-        $ odo service create mongodb-persistent --plan default --wait -p DATABASE_SERVICE_NAME=mongodb -p MEMORY_LIMIT=512Mi -p MONGODB_DATABASE=sampledb -p VOLUME_CAPACITY=1Gi
+    ``` terminal
+    $ odo service create mongodb-persistent --plan default --wait -p DATABASE_SERVICE_NAME=mongodb -p MEMORY_LIMIT=512Mi -p MONGODB_DATABASE=sampledb -p VOLUME_CAPACITY=1Gi
+    ```
 
 # Connecting the database to the front-end application
 
 1.  Link the database to the front-end service:
     
-        $ odo link mongodb-persistent
-         ✓  Service mongodb-persistent has been successfully linked from the component nodejs-nodejs-ex-mhbb
-        
-        Following environment variables were added to nodejs-nodejs-ex-mhbb component:
-        - database_name
-        - password
-        - uri
-        - username
-        - admin_password
+    ``` terminal
+    $ odo link mongodb-persistent
+    ```
+    
+    **Example
+    output.**
+    
+    ``` terminal
+     ✓  Service mongodb-persistent has been successfully linked from the component nodejs-nodejs-ex-mhbb
+    
+    Following environment variables were added to nodejs-nodejs-ex-mhbb component:
+    - database_name
+    - password
+    - uri
+    - username
+    - admin_password
+    ```
 
 2.  See the environment variables of the application and the database in
     the Pod:
     
+    1.  Get the Pod name:
+        
+        ``` terminal
         $ oc get pods
+        ```
+        
+        **Example
+        output.**
+        
+        ``` terminal
         NAME                                READY     STATUS    RESTARTS   AGE
         mongodb-1-gsznc                     1/1       Running   0          28m
         nodejs-nodejs-ex-mhbb-app-4-vkn9l   1/1       Running   0          1m
+        ```
+    
+    2.  Connect to the Pod:
         
+        ``` terminal
         $ oc rsh nodejs-nodejs-ex-mhbb-app-4-vkn9l
+        ```
+    
+    3.  Check the environment variables:
+        
+        ``` terminal
         sh-4.2$ env
+        ```
+        
+        **Example output.**
+        
+        ``` terminal
         uri=mongodb://172.30.126.3:27017
         password=dHIOpYneSkX3rTLn
         database_name=sampledb
         username=user43U
         admin_password=NCn41tqmx7RIqmfv
-        sh-4.2$
+        ```
 
 3.  Open the URL in the browser and notice the database configuration in
     the bottom right:
     
-        $ odo url list
+    ``` terminal
+    $ odo url list
+    ```
     
-        Request information
-        Page view count: 24
-        
-        DB Connection Info:
-        Type:   MongoDB
-        URL:    mongodb://172.30.126.3:27017/sampledb
+    **Example output.**
+    
+    ``` terminal
+    Request information
+    Page view count: 24
+    
+    DB Connection Info:
+    Type:   MongoDB
+    URL:    mongodb://172.30.126.3:27017/sampledb
+    ```
 
 # Deleting an application
 
@@ -231,22 +332,44 @@ deployment.
 
 1.  List the applications in the current project:
     
-        $ odo app list
-            The project '<project_name>' has the following applications:
-            NAME
-            app
+    ``` terminal
+    $ odo app list
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+        The project '<project_name>' has the following applications:
+        NAME
+        app
+    ```
 
 2.  List the components associated with the applications. These
     components will be deleted with the application:
     
-        $ odo component list
-            APP     NAME                      TYPE       SOURCE        STATE
-            app     nodejs-nodejs-ex-elyf     nodejs     file://./     Pushed
+    ``` terminal
+    $ odo component list
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+        APP     NAME                      TYPE       SOURCE        STATE
+        app     nodejs-nodejs-ex-elyf     nodejs     file://./     Pushed
+    ```
 
 3.  Delete the application:
     
-        $ odo app delete <application_name>
-            ? Are you sure you want to delete the application: <application_name> from project: <project_name>
+    ``` terminal
+    $ odo app delete <application_name>
+    ```
+    
+    **Example
+    output.**
+    
+    ``` terminal
+        ? Are you sure you want to delete the application: <application_name> from project: <project_name>
+    ```
 
 4.  Confirm the deletion with `Y`. You can suppress the confirmation
     prompt using the `-f` flag.

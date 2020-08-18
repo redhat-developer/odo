@@ -19,7 +19,7 @@ Perform application operations related to your OpenShift project.
 
 **Example using app.**
 
-``` 
+``` terminal
   # Delete the application
   odo app delete myapp
 
@@ -39,7 +39,7 @@ Perform catalog-related operations.
 
 **Example using catalog.**
 
-``` 
+``` terminal
   # Get the supported components
   odo catalog list components
 
@@ -62,11 +62,13 @@ Manage components of an application.
 
 **Example using component.**
 
-    # Create a new component
-    odo component create
-    
-    # Create a local configuration and create all objects on the cluster
-    odo component create --now
+``` terminal
+# Create a new component
+odo component create
+
+# Create a local configuration and create all objects on the cluster
+odo component create --now
+```
 
 ## config
 
@@ -74,7 +76,7 @@ Modify `odo` specific settings within the `config` file.
 
 **Example using config.**
 
-``` 
+``` terminal
   # For viewing the current local configuration
   odo config view
 
@@ -152,7 +154,7 @@ deployed.
 
 **Example using create.**
 
-``` 
+``` terminal
   # Create new Node.js component with the source in current directory.
   odo create nodejs
 
@@ -202,14 +204,18 @@ deployed.
 
 Debug a component.
 
-    # Displaying information about the state of debugging
-    odo debug info
-    
-    # Starting the port forwarding for a component to debug the application
-    odo debug port-forward
-    
-    # Setting a local port to port forward
-    odo debug port-forward --local-port 9292
+**Example using debug.**
+
+``` terminal
+# Displaying information about the state of debugging
+odo debug info
+
+# Starting the port forwarding for a component to debug the application
+odo debug port-forward
+
+# Setting a local port to port forward
+odo debug port-forward --local-port 9292
+```
 
 ## delete
 
@@ -217,7 +223,7 @@ Delete an existing component.
 
 **Example using delete.**
 
-``` 
+``` terminal
   # Delete component named 'frontend'.
   odo delete frontend
   odo delete frontend --all-apps
@@ -229,7 +235,7 @@ Describe the given component.
 
 **Example using describe.**
 
-``` 
+``` terminal
   # Describe nodejs component
   odo describe nodejs
 ```
@@ -240,7 +246,7 @@ Link a component to a service or component.
 
 **Example using link.**
 
-``` 
+``` terminal
   # Link the current component to the 'my-postgresql' service
   odo link my-postgresql
 
@@ -276,9 +282,9 @@ components.
   - Unknown  
     `odo` is disconnected from the cluster.
 
-**Example using the list command.**
+**Example using list.**
 
-``` 
+``` terminal
   # List all components in the application
   odo list
 
@@ -292,7 +298,7 @@ Retrieve the log for the given component.
 
 **Example using log.**
 
-``` 
+``` terminal
   # Get the logs for the nodejs component
   odo log nodejs
 ```
@@ -303,7 +309,7 @@ Log in to the cluster.
 
 **Example using login.**
 
-``` 
+``` terminal
   # Log in interactively
   odo login
 
@@ -323,7 +329,7 @@ Log out of the current OpenShift session.
 
 **Example using logout.**
 
-``` 
+``` terminal
   # Log out
   odo logout
 ```
@@ -335,7 +341,7 @@ preference file.
 
 **Example using preference.**
 
-``` 
+``` terminal
   # For viewing the current preferences
   odo preference view
 
@@ -378,7 +384,7 @@ Perform project operations.
 
 **Example using project.**
 
-``` 
+``` terminal
   # Set the active project
   odo project set
 
@@ -401,7 +407,7 @@ Push source code to a component.
 
 **Example using push.**
 
-``` 
+``` terminal
   # Push source code to the current component
   odo push
 
@@ -419,25 +425,27 @@ Push source code to a component.
 
 Create and modify custom registries.
 
-**Example using the registry command.**
+**Example using registry.**
 
-    # Add a registry to the registry list
-    odo registry add <registry name> <registry URL>
-    
-    # List a registry in the registry list
-    odo registry list
-    
-    # Delete a registry from the registry list
-    odo registry delete <registry name>
-    
-    # Update a registry in the registry list
-    odo registry update <registry name> <registry URL>
-    
-    # List a component with a corresponding registry
-    odo catalog list components
-    
-    # Create a component that is hosted by a specific registry
-    odo create <component type> --registry <registry name>
+``` terminal
+# Add a registry to the registry list
+odo registry add <registry name> <registry URL>
+
+# List a registry in the registry list
+odo registry list
+
+# Delete a registry from the registry list
+odo registry delete <registry name>
+
+# Update a registry in the registry list
+odo registry update <registry name> <registry URL>
+
+# List a component with a corresponding registry
+odo catalog list components
+
+# Create a component that is hosted by a specific registry
+odo create <component type> --registry <registry name>
+```
 
 ## service
 
@@ -446,7 +454,7 @@ Perform service catalog operations.
 **Example using
 service.**
 
-``` 
+``` terminal
   # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
   odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
 
@@ -463,7 +471,7 @@ Perform storage operations.
 
 **Example using storage.**
 
-``` 
+``` terminal
   # Create storage of size 1Gb to a component
   odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi
 
@@ -490,7 +498,7 @@ been linked prior to the invocation using `odo link`.
 
 **Example using unlink.**
 
-``` 
+``` terminal
   # Unlink the 'my-postgresql' service from the current component
   odo unlink my-postgresql
 
@@ -514,7 +522,7 @@ Update the source code path of a component
 **Example using
 update.**
 
-``` 
+``` terminal
   # Change the source code path of a currently active component to local (use the current directory as a source)
   odo update --local
 
@@ -537,7 +545,7 @@ Expose a component to the outside world.
 
 **Example using url.**
 
-``` 
+``` terminal
   # Create a URL for the current component with a specific port
   odo url create --port 8080
 
@@ -572,7 +580,7 @@ Utilities for terminal commands and modifying odo configurations.
 
 **Example using utils.**
 
-``` 
+``` terminal
   # Bash terminal PS1 support
   source <(odo utils terminal bash)
 
@@ -586,7 +594,7 @@ Print the client version information.
 
 **Example using version.**
 
-``` 
+``` terminal
   # Print the client version of odo
   odo version
 ```
@@ -598,7 +606,7 @@ automatically.
 
 **Example using watch.**
 
-``` 
+``` terminal
   # Watch for changes in directory for current component
   odo watch
 
