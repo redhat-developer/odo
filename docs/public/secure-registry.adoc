@@ -59,6 +59,6 @@ Please follow https://docs.github.com/en/github/authenticating-to-github/creatin
 Please run `odo create nodejs --registry <registry name> --starter --starter-token <starter project token>`
 
 - <registry name>: user-defined devfile registry name.
-- <starter project token>: the personal access token that you create on step 6.
+- <starter project token>: the personal access token that you create on step 2.
 
 Note: given GitHub only supports user-scoped personal access token, so if the repository that hosts the secure registry and the repository that hosts the secure starter project are created under the same GitHub user, then the token can be used for both downloading devfile and starter project. For that case you don't need to explicitly pass in the flag --starter-token <starter project token>, odo can automatically use one token to download both devfile and starter project
