@@ -2,6 +2,7 @@ package env
 
 import (
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -49,16 +50,11 @@ func TestPrintSupportedParameters(t *testing.T) {
 			gotStrings := strings.Split(got, "\n")
 			wantStrings := strings.Split(tt.want, "\n")
 
-			gotStringMap := make(map[string]bool)
-			for _, gotString := range gotStrings {
-				gotStringMap[gotString] = true
-			}
+			sort.Strings(gotStrings)
+			sort.Strings(wantStrings)
 
-			for _, wantString := range wantStrings {
-				_, found := gotStringMap[wantString]
-				if !found {
-					t.Errorf("String %s not found in output %s", wantString, got)
-				}
+			if !reflect.DeepEqual(wantStrings, gotStrings) {
+				t.Errorf("\nGot: %s\nWant: %s", got, tt.want)
 			}
 		})
 	}
