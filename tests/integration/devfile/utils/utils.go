@@ -204,26 +204,32 @@ func ExecPushToTestParent(projectDirPath, cmpName, namespace string) {
 	helper.MatchAllInOutput(output, []string{"Executing devbuild command", "touch blah.js"})
 }
 
-func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "java-openliberty", cmpName}
+func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string, freePort int) {
+	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "parentSupport", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	// update the devfile with the free port
+	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "(-1)", strconv.Itoa(freePort))
 
 	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 }
 
-func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "java-openliberty", cmpName}
+func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string, freePort int) {
+	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-multi-layer-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "parentSupport", "devfile-with-multi-layer-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	// update the devfile with the free port
+	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "(-1)", strconv.Itoa(freePort))
 
 	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)

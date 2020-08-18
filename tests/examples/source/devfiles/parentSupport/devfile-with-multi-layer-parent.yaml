@@ -1,0 +1,27 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+parent:
+  uri: http://localhost:(-1)/devfile-middle-layer.yaml
+  components:
+    - container:
+        name: runtime
+        env:
+          - name: ODO_TEST_ENV_2
+            value: ENV_VALUE_2
+          - name: ODO_TEST_ENV_3
+            value: ENV_VALUE_3
+  commands:
+    - exec:
+        id: devBuild
+        commandLine: touch blah.js
+commands:
+  - exec:
+      id: build
+      component: runtime
+      commandLine: touch new-blah.js
+      workingDir: /project
+      group:
+        kind: build
+        isDefault: false
