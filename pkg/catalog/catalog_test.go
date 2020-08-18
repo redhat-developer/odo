@@ -183,10 +183,10 @@ apiversion: odo.openshift.io/v1alpha1
 OdoSettings:
   Experimental: true
   RegistryList:
-  - Name: CheDevfileRegistry
-    URL: https://che-devfile-registry.openshift.io/
   - Name: DefaultDevfileRegistry
-    URL: https://github.com/elsony/devfile-registry`,
+    URL: https://github.com/elsony/devfile-registry
+  - Name: CheDevfileRegistry
+    URL: https://che-devfile-registry.openshift.io/`,
 	))
 	if err != nil {
 		t.Error(err)
