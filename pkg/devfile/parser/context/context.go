@@ -96,3 +96,7 @@ func (d *DevfileCtx) Validate() error {
 	// Validate devfile
 	return d.ValidateDevfileSchema()
 }
+
+func (d *DevfileCtx) GetAbsPath() string {
+	return d.absPath
+}

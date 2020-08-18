@@ -1,6 +1,9 @@
 package storage
 
 import (
+	"fmt"
+	v1 "k8s.io/api/core/v1"
+	"reflect"
 	"testing"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -203,4 +206,106 @@ func TestStorageCreate(t *testing.T) {
 		})
 	}
 
+}
+
+func TestDeleteOldPVCs(t *testing.T) {
+	type args struct {
+		componentName    string
+		processedVolumes map[string]bool
+	}
+	tests := []struct {
+		name            string
+		args            args
+		returnedPVCs    *v1.PersistentVolumeClaimList
+		deletedPVCNames map[string]bool
+		wantErr         bool
+	}{
+		{
+			name: "case 1: delete the non processed PVCs",
+			args: args{
+				componentName: "nodejs",
+				processedVolumes: map[string]bool{
+					"pvc-0": true,
+				},
+			},
+			returnedPVCs: &v1.PersistentVolumeClaimList{
+				Items: []v1.PersistentVolumeClaim{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pvc-1-random-string",
+							Labels: map[string]string{
+								"component":    "nodejs",
+								"storage-name": "pvc-1",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pvc-0-random-string",
+							Labels: map[string]string{
+								"component":    "nodejs",
+								"storage-name": "pvc-0",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pvc-3-random-string",
+							Labels: map[string]string{
+								"component":    "nodejs",
+								"storage-name": "pvc-3",
+							},
+						},
+					},
+				},
+			},
+			deletedPVCNames: map[string]bool{"pvc-1-random-string": true, "pvc-3-random-string": true},
+			wantErr:         false,
+		},
+		{
+			name: "case 2: no PVC returned",
+			args: args{
+				componentName: "nodejs",
+			},
+			returnedPVCs: &v1.PersistentVolumeClaimList{
+				Items: []v1.PersistentVolumeClaim{},
+			},
+			deletedPVCNames: map[string]bool{},
+			wantErr:         false,
+		},
+	}
+	for _, tt := range tests {
+		deletedVolumesMap := make(map[string]bool)
+
+		fkClient, fkClientSet := kclient.FakeNew()
+
+		fkClientSet.Kubernetes.PrependReactor("list", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+			return true, tt.returnedPVCs, nil
+		})
+
+		fkClientSet.Kubernetes.PrependReactor("delete", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+			pvcName := action.(ktesting.DeleteAction).GetName()
+			if _, ok := tt.deletedPVCNames[pvcName]; !ok {
+				return true, nil, fmt.Errorf("delete called on a processed volume: %s", pvcName)
+			}
+			deletedVolumesMap[pvcName] = true
+			return true, nil, nil
+		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			err := DeleteOldPVCs(fkClient, tt.args.componentName, tt.args.processedVolumes)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DeleteOldPVCs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantErr == true && err != nil {
+				return
+			}
+
+			if !reflect.DeepEqual(tt.deletedPVCNames, deletedVolumesMap) {
+				t.Errorf("all volumes are not deleted, want: %v, got: %v", tt.deletedPVCNames, deletedVolumesMap)
+			}
+		})
+	}
 }

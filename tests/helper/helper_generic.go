@@ -102,33 +102,21 @@ func ExtractSubString(output, start, end string) string {
 	return ""
 }
 
-// WatchNonRetCmdStdOut run odo watch and get the cmdSTDOUT output into buffer.
-// startIndicatorFunc sets true and startSimulationCh starts, when buffer contain "Waiting for something to change"
-// check function checks for the changes into the buffer
-func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(output string) bool, startSimulationCh chan bool, startIndicatorFunc func(output string) bool) (bool, error) {
+// WatchNonRetCmdStdOut runs an 'odo watch' command and stores the process' stdout output into buffer.
+// - startIndicatorFunc should check stdout output and return true when simulation is ready to begin (for example, buffer contains "Waiting for something to change")
+// - startSimulationCh will be sent a 'true' when startIndicationFunc first returns true, at which point files/directories should be created by associated goroutine
+// - success function is passed stdout buffer, and should return if the test conditions have passes
+func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, success func(output string) bool, startSimulationCh chan bool, startIndicatorFunc func(output string) bool) (bool, error) {
 	var cmd *exec.Cmd
 	var buf bytes.Buffer
 	var errBuf bytes.Buffer
-	var cmdStrParts []string
-	// interestingly "odo watch  --context" ( observe the 2 spaces between watch and --context ) becomes ["odo", "watch", "", "--context"] which falls
-	// apart with Error: unknown command "" for "odo watch" on cobra when used "cobra.NoArgs".
-	tmpParts := strings.Split(cmdStr, " ")
-	for i := 0; i < len(tmpParts); i++ {
-		trimedPart := strings.TrimSpace(tmpParts[i])
-		if trimedPart == "" {
-			continue
-		}
-		cmdStrParts = append(cmdStrParts, trimedPart)
-	}
-	cmdName := cmdStrParts[0]
-	_, err := fmt.Fprintln(GinkgoWriter, "Running command: ", cmdStrParts)
-	Expect(err).To(BeNil())
-	if len(cmdStrParts) > 1 {
-		cmdStrParts = cmdStrParts[1:]
-		cmd = exec.Command(cmdName, cmdStrParts...)
-	} else {
-		cmd = exec.Command(cmdName)
-	}
+
+	cmdStrParts := strings.Fields(cmdStr)
+
+	fmt.Fprintln(GinkgoWriter, "Running command: ", cmdStrParts)
+
+	cmd = exec.Command(cmdStrParts[0], cmdStrParts[1:]...)
+
 	cmd.Stdout = &buf
 	cmd.Stderr = &errBuf
 
@@ -156,18 +144,21 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 			}
 			errBufStr := errBuf.String()
 			if errBufStr != "" {
-				_, err = fmt.Fprintln(GinkgoWriter, "Output from stderr:")
+				_, err := fmt.Fprintln(GinkgoWriter, "Output from stderr:")
 				Expect(err).To(BeNil())
 				_, err = fmt.Fprintln(GinkgoWriter, errBufStr)
 				Expect(err).To(BeNil())
 			}
 			Fail(fmt.Sprintf("Timeout after %.2f minutes", timeout.Minutes()))
-		case <-ticker.C:
+		case <-ticker.C: // Every 10 seconds...
+
+			// If we have not yet begun file modification, query the parameter function to see if we should, do so if true
 			if !startedFileModification && startIndicatorFunc(buf.String()) {
 				startedFileModification = true
 				startSimulationCh <- true
 			}
-			if check(buf.String()) {
+			// Call success(...) to determine if stdout contains expected text, exit if true
+			if success(buf.String()) {
 				if err := cmd.Process.Kill(); err != nil {
 					return true, err
 				}

@@ -2,6 +2,7 @@ package env
 
 import (
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -45,8 +46,15 @@ func TestPrintSupportedParameters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := strings.TrimSpace(printSupportedParameters(tt.supportedParameters))
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got %s, want %s", got, tt.want)
+
+			gotStrings := strings.Split(got, "\n")
+			wantStrings := strings.Split(tt.want, "\n")
+
+			sort.Strings(gotStrings)
+			sort.Strings(wantStrings)
+
+			if !reflect.DeepEqual(wantStrings, gotStrings) {
+				t.Errorf("\nGot: %s\nWant: %s", got, tt.want)
 			}
 		})
 	}

@@ -14,6 +14,7 @@ import (
 
 	"github.com/openshift/odo/tests/helper"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
@@ -203,26 +204,32 @@ func ExecPushToTestParent(projectDirPath, cmpName, namespace string) {
 	helper.MatchAllInOutput(output, []string{"Executing devbuild command", "touch blah.js"})
 }
 
-func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "java-openliberty", cmpName}
+func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string, freePort int) {
+	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "parentSupport", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	// update the devfile with the free port
+	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "(-1)", strconv.Itoa(freePort))
 
 	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 }
 
-func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "java-openliberty", cmpName}
+func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string, freePort int) {
+	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-multi-layer-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "parentSupport", "devfile-with-multi-layer-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	// update the devfile with the free port
+	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "(-1)", strconv.Itoa(freePort))
 
 	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
@@ -345,6 +352,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 		isDevfileTest = true
 	}
 
+	// After the watch command has started (indicated via channel), simulate file system changes
 	startSimulationCh := make(chan bool)
 	go func() {
 		startMsg := <-startSimulationCh
@@ -385,17 +393,19 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 			if strings.Contains(flag, "delay 0") {
 				return true
 			}
+			// Returns true if the test has succeeded, false if not yet
 			if isDevfileTest {
 				stringsMatched := true
 
 				for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
 					if !strings.Contains(output, stringToBeMatched) {
+						fmt.Fprintln(GinkgoWriter, "Missing string: ", stringToBeMatched)
 						stringsMatched = false
 					}
 				}
 
 				if stringsMatched {
-					// Verify delete from component pod
+					// Verify directory deleted from component pod
 					err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
 					Expect(err).To(BeNil())
 					return true
@@ -414,6 +424,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 		},
 		startSimulationCh,
 		func(output string) bool {
+			// Returns true to indicate the test should begin file system file change simulation
 			return strings.Contains(output, "Waiting for something to change")
 		})
 

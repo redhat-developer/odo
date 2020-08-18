@@ -1,6 +1,7 @@
 package version200
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -225,5 +226,104 @@ func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []strin
 	}
 	if len(preStop) != 0 {
 		d.Events.PreStop = preStop
+	}
+}
+
+// AddVolume adds the volume to the devFile and mounts it to all the container components
+func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
+	volumeExists := false
+	var pathErrorContainers []string
+	for _, component := range d.Components {
+		if component.Container != nil {
+			for _, volumeMount := range component.Container.VolumeMounts {
+				if volumeMount.Path == path {
+					var err = fmt.Errorf("another volume, %s, is mounted to the same path: %s, on the container: %s", volumeMount.Name, path, component.Container.Name)
+					pathErrorContainers = append(pathErrorContainers, err.Error())
+				}
+			}
+			component.Container.VolumeMounts = append(component.Container.VolumeMounts, common.VolumeMount{
+				Name: volume.Name,
+				Path: path,
+			})
+		} else if component.Volume != nil && component.Volume.Name == volume.Name {
+			volumeExists = true
+			break
+		}
+	}
+
+	if volumeExists {
+		return &common.AlreadyExistError{
+			Field: "volume",
+			Name:  volume.Name,
+		}
+	}
+
+	if len(pathErrorContainers) > 0 {
+		return fmt.Errorf("errors while creating volume:\n%s", strings.Join(pathErrorContainers, "\n"))
+	}
+
+	d.Components = append(d.Components, common.DevfileComponent{
+		Volume: &volume,
+	})
+
+	return nil
+}
+
+// DeleteVolume removes the volume from the devFile and removes all the related volume mounts
+func (d *Devfile200) DeleteVolume(name string) error {
+	found := false
+	for i := len(d.Components) - 1; i >= 0; i-- {
+		if d.Components[i].Container != nil {
+			var tmp []common.VolumeMount
+			for _, volumeMount := range d.Components[i].Container.VolumeMounts {
+				if volumeMount.Name != name {
+					tmp = append(tmp, volumeMount)
+				}
+			}
+			d.Components[i].Container.VolumeMounts = tmp
+		} else if d.Components[i].Volume != nil {
+			if d.Components[i].Volume.Name == name {
+				found = true
+				d.Components = append(d.Components[:i], d.Components[i+1:]...)
+			}
+		}
+	}
+
+	if !found {
+		return &common.NotFoundError{
+			Field: "volume",
+			Name:  name,
+		}
+	}
+
+	return nil
+}
+
+// GetVolumeMountPath gets the mount path of the required volume
+func (d *Devfile200) GetVolumeMountPath(name string) (string, error) {
+	volumeFound := false
+	mountFound := false
+	path := ""
+
+	for _, component := range d.Components {
+		if component.Container != nil {
+			for _, volumeMount := range component.Container.VolumeMounts {
+				if volumeMount.Name == name {
+					mountFound = true
+					path = volumeMount.Path
+				}
+			}
+		} else if component.Volume != nil {
+			volumeFound = true
+		}
+	}
+	if volumeFound && mountFound {
+		return path, nil
+	} else if !mountFound && volumeFound {
+		return "", fmt.Errorf("volume not mounted to any component")
+	}
+	return "", &common.NotFoundError{
+		Field: "volume",
+		Name:  "name",
 	}
 }

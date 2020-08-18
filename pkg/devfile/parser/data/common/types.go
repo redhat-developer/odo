@@ -89,18 +89,18 @@ type Container struct {
 
 // Endpoint holds information about how an application is exposed
 type Endpoint struct {
-	Attributes map[string]string `json:"attributes,omitempty"`
+	Attributes map[string]string `json:"attributes,omitempty" yaml:"attributes,omitempty"`
 
 	// Describes how the endpoint should be exposed on the network. public|internal|none. Default value is "public"
-	Exposure string `json:"exposure,omitempty"`
+	Exposure string `json:"exposure,omitempty" yaml:"exposure,omitempty"`
 
-	Path       string `json:"path,omitempty"`
-	Secure     bool   `json:"secure,omitempty"`
-	Name       string `json:"name"`
-	TargetPort int32  `json:"targetPort"`
+	Path       string `json:"path,omitempty" yaml:"path,omitempty"`
+	Secure     bool   `json:"secure,omitempty" yaml:"secure,omitempty"`
+	Name       string `json:"name" yaml:"name"`
+	TargetPort int32  `json:"targetPort" yaml:"targetPort"`
 
 	// Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is "http"
-	Protocol string `json:"protocol,omitempty"`
+	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 }
 
 // Env
