@@ -5,7 +5,7 @@ keywords:
 
 # Hero section
 title: odo 
-description: "odo is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.<br><br>Existing tools such as oc are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. odo abstracts away complex Kubernetes and OpenShift concepts for the developer."
+description: "odo is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on Kubernetes and OpenShift.<br><br>Existing tools such as kubectl and oc are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. odo abstracts away complex Kubernetes and OpenShift concepts for the developer."
 project: 
 asciinema: '<script id="asciicast-g24BKXdHLTtTFrnIUQCk5yFpD" src="https://asciinema.org/a/g24BKXdHLTtTFrnIUQCk5yFpD.js" async></script>'
 
