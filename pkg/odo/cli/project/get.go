@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -51,12 +53,14 @@ func (pgo *ProjectGetOptions) Validate() (err error) {
 
 // Run runs the project get command
 func (pgo *ProjectGetOptions) Run() (err error) {
-	project := pgo.Context.Project
+	currentProject := pgo.Context.Project
 
 	if pgo.projectShortFlag {
-		fmt.Print(project)
+		fmt.Print(currentProject)
+	} else if log.IsJSON() {
+		machineoutput.OutputSuccess(project.GetMachineReadableFormat(currentProject, true))
 	} else {
-		log.Infof("The current project is: %v", project)
+		log.Infof("The current project is: %v", currentProject)
 	}
 
 	return
@@ -67,11 +71,12 @@ func NewCmdProjectGet(name, fullName string) *cobra.Command {
 	o := NewProjectGetOptions()
 
 	projectGetCmd := &cobra.Command{
-		Use:     name,
-		Short:   getShortDesc,
-		Long:    getLongDesc,
-		Example: fmt.Sprintf(getExample, fullName),
-		Args:    cobra.ExactArgs(0),
+		Use:         name,
+		Short:       getShortDesc,
+		Long:        getLongDesc,
+		Example:     fmt.Sprintf(getExample, fullName),
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
