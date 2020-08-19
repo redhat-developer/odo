@@ -16,7 +16,6 @@ type CliRunner interface {
 	CreateRandNamespaceProject() string
 	DeleteNamespaceProject(projectName string)
 	DeletePod(podName string, projectName string)
-	Exec(podName string, projectName string, args ...string) string
 	GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string
 	GetPVCSize(compName, storageName, namespace string) string
 	GetAllPVCNames(namespace string) []string

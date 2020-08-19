@@ -594,14 +594,3 @@ func (oc OcRunner) GetAllPVCNames(namespace string) []string {
 func (oc OcRunner) DeletePod(podName string, namespace string) {
 	CmdShouldPass(oc.path, "delete", "pod", "--namespace", namespace, podName)
 }
-
-// Exec allows generic execution of commands, returning the contents of stdout
-func (oc OcRunner) Exec(podName string, projectName string, args ...string) string {
-
-	cmd := []string{"exec", podName, "--namespace", projectName}
-
-	cmd = append(cmd, args...)
-
-	stdOut := CmdShouldPass(oc.path, cmd...)
-	return stdOut
-}

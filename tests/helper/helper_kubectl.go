@@ -185,14 +185,3 @@ func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
 func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
 	CmdShouldPass(kubectl.path, "delete", "pod", "--namespace", namespace, podName)
 }
-
-// Exec allows generic execution of commands, returning the contents of stdout
-func (kubectl KubectlRunner) Exec(podName string, projectName string, args ...string) string {
-
-	cmd := []string{"exec", podName, "--namespace", projectName}
-
-	cmd = append(cmd, args...)
-
-	stdOut := CmdShouldPass(kubectl.path, cmd...)
-	return stdOut
-}
