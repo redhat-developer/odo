@@ -463,8 +463,8 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecWithInvalidCommandGroup(context, cmpName, namespace)
 		})
 
-		It("should not restart the application if restart is false", func() {
-			utils.ExecWithRestartAttribute(context, cmpName, namespace)
+		It("should not restart the application if it is hot reload capable", func() {
+			utils.ExecWithHotReload(context, cmpName, namespace)
 		})
 
 		It("should create pvc and reuse if it shares the same devfile volume name", func() {

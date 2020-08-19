@@ -202,6 +202,15 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 	return containerNameToVolumes
 }
 
+// IsRestartRequired checks if restart required for run command
+func IsRestartRequired(hotReload bool, modeChanged bool) bool {
+	if modeChanged || !hotReload {
+		return true
+	}
+
+	return false
+}
+
 // IsEnvPresent checks if the env variable is present in an array of env variables
 func IsEnvPresent(envVars []common.Env, envVarName string) bool {
 	for _, envVar := range envVars {
