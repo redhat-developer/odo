@@ -95,7 +95,7 @@ var _ = Describe("odo devfile test command tests", func() {
 			output := helper.CmdShouldPass("odo", "test", "--context", commonVar.Context)
 			helper.MatchAllInOutput(output, []string{"Executing test1 command", "mkdir test1"})
 
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Context)
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 			output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
 			Expect(output).To(ContainSubstring("test1"))
 		})
