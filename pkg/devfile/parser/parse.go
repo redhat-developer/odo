@@ -2,13 +2,15 @@ package parser
 
 import (
 	"encoding/json"
+
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
+
+	"reflect"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	"reflect"
 )
 
 // ParseDevfile func validates the devfile integrity.
@@ -103,6 +105,11 @@ func parseParent(d DevfileObj) error {
 		return err
 	}
 
+	err = parentData.OverrideStarterProjects(d.Data.GetParent().StarterProjects)
+	if err != nil {
+		return err
+	}
+
 	klog.V(4).Infof("adding data of devfile with URI: %v", parent.Uri)
 
 	// since the parent's data has been overriden
@@ -121,6 +128,11 @@ func parseParent(d DevfileObj) error {
 	err = d.Data.AddProjects(parentData.Data.GetProjects())
 	if err != nil {
 		return errors.Wrapf(err, "error while adding projects from the parent devfiles")
+	}
+
+	err = d.Data.AddStarterProjects(parentData.Data.GetStarterProjects())
+	if err != nil {
+		return errors.Wrapf(err, "error while adding starter projects from the parent devfiles")
 	}
 
 	err = d.Data.AddEvents(parentData.Data.GetEvents())

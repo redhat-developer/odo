@@ -74,6 +74,11 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 
 }
 
+// GetStarterProjects returns the fake starter projects
+func (d TestDevfileData) GetStarterProjects() []versionsCommon.DevfileStarterProject {
+	return []versionsCommon.DevfileStarterProject{}
+}
+
 // GetCommands is a mock function to get the commands from a devfile
 func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
 	if d.Commands == nil {
@@ -125,6 +130,10 @@ func (d TestDevfileData) SetEvents(events common.DevfileEvents) {}
 func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { return nil }
 
 func (d TestDevfileData) UpdateProject(project common.DevfileProject) {}
+
+func (d TestDevfileData) AddStarterProjects(projects []common.DevfileStarterProject) error { return nil }
+
+func (d TestDevfileData) UpdateStarterProject(project common.DevfileStarterProject) {}
 
 func (d TestDevfileData) AddEvents(events common.DevfileEvents) error { return nil }
 

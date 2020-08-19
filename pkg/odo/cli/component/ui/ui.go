@@ -10,11 +10,48 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/util"
 )
+
+// SelectStarterProject allows user to select starter project in the prompt
+func SelectStarterProject(projects []common.DevfileStarterProject) string {
+
+	if len(projects) == 0 {
+		return ""
+	}
+
+	projectNames := getProjectNames(projects)
+
+	var download = false
+	var selectedProject string
+	prompt := &survey.Confirm{Message: "Do you want to download a starter project"}
+	err := survey.AskOne(prompt, &download, nil)
+	ui.HandleError(err)
+
+	if !download {
+		return ""
+	}
+
+	// select the only starter project in devfile
+	if len(projectNames) == 1 {
+		return projectNames[0]
+	}
+
+	// If multiple projects present give options to select
+	promptSelect := &survey.Select{
+		Message: "Which starter project do you want to download",
+		Options: projectNames,
+	}
+
+	err = survey.AskOne(promptSelect, &selectedProject, survey.Required)
+	ui.HandleError(err)
+	return selectedProject
+
+}
 
 // SelectDevfileComponentType lets the user to select the devfile component type in the prompt
 func SelectDevfileComponentType(options []catalog.DevfileComponentType) string {
@@ -68,6 +105,15 @@ func getDevfileComponentTypeNameCandidates(options []catalog.DevfileComponentTyp
 	result := make([]string, len(options))
 	for i, option := range options {
 		result[i] = option.Name
+	}
+	sort.Strings(result)
+	return result
+}
+
+func getProjectNames(projects []common.DevfileStarterProject) []string {
+	result := make([]string, len(projects))
+	for i, project := range projects {
+		result[i] = project.Name
 	}
 	sort.Strings(result)
 	return result
