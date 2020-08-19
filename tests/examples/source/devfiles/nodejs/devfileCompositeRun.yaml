@@ -2,7 +2,7 @@ schemaVersion: 2.0.0
 metadata:
   name: nodejs
   version: 1.0.0
-projects:
+starterProjects:
   - name: nodejs-starter
     git:
       location: "https://github.com/odo-devfiles/nodejs-ex.git"

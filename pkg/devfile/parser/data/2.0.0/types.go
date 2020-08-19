@@ -28,7 +28,7 @@ type Devfile200 struct {
 	Projects []common.DevfileProject `json:"projects,omitempty" yaml:"projects,omitempty"`
 
 	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
-	StarterProjects []StarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
+	StarterProjects []common.DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
 	Components []common.DevfileComponent `json:"components,omitempty" yaml:"components,omitempty"`

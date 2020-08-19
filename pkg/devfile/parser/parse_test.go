@@ -1,15 +1,16 @@
 package parser
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"testing"
+
 	"github.com/ghodss/yaml"
 	"github.com/kylelemons/godebug/pretty"
 	parser "github.com/openshift/odo/pkg/devfile/parser/context"
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"net/http"
-	"net/http/httptest"
-	"reflect"
-	"testing"
 )
 
 const schemaV200 = "2.0.0"
@@ -57,6 +58,12 @@ func Test_parseParent(t *testing.T) {
 									Name:      "nodejs-starter",
 								},
 							},
+							StarterProjects: []common.DevfileStarterProject{
+								{
+									ClonePath: "/projects",
+									Name:      "starter-project-1",
+								},
+							},
 						},
 
 						Commands: []common.DevfileCommand{
@@ -82,6 +89,12 @@ func Test_parseParent(t *testing.T) {
 							{
 								ClonePath: "/projects",
 								Name:      "nodejs-starter-build",
+							},
+						},
+						StarterProjects: []common.DevfileStarterProject{
+							{
+								ClonePath: "/projects",
+								Name:      "starter-project-2",
 							},
 						},
 					},
@@ -117,6 +130,15 @@ func Test_parseParent(t *testing.T) {
 								Branch: "master",
 							},
 							Name: "nodejs-starter",
+						},
+					},
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/data",
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: "starter-project-1",
 						},
 					},
 				},
@@ -169,6 +191,19 @@ func Test_parseParent(t *testing.T) {
 							Name: "nodejs-starter",
 						},
 					},
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/projects",
+							Name:      "starter-project-2",
+						},
+						{
+							ClonePath: "/projects",
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: "starter-project-1",
+						},
+					},
 				},
 			},
 		},
@@ -201,6 +236,13 @@ func Test_parseParent(t *testing.T) {
 							{
 								ClonePath: "/projects",
 								Name:      "nodejs-starter-build",
+							},
+						},
+
+						StarterProjects: []common.DevfileStarterProject{
+							{
+								ClonePath: "/projects",
+								Name:      "starter-project-1",
 							},
 						},
 					},
@@ -236,6 +278,15 @@ func Test_parseParent(t *testing.T) {
 								Branch: "master",
 							},
 							Name: "nodejs-starter",
+						},
+					},
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/data",
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: "starter-project-2",
 						},
 					},
 				},
@@ -286,6 +337,19 @@ func Test_parseParent(t *testing.T) {
 								Branch: "master",
 							},
 							Name: "nodejs-starter",
+						},
+					},
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/projects",
+							Name:      "starter-project-1",
+						},
+						{
+							ClonePath: "/data",
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: "starter-project-2",
 						},
 					},
 				},
