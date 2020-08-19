@@ -9,6 +9,7 @@ import (
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
@@ -46,7 +47,7 @@ func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) 
 
 				err = json.Unmarshal(merged, &updatedComponent)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to unmarshal override components")
 				}
 
 				d.Data.UpdateComponent(common.DevfileComponent{Container: &updatedComponent})
@@ -76,7 +77,7 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 
 				err = json.Unmarshal(merged, &updatedCommand)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to unmarshal override commands")
 				}
 
 				d.Data.UpdateCommand(common.DevfileCommand{Exec: &updatedCommand})
@@ -101,7 +102,7 @@ func (d DevfileObj) OverrideEvents(overridePatch common.DevfileEvents) error {
 
 	err = json.Unmarshal(merged, &updatedEvents)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to unmarshal override events")
 	}
 
 	d.Data.UpdateEvents(updatedEvents.PostStart,
@@ -128,7 +129,7 @@ func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) erro
 
 				err = json.Unmarshal(merged, &updatedProject)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to unmarshal override projects")
 				}
 
 				d.Data.UpdateProject(updatedProject)
@@ -158,9 +159,8 @@ func (d DevfileObj) OverrideStarterProjects(overridePatch []common.DevfileStarte
 
 				err = json.Unmarshal(merged, &updatedProject)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to unmarshal override starter projects")
 				}
-
 				d.Data.UpdateStarterProject(updatedProject)
 			}
 		}
