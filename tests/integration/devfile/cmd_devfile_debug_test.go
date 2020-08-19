@@ -63,7 +63,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("check that machine output debug information works", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -92,7 +92,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -128,7 +128,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+namespace, "--project", namespace)
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+namespace, "--project", namespace, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -153,7 +153,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")

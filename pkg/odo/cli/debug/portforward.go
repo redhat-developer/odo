@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 
@@ -76,7 +77,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 	o.isExperimental = experimental.IsExperimentalModeEnabled()
 
-	if o.isExperimental {
+	if o.isExperimental && util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// a small shortcut
