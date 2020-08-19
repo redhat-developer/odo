@@ -8,7 +8,7 @@ const JsonSchema200 = `{
       "items": {
         "properties": {
           "apply": {
-            "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+            "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
             "properties": {
               "attributes": {
                 "additionalProperties": {
@@ -65,7 +65,7 @@ const JsonSchema200 = `{
               "id"
             ],
             "type": "object",
-            "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+            "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
             "additionalProperties": false
           },
           "composite": {
@@ -205,6 +205,11 @@ const JsonSchema200 = `{
                 "type": "object",
                 "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
+              },
+              "hotReloadCapable": {
+                "description": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false"",
+                "type": "boolean",
+                "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false""
               },
               "id": {
                 "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
@@ -434,9 +439,9 @@ const JsonSchema200 = `{
                 "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
               },
               "dedicatedPod": {
-                "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false"",
                 "type": "boolean",
-                "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
+                "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false""
               },
               "endpoints": {
                 "items": {
@@ -450,14 +455,14 @@ const JsonSchema200 = `{
                       "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                     },
                     "exposure": {
-                      "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                      "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                       "enum": [
                         "public",
                         "internal",
                         "none"
                       ],
                       "type": "string",
-                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                     },
                     "name": {
                       "type": "string"
@@ -468,9 +473,9 @@ const JsonSchema200 = `{
                       "markdownDescription": "Path of the endpoint URL"
                     },
                     "protocol": {
-                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                       "type": "string",
-                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                     },
                     "secure": {
                       "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -524,9 +529,9 @@ const JsonSchema200 = `{
                 "type": "string"
               },
               "sourceMapping": {
-                "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                "description": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used.",
                 "type": "string",
-                "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
+                "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used."
               },
               "volumeMounts": {
                 "description": "List of volumes mounts that should be mounted is this container.",
@@ -534,14 +539,14 @@ const JsonSchema200 = `{
                   "description": "Volume that should be mounted to a component container",
                   "properties": {
                     "name": {
-                      "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                      "description": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
                       "type": "string",
-                      "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                      "markdownDescription": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
                     },
                     "path": {
-                      "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                      "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>".",
                       "type": "string",
-                      "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                      "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>"."
                     }
                   },
                   "required": [
@@ -578,14 +583,14 @@ const JsonSchema200 = `{
                       "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                     },
                     "exposure": {
-                      "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                      "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                       "enum": [
                         "public",
                         "internal",
                         "none"
                       ],
                       "type": "string",
-                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                     },
                     "name": {
                       "type": "string"
@@ -596,9 +601,9 @@ const JsonSchema200 = `{
                       "markdownDescription": "Path of the endpoint URL"
                     },
                     "protocol": {
-                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                       "type": "string",
-                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                     },
                     "secure": {
                       "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -667,14 +672,14 @@ const JsonSchema200 = `{
                       "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                     },
                     "exposure": {
-                      "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                      "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                       "enum": [
                         "public",
                         "internal",
                         "none"
                       ],
                       "type": "string",
-                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                      "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                     },
                     "name": {
                       "type": "string"
@@ -685,9 +690,9 @@ const JsonSchema200 = `{
                       "markdownDescription": "Path of the endpoint URL"
                     },
                     "protocol": {
-                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                       "type": "string",
-                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                      "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                     },
                     "secure": {
                       "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -742,14 +747,14 @@ const JsonSchema200 = `{
             ]
           },
           "plugin": {
-            "description": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
+            "description": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as "DevWorkspaceTemplate" Kubernetes Custom Resources",
             "properties": {
               "commands": {
                 "description": "Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge",
                 "items": {
                   "properties": {
                     "apply": {
-                      "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+                      "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                       "properties": {
                         "attributes": {
                           "additionalProperties": {
@@ -806,7 +811,7 @@ const JsonSchema200 = `{
                         "id"
                       ],
                       "type": "object",
-                      "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+                      "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                       "additionalProperties": false
                     },
                     "composite": {
@@ -946,6 +951,11 @@ const JsonSchema200 = `{
                           "type": "object",
                           "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
+                        },
+                        "hotReloadCapable": {
+                          "description": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false"",
+                          "type": "boolean",
+                          "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false""
                         },
                         "id": {
                           "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
@@ -1174,9 +1184,9 @@ const JsonSchema200 = `{
                           "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
                         },
                         "dedicatedPod": {
-                          "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                          "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false"",
                           "type": "boolean",
-                          "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
+                          "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false""
                         },
                         "endpoints": {
                           "items": {
@@ -1190,14 +1200,14 @@ const JsonSchema200 = `{
                                 "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                               },
                               "exposure": {
-                                "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                                 "enum": [
                                   "public",
                                   "internal",
                                   "none"
                                 ],
                                 "type": "string",
-                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                               },
                               "name": {
                                 "type": "string"
@@ -1208,9 +1218,9 @@ const JsonSchema200 = `{
                                 "markdownDescription": "Path of the endpoint URL"
                               },
                               "protocol": {
-                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                                 "type": "string",
-                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                               },
                               "secure": {
                                 "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -1263,9 +1273,9 @@ const JsonSchema200 = `{
                           "type": "string"
                         },
                         "sourceMapping": {
-                          "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                          "description": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used.",
                           "type": "string",
-                          "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
+                          "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used."
                         },
                         "volumeMounts": {
                           "description": "List of volumes mounts that should be mounted is this container.",
@@ -1273,14 +1283,14 @@ const JsonSchema200 = `{
                             "description": "Volume that should be mounted to a component container",
                             "properties": {
                               "name": {
-                                "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                                "description": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
                                 "type": "string",
-                                "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                                "markdownDescription": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
                               },
                               "path": {
-                                "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                                "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>".",
                                 "type": "string",
-                                "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                                "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>"."
                               }
                             },
                             "required": [
@@ -1316,14 +1326,14 @@ const JsonSchema200 = `{
                                 "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                               },
                               "exposure": {
-                                "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                                 "enum": [
                                   "public",
                                   "internal",
                                   "none"
                                 ],
                                 "type": "string",
-                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                               },
                               "name": {
                                 "type": "string"
@@ -1334,9 +1344,9 @@ const JsonSchema200 = `{
                                 "markdownDescription": "Path of the endpoint URL"
                               },
                               "protocol": {
-                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                                 "type": "string",
-                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                               },
                               "secure": {
                                 "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -1405,14 +1415,14 @@ const JsonSchema200 = `{
                                 "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                               },
                               "exposure": {
-                                "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                                 "enum": [
                                   "public",
                                   "internal",
                                   "none"
                                 ],
                                 "type": "string",
-                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                               },
                               "name": {
                                 "type": "string"
@@ -1423,9 +1433,9 @@ const JsonSchema200 = `{
                                 "markdownDescription": "Path of the endpoint URL"
                               },
                               "protocol": {
-                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                                 "type": "string",
-                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                               },
                               "secure": {
                                 "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -1566,7 +1576,7 @@ const JsonSchema200 = `{
               }
             },
             "type": "object",
-            "markdownDescription": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
+            "markdownDescription": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as "DevWorkspaceTemplate" Kubernetes Custom Resources",
             "additionalProperties": false,
             "oneOf": [
               {
@@ -1689,7 +1699,7 @@ const JsonSchema200 = `{
           "items": {
             "properties": {
               "apply": {
-                "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+                "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                 "properties": {
                   "attributes": {
                     "additionalProperties": {
@@ -1746,7 +1756,7 @@ const JsonSchema200 = `{
                   "id"
                 ],
                 "type": "object",
-                "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+                "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                 "additionalProperties": false
               },
               "composite": {
@@ -1886,6 +1896,11 @@ const JsonSchema200 = `{
                     "type": "object",
                     "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
+                  },
+                  "hotReloadCapable": {
+                    "description": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false"",
+                    "type": "boolean",
+                    "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false""
                   },
                   "id": {
                     "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
@@ -2114,9 +2129,9 @@ const JsonSchema200 = `{
                     "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
                   },
                   "dedicatedPod": {
-                    "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                    "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false"",
                     "type": "boolean",
-                    "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
+                    "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false""
                   },
                   "endpoints": {
                     "items": {
@@ -2130,14 +2145,14 @@ const JsonSchema200 = `{
                           "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                         },
                         "exposure": {
-                          "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                          "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                           "enum": [
                             "public",
                             "internal",
                             "none"
                           ],
                           "type": "string",
-                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                         },
                         "name": {
                           "type": "string"
@@ -2148,9 +2163,9 @@ const JsonSchema200 = `{
                           "markdownDescription": "Path of the endpoint URL"
                         },
                         "protocol": {
-                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                           "type": "string",
-                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                         },
                         "secure": {
                           "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -2203,9 +2218,9 @@ const JsonSchema200 = `{
                     "type": "string"
                   },
                   "sourceMapping": {
-                    "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                    "description": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used.",
                     "type": "string",
-                    "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
+                    "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used."
                   },
                   "volumeMounts": {
                     "description": "List of volumes mounts that should be mounted is this container.",
@@ -2213,14 +2228,14 @@ const JsonSchema200 = `{
                       "description": "Volume that should be mounted to a component container",
                       "properties": {
                         "name": {
-                          "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                          "description": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
                           "type": "string",
-                          "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                          "markdownDescription": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
                         },
                         "path": {
-                          "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                          "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>".",
                           "type": "string",
-                          "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                          "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>"."
                         }
                       },
                       "required": [
@@ -2256,14 +2271,14 @@ const JsonSchema200 = `{
                           "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                         },
                         "exposure": {
-                          "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                          "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                           "enum": [
                             "public",
                             "internal",
                             "none"
                           ],
                           "type": "string",
-                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                         },
                         "name": {
                           "type": "string"
@@ -2274,9 +2289,9 @@ const JsonSchema200 = `{
                           "markdownDescription": "Path of the endpoint URL"
                         },
                         "protocol": {
-                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                           "type": "string",
-                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                         },
                         "secure": {
                           "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -2345,14 +2360,14 @@ const JsonSchema200 = `{
                           "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                         },
                         "exposure": {
-                          "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                          "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                           "enum": [
                             "public",
                             "internal",
                             "none"
                           ],
                           "type": "string",
-                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                          "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                         },
                         "name": {
                           "type": "string"
@@ -2363,9 +2378,9 @@ const JsonSchema200 = `{
                           "markdownDescription": "Path of the endpoint URL"
                         },
                         "protocol": {
-                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                          "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                           "type": "string",
-                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                          "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                         },
                         "secure": {
                           "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -2420,14 +2435,14 @@ const JsonSchema200 = `{
                 ]
               },
               "plugin": {
-                "description": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
+                "description": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as "DevWorkspaceTemplate" Kubernetes Custom Resources",
                 "properties": {
                   "commands": {
                     "description": "Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge",
                     "items": {
                       "properties": {
                         "apply": {
-                          "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+                          "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                           "properties": {
                             "attributes": {
                               "additionalProperties": {
@@ -2484,7 +2499,7 @@ const JsonSchema200 = `{
                             "id"
                           ],
                           "type": "object",
-                          "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+                          "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an "apply" command is bound to a "preStart" event, and references a "container" component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its "dedicatedPod" field set to "true".\n\nWhen no "apply" command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                           "additionalProperties": false
                         },
                         "composite": {
@@ -2624,6 +2639,11 @@ const JsonSchema200 = `{
                               "type": "object",
                               "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
+                            },
+                            "hotReloadCapable": {
+                              "description": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false"",
+                              "type": "boolean",
+                              "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to "true" the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is "false""
                             },
                             "id": {
                               "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
@@ -2852,9 +2872,9 @@ const JsonSchema200 = `{
                               "markdownDescription": "The command to run in the dockerimage component instead of the default one provided in the image.\n\nDefaults to an empty array, meaning use whatever is defined in the image."
                             },
                             "dedicatedPod": {
-                              "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'",
+                              "description": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false"",
                               "type": "boolean",
-                              "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is 'false'"
+                              "markdownDescription": "Specify if a container should run in its own separated pod, instead of running as part of the main development environment pod.\n\nDefault value is "false""
                             },
                             "endpoints": {
                               "items": {
@@ -2868,14 +2888,14 @@ const JsonSchema200 = `{
                                     "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                                   },
                                   "exposure": {
-                                    "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                    "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                                     "enum": [
                                       "public",
                                       "internal",
                                       "none"
                                     ],
                                     "type": "string",
-                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                                   },
                                   "name": {
                                     "type": "string"
@@ -2886,9 +2906,9 @@ const JsonSchema200 = `{
                                     "markdownDescription": "Path of the endpoint URL"
                                   },
                                   "protocol": {
-                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                                     "type": "string",
-                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                                   },
                                   "secure": {
                                     "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -2941,9 +2961,9 @@ const JsonSchema200 = `{
                               "type": "string"
                             },
                             "sourceMapping": {
-                              "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
+                              "description": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used.",
                               "type": "string",
-                              "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used."
+                              "markdownDescription": "Optional specification of the path in the container where project sources should be transferred/mounted when "mountSources" is "true". When omitted, the value of the "PROJECTS_ROOT" environment variable is used."
                             },
                             "volumeMounts": {
                               "description": "List of volumes mounts that should be mounted is this container.",
@@ -2951,14 +2971,14 @@ const JsonSchema200 = `{
                                 "description": "Volume that should be mounted to a component container",
                                 "properties": {
                                   "name": {
-                                    "description": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
+                                    "description": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.",
                                     "type": "string",
-                                    "markdownDescription": "The volume mount name is the name of an existing 'Volume' component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
+                                    "markdownDescription": "The volume mount name is the name of an existing "Volume" component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files."
                                   },
                                   "path": {
-                                    "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'.",
+                                    "description": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>".",
                                     "type": "string",
-                                    "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is '/<name>'."
+                                    "markdownDescription": "The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is "/<name>"."
                                   }
                                 },
                                 "required": [
@@ -2994,14 +3014,14 @@ const JsonSchema200 = `{
                                     "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                                   },
                                   "exposure": {
-                                    "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                    "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                                     "enum": [
                                       "public",
                                       "internal",
                                       "none"
                                     ],
                                     "type": "string",
-                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                                   },
                                   "name": {
                                     "type": "string"
@@ -3012,9 +3032,9 @@ const JsonSchema200 = `{
                                     "markdownDescription": "Path of the endpoint URL"
                                   },
                                   "protocol": {
-                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                                     "type": "string",
-                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                                   },
                                   "secure": {
                                     "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -3083,14 +3103,14 @@ const JsonSchema200 = `{
                                     "markdownDescription": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\","
                                   },
                                   "exposure": {
-                                    "description": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'",
+                                    "description": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public"",
                                     "enum": [
                                       "public",
                                       "internal",
                                       "none"
                                     ],
                                     "type": "string",
-                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- 'public' means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- 'internal' means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- 'none' means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is 'public'"
+                                    "markdownDescription": "Describes how the endpoint should be exposed on the network.\n- "public" means that the endpoint will be exposed on the public network, typically through a K8S ingress or an OpenShift route.\n- "internal" means that the endpoint will be exposed internally outside of the main workspace POD, typically by K8S services, to be consumed by other elements running on the same cloud internal network.\n- "none" means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.\n\nDefault value is "public""
                                   },
                                   "name": {
                                     "type": "string"
@@ -3101,9 +3121,9 @@ const JsonSchema200 = `{
                                     "markdownDescription": "Path of the endpoint URL"
                                   },
                                   "protocol": {
-                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'",
+                                    "description": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http"",
                                     "type": "string",
-                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- 'http': Endpoint will have 'http' traffic, typically on a TCP connection. It will be automaticaly promoted to 'https' when the 'secure' field is set to 'true'.\n- 'https': Endpoint will have 'https' traffic, typically on a TCP connection.\n- 'ws': Endpoint will have 'ws' traffic, typically on a TCP connection. It will be automaticaly promoted to 'wss' when the 'secure' field is set to 'true'.\n- 'wss': Endpoint will have 'wss' traffic, typically on a TCP connection.\n- 'tcp': Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- 'udp': Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is 'http'"
+                                    "markdownDescription": "Describes the application and transport protocols of the traffic that will go through this endpoint.\n- "http": Endpoint will have "http" traffic, typically on a TCP connection. It will be automaticaly promoted to "https" when the "secure" field is set to "true".\n- "https": Endpoint will have "https" traffic, typically on a TCP connection.\n- "ws": Endpoint will have "ws" traffic, typically on a TCP connection. It will be automaticaly promoted to "wss" when the "secure" field is set to "true".\n- "wss": Endpoint will have "wss" traffic, typically on a TCP connection.\n- "tcp": Endpoint will have traffic on a TCP connection, without specifying an application protocol.\n- "udp": Endpoint will have traffic on an UDP connection, without specifying an application protocol.\n\nDefault value is "http""
                                   },
                                   "secure": {
                                     "description": "Describes whether the endpoint should be secured and protected by some authentication process",
@@ -3244,7 +3264,7 @@ const JsonSchema200 = `{
                   }
                 },
                 "type": "object",
-                "markdownDescription": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as 'DevWorkspaceTemplate' Kubernetes Custom Resources",
+                "markdownDescription": "Allows importing a plugin.\n\nPlugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as "DevWorkspaceTemplate" Kubernetes Custom Resources",
                 "additionalProperties": false,
                 "oneOf": [
                   {

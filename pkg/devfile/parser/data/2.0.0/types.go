@@ -220,6 +220,13 @@ type Exec struct {
 
 	// Working directory where the command should be executed
 	WorkingDir string `json:"workingDir,omitempty"`
+
+	// +optional
+	// Whether the command is capable to reload itself when source code changes.
+	// If set to `true` the command won't be restarted and it is expected to handle file changes on its own.
+	//
+	// Default value is `false`
+	HotReloadCapable bool `json:"hotReloadCapable,omitempty"`
 }
 
 // Apply Command that consists in applying a given component definition, typically bound to a workspace event.
