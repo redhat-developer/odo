@@ -22,8 +22,6 @@ components:
     container:
       image: maysunfaisal/springbootruntime
       memoryLimit: 768Mi
-      command: ['tail']
-      args: [ '-f', '/dev/null']
       endpoints:
         - name: "8080/tcp"
           targetPort: 8080
@@ -37,7 +35,7 @@ commands:
   - id: defaultBuild
     exec:
       component: tools
-      commandLine: "/artifacts/bin/build-container-full.sh"
+      commandLine: mvn clean install
       workingDir: /projects
       group:
         kind: build
@@ -45,8 +43,8 @@ commands:
   - id: defaultRun
     exec:
       component: runtime
-      commandLine: "/artifacts/bin/start-server.sh"
-      workingDir: /
+      commandLine: "java -jar target/*.jar"
+      workingDir: /projects
       group:
         kind: run
         isDefault: true
