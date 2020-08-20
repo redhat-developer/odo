@@ -60,13 +60,13 @@ application and push the source code to your cluster with `odo`.
 1.  Download the example front-end application:
     
     ``` terminal
-    $ git clone https://github.com/openshift/nodejs-ex
+    $ git clone https://github.com/openshift/nodejs-ex frontend
     ```
 
 2.  Change the current directory to the front-end directory:
     
     ``` terminal
-    $ cd <directory-name>
+    $ cd frontend
     ```
 
 3.  List the contents of the directory to see that the front end is a
