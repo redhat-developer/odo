@@ -37,8 +37,6 @@ schemaVersion: <string>
 metadata: <metadataObject>
 starterProjects: 
 - <starterProjectObject>
-projects: 
-- <projectObject>
 components: 
 - <componentObject>
 commands: 
@@ -506,21 +504,20 @@ commands:
 
 Please refer to the below table for a list of features which are *not yet* implemented:
 
-| Key                                | Key Description                           | Status      | Description                                                                                     |
-|------------------------------------|-------------------------------------------|-------------|-------------------------------------------------------------------------------------------------|
-| projects[].github.startPoint       | [githubObject](#githubObject)             | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
-| projects[].git.startPoint          | [gitObject](#gitObject)                   | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
-| projects[].zip                     | [zipObject](#zipobject)                   | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3442 |
-| parent                             | [parentObject](#parent-object)            | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
-| events                             | [eventObject](#event-object)              | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2919                                    |
-| component[].kubernetes             | [kubernetesObject](#kubernetesobject)     | IN PROGRESS |                                                                                                 |
-| component[].openshift              | [openshiftObject](#openshiftobject)       | IN PROGRESS |                                                                                                 |
-| component[].volume                 | [volumeObject](#volumeobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
-| component[].plugin                 | [pluginObject](#pluginobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
-| component[].container.endpoints    | [endpointObject](#endpointobject)         | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
-| component[].container.dedicatedPod | [containerObject](#containerobject)       | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].apply                   | [applyObject](#applyobject)               | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].composite               | [compositeObject](#compositeobject)       | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
-| commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject) | N/A         | Not applicable to odo.                                                                          |
-| commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)     | N/A         | Not applicable to odo.                                                                          |
+| Key                                | Key Description                                | Status      | Description                                                                                     |
+|------------------------------------|------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------|
+| starterProjects[].clonePath        | [starterProjectObject](#starterproject-object) | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3729                                     |
+| projects[]                         | [projectObject](#projectobject)                        | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798 |
+| parent                             | [parentObject](#parent-object)                 | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
+| events                             | [eventObject](#event-object)                   | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2919                                    |
+| component[].kubernetes             | [kubernetesObject](#kubernetesobject)          | IN PROGRESS |                                                                                                 |
+| component[].openshift              | [openshiftObject](#openshiftobject)            | IN PROGRESS |                                                                                                 |
+| component[].volume                 | [volumeObject](#volumeobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
+| component[].plugin                 | [pluginObject](#pluginobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
+| component[].container.endpoints    | [endpointObject](#endpointobject)              | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
+| component[].container.dedicatedPod | [containerObject](#containerobject)            | UNKNOWN     | In schema but not yet implemented.                                                              |
+| commands[].apply                   | [applyObject](#applyobject)                    | UNKNOWN     | In schema but not yet implemented.                                                              |
+| commands[].composite               | [compositeObject](#compositeobject)            | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
+| commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject)      | N/A         | Not applicable to odo.                                                                          |
+| commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)          | N/A         | Not applicable to odo.                                                                          |
 
