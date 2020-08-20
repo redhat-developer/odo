@@ -206,6 +206,11 @@ test-cmd-pref-config:
 test-cmd-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
 
+# Run odo plugin handler tests
+.PHONY: test-plugin-handler
+test-plugin-handler:
+	ginkgo $(GINKGO_FLAGS) -focus="odo plugin functionality" tests/integration/
+
 # Run odo catalog devfile command tests
 .PHONY: test-cmd-devfile-catalog
 test-cmd-devfile-catalog:
