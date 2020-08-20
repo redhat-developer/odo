@@ -63,7 +63,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "generic, login and component command integration tests"
+      name: "generic, login, component command and plugin handler integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -73,6 +73,7 @@ jobs:
         - travis_wait make test-generic
         - travis_wait make test-cmd-login-logout
         - travis_wait make test-cmd-cmp
+        - travis_wait make test-plugin-handler
         - odo logout
 
     - <<: *base-test
