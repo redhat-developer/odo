@@ -586,6 +586,16 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(storageSize).To(ContainSubstring("3Gi"))
 		})
 
+		It("should throw a validation error for v1 devfiles", func() {
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("unsupported devfile version"))
+		})
+
 	})
 
 	Context("when .gitignore file exists", func() {
