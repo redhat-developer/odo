@@ -108,14 +108,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			}
 		}
 
-		if isForcePush {
-			//reset the index
-			err = util.DeleteIndexFile(pushParameters.Path)
-			if err != nil {
-				return false, errors.Wrap(err, "unable to reset the index file")
-			}
-
-		}
 		// run the indexer and find the modified/added/deleted/renamed files
 		ret, err = util.RunIndexer(pushParameters.Path, absIgnoreRules)
 		s.End(true)
@@ -142,7 +134,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		changedFiles = filesChangedFiltered
 		klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
-		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
+		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !isForcePush {
 			// no file was modified/added/deleted/renamed, thus return without synching files
 			log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 			return false, nil
