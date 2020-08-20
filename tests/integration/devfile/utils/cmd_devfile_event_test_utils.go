@@ -103,7 +103,7 @@ func ParseMachineEventJSONLines(consoleOutput string) ([]machineoutput.MachineEv
 	// Ensure that all lines can be correctly parsed into their expected JSON structure
 	for _, line := range lines {
 
-		if len(strings.TrimSpace(line)) == 0 {
+		if !strings.HasPrefix(line, "{") {
 			continue
 		}
 

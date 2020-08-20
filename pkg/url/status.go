@@ -34,7 +34,7 @@ func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kcl
 
 		for {
 			var err error
-			urlList, err = getURLsForKubernetes(occlient, client, envInfo)
+			urlList, err = getURLsForKubernetes(occlient, client, envInfo, true)
 
 			if err == nil {
 				// Success!
@@ -94,15 +94,20 @@ func startURLTester(urlsToTest [][]statusURL, loggingClient machineoutput.Machin
 	}
 }
 
-func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo) ([]statusURL, error) {
+func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, ignoreUnpushed bool) ([]statusURL, error) {
 	componentName := envInfo.GetName()
 
-	routesSupported, err := oclient.IsRouteSupported()
+	routesSupported := false
 
-	if err != nil {
-		// Fallback to Kubernetes client on error
-		routesSupported = false
-		oclient = nil
+	if oclient != nil {
+		var err error
+
+		if routesSupported, err = oclient.IsRouteSupported(); err != nil {
+			// Fallback to Kubernetes client on error
+			routesSupported = false
+			oclient = nil
+		}
+
 	}
 
 	urls, err := ListIngressAndRoute(oclient, client, envInfo, componentName, routesSupported)
@@ -114,7 +119,7 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envI
 	for _, u := range urls.Items {
 
 		// Ignore unpushed URLs, they necessarily are unreachable
-		if u.Status.State != StateTypePushed {
+		if u.Status.State != StateTypePushed && ignoreUnpushed {
 			continue
 		}
 

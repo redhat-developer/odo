@@ -47,35 +47,39 @@ func (a Adapter) getDeploymentStatus() (*KubernetesDeploymentStatus, error) {
 	}
 
 	if deployment == nil {
-		return nil, errors.New("Deployment status from Kubernetes API was nil")
+		return nil, errors.New("deployment status from Kubernetes API was nil")
 	}
 
 	deploymentUID := deployment.UID
 
-	// 2) Retrieve the replica set that is owned by the deployment
+	// 2) Retrieve the replica set that is owned by the deployment; if multiple, go with one with largest generation
 	replicaSetList, err := a.Client.KubeClient.AppsV1().ReplicaSets(a.Client.Namespace).List(metav1.ListOptions{})
-
 	if err != nil {
 		return nil, err
 	}
 
 	matchingReplicaSets := []v1.ReplicaSet{}
+	sort.Slice(replicaSetList.Items, func(i, j int) bool {
+		iGen := replicaSetList.Items[i].Generation
+		jGen := replicaSetList.Items[j].Generation
+
+		// Sort descending by generation
+		return iGen > jGen
+	})
+
+	// Locate the first matching replica, after above sort
+outer:
 	for _, replicaSet := range replicaSetList.Items {
-
 		for _, ownerRef := range replicaSet.OwnerReferences {
-
 			if ownerRef.UID == deploymentUID {
 				matchingReplicaSets = append(matchingReplicaSets, replicaSet)
+				break outer
 			}
 		}
 	}
 
 	if len(matchingReplicaSets) == 0 {
-		return nil, errors.New("No replica sets found")
-	}
-
-	if len(matchingReplicaSets) > 1 {
-		return nil, errors.New("Multiple replica sets found")
+		return nil, errors.New("no replica sets found")
 	}
 
 	replicaSetUID := matchingReplicaSets[0].UID
