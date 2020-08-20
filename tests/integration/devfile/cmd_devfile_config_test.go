@@ -59,7 +59,7 @@ var _ = Describe("odo devfile config command tests", func() {
 		})
 	})
 
-	Context("When executing config set", func() {
+	Context("When executing config set and unset", func() {
 		It("Should successfully set the parameters", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
 			helper.CmdShouldPass("odo", "config", "set", "Name", testName, "-f")
@@ -69,24 +69,6 @@ var _ = Describe("odo devfile config command tests", func() {
 			wantOutput := []string{
 				testName,
 				testMemory,
-				testDebugPort,
-			}
-			helper.MatchAllInOutput(output, wantOutput)
-		})
-
-		It("Should fail to set the invalid parameter", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs")
-			helper.CmdShouldFail("odo", "config", "set", fakeParameter, fakeParameter, "-f")
-		})
-	})
-
-	Context("When executing config unset", func() {
-		It("Should successfully unset the parameters after set the parameters", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs")
-			helper.CmdShouldPass("odo", "config", "set", "Ports", testDebugPort, "-f")
-			output := helper.CmdShouldPass("odo", "config", "view")
-			wantOutput := []string{
-				"Ports",
 				testDebugPort,
 			}
 			helper.MatchAllInOutput(output, wantOutput)
@@ -100,8 +82,9 @@ var _ = Describe("odo devfile config command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--project", project)
 		})
 
-		It("Should fail to unset the invalid parameter", func() {
+		It("Should fail to set the invalid parameter", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
+			helper.CmdShouldFail("odo", "config", "set", fakeParameter, fakeParameter, "-f")
 			helper.CmdShouldFail("odo", "config", "unset", fakeParameter, "-f")
 		})
 	})
