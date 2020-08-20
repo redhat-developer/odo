@@ -62,7 +62,7 @@ type ConfigurableRepr struct {
 
 type ContainerRepr struct {
 	ContainerName        string            `yaml:"ContainerName" json:"ContainerName"`
-	EnvironmentVariables config.EnvVarList `yaml:"EnvironmentVariables" json:"EnvironmentVariables"`
+	EnvironmentVariables config.EnvVarList `yaml:"EnvironmentVariables" json:"EnvironmentVariables,omitempty"`
 	Ports                []PortRepr        `yaml:"Ports" json:"Ports"`
 }
 
