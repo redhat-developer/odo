@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = FDescribe("odo devfile env command tests", func() {
+var _ = Describe("odo devfile env command tests", func() {
 	const (
 		testName      = "testname"
 		testNamepace  = "testNamepace"
