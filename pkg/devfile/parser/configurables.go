@@ -153,11 +153,13 @@ func (d DevfileObj) removePorts() error {
 func (d DevfileObj) hasPorts() bool {
 	components := d.Data.GetComponents()
 	for _, component := range components {
-		if len(component.Container.Endpoints) > 0 {
-			// we only care about ports that added by odo
-			for _, ep := range component.Container.Endpoints {
-				if odo, ok := ep.Attributes[labels.OdoManagedBy]; ok && odo == "odo" {
-					return true
+		if component.Container != nil {
+			if len(component.Container.Endpoints) > 0 {
+				// we only care about ports that added by odo
+				for _, ep := range component.Container.Endpoints {
+					if odo, ok := ep.Attributes[labels.OdoManagedBy]; ok && odo == "odo" {
+						return true
+					}
 				}
 			}
 		}
