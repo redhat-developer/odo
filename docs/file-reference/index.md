@@ -49,8 +49,7 @@ commands:
 |-----------------|---------------------------------------------------------|----------|-------------------------------------------------------------------------|
 | schemaVersion   | string                                                  | yes      | Schema version of devfile                                               |
 | metadata        | [metadataObject](#metadataobject)                       | no       | Metadata information that describes the project                         |
-| starterProjects | array of [starterProjectObject](#starterproject-object) | no       | List of starter projects that can be used to bootstrap new projects.    |
-| projects        | array of [projectObject](#project-object)               | no       | List of projects that devfile use when creating development environment |
+| starterProjects | array of [starterProjectObject](#starterproject-object) | no       | List of starter projects that can be used to bootstrap new projects     |
 | components      | array of [componentObject](#component-object)           | no       | List of components to be used within your development environment       |
 | commands        | array of [commandObject](#commandobject)                | no       | List of commands to be executed                                         |                                             
 
@@ -84,6 +83,7 @@ metadata:
 ```yaml
 starterProjects:
   - name: quarkus-quickstart
+    description: minimal CRUD app with quarkus
     git:
       location: https://github.com/quarkusio/quarkus-quickstarts
       branch: master
@@ -95,46 +95,6 @@ starterProjects:
 | Key                  | Type                                           | Description                         |
 |----------------------|------------------------------------------------|-------------------------------------|
 | starterProjectObject | [starterProjectObject](#starterproject-object) | List of starter projects to be used |
-
-## projects
-
-> Pulling from a git location
-
-```yaml
-projects:
-  - name: nodejs-web-app
-    git:
-      location: https://github.com/odo-devfiles/nodejs-ex.git
-      branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
-      startPoint: 1.0.0 # tag or commit to start at
-```
-
-> Pulling from a GitHub location
-
-```yaml
-projects:
-  - name: nodejs-web-app
-    github:
-      location: https://github.com/odo-devfiles/nodejs-ex.git
-      branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
-      startPoint: 1.0.0 # tag or commit to start at
-```
-
-> Pulling from a zip 
-
-```yaml
-projects:
-  - name: nodejs-web-app
-    zip:
-      location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
-      sparseCheckoutDir: /app/ # optional checkout dir
-```
-
-| Key           | Type                             | Description                 |
-|---------------|----------------------------------|-----------------------------|
-| projectObject | [projectObject](#project-object) | List of projects to be used |
 
 
 ## components
@@ -211,25 +171,28 @@ metadata:
 | version | string | yes      | Version of your devfile                                                           |
 
 
-# Project Object
+# StarterProject Object
 
 > Pulling from a git location
 
 ```yaml
-projects:
-  - name: nodejs-web-app
+starterProjects:
+  - name: quarkus-quickstart
+    description: minimal CRUD app with quarkus
     git:
-      location: https://github.com/odo-devfiles/nodejs-ex.git
+      location: https://github.com/quarkusio/quarkus-quickstarts
       branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
-      startPoint: 1.0.0 # tag or commit to start at
-```
+      sparseCheckoutDir: /getting-started/ # optional checkout dir
+      startPoint: 1.7.0.Final # tag or commit to start at
+```   
+
 
 > Pulling from a GitHub location
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
+    description: nodejs app
     github:
       location: https://github.com/odo-devfiles/nodejs-ex.git
       branch: master
@@ -240,31 +203,34 @@ projects:
 > Pulling from a zip 
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
+    description: nodejs web app
     zip:
       location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
       sparseCheckoutDir: /app/ # optional checkout dir
 ```
 
-Each project may contain three different objects, `git`, `github` or `zip`.
+Each starter project may contain three different objects, `git`, `github` or `zip`.
 
 
 
 | Key       | Type                          | Description                                                                        |
 |-----------|-------------------------------|------------------------------------------------------------------------------------|
 | name      | string                        | Name of your devfile                                                               |
+| description | string                      | Description of a starter project                                                   |
 | clonePath | string                        | Path relative the root of your projects to which the project should be cloned into |
 | git       | [gitObject](#gitobject)       | Pull from a Git location                                                           |
 | github    | [githubObject](#githubobject) | Pull from GitHub                                                                   |
 | zip       | [zipObject](#zipobject)       | Get from a zip location                                                            |
+
 
 ## gitObject
 
 > Using the gitObject
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
     git:
       location: https://github.com/odo-devfiles/nodejs-ex.git
@@ -285,7 +251,7 @@ projects:
 > Using the githubObject
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
     github:
       location: https://github.com/odo-devfiles/nodejs-ex.git
@@ -306,7 +272,7 @@ projects:
 > Using the zipObject
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
     zip:
       location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
@@ -317,60 +283,6 @@ projects:
 |------------------|--------|------------------------------------|
 | location         | string | Location of the zip                |
 | spareCheckoutDir | string | What directory to use when pulling |
-
-
-# StarterProject Object
-
-> Pulling from a git location
-
-```yaml
-starterProjects:
-  - name: quarkus-quickstart
-    description: minimal CRUD app with quarkus
-    git:
-      location: https://github.com/quarkusio/quarkus-quickstarts
-      branch: master
-      sparseCheckoutDir: /getting-started/ # optional checkout dir
-      startPoint: 1.7.0.Final # tag or commit to start at
-```   
-
-
-> Pulling from a GitHub location
-
-```yaml
-projects:
-  - name: nodejs-web-app
-    description: nodejs app
-    github:
-      location: https://github.com/odo-devfiles/nodejs-ex.git
-      branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
-      startPoint: 1.0.0 # tag or commit to start at
-```
-
-> Pulling from a zip 
-
-```yaml
-projects:
-  - name: nodejs-web-app
-    description: nodejs web app
-    zip:
-      location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
-      sparseCheckoutDir: /app/ # optional checkout dir
-```
-
-Each project may contain three different objects, `git`, `github` or `zip`.
-
-
-
-| Key       | Type                          | Description                                                                        |
-|-----------|-------------------------------|------------------------------------------------------------------------------------|
-| name      | string                        | Name of your devfile                                                               |
-| description | string                      | description of a starter project
-| clonePath | string                        | Path relative the root of your projects to which the project should be cloned into |
-| git       | [gitObject](#gitobject)       | Pull from a Git location                                                           |
-| github    | [githubObject](#githubobject) | Pull from GitHub                                                                   |
-| zip       | [zipObject](#zipobject)       | Get from a zip location                                                            |
 
 
 # Component Object
