@@ -58,13 +58,13 @@ elif  [ "${ARCH}" == "ppc64le" ]; then
     make test-e2e-beta
 else
     # Integration tests
-    make test-integration
-    make test-integration-devfile
-    make test-cmd-login-logout
-    make test-cmd-project
-    make test-operator-hub
+    time make test-integration
+    time make test-integration-devfile
+    time make test-cmd-login-logout
+    time make test-cmd-project
+    time make test-operator-hub
     # E2e tests
-    make test-e2e-all
+    time make test-e2e-all
 fi
 
 odo logout
