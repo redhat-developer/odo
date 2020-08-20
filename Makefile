@@ -39,7 +39,7 @@ GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) -randomizeAllSpecs -slowSpecThreshold=$(S
 # Flags for tests that must not be run in parallel.
 GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
 # Flags for tests that may be run in parallel
-GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
+GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -debug -nodes=$(TEST_EXEC_NODES)
 
 
 default: bin
