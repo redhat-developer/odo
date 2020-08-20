@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("odo devfile config command tests", func() {
 	const (
-		testName      = "testName"
+		testName      = "testname"
 		testMemory    = "500Mi"
 		testDebugPort = "8888"
 		fakeParameter = "fakeParameter"
@@ -60,7 +60,7 @@ var _ = Describe("odo devfile config command tests", func() {
 	})
 
 	Context("When executing config set and unset", func() {
-		It("Should successfully set the parameters", func() {
+		It("Should successfully set and unset the parameters", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
 			helper.CmdShouldPass("odo", "config", "set", "Name", testName, "-f")
 			helper.CmdShouldPass("odo", "config", "set", "Ports", testDebugPort, "-f")
@@ -82,7 +82,7 @@ var _ = Describe("odo devfile config command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--project", project)
 		})
 
-		It("Should fail to set the invalid parameter", func() {
+		It("Should fail to set and unset an invalid parameter", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
 			helper.CmdShouldFail("odo", "config", "set", fakeParameter, fakeParameter, "-f")
 			helper.CmdShouldFail("odo", "config", "unset", fakeParameter, "-f")
