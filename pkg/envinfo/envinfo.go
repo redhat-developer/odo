@@ -469,9 +469,9 @@ var (
 // FormatLocallySupportedParameters outputs supported parameters and their description
 func FormatLocallySupportedParameters() (result string) {
 	for _, v := range GetLocallySupportedParameters() {
-		result = result + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
+		result = result + " " + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
 	}
-	return "\nAvailable Local Parameters:\n" + result
+	return "\nAvailable Parameter in the local Env file:\n" + result
 }
 
 func asLocallySupportedParameter(param string) (string, bool) {

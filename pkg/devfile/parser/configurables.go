@@ -194,9 +194,9 @@ func (d DevfileObj) getMetadataName() string {
 // FormatDevfileSupportedParameters outputs supported parameters and their description
 func FormatDevfileSupportedParameters() (result string) {
 	for _, v := range GetDevfileSupportedParameters() {
-		result = result + v + " - " + supportedDevfileParameterDescriptions[v] + "\n"
+		result = result + " " + v + " - " + supportedDevfileParameterDescriptions[v] + "\n"
 	}
-	return "\nAvailable Devfile Parameters:\n" + result
+	return "\nAvailable Parameters for Devfile Components:\n" + result
 }
 
 // AsDevfileSupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter
