@@ -132,7 +132,7 @@ func (d DevfileObj) setPorts(ports ...string) error {
 	}
 	for _, component := range components {
 		if component.Container != nil {
-			component.Container.Endpoints = endpoints
+			component.Container.Endpoints = addEndpoints(component.Container.Endpoints, endpoints)
 			d.Data.UpdateComponent(component)
 		}
 	}
@@ -143,7 +143,7 @@ func (d DevfileObj) removePorts() error {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
-			component.Container.Endpoints = nil
+			component.Container.Endpoints = removeEndpoints(component.Container.Endpoints)
 			d.Data.UpdateComponent(component)
 		}
 	}
@@ -154,7 +154,12 @@ func (d DevfileObj) hasPorts() bool {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if len(component.Container.Endpoints) > 0 {
-			return true
+			// we only care about ports that added by odo
+			for _, ep := range component.Container.Endpoints {
+				if odo, ok := ep.Attributes[labels.OdoManagedBy]; ok && odo == "odo" {
+					return true
+				}
+			}
 		}
 	}
 	return false
@@ -218,9 +223,54 @@ func portsToEndpoints(ports ...string) ([]common.Endpoint, error) {
 			},
 			Name:       fmt.Sprintf("port-%d", port.ContainerPort),
 			TargetPort: port.ContainerPort,
+			Protocol:   strings.ToLower(string(port.Protocol)),
 		}
 		endpoints = append(endpoints, endpoint)
 	}
 	return endpoints, nil
 
+}
+
+func addEndpoints(current []common.Endpoint, other []common.Endpoint) []common.Endpoint {
+	newList := make([]common.Endpoint, len(current))
+	copy(newList, current)
+	for _, ep := range other {
+		present := false
+		for _, presentep := range current {
+			// if the target port and protocol match
+			if presentep.TargetPort == ep.TargetPort && (ep.Protocol == presentep.Protocol) {
+				present = true
+				break
+			}
+		}
+		if !present {
+			newList = append(newList, ep)
+		}
+	}
+
+	return newList
+}
+
+// removeEndpoints removes all the odo created endpoints
+func removeEndpoints(current []common.Endpoint) []common.Endpoint {
+	newList := make([]common.Endpoint, len(current))
+	copy(newList, current)
+
+	for {
+		index := -1
+		for j, presentep := range newList {
+			// all the endpoints created by odo have these labels
+			if odo, ok := presentep.Attributes[labels.OdoManagedBy]; ok && odo == "odo" {
+				index = j
+				break
+			}
+		}
+		if index != -1 {
+			newList = append(newList[:index], newList[index+1:]...)
+		} else {
+			break
+		}
+	}
+
+	return newList
 }
