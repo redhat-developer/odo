@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/openshift/odo/pkg/log"
 	"io"
 	"time"
+
+	"github.com/openshift/odo/pkg/log"
 
 	"k8s.io/klog"
 )
@@ -23,12 +24,13 @@ func TimestampNow() string {
 	return FormatTime(time.Now())
 }
 
+// NewMachineEventLoggingClient creates the appropriate client based on whether we are in machine logging mode or not
 func NewMachineEventLoggingClient() MachineEventLoggingClient {
 	if log.IsJSON() {
 		return NewConsoleMachineEventLoggingClient()
-	} else {
-		return NewNoOpMachineEventLoggingClient()
 	}
+
+	return NewNoOpMachineEventLoggingClient()
 }
 
 // NewNoOpMachineEventLoggingClient creates a new instance of NoOpMachineEventLoggingClient,
@@ -93,6 +95,14 @@ func NewConsoleMachineEventLoggingClient() *ConsoleMachineEventLoggingClient {
 	return &ConsoleMachineEventLoggingClient{}
 }
 
+// NewConsoleMachineEventLoggingClientWithFunction creates a new instance with a custom logging functional,
+// suitable for, for example, unit testing.
+func NewConsoleMachineEventLoggingClientWithFunction(logFunc func(machineOutput MachineEventWrapper)) *ConsoleMachineEventLoggingClient {
+	return &ConsoleMachineEventLoggingClient{
+		logFunc: logFunc,
+	}
+}
+
 var _ MachineEventLoggingClient = &ConsoleMachineEventLoggingClient{}
 
 // DevFileCommandExecutionBegin outputs the provided event as JSON to the console.
@@ -108,7 +118,7 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionBegin(commandI
 		},
 	}
 
-	OutputSuccessUnindented(json)
+	c.outputJSON(json)
 }
 
 // DevFileCommandExecutionComplete outputs the provided event as JSON to the console.
@@ -133,7 +143,7 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionComplete(comma
 		},
 	}
 
-	OutputSuccessUnindented(json)
+	c.outputJSON(json)
 }
 
 // CreateContainerOutputWriter returns an io.PipeWriter for which the devfile command/action process output should be
@@ -160,7 +170,7 @@ func (c *ConsoleMachineEventLoggingClient) ReportError(errorVal error, timestamp
 		},
 	}
 
-	OutputSuccessUnindented(json)
+	c.outputJSON(json)
 }
 
 // SupervisordStatus outputs the provided event as JSON to the console.
@@ -172,7 +182,7 @@ func (c *ConsoleMachineEventLoggingClient) SupervisordStatus(statuses []Supervis
 		},
 	}
 
-	OutputSuccessUnindented(json)
+	c.outputJSON(json)
 }
 
 // ContainerStatus outputs the provided event as JSON to the console.
@@ -185,7 +195,7 @@ func (c *ConsoleMachineEventLoggingClient) ContainerStatus(statuses []ContainerS
 			},
 		},
 	}
-	OutputSuccessUnindented(json)
+	c.outputJSON(json)
 }
 
 // URLReachable outputs the provided event as JSON to the console.
@@ -201,7 +211,7 @@ func (c *ConsoleMachineEventLoggingClient) URLReachable(name string, url string,
 			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
 		},
 	}
-	OutputSuccessUnindented(json)
+	c.outputJSON(json)
 }
 
 // KubernetesPodStatus outputs the provided event as JSON to the console.
@@ -214,7 +224,17 @@ func (c *ConsoleMachineEventLoggingClient) KubernetesPodStatus(pods []Kubernetes
 			},
 		},
 	}
-	OutputSuccessUnindented(json)
+	c.outputJSON(json)
+}
+
+func (c *ConsoleMachineEventLoggingClient) outputJSON(machineOutput MachineEventWrapper) {
+
+	if c.logFunc != nil {
+		c.logFunc(machineOutput)
+		return
+	}
+
+	OutputSuccessUnindented(machineOutput)
 }
 
 // GetEntry will return the JSON event parsed from a single line of '-o json' machine readable console output.
