@@ -15,6 +15,7 @@ import (
 const RecommendedCommandName = "config"
 
 var configLongDesc = ktemplates.LongDesc(`Modifies odo specific configuration settings within the devfile or config file.
+
 %[1]s
 %[2]s
 `)

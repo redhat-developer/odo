@@ -701,34 +701,6 @@ func TestGetPushTarget(t *testing.T) {
 	}
 }
 
-func TestFormatSupportedParameters(t *testing.T) {
-	expected := `
-Available Parameters:
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-`
-	expected = fmt.Sprintf(expected,
-		BuildTimeoutSetting, BuildTimeoutSettingDescription,
-		ExperimentalSetting, ExperimentalDescription,
-		NamePrefixSetting, NamePrefixSettingDescription,
-		PushTargetSetting, PushTargetDescription,
-		PushTimeoutSetting, PushTimeoutSettingDescription,
-		RegistryCacheTimeSetting, RegistryCacheTimeDescription,
-		TimeoutSetting, TimeoutSettingDescription,
-		UpdateNotificationSetting, UpdateNotificationSettingDescription,
-	)
-	actual := FormatSupportedParameters()
-	if expected != actual {
-		t.Errorf("expected '%s', got '%s'", expected, actual)
-	}
-}
-
 func TestLowerCaseParameters(t *testing.T) {
 	expected := map[string]bool{
 		"nameprefix":         true,
