@@ -14,9 +14,6 @@ components:
       memoryLimit: 768Mi
       command: ['tail']
       args: [ '-f', '/dev/null']
-      volumeMounts:
-        - name: springbootpvc
-          path: /data
       mountSources: true
   - name: runtime
     container:
@@ -35,7 +32,7 @@ commands:
   - id: defaultBuild
     exec:
       component: tools
-      commandLine: mvn clean install
+      commandLine: mvn install
       workingDir: /projects
       group:
         kind: build

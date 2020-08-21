@@ -375,7 +375,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
-			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
+			Expect(cmdOutput).To(ContainSubstring("java -jar target/"))
 		})
 
 		It("should execute PreStart commands if present during pod startup", func() {

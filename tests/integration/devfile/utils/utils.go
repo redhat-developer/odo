@@ -39,8 +39,8 @@ func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"Executing defaultbuild command \"/artifacts/bin/build-container-full.sh\"",
-		"Executing defaultrun command \"/artifacts/bin/start-server.sh\"",
+		"Executing defaultbuild command \"mvn install\"",
+		"Executing defaultrun command \"java -jar target/*.jar\"",
 	})
 }
 
