@@ -61,6 +61,7 @@ else
     # time make test-integration
     # time GINKGO_TEST_ARGS=-v make test-integration-devfile
     GINKGO_TEST_ARGS=-v make test-cmd-devfile-watch
+    GINKGO_TEST_ARGS=-v make test-cmd-devfile-log
     #time make test-cmd-login-logout
     #time make test-cmd-project
     #time make test-operator-hub
