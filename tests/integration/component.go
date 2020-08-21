@@ -20,6 +20,7 @@ func componentTests(args ...string) {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
+		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
 	})
 
@@ -52,7 +53,7 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
 			helper.ValidateLocalCmpExist(commonVar.Context, "Type,nodejs", "Name,cmp-git", "Application,testing")
 			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context, "-v4")...)
-			projectList := helper.CmdShouldPass("odo", "project", "list", "--project", commonVar.Project)
+			projectList := helper.CmdShouldPass("odo", "project", "list")
 			Expect(projectList).To(ContainSubstring(commonVar.Project))
 			helper.CmdShouldFail("odo", "list", "--project", commonVar.Project, "--context", commonVar.Context)
 		})

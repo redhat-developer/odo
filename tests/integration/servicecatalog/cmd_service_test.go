@@ -231,6 +231,7 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("When working from outside a component dir", func() {
 		It("should be able to create, list and delete services without a context and using --app and --project flags instaed", func() {
+			app = helper.RandString(7)
 			// create the service
 			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",

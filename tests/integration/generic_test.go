@@ -13,17 +13,18 @@ import (
 )
 
 var _ = Describe("odo generic", func() {
-	// TODO: A neater way to provide odo path. Currently we assume \
-	// odo and oc in $PATH already
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
 	var testNodejsGitURL = "https://github.com/sclorg/nodejs-ex"
 	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
 
+	// TODO: A neater way to provide odo path. Currently we assume \
+	// odo and oc in $PATH already
 	var oc helper.OcRunner
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
+		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
 	})
 
@@ -109,12 +110,16 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("Delete the project with flag -o json", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
 		// odo project delete foobar -o json
 		It("should be able to delete project and show output in json format", func() {
-			helper.CmdShouldPass("odo", "project", "create", commonVar.Project, "-o", "json")
+			helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
 
-			actual := helper.CmdShouldPass("odo", "project", "delete", commonVar.Project, "-o", "json")
-			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Deleted project : %s"}`, commonVar.Project, commonVar.Project, commonVar.Project)
+			actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Deleted project : %s"}`, projectName, projectName, projectName)
 			Expect(desired).Should(MatchJSON(actual))
 		})
 	})
