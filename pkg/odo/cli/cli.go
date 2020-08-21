@@ -272,6 +272,5 @@ func ShowHelp(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	_ = cmd.Help()
 	return fmt.Errorf("Invalid command - see available commands/subcommands above")
 }
