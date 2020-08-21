@@ -2,14 +2,10 @@ package devfile
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
@@ -760,79 +756,79 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
-	Context("Handle devfiles with parent", func() {
-		var server *http.Server
-		var freePort int
-		var parentTmpFolder string
+	// Context("Handle devfiles with parent", func() {
+	// 	var server *http.Server
+	// 	var freePort int
+	// 	var parentTmpFolder string
 
-		var _ = BeforeSuite(func() {
-			// get a free port
-			var err error
-			freePort, err = util.HTTPGetFreePort()
-			Expect(err).NotTo(HaveOccurred())
+	// 	var _ = BeforeSuite(func() {
+	// 		// get a free port
+	// 		var err error
+	// 		freePort, err = util.HTTPGetFreePort()
+	// 		Expect(err).NotTo(HaveOccurred())
 
-			// move the parent devfiles to a tmp folder
-			parentTmpFolder = helper.CreateNewContext()
-			helper.CopyExample(filepath.Join("source", "devfiles", "parentSupport"), parentTmpFolder)
-			// update the port in the required devfile with the free port
-			helper.ReplaceString(filepath.Join(parentTmpFolder, "devfile-middle-layer.yaml"), "(-1)", strconv.Itoa(freePort))
+	// 		// move the parent devfiles to a tmp folder
+	// 		parentTmpFolder = helper.CreateNewContext()
+	// 		helper.CopyExample(filepath.Join("source", "devfiles", "parentSupport"), parentTmpFolder)
+	// 		// update the port in the required devfile with the free port
+	// 		helper.ReplaceString(filepath.Join(parentTmpFolder, "devfile-middle-layer.yaml"), "(-1)", strconv.Itoa(freePort))
 
-			// start the server and serve from the tmp folder of the devfiles
-			server = helper.HttpFileServer(freePort, parentTmpFolder)
+	// 		// start the server and serve from the tmp folder of the devfiles
+	// 		server = helper.HttpFileServer(freePort, parentTmpFolder)
 
-			// wait for the server to be respond with the desired result
-			helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
-		})
+	// 		// wait for the server to be respond with the desired result
+	// 		helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
+	// 	})
 
-		var _ = AfterSuite(func() {
-			helper.DeleteDir(parentTmpFolder)
-			err := server.Close()
-			Expect(err).To(BeNil())
-		})
+	// 	var _ = AfterSuite(func() {
+	// 		helper.DeleteDir(parentTmpFolder)
+	// 		err := server.Close()
+	// 		Expect(err).To(BeNil())
+	// 	})
 
-		It("should handle a devfile with a parent and add a extra command", func() {
-			utils.ExecPushToTestParent(context, cmpName, namespace)
-			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-			listDir := cliRunner.ExecListDir(podName, namespace, "/project/")
-			Expect(listDir).To(ContainSubstring("blah.js"))
-		})
+	// 	It("should handle a devfile with a parent and add a extra command", func() {
+	// 		utils.ExecPushToTestParent(context, cmpName, namespace)
+	// 		podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+	// 		listDir := cliRunner.ExecListDir(podName, namespace, "/project/")
+	// 		Expect(listDir).To(ContainSubstring("blah.js"))
+	// 	})
 
-		It("should handle a parent and override/append it's envs", func() {
-			utils.ExecPushWithParentOverride(context, cmpName, namespace, freePort)
+	// 	It("should handle a parent and override/append it's envs", func() {
+	// 		utils.ExecPushWithParentOverride(context, cmpName, namespace, freePort)
 
-			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+	// 		envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
 
-			value, ok := envMap["ODO_TEST_ENV_0"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("ENV_VALUE_0"))
+	// 		value, ok := envMap["ODO_TEST_ENV_0"]
+	// 		Expect(ok).To(BeTrue())
+	// 		Expect(value).To(Equal("ENV_VALUE_0"))
 
-			value, ok = envMap["ODO_TEST_ENV_1"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("ENV_VALUE_1_1"))
-		})
+	// 		value, ok = envMap["ODO_TEST_ENV_1"]
+	// 		Expect(ok).To(BeTrue())
+	// 		Expect(value).To(Equal("ENV_VALUE_1_1"))
+	// 	})
 
-		It("should handle a multi layer parent", func() {
-			utils.ExecPushWithMultiLayerParent(context, cmpName, namespace, freePort)
+	// 	It("should handle a multi layer parent", func() {
+	// 		utils.ExecPushWithMultiLayerParent(context, cmpName, namespace, freePort)
 
-			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-			listDir := cliRunner.ExecListDir(podName, namespace, "/project")
-			helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
+	// 		podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+	// 		listDir := cliRunner.ExecListDir(podName, namespace, "/project")
+	// 		helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
 
-			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+	// 		envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
 
-			value, ok := envMap["ODO_TEST_ENV_1"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("ENV_VALUE_1_1"))
+	// 		value, ok := envMap["ODO_TEST_ENV_1"]
+	// 		Expect(ok).To(BeTrue())
+	// 		Expect(value).To(Equal("ENV_VALUE_1_1"))
 
-			value, ok = envMap["ODO_TEST_ENV_2"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("ENV_VALUE_2"))
+	// 		value, ok = envMap["ODO_TEST_ENV_2"]
+	// 		Expect(ok).To(BeTrue())
+	// 		Expect(value).To(Equal("ENV_VALUE_2"))
 
-			value, ok = envMap["ODO_TEST_ENV_3"]
-			Expect(ok).To(BeTrue())
-			Expect(value).To(Equal("ENV_VALUE_3"))
+	// 		value, ok = envMap["ODO_TEST_ENV_3"]
+	// 		Expect(ok).To(BeTrue())
+	// 		Expect(value).To(Equal("ENV_VALUE_3"))
 
-		})
-	})
+	// 	})
+	// })
 
 })
