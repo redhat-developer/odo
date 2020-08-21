@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/util"
@@ -143,7 +142,7 @@ func (d DevfileObj) removePorts() error {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
-			component.Container.Endpoints = removeEndpoints(component.Container.Endpoints)
+			component.Container.Endpoints = []common.Endpoint{}
 			d.Data.UpdateComponent(component)
 		}
 	}
@@ -155,12 +154,7 @@ func (d DevfileObj) hasPorts() bool {
 	for _, component := range components {
 		if component.Container != nil {
 			if len(component.Container.Endpoints) > 0 {
-				// we only care about ports that added by odo
-				for _, ep := range component.Container.Endpoints {
-					if odo, ok := ep.Attributes[labels.OdoManagedBy]; ok && odo == "odo" {
-						return true
-					}
-				}
+				return true
 			}
 		}
 	}
@@ -180,9 +174,12 @@ func (d DevfileObj) setMemory(memory string) error {
 func (d DevfileObj) getMemory() string {
 	components := d.Data.GetComponents()
 	for _, component := range components {
-		if component.Container.MemoryLimit != "" {
-			return component.Container.MemoryLimit
+		if component.Container != nil {
+			if component.Container.MemoryLimit != "" {
+				return component.Container.MemoryLimit
+			}
 		}
+
 	}
 	return ""
 }
@@ -219,10 +216,6 @@ func portsToEndpoints(ports ...string) ([]common.Endpoint, error) {
 	for _, port := range conPorts {
 
 		endpoint := common.Endpoint{
-			// this is added to differentiate between endpoint created by the user vs devfile creator
-			Attributes: map[string]string{
-				labels.OdoManagedBy: "odo",
-			},
 			Name:       fmt.Sprintf("port-%d", port.ContainerPort),
 			TargetPort: port.ContainerPort,
 			Protocol:   strings.ToLower(string(port.Protocol)),
@@ -247,30 +240,6 @@ func addEndpoints(current []common.Endpoint, other []common.Endpoint) []common.E
 		}
 		if !present {
 			newList = append(newList, ep)
-		}
-	}
-
-	return newList
-}
-
-// removeEndpoints removes all the odo created endpoints
-func removeEndpoints(current []common.Endpoint) []common.Endpoint {
-	newList := make([]common.Endpoint, len(current))
-	copy(newList, current)
-
-	for {
-		index := -1
-		for j, presentep := range newList {
-			// all the endpoints created by odo have these labels
-			if odo, ok := presentep.Attributes[labels.OdoManagedBy]; ok && odo == "odo" {
-				index = j
-				break
-			}
-		}
-		if index != -1 {
-			newList = append(newList[:index], newList[index+1:]...)
-		} else {
-			break
 		}
 	}
 
