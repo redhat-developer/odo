@@ -127,20 +127,15 @@ func (d *Devfile200) UpdateComponent(component common.DevfileComponent) {
 }
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
-func (d *Devfile200) GetCommands() []common.DevfileCommand {
-	var commands []common.DevfileCommand
+func (d *Devfile200) GetCommands() map[string]common.DevfileCommand {
+	commands := make(map[string]common.DevfileCommand, len(d.Commands))
 
 	for _, command := range d.Commands {
 		// we convert devfile command id to lowercase so that we can handle
 		// cases efficiently without being error prone
 		// we also convert the odo push commands from build-command and run-command flags
-		if command.Exec != nil {
-			command.Exec.Id = strings.ToLower(command.Exec.Id)
-		} else if command.Composite != nil {
-			command.Composite.Id = strings.ToLower(command.Composite.Id)
-		}
+		commands[command.SetIDToLower()] = command
 
-		commands = append(commands, command)
 	}
 
 	return commands
@@ -148,17 +143,15 @@ func (d *Devfile200) GetCommands() []common.DevfileCommand {
 
 // AddCommands adds the slice of DevfileCommand objects to the Devfile's commands
 // if a command is already defined, error out
-func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
-	commandsMap := make(map[string]bool)
-	for _, command := range d.Commands {
-		commandsMap[command.Exec.Id] = true
-	}
+func (d *Devfile200) AddCommands(commands ...common.DevfileCommand) error {
+	commandsMap := d.GetCommands()
 
 	for _, command := range commands {
-		if _, ok := commandsMap[command.Exec.Id]; !ok {
+		id := command.GetID()
+		if _, ok := commandsMap[id]; !ok {
 			d.Commands = append(d.Commands, command)
 		} else {
-			return &common.AlreadyExistError{Name: command.Exec.Id, Field: "command"}
+			return &common.AlreadyExistError{Name: id, Field: "command"}
 		}
 	}
 	return nil
@@ -166,8 +159,9 @@ func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
 
 // UpdateCommand updates the command with the given id
 func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
+	id := strings.ToLower(command.GetID())
 	for i := range d.Commands {
-		if d.Commands[i].Exec.Id == strings.ToLower(command.Exec.Id) {
+		if d.Commands[i].GetID() == id {
 			d.Commands[i] = command
 		}
 	}

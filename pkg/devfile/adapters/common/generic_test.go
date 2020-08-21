@@ -229,10 +229,10 @@ func TestExecuteDevfileCommand(t *testing.T) {
 }
 
 func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif func(command common.DevfileCommand) (ComponentInfo, error)) *GenericAdapter {
+	data := &testingutil.TestDevfileData{}
+	_ = data.AddCommands(commands...)
 	devObj := devfileParser.DevfileObj{
-		Data: testingutil.TestDevfileData{
-			Commands: commands,
-		},
+		Data: data,
 	}
 	ctx := AdapterContext{
 		Devfile: devObj,
