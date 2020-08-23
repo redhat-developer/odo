@@ -52,13 +52,26 @@ jobs:
       go_import_path: github.com/openshift/odo
       go: "1.13.x"
       install:
-        - make goget-tools
+        - sudo curl -L  https://github.com/zchee/docker-machine-driver-xhyve/releases/download/v0.3.3/docker-machine-driver-xhyve -o /usr/local/bin/docker-machine-driver-xhyve
+        - sudo chown root:wheel /usr/local/bin/docker-machine-driver-xhyve
+        - sudo chmod u+s,+x /usr/local/bin/docker-machine-driver-xhyve
+        - brew cask install minishift
+        - minishift start
+        - eval $(minishift oc-env)
+        - oc version
+        - minishift version
       script:
         - system_profiler SPSoftwareDataType
         - export PATH="$PATH:$GOPATH/bin"
+        - make goget-tools
         - make bin
         - make validate
         - make test
+        - sudo cp odo /usr/bin
+        - travis_wait make test-generic
+        - travis_wait make test-cmd-login-logout
+        - travis_wait make test-cmd-cmp
+        - travis_wait make test-plugin-handler
       after_success: skip
 
     - <<: *base-test
