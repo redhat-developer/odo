@@ -118,15 +118,16 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())
 
+	log.Infof("\nPushing devfile component %s", componentName)
+
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
-		err = errors.Errorf("Failed to start component with name %s. Error: %v",
+		err = errors.Errorf("Failed to push component with name %s. Error: %v",
 			componentName,
 			err,
 		)
 	} else {
-		log.Infof("\nPushing devfile component %s", componentName)
 		log.Success("Changes successfully pushed to component")
 	}
 
