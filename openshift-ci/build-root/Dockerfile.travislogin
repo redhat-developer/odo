@@ -18,7 +18,6 @@ RUN yum install sudo -y \
     zlib-devel \
     libffi-devel \
     openssl-devel \
-    make \
     bzip2 \
     autoconf \
     automake \
