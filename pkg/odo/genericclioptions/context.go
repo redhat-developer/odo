@@ -325,14 +325,6 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 	return newContext(context.command, true, false), localConfiguration, err
 }
 
-// LocalConfigProvider is an interface which all local config providers need to implement
-// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
-type LocalConfigProvider interface {
-	GetApplication() string
-	GetName() string
-	GetNamespace() string
-}
-
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	localCtx := FlagValueIfSet(command, ContextFlagName)
@@ -393,6 +385,16 @@ func (c *Context) GetProject() string {
 		c.project = resolveProject(c.command, c.Client, c.LocalConfigInfo)
 	}
 	return c.project
+}
+
+// LocalConfigProvider is an interface which all local config providers need to implement
+// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
+type LocalConfigProvider interface {
+	GetApplication() string
+	GetName() string
+	GetNamespace() string
+	GetDebugPort() int
+	SetConfiguration(parameter string, value interface{}) (err error)
 }
 
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
