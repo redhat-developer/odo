@@ -19,6 +19,10 @@ export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
+
+# list of namespace to create
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7"
+
 # Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
     # Check if nessasary files exist
@@ -55,6 +59,16 @@ oc adm policy add-role-to-user edit developer
 
 #sh $SETUP_OPERATORS
 # OperatorHub setup complete
+
+# Create the namespace for e2e image test apply pull secret to the namespace
+for i in `echo $IMAGE_TEST_NAMESPACES`; do
+    # create the namespace
+    oc new-project $i
+    # Applying pull secret to the namespace which will be used for pulling images from authenticated registry
+    oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/$i/g" | oc apply -f -
+    # Let developer user have access to the project
+    oc adm policy add-role-to-user edit developer
+done
 
 # Remove existing htpasswd file, if any
 if [ -f $HTPASSWD_FILE ]; then
@@ -167,9 +181,13 @@ fi
 
 # Setup project
 oc new-project myproject
+oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/myproject/g" | oc apply -f -
+oc adm policy add-role-to-user edit developer
 sleep 4
 oc version
-oc get secret pull-secret -n openshift-config -o yaml --export | oc create -f -
+
+# Project list
+oc projects
 
 # KUBECONFIG cleanup only if CI is set
 if [ ! -f $CI ]; then

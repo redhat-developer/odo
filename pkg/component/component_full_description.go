@@ -125,6 +125,8 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		cfd.Spec.Env = componentDescFromCluster.Spec.Env
 		cfd.Spec.Type = componentDescFromCluster.Spec.Type
 		cfd.Spec.SourceType = componentDescFromCluster.Spec.SourceType
+		cfd.Status.LinkedComponents = componentDescFromCluster.Status.LinkedComponents
+		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
 	}
 
 	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)

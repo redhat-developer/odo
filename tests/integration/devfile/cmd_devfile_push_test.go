@@ -2,13 +2,14 @@ package devfile
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/util"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
@@ -129,7 +130,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/test/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -154,7 +155,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -179,7 +180,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -205,7 +206,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -328,7 +329,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -342,7 +343,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
@@ -369,7 +370,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -492,7 +493,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -505,7 +506,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/data2"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -524,6 +525,27 @@ var _ = Describe("odo devfile push command tests", func() {
 			}
 			Expect(volumesMatched).To(Equal(true))
 		})
+
+		It("Ensure that push -f correctly removes local deleted files from the remote target sync folder", func() {
+
+			// 1) Push a generic Java project
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// 2) Rename the pom.xml, which should cause the build to fail if sync is working as expected
+			err := os.Rename(filepath.Join(context, "pom.xml"), filepath.Join(context, "pom.xml.renamed"))
+			Expect(err).NotTo(HaveOccurred())
+
+			// 3) Ensure that the build fails due to missing 'pom.xml', which ensures that the sync operation
+			// correctly renamed pom.xml to pom.xml.renamed.
+			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--namespace", namespace)
+			helper.WaitForOutputToContain("Non-readable POM", 180, 10, session)
+
+		})
+
 	})
 
 	Context("Verify devfile volume components work", func() {
@@ -812,4 +834,5 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		})
 	})
+
 })

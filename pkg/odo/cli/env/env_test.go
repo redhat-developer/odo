@@ -90,7 +90,7 @@ func TestIsSupportedParameter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := isSupportedParameter(tt.parameter, tt.supportedParameters)
-			if !reflect.DeepEqual(got, tt.want) {
+			if got != tt.want {
 				t.Errorf("Got %t, want %t", got, tt.want)
 			}
 		})

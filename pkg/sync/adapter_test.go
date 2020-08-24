@@ -167,8 +167,6 @@ func TestSyncFiles(t *testing.T) {
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        false,
-					// The first invocation of watch requires this to be true, see SyncFiles(...) in 'sync/adapter.go' for details.
-					DevfileScanIndexForWatch: true,
 				},
 				CompInfo: common.ComponentInfo{
 					ContainerName: "abcd",
@@ -182,7 +180,7 @@ func TestSyncFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
@@ -315,7 +313,7 @@ func TestPushLocal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}

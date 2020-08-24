@@ -51,7 +51,7 @@ func TestCreateComponent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					ExecCommands: testingutil.GetFakeExecRunCommands(),
 					Components:   tt.components,
 				},
@@ -125,7 +125,7 @@ func TestUpdateComponent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components:   tt.components,
 					ExecCommands: testingutil.GetFakeExecRunCommands(),
 				},
@@ -209,7 +209,7 @@ func TestPullAndStartContainer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						testingutil.GetFakeContainerComponent("alias1"),
 					},
@@ -291,7 +291,7 @@ func TestStartContainer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						testingutil.GetFakeContainerComponent("alias1"),
 					},
@@ -412,7 +412,7 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
@@ -556,7 +556,7 @@ func TestExecDevfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
@@ -649,7 +649,7 @@ func TestExecTestCmd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: validComponents,
 				},
 			}
@@ -712,7 +712,7 @@ func TestCreateProjectVolumeIfReqd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
@@ -760,7 +760,7 @@ func TestStartBootstrapSupervisordInitContainer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
@@ -806,7 +806,7 @@ func TestCreateAndInitSupervisordVolumeIfReqd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
@@ -1111,7 +1111,7 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					ExecCommands: tt.commandExecs,
 					Components: []versionsCommon.DevfileComponent{
 						{
