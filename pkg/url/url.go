@@ -644,7 +644,7 @@ func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 }
 
 // ConvertConfigURL converts ConfigURL to URL
-func ConvertConfigURL(configURL config.ConfigURL) URL {
+func ConvertConfigURL(configURL envinfo.EnvInfoURL) URL {
 	return URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
@@ -871,7 +871,7 @@ func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP s
 type PushParameters struct {
 	ComponentName             string
 	ApplicationName           string
-	ConfigURLs                []config.ConfigURL
+	ConfigURLs                []envinfo.EnvInfoURL
 	EnvURLS                   []envinfo.EnvInfoURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool

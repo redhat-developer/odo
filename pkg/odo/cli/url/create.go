@@ -7,7 +7,6 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/util/validation"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -287,7 +286,7 @@ func (o *URLCreateOptions) Run() (err error) {
 		}
 		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, Host: o.host, Secure: o.secureURL, TLSSecret: o.tlsSecret, ExposedPort: o.exposedPort, Kind: o.urlType})
 	} else {
-		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
+		err = o.LocalConfigInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")

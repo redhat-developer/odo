@@ -198,7 +198,7 @@ func (lo *ListOptions) Run() (err error) {
 
 		// Json output is not implemented yet for devfile
 		if !log.IsJSON() {
-			envinfo := lo.EnvSpecificInfo.EnvInfo
+			envinfo := lo.EnvSpecificInfo
 			if len(deploymentList.Items) != 0 || envinfo.GetApplication() == lo.Application {
 
 				currentComponentState := UnpushedCompState

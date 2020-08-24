@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/envinfo"
 	"io"
 	"net/url"
 	"os"
@@ -77,7 +78,7 @@ type ComponentSettings struct {
 
 	Envs EnvVarList `yaml:"Envs,omitempty"`
 
-	URL *[]ConfigURL `yaml:"Url,omitempty"`
+	URL *[]envinfo.EnvInfoURL `yaml:"Url,omitempty"`
 }
 
 // ConfigURL holds URL related information
@@ -257,11 +258,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
 		case "url":
-			urlValue := value.(ConfigURL)
+			urlValue := value.(envinfo.EnvInfoURL)
 			if lci.componentSettings.URL != nil {
 				*lci.componentSettings.URL = append(*lci.componentSettings.URL, urlValue)
 			} else {
-				lci.componentSettings.URL = &[]ConfigURL{urlValue}
+				lci.componentSettings.URL = &[]envinfo.EnvInfoURL{urlValue}
 			}
 		}
 
@@ -485,10 +486,10 @@ func (lc *LocalConfig) GetMaxCPU() string {
 	return util.GetStringOrEmpty(lc.componentSettings.MaxCPU)
 }
 
-// GetURL returns the ConfigURL, returns default if nil
-func (lc *LocalConfig) GetURL() []ConfigURL {
+// GetURL returns the known URLs, returns empty if nil
+func (lc *LocalConfig) GetURL() []envinfo.EnvInfoURL {
 	if lc.componentSettings.URL == nil {
-		return []ConfigURL{}
+		return []envinfo.EnvInfoURL{}
 	}
 	return *lc.componentSettings.URL
 }

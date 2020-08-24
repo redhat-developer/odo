@@ -11,7 +11,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -751,7 +750,7 @@ func TestPush(t *testing.T) {
 		args                args
 		componentName       string
 		applicationName     string
-		existingConfigURLs  []config.ConfigURL
+		existingConfigURLs  []envinfo.EnvInfoURL
 		existingEnvInfoURLs []envinfo.EnvInfoURL
 		returnedRoutes      *routev1.RouteList
 		returnedIngress     *extensionsv1.IngressList
@@ -774,7 +773,7 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingConfigURLs: []config.ConfigURL{
+			existingConfigURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example",
 					Port:   8080,
@@ -826,7 +825,7 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingConfigURLs: []config.ConfigURL{
+			existingConfigURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example-local-0",
 					Port:   8080,
@@ -871,7 +870,7 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingConfigURLs: []config.ConfigURL{
+			existingConfigURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example",
 					Port:   8080,
@@ -1222,7 +1221,7 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true, isExperimentalModeEnabled: false},
-			existingConfigURLs: []config.ConfigURL{
+			existingConfigURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example-local-0",
 					Port:   8080,

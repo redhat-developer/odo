@@ -46,7 +46,7 @@ type WatchParameters struct {
 	PushDiffDelay int
 	// Parameter whether or not to show build logs
 	Show bool
-	// EnvSpecificInfo contains infomation of env.yaml file
+	// EnvSpecificInfo contains information of env.yaml file
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 	// DevfileInitCmd takes the init command through the command line and overwrites devfile init command
 	DevfileInitCmd string

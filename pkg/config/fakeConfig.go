@@ -1,5 +1,7 @@
 package config
 
+import "github.com/openshift/odo/pkg/envinfo"
+
 func GetOneExistingConfigInfo(componentName, applicationName, projectName string) LocalConfigInfo {
 	componentType := "nodejs"
 	sourceLocation := "./"
@@ -15,7 +17,7 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 
 	portsValue := []string{"8080/TCP", "45/UDP"}
 
-	urlValue := []ConfigURL{
+	urlValue := []envinfo.EnvInfoURL{
 		{
 			Name: "example-url-0",
 			Port: 8080,
