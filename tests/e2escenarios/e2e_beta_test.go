@@ -1,9 +1,7 @@
 package e2escenarios
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,45 +9,28 @@ import (
 )
 
 var _ = Describe("odo core beta flow", func() {
-	//new clean project and context for each test
-	var project string
-	var context string
-
-	//  current directory and project (before any test is run) so it can restored  after all testing is done
-	var originalDir string
-
 	var oc helper.OcRunner
-	// path to odo binary
-	var odo string
+	var commonVar helper.CommonVar
 
-	BeforeEach(func() {
-		// Set default timeout for Eventually assertions
-		// commands like odo push, might take a long time
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-
+	// This is run before every Spec (It)
+	var _ = BeforeEach(func() {
 		// initialize oc runner
-		// right now it uses oc binary, but we should convert it to client-go
 		oc = helper.NewOcRunner("oc")
-		odo = "odo"
-
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		project = helper.CreateRandProject()
+		commonVar = helper.CommonBeforeEach()
 	})
 
-	AfterEach(func() {
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
 	})
 
 	// abstract main test to the function, to allow running the same test in a different context (slightly different arguments)
 	TestBasicCreateConfigPush := func(extraArgs ...string) {
-		createSession := helper.CmdShouldPass(odo, append([]string{"component", "create", "java:8", "mycomponent", "--app", "myapp", "--project", project}, extraArgs...)...)
+		createSession := helper.CmdShouldPass("odo", append([]string{"component", "create", "java:8", "mycomponent", "--app", "myapp", "--project", commonVar.Project}, extraArgs...)...)
 		// output of the commands should point user to running "odo push"
 		Expect(createSession).Should(ContainSubstring("odo push"))
-		configFile := filepath.Join(context, ".odo", "config.yaml")
+		configFile := filepath.Join(commonVar.Context, ".odo", "config.yaml")
 		Expect(configFile).To(BeARegularFile())
 		helper.FileShouldContainSubstring(configFile, "Name: mycomponent")
 		helper.FileShouldContainSubstring(configFile, "Type: java")
@@ -57,24 +38,24 @@ var _ = Describe("odo core beta flow", func() {
 		helper.FileShouldContainSubstring(configFile, "SourceType: local")
 		// SourcePath should be relative
 		//helper.FileShouldContainSubstring(configFile, "SourceLocation: .")
-		helper.FileShouldContainSubstring(configFile, "Project: "+project)
+		helper.FileShouldContainSubstring(configFile, "Project: "+commonVar.Project)
 
-		configSession := helper.CmdShouldPass(odo, append([]string{"config", "set", "--env", "FOO=bar"}, extraArgs...)...)
+		configSession := helper.CmdShouldPass("odo", append([]string{"config", "set", "--env", "FOO=bar"}, extraArgs...)...)
 		// output of the commands should point user to running "odo push"
 		// currently failing
 		Expect(configSession).Should(ContainSubstring("odo push"))
 		helper.FileShouldContainSubstring(configFile, "Name: FOO")
 		helper.FileShouldContainSubstring(configFile, "Value: bar")
 
-		urlCreateSession := helper.CmdShouldPass(odo, append([]string{"url", "create", "--port", "8080"}, extraArgs...)...)
+		urlCreateSession := helper.CmdShouldPass("odo", append([]string{"url", "create", "--port", "8080"}, extraArgs...)...)
 		// output of the commands should point user to running "odo push"
 		Eventually(urlCreateSession).Should(ContainSubstring("odo push"))
 		helper.FileShouldContainSubstring(configFile, "Url:")
 		helper.FileShouldContainSubstring(configFile, "Port: 8080")
 
-		helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
+		helper.CmdShouldPass("odo", append([]string{"push"}, extraArgs...)...)
 
-		dcSession := oc.GetComponentDC("mycomponent", "myapp", project)
+		dcSession := oc.GetComponentDC("mycomponent", "myapp", commonVar.Project)
 		helper.MatchAllInOutput(dcSession, []string{
 			"app.kubernetes.io/instance: mycomponent",
 			"app.kubernetes.io/component-source-type: local",
@@ -86,10 +67,10 @@ var _ = Describe("odo core beta flow", func() {
 		// DC should have env variable
 		helper.MatchAllInOutput(dcSession, []string{"name: FOO", "value: bar"})
 
-		routeSession := oc.GetComponentRoutes("mycomponent", "myapp", project)
+		routeSession := oc.GetComponentRoutes("mycomponent", "myapp", commonVar.Project)
 		// check that route is pointing gto right port and component
 		helper.MatchAllInOutput(routeSession, []string{"targetPort: 8080", "name: mycomponent-myapp"})
-		url := oc.GetFirstURL("mycomponent", "myapp", project)
+		url := oc.GetFirstURL("mycomponent", "myapp", commonVar.Project)
 		helper.HttpWaitFor("http://"+url, "Hello World from Javalin!", 10, 5)
 	}
 
@@ -97,17 +78,12 @@ var _ = Describe("odo core beta flow", func() {
 		// we will be testing components that are created from the current directory
 		// switch to the clean context dir before each test
 		JustBeforeEach(func() {
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
-		})
-		// go back to original directory after each test
-		JustAfterEach(func() {
-			helper.Chdir(originalDir)
+			helper.Chdir(commonVar.Context)
 		})
 
 		It("'odo component' should fail if there already is .odo dir", func() {
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project)
-			helper.CmdShouldFail("odo", "component", "create", "nodejs", "--project", project)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", commonVar.Project)
+			helper.CmdShouldFail("odo", "component", "create", "nodejs", "--project", commonVar.Project)
 		})
 
 		It("'odo config' should fail if there is no .odo dir", func() {
@@ -115,26 +91,26 @@ var _ = Describe("odo core beta flow", func() {
 		})
 
 		It("create local java component and push code", func() {
-			oc.ImportJavaIS(project)
-			helper.CopyExample(filepath.Join("source", "openjdk"), context)
+			oc.ImportJavaIS(commonVar.Project)
+			helper.CopyExample(filepath.Join("source", "openjdk"), commonVar.Context)
 			TestBasicCreateConfigPush()
 		})
 	})
 
 	Context("when --context flag is used", func() {
 		It("odo component should fail if there already is .odo dir", func() {
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--context", context, "--project", project)
-			helper.CmdShouldFail("odo", "component", "create", "nodejs", "--context", context, "--project", project)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--context", commonVar.Context, "--project", commonVar.Project)
+			helper.CmdShouldFail("odo", "component", "create", "nodejs", "--context", commonVar.Context, "--project", commonVar.Project)
 		})
 
 		It("odo config should fail if there is no .odo dir", func() {
-			helper.CmdShouldFail("odo", "config", "set", "memory", "2Gi", "--context", context)
+			helper.CmdShouldFail("odo", "config", "set", "memory", "2Gi", "--context", commonVar.Context)
 		})
 
 		It("create local java component and push code", func() {
-			oc.ImportJavaIS(project)
-			helper.CopyExample(filepath.Join("source", "openjdk"), context)
-			TestBasicCreateConfigPush("--context", context)
+			oc.ImportJavaIS(commonVar.Project)
+			helper.CopyExample(filepath.Join("source", "openjdk"), commonVar.Context)
+			TestBasicCreateConfigPush("--context", commonVar.Context)
 		})
 	})
 })
