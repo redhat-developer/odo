@@ -21,13 +21,11 @@ import (
 
 func TestGetDeploymentStatus(t *testing.T) {
 
-	testComponentName := "test"
+	testComponentName := "component"
 
 	tests := []struct {
 		name                  string
-		componentType         versionsCommon.DevfileComponentType
 		envInfo               envinfo.EnvSpecificInfo
-		endpointMap           map[int32]versionsCommon.Endpoint
 		running               bool
 		wantErr               bool
 		deployment            v1.Deployment
@@ -38,12 +36,10 @@ func TestGetDeploymentStatus(t *testing.T) {
 		expectedPodUID        string
 	}{
 		{
-			name:          "Case 1: A single deployment, matching replica, and matching pod",
-			componentType: "",
-			envInfo:       envinfo.EnvSpecificInfo{},
-			endpointMap:   map[int32]versionsCommon.Endpoint{},
-			running:       false,
-			wantErr:       false,
+			name:    "Case 1: A single deployment, matching replica, and matching pod",
+			envInfo: envinfo.EnvSpecificInfo{},
+			running: false,
+			wantErr: false,
 			deployment: v1.Deployment{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       kclient.DeploymentKind,
@@ -92,12 +88,10 @@ func TestGetDeploymentStatus(t *testing.T) {
 			expectedPodUID:        "pod-uid",
 		},
 		{
-			name:          "Case 2: A single deployment, multiple replicas with different generations, and a single matching pod",
-			componentType: "",
-			envInfo:       envinfo.EnvSpecificInfo{},
-			endpointMap:   map[int32]versionsCommon.Endpoint{},
-			running:       false,
-			wantErr:       false,
+			name:    "Case 2: A single deployment, multiple replicas with different generations, and a single matching pod",
+			envInfo: envinfo.EnvSpecificInfo{},
+			running: false,
+			wantErr: false,
 			deployment: v1.Deployment{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       kclient.DeploymentKind,
@@ -166,10 +160,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var comp versionsCommon.DevfileComponent
-			if tt.componentType != "" {
-				comp = testingutil.GetFakeContainerComponent(testComponentName)
-			}
+			comp := testingutil.GetFakeContainerComponent(testComponentName)
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Components:   []versionsCommon.DevfileComponent{comp},
@@ -206,7 +197,10 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			componentAdapter := New(adapterCtx, *fkclient)
 			fkclient.Namespace = componentAdapter.Client.Namespace
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, tt.endpointMap)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, map[int32]versionsCommon.Endpoint{})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
 			// Call the function to test
 			result, err := componentAdapter.getDeploymentStatus()
@@ -216,19 +210,19 @@ func TestGetDeploymentStatus(t *testing.T) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 			if string(result.DeploymentUID) != tt.expectedDeploymentUID {
-				t.Fatalf("Could not find expected deployment UID %s %s", string(result.DeploymentUID), tt.expectedDeploymentUID)
+				t.Fatalf("could not find expected deployment UID %s %s", string(result.DeploymentUID), tt.expectedDeploymentUID)
 			}
 
 			if string(result.ReplicaSetUID) != tt.expectedReplicaSetUID {
-				t.Fatalf("Could not find expected replica set UID %s %s", string(result.ReplicaSetUID), tt.expectedReplicaSetUID)
+				t.Fatalf("could not find expected replica set UID %s %s", string(result.ReplicaSetUID), tt.expectedReplicaSetUID)
 			}
 
 			if result.Pods == nil || len(result.Pods) != 1 {
-				t.Fatalf("Results of this test should match 1 pod")
+				t.Fatalf("results of this test should match 1 pod")
 			}
 
 			if string(result.Pods[0].UID) != tt.expectedPodUID {
-				t.Fatalf("Pod UID did not match expected pod UID: %s %s", string(result.Pods[0].UID), tt.expectedPodUID)
+				t.Fatalf("pod UID did not match expected pod UID: %s %s", string(result.Pods[0].UID), tt.expectedPodUID)
 			}
 
 		})

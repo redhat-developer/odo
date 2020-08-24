@@ -107,10 +107,6 @@ func ParseMachineEventJSONLines(consoleOutput string) ([]machineoutput.MachineEv
 			continue
 		}
 
-		if !strings.HasPrefix(line, "{") {
-			continue
-		}
-
 		lineWrapper := machineoutput.MachineEventWrapper{}
 
 		err := json.Unmarshal([]byte(line), &lineWrapper)
@@ -171,14 +167,4 @@ func GetMostRecentEventOfType(entryType machineoutput.MachineEventLogEntryType, 
 	}
 
 	return nil
-}
-
-// Wait for the session stdout output to container a particular string
-func WaitForOutputToContain(substring string, session *gexec.Session) {
-
-	Eventually(func() string {
-		contents := string(session.Out.Contents())
-		return contents
-	}, 180, 10).Should(ContainSubstring(substring))
-
 }

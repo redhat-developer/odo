@@ -415,15 +415,15 @@ func compareCoreContainerState(oneParam corev1.ContainerState, twoParam corev1.C
 	// discard the other information.
 	toString := func(one corev1.ContainerState) string {
 		if one.Running != nil {
-			return fmt.Sprintf("Running")
+			return "Running"
 		}
 
 		if one.Terminated != nil {
-			return fmt.Sprintf("Terminated")
+			return "Terminated"
 		}
 
 		if one.Waiting != nil {
-			return fmt.Sprintf("Waiting")
+			return "Waiting"
 		}
 
 		return ""

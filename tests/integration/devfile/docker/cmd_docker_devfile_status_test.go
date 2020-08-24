@@ -62,7 +62,7 @@ var _ = Describe("odo docker devfile status command tests", func() {
 
 			session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--context", context, "--follow")
 
-			utils.WaitForOutputToContain("supervisordStatus", session)
+			helper.WaitForOutputToContain("supervisordStatus", 180, 10, session)
 
 			// return true if the supervisord status value is as expected, false otherwise
 			Eventually(func() bool {

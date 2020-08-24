@@ -2,7 +2,6 @@ package url
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -20,16 +19,8 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
-type resourceMapEntry struct {
-	list *metav1.APIResourceList
-	err  error
-}
-
 type fakeDiscovery struct {
 	*fake.FakeDiscovery
-
-	lock        sync.Mutex
-	resourceMap map[string]*resourceMapEntry
 }
 
 var fakeDiscoveryWithProject = &fakeDiscovery{
@@ -46,20 +37,6 @@ var fakeDiscoveryWithProject = &fakeDiscovery{
 						ShortNames:   []string{"route"},
 					}},
 				},
-			},
-		},
-	},
-	resourceMap: map[string]*resourceMapEntry{
-		"project.openshift.io/v1": {
-			list: &metav1.APIResourceList{
-				GroupVersion: "project.openshift.io/v1",
-				APIResources: []metav1.APIResource{{
-					Name:         "projects",
-					SingularName: "project",
-					Namespaced:   false,
-					Kind:         "Project",
-					ShortNames:   []string{"proj"},
-				}},
 			},
 		},
 	},
@@ -188,11 +165,14 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			})
 
 			esi := &envinfo.EnvSpecificInfo{}
-			esi.SetComponentSettings(envinfo.ComponentSettings{Name: componentName})
+			if err := esi.SetComponentSettings(envinfo.ComponentSettings{Name: componentName}); err != nil {
+				t.Logf("ignoring error, since no physical file to write: %v", err)
+			}
+
 			for _, url := range tt.envURLs {
 				err := esi.SetConfiguration("url", url)
 				if err != nil {
-					// ignore and discard the error, since no physical file to write
+					t.Logf("ignoring error, since no physical file to write: %v", err)
 				}
 			}
 

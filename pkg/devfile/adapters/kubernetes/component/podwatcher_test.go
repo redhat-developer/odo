@@ -17,11 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestJgw(t *testing.T) {
-	type args struct {
-		labels map[string]string
-	}
-
+func TestStatusReconciler(t *testing.T) {
 	componentName := "my-component"
 
 	tests := []struct {
@@ -42,7 +38,7 @@ func TestJgw(t *testing.T) {
 
 				latestPodStatus := lfo.getMostRecentKubernetesPodStatus()
 				if latestPodStatus == nil {
-					return fmt.Sprintf("pod not found")
+					return "pod not found"
 				}
 				if len(latestPodStatus.Pods) != 1 {
 					return fmt.Sprintf("unexpected pod size, %v", lfo.debugSprintAll())
@@ -90,7 +86,7 @@ func TestJgw(t *testing.T) {
 			successFn: func(lfo *logFuncOutput) string {
 				latestPodStatus := lfo.getMostRecentKubernetesPodStatus()
 				if latestPodStatus == nil {
-					return fmt.Sprintf("pod not found")
+					return "pod not found"
 				}
 				if len(latestPodStatus.Pods) != 1 {
 					return fmt.Sprintf("unexpected pod size, %v", lfo.debugSprintAll())

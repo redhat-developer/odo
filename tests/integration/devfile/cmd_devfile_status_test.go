@@ -63,7 +63,7 @@ var _ = Describe("odo devfile status command tests", func() {
 
 			session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--project", namespace, "--follow")
 
-			utils.WaitForOutputToContain("supervisordStatus", session)
+			helper.WaitForOutputToContain("supervisordStatus", 180, 10, session)
 
 			stdoutContents := string(session.Out.Contents())
 
@@ -346,7 +346,7 @@ var _ = Describe("odo devfile status command tests", func() {
 
 				session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--project", namespace, "--follow")
 
-				utils.WaitForOutputToContain("urlReachable", session)
+				helper.WaitForOutputToContain("urlReachable", 180, 10, session)
 
 				stdoutContents := string(session.Out.Contents())
 
