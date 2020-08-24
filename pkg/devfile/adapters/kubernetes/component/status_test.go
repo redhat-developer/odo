@@ -171,7 +171,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 				comp = testingutil.GetFakeContainerComponent(testComponentName)
 			}
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components:   []versionsCommon.DevfileComponent{comp},
 					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
