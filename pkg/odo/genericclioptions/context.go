@@ -393,7 +393,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		KClient:         KClient,
 	}
 
-	internalCxt.resolveProject(localConfiguration)
 	internalCxt.resolveApp(createAppIfNeeded, localConfiguration)
 
 	// Once the component is resolved, add it to the context
@@ -463,12 +462,19 @@ type Context struct {
 	internalCxt
 }
 
+func (c *Context) GetProject() string {
+	if c.project == "" {
+		c.resolveProject(c.LocalConfigInfo)
+	}
+	return c.project
+}
+
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
 	Client          *occlient.Client
 	command         *cobra.Command
-	Project         string
+	project         string
 	Application     string
 	cmp             string
 	OutputFlag      string

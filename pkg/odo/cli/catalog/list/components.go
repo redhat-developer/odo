@@ -179,9 +179,10 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 }
 
 func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []catalog.ComponentType, supported string) {
+	project := o.GetProject()
 	for _, component := range catalogList {
 		componentName := component.Name
-		if component.Namespace == o.Project {
+		if component.Namespace == project {
 			/*
 				If current namespace is same as the current component namespace,
 				Loop through every other component,

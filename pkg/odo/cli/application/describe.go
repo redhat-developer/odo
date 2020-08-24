@@ -47,7 +47,8 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 
 // Validate validates the DescribeOptions based on completed values
 func (o *DescribeOptions) Validate() (err error) {
-	if o.Context.Project == "" || o.appName == "" {
+	project := o.Context.GetProject()
+	if project == "" || o.appName == "" {
 		return util.ThrowContextError()
 	}
 	err = util.CheckOutputFlag(o.outputFormat)
@@ -55,7 +56,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return err
 	}
 	if o.appName == "" {
-		return fmt.Errorf("There's no active application in project: %v", o.Project)
+		return fmt.Errorf("There's no active application in project: %v", project)
 	}
 
 	exist, err := application.Exists(o.appName, o.Client)
@@ -68,7 +69,7 @@ func (o *DescribeOptions) Validate() (err error) {
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
-		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
+		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)
 	} else {
 		// List of Component
@@ -85,11 +86,12 @@ func (o *DescribeOptions) Run() (err error) {
 		} else {
 			fmt.Printf("Application Name: %s has %v component(s) and %v service(s):\n--------------------------------------\n",
 				o.appName, len(componentList.Items), len(serviceList.Items))
+			project := o.GetProject()
 			if len(componentList.Items) > 0 {
 				for _, currentComponent := range componentList.Items {
-					componentDesc, err := component.GetComponent(o.Client, currentComponent.Name, o.appName, o.Project)
+					componentDesc, err := component.GetComponent(o.Client, currentComponent.Name, o.appName, project)
 					util.LogErrorAndExit(err, "")
-					util.PrintComponentInfo(o.Client, currentComponent.Name, componentDesc, o.appName, o.Project)
+					util.PrintComponentInfo(o.Client, currentComponent.Name, componentDesc, o.appName, project)
 					fmt.Println("--------------------------------------")
 				}
 			}

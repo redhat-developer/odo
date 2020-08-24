@@ -118,7 +118,7 @@ func (lo *ListOptions) Validate() (err error) {
 		app = lo.LocalConfigInfo.GetApplication()
 
 	} else {
-		project = lo.Context.Project
+		project = lo.Context.GetProject()
 		app = lo.Application
 	}
 	if !lo.allAppsFlag && lo.pathFlag == "" && (project == "" || app == "") {

@@ -231,7 +231,7 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 
 	componentSettings := envinfo.ComponentSettings{
 		Name:    co.componentName,
-		Project: co.context.Project,
+		Project: co.context.GetProject(),
 		AppName: application,
 	}
 

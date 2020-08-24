@@ -660,6 +660,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	co.componentSettings = co.LocalConfigInfo.GetComponentSettings()
 
 	// Below code is for INTERACTIVE mode
+	project := co.Context.GetProject()
 	if co.interactive {
 		client := co.Client
 
@@ -731,7 +732,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		appName := ui.EnterOpenshiftName(co.Context.Application, "Which application do you want the component to be associated with", co.Context)
 		co.componentSettings.Application = &appName
 
-		projectName := ui.EnterOpenshiftName(co.Context.Project, "Which project go you want the component to be created in", co.Context)
+		projectName := ui.EnterOpenshiftName(project, "Which project go you want the component to be created in", co.Context)
 		co.componentSettings.Project = &projectName
 
 		co.componentSettings.Name = &componentName
@@ -806,7 +807,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.componentSettings.Ports = &(portList)
 	}
 
-	co.componentSettings.Project = &(co.Context.Project)
+	co.componentSettings.Project = &project
 	envs, err := config.NewEnvVarListFromSlice(co.componentEnvVars)
 	if err != nil {
 		return
@@ -815,7 +816,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	co.ignores = []string{}
 	if co.now {
 		co.ResolveSrcAndConfigFlags()
-		err = co.ResolveProject(co.Context.Project)
+		err = co.ResolveProject(project)
 		if err != nil {
 			return err
 		}
@@ -1141,7 +1142,7 @@ func (co *CreateOptions) Run() (err error) {
 				return err
 			}
 		} else {
-			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.GetProject())
 			if err != nil {
 				return err
 			}

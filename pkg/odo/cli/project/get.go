@@ -53,7 +53,7 @@ func (pgo *ProjectGetOptions) Validate() (err error) {
 
 // Run runs the project get command
 func (pgo *ProjectGetOptions) Run() (err error) {
-	currentProject := pgo.Context.Project
+	currentProject := pgo.Context.GetProject()
 
 	if pgo.projectShortFlag {
 		fmt.Print(currentProject)
