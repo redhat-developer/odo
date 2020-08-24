@@ -61,7 +61,7 @@ func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 		o.componentName = cfg.GetName()
 		o.applicationName = cfg.GetApplication()
-		o.Namespace = cfg.GetProject()
+		o.Namespace = cfg.GetNamespace()
 	}
 
 	// Using Discard streams because nothing important is logged

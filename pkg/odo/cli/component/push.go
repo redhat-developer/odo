@@ -160,7 +160,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	}
 
 	// Get the project information and resolve it.
-	prjName := po.LocalConfigInfo.GetProject()
+	prjName := po.LocalConfigInfo.GetNamespace()
 	po.ResolveSrcAndConfigFlags()
 	err = po.ResolveProject(prjName)
 	if err != nil {

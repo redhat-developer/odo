@@ -445,8 +445,8 @@ func (lc *LocalConfig) GetApplication() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Application)
 }
 
-// GetProject returns the project, returns default if nil
-func (lc *LocalConfig) GetProject() string {
+// GetNamespace returns the namespace, returns default if nil
+func (lc *LocalConfig) GetNamespace() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Project)
 }
 

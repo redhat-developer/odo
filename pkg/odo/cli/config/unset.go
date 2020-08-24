@@ -63,7 +63,7 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-		prjName := o.LocalConfigInfo.GetProject()
+		prjName := o.LocalConfigInfo.GetNamespace()
 		o.ResolveSrcAndConfigFlags()
 		err = o.ResolveProject(prjName)
 		if err != nil {

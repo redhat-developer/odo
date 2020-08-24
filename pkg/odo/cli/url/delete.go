@@ -62,7 +62,7 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 			return err
 		}
 		if o.now {
-			prjName := o.LocalConfigInfo.GetProject()
+			prjName := o.LocalConfigInfo.GetNamespace()
 			o.ResolveSrcAndConfigFlags()
 			err = o.ResolveProject(prjName)
 			if err != nil {

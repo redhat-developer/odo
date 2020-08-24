@@ -221,7 +221,7 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 		}
 		namespace = projectFlag
 	} else {
-		namespace = localConfiguration.GetProject()
+		namespace = localConfiguration.GetNamespace()
 		if namespace == "" {
 			namespace = client.Namespace
 			if len(namespace) <= 0 {
@@ -330,6 +330,7 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 type LocalConfigProvider interface {
 	GetApplication() string
 	GetName() string
+	GetNamespace() string
 }
 
 // newContext creates a new context based on the command flags, creating missing app when requested

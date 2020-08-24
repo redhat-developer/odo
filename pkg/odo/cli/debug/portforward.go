@@ -96,7 +96,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 		o.componentName = cfg.GetName()
 		o.applicationName = cfg.GetApplication()
-		o.Namespace = cfg.GetProject()
+		o.Namespace = cfg.GetNamespace()
 	}
 
 	// try to listen on the given local port and check if the port is free or not

@@ -916,7 +916,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 	if localConfig.ConfigFileExists() {
 		component := getMachineReadableFormat(localConfig.GetName(), localConfig.GetType())
 
-		component.Namespace = localConfig.GetProject()
+		component.Namespace = localConfig.GetNamespace()
 
 		component.Spec = ComponentSpec{
 			App:        localConfig.GetApplication(),
@@ -962,18 +962,19 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				}
 
 				// if the .odo folder doesn't contain a proper config file
-				if data.GetName() == "" || data.GetApplication() == "" || data.GetProject() == "" {
+				namespace := data.GetNamespace()
+				if data.GetName() == "" || data.GetApplication() == "" || namespace == "" {
 					return nil
 				}
 
 				// since the config file maybe belong to a component of a different project
 				if client != nil {
-					client.Namespace = data.GetProject()
+					client.Namespace = namespace
 				}
 
 				con, _ := filepath.Abs(filepath.Dir(path))
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
-				a.Namespace = data.GetProject()
+				a.Namespace = namespace
 				a.Spec.App = data.GetApplication()
 				a.Spec.Ports = data.GetPorts()
 				a.Spec.SourceType = string(data.GetSourceType())

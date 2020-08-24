@@ -193,7 +193,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			o.urlName = args[0]
 		}
 		if o.now {
-			prjName := o.LocalConfigInfo.GetProject()
+			prjName := o.LocalConfigInfo.GetNamespace()
 			o.ResolveSrcAndConfigFlags()
 			err = o.ResolveProject(prjName)
 			if err != nil {

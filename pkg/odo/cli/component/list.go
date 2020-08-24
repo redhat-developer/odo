@@ -122,7 +122,7 @@ func (lo *ListOptions) Validate() (err error) {
 	var project, app string
 
 	if !util.CheckKubeConfigExist() {
-		project = lo.LocalConfigInfo.GetProject()
+		project = lo.LocalConfigInfo.GetNamespace()
 		app = lo.LocalConfigInfo.GetApplication()
 
 	} else {
