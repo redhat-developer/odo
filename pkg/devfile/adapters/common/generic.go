@@ -49,7 +49,7 @@ func (a GenericAdapter) Logger() machineoutput.MachineEventLoggingClient {
 	return a.logger
 }
 
-func (a GenericAdapter) SetLogger(loggingClient machineoutput.MachineEventLoggingClient) {
+func (a *GenericAdapter) SetLogger(loggingClient machineoutput.MachineEventLoggingClient) {
 	a.logger = loggingClient
 }
 
