@@ -29,7 +29,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
-		imageTag = fmt.Sprintf("image-registry.openshift-image-registry.svc:5000/%s/my-nodejs:1.0", namespace)
+		imageTag = fmt.Sprintf("image-registry.openshift-image-registry.svc.cluster.local:5000/%s/my-nodejs:1.0", namespace)
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
