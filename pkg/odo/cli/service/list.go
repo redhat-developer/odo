@@ -57,7 +57,7 @@ func (o *ServiceListOptions) Validate() (err error) {
 		// Throw error if project and application values are not available.
 		// This will most likely be the case when user does odo service list from outside a component directory and
 		// doesn't provide --app and/or --project flags
-		if o.Context.Project == "" || o.Context.Application == "" {
+		if o.Context.GetProject() == "" || o.Context.Application == "" {
 			return odoutil.ThrowContextError()
 		}
 	}

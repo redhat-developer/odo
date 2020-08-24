@@ -49,7 +49,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	if o.Context.Project == "" || o.appName == "" {
+	if o.Context.GetProject() == "" || o.appName == "" {
 		return odoUtil.ThrowContextError()
 	}
 	if !util.CheckOutputFlag(o.OutputFlag) {
@@ -74,17 +74,18 @@ func (o *DeleteOptions) Run() (err error) {
 	}
 
 	// Print App Information which will be deleted
-	err = printDeleteAppInfo(o.Client, o.appName, o.Project)
+	project := o.GetProject()
+	err = printDeleteAppInfo(o.Client, o.appName, project)
 	if err != nil {
 		return err
 	}
 
-	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.Project)) {
+	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, project)) {
 		err = application.Delete(o.Client, o.appName)
 		if err != nil {
 			return err
 		}
-		log.Infof("Deleted application: %s from project: %v", o.appName, o.Project)
+		log.Infof("Deleted application: %s from project: %v", o.appName, project)
 	} else {
 		log.Infof("Aborting deletion of application: %v", o.appName)
 	}

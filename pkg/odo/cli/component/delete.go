@@ -109,7 +109,7 @@ func (do *DeleteOptions) Validate() (err error) {
 		return nil
 	}
 
-	if do.Context.Project == "" || do.Application == "" {
+	if do.Context.GetProject() == "" || do.Application == "" {
 		return odoutil.ThrowContextError()
 	}
 	do.isCmpExists, err = component.Exists(do.Client, do.componentName, do.Application)
@@ -142,7 +142,8 @@ func (do *DeleteOptions) Run() (err error) {
 // s2iRun implements delete Run for s2i components
 func (do *DeleteOptions) s2iRun() (err error) {
 	if do.isCmpExists {
-		err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
+		project := do.Context.GetProject()
+		err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, project)
 		if err != nil {
 			return err
 		}
@@ -158,7 +159,7 @@ func (do *DeleteOptions) s2iRun() (err error) {
 				return err
 			}
 
-			parentComponent, err := component.GetComponent(do.Client, do.componentName, do.Context.Application, do.Context.Project)
+			parentComponent, err := component.GetComponent(do.Client, do.componentName, do.Context.Application, project)
 			if err != nil {
 				return err
 			}

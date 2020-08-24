@@ -334,9 +334,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		util.LogErrorAndExit(err, "")
 	}
 
-	// Resolve project
-	namespace := resolveProject(command, client, localConfiguration)
-
 	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)
 
@@ -346,7 +343,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		Client:          client,
-		Project:         namespace,
 		Application:     app,
 		OutputFlag:      outputFlag,
 		command:         command,
@@ -418,12 +414,19 @@ type Context struct {
 	internalCxt
 }
 
+func (c *Context) GetProject() string {
+	if c.project == "" {
+		c.project = resolveProject(c.command, c.Client, c.LocalConfigInfo)
+	}
+	return c.project
+}
+
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
 	Client          *occlient.Client
 	command         *cobra.Command
-	Project         string
+	project         string
 	Application     string
 	cmp             string
 	OutputFlag      string

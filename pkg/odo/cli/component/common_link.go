@@ -201,7 +201,8 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 	if o.isTargetAService {
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
-		_, err = o.Client.GetServiceBinding(o.secretName, o.Project)
+		project := o.GetProject()
+		_, err = o.Client.GetServiceBinding(o.secretName, project)
 		if err != nil {
 			return fmt.Errorf("The service was not created via odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
 		}
@@ -212,11 +213,11 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			// service is in running state.
 			// This can take a long time to occur if the image of the service has yet to be downloaded
 			log.Progressf("Waiting for secret of service %s to come up", o.secretName)
-			_, err = o.Client.WaitAndGetSecret(o.secretName, o.Project)
+			_, err = o.Client.WaitAndGetSecret(o.secretName, project)
 		} else {
 			// we also need to check whether there is a secret with the same name as the service
 			// the secret should have been created along with the secret
-			_, err = o.Client.GetSecret(o.secretName, o.Project)
+			_, err = o.Client.GetSecret(o.secretName, project)
 			if err != nil {
 				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
 			}
@@ -279,7 +280,7 @@ func (o *commonLinkOptions) run() (err error) {
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
 
-	secret, err := o.Client.GetSecret(o.secretName, o.Project)
+	secret, err := o.Client.GetSecret(o.secretName, o.GetProject())
 	if err != nil {
 		return err
 	}

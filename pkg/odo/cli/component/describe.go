@@ -47,7 +47,7 @@ func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 // Validate validates the describe parameters
 func (do *DescribeOptions) Validate() (err error) {
-	if do.Context.Project == "" || do.Application == "" {
+	if do.Context.GetProject() == "" || do.Application == "" {
 		return odoutil.ThrowContextError()
 	}
 
@@ -56,11 +56,12 @@ func (do *DescribeOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
-	if (len(do.componentName) <= 0 || len(do.Application) <= 0 || len(do.Project) <= 0) && !do.LocalConfigInfo.ConfigFileExists() {
+	project := do.GetProject()
+	if (len(do.componentName) <= 0 || len(do.Application) <= 0 || len(project) <= 0) && !do.LocalConfigInfo.ConfigFileExists() {
 		return fmt.Errorf("Component %v does not exist", do.componentName)
 	}
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.componentName, do.Context.Application, do.Context.Project)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.componentName, do.Context.Application, project)
 	if err != nil {
 		return err
 	}
