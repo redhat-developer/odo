@@ -83,14 +83,6 @@ type EnvInfoPushCommand struct {
 	Run   string `yaml:"Run,omitempty"`
 }
 
-// LocalConfigProvider is an interface which all local config providers need to implement
-// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
-// The reason this interface is declared here instead of config package is because
-// some day local config would get deprecated and hence to keep the interfaces in the new package
-type LocalConfigProvider interface {
-	GetApplication() string
-}
-
 // EnvInfo holds all the env specific information relavent to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`

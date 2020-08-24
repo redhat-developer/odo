@@ -2,11 +2,6 @@ package genericclioptions
 
 import (
 	"fmt"
-	"os"
-
-	"github.com/spf13/cobra"
-	"k8s.io/klog"
-
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -14,9 +9,14 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	pkgUtil "github.com/openshift/odo/pkg/util"
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
+	"os"
+	"path/filepath"
 )
 
 // DefaultAppName is the default name of the application when an application name is not provided
@@ -24,16 +24,20 @@ const DefaultAppName = "app"
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
+	return newContext(command, false, ignoreMissingConfig(ignoreMissingConfiguration))
+}
+
+func ignoreMissingConfig(ignoreMissingConfiguration []bool) bool {
 	ignoreMissingConfig := false
 	if len(ignoreMissingConfiguration) == 1 {
 		ignoreMissingConfig = ignoreMissingConfiguration[0]
 	}
-	return newContext(command, false, ignoreMissingConfig)
+	return ignoreMissingConfig
 }
 
 // NewDevfileContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewDevfileContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
-	return newDevfileContext(command)
+	return newContext(command, true, ignoreMissingConfig(ignoreMissingConfiguration))
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
@@ -42,7 +46,7 @@ func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
 	return newContext(command, true, false)
 }
 
-// NewConfigContext is a special kind of context which only contains local configuration, other information is not retrived
+// NewConfigContext is a special kind of context which only contains local configuration, other information is not retrieved
 //  from the cluster. This is useful for commands which don't want to connect to cluster.
 func NewConfigContext(command *cobra.Command) *Context {
 
@@ -193,10 +197,12 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 	// If file does not exist at this point, raise an error
 	// HOWEVER..
 	// When using auto-completion, we should NOT error out, just ignore the fact that there is no configuration
-	if !localConfiguration.ConfigFileExists() && ignoreMissingConfiguration {
-		klog.V(4).Info("There is NO config file that exists, we are however ignoring this as the ignoreMissingConfiguration flag has been passed in as true")
-	} else if !localConfiguration.ConfigFileExists() {
-		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
+	if !localConfiguration.ConfigFileExists() {
+		if ignoreMissingConfiguration {
+			klog.V(4).Info("There is NO config file that exists, we are however ignoring this as the ignoreMissingConfiguration flag has been passed in as true")
+		} else {
+			return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
+		}
 	}
 
 	// else simply return the local config info
@@ -237,7 +243,9 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 }
 
 // resolveNamespace resolves namespace for devfile component
-func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo) string {
+func (c *internalCxt) resolveNamespace() string {
+	command := c.command
+	client := c.KClient
 	var namespace string
 	projectFlag := FlagValueIfSet(command, "project")
 	if len(projectFlag) > 0 {
@@ -249,7 +257,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		}
 		namespace = projectFlag
 	} else {
-		namespace = envSpecificInfo.GetNamespace()
+		namespace = c.EnvSpecificInfo.GetNamespace()
 		if namespace == "" {
 			namespace = client.Namespace
 			if len(namespace) <= 0 {
@@ -271,7 +279,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 }
 
 // resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -297,15 +305,15 @@ func ResolveAppFlag(command *cobra.Command) string {
 }
 
 // resolveComponent resolves component
-func resolveComponent(command *cobra.Command, localConfiguration *config.LocalConfigInfo, context *Context) string {
+func (c *Context) resolveComponent(command *cobra.Command, configProvider LocalConfigProvider) string {
 	var cmp string
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {
 		// retrieve the current component if it exists if we didn't set the component flag
-		cmp = localConfiguration.GetName()
+		cmp = configProvider.GetName()
 	} else {
 		// if flag is set, check that the specified component exists
-		context.checkComponentExistsOrFail(cmpFlag)
+		c.checkComponentExistsOrFail(cmpFlag)
 		cmp = cmpFlag
 	}
 	return cmp
@@ -317,88 +325,53 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 	return newContext(context.command, true, false), localConfiguration, err
 }
 
+// LocalConfigProvider is an interface which all local config providers need to implement
+// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
+type LocalConfigProvider interface {
+	GetApplication() string
+	GetName() string
+}
+
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
-	// Create a new occlient
-	client := client(command)
-
-	// Create a new kclient
-	KClient, err := kclient.New()
-	if err != nil {
-		util.LogErrorAndExit(err, "")
-	}
-
-	// Check for valid config
-	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
-	if err != nil {
-		util.LogErrorAndExit(err, "")
-	}
-
-	// resolve application
-	app := resolveApp(command, createAppIfNeeded, localConfiguration)
-
-	// Resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
+	localCtx := FlagValueIfSet(command, ContextFlagName)
+	isDevfile := experimental.IsExperimentalModeEnabled() && pkgUtil.CheckPathExists(filepath.Join(localCtx, "devfile.yaml")) // todo: this constant should really be here
 
 	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
-		Client:          client,
-		Application:     app,
-		OutputFlag:      outputFlag,
-		command:         command,
-		LocalConfigInfo: localConfiguration,
-		KClient:         KClient,
+		OutputFlag: FlagValueIfSet(command, OutputFlagName),
+		command:    command,
+		Client:     client(command),
+		KClient:    kClient(command),
 	}
+
+	var configProvider LocalConfigProvider
+	var err error
+	if isDevfile {
+		configProvider, err = getValidEnvInfo(command)
+		internalCxt.EnvSpecificInfo = configProvider.(*envinfo.EnvSpecificInfo)
+		internalCxt.LocalConfigInfo = &config.LocalConfigInfo{} // needed only to make devfile and s2i work together in certain cases
+
+		// If the push target is NOT Docker we will set the client to Kubernetes.
+		if !pushtarget.IsPushTargetDocker() {
+			internalCxt.resolveNamespace()
+		}
+	} else {
+		configProvider, err = getValidConfig(command, ignoreMissingConfiguration)
+		internalCxt.LocalConfigInfo = configProvider.(*config.LocalConfigInfo)
+	}
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	internalCxt.Application = resolveApp(command, createAppIfNeeded, configProvider)
 
 	// Create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
 	}
 	// Once the component is resolved, add it to the context
-	context.cmp = resolveComponent(command, localConfiguration, context)
+	context.resolveComponent(command, configProvider)
 
-	return context
-}
-
-// newDevfileContext creates a new context based on command flags for devfile components
-func newDevfileContext(command *cobra.Command) *Context {
-
-	// Resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
-
-	// Create the internal context representation based on calculated values
-	internalCxt := internalCxt{
-		OutputFlag: outputFlag,
-		command:    command,
-		// this is only so we can make devfile and s2i work together for certain cases
-		LocalConfigInfo: &config.LocalConfigInfo{},
-	}
-
-	// Get valid env information
-	envInfo, err := getValidEnvInfo(command)
-	if err != nil {
-		util.LogErrorAndExit(err, "")
-	}
-
-	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.Application = resolveApp(command, true, envInfo)
-
-	// If the push target is NOT Docker we will set the client to Kubernetes.
-	if !pushtarget.IsPushTargetDocker() {
-
-		// Create a new kubernetes client
-		kClient := kClient(command)
-		internalCxt.KClient = kClient
-
-		// Gather the environment information
-		internalCxt.EnvSpecificInfo = envInfo
-		resolveNamespace(command, kClient, envInfo)
-	}
-
-	// Create a context from the internal representation
-	context := &Context{
-		internalCxt: internalCxt,
-	}
 	return context
 }
 
@@ -437,39 +410,39 @@ type internalCxt struct {
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
 // an error
-func (o *Context) Component(optionalComponent ...string) string {
-	return o.ComponentAllowingEmpty(false, optionalComponent...)
+func (c *Context) Component(optionalComponent ...string) string {
+	return c.ComponentAllowingEmpty(false, optionalComponent...)
 }
 
 // ComponentAllowingEmpty retrieves the optionally specified component or the current one if it is set, allowing empty
 // components (instead of exiting with an error) if so specified
-func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...string) string {
+func (c *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...string) string {
 	switch len(optionalComponent) {
 	case 0:
 		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
 		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we exit with error
-		if !allowEmpty && len(o.cmp) == 0 {
+		if !allowEmpty && len(c.cmp) == 0 {
 			log.Errorf("No component is set")
 			os.Exit(1)
 		}
 	case 1:
 		cmp := optionalComponent[0]
-		o.cmp = cmp
+		c.cmp = cmp
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
 		log.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
 		os.Exit(1)
 	}
 
-	return o.cmp
+	return c.cmp
 }
 
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
-func (o *Context) checkComponentExistsOrFail(cmp string) {
-	exists, err := component.Exists(o.Client, cmp, o.Application)
+func (c *Context) checkComponentExistsOrFail(cmp string) {
+	exists, err := component.Exists(c.Client, cmp, c.Application)
 	util.LogErrorAndExit(err, "")
 	if !exists {
-		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
+		log.Errorf("Component %v does not exist in application %s", cmp, c.Application)
 		os.Exit(1)
 	}
 }
