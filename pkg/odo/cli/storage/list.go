@@ -3,10 +3,10 @@ package storage
 import (
 	"fmt"
 	"github.com/openshift/odo/pkg/devfile"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/odo/cli/component"
-	odoUtil "github.com/openshift/odo/pkg/util"
+	odoutil "github.com/openshift/odo/pkg/util"
 	"os"
 	"path/filepath"
 	"text/tabwriter"
@@ -39,7 +39,7 @@ type StorageListOptions struct {
 	*genericclioptions.Context
 
 	isDevfile bool
-	devfileParser.DevfileObj
+	parser.DevfileObj
 }
 
 // NewStorageListOptions creates a new StorageListOptions instance
@@ -50,7 +50,7 @@ func NewStorageListOptions() *StorageListOptions {
 // Complete completes StorageListOptions after they've been created
 func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	devFilePath := filepath.Join(o.componentContext, component.DevfilePath)
-	o.isDevfile = odoUtil.CheckPathExists(devFilePath)
+	o.isDevfile = odoutil.CheckPathExists(devFilePath)
 	if o.isDevfile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
