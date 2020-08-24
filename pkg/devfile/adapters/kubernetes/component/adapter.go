@@ -33,15 +33,8 @@ import (
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
-	var loggingClient machineoutput.MachineEventLoggingClient
 
-	if log.IsJSON() {
-		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
-	} else {
-		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
-	}
-
-	adapter := Adapter{Client: client, machineEventLogger: loggingClient}
+	adapter := Adapter{Client: client}
 	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
 	adapter.GenericAdapter.InitWith(adapter)
 	return adapter
@@ -97,6 +90,7 @@ type Adapter struct {
 	Client kclient.Client
 	*common.GenericAdapter
 
+	devfileInitCmd     string
 	devfileBuildCmd    string
 	devfileRunCmd      string
 	devfileDebugCmd    string

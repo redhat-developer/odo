@@ -13,7 +13,6 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/machineoutput"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
@@ -24,15 +23,7 @@ import (
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
-	var loggingClient machineoutput.MachineEventLoggingClient
-
-	if log.IsJSON() {
-		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
-	} else {
-		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
-	}
-
-	adapter := Adapter{Client: client, machineEventLogger: loggingClient}
+	adapter := Adapter{Client: client}
 	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
 	adapter.GenericAdapter.InitWith(adapter)
 	return adapter
@@ -50,7 +41,6 @@ type Adapter struct {
 	devfileRunCmd             string
 	supervisordVolumeName     string
 	projectVolumeName         string
-	machineEventLogger        machineoutput.MachineEventLoggingClient
 	containers                []types.Container
 }
 

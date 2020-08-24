@@ -141,7 +141,7 @@ const (
 // and reports the result to the console.
 func (a Adapter) StartSupervisordCtlStatusWatch() {
 
-	watcher := newSupervisordStatusWatch(a.machineEventLogger)
+	watcher := newSupervisordStatusWatch(a.Logger())
 
 	ticker := time.NewTicker(SupervisordCheckInterval)
 
@@ -233,7 +233,7 @@ func (sw *supervisordStatusWatcher) querySupervisordStatusFromContainers(a Adapt
 
 	status, err := a.getDeploymentStatus()
 	if err != nil {
-		a.machineEventLogger.ReportError(errors.Wrap(err, "Unable to retrieve container status"), machineoutput.TimestampNow())
+		a.Logger().ReportError(errors.Wrap(err, "unable to retrieve container status"), machineoutput.TimestampNow())
 		return
 	}
 
@@ -277,13 +277,13 @@ func (sw *supervisordStatusWatcher) querySupervisordStatusFromContainers(a Adapt
 
 	debugCommand, err := common.GetDebugCommand(a.Devfile.Data, a.devfileDebugCmd)
 	if err != nil {
-		a.machineEventLogger.ReportError(errors.Wrap(err, "Unable to retrieve debug command"), machineoutput.TimestampNow())
+		a.Logger().ReportError(errors.Wrap(err, "unable to retrieve debug command"), machineoutput.TimestampNow())
 		return
 	}
 
 	runCommand, err := common.GetRunCommand(a.Devfile.Data, a.devfileRunCmd)
 	if err != nil {
-		a.machineEventLogger.ReportError(errors.Wrap(err, "Unable to retrieve run command"), machineoutput.TimestampNow())
+		a.Logger().ReportError(errors.Wrap(err, "unable to retrieve run command"), machineoutput.TimestampNow())
 		return
 	}
 
@@ -347,7 +347,7 @@ func getSupervisordStatusInContainer(podName string, containerName string, a Ada
 	consoleStderrResult := <-stderrOutputChannel
 
 	if err != nil {
-		a.machineEventLogger.ReportError(errors.Wrapf(err, "Unable to execute command on %s within container %s, %v, output: %v %v", podName, containerName, err, consoleResult, consoleStderrResult), machineoutput.TimestampNow())
+		a.Logger().ReportError(errors.Wrapf(err, "unable to execute command on %s within container %s, %v, output: %v %v", podName, containerName, err, consoleResult, consoleStderrResult), machineoutput.TimestampNow())
 		return nil
 	}
 

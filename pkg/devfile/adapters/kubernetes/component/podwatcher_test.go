@@ -137,8 +137,7 @@ func TestStatusReconciler(t *testing.T) {
 			adapter := New(adapterCtx, *fkclient)
 
 			logFuncOutput := logFuncOutput{}
-
-			adapter.machineEventLogger = machineoutput.NewConsoleMachineEventLoggingClientWithFunction(logFuncOutput.logFunc)
+			adapter.GenericAdapter.SetLogger(machineoutput.NewConsoleMachineEventLoggingClientWithFunction(logFuncOutput.logFunc))
 
 			reconcilerChannel := createStatusReconciler(&adapter)
 

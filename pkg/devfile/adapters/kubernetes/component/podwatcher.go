@@ -72,7 +72,7 @@ func getLatestContainerStatus(adapter *Adapter) *KubernetesDeploymentStatus {
 		if err == nil {
 
 			if containerStatus.DeploymentUID == "" || containerStatus.ReplicaSetUID == "" {
-				adapter.machineEventLogger.ReportError(fmt.Errorf("unable to retrieve component deployment and replica set, trying again in a few moments"), machineoutput.TimestampNow())
+				adapter.Logger().ReportError(fmt.Errorf("unable to retrieve component deployment and replica set, trying again in a few moments"), machineoutput.TimestampNow())
 				time.Sleep(KubernetesResourceFailureInterval)
 				continue
 			}
@@ -80,7 +80,7 @@ func getLatestContainerStatus(adapter *Adapter) *KubernetesDeploymentStatus {
 			return containerStatus
 		}
 
-		adapter.machineEventLogger.ReportError(errors.Wrapf(err, "unable to retrieve component deployment and replica set, trying again in a few moments"), machineoutput.TimestampNow())
+		adapter.Logger().ReportError(errors.Wrapf(err, "unable to retrieve component deployment and replica set, trying again in a few moments"), machineoutput.TimestampNow())
 		time.Sleep(KubernetesResourceFailureInterval)
 	}
 
@@ -104,7 +104,7 @@ func (pw *podWatcher) startWatchThread(adapter *Adapter) {
 			if err != nil || w == nil {
 
 				if err != nil {
-					adapter.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
+					adapter.Logger().ReportError(err, machineoutput.TimestampNow())
 				}
 
 				klog.V(4).Infof("Unable to establish watch, trying again in a few moments seconds. Error was:  %v", err)
@@ -209,7 +209,7 @@ func createStatusReconciler(adapter *Adapter) chan statusReconcilerChannelEntry 
 			}
 
 			if entry.err != nil {
-				adapter.machineEventLogger.ReportError(entry.err, machineoutput.TimestampNow())
+				adapter.Logger().ReportError(entry.err, machineoutput.TimestampNow())
 				klog.V(4).Infof("Error received on status reconciler channel %v", entry.err)
 				continue
 			}
@@ -296,7 +296,7 @@ func createStatusReconciler(adapter *Adapter) chan statusReconcilerChannelEntry 
 					})
 				}
 
-				adapter.machineEventLogger.KubernetesPodStatus(podStatuses, machineoutput.TimestampNow())
+				adapter.Logger().KubernetesPodStatus(podStatuses, machineoutput.TimestampNow())
 			}
 		}
 	}()

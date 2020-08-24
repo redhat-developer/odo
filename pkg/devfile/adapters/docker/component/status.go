@@ -33,7 +33,7 @@ func (a Adapter) StartContainerStatusWatch() {
 
 			containers, err := a.Client.GetContainerList(true)
 			if err != nil {
-				a.machineEventLogger.ReportError(errors.Wrap(err, "Error occurred on acquisition of container list"), machineoutput.TimestampNow())
+				a.Logger().ReportError(errors.Wrap(err, "Error occurred on acquisition of container list"), machineoutput.TimestampNow())
 			}
 
 			if err == nil {
@@ -85,7 +85,7 @@ func (a Adapter) StartContainerStatusWatch() {
 
 				// Log any change events
 				if len(containerStatusEntries) > 0 {
-					a.machineEventLogger.ContainerStatus(containerStatusEntries, machineoutput.TimestampNow())
+					a.Logger().ContainerStatus(containerStatusEntries, machineoutput.TimestampNow())
 				}
 
 			}
@@ -99,7 +99,7 @@ func (a Adapter) StartContainerStatusWatch() {
 // If the status of the supervisord program changes (eg RUNNING <-> STOPPED), this change is reported to the console.
 func (a Adapter) StartSupervisordCtlStatusWatch() {
 
-	watcher := newSupervisordStatusWatch(a.machineEventLogger)
+	watcher := newSupervisordStatusWatch(a.Logger())
 
 	ticker := time.NewTicker(SupervisordCheckInterval)
 
@@ -191,7 +191,7 @@ func (sw *supervisordStatusWatcher) querySupervisordStatusFromContainers(a Adapt
 
 	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
 	if err != nil {
-		a.machineEventLogger.ReportError(errors.Wrap(err, "Unable to retrieve container status"), machineoutput.TimestampNow())
+		a.Logger().ReportError(errors.Wrap(err, "Unable to retrieve container status"), machineoutput.TimestampNow())
 		return
 	}
 
@@ -256,7 +256,7 @@ func getSupervisordStatusInContainer(containerID string, a Adapter) []supervisor
 
 	if err != nil {
 		klog.V(4).Infof("Unable to execute command within container %s, %v, output: %v %v", containerID, err, consoleResult, consoleStderrResult)
-		a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
+		a.Logger().ReportError(err, machineoutput.TimestampNow())
 		return nil
 	}
 
