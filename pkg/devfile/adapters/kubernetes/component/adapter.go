@@ -146,7 +146,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if currentMode != previousMode {
-		parameters.ModeChanged = true
+		parameters.RunModeChanged = true
 	}
 
 	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
@@ -216,7 +216,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	if execRequired || parameters.ModeChanged {
+	if execRequired || parameters.RunModeChanged {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {

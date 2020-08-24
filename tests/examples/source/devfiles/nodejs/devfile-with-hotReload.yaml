@@ -29,3 +29,11 @@ commands:
       group:
         kind: run
         isDefault: true
+  - exec:
+      id: debugrun
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: debug
+        isDefault: true

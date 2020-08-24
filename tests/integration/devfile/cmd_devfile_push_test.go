@@ -463,8 +463,51 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecWithInvalidCommandGroup(context, cmpName, namespace)
 		})
 
+		It("should restart the application if it is not hot reload capable", func() {
+			utils.ExecWithHotReload(context, cmpName, namespace, false)
+		})
+
 		It("should not restart the application if it is hot reload capable", func() {
-			utils.ExecWithHotReload(context, cmpName, namespace)
+			utils.ExecWithHotReload(context, cmpName, namespace, true)
+		})
+
+		It("should restart the application if run mode is changed, regardless of hotReloadCapable value", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+
+			helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+
+			logs := helper.CmdShouldPass("odo", "log")
+
+			helper.MatchAllInOutput(logs, []string{
+				"\"stop the program\" program=debugrun",
+				"\"stop the program\" program=devrun",
+			})
+
+		})
+
+		It("should run odo push successfully after odo push --debug", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command",
+				"Executing debugrun command",
+			})
+
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command",
+				"Executing devrun command",
+			})
+
 		})
 
 		It("should create pvc and reuse if it shares the same devfile volume name", func() {

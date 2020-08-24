@@ -140,7 +140,7 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			}
 		}
 
-		restart := IsRestartRequired(command.Exec.HotReloadCapable, params.ModeChanged)
+		restart := IsRestartRequired(command.Exec.HotReloadCapable, params.RunModeChanged)
 
 		// if we need to restart, issue supervisor command to stop all running commands first
 		// we do not need to restart Hot reload capable commands
