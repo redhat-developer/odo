@@ -33,7 +33,7 @@ const (
 	equivalentTemplate           = "{{.CmdFullName}} {{.ServiceType}}" +
 		"{{if .ServiceName}} {{.ServiceName}}{{end}}" +
 		" --app {{.Application}}" +
-		" --project {{.Project}}" +
+		" --project {{.GetProject}}" +
 		"{{if .Plan}} --plan {{.Plan}}{{end}}" +
 		"{{range $key, $value := .ParametersMap}} -p {{$key}}={{$value}}{{end}}"
 )
