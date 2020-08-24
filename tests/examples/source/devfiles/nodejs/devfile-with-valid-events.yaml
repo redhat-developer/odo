@@ -26,7 +26,7 @@ commands:
       component: tools
   - exec:
       id: secondPreStart
-      commandLine: echo I am also a myPreStart
+      commandLine: echo hello test >> $PROJECTS_ROOT/test.txt
       component: runtime
       workingDir: /
   - composite:

@@ -301,10 +301,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			eventCommands = append(eventCommands, eventSubCommands...)
 		}
 
-		klog.V(4).Infof("preStart events commands are: %v", strings.Join(eventCommands, ","))
+		klog.V(4).Infof("PreStart event commands are: %v", strings.Join(eventCommands, ","))
 		utils.AddPreStartEventInitContainer(podTemplateSpec, commandsMap, eventCommands, containersMap)
 		if len(eventCommands) > 0 {
-			log.Successf("preStart commands will be executed during pod startup: %s", strings.Join(eventCommands, ","))
+			log.Successf("PreStart commands have been added to the component: %s", strings.Join(eventCommands, ","))
 		}
 	}
 

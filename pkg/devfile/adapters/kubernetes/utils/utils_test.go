@@ -642,7 +642,7 @@ func TestGetContainersMap(t *testing.T) {
 			},
 		},
 		{
-			name: "Case 1: multiple entries",
+			name: "Case 2: multiple entries",
 			containers: []corev1.Container{
 				testingutil.CreateFakeContainer("container1", "image1", []string{"containercommand1"}, []string{"args1"}),
 				testingutil.CreateFakeContainer("container2", "image2", []string{"containercommand2"}, []string{"args2"}),

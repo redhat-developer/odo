@@ -349,7 +349,7 @@ func GetContainersMap(containers []corev1.Container) map[string]corev1.Container
 // AddPreStartEventInitContainer adds an init container for every preStart devfile event
 func AddPreStartEventInitContainer(podTemplateSpec *corev1.PodTemplateSpec, commandsMap map[string]common.DevfileCommand, eventCommands []string, containersMap map[string]corev1.Container) {
 
-	for _, commandName := range eventCommands {
+	for i, commandName := range eventCommands {
 		if command, ok := commandsMap[commandName]; ok {
 			component := command.GetExecComponent()
 			commandLine := command.GetExecCommandLine()
@@ -370,15 +370,14 @@ func AddPreStartEventInitContainer(podTemplateSpec *corev1.PodTemplateSpec, comm
 				container.Args = []string{}
 
 				// Override the init container name since there cannot be two containers with the same
-				// name in a pod. This applies to pod container and pod init container. The convention
-				// for init container here is, containername-eventname-<4 random chars>
-				// If there are two events referencing the same init container, then we will have
-				// tools-event1-abcd & tools-event2-efgh. And if in the edge case, the same event is
-				// executed twice by preStart, then we will have tools-event1-abcd & tools-event1-efgh
-				randomChars := util.GenerateRandomString(4)
+				// name in a pod. This applies to pod containers and pod init containers. The convention
+				// for init container name here is, containername-eventname-<position of command in prestart events>
+				// If there are two events referencing the same devfile component, then we will have
+				// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
+				// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
 				initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
 				initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
-				initContainerName = fmt.Sprintf("%s-%s", initContainerName, randomChars)
+				initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
 				container.Name = initContainerName
 
 				podTemplateSpec.Spec.InitContainers = append(podTemplateSpec.Spec.InitContainers, container)

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/openshift/odo/pkg/util"
-
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
 
@@ -377,23 +376,52 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
 		})
 
-		It("should execute PreStart commands if present on every pod startup", func() {
+		It("should execute PreStart commands if present during pod startup", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{"preStart commands will be executed during pod startup"})
+			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
+
+			firstPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+
+			firstPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
+			// 3 preStart events + 1 supervisord init containers
+			Expect(len(firstPushInitContainers)).To(Equal(4))
+			helper.MatchAllInOutput(strings.Join(firstPushInitContainers, ","), []string{"tools-myprestart", "runtime-secondprestart"})
 
 			// Need to force so build and run get triggered again with the component already created.
 			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
-			helper.MatchAllInOutput(output, []string{"preStart commands will be executed during pod startup"})
+			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
 
-			initContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
+			secondPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+
+			secondPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
 			// 3 preStart events + 1 supervisord init containers
-			Expect(len(initContainers)).To(Equal(4))
-			helper.MatchAllInOutput(strings.Join(initContainers, ","), []string{"tools-myprestart", "runtime-secondprestart"})
+			Expect(len(secondPushInitContainers)).To(Equal(4))
+			helper.MatchAllInOutput(strings.Join(secondPushInitContainers, ","), []string{"tools-myprestart", "runtime-secondprestart"})
+
+			Expect(firstPushPodName).To(Equal(secondPushPodName))
+			Expect(firstPushInitContainers).To(Equal(secondPushInitContainers))
+
+			var statErr error
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				firstPushPodName,
+				"runtime",
+				namespace,
+				[]string{"cat", "/projects/test.txt"},
+				func(cmdOp string, err error) bool {
+					if err != nil {
+						statErr = err
+					} else if cmdOp != "hello test\n" {
+						statErr = fmt.Errorf("prestart event action error, expected: hello test, got: %s", cmdOp)
+					}
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
 		})
 
 		It("should execute PostStart commands if present and not execute when component already exists", func() {
