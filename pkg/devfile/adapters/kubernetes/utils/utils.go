@@ -48,8 +48,9 @@ func ConvertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
 		name = util.TruncateString(name, 15)
 		for _, c := range containerPorts {
-			if c.ContainerPort == endpoint.TargetPort {
-				return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", endpoint.TargetPort)
+			if c.Name == endpoint.Name {
+				// the name has to be unique within a single container since it is considered as the URL name
+				return nil, fmt.Errorf("Devfile contains multiple endpoint entries with same name: %v", endpoint.Name)
 			}
 		}
 		containerPorts = append(containerPorts, corev1.ContainerPort{
@@ -74,8 +75,14 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		for _, c := range containers {
 			for _, containerPort := range c.Ports {
 				for _, curPort := range container.Ports {
+					if curPort.Name == containerPort.Name {
+						// the name has to be unique across containers since it is considered as the URL name
+						return nil, fmt.Errorf("Devfile contains multiple endpoint entries with same name: %v", containerPort.Name)
+					}
 					if curPort.ContainerPort == containerPort.ContainerPort {
-						return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", containerPort.ContainerPort)
+						// the same TargetPort present in different containers
+						// because containers in a single pod shares the network namespace
+						return nil, fmt.Errorf("Devfile contains multiple containers with same TargetPort: %v", containerPort.ContainerPort)
 					}
 				}
 			}
@@ -131,6 +138,30 @@ func GetEndpoints(data data.DevfileData) (map[int32]common.Endpoint, error) {
 		}
 	}
 	return endpointsMap, nil
+}
+
+func GetContainerEndpoints(data data.DevfileData) (map[string]map[string]common.Endpoint, error) {
+	containerEndpointsMap := make(map[string]map[string]common.Endpoint)
+
+	for _, comp := range adaptersCommon.GetDevfileContainerComponents(data) {
+		// Currently type container is the only devfile component that odo supports
+		if comp.Container.Endpoints != nil {
+			endpointsMap := make(map[string]common.Endpoint)
+			for _, endpoint := range comp.Container.Endpoints {
+				// Name is a required entry for an Endpoint
+				// Devfile should not contains multiple endpoint with same Name, since it is considered as URL name
+				endpointName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
+				endpointName = util.TruncateString(endpointName, 15)
+				if _, keyexist := endpointsMap[endpointName]; keyexist {
+					return nil, fmt.Errorf("Devfile contains multiple endpoints with same Name: %v", endpointName)
+				} else {
+					endpointsMap[endpointName] = endpoint
+				}
+			}
+			containerEndpointsMap[comp.Container.Name] = endpointsMap
+		}
+	}
+	return containerEndpointsMap, nil
 }
 
 // isEnvPresent checks if the env variable is present in an array of env variables

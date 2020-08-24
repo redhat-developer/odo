@@ -8,14 +8,18 @@ import (
 	"text/tabwriter"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
+	pkgutil "github.com/openshift/odo/pkg/util"
 
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/openshift/odo/pkg/config"
+	kubeutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -44,8 +48,13 @@ var (
 type URLListOptions struct {
 	componentContext string
 	*genericclioptions.Context
+<<<<<<< Updated upstream
 
 	isDevfile bool
+=======
+	devfilePath string
+	isDevFile   bool
+>>>>>>> Stashed changes
 }
 
 // NewURLListOptions creates a new URLCreateOptions instance
@@ -55,8 +64,14 @@ func NewURLListOptions() *URLListOptions {
 
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+<<<<<<< Updated upstream
 	o.isDevfile = util.CheckPathExists(filepath.Join(o.componentContext, component.DevfilePath))
 	if o.isDevfile {
+=======
+	o.devfilePath = clicomponent.DevfilePath
+	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.devfilePath)
+	if o.isDevFile {
+>>>>>>> Stashed changes
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
@@ -76,7 +91,11 @@ func (o *URLListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
+<<<<<<< Updated upstream
 	if o.isDevfile {
+=======
+	if o.isDevFile {
+>>>>>>> Stashed changes
 		if pushtarget.IsPushTargetDocker() {
 			componentName := o.EnvSpecificInfo.GetName()
 			client, err := lclient.New()
@@ -130,7 +149,15 @@ func (o *URLListOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, componentName, routeSupported)
+			devObj, err := devfile.ParseAndValidate(o.devfilePath)
+			if err != nil {
+				return errors.Wrap(err, "fail to parse the devfile")
+			}
+			endpointsMap, err := kubeutils.GetEndpoints(devObj.Data)
+			if err != nil {
+				return errors.Wrap(err, "unable to get endpoints")
+			}
+			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, endpointsMap, componentName, routeSupported)
 			if err != nil {
 				return err
 			}
@@ -149,9 +176,9 @@ func (o *URLListOptions) Run() (err error) {
 				outOfSync := false
 				for _, u := range urls.Items {
 					if u.Spec.Kind == envinfo.ROUTE {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 					} else {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 					}
 					if u.Status.State != url.StateTypePushed {
 						outOfSync = true
@@ -182,7 +209,7 @@ func (o *URLListOptions) Run() (err error) {
 			// are there changes between local and cluster states?
 			outOfSync := false
 			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure)
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}

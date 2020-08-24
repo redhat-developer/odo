@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"text/tabwriter"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -13,6 +14,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/config"
+	kubeutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -40,7 +42,7 @@ type URLDescribeOptions struct {
 	componentContext string
 	url              string
 	*genericclioptions.Context
-	DevfilePath string
+	devfilePath string
 	isDevFile   bool
 }
 
@@ -51,9 +53,9 @@ func NewURLDescribeOptions() *URLDescribeOptions {
 
 // Complete completes URLDescribeOptions after they've been Listed
 func (o *URLDescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.DevfilePath = clicomponent.DevfilePath
+	o.devfilePath = clicomponent.DevfilePath
 
-	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.DevfilePath)
+	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.devfilePath)
 	if o.isDevFile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
@@ -121,7 +123,16 @@ func (o *URLDescribeOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, o.DevfilePath, componentName, routeSupported)
+
+			devObj, err := devfile.ParseAndValidate(o.devfilePath)
+			if err != nil {
+				return errors.Wrap(err, "fail to parse the devfile")
+			}
+			endpointsMap, err := kubeutils.GetEndpoints(devObj.Data)
+			if err != nil {
+				return errors.Wrap(err, "unable to get endpoints")
+			}
+			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, endpointsMap, componentName, routeSupported)
 			if err != nil {
 				return err
 			}

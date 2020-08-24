@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
-	kubeutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
@@ -90,7 +88,7 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 }
 
 // GetIngressOrRoute returns ingress/route spec for given URL name
-func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, devfilePath string, componentName string, routeSupported bool) (URL, error) {
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, endpointsMap map[int32]parsercommon.Endpoint, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
@@ -112,15 +110,6 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 			return URL{}, errors.Wrap(getIngressErr, "unable to get ingress")
 		}
 		return URL{}, errors.Wrap(getRouteErr, "unable to get route")
-	}
-
-	devObj, err := devfile.ParseAndValidate(devfilePath)
-	if err != nil {
-		return URL{}, errors.Wrap(err, "fail to parse the devfile")
-	}
-	endpointsMap, err := kubeutils.GetEndpoints(devObj.Data)
-	if err != nil {
-		return URL{}, errors.Wrap(err, "unable to get endpoints")
 	}
 
 	envinfoURLs := envSpecificInfo.GetURL()
@@ -518,7 +507,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, endpointsMap map[int32]parsercommon.Endpoint, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
