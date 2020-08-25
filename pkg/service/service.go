@@ -141,6 +141,12 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 	return nil
 }
 
+// DeleteServiceBindingRequest deletes a service binding request (when user
+// does odo unlink). It's just a wrapper on DeleteOperatorService
+func DeleteServiceBindingRequest(client *kclient.Client, serviceName string) error {
+	return DeleteOperatorService(client, serviceName)
+}
+
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
 // https://github.com/openshift/odo/issues/3563

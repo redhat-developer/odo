@@ -327,6 +327,26 @@ func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
 	return esi.writeToFile()
 }
 
+func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
+	index := -1
+
+	for i, link := range *esi.componentSettings.Link {
+		if link.Name == parameter {
+			index = i
+			break
+		}
+	}
+
+	if index != -1 {
+		s := *esi.componentSettings.Link
+		s = append(s[:index], s[index+1:]...)
+		esi.componentSettings.Link = &s
+		return esi.writeToFile()
+	} else {
+		return nil
+	}
+}
+
 // GetComponentSettings returns the componentSettings from envinfo
 func (esi *EnvSpecificInfo) GetComponentSettings() ComponentSettings {
 	return esi.componentSettings
