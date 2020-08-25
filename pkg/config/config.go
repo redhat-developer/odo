@@ -81,16 +81,6 @@ type ComponentSettings struct {
 	URL *[]envinfo.EnvInfoURL `yaml:"Url,omitempty"`
 }
 
-// ConfigURL holds URL related information
-type ConfigURL struct {
-	// Name of the URL
-	Name string `yaml:"Name,omitempty"`
-	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty"`
-	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty"`
-}
-
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
 	typeMeta          metav1.TypeMeta   `yaml:",inline"`
@@ -484,6 +474,10 @@ func (lc *LocalConfig) GetMinCPU() string {
 // GetMaxCPU returns the MaxCPU, returns default if nil
 func (lc *LocalConfig) GetMaxCPU() string {
 	return util.GetStringOrEmpty(lc.componentSettings.MaxCPU)
+}
+
+func (lc *LocalConfig) GetRunMode() envinfo.RUNMode {
+	return envinfo.Run
 }
 
 // GetURL returns the known URLs, returns empty if nil

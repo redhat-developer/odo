@@ -395,6 +395,8 @@ type LocalConfigProvider interface {
 	GetNamespace() string
 	GetDebugPort() int
 	SetConfiguration(parameter string, value interface{}) (err error)
+	GetURL() []envinfo.EnvInfoURL
+	GetRunMode() envinfo.RUNMode
 }
 
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
