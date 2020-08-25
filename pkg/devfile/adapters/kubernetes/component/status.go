@@ -290,7 +290,7 @@ func (sw *supervisordStatusWatcher) querySupervisordStatusFromContainers(a Adapt
 	// For each of the containers, retrieve the status of the tasks and send that status back to the status reconciler
 	for _, container := range pod.Status.ContainerStatuses {
 
-		if container.Name == runCommand.Exec.Component || container.Name == debugCommand.Exec.Component {
+		if (runCommand.Exec != nil && container.Name == runCommand.Exec.Component) || (debugCommand.Exec != nil && container.Name == debugCommand.Exec.Component) {
 			status := getSupervisordStatusInContainer(pod.Name, container.Name, a)
 
 			sw.statusReconcilerChannel <- supervisordStatusEvent{
