@@ -314,6 +314,10 @@ const JsonSchema210 = `{
           "dockerfile":{
             "description":"Dockerfile Component defines dockerfile based image build guidence for outer-loop.",
             "properties":{
+              "name": {
+                "description": "Mandatory name that allows referencing the build guidance",
+                "type": "string"
+              },              
               "dockerfileLocation":{
                 "description":"Mandatory Dockerfile location which can be an URL or a path relative to buildContext",
                 "type":"string"
@@ -328,13 +332,18 @@ const JsonSchema210 = `{
               }					
             },
             "required":[
+              "name",
               "dockerfileLocation"
             ],
             "type":"object"          
           },     
           "s2i":{
             "description":"SourceToImage (s2i) component",
-            "properties":{              
+            "properties":{      
+              "name": {
+                "description": "Mandatory name that allows referencing the build guidance",
+                "type": "string"
+              },                           
               "builderImageNamespace":{
                 "description":"Mandatory namespace where builder image is present",
                 "type":"string"
@@ -353,6 +362,7 @@ const JsonSchema210 = `{
               }
             },
             "required":[
+              "name",
               "builderImageNamespace",
               "builderImageStreamTag"
             ],

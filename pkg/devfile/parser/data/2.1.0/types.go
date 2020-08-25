@@ -425,6 +425,9 @@ type Zip struct {
 // Dockerfile Build Guidance is for dockerfile image build
 type Dockerfile struct {
 
+	// Mandatory name that allows referencing the build guidance
+	Name string `json:"name"`
+
 	// Mandatory Dockerfile location which can be an URL or a path relative to buildContext
 	DockerfileLocation string `json:"dockerfileLocation"`
 
@@ -437,6 +440,9 @@ type Dockerfile struct {
 
 // SourceToImage Build Guidance is for s2i (SourceToImage) build
 type SourceToImage struct {
+
+	// Mandatory name that allows referencing the build guidance
+	Name string `json:"name"`
 
 	// Mandatory namespace where builder image is present
 	BuilderImageNamespace string `json:"builderImageNamespace"`
