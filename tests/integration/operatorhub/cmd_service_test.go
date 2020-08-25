@@ -55,7 +55,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		It("should list operators installed in the namespace", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "mongodb-enterprise", "etcdoperator"})
+			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "percona-server-mongodb-operator", "etcdoperator"})
 		})
 
 		It("should not allow interactive mode command to be executed", func() {
@@ -308,7 +308,7 @@ spec:
 
 		It("listing catalog of services", func() {
 			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
-			helper.MatchAllInOutput(jsonOut, []string{"mongodb-enterprise", "etcdoperator"})
+			helper.MatchAllInOutput(jsonOut, []string{"percona-server-mongodb-operator", "etcdoperator"})
 		})
 	})
 
