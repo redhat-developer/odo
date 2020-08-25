@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -312,8 +313,52 @@ func (o *URLCreateOptions) Run() (err error) {
 			}
 			err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, ExposedPort: o.exposedPort, Kind: o.urlType})
 		} else {
-			adapterutils.GetContainerEndpoints(o.devObj.Data)
-			err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, Host: o.host, Secure: o.secureURL, TLSSecret: o.tlsSecret, Kind: o.urlType})
+			containerEndpointMap, err := adapterutils.GetContainerEndpoints(o.devObj.Data)
+			if err != nil {
+				return errors.Wrap(err, "failed to get container endpoint map")
+			}
+			var firstContainer string
+			for containerName, endpointMap := range containerEndpointMap {
+				// save the first container name to store the new endpoint entry
+				if firstContainer == "" {
+					firstContainer = containerName
+				}
+				_, exist := endpointMap[o.urlName]
+				if exist {
+					if !o.forceFlag && !ui.Proceed(fmt.Sprintf("URL %v already exist in devfile endpoint entry under container %v. Do you want to override the endpoint", o.urlName, containerName)) {
+						log.Info("Aborted by the user")
+						return nil
+					}
+					if len(o.container) > 0 && o.container != containerName {
+						delete(endpointMap, o.urlName)
+					}
+					containerEndpointMap[containerName] = endpointMap
+				}
+				for _, endpoint := range endpointMap {
+					if int(endpoint.TargetPort) == o.componentPort {
+						// devfile cannot have two endpoints within different containers share the same targetport
+						// it is because containers in a single pod shares the network namespace
+						if len(o.container) > 0 && o.container != containerName {
+							return fmt.Errorf("cannot set URL %v under container %v, TargetPort is being used for endpoint %v under container %v", o.urlName, o.container, endpoint.Name, containerName)
+						} else {
+							o.container = containerName
+						}
+						break
+					}
+				}
+			}
+			if len(o.container) == 0 {
+				o.container = firstContainer
+			}
+			containerEndpointMap[o.container][o.urlName] = common.Endpoint{
+				Name:       o.urlName,
+				Path:       o.path,
+				Secure:     o.secureURL,
+				Exposure:   o.exposure,
+				TargetPort: int32(o.componentPort),
+				Protocol:   o.protocol,
+			}
+			err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Host: o.host, TLSSecret: o.tlsSecret, Kind: o.urlType})
 		}
 	} else {
 		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})

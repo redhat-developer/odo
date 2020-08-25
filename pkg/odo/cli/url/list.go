@@ -3,7 +3,6 @@ package url
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"text/tabwriter"
 
@@ -23,12 +22,10 @@ import (
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -48,13 +45,8 @@ var (
 type URLListOptions struct {
 	componentContext string
 	*genericclioptions.Context
-<<<<<<< Updated upstream
-
-	isDevfile bool
-=======
 	devfilePath string
 	isDevFile   bool
->>>>>>> Stashed changes
 }
 
 // NewURLListOptions creates a new URLCreateOptions instance
@@ -64,14 +56,9 @@ func NewURLListOptions() *URLListOptions {
 
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-<<<<<<< Updated upstream
-	o.isDevfile = util.CheckPathExists(filepath.Join(o.componentContext, component.DevfilePath))
-	if o.isDevfile {
-=======
 	o.devfilePath = clicomponent.DevfilePath
 	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.devfilePath)
 	if o.isDevFile {
->>>>>>> Stashed changes
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
@@ -91,11 +78,7 @@ func (o *URLListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
-<<<<<<< Updated upstream
-	if o.isDevfile {
-=======
 	if o.isDevFile {
->>>>>>> Stashed changes
 		if pushtarget.IsPushTargetDocker() {
 			componentName := o.EnvSpecificInfo.GetName()
 			client, err := lclient.New()
