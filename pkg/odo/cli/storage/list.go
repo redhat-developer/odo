@@ -72,12 +72,15 @@ func (o *StorageListOptions) Validate() (err error) {
 
 func (o *StorageListOptions) Run() (err error) {
 	var storageList storage.StorageList
+	var componentName string
 	if o.isDevfile {
+		componentName = o.EnvSpecificInfo.GetName()
 		storageList, err = storage.DevfileList(o.KClient, o.DevfileObj.Data, o.EnvSpecificInfo.GetName())
 		if err != nil {
 			return err
 		}
 	} else {
+		componentName = o.LocalConfigInfo.GetName()
 		storageList, err = storage.ListStorageWithState(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
 		if err != nil {
 			return err
@@ -88,9 +91,9 @@ func (o *StorageListOptions) Run() (err error) {
 		machineoutput.OutputSuccess(storageList)
 	} else {
 		if o.isDevfile && isContainerDisplay(storageList, o.DevfileObj.Data.GetComponents()) {
-			printStorageWithContainer(storageList, o.EnvSpecificInfo.GetName())
+			printStorageWithContainer(storageList, componentName)
 		} else {
-			printStorage(storageList, o.LocalConfigInfo.GetName())
+			printStorage(storageList, componentName)
 		}
 	}
 

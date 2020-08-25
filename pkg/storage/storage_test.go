@@ -960,7 +960,7 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 		{
 			name: "case 1: list all the volumes in the devfile along with their respective size and containers",
 			args: args{
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -1004,7 +1004,7 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 		{
 			name: "case 2: list all the volumes in the devfile with the default size when no size is mentioned",
 			args: args{
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -1036,7 +1036,7 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 		{
 			name: "case 3: return empty when no volumes is mounted",
 			args: args{
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -1055,8 +1055,8 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetLocalDevfileStorage(tt.args.devfileData); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetLocalDevfileStorage() difference between got and want : %v", pretty.Compare(got, tt.want))
+			if got := getLocalDevfileStorage(tt.args.devfileData); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getLocalDevfileStorage() difference between got and want : %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}
@@ -1235,13 +1235,13 @@ func TestDevfileListMounted(t *testing.T) {
 				return true, tt.returnedPods, nil
 			})
 
-			got, err := DevfileListMounted(fakeClient, tt.args.componentName)
+			got, err := devfileListMounted(fakeClient, tt.args.componentName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DevfileListMounted() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("devfileListMounted() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DevfileListMounted() result is different: %v", pretty.Compare(got, tt.want))
+				t.Errorf("devfileListMounted() result is different: %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}
@@ -1263,7 +1263,7 @@ func TestDevfileList(t *testing.T) {
 		{
 			name: "case 1: no volume on devfile and no pod on cluster",
 			args: args{
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						testingutil.GetFakeContainerComponent("runtime"),
 					},
@@ -1282,7 +1282,7 @@ func TestDevfileList(t *testing.T) {
 		{
 			name: "case 2: no volume on devfile and pod",
 			args: args{
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						testingutil.GetFakeContainerComponent("runtime"),
 					},
@@ -1304,7 +1304,7 @@ func TestDevfileList(t *testing.T) {
 			name: "case 3: same two volumes on cluster and devFile",
 			args: args{
 				componentName: "nodejs",
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -1352,7 +1352,7 @@ func TestDevfileList(t *testing.T) {
 			name: "case 4: both volumes, present on the cluster and devFile, are different",
 			args: args{
 				componentName: "nodejs",
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -1402,7 +1402,7 @@ func TestDevfileList(t *testing.T) {
 			name: "case 5: two containers with different volumes but one container is not pushed",
 			args: args{
 				componentName: "nodejs",
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -1455,7 +1455,7 @@ func TestDevfileList(t *testing.T) {
 			name: "case 6: two containers with different volumes on the cluster but one container is deleted locally",
 			args: args{
 				componentName: "nodejs",
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -1499,7 +1499,7 @@ func TestDevfileList(t *testing.T) {
 			name: "case 7: multiple pods are present on the cluster",
 			args: args{
 				componentName: "nodejs",
-				devfileData: testingutil.TestDevfileData{
+				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{

@@ -49,7 +49,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 	Context("When devfile storage create command is executed", func() {
 
 		It("should create the storage and mount it on the container", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -90,7 +90,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create a storage with default size when --size is not provided", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -109,7 +109,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create a storage when storage is not provided", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -126,7 +126,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create and output in json format", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -140,7 +140,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 	Context("When devfile storage delete command is executed", func() {
 		It("should delete the storage and unmount it on the container", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -184,7 +184,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should delete the storage and output in json format", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -200,7 +200,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 	Context("When devfile storage list command is executed", func() {
 		It("should list the storage with the proper states", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -212,7 +212,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			helper.CmdShouldPass("odo", "storage", "create", storageNames[0], "--path", pathNames[0], "--size", sizes[0], "--context", context)
 			stdOut := helper.CmdShouldPass("odo", "storage", "list", "--context", context)
-			helper.MatchAllInOutput(stdOut, []string{storageNames[0], pathNames[0], sizes[0], "Not Pushed"})
+			helper.MatchAllInOutput(stdOut, []string{storageNames[0], pathNames[0], sizes[0], "Not Pushed", cmpName})
 			helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
 
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -234,7 +234,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should list the storage with the proper states and container names", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -255,7 +255,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should list output in json format", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -271,7 +271,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 	Context("When devfile storage commands are invalid", func() {
 		It("should error if same storage name is provided again", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -286,7 +286,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should error if same path is provided again", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -301,7 +301,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should throw error if no storage is present", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", context}
+			args := []string{"create", "nodejs", cmpName, "--context", context, "--project", namespace}
 			helper.CmdShouldPass("odo", args...)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)

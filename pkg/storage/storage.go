@@ -568,8 +568,8 @@ func MachineReadableSuccessOutput(storageName string, message string) {
 	machineoutput.OutputSuccess(machineOutput)
 }
 
-// DevfileListMounted lists the storage which are mounted on a container
-func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageList, error) {
+// devfileListMounted lists the storage which are mounted on a container
+func devfileListMounted(kClient *kclient.Client, componentName string) (StorageList, error) {
 	pod, err := kClient.GetPodUsingComponentName(componentName)
 	if err != nil {
 		if _, ok := err.(*kclient.PodNotFoundError); ok {
@@ -619,8 +619,8 @@ func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 	return StorageList{Items: storage}, nil
 }
 
-// GetLocalDevfileStorage lists the storage from the devfile
-func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
+// getLocalDevfileStorage lists the storage from the devfile
+func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 	volumeSizeMap := make(map[string]string)
 	for _, component := range devfileData.GetComponents() {
 		if component.Volume == nil {
@@ -651,9 +651,9 @@ func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 
 // DevfileList lists the storage from the local devfile and cluster with their respective state
 func DevfileList(kClient *kclient.Client, devfileData data.DevfileData, componentName string) (StorageList, error) {
-	localStorage := GetLocalDevfileStorage(devfileData)
+	localStorage := getLocalDevfileStorage(devfileData)
 
-	clusterStorage, err := DevfileListMounted(kClient, componentName)
+	clusterStorage, err := devfileListMounted(kClient, componentName)
 	if err != nil {
 		return StorageList{}, err
 	}
