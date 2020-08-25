@@ -201,5 +201,5 @@ jobs:
         - sudo cp odo /usr/bin
         - export KUBERNETES=true
         - travis_wait make test-cmd-project
-        - travis_wait 45 make test-integration-devfile
+        - travis_wait 60 make test-integration-devfile
         - travis_wait make test-cmd-devfile-debug-serial
