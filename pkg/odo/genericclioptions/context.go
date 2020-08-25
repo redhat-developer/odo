@@ -316,6 +316,7 @@ func (c *Context) resolveComponent(command *cobra.Command, configProvider LocalC
 		c.checkComponentExistsOrFail(cmpFlag)
 		cmp = cmpFlag
 	}
+	c.cmp = cmp
 	return cmp
 }
 
