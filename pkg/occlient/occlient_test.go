@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/kylelemons/godebug/pretty"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -5007,6 +5008,112 @@ func TestWaitAndGetDC(t *testing.T) {
 	}
 }
 
+func TestCreateBuildConfigWithBinaryInput(t *testing.T) {
+	type args struct {
+		commonObjectMeta      metav1.ObjectMeta
+		builderImageStreamTag string
+		builderImageNamespace string
+		pushSecret            string
+		scriptURL             string
+		outputImageTag        string
+		incrementalBuild      bool
+		envVars               []corev1.EnvVar
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		actions int
+	}{
+		{
+			name: "Case 1 - Generate and create the BuildConfig",
+			args: args{
+				commonObjectMeta: metav1.ObjectMeta{
+					Name: "ruby",
+					Labels: map[string]string{
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
+					},
+				},
+				builderImageStreamTag: "ruby:latest",
+				builderImageNamespace: "openshift",
+				scriptURL:             "",
+				incrementalBuild:      false,
+				envVars: []corev1.EnvVar{
+					{
+						Name:  "key",
+						Value: "value",
+					},
+					{
+						Name:  "key1",
+						Value: "value1",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case 2 - Generate and create the BuildConfig but fail with unable to find image name",
+			args: args{
+				commonObjectMeta: metav1.ObjectMeta{
+					Name: "ruby",
+					Labels: map[string]string{
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
+					},
+				},
+				builderImageStreamTag: "fakeimagename:notlatest",
+				builderImageNamespace: "testing",
+				scriptURL:             "",
+				outputImageTag:        "rubyimage:latest",
+				incrementalBuild:      false,
+				envVars: []corev1.EnvVar{
+					{
+						Name:  "key",
+						Value: "value",
+					},
+					{
+						Name:  "key1",
+						Value: "value1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+			fakeClientSet.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStream(tt.args.commonObjectMeta.Name, tt.args.commonObjectMeta.Namespace, []string{"latest"}), nil
+			})
+			// Run function CreateBuildConfig
+			bc, err := fakeClient.CreateBuildConfigWithBinaryInput(tt.args.commonObjectMeta, tt.args.builderImageStreamTag, tt.args.builderImageNamespace,
+				tt.args.pushSecret, tt.args.scriptURL, tt.args.outputImageTag, "DockerImage", tt.args.incrementalBuild, tt.args.envVars)
+			if err == nil && !tt.wantErr {
+				// Check to see that names match
+				if bc.ObjectMeta.Name != tt.args.commonObjectMeta.Name {
+					t.Errorf("Expected buildConfig name %s, got '%s'", tt.args.commonObjectMeta.Name, bc.ObjectMeta.Name)
+				}
+				// Check to see that labels match
+				diff := cmp.Diff(tt.args.commonObjectMeta.Labels, bc.ObjectMeta.Labels)
+
+				if diff != "" {
+					t.Errorf("Expected equal labels: got %s", diff)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+		})
+	}
+}
+
 func TestCreateBuildConfig(t *testing.T) {
 	type args struct {
 		commonObjectMeta metav1.ObjectMeta
@@ -5155,7 +5262,6 @@ func TestCreateBuildConfig(t *testing.T) {
 			fakeClientSet.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, fakeImageStream(tt.args.commonObjectMeta.Name, tt.args.commonObjectMeta.Namespace, []string{"latest"}), nil
 			})
-
 			// Run function CreateBuildConfig
 			bc, err := fakeClient.CreateBuildConfig(tt.args.commonObjectMeta, tt.args.builderImage, tt.args.gitURL, tt.args.gitRef, tt.args.envVars)
 

@@ -35,4 +35,7 @@ type DevfileData interface {
 	GetCommands() []common.DevfileCommand
 	AddCommands(commands []common.DevfileCommand) error
 	UpdateCommand(command common.DevfileCommand)
+
+	// build guidance related methods
+	GetBuildGuidances() []common.DevfileBuildGuidance
 }

@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	parserCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
@@ -41,15 +43,15 @@ type DeployOptions struct {
 
 	DevfilePath              string
 	devObj                   devfileParser.DevfileObj
-	DockerfileURL            string
 	DockerfileBytes          []byte
 	namespace                string
 	tag                      string
 	ManifestSource           []byte
 	DeploymentPort           int
 	dockerConfigJSONFilename string
-	rootless                 bool
-
+	buildGuidance            common.BuildGuidanceType
+	dockerfileGuidance       *parserCommon.Dockerfile
+	sourceToImageGuidance    *parserCommon.SourceToImage
 	*genericclioptions.Context
 }
 
@@ -107,48 +109,55 @@ func (do *DeployOptions) Validate() (err error) {
 
 	s = log.Spinner("Validating build information")
 
-	var dockerfileURL string
-	components := do.devObj.Data.GetAliasedComponents()
-	for _, component := range components {
-		if component.Dockerfile != nil {
-			dockerfileURL = component.Dockerfile.DockerfileLocation
-			do.rootless = component.Dockerfile.Rootless
+	//var dockerfileURL string
+	buldGuidances := do.devObj.Data.GetBuildGuidances()
+	for _, bg := range buldGuidances {
+		if bg.Dockerfile != nil {
+			do.buildGuidance = common.DockerFile
+			do.dockerfileGuidance = bg.Dockerfile
+			break
+		} else if bg.SourceToImage != nil {
+			do.buildGuidance = common.SourceToImage
+			do.sourceToImageGuidance = bg.SourceToImage
 			break
 		}
+	}
+
+	if do.buildGuidance == common.Unknown {
+		s.End(false)
+		return errors.New("missing build guidance in devfile")
 	}
 
 	//Download Dockerfile to .odo, build, then delete from .odo dir
 	//If Dockerfile is present in the project already, use that for the build
 	//If Dockerfile is present in the project and field is in devfile, build the one already in the project and warn the user.
-	if dockerfileURL != "" && util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
-		// TODO: make clearer more visible output
-		log.Warning("Dockerfile already exists in project directory and one is specified in Devfile.")
-		log.Warningf("Using Dockerfile specified in devfile from '%s'", dockerfileURL)
-	}
-
-	if dockerfileURL != "" {
-		dockerfileBytes, err := util.LoadFileIntoMemory(dockerfileURL)
-		if err != nil {
-			s.End(false)
-			return errors.New("unable to download Dockerfile from URL specified in devfile")
+	if do.buildGuidance == common.DockerFile {
+		if do.dockerfileGuidance.DockerfileLocation != "" && util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
+			// TODO: make clearer more visible output
+			log.Warning("Dockerfile already exists in project directory and one is specified in Devfile.")
+			log.Warningf("Using Dockerfile specified in devfile from '%s'", do.dockerfileGuidance.DockerfileLocation)
 		}
-		// If we successfully downloaded the Dockerfile into memory, store it in the DeployOptions
-		do.DockerfileBytes = dockerfileBytes
+		if do.dockerfileGuidance.DockerfileLocation != "" {
+			dockerfileBytes, err := util.LoadFileIntoMemory(do.dockerfileGuidance.DockerfileLocation)
+			if err != nil {
+				s.End(false)
+				return errors.New("unable to download Dockerfile from URL specified in devfile")
+			}
+			// If we successfully downloaded the Dockerfile into memory, store it in the DeployOptions
+			do.DockerfileBytes = dockerfileBytes
 
-		// Validate the file that was downloaded is a Dockerfile
-		err = util.ValidateDockerfile(dockerfileBytes)
-		if err != nil {
+			// Validate the file that was downloaded is a Dockerfile
+			err = util.ValidateDockerfile(dockerfileBytes)
+			if err != nil {
+				s.End(false)
+				return err
+			}
+		} else if !util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
 			s.End(false)
-			return err
+			return errors.New("dockerfile required for build. No 'DockerfileLocation' field found in dockerfile component of devfile, or Dockerfile found in project directory")
 		}
-
-	} else if !util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
-		s.End(false)
-		return errors.New("dockerfile required for build. No 'DockerfileLocation' field found in dockerfile component of devfile, or Dockerfile found in project directory")
 	}
-
 	s.End(true)
-
 	s = log.Spinner("Validating deployment information")
 	metadata := do.devObj.Data.GetMetadata()
 	manifestURL := metadata.Manifest

@@ -210,3 +210,8 @@ func (d *Devfile210) GetAliasedComponents() []common.DevfileComponent {
 	// V2 has name required in jsonSchema
 	return d.Components
 }
+
+// GetBuildGuidances returns the slice of DevfileBuildGuidance objects that each have a build guidance
+func (d *Devfile210) GetBuildGuidances() []common.DevfileBuildGuidance {
+	return d.BuildGuidances
+}

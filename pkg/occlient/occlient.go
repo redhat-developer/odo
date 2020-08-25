@@ -3099,19 +3099,6 @@ func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, 
 // the source with Dockerfile, and push the image using tag.
 // envVars is the array containing the environment variables
 func (c *Client) CreateDockerBuildConfigWithBinaryInput(commonObjectMeta metav1.ObjectMeta, dockerfilePath string, outputImageTag string, envVars []corev1.EnvVar, outputType string, secretName string) (bc buildv1.BuildConfig, err error) {
-	// generate and create ImageStream if not present
-
-	var imageStream *imagev1.ImageStream
-	if imageStream, err = c.GetImageStream(c.Namespace, commonObjectMeta.Name, ""); err != nil || imageStream == nil {
-		imageStream = &imagev1.ImageStream{
-			ObjectMeta: commonObjectMeta,
-		}
-
-		_, err = c.imageClient.ImageStreams(c.Namespace).Create(imageStream)
-		if err != nil {
-			return bc, errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
-		}
-	}
 
 	bc = generateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, outputImageTag, outputType)
 
@@ -3131,15 +3118,34 @@ func (c *Client) CreateDockerBuildConfigWithBinaryInput(commonObjectMeta metav1.
 	return bc, err
 }
 
+// CreateBuildConfigWithBinaryInput creates a BuildConfig which accepts a builder image. It will build
+// the source with builder image, and push the image using tag.
+// envVars is the array containing the environment variables
+func (c *Client) CreateBuildConfigWithBinaryInput(commonObjectMeta metav1.ObjectMeta, builderImageStreamTag, buildImageNamespace, pushSecret, scriptURL, outputImageKind, outputImageTag string, incrementalBuild bool, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
+	buildSource := buildv1.BuildSource{
+		Binary: &buildv1.BinaryBuildSource{},
+		Type:   buildv1.BuildSourceBinary,
+	}
+	return c.createBuildConfig(commonObjectMeta, builderImageStreamTag, buildImageNamespace, buildSource, pushSecret, scriptURL, outputImageKind, outputImageTag, incrementalBuild, envVars)
+}
+
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
 // envVars is the array containing the environment variables
-func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, gitRef string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
+func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImageStreamTag string, gitURL string, gitRef string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
+	return c.createBuildConfig(commonObjectMeta, builderImageStreamTag, "", gitBuildSource(gitURL, gitRef), "", "", "ImageStreamTag", commonObjectMeta.Name+":latest", false, envVars)
+}
 
+func (c *Client) createBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImageStreamTag, builderImageNamespace string, buildSource buildv1.BuildSource, pushSecret, scriptURL, outputImageKind, outputImageTag string, incrementalBuild bool, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
 	// Retrieve the namespace, image name and the appropriate tag
-	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
+	imageNS, imageName, imageTag, _, err := ParseImageName(builderImageStreamTag)
 	if err != nil {
 		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to parse image name")
 	}
+
+	if imageNS == "" {
+		imageNS = builderImageNamespace
+	}
+
 	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 	if err != nil {
 		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to retrieve image stream for CreateBuildConfig")
@@ -3149,8 +3155,22 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	klog.V(4).Infof("Using namespace: %s for the CreateBuildConfig function", imageNS)
 
 	// Use BuildConfig to build the container with Git
-	bc := generateBuildConfig(commonObjectMeta, gitURL, gitRef, imageName+":"+imageTag, imageNS)
+	bc := generateBuildConfig(commonObjectMeta, buildSource, imageName+":"+imageTag, imageNS, outputImageKind, outputImageTag)
 
+	// Set PushSecret in buildconfig
+	if pushSecret != "" {
+		bc.Spec.CommonSpec.Output.PushSecret = &corev1.LocalObjectReference{
+			Name: pushSecret,
+		}
+	}
+	// Set script location if provided by user in devfile
+	if scriptURL != "" {
+		bc.Spec.Strategy.SourceStrategy.Scripts = scriptURL
+	}
+	// Set Incremental build flag if provided by user in devfile
+	if incrementalBuild {
+		bc.Spec.Strategy.SourceStrategy.Incremental = &incrementalBuild
+	}
 	if len(envVars) > 0 {
 		bc.Spec.Strategy.SourceStrategy.Env = envVars
 	}
@@ -3440,6 +3460,21 @@ func (c *Client) GetApplicationURL(applicationName, labelSelector string) (fullU
 	}
 
 	return fullURL, nil
+}
+
+// EnsureImageStreamTag creates ImageStream if not present
+func (c *Client) EnsureImageStream(ns, name string) error {
+	if imageStream, err := c.GetImageStream(ns, name, ""); err != nil || imageStream == nil {
+		imageStream = &imagev1.ImageStream{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+		}
+		if _, err = c.imageClient.ImageStreams(ns).Create(imageStream); err != nil {
+			return errors.Wrapf(err, "unable to create ImageStream for %s", name)
+		}
+	}
+	return nil
 }
 
 // Create a function to wait for deploment completion of any unstructured object

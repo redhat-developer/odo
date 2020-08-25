@@ -307,6 +307,62 @@ const JsonSchema210 = `{
       },
       "type": "array"
     },
+    "buildGuidances": {
+      "description": "Outer-loop  build guidances.",
+      "items": {
+        "properties": {
+          "dockerfile":{
+            "description":"Dockerfile Component defines dockerfile based image build guidence for outer-loop.",
+            "properties":{
+              "dockerfileLocation":{
+                "description":"Mandatory Dockerfile location which can be an URL or a path relative to buildContext",
+                "type":"string"
+              },
+              "buildContext":{
+                "description":"Optional path of source directory to establish build context.  Default to the top level directory.",
+                "type":"string"
+              },              
+              "rootless":{
+                "description":"Optional flag that specifies whether unprivileged builder pod is required.  Default is false",
+                "type":"boolean"
+              }					
+            },
+            "required":[
+              "dockerfileLocation"
+            ],
+            "type":"object"          
+          },     
+          "s2i":{
+            "description":"SourceToImage (s2i) component",
+            "properties":{              
+              "builderImageNamespace":{
+                "description":"Mandatory namespace where builder image is present",
+                "type":"string"
+              },
+              "builderImageStreamTag":{
+                "description":"Mandatory builder image name with tag",
+                "type":"string"
+              },
+              "scriptLocation": {
+                "description":"Script URL to override default scripts provided by builder image",
+                "type":"string"
+              },
+              "incrementalBuild":{
+                "description":"Flag that indicates whether to perform increamental builds or not",
+                "type": "boolean"
+              }
+            },
+            "required":[
+              "builderImageNamespace",
+              "builderImageStreamTag"
+            ],
+            "type":"object"
+          }                         
+        },
+        "type":"object"
+      },
+      "type": "array"
+    },     
     "components": {
       "description": "List of the workspace components, such as editor and plugins, user-provided containers, or other types of components",
       "items": {
@@ -1160,45 +1216,7 @@ const JsonSchema210 = `{
             ],
             "type": "object",
             "additionalProperties": false
-          },
-          "Dockerfile":{
-            "description":"Dockerfile component",
-            "properties":{
-              "name":{
-                "description":"Mandatory name that allows referencing the dockerfile component",
-                "type":"string"
-              },
-              "source":{
-                "sourceDir":{
-                  "description":"path of source directory to establish build context",
-                  "type":"string"
-                },
-                "location":{
-                  "description":"location of the source code repostory",
-                   "type":"string"
-                },
-                "type":"object"
-              },
-              "dockerfileLocation":{
-                "description":"path to dockerfile",
-                "type":"string"
-              },
-              "destination":{
-                "description":"path to registry where the build image is to be pushed",
-                "type":"string"
-              },
-              "rootless":{
-                "description":"rootless/unprivileged builder pod",
-                "type":"boolean"
-              }					
-            },
-            "required":[
-              "name",
-              "dockerfileLocation",
-              "source"
-            ],
-            "type":"object"
-          }
+          }                  
         },
         "type": "object"
       },

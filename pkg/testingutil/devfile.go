@@ -12,6 +12,7 @@ type TestDevfileData struct {
 	CompositeCommands []versionsCommon.Composite
 	Commands          []versionsCommon.DevfileCommand
 	Events            common.DevfileEvents
+	BuildGuidances    []versionsCommon.DevfileBuildGuidance
 }
 
 // GetComponents is a mock function to get the components from a devfile
@@ -186,4 +187,8 @@ func GetFakeVolumeMount(name, path string) versionsCommon.VolumeMount {
 		Name: name,
 		Path: path,
 	}
+}
+
+func (d TestDevfileData) GetBuildGuidances() []versionsCommon.DevfileBuildGuidance {
+	return d.BuildGuidances
 }

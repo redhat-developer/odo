@@ -253,3 +253,5 @@ func (d *Devfile100) GetEvents() common.DevfileEvents { return common.DevfileEve
 func (d *Devfile100) AddEvents(events common.DevfileEvents) error { return nil }
 
 func (d *Devfile100) UpdateEvents(postStart, postStop, preStart, preStop []string) {}
+
+func (d *Devfile100) GetBuildGuidances() []common.DevfileBuildGuidance { return nil }

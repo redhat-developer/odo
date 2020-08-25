@@ -27,6 +27,15 @@ type Storage struct {
 	Volume DevfileVolume
 }
 
+// BuildGuidance Type used in BuildParameters
+type BuildGuidanceType int
+
+const (
+	Unknown BuildGuidanceType = iota
+	DockerFile
+	SourceToImage
+)
+
 // BuildParameters is a struct containing the parameters to be used when building the image for a devfile component
 type BuildParameters struct {
 	Path                     string                  // Path refers to the parent folder containing the source code to push up to a component
@@ -35,7 +44,9 @@ type BuildParameters struct {
 	Tag                      string                  // Tag refers to the image tag of the image being built
 	IgnoredFiles             []string                // IgnoredFiles is the list of files to not push up to a component
 	DockerConfigJSONFilename string                  // Credentials refers to the path to the dockerconfig file containing external registry credentials
-	Rootless                 bool                    // Rootless/Unprivileged builder pod
+	BuildGuidance            BuildGuidanceType       // Build Guidance type to be used
+	DockerfileGuidance       *common.Dockerfile      // Dockerfile build guidance
+	SourceToImageGuidance    *common.SourceToImage   // S2i build guidance
 }
 
 // DeployParameters is a struct containing the parameters to be used when building the image for a devfile component

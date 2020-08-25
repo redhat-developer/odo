@@ -227,3 +227,6 @@ func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []strin
 		d.Events.PreStop = preStop
 	}
 }
+
+// not supported
+func (d *Devfile200) GetBuildGuidances() []common.DevfileBuildGuidance { return nil }

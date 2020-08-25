@@ -129,13 +129,34 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	signal.Notify(controlC, os.Interrupt, syscall.SIGTERM)
 	go a.terminateBuild(controlC, client, commonObjectMeta)
 
-	var secretName string
+	var secretName string = ""
 	if !isImageRegistryInternal {
 		secretName = regcredName
 	}
-	_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{}, buildOutput, secretName)
-	if err != nil {
-		return err
+
+	// If tag is not provided, default to use the buildName as image stream.
+	// We need to make sure imagestream exists.
+	if parameters.Tag == "" {
+		if err := client.EnsureImageStream(client.Namespace, buildName); err != nil {
+			return err
+		}
+	}
+
+	switch parameters.BuildGuidance {
+	case common.DockerFile:
+		_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{}, buildOutput, secretName)
+		if err != nil {
+			return err
+		}
+	case common.SourceToImage:
+		_, err = client.CreateBuildConfigWithBinaryInput(commonObjectMeta, parameters.SourceToImageGuidance.BuilderImageStreamTag,
+			parameters.SourceToImageGuidance.BuilderImageNamespace, secretName, parameters.SourceToImageGuidance.ScriptLocation,
+			buildOutput, parameters.Tag, parameters.SourceToImageGuidance.IncrementalBuild, []corev1.EnvVar{})
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown build guidance '%d", parameters.BuildGuidance)
 	}
 
 	defer func() {
@@ -217,11 +238,12 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		}
 	}
 
-	if isBuildConfigSupported && !parameters.Rootless {
-		return a.runBuildConfig(client, parameters, isImageRegistryInternal)
-	} else {
+	if parameters.BuildGuidance == common.DockerFile && (parameters.DockerfileGuidance.Rootless || !isBuildConfigSupported) {
 		return a.runKaniko(parameters, isImageRegistryInternal)
 	}
+
+	return a.runBuildConfig(client, parameters, isImageRegistryInternal)
+
 }
 
 // Perform the substitutions in the manifest file(s)
@@ -929,6 +951,10 @@ func (a Adapter) createDockerConfigSecret(dockerConfigJSONFilename, secretName, 
 
 // NOTE: we assume internal registry host is: image-registry.openshift-image-registry.svc:5000
 func isInternalRegistry(imageTag string) (bool, error) {
+	if imageTag == "" {
+		// relax validation check to allow empty tag (image repository) which default to the "buildName"
+		return true, nil
+	}
 	components := strings.Split(imageTag, "/")
 	if len(components) != 3 {
 		return false, fmt.Errorf("Invalid image tag '%s', must contain 3 components", imageTag)
