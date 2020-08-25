@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog"
@@ -127,10 +126,10 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envI
 
 		if u.Spec.Kind != envinfo.ROUTE {
 			protocol = GetProtocol(routev1.Route{}, ConvertIngressURLToIngress(u, componentName))
-			properURL = GetURLString(protocol, "", u.Spec.Host, experimental.IsExperimentalModeEnabled())
+			properURL = GetURLString(protocol, "", u.Spec.Host, true)
 		} else {
 			protocol = u.Spec.Protocol
-			properURL = GetURLString(protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled())
+			properURL = GetURLString(protocol, u.Spec.Host, "", true)
 		}
 
 		statusURLVal := statusURL{
