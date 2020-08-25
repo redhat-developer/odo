@@ -77,14 +77,6 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("When configuring global config values", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
-		})
-		JustAfterEach(func() {
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should successfully updated", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "updatenotification", "false")
 			helper.CmdShouldPass("odo", "preference", "set", "timeout", "5")
