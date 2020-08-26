@@ -704,13 +704,13 @@ func TestGetCommandsFromEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					ExecCommands:      execCommands,
 					CompositeCommands: compCommands,
 				},
 			}
 
-			commandsMap := GetCommandsMap(devObj.Data.GetCommands())
+			commandsMap := devObj.Data.GetCommands()
 			commands := GetCommandsFromEvent(commandsMap, tt.eventName)
 			if !reflect.DeepEqual(tt.wantCommands, commands) {
 				t.Errorf("TestGetCommandsFromEvent error - got %v expected %v", commands, tt.wantCommands)

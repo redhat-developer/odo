@@ -552,15 +552,15 @@ events:
 
 ## preStartObject
 
-> preStart events are executed as init containers for the project pod in the order they are specified. The devfile command's `commandLine` and `workingDir` become the init container's command and as a result the devfile component container's `command` and `args` or the container image's `Command` and `Args` are overwritten. If a composite command with `parallel: true` is used, it will be executed sequentially as Kubernetes init containers only execute in sequence.
+PreStart events are executed as init containers for the project pod in the order they are specified. The devfile command's `commandLine` and `workingDir` become the init container's command and as a result the devfile component container's `command` and `args` or the container image's `Command` and `Args` are overwritten. If a composite command with `parallel: true` is used, it will be executed sequentially as Kubernetes init containers only execute in sequence.
 
 ## postStartObject
 
-> postStart events are executed when the Kubernetes deployment for the odo component is created. 
+PostStart events are executed when the Kubernetes deployment for the odo component is created. 
 
 ## preStopObject
 
-> preStop events are executed before the Kubernetes deployment for the odo component is deleted. 
+PreStop events are executed before the Kubernetes deployment for the odo component is deleted. 
 
 # Universal objects
 

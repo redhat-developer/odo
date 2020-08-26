@@ -765,13 +765,13 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 			podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
 
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					ExecCommands:      execCommands,
 					CompositeCommands: compCommands,
 				},
 			}
 
-			commandsMap := adaptersCommon.GetCommandsMap(devObj.Data.GetCommands())
+			commandsMap := devObj.Data.GetCommands()
 			containersMap := GetContainersMap(containers)
 
 			AddPreStartEventInitContainer(podTemplateSpec, commandsMap, tt.eventCommands, containersMap)
