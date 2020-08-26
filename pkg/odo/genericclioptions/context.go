@@ -49,21 +49,7 @@ func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
 // NewConfigContext is a special kind of context which only contains local configuration, other information is not retrieved
 //  from the cluster. This is useful for commands which don't want to connect to cluster.
 func NewConfigContext(command *cobra.Command) *Context {
-
-	// Check for valid config
-	localConfiguration, err := getValidConfig(command, false)
-	if err != nil {
-		util.LogErrorAndExit(err, "")
-	}
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
-
-	ctx := &Context{
-		internalCxt{
-			LocalConfigInfo: localConfiguration,
-			OutputFlag:      outputFlag,
-		},
-	}
-	return ctx
+	return newContext(command, false, false)
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
@@ -329,14 +315,30 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	localCtx := FlagValueIfSet(command, ContextFlagName)
-	isDevfile := experimental.IsExperimentalModeEnabled() && pkgUtil.CheckPathExists(filepath.Join(localCtx, "devfile.yaml")) // todo: this constant should really be here
+	experimentalModeEnabled := experimental.IsExperimentalModeEnabled()
+	if experimentalModeEnabled {
+		// Add a disclaimer that we are in *experimental mode*
+		log.Experimental("Experimental mode is enabled, use at your own risk")
+	}
+
+	devfilePath := filepath.Join(localCtx, "devfile.yaml")
+	isDevfile := experimentalModeEnabled && pkgUtil.CheckPathExists(devfilePath) // todo: this constant should really be here
+
+	kubeConfigExist := pkgUtil.CheckKubeConfigExist()
 
 	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
-		OutputFlag: FlagValueIfSet(command, OutputFlagName),
-		command:    command,
-		Client:     client(command),
-		KClient:    kClient(command),
+		experimentalModeEnabled: experimentalModeEnabled,
+		OutputFlag:              FlagValueIfSet(command, OutputFlagName),
+		command:                 command,
+	}
+
+	// only initialize the clients if we have a kube config
+	if kubeConfigExist {
+		internalCxt.Client = client(command)
+		internalCxt.KClient = kClient(command)
+		// if we don't have a kube config, we have to rely on local information so we can't ignore if it's missing
+		ignoreMissingConfiguration = false
 	}
 
 	var configProvider LocalConfigProvider
@@ -403,15 +405,20 @@ type LocalConfigProvider interface {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	Client          *occlient.Client
-	command         *cobra.Command
-	project         string
-	Application     string
-	cmp             string
-	OutputFlag      string
-	LocalConfigInfo *config.LocalConfigInfo
-	KClient         *kclient.Client
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
+	Client                  *occlient.Client
+	command                 *cobra.Command
+	project                 string
+	Application             string
+	cmp                     string
+	OutputFlag              string
+	LocalConfigInfo         *config.LocalConfigInfo
+	KClient                 *kclient.Client
+	EnvSpecificInfo         *envinfo.EnvSpecificInfo
+	experimentalModeEnabled bool
+}
+
+func (c internalCxt) IsExperimentalModeEnabled() bool {
+	return c.experimentalModeEnabled
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
