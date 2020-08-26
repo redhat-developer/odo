@@ -89,6 +89,8 @@ type EnvInfoPushCommand struct {
 // some day local config would get deprecated and hence to keep the interfaces in the new package
 type LocalConfigProvider interface {
 	GetApplication() string
+	GetName() string
+	GetNamespace() string
 }
 
 // EnvInfo holds all the env specific information relavent to a specific Component.

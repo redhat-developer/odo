@@ -450,6 +450,11 @@ func (lc *LocalConfig) GetProject() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Project)
 }
 
+// GetProject returns the project, returns default if nil
+func (lc *LocalConfig) GetNamespace() string {
+	return lc.GetProject()
+}
+
 // GetName returns the Name, returns default if nil
 func (lc *LocalConfig) GetName() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Name)
