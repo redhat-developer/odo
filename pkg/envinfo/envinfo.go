@@ -93,6 +93,7 @@ type LocalConfigProvider interface {
 	GetNamespace() string
 	GetDebugPort() int
 	GetURL() []EnvInfoURL
+	Exists() bool
 }
 
 // EnvInfo holds all the env specific information relavent to a specific Component.
