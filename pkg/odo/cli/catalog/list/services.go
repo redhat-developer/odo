@@ -68,16 +68,16 @@ func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []s
 			// Neither OperatorHub nor Service Catalog is enabled on the cluster
 			return fmt.Errorf("unable to list services because neither Service Catalog nor Operator Hub is enabled in your cluster: %v", err)
 		}
+
 		o.services = util.FilterHiddenServices(o.services)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
 		o.services, err = catalog.ListServices(o.Client)
 		if err != nil {
-			return fmt.Errorf("unable to list services because neither Service Catalog nor Operator Hub is enabled in your cluster: %v", err)
+			return fmt.Errorf("unable to list services because Service Catalog is not enabled in your cluster: %v", err)
 		}
 		o.services = util.FilterHiddenServices(o.services)
 	}
-
 	return
 }
 
