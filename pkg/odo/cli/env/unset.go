@@ -60,7 +60,7 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the UnsetOptions based on completed values
 func (o *UnsetOptions) Validate() (err error) {
-	if !o.cfg.EnvInfoFileExists() {
+	if !o.cfg.Exists() {
 		return errors.Errorf("the context directory doesn't contain a component, please refer `odo create --help` to create a component")
 	}
 

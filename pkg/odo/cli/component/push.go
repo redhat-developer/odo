@@ -99,7 +99,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 		// If the file does not exist, we should populate the environment file with the correct env.yaml information
 		// such as name and namespace.
-		if !envFileInfo.EnvInfoFileExists() {
+		if !envFileInfo.Exists() {
 			klog.V(4).Info("Environment file does not exist, creating the env.yaml file in order to use 'odo push'")
 
 			// Since the environment file does not exist, we will retrieve a correct namespace from

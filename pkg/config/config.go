@@ -310,8 +310,8 @@ func (lci *LocalConfigInfo) IsSet(parameter string) bool {
 	return util.IsSet(lci.componentSettings, parameter)
 }
 
-// ConfigFileExists if a config file exists or not
-func (lci *LocalConfigInfo) ConfigFileExists() bool {
+// Exists returns whether the config file exists or not
+func (lci *LocalConfigInfo) Exists() bool {
 	return lci.configFileExists
 }
 

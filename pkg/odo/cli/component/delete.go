@@ -240,7 +240,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
 		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete env folder?") {
-			if !do.EnvSpecificInfo.EnvInfoFileExists() {
+			if !do.EnvSpecificInfo.Exists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
 			}
 			if err = util.DeleteIndexFile(filepath.Dir(do.devfilePath)); err != nil {

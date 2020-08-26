@@ -114,7 +114,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
 	if !o.IsDevfile {
-		if !o.LocalConfigInfo.ConfigFileExists() {
+		if !o.LocalConfigInfo.Exists() {
 			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
 		}
 

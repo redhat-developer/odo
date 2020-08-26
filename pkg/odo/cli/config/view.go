@@ -67,7 +67,7 @@ func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (
 // Validate validates the ViewOptions based on completed values
 func (o *ViewOptions) Validate() (err error) {
 	if !o.IsDevfile {
-		if !o.lci.ConfigFileExists() {
+		if !o.lci.Exists() {
 			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
 		}
 	}
