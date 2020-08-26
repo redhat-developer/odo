@@ -2,14 +2,15 @@ package list
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
+	cmdutil "github.com/openshift/odo/pkg/odo/util"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
 )
@@ -27,6 +28,8 @@ type ListServicesOptions struct {
 	csvs *olm.ClusterServiceVersionList
 	// generic context options common to all commands
 	*genericclioptions.Context
+	// choose between Operator Hub and Service Catalog. If true, Operator Hub
+	csvSupport bool
 }
 
 // NewListServicesOptions creates a new ListServicesOptions instance
@@ -36,7 +39,9 @@ func NewListServicesOptions() *ListServicesOptions {
 
 // Complete completes ListServicesOptions after they've been created
 func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport, err = cmdutil.IsCSVSupported(); err != nil {
+		return err
+	} else if o.csvSupport {
 		var noCsvs, noServices bool
 		o.Context = genericclioptions.NewContext(cmd)
 		o.csvs, err = o.KClient.GetClusterServiceVersionList()
@@ -79,7 +84,7 @@ func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []s
 
 // Validate validates the ListServicesOptions based on completed values
 func (o *ListServicesOptions) Validate() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport {
 		if len(o.services.Items) == 0 && len(o.csvs.Items) == 0 {
 			return fmt.Errorf("no deployable services/operators found")
 		}
@@ -96,7 +101,7 @@ func (o *ListServicesOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(newCatalogListOutput(&o.services, o.csvs))
 	} else {
-		if experimental.IsExperimentalModeEnabled() {
+		if o.csvSupport {
 			if len(o.csvs.Items) > 0 {
 				util.DisplayClusterServiceVersions(o.csvs)
 			}

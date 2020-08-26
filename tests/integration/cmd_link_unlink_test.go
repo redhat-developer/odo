@@ -41,7 +41,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 	Context("when running help for link command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "link", "-h")
-			Expect(appHelp).To(ContainSubstring("Link component to a service or component"))
+			Expect(appHelp).To(ContainSubstring("Link component to an operator backed service"))
 		})
 	})
 

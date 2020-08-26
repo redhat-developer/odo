@@ -10,9 +10,9 @@ import (
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/openshift/odo/pkg/odo/util"
+	cmdutil "github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"
@@ -95,6 +95,7 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
+	options.commonLinkOptions.csvSupport, _ = util.IsCSVSupported()
 	options.commonLinkOptions.sbr = &sbo.ServiceBindingRequest{}
 	return &options
 }
@@ -102,9 +103,21 @@ func NewLinkOptions() *LinkOptions {
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	err = o.complete(name, cmd, args)
-	if !experimental.IsExperimentalModeEnabled() {
+	if err != nil {
+		return err
+	}
+
+	o.csvSupport, err = o.Client.IsCSVSupported()
+	if err != nil {
+		return err
+	}
+
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+		o.operation = o.KClient.LinkSecret
+	} else {
 		o.operation = o.Client.LinkSecret
 	}
+
 	return err
 }
 
@@ -115,7 +128,7 @@ func (o *LinkOptions) Validate() (err error) {
 		return err
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		return
 	}
 
@@ -129,7 +142,7 @@ func (o *LinkOptions) Validate() (err error) {
 			if o.isTargetAService {
 				targetType = "service"
 			}
-			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Component(), targetType, o.suppliedName)
+			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Project, targetType, o.suppliedName)
 		}
 	}
 	return
@@ -162,8 +175,11 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 
 	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
-	// Modifications for the case when experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
+	// we ignore the error because it doesn't matter at this place to deal with it and the function returns a *cobra.Command
+	csvSupport, _ := cmdutil.IsCSVSupported()
+
+	// Modifications for the case when Operators are supported
+	if csvSupport {
 		linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
 		linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
 		linkCmd.Long = linkLongDescExperimental
@@ -171,7 +187,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)
 	//Adding `--application` flag
-	if !experimental.IsExperimentalModeEnabled() {
+	if !csvSupport {
 		appCmd.AddApplicationFlag(linkCmd)
 	}
 	//Adding `--component` flag

@@ -11,7 +11,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 )
 
@@ -29,6 +31,47 @@ const (
 func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
 	return deployment, err
+}
+
+// GetOneDeploymentFromSelector returns the Deployment object associated
+// with the given selector.
+// An error is thrown when exactly one Deployment is not found for the
+// selector.
+func (c *Client) GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error) {
+	deployments, err := c.GetDeploymentFromSelector(selector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get Deployments for the selector: %v", selector)
+	}
+
+	num := len(deployments)
+	if num == 0 {
+		return nil, fmt.Errorf("no Deployment was found for the selector: %v", selector)
+	} else if num > 1 {
+		return nil, fmt.Errorf("multiple Deployments exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &deployments[0], nil
+}
+
+// GetDeploymentsFromSelector returns an array of Deployment resources which
+// match the given selector
+func (c *Client) GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error) {
+	var deploymentList *appsv1.DeploymentList
+	var err error
+
+	if selector != "" {
+		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+			LabelSelector: selector,
+		})
+	} else {
+		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
+		})
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list Deployments")
+	}
+	return deploymentList.Items, nil
 }
 
 // getDeploymentCondition returns the condition with the provided type
@@ -209,4 +252,78 @@ func (c *Client) DeleteDynamicResource(name, group, version, resource string) er
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
 	return c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Delete(name, &metav1.DeleteOptions{})
+}
+
+// Define a function that is meant to create patch based on the contents of the deployment
+type deploymentPatchProvider func(deployment *appsv1.Deployment) (string, error)
+
+// LinkSecret links a secret to the Deployment of a component
+func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
+
+	var deploymentPatchProvider = func(d *appsv1.Deployment) (string, error) {
+		if len(d.Spec.Template.Spec.Containers[0].EnvFrom) > 0 {
+			// we always add the link as the first value in the envFrom array. That way we don't need to know the existing value
+			return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom/0", "value": {"secretRef": {"name": "%s"}} }]`, secretName), nil
+		}
+
+		//in this case we need to add the full envFrom value
+		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
+	}
+
+	return c.patchDeploymentOfComponent(componentName, applicationName, deploymentPatchProvider)
+}
+
+// UnlinkSecret unlinks a secret to the Deployment of a component
+func (c *Client) UnlinkSecret(secretName, componentName, applicationName string) error {
+	// Remove the Secret from the container
+	var deploymentPatchProvider = func(d *appsv1.Deployment) (string, error) {
+		indexForRemoval := -1
+		for i, env := range d.Spec.Template.Spec.Containers[0].EnvFrom {
+			if env.SecretRef.Name == secretName {
+				indexForRemoval = i
+				break
+			}
+		}
+
+		if indexForRemoval == -1 {
+			return "", fmt.Errorf("Deployment does not contain a link to %s", secretName)
+		}
+
+		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
+	}
+
+	return c.patchDeploymentOfComponent(componentName, applicationName, deploymentPatchProvider)
+}
+
+// this function will look up the appropriate DC, and execute the specified patch
+// the whole point of using patch is to avoid race conditions where we try to update
+// deployment while it's being simultaneously updated from another source (for example Kubernetes itself)
+// this will result in the triggering of a redeployment
+func (c *Client) patchDeploymentOfComponent(componentName, applicationName string, deploymentPatchProvider deploymentPatchProvider) error {
+	// deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	// if err != nil {
+	// 	return err
+	// }
+
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(componentName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Unable to locate Deployment for component %s of application %s", componentName, applicationName)
+	}
+
+	if deploymentPatchProvider != nil {
+		patch, err := deploymentPatchProvider(deployment)
+		if err != nil {
+			return errors.Wrap(err, "Unable to create a patch for the Deployment")
+		}
+
+		// patch the Deployment with the secret
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(componentName, types.JSONPatchType, []byte(patch))
+		if err != nil {
+			return errors.Wrapf(err, "Deployment not patched %s", deployment.Name)
+		}
+	} else {
+		return errors.Wrapf(err, "deploymentPatch was not properly set")
+	}
+
+	return nil
 }
