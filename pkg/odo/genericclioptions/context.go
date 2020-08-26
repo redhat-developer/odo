@@ -290,7 +290,7 @@ func ResolveAppFlag(command *cobra.Command) string {
 }
 
 // resolveComponent resolves component
-func resolveComponent(command *cobra.Command, localConfiguration *config.LocalConfigInfo, context *Context) string {
+func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration envinfo.LocalConfigProvider) string {
 	var cmp string
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {
@@ -298,9 +298,10 @@ func resolveComponent(command *cobra.Command, localConfiguration *config.LocalCo
 		cmp = localConfiguration.GetName()
 	} else {
 		// if flag is set, check that the specified component exists
-		context.checkComponentExistsOrFail(cmpFlag)
+		o.checkComponentExistsOrFail(cmpFlag)
 		cmp = cmpFlag
 	}
+	o.cmp = cmp
 	return cmp
 }
 
@@ -347,12 +348,13 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		KClient:         KClient,
 	}
 
+	// Once the component is resolved, add it to the context
+	internalCxt.resolveAndSetComponent(command, localConfiguration)
+
 	// Create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
 	}
-	// Once the component is resolved, add it to the context
-	context.cmp = resolveComponent(command, localConfiguration, context)
 
 	return context
 }
@@ -384,12 +386,15 @@ func newDevfileContext(command *cobra.Command) *Context {
 	if !pushtarget.IsPushTargetDocker() {
 
 		// Create a new kubernetes client
-		kClient := kClient(command)
-		internalCxt.KClient = kClient
+		internalCxt.KClient = kClient(command)
+		internalCxt.Client = client(command)
 
 		// Gather the environment information
 		internalCxt.Project = resolveNamespace(command, internalCxt.KClient, envInfo)
 	}
+
+	// resolve the component
+	internalCxt.resolveAndSetComponent(command, envInfo)
 
 	// Create a context from the internal representation
 	context := &Context{
@@ -454,7 +459,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 }
 
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
-func (o *Context) checkComponentExistsOrFail(cmp string) {
+func (o *internalCxt) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
 	util.LogErrorAndExit(err, "")
 	if !exists {
