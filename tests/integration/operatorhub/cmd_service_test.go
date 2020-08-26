@@ -22,7 +22,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		// TODO: remove this when OperatorHub integration is fully baked into odo
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		// helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	preSetup := func() {
@@ -31,7 +31,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		// wait till oc can see the all operators installed by setup script in the namespace
 		ocArgs := []string{"get", "csv"}
-		operators := []string{"etcd", "mongodb"}
+		operators := []string{"etcd"}
 		for _, operator := range operators {
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, operator)
@@ -43,7 +43,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		helper.DeleteProject(project)
 	}
 
-	Context("When experimental mode is enabled", func() {
+	Context("When Operators are installed in the cluster", func() {
 
 		JustBeforeEach(func() {
 			preSetup()
@@ -55,7 +55,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		It("should list operators installed in the namespace", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "percona-server-mongodb-operator", "etcdoperator"})
+			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "etcdoperator"})
 		})
 
 		It("should not allow interactive mode command to be executed", func() {
@@ -308,7 +308,7 @@ spec:
 
 		It("listing catalog of services", func() {
 			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
-			helper.MatchAllInOutput(jsonOut, []string{"percona-server-mongodb-operator", "etcdoperator"})
+			helper.MatchAllInOutput(jsonOut, []string{"etcdoperator"})
 		})
 	})
 

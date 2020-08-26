@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	cmdutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	svc "github.com/openshift/odo/pkg/service"
-	"github.com/openshift/odo/pkg/util"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -58,9 +56,9 @@ A --plan must be passed along with the service type. Parameters to configure the
 
 For a full list of service types, use: 'odo catalog list services'`)
 
-	createShortDescExperimental = `Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.`
+	createShortDescOperatorHub = `Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.`
 
-	createLongDescExperimental = ktemplates.LongDesc(`
+	createLongDescOperatorHub = ktemplates.LongDesc(`
 Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.
 
 When creating a service using Operator Hub, provide a service name along with Operator name.
@@ -107,11 +105,9 @@ type ServiceCreateOptions struct {
 	// If set to true, DryRun prints the yaml that will create the service
 	DryRun bool
 	// Location of the file in which yaml specification of CR is stored.
-	// TODO: remove this after service create's interactive mode supports creating operator backed services
 	fromFile string
-
-	// Devfile
-	devfilePath string
+	// choose between Operator Hub and Service Catalog. If true, Operator Hub
+	csvSupport bool
 }
 
 // NewServiceCreateOptions creates a new ServiceCreateOptions instance
@@ -133,13 +129,13 @@ func NewDynamicCRD() *DynamicCRD {
 
 // Complete completes ServiceCreateOptions after they've been created
 func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.devfilePath = filepath.Join(o.componentContext, component.DevfilePath)
-
 	if len(args) == 0 || !cmd.HasFlags() {
 		o.interactive = true
 	}
 
-	if util.CheckPathExists(o.devfilePath) {
+	if o.csvSupport, err = cmdutil.IsCSVSupported(); err != nil {
+		return err
+	} else if o.csvSupport {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else if o.componentContext != "" {
 		o.Context = genericclioptions.NewContext(cmd)
@@ -151,7 +147,8 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 	var class scv1beta1.ClusterServiceClass
 
-	if util.CheckPathExists(o.devfilePath) {
+	if o.csvSupport {
+		// we don't support interactive mode for Operator Hub yet
 		o.interactive = false
 
 		// if user has just used "odo service create", simply return
@@ -204,8 +201,8 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		o.outputCLI = commonui.Proceed("Output the non-interactive version of the selected options")
 		o.wait = commonui.Proceed("Wait for the service to be ready")
 	} else {
-		// split the name provided on CLI and populate servicetype & customresource
-		if util.CheckPathExists(o.devfilePath) {
+		if o.csvSupport {
+			// split the name provided on CLI and populate servicetype & customresource
 			o.ServiceType, o.CustomResource, err = svc.SplitServiceKindName(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid service name, use the format <operator-type>/<crd-name>")
@@ -215,8 +212,8 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 			o.ServiceType = args[0]
 		}
 		// if only one arg is given, then it is considered as service name and service type both
-		// ONLY if not running in Experimental mode
-		if !util.CheckPathExists(o.devfilePath) {
+		// ONLY if working on a cluster with Service Catalog and not Operator Hub
+		if !o.csvSupport {
 			// This is because an operator with name
 			// "etcdoperator.v0.9.4-clusterwide" would lead to creation of a
 			// serice with name like
@@ -284,7 +281,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	}
 
 	// we want to find an Operator only if something's passed to the crd flag on CLI
-	if util.CheckPathExists(o.devfilePath) {
+	if o.csvSupport {
 		d := NewDynamicCRD()
 		// if the user wants to create service from a file, we check for
 		// existence of file and validate if the requested operator and CR
@@ -437,11 +434,12 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
 	s := &log.Status{}
-	if util.CheckPathExists(o.devfilePath) {
+	if o.csvSupport {
 		// in case of an opertor backed service, name of the service is
 		// provided by the yaml specification in alm-examples. It might also
-		// happen that a user spins up Service Catalog based service in
-		// experimental mode but we're taking a bet against that for now, so
+		// happen that a user wants to spin up Service Catalog based service in
+		// spite of having 4.x cluster mode but we're not supporting
+		// interacting with both Operator Hub and Service Catalog on 4.x. So
 		// the user won't get to see service name in the log message
 		if !o.DryRun {
 			log.Infof("Deploying service of type: %s", o.CustomResource)
@@ -452,8 +450,9 @@ func (o *ServiceCreateOptions) Run() (err error) {
 		log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
 	}
 
-	if util.CheckPathExists(o.devfilePath) && o.CustomResource != "" {
-		// if experimental mode is enabled and o.CustomResource is not empty, we're expected to create an Operator backed service
+	if o.csvSupport && o.CustomResource != "" {
+		// if cluster has resources of type CSV and o.CustomResource is not
+		// empty, we're expected to create an Operator backed service
 		if o.DryRun {
 			// if it's dry run, only print the alm-example (o.CustomResourceDefinition) and exit
 			jsonCR, err := json.MarshalIndent(o.CustomResourceDefinition, "", "  ")
@@ -519,13 +518,18 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
-	serviceCreateCmd.Short = createShortDescExperimental
-	serviceCreateCmd.Long = createLongDescExperimental
-	serviceCreateCmd.Example += "\n\n" + fmt.Sprintf(createOperatorExample, fullName)
-	serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
-	// remove this feature after enabling service create interactive mode for operator backed services
-	serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
+	// we ignore the error because it doesn't matter at this place to deal with it and the function returns a *cobra.Command
+	csvSupport, _ := cmdutil.IsCSVSupported()
+
+	if csvSupport {
+		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
+		serviceCreateCmd.Short = createShortDescOperatorHub
+		serviceCreateCmd.Long = createLongDescOperatorHub
+		serviceCreateCmd.Example += "\n\n" + fmt.Sprintf(createOperatorExample, fullName)
+		serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
+		// remove this feature after enabling service create interactive mode for operator backed services
+		serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
+	}
 
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringArrayVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
