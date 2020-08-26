@@ -612,9 +612,9 @@ var (
 // FormatLocallySupportedParameters outputs supported parameters and their description
 func FormatLocallySupportedParameters() (result string) {
 	for _, v := range GetLocallySupportedParameters() {
-		result = result + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
+		result = result + " " + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
 	}
-	return "\nAvailable Local Parameters:\n" + result
+	return "\nAvailable Parameters for s2i Components:\n" + result
 }
 
 // AsLocallySupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter

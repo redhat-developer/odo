@@ -50,7 +50,7 @@ var _ = Describe("odo preference and config command tests", func() {
 	Context("when running help for config command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "config", "-h")
-			Expect(appHelp).To(ContainSubstring("Modifies odo specific configuration settings within the config file"))
+			Expect(appHelp).To(ContainSubstring("Modifies odo specific configuration settings within the devfile or config file"))
 		})
 	})
 
