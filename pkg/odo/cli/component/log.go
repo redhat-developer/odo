@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
 
@@ -35,12 +34,11 @@ type LogOptions struct {
 	componentContext string
 	*ComponentOptions
 	devfilePath string
-	EnvInfo     *envinfo.EnvSpecificInfo
 }
 
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
-	return &LogOptions{false, false, "", &ComponentOptions{}, "", nil}
+	return &LogOptions{false, false, "", &ComponentOptions{}, ""}
 }
 
 // Complete completes log args
@@ -52,7 +50,6 @@ func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(lo.devfilePath) {
 		lo.ComponentOptions.Context = genericclioptions.NewDevfileContext(cmd)
-		lo.EnvInfo, err = envinfo.NewEnvSpecificInfo(lo.componentContext)
 		if err != nil {
 			return err
 		}
