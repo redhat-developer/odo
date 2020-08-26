@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/envinfo"
 	"io"
 	"net/url"
 	"os"
@@ -77,17 +78,7 @@ type ComponentSettings struct {
 
 	Envs EnvVarList `yaml:"Envs,omitempty"`
 
-	URL *[]ConfigURL `yaml:"Url,omitempty"`
-}
-
-// ConfigURL holds URL related information
-type ConfigURL struct {
-	// Name of the URL
-	Name string `yaml:"Name,omitempty"`
-	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty"`
-	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty"`
+	URL *[]envinfo.EnvInfoURL `yaml:"Url,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
@@ -257,11 +248,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
 		case "url":
-			urlValue := value.(ConfigURL)
+			urlValue := value.(envinfo.EnvInfoURL)
 			if lci.componentSettings.URL != nil {
 				*lci.componentSettings.URL = append(*lci.componentSettings.URL, urlValue)
 			} else {
-				lci.componentSettings.URL = &[]ConfigURL{urlValue}
+				lci.componentSettings.URL = &[]envinfo.EnvInfoURL{urlValue}
 			}
 		}
 
@@ -491,9 +482,9 @@ func (lc *LocalConfig) GetMaxCPU() string {
 }
 
 // GetURL returns the ConfigURL, returns default if nil
-func (lc *LocalConfig) GetURL() []ConfigURL {
+func (lc *LocalConfig) GetURL() []envinfo.EnvInfoURL {
 	if lc.componentSettings.URL == nil {
-		return []ConfigURL{}
+		return []envinfo.EnvInfoURL{}
 	}
 	return *lc.componentSettings.URL
 }
