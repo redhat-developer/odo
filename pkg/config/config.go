@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"io"
 	"net/url"
@@ -388,14 +387,6 @@ func (lci *LocalConfigInfo) SetEnvVars(envVars EnvVarList) error {
 // GetEnvVars gets the env variables from the component settings
 func (lci *LocalConfigInfo) GetEnvVars() EnvVarList {
 	return lci.GetEnvs()
-}
-
-func (lci *LocalConfigInfo) GetEnv() []common.Env {
-	if lci.Exists() {
-		envVars := lci.GetEnvs()
-		return envVars.ToDevfileEnv()
-	}
-	return []common.Env{}
 }
 
 func (lci *LocalConfigInfo) writeToFile() error {

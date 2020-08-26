@@ -1,8 +1,6 @@
 package envinfo
 
 import (
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"io"
 	"os"
 	"path/filepath"
@@ -96,7 +94,6 @@ type LocalConfigProvider interface {
 	GetDebugPort() int
 	GetURL() []EnvInfoURL
 	Exists() bool
-	GetEnv() []common.Env
 }
 
 // EnvInfo holds all the env specific information relavent to a specific Component.
@@ -435,23 +432,6 @@ func (ei *EnvInfo) GetLink() []EnvInfoLink {
 		return []EnvInfoLink{}
 	}
 	return *ei.componentSettings.Link
-}
-
-func (esi *EnvSpecificInfo) GetEnv() []common.Env {
-	if esi.Exists() {
-		devfile, err := devfileParser.Parse(esi.Filename)
-		if err != nil {
-			panic(err)
-		}
-		envs := make([]common.Env, 0, 19)
-		for _, component := range devfile.Data.GetComponents() {
-			for _, env := range component.Container.Env {
-				envs = append(envs, env)
-			}
-		}
-		return envs
-	}
-	return []common.Env{}
 }
 
 const (
