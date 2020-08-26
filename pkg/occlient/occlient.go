@@ -3280,6 +3280,11 @@ func (c *Client) IsSBRSupported() (bool, error) {
 	return c.isResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
 }
 
+// IsCSVSupported chekcs if resource of type service binding request present on the cluster
+func (c *Client) IsCSVSupported() (bool, error) {
+	return c.isResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
+}
+
 // GenerateOwnerReference genertes an ownerReference which can then be set as
 // owner for various OpenShift objects and ensure that when the owner object is
 // deleted from the cluster, all other objects are automatically removed by
