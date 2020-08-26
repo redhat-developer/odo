@@ -229,43 +229,10 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 	return localConfiguration, nil
 }
 
-// resolveProject resolves project
-func resolveProject(command *cobra.Command, client *occlient.Client, localConfiguration *config.LocalConfigInfo) string {
+// resolveNamespace resolves namespace for devfile component
+func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo envinfo.LocalConfigProvider) string {
 	var namespace string
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	if len(projectFlag) > 0 {
-		// if project flag was set, check that the specified project exists and use it
-		project, err := client.GetProject(projectFlag)
-		if err != nil || project == nil {
-			util.LogErrorAndExit(err, "")
-		}
-		namespace = projectFlag
-	} else {
-		namespace = localConfiguration.GetProject()
-		if namespace == "" {
-			namespace = client.Namespace
-			if len(namespace) <= 0 {
-				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
-				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
-			}
-		}
-
-		// check that the specified project exists
-		_, err := client.GetProject(namespace)
-		if err != nil {
-			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
-			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
-		}
-	}
-	client.Namespace = namespace
-	return namespace
-}
-
-// resolveNamespace resolves namespace for devfile component
-func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo) string {
-	var namespace string
-	projectFlag := FlagValueIfSet(command, "project")
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := client.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
@@ -279,7 +246,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		if namespace == "" {
 			namespace = client.Namespace
 			if len(namespace) <= 0 {
-				errFormat := "Could not get current namespace. Please create or set a namespace\n"
+				errFormat := "Could not get current project/namespace. Please create or set a project\n\t%s project create|set <project_name>"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 			}
 		}
@@ -287,7 +254,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		// check that the specified namespace exists
 		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 		if err != nil {
-			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
+			errFormat := fmt.Sprintf("You don't have permission to create or set project/namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
@@ -361,7 +328,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	}
 
 	// Resolve project
-	namespace := resolveProject(command, client, localConfiguration)
+	namespace := resolveNamespace(command, KClient, localConfiguration)
 
 	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)
@@ -421,8 +388,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 		internalCxt.KClient = kClient
 
 		// Gather the environment information
-		internalCxt.EnvSpecificInfo = envInfo
-		resolveNamespace(command, kClient, envInfo)
+		internalCxt.Project = resolveNamespace(command, internalCxt.KClient, envInfo)
 	}
 
 	// Create a context from the internal representation
