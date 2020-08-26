@@ -332,6 +332,17 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	It("checks that odo push works with a devfile with now flag", func() {
+		originalDir := helper.Getwd()
+		context2 := helper.CreateNewContext()
+		helper.Chdir(context2)
+		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
+		output := helper.CmdShouldPass("odo", "create", "--starter", "nodejs", "--now")
+		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+		helper.Chdir(originalDir)
+		helper.DeleteDir(context2)
+	})
+
 	// Currently these tests need interactive mode in order to set the name of the component.
 	// Once this feature is added we can change these tests.
 	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {
