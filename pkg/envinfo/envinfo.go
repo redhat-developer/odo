@@ -91,6 +91,8 @@ type LocalConfigProvider interface {
 	GetApplication() string
 	GetName() string
 	GetNamespace() string
+	GetDebugPort() int
+	GetURL() []EnvInfoURL
 }
 
 // EnvInfo holds all the env specific information relavent to a specific Component.
