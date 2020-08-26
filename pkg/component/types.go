@@ -40,7 +40,7 @@ type ComponentStatus struct {
 	LinkedServices   []string            `json:"linkedServices,omitempty"`
 }
 
-// State reperesents component state
+// State represents component state
 type State string
 
 const (
