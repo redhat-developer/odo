@@ -6,13 +6,15 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/util"
 
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util"
+	cmdutil "github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"
@@ -96,6 +98,7 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
+	options.commonLinkOptions.csvSupport, _ = util.IsCSVSupported()
 	options.commonLinkOptions.sbr = &sbo.ServiceBindingRequest{}
 	return &options
 }
@@ -105,9 +108,21 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	o.commonLinkOptions.devfilePath = filepath.Join(o.componentContext, DevfilePath)
 
 	err = o.complete(name, cmd, args)
-	if !util.CheckPathExists(o.commonLinkOptions.devfilePath) {
+	if err != nil {
+		return err
+	}
+
+	o.csvSupport, err = o.Client.IsCSVSupported()
+	if err != nil {
+		return err
+	}
+
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+		o.operation = o.KClient.LinkSecret
+	} else {
 		o.operation = o.Client.LinkSecret
 	}
+
 	return err
 }
 
@@ -118,8 +133,7 @@ func (o *LinkOptions) Validate() (err error) {
 		return err
 	}
 
-	// Return if we are using Devfile, no need to validate anything else below
-	if util.CheckPathExists(o.commonLinkOptions.devfilePath) {
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		return
 	}
 
@@ -133,7 +147,7 @@ func (o *LinkOptions) Validate() (err error) {
 			if o.isTargetAService {
 				targetType = "service"
 			}
-			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Component(), targetType, o.suppliedName)
+			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Project, targetType, o.suppliedName)
 		}
 	}
 	return
@@ -171,9 +185,21 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
 	linkCmd.Long = linkLongDescExperimental
 
+	// we ignore the error because it doesn't matter at this place to deal with it and the function returns a *cobra.Command
+	csvSupport, _ := cmdutil.IsCSVSupported()
+
+	// Modifications for the case when Operators are supported
+	if csvSupport {
+		linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
+		linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
+		linkCmd.Long = linkLongDescExperimental
+	}
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)
-
+	//Adding `--application` flag
+	if !csvSupport {
+		appCmd.AddApplicationFlag(linkCmd)
+	}
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
 

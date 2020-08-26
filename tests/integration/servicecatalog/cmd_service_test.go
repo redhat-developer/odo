@@ -21,13 +21,13 @@ var _ = Describe("odo service command tests", func() {
 
 	//  current directory and project (before eny test is run) so it can restored  after all testing is done
 	var originalDir string
-	var oc helper.OcRunner
+	// var oc helper.OcRunner
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		oc = helper.NewOcRunner("oc")
+		// oc = helper.NewOcRunner("oc")
 	})
 
 	preSetup := func() {
@@ -129,58 +129,60 @@ var _ = Describe("odo service command tests", func() {
 		})
 	})
 
-	Context("When creating with a spring boot application", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			helper.Chdir(originalDir)
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
-		It("should be able to create postgresql and link it with springboot", func() {
-			oc.ImportJavaIS(project)
-			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
-
-			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
-			helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "sb-app", "--project", project)
-
-			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080")
-
-			// push
-			helper.CmdShouldPass("odo", "push")
-
-			// create the postgres service
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--plan", "dev",
-				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
-
-			// link the service
-			helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "--project", project, "-w", "--wait-for-target")
-			odoArgs := []string{"service", "list"}
-			helper.WaitForCmdOut("odo", odoArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "dh-postgresql-apb") &&
-					strings.Contains(output, "ProvisionedAndLinked")
+	/*
+		Context("When creating with a spring boot application", func() {
+			JustBeforeEach(func() {
+				context = helper.CreateNewContext()
+				os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+				project = helper.CreateRandProject()
+				originalDir = helper.Getwd()
+				helper.Chdir(context)
 			})
+			JustAfterEach(func() {
+				helper.DeleteProject(project)
+				helper.Chdir(originalDir)
+				helper.DeleteDir(context)
+				os.Unsetenv("GLOBALODOCONFIG")
+			})
+				It("should be able to create postgresql and link it with springboot", func() {
+					oc.ImportJavaIS(project)
+					helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
 
-			routeURL := helper.DetermineRouteURL("")
+					// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
+					helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "sb-app", "--project", project)
 
-			// Ping said URL
-			helper.HttpWaitFor(routeURL, "Spring Boot", 90, 1)
+					// Create a URL
+					helper.CmdShouldPass("odo", "url", "create", "--port", "8080")
 
-			// Delete the service
-			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f")
+					// push
+					helper.CmdShouldPass("odo", "push")
 
-			// Delete the component and the config
-			helper.CmdShouldPass("odo", "delete", "sb-app", "-f", "--all")
+					// create the postgres service
+					helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+						"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+						"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
+
+					// link the service
+					helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "--project", project, "-w", "--wait-for-target")
+					odoArgs := []string{"service", "list"}
+					helper.WaitForCmdOut("odo", odoArgs, 1, true, func(output string) bool {
+						return strings.Contains(output, "dh-postgresql-apb") &&
+							strings.Contains(output, "ProvisionedAndLinked")
+					})
+
+					routeURL := helper.DetermineRouteURL("")
+
+					// Ping said URL
+					helper.HttpWaitFor(routeURL, "Spring Boot", 90, 1)
+
+					// Delete the service
+					helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f")
+
+					// Delete the component and the config
+					helper.CmdShouldPass("odo", "delete", "sb-app", "-f", "--all")
+				})
 		})
-	})
+	*/
 
 	// TODO: auth issue, we need to find a proper way how to test it without requiring cluster admin privileges
 
@@ -295,116 +297,122 @@ var _ = Describe("odo service command tests", func() {
 		})
 	})
 
-	Context("When link backend between component and service", func() {
-		JustBeforeEach(func() {
-			preSetup()
-		})
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
-		It("should link backend to service successfully", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "frontend", "--context", context1, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context1)
-			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "--s2i", "python", "backend", "--context", context2, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
-			// Switching to context2 dir because --context flag is not supported with service command
-			helper.Chdir(context2)
-			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
-
-			ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "mysql-persistent")
+	/*
+		Context("When link backend between component and service", func() {
+			JustBeforeEach(func() {
+				preSetup()
 			})
-			helper.CmdShouldPass("odo", "link", "mysql-persistent", "--wait-for-target", "--component", "backend", "--project", project)
-			// ensure that the proper envFrom entry was created
-			envFromOutput := oc.GetEnvFromEntry("backend", "app", project)
-			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
-			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--context", context2)
-			Expect(outputErr).To(ContainSubstring("been linked"))
-		})
-	})
-
-	Context("When deleting service and unlink the backend from the frontend", func() {
-		JustBeforeEach(func() {
-			preSetup()
-		})
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
-		It("should pass", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "frontend", "--context", context1, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context1)
-			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "--s2i", "python", "backend", "--context", context2, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
-			helper.Chdir(context2)
-			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
-
-			ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "mysql-persistent")
+			JustAfterEach(func() {
+				cleanPreSetup()
 			})
-			helper.CmdShouldPass("odo", "service", "delete", "mysql-persistent", "-f")
-			// ensure that the backend no longer has an envFrom value
-			backendEnvFromOutput := oc.GetEnvFromEntry("backend", "app", project)
-			Expect(backendEnvFromOutput).To(Equal("''"))
-			// ensure that the frontend envFrom was not changed
-			frontEndEnvFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
-			Expect(frontEndEnvFromOutput).To(ContainSubstring("backend"))
-			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project)
-			// ensure that the proper envFrom entry was created
-			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
-			Expect(envFromOutput).To(Equal("''"))
+			It("should link backend to service successfully", func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), context1)
+				helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "frontend", "--context", context1, "--project", project)
+				helper.CmdShouldPass("odo", "push", "--context", context1)
+				helper.CopyExample(filepath.Join("source", "python"), context2)
+				helper.CmdShouldPass("odo", "create", "--s2i", "python", "backend", "--context", context2, "--project", project)
+				helper.CmdShouldPass("odo", "push", "--context", context2)
+				helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
+				// Switching to context2 dir because --context flag is not supported with service command
+				helper.Chdir(context2)
+				helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
+
+				ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
+				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+					return strings.Contains(output, "mysql-persistent")
+				})
+				helper.CmdShouldPass("odo", "link", "mysql-persistent", "--wait-for-target", "--component", "backend", "--project", project)
+				// ensure that the proper envFrom entry was created
+				envFromOutput := oc.GetEnvFromEntry("backend", "app", project)
+				Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
+				outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--context", context2)
+				Expect(outputErr).To(ContainSubstring("been linked"))
+			})
 		})
-	})
+	*/
 
-	Context("When linking or unlinking a service or component", func() {
-		JustBeforeEach(func() {
-			preSetup()
+	/*
+		Context("When deleting service and unlink the backend from the frontend", func() {
+			JustBeforeEach(func() {
+				preSetup()
+			})
+			JustAfterEach(func() {
+				cleanPreSetup()
+			})
+			It("should pass", func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), context1)
+				helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "frontend", "--context", context1, "--project", project)
+				helper.CmdShouldPass("odo", "push", "--context", context1)
+				helper.CopyExample(filepath.Join("source", "python"), context2)
+				helper.CmdShouldPass("odo", "create", "--s2i", "python", "backend", "--context", context2, "--project", project)
+				helper.CmdShouldPass("odo", "push", "--context", context2)
+				helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
+				helper.Chdir(context2)
+				helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
+
+				ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
+				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+					return strings.Contains(output, "mysql-persistent")
+				})
+				helper.CmdShouldPass("odo", "service", "delete", "mysql-persistent", "-f")
+				// ensure that the backend no longer has an envFrom value
+				backendEnvFromOutput := oc.GetEnvFromEntry("backend", "app", project)
+				Expect(backendEnvFromOutput).To(Equal("''"))
+				// ensure that the frontend envFrom was not changed
+				frontEndEnvFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
+				Expect(frontEndEnvFromOutput).To(ContainSubstring("backend"))
+				helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project)
+				// ensure that the proper envFrom entry was created
+				envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
+				Expect(envFromOutput).To(Equal("''"))
+			})
 		})
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
+	*/
 
-		It("should print the environment variables being linked/unlinked", func() {
-			helper.CopyExample(filepath.Join("source", "python"), context1)
-			helper.CmdShouldPass("odo", "create", "--s2i", "python", "component1", "--context", context1, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context1)
-			helper.CopyExample(filepath.Join("source", "nodejs"), context2)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "component2", "--context", context2, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context2)
-
-			// tests for linking a component to a component
-			stdOut := helper.CmdShouldPass("odo", "link", "component2", "--context", context1)
-			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were added", "COMPONENT_COMPONENT2_HOST", "COMPONENT_COMPONENT2_PORT"})
-
-			// tests for unlinking a component from a component
-			stdOut = helper.CmdShouldPass("odo", "unlink", "component2", "--context", context1)
-			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were removed", "COMPONENT_COMPONENT2_HOST", "COMPONENT_COMPONENT2_PORT"})
-
-			// first create a service
-			helper.CmdShouldPass("odo", "service", "create", "-w", "dh-postgresql-apb", "--project", project, "--plan", "dev",
-				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
-			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "dh-postgresql-apb")
+	/*
+		Context("When linking or unlinking a service or component", func() {
+			JustBeforeEach(func() {
+				preSetup()
+			})
+			JustAfterEach(func() {
+				cleanPreSetup()
 			})
 
-			// tests for linking a service to a component
-			stdOut = helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "--context", context1)
-			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were added", "DB_PORT", "DB_HOST"})
+			It("should print the environment variables being linked/unlinked", func() {
+				helper.CopyExample(filepath.Join("source", "python"), context1)
+				helper.CmdShouldPass("odo", "create", "--s2i", "python", "component1", "--context", context1, "--project", project)
+				helper.CmdShouldPass("odo", "push", "--context", context1)
+				helper.CopyExample(filepath.Join("source", "nodejs"), context2)
+				helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "component2", "--context", context2, "--project", project)
+				helper.CmdShouldPass("odo", "push", "--context", context2)
 
-			// tests for unlinking a service to a component
-			stdOut = helper.CmdShouldPass("odo", "unlink", "dh-postgresql-apb", "--context", context1)
-			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were removed", "DB_PORT", "DB_HOST"})
+				// tests for linking a component to a component
+				stdOut := helper.CmdShouldPass("odo", "link", "component2", "--context", context1)
+				helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were added", "COMPONENT_COMPONENT2_HOST", "COMPONENT_COMPONENT2_PORT"})
+
+				// tests for unlinking a component from a component
+				stdOut = helper.CmdShouldPass("odo", "unlink", "component2", "--context", context1)
+				helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were removed", "COMPONENT_COMPONENT2_HOST", "COMPONENT_COMPONENT2_PORT"})
+
+				// first create a service
+				helper.CmdShouldPass("odo", "service", "create", "-w", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+					"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+					"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
+				ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+					return strings.Contains(output, "dh-postgresql-apb")
+				})
+
+				// tests for linking a service to a component
+				stdOut = helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "--context", context1)
+				helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were added", "DB_PORT", "DB_HOST"})
+
+				// tests for unlinking a service to a component
+				stdOut = helper.CmdShouldPass("odo", "unlink", "dh-postgresql-apb", "--context", context1)
+				helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were removed", "DB_PORT", "DB_HOST"})
+			})
 		})
-	})
+	*/
 
 	Context("When describing services", func() {
 		JustBeforeEach(func() {

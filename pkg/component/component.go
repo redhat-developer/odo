@@ -213,6 +213,25 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 	return secretNames, nil
 }
 
+// GetDevfileComponentLinkedSecretNames
+func GetDevfileComponentLinkedSecretNames(client *kclient.Client, componentName string, applicationName string) (secretNames []string, err error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	dc, err := client.GetOneDeploymentFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to fetch deployments for the selector %v", componentSelector)
+	}
+
+	for _, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
+		if env.SecretRef != nil {
+			secretNames = append(secretNames, env.SecretRef.Name)
+		}
+	}
+
+	return secretNames, nil
+}
+
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
