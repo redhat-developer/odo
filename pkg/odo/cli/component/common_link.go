@@ -50,6 +50,8 @@ type commonLinkOptions struct {
 	serviceType string
 	serviceName string
 	*genericclioptions.Context
+	// choose between Operator Hub and Service Catalog. If true, Operator Hub
+	csvSupport bool
 }
 
 func newCommonLinkOptions() *commonLinkOptions {
@@ -64,15 +66,31 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	suppliedName := args[0]
 	o.suppliedName = suppliedName
 
-	if util.CheckPathExists(o.devfilePath) {
+	// we need to support both devfile based component and s2i components.
+	// Let's first check if creating a devfile context is possible for the
+	// command provided by the user
+	_, err = genericclioptions.GetValidEnvInfo(cmd)
+	if err != nil {
+		// error means that we can't create a devfile context for the command
+		// and must create s2i context instead
+		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	} else {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
+	}
 
-		oclient, err := occlient.New()
-		if err != nil {
-			return err
-		}
+	o.Client, err = occlient.New()
+	if err != nil {
+		return err
+	}
 
-		sboSupport, err := oclient.IsSBRSupported()
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+
+		// oclient, err := occlient.New()
+		// if err != nil {
+		// 	return err
+		// }
+
+		sboSupport, err := o.Client.IsSBRSupported()
 		if err != nil {
 			return err
 		}
@@ -131,8 +149,6 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return nil
 	}
 
-	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
 	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
@@ -169,8 +185,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 }
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
-
-	if util.CheckPathExists(o.devfilePath) {
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		// let's validate if the service exists
 		svcFullName := strings.Join([]string{o.serviceType, o.serviceName}, "/")
 		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
@@ -265,7 +280,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 }
 
 func (o *commonLinkOptions) run() (err error) {
-	if util.CheckPathExists(o.devfilePath) {
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
 			sbrName := getSBRName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
 			svcFullName := getSvcFullName(sbrKind, sbrName)
@@ -322,16 +337,24 @@ func (o *commonLinkOptions) run() (err error) {
 		linkType = "Service"
 	}
 
-	err = o.operation(o.secretName, o.Component(), o.Application)
+	var component string
+	if o.Context.EnvSpecificInfo != nil {
+		component = o.EnvSpecificInfo.GetName()
+		err = o.operation(o.secretName, component, o.Application)
+	} else {
+		component = o.Component()
+		err = o.operation(o.secretName, component, o.Application)
+	}
+
 	if err != nil {
 		return err
 	}
 
 	switch o.operationName {
 	case "link":
-		log.Successf("%s %s has been successfully linked to the component %s\n", linkType, o.suppliedName, o.Component())
+		log.Successf("%s %s has been successfully linked to the component %s\n", linkType, o.suppliedName, component)
 	case "unlink":
-		log.Successf("%s %s has been successfully unlinked from the component %s\n", linkType, o.suppliedName, o.Component())
+		log.Successf("%s %s has been successfully unlinked from the component %s\n", linkType, o.suppliedName, component)
 	default:
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
@@ -345,9 +368,9 @@ func (o *commonLinkOptions) run() (err error) {
 		log.Infof("There are no secret environment variables to expose within the %s service", o.suppliedName)
 	} else {
 		if o.operationName == "link" {
-			log.Infof("The below secret environment variables were added to the '%s' component:\n", o.Component())
+			log.Infof("The below secret environment variables were added to the '%s' component:\n", component)
 		} else {
-			log.Infof("The below secret environment variables were removed from the '%s' component:\n", o.Component())
+			log.Infof("The below secret environment variables were removed from the '%s' component:\n", component)
 		}
 
 		// Output the environment variables
@@ -367,7 +390,7 @@ func (o *commonLinkOptions) run() (err error) {
 		if o.operationName == "link" {
 			log.Italicf(`
 You can now access the environment variables from within the component pod, for example:
-$%s is now available as a variable within component %s`, exampleEnv, o.Component())
+$%s is now available as a variable within component %s`, exampleEnv, component)
 		}
 	}
 
@@ -381,7 +404,14 @@ $%s is now available as a variable within component %s`, exampleEnv, o.Component
 }
 
 func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
-	labels := componentlabels.GetLabels(o.Component(), o.Application, true)
+	var component string
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+		component = o.EnvSpecificInfo.GetName()
+	} else {
+		component = o.Component()
+	}
+
+	labels := componentlabels.GetLabels(component, o.Application, true)
 	selectorLabels, err := util.NamespaceOpenShiftObject(labels[componentlabels.ComponentLabel], labels["app"])
 	if err != nil {
 		return err
