@@ -218,15 +218,20 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 
 	// If the preference file doesn't exist then we return with default preference
 	if _, err = os.Stat(preferenceFile); os.IsNotExist(err) {
-		// If initializing a new preferences file, make sure we add the default devfile registry to it
-		defaultRegistryList := []Registry{
-			{
-				Name:   DefaultDevfileRegistryName,
-				URL:    DefaultDevfileRegistryURL,
-				Secure: false,
-			},
+		// Add the default devfile registry if "ODO_EXPERIMENTAL" env variable is true
+		// We specifically need to check for the experimental mode env, as `odo preferences set experimental true` already properly
+		// initializes the default devfile registries.
+		experimentalEnvStr, _ := os.LookupEnv("ODO_EXPERIMENTAL")
+		if experimentalEnvStr == "true" {
+			defaultRegistryList := []Registry{
+				{
+					Name:   DefaultDevfileRegistryName,
+					URL:    DefaultDevfileRegistryURL,
+					Secure: false,
+				},
+			}
+			c.OdoSettings.RegistryList = &defaultRegistryList
 		}
-		c.OdoSettings.RegistryList = &defaultRegistryList
 		return &c, nil
 	}
 
