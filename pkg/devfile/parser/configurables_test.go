@@ -294,7 +294,6 @@ func TestAddAndRemoveEnvVars(t *testing.T) {
 
 			err := tt.currentDevfile.AddEnvVars(tt.listToAdd)
 
-			// we dont expect an error here
 			if err != nil {
 				t.Errorf("error while adding env vars %+v", err.Error())
 			}
