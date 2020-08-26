@@ -2,14 +2,17 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/validation"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
@@ -19,9 +22,10 @@ import (
 const setCommandName = "set"
 
 var (
-	setLongDesc = ktemplates.LongDesc(`Set an individual value in the odo configuration file.
-
-%[1]s`)
+	setLongDesc = ktemplates.LongDesc(`Set an individual value in the devfile or odo configuration file.
+%[1]s
+%[2]s
+`)
 	setExample = ktemplates.Examples(`
    # Set a configuration value in the local config
    %[1]s %[2]s java
@@ -39,6 +43,16 @@ var (
    # Set a env variable in the local config
    %[1]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
 	`)
+
+	devfileSetExample = ktemplates.Examples(`
+	# Set a configuration value in the devfile
+	%[1]s %[2]s testapp
+	%[1]s %[3]s 8080/TCP,8443/TCP
+	%[1]s %[4]s 500M
+
+	# Set a env variable in the devfiles
+	%[1]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
+	`)
 )
 
 // SetOptions encapsulates the options for the command
@@ -49,6 +63,9 @@ type SetOptions struct {
 	configForceFlag bool
 	envArray        []string
 	now             bool
+	devfilePath     string
+	devfileObj      parser.DevfileObj
+	IsDevfile       bool
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -59,42 +76,98 @@ func NewSetOptions() *SetOptions {
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
+	context := genericclioptions.GetContextFlagValue(cmd)
+	devfilePath := filepath.Join(context, "devfile.yaml")
+	if util.CheckPathExists(devfilePath) {
+		o.devfilePath = devfilePath
+		o.IsDevfile = true
+		o.devfileObj, err = parser.Parse(o.devfilePath)
+		if err != nil {
+			return err
+		}
+	}
+
 	if o.envArray == nil {
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
 
-	// we initialize the context irrespective of --now flag being provided
-	if o.now {
-		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-		prjName := o.LocalConfigInfo.GetProject()
-		o.ResolveSrcAndConfigFlags()
-		err = o.ResolveProject(prjName)
-		if err != nil {
-			return err
+	if !o.IsDevfile {
+
+		// we initialize the context irrespective of --now flag being provided
+		if o.now {
+			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			prjName := o.LocalConfigInfo.GetProject()
+			o.ResolveSrcAndConfigFlags()
+			err = o.ResolveProject(prjName)
+			if err != nil {
+				return err
+			}
+		} else {
+			o.Context = genericclioptions.NewConfigContext(cmd)
 		}
-	} else {
-		o.Context = genericclioptions.NewConfigContext(cmd)
 	}
+
 	return
 }
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
-	if !o.LocalConfigInfo.ConfigFileExists() {
-		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
-	}
-	if o.now {
-		err = o.ValidateComponentCreate()
-		if err != nil {
-			return err
+	if !o.IsDevfile {
+		if !o.LocalConfigInfo.ConfigFileExists() {
+			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+		}
+
+		if o.now {
+			err = o.ValidateComponentCreate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return
 }
 
+// DevfileRun is ran when the context detects a devfile locally
+func (o *SetOptions) DevfileRun() (err error) {
+	if o.envArray != nil {
+		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArray)
+		if err != nil {
+			return err
+		}
+		err = o.devfileObj.AddEnvVars(newEnvVarList)
+		if err != nil {
+			return err
+		}
+		log.Success("Environment variables were successfully updated")
+		log.Italic("\nRun `odo push` command to apply changes to the cluster")
+		return err
+	}
+	if !o.configForceFlag {
+
+		if o.devfileObj.IsSet(o.paramName) {
+			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
+				fmt.Println("Aborted by the user.")
+				return nil
+			}
+		}
+	}
+
+	err = o.devfileObj.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	if err != nil {
+		return err
+	}
+	log.Success("Devfile successfully updated")
+	log.Italic("\nRun `odo push` command to apply changes to the cluster")
+	return err
+}
+
 // Run contains the logic for the command
 func (o *SetOptions) Run() (err error) {
+
+	if o.IsDevfile {
+		return o.DevfileRun()
+	}
 
 	// env variables have been provided
 	if o.envArray != nil {
@@ -102,13 +175,13 @@ func (o *SetOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
+
 		// keeping the old env vars as well
 		presentEnvVarList := o.LocalConfigInfo.GetEnvVars()
 		newEnvVarList = presentEnvVarList.Merge(newEnvVarList)
 		if err := o.LocalConfigInfo.SetEnvVars(newEnvVarList); err != nil {
 			return err
 		}
-		log.Success("Environment variables were successfully updated")
 		if o.now {
 			err = o.Push()
 			if err != nil {
@@ -122,7 +195,8 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	if !o.configForceFlag {
-		if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
+
+		if o.LocalConfigInfo.IsSet(o.paramName) {
 			if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" || strings.ToLower(o.paramName) == "application" {
 				if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetApplication(), o.LocalConfigInfo.GetProject())) {
 					fmt.Println("Aborted by the user.")
@@ -135,6 +209,7 @@ func (o *SetOptions) Run() (err error) {
 				}
 			}
 		}
+
 	}
 
 	err = o.LocalConfigInfo.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
@@ -186,15 +261,21 @@ func isValidArgumentList(args []string) error {
 	return err
 }
 
+func getSetExampleString(fullName string) string {
+	s2iExample := fmt.Sprintf(fmt.Sprint("\n", setExample), fullName, config.Type,
+		config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU, config.Ports)
+	devfileExample := fmt.Sprintf("\n"+devfileSetExample, fullName, config.Name, config.Ports, config.Memory)
+	return devfileExample + "\n" + s2iExample
+}
+
 // NewCmdSet implements the config set odo command
 func NewCmdSet(name, fullName string) *cobra.Command {
 	o := NewSetOptions()
 	configurationSetCmd := &cobra.Command{
-		Use:   name,
-		Short: "Set a value in odo config file",
-		Long:  fmt.Sprintf(setLongDesc, config.FormatLocallySupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName, config.Type,
-			config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU, config.Ports),
+		Use:     name,
+		Short:   "Set a value in odo config file",
+		Long:    fmt.Sprintf(setLongDesc, parser.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Example: getSetExampleString(fullName),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if o.envArray != nil {
 				// no args are needed
@@ -212,5 +293,6 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
 	o.AddContextFlag(configurationSetCmd)
 	genericclioptions.AddNowFlag(configurationSetCmd, &o.now)
+
 	return configurationSetCmd
 }

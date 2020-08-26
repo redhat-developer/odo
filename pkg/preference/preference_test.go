@@ -703,15 +703,15 @@ func TestGetPushTarget(t *testing.T) {
 
 func TestFormatSupportedParameters(t *testing.T) {
 	expected := `
-Available Parameters:
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
-%s - %s
+Available Global Parameters:
+ %s - %s
+ %s - %s
+ %s - %s
+ %s - %s
+ %s - %s
+ %s - %s
+ %s - %s
+ %s - %s
 `
 	expected = fmt.Sprintf(expected,
 		BuildTimeoutSetting, BuildTimeoutSettingDescription,

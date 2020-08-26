@@ -503,9 +503,9 @@ func (c *PreferenceInfo) GetPushTarget() string {
 // FormatSupportedParameters outputs supported parameters and their description
 func FormatSupportedParameters() (result string) {
 	for _, v := range GetSupportedParameters() {
-		result = result + v + " - " + supportedParameterDescriptions[v] + "\n"
+		result = result + " " + v + " - " + supportedParameterDescriptions[v] + "\n"
 	}
-	return "\nAvailable Parameters:\n" + result
+	return "\nAvailable Global Parameters:\n" + result
 }
 
 // asSupportedParameter checks that the given parameter is supported and returns a lower case version of it if it is
