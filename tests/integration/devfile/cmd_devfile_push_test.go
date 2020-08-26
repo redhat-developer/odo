@@ -69,7 +69,8 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	Context("Verify devfile push works", func() {
 
-		It("should have no errors when no endpoints within the devfile, should create a service when devfile has endpoints and multiple pushes with changes in devfile", func() {
+		// used ";" as consolidating symbol as this spec covers multiple scenerios
+		It("should have work when no endpoints within the devfile and update accordingly when endpoints are added; also should pass when multiple pushes with changes in devfile are made", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)

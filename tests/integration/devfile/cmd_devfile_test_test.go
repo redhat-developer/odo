@@ -44,7 +44,8 @@ var _ = Describe("odo devfile test command tests", func() {
 
 	Context("Should show proper errors", func() {
 
-		It("should show error if component is not pushed or specify non-exist command or use a command from wrong group", func() {
+		// used ";" as consolidating symbol as this spec covers multiple scenerios
+		It("should show error if component is not pushed; should error out if a non-existent command or a command from wrong group is specified", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
