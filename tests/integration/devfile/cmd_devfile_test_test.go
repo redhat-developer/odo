@@ -44,15 +44,21 @@ var _ = Describe("odo devfile test command tests", func() {
 
 	Context("Should show proper errors", func() {
 
-		It("should show error if component is not pushed", func() {
+		It("should show error if component is not pushed or specify non-exist command or use a command from wrong group", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldFail("odo", "test", "--context", context)
-
 			Expect(output).To(ContainSubstring("error occurred while getting the pod: pod not found for the selector"))
+
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			output = helper.CmdShouldFail("odo", "test", "--test-command", "invalidcmd", "--context", context)
+			Expect(output).To(ContainSubstring("not found in the devfile"))
+
+			output = helper.CmdShouldFail("odo", "test", "--test-command", "devrun", "--context", context)
+			Expect(output).To(ContainSubstring("command devrun is of group run in devfile.yaml"))
 		})
 
 		It("should show error if no test group is defined", func() {
@@ -64,28 +70,6 @@ var _ = Describe("odo devfile test command tests", func() {
 			output := helper.CmdShouldFail("odo", "test", "--context", context)
 
 			Expect(output).To(ContainSubstring("the command group of kind \"test\" is not found in the devfile"))
-		})
-
-		It("should show error if specify non-exist command", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			output := helper.CmdShouldFail("odo", "test", "--test-command", "invalidcmd", "--context", context)
-
-			Expect(output).To(ContainSubstring("not found in the devfile"))
-		})
-
-		It("should show error if command from another group", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			output := helper.CmdShouldFail("odo", "test", "--test-command", "devrun", "--context", context)
-
-			Expect(output).To(ContainSubstring("command devrun is of group run in devfile.yaml"))
 		})
 
 		It("should show error if devfile has no default test command", func() {
