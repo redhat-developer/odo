@@ -19,7 +19,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
 
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
@@ -58,6 +58,14 @@ var _ = Describe("odo devfile registry command tests", func() {
 			output := helper.CmdShouldFail("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo registry add -h` to add one"})
 
+		})
+
+		It("Should list all default registries when experimental mode is set via env", func() {
+			helper.CmdShouldPass("odo", "preference", "unset", "Experimental")
+			os.Setenv("ODO_EXPERIMENTAL", "true")
+			output := helper.CmdShouldPass("odo", "registry", "list")
+			helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
+			os.Unsetenv("ODO_EXPERIMENTAL")
 		})
 	})
 
