@@ -17,20 +17,36 @@ func runningCmd(cmd *exec.Cmd) string {
 	return fmt.Sprintf("Running %s with args %v", prog, cmd.Args)
 }
 
-func CmdRunner(program string, args ...string) *gexec.Session {
+// CmdRunnerWithEnv runs the specified program and args, and sets the given env variables
+func CmdRunnerWithEnv(env []string, program string, args ...string) *gexec.Session {
 	//prefix ginkgo verbose output with program name
 	prefix := fmt.Sprintf("[%s] ", filepath.Base(program))
 	prefixWriter := gexec.NewPrefixedWriter(prefix, GinkgoWriter)
 	command := exec.Command(program, args...)
+	command.Env = env
 	fmt.Fprintln(GinkgoWriter, runningCmd(command))
 	session, err := gexec.Start(command, prefixWriter, prefixWriter)
 	Expect(err).NotTo(HaveOccurred())
 	return session
 }
 
+// CmdRunner runs the specified program and args
+func CmdRunner(program string, args ...string) *gexec.Session {
+	// Re-use the CmdRunnerWithEnv function since the logic is the same
+	// By passing in nil as the env, we default to the system env
+	return CmdRunnerWithEnv(nil, program, args...)
+}
+
 // CmdShouldPass returns stdout if command succeeds
 func CmdShouldPass(program string, args ...string) string {
 	session := CmdRunner(program, args...)
+	Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
+	return string(session.Wait().Out.Contents())
+}
+
+// CmdShouldPassWithEnv returns stdout if command succeeds
+func CmdShouldPassWithEnv(env []string, program string, args ...string) string {
+	session := CmdRunnerWithEnv(env, program, args...)
 	Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
 	return string(session.Wait().Out.Contents())
 }
