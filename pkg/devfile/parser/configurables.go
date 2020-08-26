@@ -216,7 +216,7 @@ func portsToEndpoints(ports ...string) ([]common.Endpoint, error) {
 	for _, port := range conPorts {
 
 		endpoint := common.Endpoint{
-			Name:       fmt.Sprintf("port-%d", port.ContainerPort),
+			Name:       fmt.Sprintf("port-%d-%s", port.ContainerPort, strings.ToLower(string(port.Protocol))),
 			TargetPort: port.ContainerPort,
 			Protocol:   strings.ToLower(string(port.Protocol)),
 		}

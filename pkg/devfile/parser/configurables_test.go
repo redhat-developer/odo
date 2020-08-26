@@ -109,11 +109,11 @@ func TestSetConfiguration(t *testing.T) {
 										TargetPort: 3000,
 									},
 									{
-										Name:       "port-8080",
+										Name:       "port-8080-tcp",
 										TargetPort: 8080,
 										Protocol:   "tcp",
 									}, {
-										Name:       "port-8081",
+										Name:       "port-8081-udp",
 										TargetPort: 8081,
 										Protocol:   "udp",
 									},
@@ -126,11 +126,11 @@ func TestSetConfiguration(t *testing.T) {
 								Name:  "loadbalancer",
 								Endpoints: []common.Endpoint{
 									{
-										Name:       "port-8080",
+										Name:       "port-8080-tcp",
 										TargetPort: 8080,
 										Protocol:   "tcp",
 									}, {
-										Name:       "port-8081",
+										Name:       "port-8081-udp",
 										TargetPort: 8081,
 										Protocol:   "udp",
 									},

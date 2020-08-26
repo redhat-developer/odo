@@ -44,8 +44,7 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	context := genericclioptions.GetContextFlagValue(cmd)
-	devfilePath := filepath.Join(context, "devfile.yaml")
+	devfilePath := filepath.Join(o.contextDir, "devfile.yaml")
 	if util.CheckPathExists(devfilePath) {
 		o.devfilePath = devfilePath
 		o.IsDevfile = true
