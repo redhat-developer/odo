@@ -79,6 +79,7 @@ var _ = Describe("odo devfile config command tests", func() {
 				testDebugPort,
 			}
 			helper.DontMatchAllInOutput(output, dontWantOutput)
+			helper.CmdShouldPass("odo", "push", "--project", project)
 		})
 
 		It("Should fail to set and unset an invalid parameter", func() {

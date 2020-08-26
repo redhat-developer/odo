@@ -231,9 +231,15 @@ func addEndpoints(current []common.Endpoint, other []common.Endpoint) []common.E
 	copy(newList, current)
 	for _, ep := range other {
 		present := false
-		for _, presentep := range current {
-			// if the target port and protocol match
-			if presentep.TargetPort == ep.TargetPort && (ep.Protocol == presentep.Protocol) {
+
+		for _, presentep := range newList {
+
+			protocol := presentep.Protocol
+			if protocol == "" {
+				protocol = "tcp"
+			}
+			// if the target port and protocol match, we add a case where the protocol is not provided and hence we assume that to be "tcp"
+			if presentep.TargetPort == ep.TargetPort && (ep.Protocol == protocol) {
 				present = true
 				break
 			}
