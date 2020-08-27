@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"io"
 	"os"
 	"path/filepath"
@@ -912,28 +913,17 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 
 // GetComponentFromConfig returns the component on the config if it exists
 func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, error) {
-	if localConfig.ConfigFileExists() {
-		component := getMachineReadableFormat(localConfig.GetName(), localConfig.GetType())
-
-		component.Namespace = localConfig.GetProject()
-
-		component.Spec = ComponentSpec{
-			App:        localConfig.GetApplication(),
-			Type:       localConfig.GetType(),
-			Source:     localConfig.GetSourceLocation(),
-			Ports:      localConfig.GetPorts(),
-			SourceType: string(localConfig.GetSourceType()),
-		}
-
-		if localConfig.GetSourceType() == "local" || localConfig.GetSourceType() == "binary" {
-			component.Spec.Source = util.GenFileURL(localConfig.GetSourceLocation())
-		}
-
-		urls := localConfig.GetURL()
-		if len(urls) > 0 {
-			for _, url := range urls {
-				component.Spec.URL = append(component.Spec.URL, url.Name)
-			}
+	component := getComponentFrom(localConfig, localConfig.GetType())
+	if len(component.Name) > 0 {
+		location := localConfig.GetSourceLocation()
+		sourceType := localConfig.GetSourceType()
+		component.Spec.Ports = localConfig.GetPorts()
+		component.Spec.SourceType = string(sourceType)
+		switch sourceType {
+		case config.LOCAL, config.BINARY:
+			component.Spec.Source = util.GenFileURL(location)
+		default:
+			component.Spec.Source = location
 		}
 
 		for _, localEnv := range localConfig.GetEnvVars() {
@@ -943,9 +933,53 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		for _, localStorage := range localConfig.GetStorage() {
 			component.Spec.Storage = append(component.Spec.Storage, localStorage.Name)
 		}
-		return component, nil
+		return *component, nil
 	}
 	return Component{}, nil
+}
+
+func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) Component {
+	component := getComponentFrom(info, "devfile")
+	if len(component.Name) > 0 {
+		devfile, err := devfileParser.Parse(info.GetDevfilePath())
+		if err != nil {
+			panic(err)
+		}
+		for _, cmp := range devfile.Data.GetComponents() {
+			if cmp.Container != nil {
+				for _, env := range cmp.Container.Env {
+					component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
+				}
+			}
+		}
+
+		return *component
+	}
+	return Component{}
+}
+
+func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) *Component {
+	if info.Exists() {
+		component := getMachineReadableFormat(info.GetName(), componentType)
+
+		component.Namespace = info.GetNamespace()
+
+		component.Spec = ComponentSpec{
+			App:   info.GetApplication(),
+			Type:  componentType,
+			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
+		}
+
+		urls := info.GetURL()
+		if len(urls) > 0 {
+			for _, url := range urls {
+				component.Spec.URL = append(component.Spec.URL, url.Name)
+			}
+		}
+
+		return &component
+	}
+	return &Component{}
 }
 
 // ListIfPathGiven lists all available component in given path directory

@@ -3,6 +3,8 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"strings"
 
 	"github.com/openshift/odo/pkg/config"
@@ -41,17 +43,6 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 		return err
 	}
 	return json.Unmarshal(d, cfd)
-}
-
-// loadURLSFromClientAndLocalConfig loads url information from localconfig and cluster
-func (cfd *ComponentFullDescription) loadURLSFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string) error {
-	urls, err := urlpkg.List(client, localConfigInfo, componentName, applicationName)
-	if err != nil {
-		return err
-	}
-
-	cfd.Spec.URL = urls
-	return nil
 }
 
 // loadStoragesFromClientAndLocalConfig collects information about storages in localconfig and cluster.
@@ -104,10 +95,16 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 }
 
 // NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
-func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
+func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, localConfigInfo *config.LocalConfigInfo, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	state := GetComponentState(client, componentName, applicationName)
-	componentDesc, err := GetComponentFromConfig(localConfigInfo)
+	var componentDesc Component
+	var err error
+	if envInfo != nil {
+		componentDesc = GetComponentFromDevfile(envInfo)
+	} else {
+		componentDesc, err = GetComponentFromConfig(localConfigInfo)
+	}
 	if err != nil {
 		return cfd, err
 	}
@@ -130,15 +127,23 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 
 	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
 
-	err = cfd.loadURLSFromClientAndLocalConfig(client, localConfigInfo, componentName, applicationName)
-	if err != nil {
-		return cfd, err
+	var urls urlpkg.URLList
+	if envInfo != nil {
+		routeSupported, _ := client.IsRouteSupported()
+		urls, err = urlpkg.ListIngressAndRoute(client, kClient, envInfo, componentName, routeSupported)
+	} else {
+		urls, err = urlpkg.List(client, localConfigInfo, componentName, applicationName)
 	}
+	if err != nil {
+		log.Warningf("URLs couldn't not be retrieved: %v", err)
+	}
+	cfd.Spec.URL = urls
 
 	err = cfd.loadStoragesFromClientAndLocalConfig(client, localConfigInfo, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
 	}
+
 	return cfd, nil
 }
 

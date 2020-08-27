@@ -365,7 +365,7 @@ func TestGetPushCommand(t *testing.T) {
 
 func TestEnvSpecificInfonitDoesntCreateLocalOdoFolder(t *testing.T) {
 	// cleaning up old odo files if any
-	filename, err := getEnvInfoFile("")
+	filename, _, err := getEnvInfoFile("")
 	if err != nil {
 		t.Error(err)
 	}
