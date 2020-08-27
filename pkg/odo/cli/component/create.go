@@ -1212,6 +1212,7 @@ func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectP
 			if projectInfo.Name == projectPassed { //Get the index
 				project = &projects[indexOfProject]
 				projectFound = true
+				break
 			}
 		}
 
