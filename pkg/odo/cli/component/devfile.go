@@ -95,10 +95,10 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	}
 
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
-
 	if err != nil {
 		return err
 	}
+
 	pushParams := common.PushParameters{
 		Path:            po.sourcePath,
 		IgnoredFiles:    po.ignores,
@@ -187,7 +187,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	}
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.Application, devObj, kc)
 	if err != nil {
-
+		return err
 	}
 
 	return devfileHandler.Delete(labels, do.show)
