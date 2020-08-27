@@ -1793,7 +1793,11 @@ func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.D
 				break
 			}
 			if e, ok := val.Object.(*appsv1.DeploymentConfig); ok {
-
+				for _, cond := range e.Status.Conditions {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonCond, _ := json.Marshal(cond)
+					klog.V(4).Infof("DeploymentConfig Condition: %s", string(jsonCond))
+				}
 				// If the annotation has been updated, let's exit
 				if waitCond(e, desiredRevision) {
 					return e, nil
@@ -1890,6 +1894,16 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
 				klog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				for _, cond := range e.Status.Conditions {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonCond, _ := json.Marshal(cond)
+					klog.V(4).Infof("Pod Conditions: %s", string(jsonCond))
+				}
+				for _, status := range e.Status.ContainerStatuses {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonStatus, _ := json.Marshal(status)
+					klog.V(4).Infof("Container Status: %#v", jsonStatus)
+				}
 				switch e.Status.Phase {
 				case desiredPhase:
 					klog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
