@@ -68,22 +68,6 @@ type DevfileComponent struct {
 	Volume *Volume `json:"volume,omitempty" yaml:"volume,omitempty"`
 }
 
-// Configuration
-type Configuration struct {
-	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty" yaml:"cookiesAuthEnabled,omitempty"`
-	Discoverable       bool   `json:"discoverable,omitempty" yaml:"discoverable,omitempty"`
-	Path               string `json:"path,omitempty" yaml:"path,omitempty"`
-
-	// The is the low-level protocol of traffic coming through this endpoint. Default value is "tcp"
-	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Public   bool   `json:"public,omitempty" yaml:"public,omitempty"`
-
-	// The is the URL scheme to use when accessing the endpoint. Default value is "http"
-	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
-	Secure bool   `json:"secure,omitempty" yaml:"secure,omitempty" `
-	Type   string `json:"type,omitempty" yaml:"type,omitempty"`
-}
-
 // Container Allows adding and configuring workspace-related containers
 type Container struct {
 
@@ -109,12 +93,20 @@ type Container struct {
 	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty" yaml:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
-// Endpoint
+// Endpoint holds information about how an application is exposed
 type Endpoint struct {
-	Attributes    map[string]string `json:"attributes,omitempty" yaml:"attributes,omitempty" patchStrategy:"merge"`
-	Configuration *Configuration    `json:"configuration,omitempty" yaml:"configuration,omitempty"`
-	Name          string            `json:"name" yaml:"name"`
-	TargetPort    int32             `json:"targetPort" yaml:"targetPort"`
+	Attributes map[string]string `json:"attributes,omitempty" yaml:"attributes,omitempty"`
+
+	// Describes how the endpoint should be exposed on the network. public|internal|none. Default value is "public"
+	Exposure string `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+
+	Path       string `json:"path,omitempty" yaml:"path,omitempty"`
+	Secure     bool   `json:"secure,omitempty" yaml:"secure,omitempty"`
+	Name       string `json:"name" yaml:"name"`
+	TargetPort int32  `json:"targetPort" yaml:"targetPort"`
+
+	// Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is "http"
+	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 }
 
 // Env
@@ -281,6 +273,9 @@ type DevfileParent struct {
 
 	// Bindings of commands to events. Each command is referred-to by its name.
 	Events DevfileEvents `json:"events,omitempty" yaml:"events,omitempty"`
+
+	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
+	StarterProjects []DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 }
 
 // Plugin Allows importing a plugin. Plugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as `DevWorkspaceTemplate` Kubernetes Custom Resources
@@ -320,6 +315,31 @@ type DevfileProject struct {
 
 	// Project name
 	Name string `json:"name" yaml:"name"`
+
+	// Project's Zip source
+	Zip *Zip `json:"zip,omitempty" yaml:"zip,omitempty"`
+}
+
+// DevfileStarterProject getting started project
+type DevfileStarterProject struct {
+
+	// Project name
+	Name string `json:"name" yaml:"name"`
+
+	// Description of a starter project
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+
+	// Description of a starter project
+	MarkdownDescription string `json:"markdownDescription,omitempty" yaml:"markdownDescription,omitempty"`
+
+	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
+	ClonePath string `json:"clonePath,omitempty" yaml:"clonePath,omitempty"`
+
+	// Project's Git source
+	Git *Git `json:"git,omitempty" yaml:"git,omitempty"`
+
+	// Project's GitHub source
+	Github *Github `json:"github,omitempty" yaml:"github,omitempty"`
 
 	// Project's Zip source
 	Zip *Zip `json:"zip,omitempty" yaml:"zip,omitempty"`

@@ -30,4 +30,6 @@ Fixes #?
 
 - [ ] Documentation 
 
+- [ ] I have read the [test guidelines](https://github.com/openshift/odo/blob/master/docs/dev/test-architecture.adoc)
+
 **How to test changes / Special notes to the reviewer**:

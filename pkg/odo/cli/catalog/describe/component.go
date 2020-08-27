@@ -2,9 +2,10 @@ package describe
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile"
 	"os"
 	"text/tabwriter"
+
+	"github.com/openshift/odo/pkg/devfile"
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/devfile/parser"
@@ -130,9 +131,9 @@ func (o *DescribeComponentOptions) Run() (err error) {
 						return err
 					}
 
-					projects := devObj.Data.GetProjects()
+					projects := devObj.Data.GetStarterProjects()
 					// only print project info if there is at least one project in the devfile
-					err = o.PrintDevfileProjects(w, projects, devObj)
+					err = o.PrintDevfileStarterProjects(w, projects, devObj)
 					if err != nil {
 						return err
 					}
@@ -189,9 +190,9 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 	return devObj, nil
 }
 
-// PrintDevfileProjects prints all the starter projects in a devfile
+// PrintDevfileStarterProjects prints all the starter projects in a devfile
 // If no starter projects exists in the devfile, it prints the whole devfile
-func (o *DescribeComponentOptions) PrintDevfileProjects(w *tabwriter.Writer, projects []common.DevfileProject, devObj parser.DevfileObj) error {
+func (o *DescribeComponentOptions) PrintDevfileStarterProjects(w *tabwriter.Writer, projects []common.DevfileStarterProject, devObj parser.DevfileObj) error {
 	if len(projects) > 0 {
 		fmt.Fprintln(w, "\nStarter Projects:")
 		for _, project := range projects {

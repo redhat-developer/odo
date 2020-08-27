@@ -366,7 +366,7 @@ func TestGetPushCommand(t *testing.T) {
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"push": true, "url": true, "link": true}
+	expected := map[string]bool{"debugport": true, "name": true, "namespace": true, "push": true, "url": true, "link": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)

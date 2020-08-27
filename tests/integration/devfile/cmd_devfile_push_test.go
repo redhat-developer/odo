@@ -2,10 +2,14 @@ package devfile
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
@@ -126,7 +130,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/test/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -151,7 +155,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -176,7 +180,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -202,7 +206,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -325,7 +329,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -339,7 +343,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
@@ -366,7 +370,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -489,7 +493,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -502,7 +506,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/data2"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -521,6 +525,27 @@ var _ = Describe("odo devfile push command tests", func() {
 			}
 			Expect(volumesMatched).To(Equal(true))
 		})
+
+		It("Ensure that push -f correctly removes local deleted files from the remote target sync folder", func() {
+
+			// 1) Push a generic Java project
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// 2) Rename the pom.xml, which should cause the build to fail if sync is working as expected
+			err := os.Rename(filepath.Join(context, "pom.xml"), filepath.Join(context, "pom.xml.renamed"))
+			Expect(err).NotTo(HaveOccurred())
+
+			// 3) Ensure that the build fails due to missing 'pom.xml', which ensures that the sync operation
+			// correctly renamed pom.xml to pom.xml.renamed.
+			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--namespace", namespace)
+			helper.WaitForOutputToContain("Non-readable POM", 180, 10, session)
+
+		})
+
 	})
 
 	Context("Verify devfile volume components work", func() {
@@ -581,6 +606,16 @@ var _ = Describe("odo devfile push command tests", func() {
 			storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)
 			// should be the specified size in the devfile volume component
 			Expect(storageSize).To(ContainSubstring("3Gi"))
+		})
+
+		It("should throw a validation error for v1 devfiles", func() {
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("unsupported devfile version"))
 		})
 
 	})
@@ -725,61 +760,79 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
-	/*
-		Disabled test due to issue https://github.com/openshift/odo/issues/3638
+	Context("Handle devfiles with parent", func() {
+		var server *http.Server
+		var freePort int
+		var parentTmpFolder string
 
-		Context("Handle devfiles with parent", func() {
-			It("should handle a devfile with a parent and add a extra command", func() {
-				utils.ExecPushToTestParent(context, cmpName, namespace)
-				podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-				listDir := cliRunner.ExecListDir(podName, namespace, "/projects/nodejs-starter")
-				Expect(listDir).To(ContainSubstring("blah.js"))
-			})
+		var _ = BeforeSuite(func() {
+			// get a free port
+			var err error
+			freePort, err = util.HTTPGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
 
-			It("should handle a parent and override/append it's envs", func() {
-				utils.ExecPushWithParentOverride(context, cmpName, namespace)
+			// move the parent devfiles to a tmp folder
+			parentTmpFolder = helper.CreateNewContext()
+			helper.CopyExample(filepath.Join("source", "devfiles", "parentSupport"), parentTmpFolder)
+			// update the port in the required devfile with the free port
+			helper.ReplaceString(filepath.Join(parentTmpFolder, "devfile-middle-layer.yaml"), "(-1)", strconv.Itoa(freePort))
 
-				envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+			// start the server and serve from the tmp folder of the devfiles
+			server = helper.HttpFileServer(freePort, parentTmpFolder)
 
-				value, ok := envMap["MODE2"]
-				Expect(ok).To(BeTrue())
-				Expect(value).To(Equal("TEST2-override"))
-
-				value, ok = envMap["myprop-3"]
-				Expect(ok).To(BeTrue())
-				Expect(value).To(Equal("myval-3"))
-
-				value, ok = envMap["myprop2"]
-				Expect(ok).To(BeTrue())
-				Expect(value).To(Equal("myval2"))
-			})
-
-
-				It("should handle a multi layer parent", func() {
-					utils.ExecPushWithMultiLayerParent(context, cmpName, namespace)
-
-					podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-					listDir := cliRunner.ExecListDir(podName, namespace, "/projects/user-app")
-					helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
-
-					envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
-
-					value, ok := envMap["MODE2"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("TEST2-override"))
-
-					value, ok = envMap["myprop3"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("myval3"))
-
-					value, ok = envMap["myprop2"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("myval2"))
-
-					value, ok = envMap["myprop4"]
-					Expect(ok).To(BeTrue())
-					Expect(value).To(Equal("myval4"))
-				})
+			// wait for the server to be respond with the desired result
+			helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
 		})
-	*/
+
+		var _ = AfterSuite(func() {
+			helper.DeleteDir(parentTmpFolder)
+			err := server.Close()
+			Expect(err).To(BeNil())
+		})
+
+		It("should handle a devfile with a parent and add a extra command", func() {
+			utils.ExecPushToTestParent(context, cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/project/")
+			Expect(listDir).To(ContainSubstring("blah.js"))
+		})
+
+		It("should handle a parent and override/append it's envs", func() {
+			utils.ExecPushWithParentOverride(context, cmpName, namespace, freePort)
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["ODO_TEST_ENV_0"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_0"))
+
+			value, ok = envMap["ODO_TEST_ENV_1"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_1_1"))
+		})
+
+		It("should handle a multi layer parent", func() {
+			utils.ExecPushWithMultiLayerParent(context, cmpName, namespace, freePort)
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/project")
+			helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["ODO_TEST_ENV_1"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_1_1"))
+
+			value, ok = envMap["ODO_TEST_ENV_2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_2"))
+
+			value, ok = envMap["ODO_TEST_ENV_3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("ENV_VALUE_3"))
+
+		})
+	})
+
 })

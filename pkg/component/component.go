@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -563,9 +564,10 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
+//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each enpoint entry
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool) (err error) {
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, endpointMap map[int32]parsercommon.Endpoint) (err error) {
 	isExperimentalModeEnabled := experimental.IsExperimentalModeEnabled()
 
 	if client == nil {
@@ -574,7 +576,8 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		if err != nil {
 			return err
 		}
-		client.Namespace = envSpecificInfo.GetNamespace()
+		// new client created to support route URLs for devfile components should use the same namespace as kClient's
+		client.Namespace = kClient.Namespace
 	}
 
 	if !isExperimentalModeEnabled {
@@ -608,6 +611,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		EnvURLS:                   envSpecificInfo.GetURL(),
 		IsRouteSupported:          isRouteSupported,
 		IsExperimentalModeEnabled: isExperimentalModeEnabled,
+		EndpointMap:               endpointMap,
 	})
 }
 

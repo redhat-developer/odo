@@ -1,0 +1,56 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+projects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-45
+      memoryLimit: 1024Mi
+      mountSources: true
+      sourceMapping: /project
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+      env:
+        - name: ODO_TEST_ENV_0
+          value: ENV_VALUE_0
+        - name: ODO_TEST_ENV_1
+          value: ENV_VALUE_1
+commands:
+  - exec:
+      id: install
+      component: runtime
+      commandLine: npm install
+      workingDir: /project
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: run
+      component: runtime
+      commandLine: npm start
+      workingDir: /project
+      group:
+        kind: run
+        isDefault: true
+  - exec:
+      id: debug
+      component: runtime
+      commandLine: npm run debug
+      workingDir: /project
+      group:
+        kind: debug
+        isDefault: true
+  - exec:
+      id: test
+      component: runtime
+      commandLine: npm test
+      workingDir: /project
+      group:
+        kind: test
+        isDefault: true

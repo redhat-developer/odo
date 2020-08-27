@@ -29,6 +29,17 @@ func (kubectl KubectlRunner) Run(cmd string) *gexec.Session {
 	return session
 }
 
+// Exec allows generic execution of commands, returning the contents of stdout
+func (kubectl KubectlRunner) Exec(podName string, projectName string, args ...string) string {
+
+	cmd := []string{"exec", podName, "--namespace", projectName}
+
+	cmd = append(cmd, args...)
+
+	stdOut := CmdShouldPass(kubectl.path, cmd...)
+	return stdOut
+}
+
 // ExecListDir returns dir list in specified location of pod
 func (kubectl KubectlRunner) ExecListDir(podName string, projectName string, dir string) string {
 	stdOut := CmdShouldPass(kubectl.path, "exec", podName, "--namespace", projectName,
@@ -141,4 +152,14 @@ func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName string, proj
 		mapOutput[name] = value
 	}
 	return mapOutput
+}
+
+func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
+	session := CmdRunner(kubectl.path, "get", "pvc", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	if output == "" {
+		return []string{}
+	}
+	return strings.Split(output, " ")
 }

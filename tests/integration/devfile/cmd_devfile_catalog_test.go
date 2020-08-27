@@ -104,9 +104,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	Context("When executing catalog describe component with a component name with multiple components", func() {
 		It("should print multiple devfiles from different registries", func() {
 			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
-			output := helper.CmdShouldPass("odo", "registry", "list")
-			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
-			output = helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
 			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: " + registryName})
 		})
 	})

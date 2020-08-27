@@ -67,13 +67,12 @@ func (d *Devfile100) GetProjects() []common.DevfileProject {
 }
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
-func (d *Devfile100) GetCommands() []common.DevfileCommand {
+func (d *Devfile100) GetCommands() map[string]common.DevfileCommand {
+	commands := make(map[string]common.DevfileCommand, len(d.Commands))
 
-	var commands []common.DevfileCommand
 	for _, v := range d.Commands {
 		cmd := convertV1CommandToCommon(v)
-
-		commands = append(commands, cmd)
+		commands[cmd.GetID()] = cmd
 	}
 
 	return commands
@@ -240,7 +239,7 @@ func (d *Devfile100) AddComponents(components []common.DevfileComponent) error {
 
 func (d *Devfile100) UpdateComponent(component common.DevfileComponent) {}
 
-func (d *Devfile100) AddCommands(commands []common.DevfileCommand) error { return nil }
+func (d *Devfile100) AddCommands(commands ...common.DevfileCommand) error { return nil }
 
 func (d *Devfile100) UpdateCommand(command common.DevfileCommand) {}
 
@@ -253,3 +252,15 @@ func (d *Devfile100) GetEvents() common.DevfileEvents { return common.DevfileEve
 func (d *Devfile100) AddEvents(events common.DevfileEvents) error { return nil }
 
 func (d *Devfile100) UpdateEvents(postStart, postStop, preStart, preStop []string) {}
+
+func (d *Devfile100) AddVolume(volume common.Volume, path string) error { return nil }
+
+func (d *Devfile100) DeleteVolume(name string) error { return nil }
+
+func (d *Devfile100) GetVolumeMountPath(name string) (string, error) { return "", nil }
+
+func (d *Devfile100) GetStarterProjects() []common.DevfileStarterProject { return nil }
+
+func (d *Devfile100) AddStarterProjects(projects []common.DevfileStarterProject) error { return nil }
+
+func (d *Devfile100) UpdateStarterProject(project common.DevfileStarterProject) {}

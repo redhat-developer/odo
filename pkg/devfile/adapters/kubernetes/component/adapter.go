@@ -57,12 +57,18 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	return adapter
 }
 
-// getPod lazily records and retrieves the pod associated with the component associated with this adapter
-func (a Adapter) getPod() (*corev1.Pod, error) {
-	if a.pod == nil {
-		pod, err := waitAndGetPod(true, a.ComponentName, a.Client)
+// getPod lazily records and retrieves the pod associated with the component associated with this adapter. If refresh parameter
+// is true, then the pod is refreshed from the cluster regardless of its current local state
+func (a Adapter) getPod(refresh bool) (*corev1.Pod, error) {
+	if refresh || a.pod == nil {
+		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+		watchOptions := metav1.ListOptions{
+			LabelSelector: podSelector,
+		}
+		// Wait for Pod to be in running state otherwise we can't sync data to it.
+		pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", true)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+			return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 		}
 		a.pod = pod
 	}
@@ -70,7 +76,7 @@ func (a Adapter) getPod() (*corev1.Pod, error) {
 }
 
 func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-	pod, err := a.getPod()
+	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
 	}
@@ -81,7 +87,7 @@ func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.Co
 }
 
 func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-	pod, err := a.getPod()
+	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
 	}
@@ -470,7 +476,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
 	if componentExists {
-		pod, err := a.waitAndGetComponentPod(true)
+		pod, err := a.getPod(true)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 		}
@@ -498,7 +504,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		parameters.ForceBuild = true
 	}
 
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
+	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
+	if err != nil {
+		return errors.Wrap(err, "unable to get endpoints")
+	}
+
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, endpointsMap)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -509,12 +520,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(true)
+	pod, err := a.getPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists)
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, endpointsMap)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -599,7 +610,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, endpointMap map[int32]versionsCommon.Endpoint) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -675,6 +686,11 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		}
 	}
 
+	err = storage.DeleteOldPVCs(&a.Client, componentName, processedVolumes)
+	if err != nil {
+		return err
+	}
+
 	// Add PVC and Volume Mounts to the podTemplateSpec
 	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
@@ -684,14 +700,23 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
 		"component": componentName,
 	})
+
 	var containerPorts []corev1.ContainerPort
+
 	for _, c := range deploymentSpec.Template.Spec.Containers {
-		if len(containerPorts) == 0 {
-			containerPorts = c.Ports
-		} else {
+		// No need to check
+		if reflect.DeepEqual(a.Devfile.Ctx.GetApiVersion(), "1.0.0") {
 			containerPorts = append(containerPorts, c.Ports...)
+		} else {
+			for _, port := range c.Ports {
+				// if Exposure == none, should not create a service for that port
+				if endpointMap[port.ContainerPort].Exposure != "none" {
+					containerPorts = append(containerPorts, port)
+				}
+			}
 		}
 	}
+
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
 	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(4).Infof("The component name is %v", componentName)
@@ -760,23 +785,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	return nil
-}
-
-func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
-	return waitAndGetPod(hideSpinner, a.ComponentName, a.Client)
-}
-
-func waitAndGetPod(hideSpinner bool, componentName string, client kclient.Client) (*corev1.Pod, error) {
-	podSelector := fmt.Sprintf("component=%s", componentName)
-	watchOptions := metav1.ListOptions{
-		LabelSelector: podSelector,
-	}
-	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
-	}
-	return pod, nil
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well

@@ -28,7 +28,7 @@ type Devfile200 struct {
 	Projects []common.DevfileProject `json:"projects,omitempty" yaml:"projects,omitempty"`
 
 	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
-	StarterProjects []StarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
+	StarterProjects []common.DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
 	Components []common.DevfileComponent `json:"components,omitempty" yaml:"components,omitempty"`
@@ -102,22 +102,6 @@ type Composite struct {
 
 	// Indicates if the sub-commands should be executed concurrently
 	Parallel bool `json:"parallel,omitempty"`
-}
-
-// Configuration holds configuration for an endpoint
-type Configuration struct {
-	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty"`
-	Discoverable       bool   `json:"discoverable,omitempty"`
-	Path               string `json:"path,omitempty"`
-
-	// The is the low-level protocol of traffic coming through this endpoint. Default value is "tcp"
-	Protocol string `json:"protocol,omitempty"`
-	Public   bool   `json:"public,omitempty"`
-
-	// The is the URL scheme to use when accessing the endpoint. Default value is "http"
-	Scheme string `json:"scheme,omitempty"`
-	Secure bool   `json:"secure,omitempty"`
-	Type   string `json:"type,omitempty"`
 }
 
 // Container Allows adding and configuring workspace-related containers

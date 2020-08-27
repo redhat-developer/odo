@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// StorageCreate sets the storage related information in the local configuration
 func (lci *LocalConfigInfo) StorageCreate(name, size, path string) (ComponentStorageSettings, error) {
 	storage := ComponentStorageSettings{
 		Name: name,

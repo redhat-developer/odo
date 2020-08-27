@@ -143,6 +143,11 @@ configure-installer-tests-cluster:
 configure-installer-tests-cluster-s390x:
 	. ./scripts/configure-installer-tests-cluster-s390x.sh
 
+# configure cluster to run tests on ppc64le arch
+.PHONY: configure-installer-tests-cluster-ppc64le
+configure-installer-tests-cluster-ppc64le:
+	. ./scripts/configure-installer-tests-cluster-ppc64le.sh
+
 .PHONY: configure-supported-311-is
 configure-supported-311-is:
 	. ./scripts/supported-311-is.sh
@@ -200,6 +205,11 @@ test-cmd-pref-config:
 .PHONY: test-cmd-push
 test-cmd-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
+
+# Run odo plugin handler tests
+.PHONY: test-plugin-handler
+test-plugin-handler:
+	ginkgo $(GINKGO_FLAGS) -focus="odo plugin functionality" tests/integration/
 
 # Run odo catalog devfile command tests
 .PHONY: test-cmd-devfile-catalog
@@ -277,10 +287,25 @@ test-cmd-devfile-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug
 
+# Run odo storage devfile command tests
+.PHONY: test-cmd-devfile-storage
+test-cmd-devfile-storage:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile storage command tests" tests/integration/devfile/
+
 # Run odo log devfile command tests
 .PHONY: test-cmd-devfile-log
 test-cmd-devfile-log:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile log command tests" tests/integration/devfile/
+
+# Run odo env devfile command tests
+.PHONY: test-cmd-devfile-env
+test-cmd-devfile-env:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile env command tests" tests/integration/devfile/
+
+# Run odo config devfile command tests
+.PHONY: test-cmd-devfile-config
+test-cmd-devfile-config:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile config command tests" tests/integration/devfile/
 
 # Run odo push docker devfile command tests
 .PHONY: test-cmd-docker-devfile-push

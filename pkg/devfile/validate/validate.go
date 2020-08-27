@@ -16,7 +16,7 @@ func ValidateDevfileData(data interface{}) error {
 
 	switch d := data.(type) {
 	case *v100.Devfile100:
-		components = d.GetComponents()
+		return fmt.Errorf("unsupported devfile version. Only devfiles with schema version 2.0.0 are supported")
 	case *v200.Devfile200:
 		components = d.GetComponents()
 

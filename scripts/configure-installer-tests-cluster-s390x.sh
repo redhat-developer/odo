@@ -19,6 +19,10 @@ export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
+
+# list of namespace to create
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7"
+
 # Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
     # Check if nessasary files exist
@@ -56,6 +60,16 @@ oc adm policy add-role-to-user edit developer
 #sh $SETUP_OPERATORS
 # OperatorHub setup complete
 
+# Create the namespace for e2e image test apply pull secret to the namespace
+for i in `echo $IMAGE_TEST_NAMESPACES`; do
+    # create the namespace
+    oc new-project $i
+    # Applying pull secret to the namespace which will be used for pulling images from authenticated registry
+    oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/$i/g" | oc apply -f -
+    # Let developer user have access to the project
+    oc adm policy add-role-to-user edit developer
+done
+
 # Remove existing htpasswd file, if any
 if [ -f $HTPASSWD_FILE ]; then
     rm -rf $HTPASSWD_FILE
@@ -70,16 +84,26 @@ for i in `echo $USERS`; do
     HTPASSWD_CREATED=""
 done
 
-# Workarounds - Note we should find better soulutions asap
-## Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
-#oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
+#Clear up the imagestreams out of date
+oc delete is/nodejs -n openshift
+oc delete is/java -n openshift
+oc delete istag/nodejs:10 -n openshift
+oc delete istag/nodejs:12 -n openshift
+oc delete istag/nodejs:latest -n openshift
+oc delete istag/java:11 -n openshift
+oc delete istag/java:8 -n openshift
+oc delete istag/java:latest -n openshift
+
+#Missing required images in OpenShift and Adding it manually to cluster
 oc import-image nodejs --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
 sleep 5
 oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite
 oc import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
 sleep 5
 oc annotate istag/java:8 --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/ruby/imagestreams/ruby-rhel7.json
+oc import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
+oc annotate istag/java:latest --namespace=openshift tags=builder --overwrite
+oc import-image ruby --from=registry.redhat.io/ubi8/ruby-26 -n openshift --confirm
 sleep 5
 oc annotate istag/ruby:latest --namespace=openshift tags=builder --overwrite
 oc import-image wildfly --confirm \--from docker.io/clefos/wildfly-120-centos7:latest --insecure -n openshift
@@ -157,9 +181,13 @@ fi
 
 # Setup project
 oc new-project myproject
+oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/myproject/g" | oc apply -f -
+oc adm policy add-role-to-user edit developer
 sleep 4
 oc version
-oc get secret pull-secret -n openshift-config -o yaml --export | oc create -f -
+
+# Project list
+oc projects
 
 # KUBECONFIG cleanup only if CI is set
 if [ ! -f $CI ]; then

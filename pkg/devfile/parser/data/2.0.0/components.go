@@ -1,6 +1,7 @@
 package version200
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -118,28 +119,28 @@ func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
 
 // UpdateComponent updates the component with the given name
 func (d *Devfile200) UpdateComponent(component common.DevfileComponent) {
+	index := -1
 	for i := range d.Components {
 		if d.Components[i].Container.Name == strings.ToLower(component.Container.Name) {
-			d.Components[i] = component
+			index = i
+			break
 		}
+	}
+	if index != -1 {
+		d.Components[index] = component
 	}
 }
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
-func (d *Devfile200) GetCommands() []common.DevfileCommand {
-	var commands []common.DevfileCommand
+func (d *Devfile200) GetCommands() map[string]common.DevfileCommand {
+	commands := make(map[string]common.DevfileCommand, len(d.Commands))
 
 	for _, command := range d.Commands {
 		// we convert devfile command id to lowercase so that we can handle
 		// cases efficiently without being error prone
 		// we also convert the odo push commands from build-command and run-command flags
-		if command.Exec != nil {
-			command.Exec.Id = strings.ToLower(command.Exec.Id)
-		} else if command.Composite != nil {
-			command.Composite.Id = strings.ToLower(command.Composite.Id)
-		}
+		commands[command.SetIDToLower()] = command
 
-		commands = append(commands, command)
 	}
 
 	return commands
@@ -147,17 +148,15 @@ func (d *Devfile200) GetCommands() []common.DevfileCommand {
 
 // AddCommands adds the slice of DevfileCommand objects to the Devfile's commands
 // if a command is already defined, error out
-func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
-	commandsMap := make(map[string]bool)
-	for _, command := range d.Commands {
-		commandsMap[command.Exec.Id] = true
-	}
+func (d *Devfile200) AddCommands(commands ...common.DevfileCommand) error {
+	commandsMap := d.GetCommands()
 
 	for _, command := range commands {
-		if _, ok := commandsMap[command.Exec.Id]; !ok {
+		id := command.GetID()
+		if _, ok := commandsMap[id]; !ok {
 			d.Commands = append(d.Commands, command)
 		} else {
-			return &common.AlreadyExistError{Name: command.Exec.Id, Field: "command"}
+			return &common.AlreadyExistError{Name: id, Field: "command"}
 		}
 	}
 	return nil
@@ -165,9 +164,42 @@ func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
 
 // UpdateCommand updates the command with the given id
 func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
+	id := strings.ToLower(command.GetID())
 	for i := range d.Commands {
-		if d.Commands[i].Exec.Id == strings.ToLower(command.Exec.Id) {
+		if d.Commands[i].GetID() == id {
 			d.Commands[i] = command
+		}
+	}
+}
+
+//GetStarterProjects returns the DevfileStarterProject parsed from devfile
+func (d *Devfile200) GetStarterProjects() []common.DevfileStarterProject {
+	return d.StarterProjects
+}
+
+// AddStarterProjects adds the slice of Devfile starter projects to the Devfile's starter project list
+// if a starter project is already defined, error out
+func (d *Devfile200) AddStarterProjects(projects []common.DevfileStarterProject) error {
+	projectsMap := make(map[string]bool)
+	for _, project := range d.StarterProjects {
+		projectsMap[project.Name] = true
+	}
+
+	for _, project := range projects {
+		if _, ok := projectsMap[project.Name]; !ok {
+			d.StarterProjects = append(d.StarterProjects, project)
+		} else {
+			return &common.AlreadyExistError{Name: project.Name, Field: "starterProject"}
+		}
+	}
+	return nil
+}
+
+// UpdateStarterProject updates the slice of Devfile starter projects parsed from the Devfile
+func (d *Devfile200) UpdateStarterProject(project common.DevfileStarterProject) {
+	for i := range d.StarterProjects {
+		if d.StarterProjects[i].Name == strings.ToLower(project.Name) {
+			d.StarterProjects[i] = project
 		}
 	}
 }
@@ -225,5 +257,104 @@ func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []strin
 	}
 	if len(preStop) != 0 {
 		d.Events.PreStop = preStop
+	}
+}
+
+// AddVolume adds the volume to the devFile and mounts it to all the container components
+func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
+	volumeExists := false
+	var pathErrorContainers []string
+	for _, component := range d.Components {
+		if component.Container != nil {
+			for _, volumeMount := range component.Container.VolumeMounts {
+				if volumeMount.Path == path {
+					var err = fmt.Errorf("another volume, %s, is mounted to the same path: %s, on the container: %s", volumeMount.Name, path, component.Container.Name)
+					pathErrorContainers = append(pathErrorContainers, err.Error())
+				}
+			}
+			component.Container.VolumeMounts = append(component.Container.VolumeMounts, common.VolumeMount{
+				Name: volume.Name,
+				Path: path,
+			})
+		} else if component.Volume != nil && component.Volume.Name == volume.Name {
+			volumeExists = true
+			break
+		}
+	}
+
+	if volumeExists {
+		return &common.AlreadyExistError{
+			Field: "volume",
+			Name:  volume.Name,
+		}
+	}
+
+	if len(pathErrorContainers) > 0 {
+		return fmt.Errorf("errors while creating volume:\n%s", strings.Join(pathErrorContainers, "\n"))
+	}
+
+	d.Components = append(d.Components, common.DevfileComponent{
+		Volume: &volume,
+	})
+
+	return nil
+}
+
+// DeleteVolume removes the volume from the devFile and removes all the related volume mounts
+func (d *Devfile200) DeleteVolume(name string) error {
+	found := false
+	for i := len(d.Components) - 1; i >= 0; i-- {
+		if d.Components[i].Container != nil {
+			var tmp []common.VolumeMount
+			for _, volumeMount := range d.Components[i].Container.VolumeMounts {
+				if volumeMount.Name != name {
+					tmp = append(tmp, volumeMount)
+				}
+			}
+			d.Components[i].Container.VolumeMounts = tmp
+		} else if d.Components[i].Volume != nil {
+			if d.Components[i].Volume.Name == name {
+				found = true
+				d.Components = append(d.Components[:i], d.Components[i+1:]...)
+			}
+		}
+	}
+
+	if !found {
+		return &common.NotFoundError{
+			Field: "volume",
+			Name:  name,
+		}
+	}
+
+	return nil
+}
+
+// GetVolumeMountPath gets the mount path of the required volume
+func (d *Devfile200) GetVolumeMountPath(name string) (string, error) {
+	volumeFound := false
+	mountFound := false
+	path := ""
+
+	for _, component := range d.Components {
+		if component.Container != nil {
+			for _, volumeMount := range component.Container.VolumeMounts {
+				if volumeMount.Name == name {
+					mountFound = true
+					path = volumeMount.Path
+				}
+			}
+		} else if component.Volume != nil {
+			volumeFound = true
+		}
+	}
+	if volumeFound && mountFound {
+		return path, nil
+	} else if !mountFound && volumeFound {
+		return "", fmt.Errorf("volume not mounted to any component")
+	}
+	return "", &common.NotFoundError{
+		Field: "volume",
+		Name:  "name",
 	}
 }

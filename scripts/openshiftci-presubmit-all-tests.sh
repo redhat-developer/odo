@@ -9,6 +9,8 @@ ARCH=$(uname -m)
 export CI="openshift"
 if [ "${ARCH}" == "s390x" ]; then
     make configure-installer-tests-cluster-s390x
+elif [ "${ARCH}" == "ppc64le" ]; then
+    make configure-installer-tests-cluster-ppc64le
 else
     make configure-installer-tests-cluster
 fi
@@ -32,12 +34,14 @@ odo login -u developer -p developer
 # Check login user name for debugging purpose
 oc whoami
 
-# import the odo-init-image for s390x arch
 if [ "${ARCH}" == "s390x" ]; then
-    export ODO_BOOTSTRAPPER_IMAGE=registry.redhat.io/ocp-tools-4/odo-init-container-rhel8:1.1.4
-fi
-
-if [ "${ARCH}" == "s390x" ]; then
+    # Integration tests
+    make test-integration
+    make test-cmd-login-logout
+    make test-cmd-project
+    # E2e tests
+    make test-e2e-all
+elif  [ "${ARCH}" == "ppc64le" ]; then
     # Integration tests
     make test-generic
     make test-cmd-link-unlink

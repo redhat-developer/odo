@@ -1,13 +1,14 @@
 package parser
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/kylelemons/godebug/pretty"
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
-	"reflect"
-	"testing"
 )
 
 const devfileTempPath = "devfile.yaml"
@@ -345,9 +346,8 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 											"key-0": "value-0",
 											"key-1": "value-1",
 										},
-										Configuration: nil,
-										Name:          "endpoint-0",
-										TargetPort:    8080,
+										Name:       "endpoint-0",
+										TargetPort: 8080,
 									},
 								},
 								Env: []common.Env{
@@ -781,6 +781,171 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("OverrideProjects() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr && err != nil {
+				return
+			}
+
+			if !reflect.DeepEqual(tt.wantDevFileObj, tt.devFileObj) {
+				t.Errorf("expected devfile and got devfile are different: %v", pretty.Compare(tt.wantDevFileObj, tt.devFileObj))
+			}
+		})
+	}
+}
+
+func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
+	projectName1 := "starter-1"
+	projectName2 := "starter-2"
+
+	type args struct {
+		overridePatch []common.DevfileStarterProject
+	}
+	tests := []struct {
+		name           string
+		devFileObj     DevfileObj
+		wantDevFileObj DevfileObj
+		args           args
+		wantErr        bool
+	}{
+		{
+			name: "Case 1: override a starter projects fields",
+			devFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/data",
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: projectName1,
+						},
+					},
+				},
+			},
+			args: args{
+				overridePatch: []common.DevfileStarterProject{
+					{
+						ClonePath: "/source",
+						Github: &common.Github{
+							Branch: "release-1.0.0",
+						},
+						Name: projectName1,
+						Zip:  nil,
+					},
+				},
+			},
+			wantDevFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/source",
+							Github: &common.Github{
+								Branch: "release-1.0.0",
+							},
+							Name: projectName1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Case 2: if multiple, override the correct starter project",
+			devFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/data",
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: projectName1,
+						},
+						{
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: projectName2,
+						},
+					},
+				},
+			},
+			args: args{
+				overridePatch: []common.DevfileStarterProject{
+					{
+						ClonePath: "/source",
+						Github: &common.Github{
+							Branch: "release-1.0.0",
+						},
+						Name: projectName1,
+					},
+				},
+			},
+			wantDevFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/source",
+							Github: &common.Github{
+								Branch: "release-1.0.0",
+							},
+							Name: projectName1,
+							Zip:  nil,
+						},
+						{
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: projectName2,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Case 3: throw error if starter project to override is not found",
+			devFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					StarterProjects: []common.DevfileStarterProject{
+						{
+							ClonePath: "/data",
+							Github: &common.Github{
+								Branch: "master",
+							},
+							Name: projectName1,
+							Zip:  nil,
+						},
+					},
+				},
+			},
+			args: args{
+				overridePatch: []common.DevfileStarterProject{
+					{
+						ClonePath: "/source",
+						Github: &common.Github{
+							Branch: "release-1.0.0",
+						},
+						Name: "custom-starter-project",
+						Zip:  nil,
+					},
+				},
+			},
+			wantDevFileObj: DevfileObj{},
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.devFileObj.OverrideStarterProjects(tt.args.overridePatch)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OverrideStarterProjects() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 

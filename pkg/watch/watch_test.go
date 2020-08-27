@@ -108,7 +108,7 @@ type mockPushParameters struct {
 var mockPush mockPushParameters
 
 // Mocks the devFile push function that's called when odo watch pushes to a component
-func mockDevFilePush(parameters common.PushParameters) error {
+func mockDevFilePush(parameters common.PushParameters, _ WatchParameters) error {
 	muLock.Lock()
 	defer muLock.Unlock()
 	if parameters.Show != mockPush.show || parameters.Debug != mockPush.isDebug || parameters.DebugPort != mockPush.debugPort {

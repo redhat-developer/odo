@@ -40,6 +40,15 @@ var _ = Describe("odo project command tests", func() {
 			Expect(output).To(ContainSubstring("Specify output format, supported format: json"))
 		})
 
+		It("should be able to get project", func() {
+			projectGetJSON := helper.CmdShouldPass("odo", "project", "get", "-o", "json")
+			getOutputJSON, err := helper.Unindented(projectGetJSON)
+			Expect(err).Should(BeNil())
+			expectedJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+			Expect(err).Should(BeNil())
+			Expect(getOutputJSON).Should(MatchJSON(expectedJSON))
+		})
+
 	})
 
 	Context("when running help for project command", func() {

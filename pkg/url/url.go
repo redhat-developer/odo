@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
@@ -92,11 +93,12 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
 	var getRouteErr error
+	remoteURLName := fmt.Sprintf("%s-%s", urlName, componentName)
 	// Check whether remote already created the ingress
-	ingress, getIngressErr := kClient.GetIngress(urlName)
+	ingress, getIngressErr := kClient.GetIngress(remoteURLName)
 	if kerrors.IsNotFound(getIngressErr) && routeSupported {
 		// Check whether remote already created the route
-		route, getRouteErr = client.GetRoute(urlName)
+		route, getRouteErr = client.GetRoute(remoteURLName)
 	}
 	if kerrors.IsNotFound(getIngressErr) && (!routeSupported || kerrors.IsNotFound(getRouteErr)) {
 		remoteExist = false
@@ -238,6 +240,7 @@ type CreateParameters struct {
 	host            string
 	secretName      string
 	urlKind         envinfo.URLKind
+	path            string
 }
 
 // Create creates a URL and returns url string and error if any
@@ -308,10 +311,11 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 		}
 
-		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName}
+		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
-		objectMeta.Name = parameters.urlName
+		// to avoid error due to duplicate ingress name defined in different devfile components
+		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
 		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
@@ -346,6 +350,8 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 			ownerReference = occlient.GenerateOwnerReference(dc)
 		} else {
+			// to avoid error due to duplicate ingress name defined in different devfile components
+			parameters.urlName = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 			serviceName = parameters.componentName
 
 			deployment, err := kClient.GetDeploymentByName(parameters.componentName)
@@ -356,7 +362,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		}
 
 		// Pass in the namespace name, link to the service (componentName) and labels to create a route
-		route, err := client.CreateRoute(parameters.urlName, serviceName, intstr.FromInt(parameters.portNumber), labels, parameters.secureURL, ownerReference)
+		route, err := client.CreateRoute(parameters.urlName, serviceName, intstr.FromInt(parameters.portNumber), labels, parameters.secureURL, parameters.path, ownerReference)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create route")
 		}
@@ -651,6 +657,7 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 			Port:   configURL.Port,
 			Secure: configURL.Secure,
 			Kind:   envinfo.ROUTE,
+			Path:   "/",
 		},
 	}
 }
@@ -776,7 +783,7 @@ func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Kind: envinfo.ROUTE},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: envinfo.ROUTE},
 	}
 
 }
@@ -796,7 +803,7 @@ func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
 	url := URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Kind: envinfo.INGRESS},
+		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: envinfo.INGRESS},
 	}
 	if i.Spec.TLS != nil {
 		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
@@ -827,7 +834,7 @@ func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv
 						HTTP: &iextensionsv1.HTTPIngressRuleValue{
 							Paths: []iextensionsv1.HTTPIngressPath{
 								{
-									Path: "/",
+									Path: ingressURL.Spec.Path,
 									Backend: iextensionsv1.IngressBackend{
 										ServiceName: serviceName,
 										ServicePort: port,
@@ -868,6 +875,7 @@ type PushParameters struct {
 	EnvURLS                   []envinfo.EnvInfoURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool
+	EndpointMap               map[int32]parsercommon.Endpoint
 }
 
 // Push creates and deletes the required URLs
@@ -880,13 +888,30 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		urls := parameters.EnvURLS
 		for _, url := range urls {
 			if url.Kind != envinfo.DOCKER {
+				if parameters.EndpointMap == nil {
+					klog.V(4).Infof("No Endpoint entry defined in devfile.")
+					return nil
+				}
+				endpoint, exist := parameters.EndpointMap[int32(url.Port)]
+				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
+					return fmt.Errorf("port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry", url.Port, url.Name)
+				}
+				secure := false
+				if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+					secure = true
+				}
+				path := "/"
+				if endpoint.Path != "" {
+					path = endpoint.Path
+				}
 				urlLOCAL[url.Name] = URL{
 					Spec: URLSpec{
 						Host:      url.Host,
 						Port:      url.Port,
-						Secure:    url.Secure,
+						Secure:    secure,
 						TLSSecret: url.TLSSecret,
 						Kind:      url.Kind,
+						Path:      path,
 					},
 				}
 			}
@@ -899,7 +924,53 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					Port:   url.Port,
 					Secure: url.Secure,
 					Kind:   envinfo.ROUTE,
+					Path:   "/",
 				},
+			}
+		}
+	}
+
+	log.Info("\nApplying URL changes")
+
+	// iterate through endpoints defined in devfile
+	// add the url defination into urlLOCAL if it's not defined in env.yaml
+	if parameters.IsExperimentalModeEnabled && parameters.EndpointMap != nil {
+		for port, endpoint := range parameters.EndpointMap {
+			// should not create URL if Exposure is none or internal
+			if endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
+				continue
+			}
+			exist := false
+			for _, envURL := range urlLOCAL {
+				if envURL.Spec.Port == int(port) {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				// create route against Openshift
+				if parameters.IsRouteSupported {
+					secure := false
+					if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+						secure = true
+					}
+					path := "/"
+					if endpoint.Path != "" {
+						path = endpoint.Path
+					}
+					name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
+					urlLOCAL[name] = URL{
+						Spec: URLSpec{
+							Port:   int(port),
+							Secure: secure,
+							Kind:   envinfo.ROUTE,
+							Path:   path,
+						},
+					}
+				} else {
+					// display warning since Host info is missing
+					log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", endpoint.Name)
+				}
 			}
 		}
 	}
@@ -917,6 +988,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					Port:   url.Spec.Port,
 					Kind:   envinfo.INGRESS,
 					Secure: url.Spec.Secure,
+					Path:   url.Spec.Path,
 				},
 			}
 		}
@@ -933,12 +1005,12 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					Port:   urlRoute.Spec.Port,
 					Kind:   envinfo.ROUTE,
 					Secure: urlRoute.Spec.Secure,
+					Path:   urlRoute.Spec.Path,
 				},
 			}
 		}
 	}
 
-	log.Info("\nApplying URL changes")
 	urlChange := false
 
 	// find URLs to delete
@@ -963,7 +1035,13 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				continue
 			}
 			// delete the url
-			err := Delete(client, kClient, urlName, parameters.ApplicationName, urlSpec.Spec.Kind)
+			deleteURLName := urlName
+			if parameters.IsExperimentalModeEnabled && kClient != nil {
+				// route/ingress name is defined as <urlName>-<componentName>
+				// to avoid error due to duplicate ingress name defined in different devfile components
+				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
+			}
+			err := Delete(client, kClient, deleteURLName, parameters.ApplicationName, urlSpec.Spec.Kind)
 			if err != nil {
 				return err
 			}
@@ -981,7 +1059,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if urlInfo.Spec.Kind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
-
 			createParameters := CreateParameters{
 				urlName:         urlName,
 				portNumber:      urlInfo.Spec.Port,
@@ -991,12 +1068,14 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				host:            urlInfo.Spec.Host,
 				secretName:      urlInfo.Spec.TLSSecret,
 				urlKind:         urlInfo.Spec.Kind,
+				path:            urlInfo.Spec.Path,
 			}
+
 			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
 			if err != nil {
 				return err
 			}
-			log.Successf("URL %s: %s created", urlName, host)
+			log.Successf("URL %s: %s%s created", urlName, host, urlInfo.Spec.Path)
 			urlChange = true
 		}
 	}

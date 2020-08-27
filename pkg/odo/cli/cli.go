@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/config"
 	"github.com/openshift/odo/pkg/odo/cli/debug"
+	"github.com/openshift/odo/pkg/odo/cli/env"
 	"github.com/openshift/odo/pkg/odo/cli/login"
 	"github.com/openshift/odo/pkg/odo/cli/logout"
 	"github.com/openshift/odo/pkg/odo/cli/plugins"
@@ -210,6 +211,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
 			component.NewCmdDeploy(component.DeployRecommendedCommandName, util.GetFullName(fullName, component.DeployRecommendedCommandName)),
 			component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
+			env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 		)
 	}
 
@@ -272,6 +274,5 @@ func ShowHelp(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	_ = cmd.Help()
 	return fmt.Errorf("Invalid command - see available commands/subcommands above")
 }

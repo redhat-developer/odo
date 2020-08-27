@@ -50,7 +50,7 @@ func TestGetDevfileContainerComponents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: tt.component,
 				},
 			}
@@ -97,14 +97,14 @@ func TestGetDevfileVolumeComponents(t *testing.T) {
 
 		{
 			name:                 "Case 5: Valid devfile with correct component type (Volume)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol")},
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
 			expectedMatchesCount: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: tt.component,
 				},
 			}
@@ -121,6 +121,8 @@ func TestGetDevfileVolumeComponents(t *testing.T) {
 
 func TestGetVolumes(t *testing.T) {
 
+	size := "4Gi"
+
 	tests := []struct {
 		name                       string
 		component                  []versionsCommon.DevfileComponent
@@ -128,12 +130,12 @@ func TestGetVolumes(t *testing.T) {
 	}{
 		{
 			name:      "Case 1: Valid devfile with container referencing a volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1")},
+			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
 						Name:          "myvolume1",
-						Size:          "4Gi",
+						Size:          size,
 						ContainerPath: "/my/volume/mount/path1",
 					},
 				},
@@ -142,9 +144,9 @@ func TestGetVolumes(t *testing.T) {
 		{
 			name: "Case 2: Valid devfile with container referencing multiple volume components",
 			component: []versionsCommon.DevfileComponent{
-				testingutil.GetFakeVolumeComponent("myvolume1"),
-				testingutil.GetFakeVolumeComponent("myvolume2"),
-				testingutil.GetFakeVolumeComponent("myvolume3"),
+				testingutil.GetFakeVolumeComponent("myvolume1", size),
+				testingutil.GetFakeVolumeComponent("myvolume2", size),
+				testingutil.GetFakeVolumeComponent("myvolume3", size),
 				{
 					Container: &versionsCommon.Container{
 						Name:  "mycontainer",
@@ -166,12 +168,12 @@ func TestGetVolumes(t *testing.T) {
 				"mycontainer": {
 					{
 						Name:          "myvolume1",
-						Size:          "4Gi",
+						Size:          size,
 						ContainerPath: "/myvolume1",
 					},
 					{
 						Name:          "myvolume2",
-						Size:          "4Gi",
+						Size:          size,
 						ContainerPath: "/myvolume2",
 					},
 				},
@@ -179,7 +181,7 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name:      "Case 3: Valid devfile with container referencing no volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2")},
+			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
@@ -193,7 +195,7 @@ func TestGetVolumes(t *testing.T) {
 		{
 			name: "Case 4: Valid devfile with no container volume mounts",
 			component: []versionsCommon.DevfileComponent{
-				testingutil.GetFakeVolumeComponent("myvolume2"),
+				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				{
 					Container: &versionsCommon.Container{
 						Name:  "mycontainer",
@@ -207,7 +209,7 @@ func TestGetVolumes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: tt.component,
 				},
 			}
@@ -375,7 +377,7 @@ func TestIsVolume(t *testing.T) {
 	}{
 		{
 			name:            "Case 1: Volume component",
-			component:       testingutil.GetFakeVolumeComponent("myvol"),
+			component:       testingutil.GetFakeVolumeComponent("myvol", "4Gi"),
 			wantIsSupported: true,
 		},
 		{
@@ -447,7 +449,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 	}
 
 	devObj := devfileParser.DevfileObj{
-		Data: testingutil.TestDevfileData{
+		Data: &testingutil.TestDevfileData{
 			Components:   component,
 			ExecCommands: execCommands,
 		},
@@ -502,7 +504,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 
 }
 
-func TestGetCommandsMap(t *testing.T) {
+func TestGetCommands(t *testing.T) {
 
 	component := []versionsCommon.DevfileComponent{
 		testingutil.GetFakeContainerComponent("alias1"),
@@ -566,21 +568,21 @@ func TestGetCommandsMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components:        component,
 					ExecCommands:      tt.execCommands,
 					CompositeCommands: tt.compCommands,
 				},
 			}
 
-			commandsMap := GetCommandsMap(devObj.Data.GetCommands())
+			commandsMap := devObj.Data.GetCommands()
 			if len(commandsMap) != len(tt.expectedCommands) {
-				t.Errorf("TestGetCommandsMap error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
+				t.Errorf("TestGetCommands error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}
 			for _, command := range tt.expectedCommands {
 				_, ok := commandsMap[command.GetID()]
 				if !ok {
-					t.Errorf("TestGetCommandsMap error: command %v not found in map", command.GetID())
+					t.Errorf("TestGetCommands error: command %v not found in map", command.GetID())
 				}
 			}
 		})
