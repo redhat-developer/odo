@@ -377,6 +377,8 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should execute PreStart commands if present during pod startup", func() {
+			expectedInitContainers := []string{"tools-myprestart-1", "tools-myprestart-2", "runtime-secondprestart-3"}
+
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -390,7 +392,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			firstPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
 			// 3 preStart events + 1 supervisord init containers
 			Expect(len(firstPushInitContainers)).To(Equal(4))
-			helper.MatchAllInOutput(strings.Join(firstPushInitContainers, ","), []string{"tools-myprestart", "runtime-secondprestart"})
+			helper.MatchAllInOutput(strings.Join(firstPushInitContainers, ","), expectedInitContainers)
 
 			// Need to force so build and run get triggered again with the component already created.
 			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
@@ -401,7 +403,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			secondPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
 			// 3 preStart events + 1 supervisord init containers
 			Expect(len(secondPushInitContainers)).To(Equal(4))
-			helper.MatchAllInOutput(strings.Join(secondPushInitContainers, ","), []string{"tools-myprestart", "runtime-secondprestart"})
+			helper.MatchAllInOutput(strings.Join(secondPushInitContainers, ","), expectedInitContainers)
 
 			Expect(firstPushPodName).To(Equal(secondPushPodName))
 			Expect(firstPushInitContainers).To(Equal(secondPushInitContainers))
@@ -415,9 +417,17 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					if err != nil {
 						statErr = err
-					} else if cmdOp != "hello test\n" {
-						statErr = fmt.Errorf("prestart event action error, expected: hello test, got: %s", cmdOp)
+					} else if cmdOp == "" {
+						statErr = fmt.Errorf("prestart event action error, expected: hello test2\nhello test2\nhello test\n, got empty string")
+					} else {
+						fileContents := strings.Split(cmdOp, "\n")
+						if len(fileContents)-1 != 3 {
+							statErr = fmt.Errorf("prestart event action count error, expected: 3 strings, got %d strings: %s", len(fileContents), strings.Join(fileContents, ","))
+						} else if cmdOp != "hello test2\nhello test2\nhello test\n" {
+							statErr = fmt.Errorf("prestart event action error, expected: hello test2\nhello test2\nhello test\n, got: %s", cmdOp)
+						}
 					}
+
 					return true
 				},
 			)

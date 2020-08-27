@@ -22,7 +22,7 @@ components:
 commands:
   - exec:
       id: myPreStart
-      commandLine: echo I am a myPreStart
+      commandLine: echo hello test2 >> $PROJECTS_ROOT/test.txt
       component: tools
   - exec:
       id: secondPreStart
