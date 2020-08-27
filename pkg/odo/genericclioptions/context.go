@@ -255,7 +255,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 		if err != nil {
 			errFormat := fmt.Sprintf("You don't have permission to create or set project/namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
-			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
+			errFormat = errFormat + "%s project create|set <project_name>"
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
 	}
