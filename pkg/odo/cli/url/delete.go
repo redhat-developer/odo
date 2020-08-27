@@ -3,12 +3,17 @@ package url
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/devfile"
+	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
+	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,9 +33,11 @@ var (
 // URLDeleteOptions encapsulates the options for the odo url delete command
 type URLDeleteOptions struct {
 	*clicomponent.PushOptions
-	urlName            string
-	urlForceDeleteFlag bool
-	now                bool
+	urlName              string
+	urlForceDeleteFlag   bool
+	now                  bool
+	devObj               parser.DevfileObj
+	containerEndpointMap map[string]map[string]common.Endpoint
 }
 
 // NewURLDeleteOptions creates a new URLDeleteOptions instance
@@ -78,15 +85,36 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 func (o *URLDeleteOptions) Validate() (err error) {
 	var exists bool
 	if experimental.IsExperimentalModeEnabled() {
-		urls := o.EnvSpecificInfo.GetURL()
+
 		componentName := o.EnvSpecificInfo.GetName()
-		for _, url := range urls {
-			if url.Name == o.urlName {
+
+		devObj, err := devfile.ParseAndValidate(o.DevfilePath)
+		if err != nil {
+			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
+		}
+		o.devObj = devObj
+		containerEndpointMap, err := adapterutils.GetContainerEndpoints(devObj.Data)
+		if err != nil {
+			return errors.Wrap(err, "failed to get container endpoint map")
+		}
+		o.containerEndpointMap = containerEndpointMap
+		for _, endpointMap := range containerEndpointMap {
+			if _, exist := endpointMap[o.urlName]; exist {
 				exists = true
+				break
 			}
 		}
+
 		if !exists {
-			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, componentName)
+			urls := o.EnvSpecificInfo.GetURL()
+			for _, url := range urls {
+				if url.Name == o.urlName {
+					exists = true
+				}
+			}
+			if !exists {
+				return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, componentName)
+			}
 		}
 	} else {
 		urls := o.LocalConfigInfo.GetURL()
@@ -117,6 +145,18 @@ func (o *URLDeleteOptions) Run() (err error) {
 			err = o.EnvSpecificInfo.DeleteURL(o.urlName)
 			if err != nil {
 				return err
+			}
+			containerEndpointMap := o.containerEndpointMap
+			for containerName, endpointMap := range containerEndpointMap {
+				if _, exist := endpointMap[o.urlName]; exist {
+					delete(endpointMap, o.urlName)
+					containerEndpointMap[containerName] = endpointMap
+					break
+				}
+			}
+			err = url.UpdateEndpointsInDevfile(o.devObj, containerEndpointMap)
+			if err != nil {
+				return errors.Wrapf(err, "failed to write endpoints information into devfile")
 			}
 			if o.now {
 				err = o.DevfilePush()

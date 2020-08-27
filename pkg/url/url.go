@@ -90,7 +90,7 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 }
 
 // GetIngressOrRoute returns ingress/route spec for given URL name
-func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, endpointsMap map[int32]parsercommon.Endpoint, componentName string, routeSupported bool) (URL, error) {
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, containerEndpointsMap map[string]map[string]parsercommon.Endpoint, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
@@ -116,11 +116,12 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 
 	envinfoURLs := envSpecificInfo.GetURL()
 	var devfileURL envinfo.EnvInfoURL
-	for _, localEndpoint := range endpointsMap {
-		if localEndpoint.Name != urlName {
+	for _, endpointMap := range containerEndpointsMap {
+		if _, exist := endpointMap[urlName]; !exist {
 			continue
 		}
-		if localEndpoint.Exposure == parsercommon.None || localEndpoint.Exposure == parsercommon.Internal {
+		localEndpoint := endpointMap[urlName]
+		if localEndpoint.Exposure != common.Public {
 			return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
 		}
 		for _, envURL := range envinfoURLs {
@@ -147,7 +148,6 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 			devfileURL.Port = int(localEndpoint.TargetPort)
 			devfileURL.Secure = localEndpoint.Secure
 			devfileURL.Kind = envinfo.ROUTE
-
 		}
 		localURL := ConvertEnvinfoURL(devfileURL, componentName)
 		if remoteExist {
@@ -509,7 +509,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, endpointsMap map[int32]parsercommon.Endpoint, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, containerEndpointsMap map[string]map[string]parsercommon.Endpoint, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
@@ -540,16 +540,43 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		clusterURL := getMachineReadableFormat(r)
 		clusterURLMap[clusterURL.Name] = clusterURL
 	}
-	for _, envinfoURL := range localEnvinfoURLs {
-		// only checks for Ingress and Route URLs
-		if envinfoURL.Kind == envinfo.DOCKER {
-			continue
+	for _, endpointMap := range containerEndpointsMap {
+		for _, localEndpoint := range endpointMap {
+			// only exposed endpoint will be shown as a URL in `odo url list`
+			if localEndpoint.Exposure != common.Public {
+				continue
+			}
+			var devfileURL envinfo.EnvInfoURL
+			for _, envinfoURL := range localEnvinfoURLs {
+				// only checks for Ingress and Route URLs
+				if envinfoURL.Name != localEndpoint.Name {
+					continue
+				}
+				if envinfoURL.Kind == envinfo.DOCKER {
+					continue
+				}
+				if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
+					continue
+				}
+				devfileURL = envinfoURL
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
+			}
+			if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
+				// If it is not openshify cluster, should ignore the endpoint entry when executing url describe/list
+				if !routeSupported {
+					break
+				}
+				devfileURL.Name = localEndpoint.Name
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
+				devfileURL.Kind = envinfo.ROUTE
+			}
+			localURL := ConvertEnvinfoURL(devfileURL, componentName)
+			localMap[localURL.Name] = localURL
+
 		}
-		if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
-			continue
-		}
-		localURL := ConvertEnvinfoURL(envinfoURL, componentName)
-		localMap[localURL.Name] = localURL
 	}
 
 	for URLName, clusterURL := range clusterURLMap {
@@ -948,17 +975,19 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 						}
 					}
 				}
-				if !existInEnv && !parameters.IsRouteSupported {
-					// display warning since Host info is missing
-					log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", endpoint.Name)
-				} else {
-					urlLOCAL[name] = URL{
-						Spec: URLSpec{
-							Port:   int(endpoint.TargetPort),
-							Secure: secure,
-							Kind:   envinfo.ROUTE,
-							Path:   path,
-						},
+				if !existInEnv {
+					if !parameters.IsRouteSupported {
+						// display warning since Host info is missing
+						log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", endpoint.Name)
+					} else {
+						urlLOCAL[name] = URL{
+							Spec: URLSpec{
+								Port:   int(endpoint.TargetPort),
+								Secure: secure,
+								Kind:   envinfo.ROUTE,
+								Path:   path,
+							},
+						}
 					}
 				}
 			}

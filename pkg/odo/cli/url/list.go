@@ -136,11 +136,11 @@ func (o *URLListOptions) Run() (err error) {
 			if err != nil {
 				return errors.Wrap(err, "fail to parse the devfile")
 			}
-			endpointsMap, err := kubeutils.GetEndpoints(devObj.Data)
+			containerEndpointMap, err := kubeutils.GetContainerEndpoints(devObj.Data)
 			if err != nil {
-				return errors.Wrap(err, "unable to get endpoints")
+				return errors.Wrap(err, "unable to get container endpoints")
 			}
-			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, endpointsMap, componentName, routeSupported)
+			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, containerEndpointMap, componentName, routeSupported)
 			if err != nil {
 				return err
 			}
