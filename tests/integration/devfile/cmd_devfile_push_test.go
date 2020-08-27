@@ -65,6 +65,15 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
 		})
 
+		It("should be able to push based on name passed", func() {
+			name := "springboot"
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace, name)
+			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
+		})
+
 	})
 
 	Context("Verify devfile push works", func() {
