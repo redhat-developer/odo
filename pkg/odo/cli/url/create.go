@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -76,26 +78,27 @@ var (
 // URLCreateOptions encapsulates the options for the odo url create command
 type URLCreateOptions struct {
 	*clicomponent.PushOptions
-	urlName          string
-	urlPort          int
-	secureURL        bool
-	componentPort    int
-	now              bool
-	host             string
-	tlsSecret        string
-	exposedPort      int
-	exposure         string
-	path             string
-	protocol         string
-	container        string
-	forceFlag        bool
-	isRouteSupported bool
-	wantIngress      bool
-	urlType          envinfo.URLKind
-	isDevFile        bool
-	isDocker         bool
-	isExperimental   bool
-	devObj           parser.DevfileObj
+	urlName           string
+	urlPort           int
+	secureURL         bool
+	componentPort     int
+	now               bool
+	host              string
+	tlsSecret         string
+	exposedPort       int
+	exposure          string
+	path              string
+	protocol          string
+	container         string
+	forceFlag         bool
+	isRouteSupported  bool
+	wantIngress       bool
+	urlType           envinfo.URLKind
+	isDevFile         bool
+	isDocker          bool
+	isExperimental    bool
+	devObj            parser.DevfileObj
+	devfileContainers []corev1.Container
 }
 
 // NewURLCreateOptions creates a new URLCreateOptions instance
@@ -165,6 +168,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 		if err != nil {
 			return err
 		}
+		o.devfileContainers = containers
 		if len(containers) == 0 {
 			return fmt.Errorf("No valid components found in the devfile")
 		}
@@ -380,6 +384,11 @@ func (o *URLCreateOptions) Run() (err error) {
 						break
 					}
 				}
+			}
+			if reflect.DeepEqual(containerEndpointMap, map[string]map[string]common.Endpoint{}) {
+				// devfile have no containers had endpoint entry
+				// pick the first container to store the new enpoint
+				o.container = o.devfileContainers[0].Name
 			}
 			if len(o.container) == 0 {
 				o.container = firstContainer
