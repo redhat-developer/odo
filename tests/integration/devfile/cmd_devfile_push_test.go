@@ -82,7 +82,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).NotTo(ContainSubstring(cmpName))
 
 			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
-			output = helper.CmdShouldPass("odo", "push", "--project", namespace)
+			output = helper.CmdShouldPass("odo", "push", "--project", namespace, cmpName)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 			Expect(output).To(ContainSubstring("Executing devfile commands for component " + cmpName))
