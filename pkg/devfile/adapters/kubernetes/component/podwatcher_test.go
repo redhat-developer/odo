@@ -307,7 +307,7 @@ func TestStatusReconciler(t *testing.T) {
 				reconcilerChannel <- statusReconcilerChannelEntry{
 					pods:                   fauxReconcilerEntry.pods,
 					err:                    nil,
-					isCompleteListOfPods:   false,
+					isCompleteListOfPods:   fauxReconcilerEntry.isCompleteListOfPods,
 					isDeleteEventFromWatch: fauxReconcilerEntry.isDeleteEventFromWatch,
 				}
 
@@ -331,7 +331,7 @@ func TestStatusReconciler(t *testing.T) {
 				reconcilerChannel <- statusReconcilerChannelEntry{
 					pods:                   fauxReconcilerEntry.pods,
 					err:                    nil,
-					isCompleteListOfPods:   false,
+					isCompleteListOfPods:   fauxReconcilerEntry.isCompleteListOfPods,
 					isDeleteEventFromWatch: fauxReconcilerEntry.isDeleteEventFromWatch,
 				}
 			}
