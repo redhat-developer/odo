@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
-
-	"github.com/openshift/odo/pkg/util"
 )
 
 func TestNew(t *testing.T) {
@@ -698,51 +696,6 @@ func TestGetPushTarget(t *testing.T) {
 			}
 
 		})
-	}
-}
-
-func TestFormatSupportedParameters(t *testing.T) {
-	expected := `
-Available Global Parameters:
- %s - %s
- %s - %s
- %s - %s
- %s - %s
- %s - %s
- %s - %s
- %s - %s
- %s - %s
-`
-	expected = fmt.Sprintf(expected,
-		BuildTimeoutSetting, BuildTimeoutSettingDescription,
-		ExperimentalSetting, ExperimentalDescription,
-		NamePrefixSetting, NamePrefixSettingDescription,
-		PushTargetSetting, PushTargetDescription,
-		PushTimeoutSetting, PushTimeoutSettingDescription,
-		RegistryCacheTimeSetting, RegistryCacheTimeDescription,
-		TimeoutSetting, TimeoutSettingDescription,
-		UpdateNotificationSetting, UpdateNotificationSettingDescription,
-	)
-	actual := FormatSupportedParameters()
-	if expected != actual {
-		t.Errorf("expected '%s', got '%s'", expected, actual)
-	}
-}
-
-func TestLowerCaseParameters(t *testing.T) {
-	expected := map[string]bool{
-		"nameprefix":         true,
-		"buildtimeout":       true,
-		"pushtimeout":        true,
-		"registrycachetime":  true,
-		"timeout":            true,
-		"updatenotification": true,
-		"experimental":       true,
-		"pushtarget":         true,
-	}
-	actual := util.GetLowerCaseParameters(GetSupportedParameters())
-	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("expected '%v', got '%v'", expected, actual)
 	}
 }
 

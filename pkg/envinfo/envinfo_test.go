@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
-
-	"github.com/openshift/odo/pkg/util"
 )
 
 func TestSetEnvInfo(t *testing.T) {
@@ -363,14 +361,6 @@ func TestGetPushCommand(t *testing.T) {
 		})
 	}
 
-}
-
-func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"debugport": true, "name": true, "namespace": true, "push": true, "url": true, "link": true}
-	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
-	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("expected '%v', got '%v'", expected, actual)
-	}
 }
 
 func TestEnvSpecificInfonitDoesntCreateLocalOdoFolder(t *testing.T) {
