@@ -78,8 +78,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	Context("Verify devfile push works", func() {
 
-		// used ";" as consolidating symbol as this spec covers multiple scenerios
-		It("should have work when no endpoints within the devfile and update accordingly when endpoints are added; also should pass when multiple pushes with changes in devfile are made", func() {
+		It("should have no errors when no endpoints within the devfile, should create a service when devfile has endpoints", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -91,17 +90,25 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).NotTo(ContainSubstring(cmpName))
 
 			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
-			output = helper.CmdShouldPass("odo", "push", "--project", namespace, cmpName)
+			output = helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-			Expect(output).To(ContainSubstring("Executing devfile commands for component " + cmpName))
+			output = cliRunner.GetServices(namespace)
+			Expect(output).To(ContainSubstring(cmpName))
+		})
+
+		It("checks that odo push works with a devfile", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
-
-			output = cliRunner.GetServices(namespace)
-			Expect(output).To(ContainSubstring(cmpName))
 		})
 
 		It("checks that odo push works with a devfile with sourcemapping set", func() {
