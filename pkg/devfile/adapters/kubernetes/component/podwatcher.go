@@ -91,12 +91,12 @@ func (pw *podWatcher) startWatchThread(adapter *Adapter) {
 	// Kick off the goroutine then return execution
 	go func() {
 
-		watchAttempts := 0
+		watchAttempts := 1
 
 		var w watch.Interface = nil
 		for {
 
-			klog.V(4).Infof("Attempting to acquire watch, attempt #%d", watchAttempts+1)
+			klog.V(4).Infof("Attempting to acquire watch, attempt #%d", watchAttempts)
 
 			var err error
 			w, err = adapter.Client.KubeClient.CoreV1().Pods(adapter.Client.Namespace).Watch(metav1.ListOptions{})

@@ -22,17 +22,21 @@ func TestStatusReconciler(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		pre               []*corev1.Pod
+		pre               []testReconcilerEntry
 		expectedPreEvents int
-		post              []*corev1.Pod
+		post              []testReconcilerEntry
 		successFn         func(lfo *logFuncOutput) string
 	}{
 		{
 			name:              "a new pod should trigger a status update",
-			pre:               []*corev1.Pod{},
+			pre:               []testReconcilerEntry{},
 			expectedPreEvents: 0,
-			post: []*corev1.Pod{
-				createFakePod(componentName, componentName, nil),
+			post: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, nil),
+					},
+				},
 			},
 			successFn: func(lfo *logFuncOutput) string {
 
@@ -53,41 +57,69 @@ func TestStatusReconciler(t *testing.T) {
 		},
 		{
 			name: "if a pod is deleted, trigger a status update",
-			pre: []*corev1.Pod{
-				createFakePod(componentName, componentName, func(pod *corev1.Pod) {
-					pod.UID = "one"
-				}),
+			pre: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+						pod.UID = "one"
+					}),
+					},
+				},
 			},
+
 			expectedPreEvents: 1,
-			post:              []*corev1.Pod{},
-			successFn: func(lfo *logFuncOutput) string {
-				time.Sleep(5 * time.Second)
-				if lfo.listSize() > 0 {
-					return fmt.Sprintf("Unexpected event after deletion: %v", lfo.debugSprintAll())
-				}
-				return ""
-			},
-		},
-		{
-			name: "if a pod is updated, trigger a status update",
-			pre: []*corev1.Pod{
-				createFakePod(componentName, componentName, func(pod *corev1.Pod) {
-					pod.UID = "one"
-					pod.Status.Phase = corev1.PodPending
-				}),
-			},
-			expectedPreEvents: 1,
-			post: []*corev1.Pod{
-				createFakePod(componentName, componentName, func(pod *corev1.Pod) {
-					pod.UID = "one"
-					pod.Status.Phase = corev1.PodRunning
-				}),
+			post: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+						pod.UID = "one"
+					}),
+					},
+					isDeleteEventFromWatch: true,
+				},
 			},
 			successFn: func(lfo *logFuncOutput) string {
 				latestPodStatus := lfo.getMostRecentKubernetesPodStatus()
 				if latestPodStatus == nil {
 					return "pod not found"
 				}
+
+				if len(latestPodStatus.Pods) != 0 {
+					return fmt.Sprintf("Unexpected number of pods: %v", lfo.debugSprintAll())
+				}
+
+				return ""
+			},
+		},
+		{
+			name: "if a pod is updated, trigger a status update",
+			pre: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "one"
+							pod.Status.Phase = corev1.PodPending
+						}),
+					},
+				},
+			},
+
+			expectedPreEvents: 1,
+			post: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "one"
+							pod.Status.Phase = corev1.PodRunning
+						}),
+					},
+				},
+			},
+
+			successFn: func(lfo *logFuncOutput) string {
+				latestPodStatus := lfo.getMostRecentKubernetesPodStatus()
+				if latestPodStatus == nil {
+					return "pod not found"
+				}
+
 				if len(latestPodStatus.Pods) != 1 {
 					return fmt.Sprintf("unexpected pod size, %v", lfo.debugSprintAll())
 				}
@@ -104,12 +136,133 @@ func TestStatusReconciler(t *testing.T) {
 
 			},
 		},
+		{
+			name: "if a pod fails and is replaced by another, but both temporarily exist together",
+			pre: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "one"
+							pod.Status.Phase = corev1.PodPending
+						}),
+					},
+				},
+			},
+			expectedPreEvents: 1,
+			post: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "one"
+							pod.Status.Phase = corev1.PodFailed
+						}),
+					},
+				},
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "two"
+							pod.Status.Phase = corev1.PodRunning
+						}),
+					},
+				},
+			},
+
+			successFn: func(lfo *logFuncOutput) string {
+				latestPodStatus := lfo.getMostRecentKubernetesPodStatus()
+				if latestPodStatus == nil {
+					return "pod not found"
+				}
+
+				if len(latestPodStatus.Pods) != 2 {
+					return fmt.Sprintf("unexpected pod size, %v", lfo.debugSprintAll())
+				}
+
+				for _, pod := range latestPodStatus.Pods {
+
+					if pod.Name != "my-component" {
+						return fmt.Sprintf("mismatching component, %v", lfo.debugSprintAll())
+					}
+
+					if pod.UID == "one" {
+						if pod.Phase != string(corev1.PodFailed) {
+							return fmt.Sprintf("unexpected pod phase, %v", lfo.debugSprintAll())
+						}
+					}
+
+					if pod.UID == "two" {
+						if pod.Phase != string(corev1.PodRunning) {
+							return fmt.Sprintf("unexpected pod phase, %v", lfo.debugSprintAll())
+						}
+					}
+
+				}
+
+				return ""
+
+			},
+		},
+		{
+			name: "if a pod fails, and is fully replaced (one and new pod don't co-exist at the same time)",
+
+			pre: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "one"
+							pod.Status.Phase = corev1.PodRunning
+						}),
+					},
+				},
+			},
+
+			expectedPreEvents: 1,
+			post: []testReconcilerEntry{
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "one"
+							pod.Status.Phase = corev1.PodFailed
+						}),
+					},
+					isDeleteEventFromWatch: true,
+				},
+				{
+					pods: []*corev1.Pod{
+						createFakePod(componentName, componentName, func(pod *corev1.Pod) {
+							pod.UID = "two"
+							pod.Status.Phase = corev1.PodRunning
+						}),
+					},
+				},
+			},
+			successFn: func(lfo *logFuncOutput) string {
+				latestPodStatus := lfo.getMostRecentKubernetesPodStatus()
+				if latestPodStatus == nil {
+					return "pod not found"
+				}
+
+				if len(latestPodStatus.Pods) != 1 {
+					return fmt.Sprintf("unexpected pod size, %v", lfo.debugSprintAll())
+				}
+
+				if latestPodStatus.Pods[0].Name != "my-component" {
+					return fmt.Sprintf("mismatching component, %v", lfo.debugSprintAll())
+				}
+
+				if latestPodStatus.Pods[0].UID != "two" {
+					return fmt.Sprintf("unexpected pod UID, %v", lfo.debugSprintAll())
+				}
+				return ""
+
+			},
+		},
 
 		{
 			name:              "no changes should trigger no events",
-			pre:               []*corev1.Pod{},
+			pre:               []testReconcilerEntry{},
 			expectedPreEvents: 0,
-			post:              []*corev1.Pod{},
+			post:              []testReconcilerEntry{},
 			successFn: func(lfo *logFuncOutput) string {
 				time.Sleep(5 * time.Second)
 
@@ -149,12 +302,15 @@ func TestStatusReconciler(t *testing.T) {
 				isDeleteEventFromWatch: false,
 			}
 
-			// Send the initial simulated cluster status before the test runs
-			reconcilerChannel <- statusReconcilerChannelEntry{
-				pods:                   tt.pre,
-				err:                    nil,
-				isCompleteListOfPods:   false,
-				isDeleteEventFromWatch: false,
+			for _, fauxReconcilerEntry := range tt.pre {
+				// Send the initial simulated cluster status before the test runs
+				reconcilerChannel <- statusReconcilerChannelEntry{
+					pods:                   fauxReconcilerEntry.pods,
+					err:                    nil,
+					isCompleteListOfPods:   false,
+					isDeleteEventFromWatch: fauxReconcilerEntry.isDeleteEventFromWatch,
+				}
+
 			}
 
 			// Wait for the expected number of events that will be generated by sending the initial faux cluster status
@@ -170,12 +326,14 @@ func TestStatusReconciler(t *testing.T) {
 			// Clear the expected events
 			logFuncOutput.clearList()
 
-			// Send the test's simulated cluster status
-			reconcilerChannel <- statusReconcilerChannelEntry{
-				pods:                   tt.post,
-				err:                    nil,
-				isCompleteListOfPods:   false,
-				isDeleteEventFromWatch: false,
+			for _, fauxReconcilerEntry := range tt.post {
+				// Send the test's simulated cluster status
+				reconcilerChannel <- statusReconcilerChannelEntry{
+					pods:                   fauxReconcilerEntry.pods,
+					err:                    nil,
+					isCompleteListOfPods:   false,
+					isDeleteEventFromWatch: fauxReconcilerEntry.isDeleteEventFromWatch,
+				}
 			}
 
 			// Wait up to 10 seconds for the test to signal success (an empty string, indicating no errors)
@@ -208,12 +366,16 @@ func TestStatusReconciler(t *testing.T) {
 
 }
 
-type logFuncOutput struct {
-	jsonList      []machineoutput.MachineEventLogEntry
-	listMutex     sync.Mutex
-	errorOccurred error
+// Simulate a channel message sent to the status reconciler. See 'statusReconcilerChannelEntry' for field details
+type testReconcilerEntry struct {
+	pods []*corev1.Pod
+
+	isCompleteListOfPods bool
+
+	isDeleteEventFromWatch bool
 }
 
+// getMostRecentKubernetesPodStatus is a test convenience method to retrieve the most recent pod status
 func (lfo *logFuncOutput) getMostRecentKubernetesPodStatus() *machineoutput.KubernetesPodStatus {
 
 	lfo.listMutex.Lock()
@@ -231,6 +393,7 @@ func (lfo *logFuncOutput) getMostRecentKubernetesPodStatus() *machineoutput.Kube
 	return podStatus
 }
 
+// listSize is simple thread-safe wrapper around list
 func (lfo *logFuncOutput) listSize() int {
 	lfo.listMutex.Lock()
 	defer lfo.listMutex.Unlock()
@@ -238,6 +401,7 @@ func (lfo *logFuncOutput) listSize() int {
 	return len(lfo.jsonList)
 }
 
+// debugSprintAll returns a list of all machine readable JSON events that have been output thus far
 func (lfo *logFuncOutput) debugSprintAll() string {
 
 	lfo.listMutex.Lock()
@@ -257,6 +421,7 @@ func (lfo *logFuncOutput) debugSprintAll() string {
 	return result
 }
 
+// clearList clears the internal list of received machine readable JSON events
 func (lfo *logFuncOutput) clearList() {
 	lfo.listMutex.Lock()
 	defer lfo.listMutex.Unlock()
@@ -264,6 +429,8 @@ func (lfo *logFuncOutput) clearList() {
 	lfo.jsonList = []machineoutput.MachineEventLogEntry{}
 }
 
+// Any machine readable JSON events that are output by odo are passed to this function, and this function
+// adds them to an internal list, for test verification
 func (lfo *logFuncOutput) logFunc(wrapper machineoutput.MachineEventWrapper) {
 
 	lfo.listMutex.Lock()
@@ -278,6 +445,12 @@ func (lfo *logFuncOutput) logFunc(wrapper machineoutput.MachineEventWrapper) {
 	machineoutput.OutputSuccessUnindented(wrapper)
 
 	lfo.jsonList = append(lfo.jsonList, json)
+}
+
+type logFuncOutput struct {
+	jsonList      []machineoutput.MachineEventLogEntry
+	listMutex     sync.Mutex
+	errorOccurred error
 }
 
 func createFakePod(componentName, podName string, fn func(*corev1.Pod)) *corev1.Pod {
