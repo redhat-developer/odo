@@ -150,8 +150,8 @@ type Endpoint struct {
 	// - `none` means that the endpoint will not be exposed and will only be accessible inside the main workspace POD, on a local address.
 	//
 	// Default value is `public`
-	Exposure string `json:"exposure,omitempty"`
-	Name     string `json:"name"`
+	Exposure common.ExposureType `json:"exposure,omitempty"`
+	Name     string              `json:"name"`
 
 	// Path of the endpoint URL
 	Path string `json:"path,omitempty"`
@@ -165,7 +165,7 @@ type Endpoint struct {
 	// - `udp`: Endpoint will have traffic on an UDP connection, without specifying an application protocol.
 	//
 	// Default value is `http`
-	Protocol string `json:"protocol,omitempty"`
+	Protocol common.ProtocolType `json:"protocol,omitempty"`
 
 	// Describes whether the endpoint should be secured and protected by some authentication process
 	Secure     bool  `json:"secure,omitempty"`

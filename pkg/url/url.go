@@ -17,6 +17,8 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
@@ -118,7 +120,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 		if localEndpoint.Name != urlName {
 			continue
 		}
-		if localEndpoint.Exposure == "none" || localEndpoint.Exposure == "local" {
+		if localEndpoint.Exposure == parsercommon.None || localEndpoint.Exposure == parsercommon.Internal {
 			return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
 		}
 		for _, envURL := range envinfoURLs {
@@ -901,7 +903,7 @@ type PushParameters struct {
 	EnvURLS                   []envinfo.EnvInfoURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool
-	EndpointMap               map[int32]parsercommon.Endpoint
+	ContainerEndpointMap      map[string]map[string]parsercommon.Endpoint
 }
 
 // Push creates and deletes the required URLs
@@ -911,16 +913,11 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	// in case the component is a s2i one
 	// kClient will be nil
 	if parameters.IsExperimentalModeEnabled && kClient != nil {
-		urls := parameters.EnvURLS
-		for _, url := range urls {
-			if url.Kind != envinfo.DOCKER {
-				if parameters.EndpointMap == nil {
-					klog.V(4).Infof("No Endpoint entry defined in devfile.")
-					return nil
-				}
-				endpoint, exist := parameters.EndpointMap[int32(url.Port)]
-				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
-					return fmt.Errorf("port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry", url.Port, url.Name)
+		for _, endpointMap := range parameters.ContainerEndpointMap {
+			for _, endpoint := range endpointMap {
+				// skip URL creation if the URL is not publicly exposed
+				if endpoint.Exposure != parsercommon.Public {
+					continue
 				}
 				secure := false
 				if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
@@ -930,15 +927,39 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				if endpoint.Path != "" {
 					path = endpoint.Path
 				}
-				urlLOCAL[url.Name] = URL{
-					Spec: URLSpec{
-						Host:      url.Host,
-						Port:      url.Port,
-						Secure:    secure,
-						TLSSecret: url.TLSSecret,
-						Kind:      url.Kind,
-						Path:      path,
-					},
+				name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
+				envUrls := parameters.EnvURLS
+				existInEnv := false
+				for _, url := range envUrls {
+					if url.Kind == envinfo.DOCKER {
+						continue
+					}
+					if url.Name == endpoint.Name {
+						existInEnv = true
+						urlLOCAL[name] = URL{
+							Spec: URLSpec{
+								Host:      url.Host,
+								Port:      int(endpoint.TargetPort),
+								Secure:    secure,
+								TLSSecret: url.TLSSecret,
+								Kind:      url.Kind,
+								Path:      path,
+							},
+						}
+					}
+				}
+				if !existInEnv && !parameters.IsRouteSupported {
+					// display warning since Host info is missing
+					log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", endpoint.Name)
+				} else {
+					urlLOCAL[name] = URL{
+						Spec: URLSpec{
+							Port:   int(endpoint.TargetPort),
+							Secure: secure,
+							Kind:   envinfo.ROUTE,
+							Path:   path,
+						},
+					}
 				}
 			}
 		}
@@ -957,49 +978,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	log.Info("\nApplying URL changes")
-
-	// iterate through endpoints defined in devfile
-	// add the url defination into urlLOCAL if it's not defined in env.yaml
-	if parameters.IsExperimentalModeEnabled && parameters.EndpointMap != nil {
-		for port, endpoint := range parameters.EndpointMap {
-			// should not create URL if Exposure is none or internal
-			if endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
-				continue
-			}
-			exist := false
-			for _, envURL := range urlLOCAL {
-				if envURL.Spec.Port == int(port) {
-					exist = true
-					break
-				}
-			}
-			if !exist {
-				// create route against Openshift
-				if parameters.IsRouteSupported {
-					secure := false
-					if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
-						secure = true
-					}
-					path := "/"
-					if endpoint.Path != "" {
-						path = endpoint.Path
-					}
-					name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
-					urlLOCAL[name] = URL{
-						Spec: URLSpec{
-							Port:   int(port),
-							Secure: secure,
-							Kind:   envinfo.ROUTE,
-							Path:   path,
-						},
-					}
-				} else {
-					// display warning since Host info is missing
-					log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", endpoint.Name)
-				}
-			}
-		}
-	}
 
 	urlCLUSTER := make(map[string]URL)
 	if parameters.IsExperimentalModeEnabled && kClient != nil {
@@ -1111,4 +1089,20 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	return nil
+}
+
+// UpdateEndpointsInDevfile writes the provided endpoint information into devfile
+func UpdateEndpointsInDevfile(devObj parser.DevfileObj, containerEndpointMap map[string]map[string]parsercommon.Endpoint) error {
+	components := devObj.Data.GetComponents()
+	for _, component := range components {
+		if component.Container != nil {
+			var endpoints []common.Endpoint
+			for _, endpoint := range containerEndpointMap[component.Container.Name] {
+				endpoints = append(endpoints, endpoint)
+			}
+			component.Container.Endpoints = endpoints
+			devObj.Data.UpdateComponent(component)
+		}
+	}
+	return devObj.WriteYamlDevfile()
 }

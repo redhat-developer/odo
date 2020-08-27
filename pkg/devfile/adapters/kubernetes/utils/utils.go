@@ -140,6 +140,7 @@ func GetEndpoints(data data.DevfileData) (map[int32]common.Endpoint, error) {
 	return endpointsMap, nil
 }
 
+// GetEndpoints iterates through the container components in the devfile and returns endpoints of all containers
 func GetContainerEndpoints(data data.DevfileData) (map[string]map[string]common.Endpoint, error) {
 	containerEndpointsMap := make(map[string]map[string]common.Endpoint)
 
@@ -162,6 +163,29 @@ func GetContainerEndpoints(data data.DevfileData) (map[string]map[string]common.
 		}
 	}
 	return containerEndpointsMap, nil
+}
+
+// GetPortExposure iterate through all endpoints and returns the highest exposure level of all TargetPort.
+// exposure level: public > internal > none
+func GetPortExposure(containerEndpointMap map[string]map[string]common.Endpoint) map[int32]common.ExposureType {
+	portExposureMap := make(map[int32]common.ExposureType)
+	for _, endpointMap := range containerEndpointMap {
+		for _, endpoint := range endpointMap {
+			// if exposure=public, no need to check for existence
+			if endpoint.Exposure == common.Public {
+				portExposureMap[endpoint.TargetPort] = common.Public
+			} else if exposure, exist := portExposureMap[endpoint.TargetPort]; exist {
+				// if a container has multiple identical ports with different exposure levels, save the highest level in the map
+				if endpoint.Exposure == common.Internal && exposure == common.None {
+					portExposureMap[endpoint.TargetPort] = common.Internal
+				}
+			} else {
+				portExposureMap[endpoint.TargetPort] = endpoint.Exposure
+			}
+		}
+
+	}
+	return portExposureMap
 }
 
 // isEnvPresent checks if the env variable is present in an array of env variables

@@ -218,7 +218,7 @@ func portsToEndpoints(ports ...string) ([]common.Endpoint, error) {
 		endpoint := common.Endpoint{
 			Name:       fmt.Sprintf("port-%d-%s", port.ContainerPort, strings.ToLower(string(port.Protocol))),
 			TargetPort: port.ContainerPort,
-			Protocol:   strings.ToLower(string(port.Protocol)),
+			Protocol:   common.ProtocolType(strings.ToLower(string(port.Protocol))),
 		}
 		endpoints = append(endpoints, endpoint)
 	}
@@ -236,7 +236,8 @@ func addEndpoints(current []common.Endpoint, other []common.Endpoint) []common.E
 
 			protocol := presentep.Protocol
 			if protocol == "" {
-				protocol = "tcp"
+				// endpoint protocol efault value is http
+				protocol = "http"
 			}
 			// if the target port and protocol match, we add a case where the protocol is not provided and hence we assume that to be "tcp"
 			if presentep.TargetPort == ep.TargetPort && (ep.Protocol == protocol) {
