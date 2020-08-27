@@ -121,7 +121,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 			continue
 		}
 		localEndpoint := endpointMap[urlName]
-		if localEndpoint.Exposure != common.Public {
+		if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
 			return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
 		}
 		for _, envURL := range envinfoURLs {
@@ -543,7 +543,7 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 	for _, endpointMap := range containerEndpointsMap {
 		for _, localEndpoint := range endpointMap {
 			// only exposed endpoint will be shown as a URL in `odo url list`
-			if localEndpoint.Exposure != common.Public {
+			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
 				continue
 			}
 			var devfileURL envinfo.EnvInfoURL
@@ -943,7 +943,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, endpointMap := range parameters.ContainerEndpointMap {
 			for _, endpoint := range endpointMap {
 				// skip URL creation if the URL is not publicly exposed
-				if endpoint.Exposure != parsercommon.Public {
+				if endpoint.Exposure == common.None || endpoint.Exposure == common.Internal {
 					continue
 				}
 				secure := false

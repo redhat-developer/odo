@@ -151,7 +151,7 @@ func GetPortExposure(containerEndpointMap map[string]map[string]common.Endpoint)
 	for _, endpointMap := range containerEndpointMap {
 		for _, endpoint := range endpointMap {
 			// if exposure=public, no need to check for existence
-			if endpoint.Exposure == common.Public {
+			if endpoint.Exposure == common.Public || endpoint.Exposure == "" {
 				portExposureMap[endpoint.TargetPort] = common.Public
 			} else if exposure, exist := portExposureMap[endpoint.TargetPort]; exist {
 				// if a container has multiple identical ports with different exposure levels, save the highest level in the map
