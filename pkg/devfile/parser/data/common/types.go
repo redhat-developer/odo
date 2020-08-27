@@ -40,12 +40,12 @@ const (
 type ProtocolType string
 
 const (
-	HTTP  ExposureType = "http"
-	HTTPS ExposureType = "https"
-	WS    ExposureType = "ws"
-	WSS   ExposureType = "wss"
-	TCP   ExposureType = "tcp"
-	UDP   ExposureType = "udp"
+	HTTP  ProtocolType = "http"
+	HTTPS ProtocolType = "https"
+	WS    ProtocolType = "ws"
+	WSS   ProtocolType = "wss"
+	TCP   ProtocolType = "tcp"
+	UDP   ProtocolType = "udp"
 )
 
 // DevfileMetadata metadata for devfile
