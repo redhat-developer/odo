@@ -2,7 +2,7 @@
 
 `odo` uses devfiles to build and deploy components. More information on devifles : https://redhat-developer.github.io/devfile/[Introduction to devfile]
 
-To enable debugging mode for the component using devfiles, we need to enable the experimental mode for odo. This can be done by: `odo preference set experimental true`. We also need a devfile with `debugrun` step. Example of a nodejs devfile with a debugrun step:
+In order to use `odo debug` your devfile is required to have a `debugrun` step. Example of a nodejs devfile with a debugrun step:
 
 ```yaml
 apiVersion: 1.0.0
