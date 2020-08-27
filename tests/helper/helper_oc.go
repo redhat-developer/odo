@@ -109,6 +109,19 @@ func (oc OcRunner) GetComponentDC(component string, app string, project string) 
 	return ""
 }
 
+func (oc OcRunner) GetInternalRegistryURL() string {
+	session := CmdRunner(oc.path, "get", "svc",
+		"-l", "docker-registry",
+		"--all-namespaces",
+		"-o=jsonpath={range .items[0]}{@.spec.clusterIP}:{@.spec.ports[0].port}")
+
+	session.Wait()
+	if session.ExitCode() == 0 {
+		return string(session.Out.Contents())
+	}
+	return ""
+}
+
 // SourceTest checks the component-source-type and the source url in the annotation of the bc and dc
 // appTestName is the name of the app
 // sourceType is the type of the source of the component i.e git/binary/local
