@@ -7,6 +7,8 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	devData "github.com/openshift/odo/pkg/devfile/parser/data"
+	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
@@ -618,6 +620,153 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			if len(tt.execCommands) >= 2 && (!envDebugMatched || !envDebugWorkDirMatched || !envDebugPortMatched) {
 				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found debug env: %v, found work dir env: %v, found debug port env: %v", component, envDebugMatched, envDebugWorkDirMatched, envDebugPortMatched)
 			}
+		})
+	}
+}
+
+func TestGetContainerEndpoints(t *testing.T) {
+	urlName := "testurl"
+	urlName2 := "testurl2"
+	tests := []struct {
+		name        string
+		devfileData devData.DevfileData
+		wantMap     map[string]map[string]common.Endpoint
+		wantErr     bool
+	}{
+		{
+			name: "Case 1: devfile has single container with single endpoint",
+			wantMap: map[string]map[string]common.Endpoint{
+				"testcontainer1": map[string]common.Endpoint{
+					urlName: common.Endpoint{
+						Name:       urlName,
+						TargetPort: 8080,
+						Secure:     false,
+					},
+				},
+			},
+			devfileData: &v200.Devfile200{
+				Components: []common.DevfileComponent{
+					{
+						Container: &common.Container{
+							Image: "quay.io/nodejs-12",
+							Name:  "testcontainer1",
+							Endpoints: []common.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: devfile has multiple endpoints with same name",
+			wantMap: map[string]map[string]common.Endpoint{},
+			devfileData: &v200.Devfile200{
+				Components: []common.DevfileComponent{
+					{
+						Container: &common.Container{
+							Image: "quay.io/nodejs-12",
+							Name:  "testcontainer1",
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:    "Case 3: devfile no endpoints",
+			wantMap: nil,
+			devfileData: &v200.Devfile200{
+				Components: []common.DevfileComponent{
+					{
+						Container: &common.Container{
+							Image: "quay.io/nodejs-12",
+							Name:  "testcontainer1",
+							Endpoints: []common.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+								},
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 4: devfile has multiple containers with endpoints",
+			wantMap: map[string]map[string]common.Endpoint{
+				"testcontainer1": map[string]common.Endpoint{
+					urlName: common.Endpoint{
+						Name:       urlName,
+						TargetPort: 8080,
+						Secure:     false,
+					},
+				},
+				"testcontainer2": map[string]common.Endpoint{
+					urlName2: common.Endpoint{
+						Name:       urlName2,
+						TargetPort: 9090,
+						Secure:     true,
+						Path:       "/testpath",
+						Exposure:   common.Internal,
+						Protocol:   common.HTTPS,
+					},
+				},
+			},
+			devfileData: &v200.Devfile200{
+				Components: []common.DevfileComponent{
+					{
+						Container: &common.Container{
+							Image: "quay.io/nodejs-12",
+							Name:  "testcontainer1",
+							Endpoints: []common.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+								},
+							},
+						},
+					},
+					{
+						Container: &common.Container{
+							Name: "testcontainer2",
+							Endpoints: []common.Endpoint{
+								{
+									Name:       urlName2,
+									TargetPort: 9090,
+									Secure:     true,
+									Path:       "/testpath",
+									Exposure:   common.Internal,
+									Protocol:   common.HTTPS,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			containerEndpointMapCreated, err := GetContainerEndpoints(tt.devfileData)
+			if !tt.wantErr && err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(containerEndpointMapCreated, tt.wantMap) {
+				t.Errorf("Expected: %v, got %v", tt.wantMap, containerEndpointMapCreated)
+			}
+
 		})
 	}
 
