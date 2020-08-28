@@ -6,8 +6,8 @@ else
 endif
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests)
 COMMON_FLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
-BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
-DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
+BUILD_FLAGS := -mod=vendor -ldflags="-w $(COMMON_FLAGS)"
+DEBUG_BUILD_FLAGS := -mod=vendor -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
 TIMEOUT ?= 7200s
 
