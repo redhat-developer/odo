@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/openshift/odo/pkg/util"
-
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
 
@@ -544,6 +543,43 @@ var _ = Describe("odo devfile push command tests", func() {
 			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--namespace", namespace)
 			helper.WaitForOutputToContain("Non-readable POM", 180, 10, session)
 
+		})
+
+	})
+
+	Context("Verify files are correctly synced", func() {
+
+		// Tests https://github.com/openshift/odo/issues/3838
+		ensureFilesSyncedTest := func(namespace string, shouldForcePush bool) {
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+
+			fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
+
+			// 1) Push a standard spring boot project
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// 2) Update the devfile.yaml, causing push to redeploy the component
+			helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 769Mi")
+			commands := []string{"push", "-v", "4", "--namespace", namespace}
+			if shouldForcePush {
+				// Test both w/ and w/o '-f'
+				commands = append(commands, "-f")
+			}
+
+			// 3) Ensure the build passes, indicating that all files were correctly synced to the new pod
+			output = helper.CmdShouldPass("odo", commands...)
+			Expect(output).To(ContainSubstring("BUILD SUCCESS"))
+
+		}
+
+		It("Should ensure that files are correctly synced on pod redeploy, with force push specified", func() {
+			ensureFilesSyncedTest(namespace, true)
+		})
+
+		It("Should ensure that files are correctly synced on pod redeploy, without force push specified", func() {
+			ensureFilesSyncedTest(namespace, false)
 		})
 
 	})
