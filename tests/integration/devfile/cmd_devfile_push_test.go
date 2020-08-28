@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -572,6 +574,55 @@ var _ = Describe("odo devfile push command tests", func() {
 			output = helper.CmdShouldPass("odo", commands...)
 			Expect(output).To(ContainSubstring("BUILD SUCCESS"))
 
+			// 4) Acquire files from remote container, filtering out target/* and .*
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.Exec(podName, namespace, "find", sourcePath)
+			remoteFiles := []string{}
+			outputArr := strings.Split(output, "\n")
+			for _, line := range outputArr {
+
+				if !strings.HasPrefix(line, sourcePath+"/") {
+					continue
+				}
+
+				newLine, err := filepath.Rel(sourcePath, line)
+				Expect(err).ToNot(HaveOccurred())
+
+				newLine = filepath.ToSlash(newLine)
+				if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
+					continue
+				}
+
+				remoteFiles = append(remoteFiles, newLine)
+			}
+
+			// 5) Acquire file from local context, filtering out .*
+			localFiles := []string{}
+			err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				newPath := filepath.ToSlash(path)
+
+				if strings.HasPrefix(newPath, ".") {
+					return nil
+				}
+
+				localFiles = append(localFiles, newPath)
+				return nil
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			// 6) Sort and compare the local and remote files; they should match
+			sort.Strings(localFiles)
+			sort.Strings(remoteFiles)
+
+			equal := reflect.DeepEqual(localFiles, remoteFiles)
+			if !equal {
+				fmt.Fprintf(GinkgoWriter, "Files mismatched between local and remote. local: {%v} remote: {%v}", localFiles, remoteFiles)
+				Fail("Mismatching files between local and remote")
+			}
 		}
 
 		It("Should ensure that files are correctly synced on pod redeploy, with force push specified", func() {
