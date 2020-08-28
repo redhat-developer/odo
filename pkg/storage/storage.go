@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"reflect"
 
 	"github.com/openshift/odo/pkg/config"
@@ -627,7 +628,7 @@ func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 			continue
 		}
 		if component.Volume.Size == "" {
-			component.Volume.Size = "1Gi"
+			component.Volume.Size = common.DefaultVolumeSize
 		}
 		volumeSizeMap[component.Volume.Name] = component.Volume.Size
 	}
