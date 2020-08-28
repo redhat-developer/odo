@@ -91,21 +91,6 @@
                       <p>{{ item.excerpt }}</p>
                     </div><!-- /.nav-grid__content -->
                     <p class="nav-grid__btn">
-
-                    {% unless item.openshift && item.kubernetes && item.docker %}
-                    <img class="platform" src="{{ site.doks.baseurl }}/doks-theme/assets/images/platforms/none.png"/>
-                    {% endunless %}
-
-                    {% if item.openshift %}
-                    <img class="platform" src="{{ site.doks.baseurl }}/doks-theme/assets/images/platforms/openshift.png"/>
-                    {% endif %}
-                    {% if item.kubernetes %}
-                    <img class="platform" src="{{ site.doks.baseurl }}/doks-theme/assets/images/platforms/kubernetes.png"/>
-                    {% endif %}
-                    {% if item.docker %}
-                    <img class="platform" src="{{ site.doks.baseurl }}/doks-theme/assets/images/platforms/docker.png"/>
-                    {% endif %}
-                    <br>
                     {{ item.cta }}
                     <i class="icon icon--arrow-right"></i>
                     </p>
