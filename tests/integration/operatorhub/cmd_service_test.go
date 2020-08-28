@@ -433,11 +433,13 @@ spec:
 
 			stdOut := helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
+			helper.CmdShouldPass("odo", "push")
 			stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("already linked with the service"))
 
 			stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))
+			helper.CmdShouldPass("odo", "push")
 
 			// verify that sbr is deleted
 			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
