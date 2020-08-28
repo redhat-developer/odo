@@ -66,7 +66,7 @@ gofmt:
 
 .PHONY: check-vendor
 check-vendor:
-	./scripts/check-vendor.sh
+	go mod verify
 
 .PHONY: check-fit
 check-fit:
