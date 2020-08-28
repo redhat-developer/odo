@@ -4,7 +4,7 @@ Pty is a Go package for using unix pseudo-terminals.
 
 ## Install
 
-    go get github.com/creack/pty
+    go get github.com/kr/pty
 
 ## Example
 
@@ -14,7 +14,7 @@ Pty is a Go package for using unix pseudo-terminals.
 package main
 
 import (
-	"github.com/creack/pty"
+	"github.com/kr/pty"
 	"io"
 	"os"
 	"os/exec"
@@ -50,7 +50,7 @@ import (
         "os/signal"
         "syscall"
 
-        "github.com/creack/pty"
+        "github.com/kr/pty"
         "golang.org/x/crypto/ssh/terminal"
 )
 

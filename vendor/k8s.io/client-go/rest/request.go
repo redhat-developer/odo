@@ -562,7 +562,7 @@ func (r *Request) tryThrottle() error {
 	}
 
 	if latency := time.Since(now); latency > longThrottleLatency {
-		klog.V(3).Infof("Throttling request took %v, request: %s:%s", latency, r.verb, r.URL().String())
+		klog.V(4).Infof("Throttling request took %v, request: %s:%s", latency, r.verb, r.URL().String())
 	}
 
 	return err
@@ -806,24 +806,19 @@ func (r *Request) request(fn func(*http.Request, *http.Response)) error {
 			r.backoff.UpdateBackoff(r.URL(), err, resp.StatusCode)
 		}
 		if err != nil {
-			// "Connection reset by peer" or "apiserver is shutting down" are usually a transient errors.
+			// "Connection reset by peer" is usually a transient error.
 			// Thus in case of "GET" operations, we simply retry it.
 			// We are not automatically retrying "write" operations, as
 			// they are not idempotent.
-			if r.verb != "GET" {
+			if !net.IsConnectionReset(err) || r.verb != "GET" {
 				return err
 			}
-			// For connection errors and apiserver shutdown errors retry.
-			if net.IsConnectionReset(err) || net.IsProbableEOF(err) {
-				// For the purpose of retry, we set the artificial "retry-after" response.
-				// TODO: Should we clean the original response if it exists?
-				resp = &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Header:     http.Header{"Retry-After": []string{"1"}},
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte{})),
-				}
-			} else {
-				return err
+			// For the purpose of retry, we set the artificial "retry-after" response.
+			// TODO: Should we clean the original response if it exists?
+			resp = &http.Response{
+				StatusCode: http.StatusInternalServerError,
+				Header:     http.Header{"Retry-After": []string{"1"}},
+				Body:       ioutil.NopCloser(bytes.NewReader([]byte{})),
 			}
 		}
 

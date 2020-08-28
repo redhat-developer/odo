@@ -1,5 +1,0 @@
-ignore:
-  # ignore auto-generated code
-  - "github/github-accessors.go"
-  # ignore experimental scrape package
-  - "scrape"
