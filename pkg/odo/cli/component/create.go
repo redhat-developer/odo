@@ -2,9 +2,9 @@ package component
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -12,10 +12,13 @@ import (
 	"github.com/zalando/go-keyring"
 	"k8s.io/klog"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -885,30 +888,26 @@ func (co *CreateOptions) Validate() (err error) {
 
 // Downloads first starter project from list of starter projects in devfile
 // Currenty type git with a non github url is not supported
-func (co *CreateOptions) downloadStarterProject(projectPassed string, interactive bool) error {
+func downloadStarterProject(devObj parser.DevfileObj, projectPassed string, interactive bool) error {
 	if projectPassed == "" && !interactive {
 		return nil
 	}
 
-	var project *common.DevfileStarterProject
-	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(DevfilePath)
-	if err != nil {
-		return err
-	}
 	// Retrieve starter projects
-	projects := devObj.Data.GetStarterProjects()
+	starterProjects := devObj.Data.GetStarterProjects()
 
+	var starterProject *common.DevfileStarterProject
+	var err error
 	if interactive {
-		project = getStarterProjectInteractiveMode(projects)
+		starterProject = getStarterProjectInteractiveMode(starterProjects)
 	} else {
-		project, err = getStarterProjectFromFlag(projects, projectPassed)
+		starterProject, err = getStarterProjectFromFlag(starterProjects, projectPassed)
 		if err != nil {
 			return err
 		}
 	}
 
-	if project == nil {
+	if starterProject == nil {
 		return nil
 	}
 
@@ -918,19 +917,14 @@ func (co *CreateOptions) downloadStarterProject(projectPassed string, interactiv
 		return errors.Wrapf(err, "Could not get the current working directory.")
 	}
 
-	if project.ClonePath != "" {
-		clonePath := project.ClonePath
-		if runtime.GOOS == "windows" {
-			//TODO: This is a bad implementation.. we should be using FromSlash
-			// https://golang.org/pkg/path/filepath/#FromSlash
-			clonePath = strings.Replace(clonePath, "\\", "/", -1)
-		}
+	if starterProject.ClonePath != "" {
+		clonePath := filepath.FromSlash(starterProject.ClonePath)
 
 		path = filepath.Join(path, clonePath)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			err = os.MkdirAll(path, os.FileMode(0755))
 			if err != nil {
-				return errors.Wrap(err, "failed creating folder with path: "+path)
+				return errors.Wrapf(err, "failed creating folder with path: %s", path)
 			}
 		}
 	}
@@ -941,43 +935,65 @@ func (co *CreateOptions) downloadStarterProject(projectPassed string, interactiv
 		return err
 	}
 
-	var logUrl, url, sparseDir string
-	if project.Git != nil {
-		if strings.Contains(project.Git.Location, "github.com") {
-			url, err = util.GetGitHubZipURL(project.Git.Location, project.Git.Branch, project.Git.StartPoint)
-			if err != nil {
-				return err
-			}
-			sparseDir = project.Git.SparseCheckoutDir
+	log.Info("\nStarter Project")
+
+	if starterProject.Git != nil || starterProject.Github != nil {
+
+		projectSource := common.GitLikeProjectSource{}
+		if starterProject.Git != nil {
+			projectSource = starterProject.Git.GitLikeProjectSource
 		} else {
-			return errors.Errorf("project type git with non github url not supported")
+			projectSource = starterProject.Github.GitLikeProjectSource
 		}
-		logUrl = project.Git.Location
-	} else if project.Github != nil {
-		url, err = util.GetGitHubZipURL(project.Github.Location, project.Github.Branch, project.Github.StartPoint)
+
+		remoteName, remoteUrl, revision, err := projectSource.GetDefaultSource()
+		if err != nil {
+			return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
+		}
+
+		if revision != "" {
+			log.Warning("Specifying 'revision' in 'checkoutFrom' is not yet supported in odo.")
+		}
+
+		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
+		defer downloadSpinner.End(false)
+
+		_, err = git.PlainClone(path, false, &git.CloneOptions{
+			URL:           remoteUrl,
+			RemoteName:    remoteName,
+			ReferenceName: plumbing.ReferenceName(revision),
+			SingleBranch:  true,
+			// we don't need history for starter projects
+			Depth: 1,
+		})
 		if err != nil {
 			return err
 		}
-		logUrl = project.Github.Location
-		sparseDir = project.Github.SparseCheckoutDir
-	} else if project.Zip != nil {
-		url = project.Zip.Location
-		logUrl = project.Zip.Location
-		sparseDir = project.Zip.SparseCheckoutDir
+
+		// we don't want to download project be a git repo
+		err = os.RemoveAll(filepath.Join(path, ".git"))
+		if err != nil {
+			// we don't need to return (fail) if this happends
+			log.Warning("Unable to delete .git from cloned starter project")
+			downloadSpinner.End(true)
+		}
+		downloadSpinner.End(true)
+
+	} else if starterProject.Zip != nil {
+		url := starterProject.Zip.Location
+		logUrl := starterProject.Zip.Location
+		sparseDir := starterProject.Zip.SparseCheckoutDir
+		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, logUrl)
+		err := checkoutProject(sparseDir, url, path)
+		if err != nil {
+			downloadSpinner.End(false)
+			return err
+		}
+		downloadSpinner.End(true)
 	} else {
 		return errors.Errorf("Project type not supported")
 	}
 
-	log.Info("\nStarter Project")
-	downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", project.Name, logUrl)
-	err = checkoutProject(sparseDir, url, path)
-
-	if err != nil {
-		downloadSpinner.End(false)
-		return err
-	}
-
-	downloadSpinner.End(true)
 	return nil
 }
 
@@ -1006,66 +1022,74 @@ func (co *CreateOptions) s2iRun() (err error) {
 	return nil
 }
 
+// Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) devfileRun() (err error) {
+	var devfileData []byte
 	// Use existing devfile directly from --devfile flag
 	if co.devfileMetadata.devfilePath.value != "" {
 		if co.devfileMetadata.devfilePath.protocol == "http(s)" {
 			// User specify devfile path is http(s) URL
-			params := util.DownloadParams{
-				Request: util.HTTPRequestParams{
-					URL:   co.devfileMetadata.devfilePath.value,
-					Token: co.devfileMetadata.token,
-				},
-				Filepath: DevfilePath,
+			params := util.HTTPRequestParams{
+				URL:   co.devfileMetadata.devfilePath.value,
+				Token: co.devfileMetadata.token,
 			}
-			err = util.DownloadFile(params)
+			devfileData, err = util.DownloadFileInMemory(params)
 			if err != nil {
 				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 			}
 		} else if co.devfileMetadata.devfilePath.protocol == "file" {
-			// User specify devfile path is file system link
-			info, err := os.Stat(co.devfileMetadata.devfilePath.value)
+			devfileData, err = ioutil.ReadFile(co.devfileMetadata.devfilePath.value)
+			if err != nil {
+				return errors.Wrapf(err, "failed to read devfile from %s", co.devfileMetadata.devfilePath)
+			}
+		}
+	} else {
+		if util.CheckPathExists(DevfilePath) {
+			// if local devfile already exists read that
+			// odo create command was exected in a directory already containing devfile
+			devfileData, err = ioutil.ReadFile(DevfilePath)
+			if err != nil {
+				return errors.Wrapf(err, "failed to read devfile from %s", DevfilePath)
+			}
+		} else {
+			// Download devfile from registry
+			params := util.HTTPRequestParams{
+				URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+			}
+
+			if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+				token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+				if err != nil {
+					return errors.Wrap(err, "unable to get secure registry credential from keyring")
+				}
+				params.Token = token
+			}
+
+			cfg, err := preference.New()
 			if err != nil {
 				return err
 			}
-			err = util.CopyFile(co.devfileMetadata.devfilePath.value, DevfilePath, info)
+			devfileData, err = util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
 			if err != nil {
-				return errors.Wrapf(err, "failed to copy devfile from %s to %s", co.devfileMetadata.devfilePath, DevfilePath)
+				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 			}
 		}
 	}
-
-	if !util.CheckPathExists(DevfilePath) {
-		// Download devfile from registry
-		params := util.DownloadParams{
-			Request: util.HTTPRequestParams{
-				URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
-			},
-			Filepath: DevfilePath,
-		}
-		if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-			token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
-			if err != nil {
-				return errors.Wrap(err, "unable to get secure registry credential from keyring")
-			}
-			params.Request.Token = token
-		}
-
-		cfg, err := preference.New()
-		if err != nil {
-			return err
-		}
-		err = util.DownloadFileWithCache(params, cfg.GetRegistryCacheTime())
-		if err != nil {
-			return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
-		}
+	devObj, err := devfile.ParseFromDataAndValidate(devfileData)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse devfile")
 	}
 
-	if util.CheckPathExists(DevfilePath) {
-		err = co.downloadStarterProject(co.devfileMetadata.starter, co.interactive)
-		if err != nil {
-			return errors.Wrap(err, "failed to download project for devfile component")
-		}
+	err = downloadStarterProject(devObj, co.devfileMetadata.starter, co.interactive)
+	if err != nil {
+		return errors.Wrap(err, "failed to download project for devfile component")
+	}
+
+	// save devfile
+	// use original devfileData to persist original formating of the devfile file
+	err = ioutil.WriteFile(DevfilePath, devfileData, 0644) // #nosec G306
+	if err != nil {
+		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
 	}
 
 	// Generate env file

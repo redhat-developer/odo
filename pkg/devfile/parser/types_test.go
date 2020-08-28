@@ -649,7 +649,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
@@ -662,7 +665,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName0,
 						Zip:  nil,
@@ -676,7 +682,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
@@ -694,14 +703,20 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -713,7 +728,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName0,
 						Zip:  nil,
@@ -727,14 +745,20 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -751,7 +775,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
@@ -764,7 +791,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: "custom-project",
 						Zip:  nil,
@@ -818,7 +848,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -830,7 +863,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName1,
 						Zip:  nil,
@@ -844,7 +880,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -861,13 +900,19 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName2,
 						},
@@ -879,7 +924,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName1,
 					},
@@ -892,14 +940,20 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName1,
 							Zip:  nil,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName2,
 						},
@@ -916,7 +970,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 							Zip:  nil,
@@ -929,7 +986,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: "custom-starter-project",
 						Zip:  nil,

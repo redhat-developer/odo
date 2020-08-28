@@ -189,8 +189,10 @@ func handleMerge(original, patch, dataStruct interface{}) ([]byte, error) {
 	}
 
 	merged, err := strategicpatch.StrategicMergePatch(originalJson, patchJson, dataStruct)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return merged, nil
 }

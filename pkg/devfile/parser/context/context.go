@@ -102,6 +102,11 @@ func (d *DevfileCtx) PopulateFromURL() (err error) {
 	return d.populateDevfile()
 }
 
+// PopulateFromRaw fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) PopulateFromRaw() (err error) {
+	return d.populateDevfile()
+}
+
 // Validate func validates devfile JSON schema for the given apiVersion
 func (d *DevfileCtx) Validate() error {
 

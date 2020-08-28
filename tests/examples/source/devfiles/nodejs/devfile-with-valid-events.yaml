@@ -4,7 +4,8 @@ metadata:
 starterProjects:
   - name: nodejs-starter
     git:
-      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+      remote:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
   - container:
       name: runtime

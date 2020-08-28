@@ -4,7 +4,8 @@ metadata:
 starterProjects:
   - name: nodejs-starter
     git:
-      location: "https://github.com/che-samples/web-nodejs-sample.git"
+      remote:
+        origin: "https://github.com/che-samples/web-nodejs-sample.git"
 components:
   - container:
       name: runtime

@@ -2,6 +2,7 @@ package testingutil
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
@@ -60,7 +61,9 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 		ClonePath: clonePath[0],
 		Name:      projectName[0],
 		Git: &versionsCommon.Git{
-			Location: sourceLocation[0],
+			GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+				Remotes: map[string]string{"origin": sourceLocation[0]},
+			},
 		},
 	}
 
@@ -68,7 +71,9 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 		ClonePath: clonePath[1],
 		Name:      projectName[1],
 		Git: &versionsCommon.Git{
-			Location: sourceLocation[1],
+			GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+				Remotes: map[string]string{"origin": sourceLocation[1]},
+			},
 		},
 	}
 	return []versionsCommon.DevfileProject{project1, project2}
