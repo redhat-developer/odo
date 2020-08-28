@@ -100,13 +100,17 @@ clean:
 
 # install tools used for building, tests and  validations
 .PHONY: goget-tools
-goget-tools:
-	go get -u github.com/frapposelli/wwhrd
-	go get -u github.com/onsi/ginkgo/ginkgo
-	go get -u github.com/securego/gosec/cmd/gosec
+goget-tools: goget-ginkgo
+	mkdir -p $(shell go env GOPATH)/bin
+	GOFLAGS='' go get github.com/frapposelli/wwhrd@v0.3.0
+	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.4.0
 	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
 
+.PHONY: goget-ginkgo
+goget-ginkgo:
+	# https://go-review.googlesource.com/c/go/+/198438/
+	GOFLAGS='' go get github.com/onsi/ginkgo/ginkgo@v1.14.0
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage
