@@ -141,7 +141,6 @@ jobs:
         # These tests need cluster login as they will be interacting with a Kube environment
         - odo login -u developer
         - travis_wait 60 make test-integration-devfile
-        - travis_wait make test-cmd-devfile-debug-serial
         - odo logout
 
     - <<: *base-test
@@ -202,4 +201,3 @@ jobs:
         - export KUBERNETES=true
         - travis_wait make test-cmd-project
         - travis_wait 60 make test-integration-devfile
-        - travis_wait make test-cmd-devfile-debug-serial

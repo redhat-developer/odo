@@ -29,9 +29,7 @@ oc whoami
 
 # Integration tests
 make test-integration
-make test-cmd-debug-serial
 make test-integration-devfile
-make test-cmd-devfile-debug-serial
 make test-cmd-login-logout
 make test-cmd-project
 make test-operator-hub
