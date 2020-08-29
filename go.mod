@@ -62,6 +62,7 @@ replace (
 	github.com/apcera/gssapi => github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b
 	github.com/containers/image => github.com/openshift/containers-image v0.0.0-20190130162819-76de87591e9d
 	github.com/docker/docker => github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
+	github.com/kr/pty => github.com/creack/pty v1.1.9
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200205133042-34f0ec8dab87
 	k8s.io/api => k8s.io/api v0.17.1
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.1
