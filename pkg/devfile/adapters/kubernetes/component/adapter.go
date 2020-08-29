@@ -133,13 +133,20 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 
+	previousMode := parameters.EnvSpecificInfo.GetRunMode()
+	currentMode := envinfo.Run
+
 	if parameters.Debug {
 		pushDevfileDebugCommands, err := common.ValidateAndGetDebugDevfileCommands(a.Devfile.Data, a.devfileDebugCmd)
 		if err != nil {
 			return fmt.Errorf("debug command is not valid")
 		}
 		pushDevfileCommands[versionsCommon.DebugCommandGroupType] = pushDevfileDebugCommands
-		parameters.ForceBuild = true
+		currentMode = envinfo.Debug
+	}
+
+	if currentMode != previousMode {
+		parameters.RunModeChanged = true
 	}
 
 	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
@@ -209,7 +216,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	if execRequired {
+	if execRequired || parameters.RunModeChanged {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
