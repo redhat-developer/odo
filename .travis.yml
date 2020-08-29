@@ -78,7 +78,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "preference, config, url,storage and debug command integration tests"
+      name: "preference, config, component sub-commands and debug command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -86,7 +86,6 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-pref-config
-        - travis_wait make test-cmd-url
         - travis_wait make test-cmd-cmp-sub
         - travis_wait make test-cmd-debug
         - odo logout
@@ -107,7 +106,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "watch, storage, app, project and push command integration tests"
+      name: "watch, storage, app, project, URL and push command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -119,6 +118,7 @@ jobs:
         - travis_wait make test-cmd-app
         - travis_wait make test-cmd-push
         - travis_wait make test-cmd-project
+        - travis_wait make test-cmd-url
         - odo logout
 
     - <<: *base-test
