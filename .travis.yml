@@ -87,9 +87,7 @@ jobs:
         - odo login -u developer
         - travis_wait make test-cmd-pref-config
         - travis_wait make test-cmd-url
-        - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-debug
-        - travis_wait make test-cmd-debug-serial
         - odo logout
 
     # Run service-catalog e2e tests
@@ -129,7 +127,7 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, watch, delete, registry, exec, test, env, debug and log command integration tests"
+      name: "devfile catalog, create, push, watch, delete, registry, exec, test, env, config, debug and log command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
