@@ -5,8 +5,8 @@ metadata:
 parent:
   uri: http://localhost:(-1)/devfile.yaml
   components:
-    - container:
-        name: runtime
+    - name: runtime
+      container:
         env:
           - name: ODO_TEST_ENV_1
             value: ENV_VALUE_1_1

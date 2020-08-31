@@ -34,15 +34,15 @@ func validateComponents(components []common.DevfileComponent) error {
 		}
 
 		if component.Volume != nil {
-			if _, ok := processedVolumes[component.Volume.Name]; !ok {
-				processedVolumes[component.Volume.Name] = true
+			if _, ok := processedVolumes[component.Name]; !ok {
+				processedVolumes[component.Name] = true
 				if !pushtarget.IsPushTargetDocker() && len(component.Volume.Size) > 0 {
 					// Only validate on Kubernetes since Docker volumes do not use sizes
 					// We use the Kube API for validation because there are so many ways to
 					// express storage in Kubernetes. For reference, you may check doc
 					// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 					if _, err := resource.ParseQuantity(component.Volume.Size); err != nil {
-						return &InvalidVolumeSizeError{size: component.Volume.Size, componentName: component.Volume.Name, validationError: err}
+						return &InvalidVolumeSizeError{size: component.Volume.Size, componentName: component.Name, validationError: err}
 					}
 				}
 			} else {

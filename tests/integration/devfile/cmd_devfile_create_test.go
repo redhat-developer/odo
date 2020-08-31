@@ -257,7 +257,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should successfully create the devfile component with valid specifies URL path", func() {
 				// TODO change to odo-devfiles registry
-				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml")
+				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/kadel/registry/move-merge-key/devfiles/nodejs/devfile.yaml")
 			})
 
 			It("should fail to create the devfile component with invalid file system path", func() {

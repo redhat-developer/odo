@@ -7,8 +7,8 @@ starterProjects:
       remotes:
         origin: "https://github.com/che-samples/web-nodejs-sample.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       endpoints:
         - name: "3000/tcp"
@@ -17,8 +17,8 @@ components:
       volumeMounts:
         - name: invalidvol1
           path: /data
-  - container:
-      name: runtime2
+  - name: runtime2
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       mountSources: false
       volumeMounts:
@@ -26,22 +26,22 @@ components:
           path: /data
         - name: secondvol
           path: /data2
-  - volume:
-      name: firstvol
-  - volume:
-      name: secondvol
+  - name: firstvol
+    volume: {}
+  - name: secondvol
+    volume:
       size: 3Gi
 commands:
-  - exec:
-      id: devbuild
+  - id: devbuild
+    exec:
       component: runtime
       commandLine: "echo hello >> myfile.log"
       workingDir: /data
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: devrun
+  - id: devrun
+    exec:
       component: runtime2
       commandLine: "cat myfile.log"
       workingDir: /data

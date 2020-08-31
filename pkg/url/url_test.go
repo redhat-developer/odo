@@ -916,8 +916,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -998,8 +998,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example-local-0",
@@ -1072,8 +1072,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example-0",
@@ -1111,8 +1111,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example-local-0",
@@ -1180,8 +1180,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1221,8 +1221,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example-local-0",
@@ -1311,8 +1311,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1351,8 +1351,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1393,8 +1393,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1435,8 +1435,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1466,8 +1466,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1496,8 +1496,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1526,8 +1526,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1551,8 +1551,8 @@ func TestPush(t *testing.T) {
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1575,8 +1575,8 @@ func TestPush(t *testing.T) {
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1617,8 +1617,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1654,8 +1654,8 @@ func TestPush(t *testing.T) {
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -1697,8 +1697,8 @@ func TestPush(t *testing.T) {
 			},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "container1",
 					Container: &versionsCommon.Container{
-						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "example",
@@ -2125,8 +2125,8 @@ func TestListIngressAndRoute(t *testing.T) {
 			envURLs:   []envinfo.EnvInfoURL{testURL2, testURL3, testURL4, testURL5},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: containerName,
 					Container: &versionsCommon.Container{
-						Name: containerName,
 						Endpoints: []versionsCommon.Endpoint{
 							example1Endpoint, ingressurl3Endpoint, exampleEndpoint, routeurl2Endpoint,
 						},
@@ -2198,8 +2198,8 @@ func TestListIngressAndRoute(t *testing.T) {
 			envURLs:   []envinfo.EnvInfoURL{testURL2, testURL3, testURL4, testURL5},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: containerName,
 					Container: &versionsCommon.Container{
-						Name: containerName,
 						Endpoints: []versionsCommon.Endpoint{
 							example1Endpoint, ingressurl3Endpoint, exampleEndpoint, routeurl2Endpoint,
 						},
@@ -2242,8 +2242,8 @@ func TestListIngressAndRoute(t *testing.T) {
 			envURLs:   []envinfo.EnvInfoURL{testURL2, testURL3},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: containerName,
 					Container: &versionsCommon.Container{
-						Name: containerName,
 						Endpoints: []versionsCommon.Endpoint{
 							example1Endpoint, ingressurl3Endpoint,
 						},
@@ -2286,8 +2286,8 @@ func TestListIngressAndRoute(t *testing.T) {
 			envURLs:   []envinfo.EnvInfoURL{testURL4, testURL5},
 			containerComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: containerName,
 					Container: &versionsCommon.Container{
-						Name: containerName,
 						Endpoints: []versionsCommon.Endpoint{
 							exampleEndpoint, routeurl2Endpoint,
 						},
@@ -2770,9 +2770,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: "testcontainer1",
 							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "testcontainer1",
 								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       "port-3030",
@@ -2786,9 +2786,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			},
 			wantComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "port-3030",
@@ -2817,9 +2817,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: "testcontainer1",
 							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "testcontainer1",
 							},
 						},
 					},
@@ -2827,9 +2827,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			},
 			wantComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName,
@@ -2854,14 +2854,14 @@ func TestAddEndpointInDevfile(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: "testcontainer1",
 							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "testcontainer1",
 							},
 						},
 						{
+							Name: "testcontainer2",
 							Container: &versionsCommon.Container{
-								Name: "testcontainer2",
 								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName2,
@@ -2879,9 +2879,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			},
 			wantComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName,
@@ -2892,8 +2892,8 @@ func TestAddEndpointInDevfile(t *testing.T) {
 					},
 				},
 				{
+					Name: "testcontainer2",
 					Container: &versionsCommon.Container{
-						Name: "testcontainer2",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName2,
@@ -2943,9 +2943,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: "testcontainer1",
 							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "testcontainer1",
 								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       "port-3030",
@@ -2964,9 +2964,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			},
 			wantComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "port-3030",
@@ -2986,9 +2986,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: "testcontainer1",
 							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "testcontainer1",
 								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName,
@@ -3003,9 +3003,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			},
 			wantComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &versionsCommon.Container{
 						Image:     "quay.io/nodejs-12",
-						Name:      "testcontainer1",
 						Endpoints: []versionsCommon.Endpoint{},
 					},
 				},
@@ -3020,9 +3020,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: "testcontainer1",
 							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "testcontainer1",
 								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName,
@@ -3033,8 +3033,8 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 							},
 						},
 						{
+							Name: "testcontainer2",
 							Container: &versionsCommon.Container{
-								Name: "testcontainer2",
 								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName2,
@@ -3052,15 +3052,15 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			},
 			wantComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &versionsCommon.Container{
 						Image:     "quay.io/nodejs-12",
-						Name:      "testcontainer1",
 						Endpoints: []versionsCommon.Endpoint{},
 					},
 				},
 				{
+					Name: "testcontainer2",
 					Container: &versionsCommon.Container{
-						Name: "testcontainer2",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName2,
@@ -3084,9 +3084,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: "testcontainer1",
 							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "testcontainer1",
 								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName,
@@ -3101,9 +3101,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			},
 			wantComponents: []versionsCommon.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName,

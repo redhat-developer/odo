@@ -209,15 +209,15 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			containerPortMap := make(map[int]string)
 			for _, component := range containerComponents {
 				if len(o.container) > 0 && !foundContainer {
-					if component.Container.Name == o.container {
+					if component.Name == o.container {
 						foundContainer = true
 					}
 				}
 				for _, endpoint := range component.Container.Endpoints {
 					if endpoint.Name == o.urlName {
-						return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", o.urlName, component.Container.Name)
+						return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", o.urlName, component.Name)
 					}
-					containerPortMap[int(endpoint.TargetPort)] = component.Container.Name
+					containerPortMap[int(endpoint.TargetPort)] = component.Name
 				}
 			}
 			if len(o.container) > 0 && !foundContainer {
@@ -232,7 +232,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			// container is not provided, or the specified port is not being used under any containers
 			// pick the first container to store the new enpoint
 			if len(o.container) == 0 {
-				o.container = containerComponents[0].Container.Name
+				o.container = containerComponents[0].Name
 			}
 
 		}

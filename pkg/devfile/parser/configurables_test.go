@@ -35,17 +35,17 @@ func TestSetConfiguration(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id:         "devbuild",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
 					},
 					Components: []common.DevfileComponent{
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image:       "quay.io/nodejs-12",
-								Name:        "runtime",
 								MemoryLimit: "500Mi",
 								Endpoints: []common.Endpoint{
 									{
@@ -56,9 +56,9 @@ func TestSetConfiguration(t *testing.T) {
 							},
 						},
 						{
+							Name: "loadbalancer",
 							Container: &common.Container{
 								Image:       "quay.io/nginx",
-								Name:        "loadbalancer",
 								MemoryLimit: "500Mi",
 							},
 						},
@@ -92,17 +92,17 @@ func TestSetConfiguration(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id:         "devbuild",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
 					},
 					Components: []common.DevfileComponent{
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "runtime",
 								Endpoints: []common.Endpoint{
 									{
 										Name:       "port-3030",
@@ -121,9 +121,9 @@ func TestSetConfiguration(t *testing.T) {
 							},
 						},
 						{
+							Name: "loadbalancer",
 							Container: &common.Container{
 								Image: "quay.io/nginx",
-								Name:  "loadbalancer",
 								Endpoints: []common.Endpoint{
 									{
 										Name:       "port-8080-tcp",
@@ -231,17 +231,17 @@ func TestAddAndRemoveEnvVars(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id:         "devbuild",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
 					},
 					Components: []common.DevfileComponent{
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "runtime",
 								Endpoints: []common.Endpoint{
 									{
 										Name:       "port-3030",
@@ -257,9 +257,9 @@ func TestAddAndRemoveEnvVars(t *testing.T) {
 							},
 						},
 						{
+							Name: "loadbalancer",
 							Container: &common.Container{
 								Image: "quay.io/nginx",
-								Name:  "loadbalancer",
 								Env: []common.Env{
 									{
 										Name:  "DATABASE_PASSWORD",
@@ -319,17 +319,17 @@ func testDevfileObj(fs filesystem.Filesystem) DevfileObj {
 		Data: &v200.Devfile200{
 			Commands: []common.DevfileCommand{
 				{
+					Id: "devbuild",
 					Exec: &common.Exec{
-						Id:         "devbuild",
 						WorkingDir: "/projects/nodejs-starter",
 					},
 				},
 			},
 			Components: []common.DevfileComponent{
 				{
+					Name: "runtime",
 					Container: &common.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "runtime",
 						Endpoints: []common.Endpoint{
 							{
 								Name:       "port-3030",
@@ -339,9 +339,9 @@ func testDevfileObj(fs filesystem.Filesystem) DevfileObj {
 					},
 				},
 				{
+					Name: "loadbalancer",
 					Container: &common.Container{
 						Image: "quay.io/nginx",
-						Name:  "loadbalancer",
 					},
 				},
 			},

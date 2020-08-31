@@ -161,7 +161,7 @@ func isContainerDisplay(storageList storage.StorageList, components []common.Dev
 	componentsMap := make(map[string]bool)
 	for _, comp := range components {
 		if comp.Container != nil {
-			componentsMap[comp.Container.Name] = true
+			componentsMap[comp.Name] = true
 		}
 	}
 

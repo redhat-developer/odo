@@ -14,7 +14,8 @@ import (
 var _ = Describe("odo devfile catalog command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
 	const registryName string = "RegistryName"
-	const addRegistryURL string = "https://github.com/odo-devfiles/registry"
+	// TODO remove
+	const addRegistryURL string = "https://raw.githubusercontent.com/kadel/registry/move-merge-key"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()

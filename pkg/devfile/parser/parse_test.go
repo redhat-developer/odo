@@ -35,17 +35,17 @@ func Test_parseParent(t *testing.T) {
 						Parent: common.DevfileParent{
 							Commands: []common.DevfileCommand{
 								{
+									Id: "devrun",
 									Exec: &common.Exec{
-										Id:         "devrun",
 										WorkingDir: "/projects/nodejs-starter",
 									},
 								},
 							},
 							Components: []common.DevfileComponent{
 								{
+									Name: "nodejs",
 									Container: &common.Container{
 										Image: "quay.io/nodejs-12",
-										Name:  "nodejs",
 									},
 								},
 							},
@@ -65,17 +65,17 @@ func Test_parseParent(t *testing.T) {
 
 						Commands: []common.DevfileCommand{
 							{
+								Id: "devbuild",
 								Exec: &common.Exec{
-									Id:         "devbuild",
 									WorkingDir: "/projects/nodejs-starter",
 								},
 							},
 						},
 						Components: []common.DevfileComponent{
 							{
+								Name: "runtime",
 								Container: &common.Container{
 									Image: "quay.io/nodejs-12",
-									Name:  "runtime",
 								},
 							},
 						},
@@ -102,8 +102,8 @@ func Test_parseParent(t *testing.T) {
 					SchemaVersion: schemaV200,
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
-								Id:          "devrun",
 								WorkingDir:  "/projects",
 								CommandLine: "npm run",
 							},
@@ -111,9 +111,9 @@ func Test_parseParent(t *testing.T) {
 					},
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-10",
-								Name:  "nodejs",
 							},
 						},
 					},
@@ -150,14 +150,14 @@ func Test_parseParent(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id:         "devbuild",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
-								Id:          "devrun",
 								CommandLine: "npm run",
 								WorkingDir:  "/projects/nodejs-starter",
 							},
@@ -165,15 +165,15 @@ func Test_parseParent(t *testing.T) {
 					},
 					Components: []common.DevfileComponent{
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "runtime",
 							},
 						},
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "nodejs",
 							},
 						},
 					},
@@ -224,17 +224,17 @@ func Test_parseParent(t *testing.T) {
 					Data: &v200.Devfile200{
 						Commands: []common.DevfileCommand{
 							{
+								Id: "devbuild",
 								Exec: &common.Exec{
-									Id:         "devbuild",
 									WorkingDir: "/projects/nodejs-starter",
 								},
 							},
 						},
 						Components: []common.DevfileComponent{
 							{
+								Name: "runtime",
 								Container: &common.Container{
 									Image: "quay.io/nodejs-12",
-									Name:  "runtime",
 								},
 							},
 						},
@@ -262,8 +262,8 @@ func Test_parseParent(t *testing.T) {
 					SchemaVersion: schemaV200,
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
-								Id:          "devrun",
 								WorkingDir:  "/projects",
 								CommandLine: "npm run",
 							},
@@ -271,9 +271,9 @@ func Test_parseParent(t *testing.T) {
 					},
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-10",
-								Name:  "nodejs",
 							},
 						},
 					},
@@ -310,14 +310,14 @@ func Test_parseParent(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id:         "devbuild",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
-								Id:          "devrun",
 								CommandLine: "npm run",
 								WorkingDir:  "/projects",
 							},
@@ -325,15 +325,15 @@ func Test_parseParent(t *testing.T) {
 					},
 					Components: []common.DevfileComponent{
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "runtime",
 							},
 						},
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-10",
-								Name:  "nodejs",
 							},
 						},
 					},
@@ -385,17 +385,17 @@ func Test_parseParent(t *testing.T) {
 						Parent: common.DevfileParent{
 							Commands: []common.DevfileCommand{
 								{
+									Id: "devrun",
 									Exec: &common.Exec{
-										Id:         "devrun",
 										WorkingDir: "/projects/nodejs-starter",
 									},
 								},
 							},
 							Components: []common.DevfileComponent{
 								{
+									Name: "nodejs",
 									Container: &common.Container{
 										Image: "quay.io/nodejs-12",
-										Name:  "nodejs",
 									},
 								},
 							},
@@ -430,8 +430,8 @@ func Test_parseParent(t *testing.T) {
 					Data: &v200.Devfile200{
 						Commands: []common.DevfileCommand{
 							{
+								Id: "devbuild",
 								Exec: &common.Exec{
-									Id:         "devbuild",
 									WorkingDir: "/projects/nodejs-starter",
 								},
 							},
@@ -444,8 +444,8 @@ func Test_parseParent(t *testing.T) {
 					SchemaVersion: schemaV200,
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id:         "devbuild",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
@@ -465,9 +465,9 @@ func Test_parseParent(t *testing.T) {
 					Data: &v200.Devfile200{
 						Components: []common.DevfileComponent{
 							{
+								Name: "runtime",
 								Container: &common.Container{
 									Image: "quay.io/nodejs-12",
-									Name:  "runtime",
 								},
 							},
 						},
@@ -479,9 +479,9 @@ func Test_parseParent(t *testing.T) {
 					SchemaVersion: schemaV200,
 					Components: []common.DevfileComponent{
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: "quay.io/nodejs-12",
-								Name:  "runtime",
 							},
 						},
 					},
@@ -572,6 +572,7 @@ func Test_parseParent(t *testing.T) {
 			tt.wantDevFile.Data.SetParent(parent)
 
 			err := parseParent(tt.args.devFileObj)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseParent() error = %v, wantErr %v", err, tt.wantErr)
 			}

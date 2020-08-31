@@ -16,7 +16,7 @@ func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 
 		if component.Container != nil {
 			cont := ContainerRepr{
-				ContainerName: component.Container.Name,
+				ContainerName: component.Name,
 			}
 			cont.EnvironmentVariables = config.NewEnvVarListFromDevfileEnv(component.Container.Env)
 			for _, endpoint := range component.Container.Endpoints {

@@ -51,20 +51,12 @@ const JsonSchema200 = `{
                 "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
-              "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                "type": "string",
-                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-              },
               "label": {
                 "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                 "type": "string",
                 "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
               }
             },
-            "required": [
-              "id"
-            ],
             "type": "object",
             "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
             "additionalProperties": false
@@ -115,11 +107,6 @@ const JsonSchema200 = `{
                 "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
-              "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                "type": "string",
-                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-              },
               "label": {
                 "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                 "type": "string",
@@ -131,9 +118,6 @@ const JsonSchema200 = `{
                 "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
               }
             },
-            "required": [
-              "id"
-            ],
             "type": "object",
             "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
             "additionalProperties": false
@@ -212,11 +196,6 @@ const JsonSchema200 = `{
                 "type": "boolean",
                 "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
               },
-              "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                "type": "string",
-                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-              },
               "label": {
                 "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                 "type": "string",
@@ -228,13 +207,17 @@ const JsonSchema200 = `{
                 "markdownDescription": "Working directory where the command should be executed\n\nSpecial variables that can be used:\n\n - '${PROJECTS_ROOT}': A path where projects sources are mounted\n\n - '${PROJECT_SOURCE}': A path to a project source (${PROJECTS_ROOT}/<project-name>). If there are multiple projects, this will point to the directory of the first one."
               }
             },
-            "required": [
-              "id",
-              "commandLine"
-            ],
             "type": "object",
             "markdownDescription": "CLI Command executed in an existing component container",
-            "additionalProperties": false
+            "additionalProperties": false,
+            "required": [
+              "commandLine"
+            ]
+          },
+          "id": {
+            "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+            "type": "string",
+            "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
           },
           "vscodeLaunch": {
             "description": "Command providing the definition of a VsCode launch action",
@@ -274,11 +257,6 @@ const JsonSchema200 = `{
                 "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
-              "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                "type": "string",
-                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-              },
               "inlined": {
                 "description": "Inlined content of the VsCode configuration",
                 "type": "string",
@@ -290,9 +268,6 @@ const JsonSchema200 = `{
                 "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
               }
             },
-            "required": [
-              "id"
-            ],
             "type": "object",
             "markdownDescription": "Command providing the definition of a VsCode launch action",
             "additionalProperties": false,
@@ -347,11 +322,6 @@ const JsonSchema200 = `{
                 "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
               },
-              "id": {
-                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                "type": "string",
-                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-              },
               "inlined": {
                 "description": "Inlined content of the VsCode configuration",
                 "type": "string",
@@ -363,9 +333,6 @@ const JsonSchema200 = `{
                 "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
               }
             },
-            "required": [
-              "id"
-            ],
             "type": "object",
             "markdownDescription": "Command providing the definition of a VsCode Task",
             "additionalProperties": false,
@@ -383,6 +350,9 @@ const JsonSchema200 = `{
             ]
           }
         },
+        "required": [
+          "id"
+        ],
         "type": "object",
         "additionalProperties": false,
         "oneOf": [
@@ -534,9 +504,6 @@ const JsonSchema200 = `{
               "mountSources": {
                 "type": "boolean"
               },
-              "name": {
-                "type": "string"
-              },
               "sourceMapping": {
                 "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
                 "type": "string",
@@ -569,13 +536,12 @@ const JsonSchema200 = `{
                 "markdownDescription": "List of volumes mounts that should be mounted is this container."
               }
             },
-            "required": [
-              "name",
-              "image"
-            ],
             "type": "object",
             "markdownDescription": "Allows adding and configuring workspace-related containers",
-            "additionalProperties": false
+            "additionalProperties": false,
+            "required": [
+              "image"
+            ]
           },
           "kubernetes": {
             "description": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
@@ -645,20 +611,12 @@ const JsonSchema200 = `{
                 "type": "string",
                 "markdownDescription": "Inlined manifest"
               },
-              "name": {
-                "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                "type": "string",
-                "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-              },
               "uri": {
                 "description": "Location in a file fetched from a uri.",
                 "type": "string",
                 "markdownDescription": "Location in a file fetched from a uri."
               }
             },
-            "required": [
-              "name"
-            ],
             "type": "object",
             "markdownDescription": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
             "additionalProperties": false,
@@ -674,6 +632,11 @@ const JsonSchema200 = `{
                 ]
               }
             ]
+          },
+          "name": {
+            "description": "Mandatory name that allows referencing the component from other elements (such as commands) or from an external devfile that may reference this component through a parent or a plugin.",
+            "type": "string",
+            "markdownDescription": "Mandatory name that allows referencing the component from other elements (such as commands) or from an external devfile that may reference this component through a parent or a plugin."
           },
           "openshift": {
             "description": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
@@ -743,20 +706,12 @@ const JsonSchema200 = `{
                 "type": "string",
                 "markdownDescription": "Inlined manifest"
               },
-              "name": {
-                "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                "type": "string",
-                "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-              },
               "uri": {
                 "description": "Location in a file fetched from a uri.",
                 "type": "string",
                 "markdownDescription": "Location in a file fetched from a uri."
               }
             },
-            "required": [
-              "name"
-            ],
             "type": "object",
             "markdownDescription": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
             "additionalProperties": false,
@@ -823,20 +778,12 @@ const JsonSchema200 = `{
                           "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
-                        "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                          "type": "string",
-                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                        },
                         "label": {
                           "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                           "type": "string",
                           "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                         }
                       },
-                      "required": [
-                        "id"
-                      ],
                       "type": "object",
                       "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                       "additionalProperties": false
@@ -887,11 +834,6 @@ const JsonSchema200 = `{
                           "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
-                        "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                          "type": "string",
-                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                        },
                         "label": {
                           "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                           "type": "string",
@@ -903,9 +845,6 @@ const JsonSchema200 = `{
                           "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
                         }
                       },
-                      "required": [
-                        "id"
-                      ],
                       "type": "object",
                       "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
                       "additionalProperties": false
@@ -984,11 +923,6 @@ const JsonSchema200 = `{
                           "type": "boolean",
                           "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
                         },
-                        "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                          "type": "string",
-                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                        },
                         "label": {
                           "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                           "type": "string",
@@ -1000,12 +934,14 @@ const JsonSchema200 = `{
                           "markdownDescription": "Working directory where the command should be executed\n\nSpecial variables that can be used:\n\n - '${PROJECTS_ROOT}': A path where projects sources are mounted\n\n - '${PROJECT_SOURCE}': A path to a project source (${PROJECTS_ROOT}/<project-name>). If there are multiple projects, this will point to the directory of the first one."
                         }
                       },
-                      "required": [
-                        "id"
-                      ],
                       "type": "object",
                       "markdownDescription": "CLI Command executed in an existing component container",
                       "additionalProperties": false
+                    },
+                    "id": {
+                      "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                      "type": "string",
+                      "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                     },
                     "vscodeLaunch": {
                       "description": "Command providing the definition of a VsCode launch action",
@@ -1045,11 +981,6 @@ const JsonSchema200 = `{
                           "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
-                        "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                          "type": "string",
-                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                        },
                         "inlined": {
                           "description": "Inlined content of the VsCode configuration",
                           "type": "string",
@@ -1061,9 +992,6 @@ const JsonSchema200 = `{
                           "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                         }
                       },
-                      "required": [
-                        "id"
-                      ],
                       "type": "object",
                       "markdownDescription": "Command providing the definition of a VsCode launch action",
                       "additionalProperties": false,
@@ -1118,11 +1046,6 @@ const JsonSchema200 = `{
                           "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
                         },
-                        "id": {
-                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                          "type": "string",
-                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                        },
                         "inlined": {
                           "description": "Inlined content of the VsCode configuration",
                           "type": "string",
@@ -1134,9 +1057,6 @@ const JsonSchema200 = `{
                           "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                         }
                       },
-                      "required": [
-                        "id"
-                      ],
                       "type": "object",
                       "markdownDescription": "Command providing the definition of a VsCode Task",
                       "additionalProperties": false,
@@ -1154,6 +1074,9 @@ const JsonSchema200 = `{
                       ]
                     }
                   },
+                  "required": [
+                    "id"
+                  ],
                   "type": "object",
                   "additionalProperties": false,
                   "oneOf": [
@@ -1304,9 +1227,6 @@ const JsonSchema200 = `{
                         "mountSources": {
                           "type": "boolean"
                         },
-                        "name": {
-                          "type": "string"
-                        },
                         "sourceMapping": {
                           "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
                           "type": "string",
@@ -1339,9 +1259,6 @@ const JsonSchema200 = `{
                           "markdownDescription": "List of volumes mounts that should be mounted is this container."
                         }
                       },
-                      "required": [
-                        "name"
-                      ],
                       "type": "object",
                       "markdownDescription": "Configuration overriding for a Container component in a plugin",
                       "additionalProperties": false
@@ -1413,20 +1330,12 @@ const JsonSchema200 = `{
                           "type": "string",
                           "markdownDescription": "Inlined manifest"
                         },
-                        "name": {
-                          "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                          "type": "string",
-                          "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-                        },
                         "uri": {
                           "description": "Location in a file fetched from a uri.",
                           "type": "string",
                           "markdownDescription": "Location in a file fetched from a uri."
                         }
                       },
-                      "required": [
-                        "name"
-                      ],
                       "type": "object",
                       "markdownDescription": "Configuration overriding for a Kubernetes component in a plugin",
                       "additionalProperties": false,
@@ -1442,6 +1351,11 @@ const JsonSchema200 = `{
                           ]
                         }
                       ]
+                    },
+                    "name": {
+                      "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
+                      "type": "string",
+                      "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
                     },
                     "openshift": {
                       "description": "Configuration overriding for an OpenShift component in a plugin",
@@ -1510,20 +1424,12 @@ const JsonSchema200 = `{
                           "type": "string",
                           "markdownDescription": "Inlined manifest"
                         },
-                        "name": {
-                          "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                          "type": "string",
-                          "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-                        },
                         "uri": {
                           "description": "Location in a file fetched from a uri.",
                           "type": "string",
                           "markdownDescription": "Location in a file fetched from a uri."
                         }
                       },
-                      "required": [
-                        "name"
-                      ],
                       "type": "object",
                       "markdownDescription": "Configuration overriding for an OpenShift component in a plugin",
                       "additionalProperties": false,
@@ -1543,25 +1449,20 @@ const JsonSchema200 = `{
                     "volume": {
                       "description": "Configuration overriding for a Volume component in a plugin",
                       "properties": {
-                        "name": {
-                          "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                          "type": "string",
-                          "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
-                        },
                         "size": {
                           "description": "Size of the volume",
                           "type": "string",
                           "markdownDescription": "Size of the volume"
                         }
                       },
-                      "required": [
-                        "name"
-                      ],
                       "type": "object",
                       "markdownDescription": "Configuration overriding for a Volume component in a plugin",
                       "additionalProperties": false
                     }
                   },
+                  "required": [
+                    "name"
+                  ],
                   "type": "object",
                   "additionalProperties": false,
                   "oneOf": [
@@ -1612,11 +1513,6 @@ const JsonSchema200 = `{
                 "markdownDescription": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
                 "additionalProperties": false
               },
-              "name": {
-                "description": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)",
-                "type": "string",
-                "markdownDescription": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)"
-              },
               "registryUrl": {
                 "type": "string"
               },
@@ -1650,25 +1546,20 @@ const JsonSchema200 = `{
           "volume": {
             "description": "Allows specifying the definition of a volume shared by several other components",
             "properties": {
-              "name": {
-                "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                "type": "string",
-                "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
-              },
               "size": {
                 "description": "Size of the volume",
                 "type": "string",
                 "markdownDescription": "Size of the volume"
               }
             },
-            "required": [
-              "name"
-            ],
             "type": "object",
             "markdownDescription": "Allows specifying the definition of a volume shared by several other components",
             "additionalProperties": false
           }
         },
+        "required": [
+          "name"
+        ],
         "type": "object",
         "additionalProperties": false,
         "oneOf": [
@@ -1792,20 +1683,12 @@ const JsonSchema200 = `{
                     "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
-                  "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                    "type": "string",
-                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                  },
                   "label": {
                     "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                     "type": "string",
                     "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                   }
                 },
-                "required": [
-                  "id"
-                ],
                 "type": "object",
                 "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                 "additionalProperties": false
@@ -1856,11 +1739,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
-                  "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                    "type": "string",
-                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                  },
                   "label": {
                     "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                     "type": "string",
@@ -1872,9 +1750,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
                   }
                 },
-                "required": [
-                  "id"
-                ],
                 "type": "object",
                 "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
                 "additionalProperties": false
@@ -1953,11 +1828,6 @@ const JsonSchema200 = `{
                     "type": "boolean",
                     "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
                   },
-                  "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                    "type": "string",
-                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                  },
                   "label": {
                     "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                     "type": "string",
@@ -1969,12 +1839,14 @@ const JsonSchema200 = `{
                     "markdownDescription": "Working directory where the command should be executed\n\nSpecial variables that can be used:\n\n - '${PROJECTS_ROOT}': A path where projects sources are mounted\n\n - '${PROJECT_SOURCE}': A path to a project source (${PROJECTS_ROOT}/<project-name>). If there are multiple projects, this will point to the directory of the first one."
                   }
                 },
-                "required": [
-                  "id"
-                ],
                 "type": "object",
                 "markdownDescription": "CLI Command executed in an existing component container",
                 "additionalProperties": false
+              },
+              "id": {
+                "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                "type": "string",
+                "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
               },
               "vscodeLaunch": {
                 "description": "Command providing the definition of a VsCode launch action",
@@ -2014,11 +1886,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
-                  "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                    "type": "string",
-                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                  },
                   "inlined": {
                     "description": "Inlined content of the VsCode configuration",
                     "type": "string",
@@ -2030,9 +1897,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                   }
                 },
-                "required": [
-                  "id"
-                ],
                 "type": "object",
                 "markdownDescription": "Command providing the definition of a VsCode launch action",
                 "additionalProperties": false,
@@ -2087,11 +1951,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
-                  "id": {
-                    "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                    "type": "string",
-                    "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                  },
                   "inlined": {
                     "description": "Inlined content of the VsCode configuration",
                     "type": "string",
@@ -2103,9 +1962,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                   }
                 },
-                "required": [
-                  "id"
-                ],
                 "type": "object",
                 "markdownDescription": "Command providing the definition of a VsCode Task",
                 "additionalProperties": false,
@@ -2123,6 +1979,9 @@ const JsonSchema200 = `{
                 ]
               }
             },
+            "required": [
+              "id"
+            ],
             "type": "object",
             "additionalProperties": false,
             "oneOf": [
@@ -2273,9 +2132,6 @@ const JsonSchema200 = `{
                   "mountSources": {
                     "type": "boolean"
                   },
-                  "name": {
-                    "type": "string"
-                  },
                   "sourceMapping": {
                     "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
                     "type": "string",
@@ -2308,9 +2164,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "List of volumes mounts that should be mounted is this container."
                   }
                 },
-                "required": [
-                  "name"
-                ],
                 "type": "object",
                 "markdownDescription": "Allows adding and configuring workspace-related containers",
                 "additionalProperties": false
@@ -2382,20 +2235,12 @@ const JsonSchema200 = `{
                     "type": "string",
                     "markdownDescription": "Inlined manifest"
                   },
-                  "name": {
-                    "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                    "type": "string",
-                    "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-                  },
                   "uri": {
                     "description": "Location in a file fetched from a uri.",
                     "type": "string",
                     "markdownDescription": "Location in a file fetched from a uri."
                   }
                 },
-                "required": [
-                  "name"
-                ],
                 "type": "object",
                 "markdownDescription": "Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.",
                 "additionalProperties": false,
@@ -2411,6 +2256,11 @@ const JsonSchema200 = `{
                     ]
                   }
                 ]
+              },
+              "name": {
+                "description": "Mandatory name that allows referencing the component from other elements (such as commands) or from an external devfile that may reference this component through a parent or a plugin.",
+                "type": "string",
+                "markdownDescription": "Mandatory name that allows referencing the component from other elements (such as commands) or from an external devfile that may reference this component through a parent or a plugin."
               },
               "openshift": {
                 "description": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
@@ -2479,20 +2329,12 @@ const JsonSchema200 = `{
                     "type": "string",
                     "markdownDescription": "Inlined manifest"
                   },
-                  "name": {
-                    "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                    "type": "string",
-                    "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-                  },
                   "uri": {
                     "description": "Location in a file fetched from a uri.",
                     "type": "string",
                     "markdownDescription": "Location in a file fetched from a uri."
                   }
                 },
-                "required": [
-                  "name"
-                ],
                 "type": "object",
                 "markdownDescription": "Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.",
                 "additionalProperties": false,
@@ -2559,20 +2401,12 @@ const JsonSchema200 = `{
                               "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
-                            "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                              "type": "string",
-                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                            },
                             "label": {
                               "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                               "type": "string",
                               "markdownDescription": "Optional label that provides a label for this command to be used in Editor UI menus for example"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
                           "type": "object",
                           "markdownDescription": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
                           "additionalProperties": false
@@ -2623,11 +2457,6 @@ const JsonSchema200 = `{
                               "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
-                            "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                              "type": "string",
-                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                            },
                             "label": {
                               "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                               "type": "string",
@@ -2639,9 +2468,6 @@ const JsonSchema200 = `{
                               "markdownDescription": "Indicates if the sub-commands should be executed concurrently"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
                           "type": "object",
                           "markdownDescription": "Composite command that allows executing several sub-commands either sequentially or concurrently",
                           "additionalProperties": false
@@ -2720,11 +2546,6 @@ const JsonSchema200 = `{
                               "type": "boolean",
                               "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
                             },
-                            "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                              "type": "string",
-                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                            },
                             "label": {
                               "description": "Optional label that provides a label for this command to be used in Editor UI menus for example",
                               "type": "string",
@@ -2736,12 +2557,14 @@ const JsonSchema200 = `{
                               "markdownDescription": "Working directory where the command should be executed\n\nSpecial variables that can be used:\n\n - '${PROJECTS_ROOT}': A path where projects sources are mounted\n\n - '${PROJECT_SOURCE}': A path to a project source (${PROJECTS_ROOT}/<project-name>). If there are multiple projects, this will point to the directory of the first one."
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
                           "type": "object",
                           "markdownDescription": "CLI Command executed in an existing component container",
                           "additionalProperties": false
+                        },
+                        "id": {
+                          "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
+                          "type": "string",
+                          "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
                         },
                         "vscodeLaunch": {
                           "description": "Command providing the definition of a VsCode launch action",
@@ -2781,11 +2604,6 @@ const JsonSchema200 = `{
                               "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
-                            "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                              "type": "string",
-                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                            },
                             "inlined": {
                               "description": "Inlined content of the VsCode configuration",
                               "type": "string",
@@ -2797,9 +2615,6 @@ const JsonSchema200 = `{
                               "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
                           "type": "object",
                           "markdownDescription": "Command providing the definition of a VsCode launch action",
                           "additionalProperties": false,
@@ -2854,11 +2669,6 @@ const JsonSchema200 = `{
                               "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
                             },
-                            "id": {
-                              "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
-                              "type": "string",
-                              "markdownDescription": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events."
-                            },
                             "inlined": {
                               "description": "Inlined content of the VsCode configuration",
                               "type": "string",
@@ -2870,9 +2680,6 @@ const JsonSchema200 = `{
                               "markdownDescription": "Location as an absolute of relative URI the VsCode configuration will be fetched from"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
                           "type": "object",
                           "markdownDescription": "Command providing the definition of a VsCode Task",
                           "additionalProperties": false,
@@ -2890,6 +2697,9 @@ const JsonSchema200 = `{
                           ]
                         }
                       },
+                      "required": [
+                        "id"
+                      ],
                       "type": "object",
                       "additionalProperties": false,
                       "oneOf": [
@@ -3040,9 +2850,6 @@ const JsonSchema200 = `{
                             "mountSources": {
                               "type": "boolean"
                             },
-                            "name": {
-                              "type": "string"
-                            },
                             "sourceMapping": {
                               "description": "Optional specification of the path in the container where project sources should be transferred/mounted when 'mountSources' is 'true'. When omitted, the value of the 'PROJECTS_ROOT' environment variable is used.",
                               "type": "string",
@@ -3075,9 +2882,6 @@ const JsonSchema200 = `{
                               "markdownDescription": "List of volumes mounts that should be mounted is this container."
                             }
                           },
-                          "required": [
-                            "name"
-                          ],
                           "type": "object",
                           "markdownDescription": "Configuration overriding for a Container component in a plugin",
                           "additionalProperties": false
@@ -3149,20 +2953,12 @@ const JsonSchema200 = `{
                               "type": "string",
                               "markdownDescription": "Inlined manifest"
                             },
-                            "name": {
-                              "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                              "type": "string",
-                              "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-                            },
                             "uri": {
                               "description": "Location in a file fetched from a uri.",
                               "type": "string",
                               "markdownDescription": "Location in a file fetched from a uri."
                             }
                           },
-                          "required": [
-                            "name"
-                          ],
                           "type": "object",
                           "markdownDescription": "Configuration overriding for a Kubernetes component in a plugin",
                           "additionalProperties": false,
@@ -3178,6 +2974,11 @@ const JsonSchema200 = `{
                               ]
                             }
                           ]
+                        },
+                        "name": {
+                          "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
+                          "type": "string",
+                          "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
                         },
                         "openshift": {
                           "description": "Configuration overriding for an OpenShift component in a plugin",
@@ -3246,20 +3047,12 @@ const JsonSchema200 = `{
                               "type": "string",
                               "markdownDescription": "Inlined manifest"
                             },
-                            "name": {
-                              "description": "Mandatory name that allows referencing the component in commands, or inside a parent",
-                              "type": "string",
-                              "markdownDescription": "Mandatory name that allows referencing the component in commands, or inside a parent"
-                            },
                             "uri": {
                               "description": "Location in a file fetched from a uri.",
                               "type": "string",
                               "markdownDescription": "Location in a file fetched from a uri."
                             }
                           },
-                          "required": [
-                            "name"
-                          ],
                           "type": "object",
                           "markdownDescription": "Configuration overriding for an OpenShift component in a plugin",
                           "additionalProperties": false,
@@ -3279,25 +3072,20 @@ const JsonSchema200 = `{
                         "volume": {
                           "description": "Configuration overriding for a Volume component in a plugin",
                           "properties": {
-                            "name": {
-                              "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                              "type": "string",
-                              "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
-                            },
                             "size": {
                               "description": "Size of the volume",
                               "type": "string",
                               "markdownDescription": "Size of the volume"
                             }
                           },
-                          "required": [
-                            "name"
-                          ],
                           "type": "object",
                           "markdownDescription": "Configuration overriding for a Volume component in a plugin",
                           "additionalProperties": false
                         }
                       },
+                      "required": [
+                        "name"
+                      ],
                       "type": "object",
                       "additionalProperties": false,
                       "oneOf": [
@@ -3348,11 +3136,6 @@ const JsonSchema200 = `{
                     "markdownDescription": "Reference to a Kubernetes CRD of type DevWorkspaceTemplate",
                     "additionalProperties": false
                   },
-                  "name": {
-                    "description": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)",
-                    "type": "string",
-                    "markdownDescription": "Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)"
-                  },
                   "registryUrl": {
                     "type": "string"
                   },
@@ -3386,25 +3169,20 @@ const JsonSchema200 = `{
               "volume": {
                 "description": "Allows specifying the definition of a volume shared by several other components",
                 "properties": {
-                  "name": {
-                    "description": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent",
-                    "type": "string",
-                    "markdownDescription": "Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent"
-                  },
                   "size": {
                     "description": "Size of the volume",
                     "type": "string",
                     "markdownDescription": "Size of the volume"
                   }
                 },
-                "required": [
-                  "name"
-                ],
                 "type": "object",
                 "markdownDescription": "Allows specifying the definition of a volume shared by several other components",
                 "additionalProperties": false
               }
             },
+            "required": [
+              "name"
+            ],
             "type": "object",
             "additionalProperties": false,
             "oneOf": [
@@ -3599,6 +3377,153 @@ const JsonSchema200 = `{
         },
         "registryUrl": {
           "type": "string"
+        },
+        "starterProjects": {
+          "description": "Overrides of startedProjects encapsulated in a parent devfile. Overriding is done using a strategic merge patch.",
+          "items": {
+            "properties": {
+              "clonePath": {
+                "description": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.",
+                "type": "string",
+                "markdownDescription": "Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name."
+              },
+              "description": {
+                "description": "Description of a starter project",
+                "type": "string",
+                "markdownDescription": "Description of a starter project"
+              },
+              "git": {
+                "description": "Project's Git source",
+                "properties": {
+                  "checkoutFrom": {
+                    "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
+                    "properties": {
+                      "remote": {
+                        "description": "The remote name should be used as init. Required if there are more than one remote configured",
+                        "type": "string",
+                        "markdownDescription": "The remote name should be used as init. Required if there are more than one remote configured"
+                      },
+                      "revision": {
+                        "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
+                        "type": "string",
+                        "markdownDescription": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found."
+                      }
+                    },
+                    "type": "object",
+                    "markdownDescription": "Defines from what the project should be checked out. Required if there are more than one remote configured",
+                    "additionalProperties": false
+                  },
+                  "remotes": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
+                    "type": "object",
+                    "markdownDescription": "The remotes map which should be initialized in the git project. Must have at least one remote configured"
+                  },
+                  "sparseCheckoutDir": {
+                    "description": "Part of project to populate in the working directory.",
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
+                  }
+                },
+                "type": "object",
+                "markdownDescription": "Project's Git source",
+                "additionalProperties": false
+              },
+              "github": {
+                "description": "Project's GitHub source",
+                "properties": {
+                  "checkoutFrom": {
+                    "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
+                    "properties": {
+                      "remote": {
+                        "description": "The remote name should be used as init. Required if there are more than one remote configured",
+                        "type": "string",
+                        "markdownDescription": "The remote name should be used as init. Required if there are more than one remote configured"
+                      },
+                      "revision": {
+                        "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
+                        "type": "string",
+                        "markdownDescription": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found."
+                      }
+                    },
+                    "type": "object",
+                    "markdownDescription": "Defines from what the project should be checked out. Required if there are more than one remote configured",
+                    "additionalProperties": false
+                  },
+                  "remotes": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
+                    "type": "object",
+                    "markdownDescription": "The remotes map which should be initialized in the git project. Must have at least one remote configured"
+                  },
+                  "sparseCheckoutDir": {
+                    "description": "Part of project to populate in the working directory.",
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
+                  }
+                },
+                "type": "object",
+                "markdownDescription": "Project's GitHub source",
+                "additionalProperties": false
+              },
+              "name": {
+                "description": "Project name",
+                "type": "string",
+                "markdownDescription": "Project name"
+              },
+              "zip": {
+                "description": "Project's Zip source",
+                "properties": {
+                  "location": {
+                    "description": "Zip project's source location address. Should be file path of the archive, e.g. file://$FILE_PATH",
+                    "type": "string",
+                    "markdownDescription": "Zip project's source location address. Should be file path of the archive, e.g. file://$FILE_PATH"
+                  },
+                  "sparseCheckoutDir": {
+                    "description": "Part of project to populate in the working directory.",
+                    "type": "string",
+                    "markdownDescription": "Part of project to populate in the working directory."
+                  }
+                },
+                "type": "object",
+                "markdownDescription": "Project's Zip source",
+                "additionalProperties": false
+              },
+              "markdownDescription": {
+                "description": "Description of a starter project",
+                "type": "string",
+                "markdownDescription": "Description of a starter project"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object",
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "required": [
+                  "git"
+                ]
+              },
+              {
+                "required": [
+                  "github"
+                ]
+              },
+              {
+                "required": [
+                  "zip"
+                ]
+              }
+            ]
+          },
+          "type": "array",
+          "markdownDescription": "Overrides of startedProjects encapsulated in a parent devfile. Overriding is done using a strategic merge patch."
         },
         "uri": {
           "description": "Uri of a Devfile yaml file",

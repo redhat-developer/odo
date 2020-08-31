@@ -7,105 +7,105 @@ starterProjects:
       remotes:
         origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       endpoints:
         - name: "3000/tcp"
           targetPort: 3000 
       mountSources: true
-  - container:
-      name: "tools"
+  - name: "tools"
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       mountSources: true
       memoryLimit: 1024Mi
 commands:
-  - exec:
-      id: myPreStart
+  - id: myPreStart
+    exec:
       commandLine: echo hello test2 >> $PROJECTS_ROOT/test.txt
       component: tools
-  - exec:
-      id: secondPreStart
+  - id: secondPreStart
+    exec:
       commandLine: echo hello test >> $PROJECTS_ROOT/test.txt
       component: runtime
       workingDir: /
-  - composite:
-      id: preStartComp
+  - id: preStartComp
+    composite:
       label: pre start composite
       commands:
         - myPreStart
         - secondPreStart
       parallel: true
-  - exec:
-      id: myPostStart
+  - id: myPostStart
+    exec:
       commandLine: echo I am a PostStart
       component: tools
       workingDir: /
-  - exec:
-      id: secondPostStart
+  - id: secondPostStart
+    exec:
       commandLine: echo I am also a PostStart
       component: runtime
       workingDir: /
-  - exec:
-      id: wrongPostStart
+  - id: wrongPostStart
+    exec:
       commandLine: echo I am also a PostStart
       component: wrongruntime
       workingDir: /
-  - exec:
-      id: myPreStop
+  - id: myPreStop
+    exec:
       commandLine: echo I am a PreStop
       component: tools
       workingDir: /
-  - exec:
-      id: secondPreStop
+  - id: secondPreStop
+    exec:
       commandLine: echo I am also a PreStop
       component: runtime
       workingDir: /
-  - exec:
-      id: thirdPreStop
+  - id: thirdPreStop
+    exec:
       commandLine: echo I am a third PreStop
       component: runtime
       workingDir: /
-  - composite:
-      id: myCompCmd
+  - id: myCompCmd
+    composite:
       label: Build and Mkdir
       commands:
         - secondPreStop
         - thirdPreStop
       parallel: true
-  - composite:
-      id: myWrongCompCmd
+  - id: myWrongCompCmd
+    composite:
       label: Build and Mkdir
       commands:
         - secondPreStopisWrong
         - thirdPreStop
       parallel: true
-  - exec:
-      id: devbuild
+  - id: devbuild
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: build
+  - id: build
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-  - exec:
-      id: devrun
+  - id: devrun
+    exec:
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
-  - exec:
-      id: run
+  - id: run
+    exec:
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}
