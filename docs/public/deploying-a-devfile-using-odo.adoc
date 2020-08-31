@@ -33,8 +33,6 @@ An example deployment scenario:
 
 ==== Prerequisites for an OpenShift Cluster
 
-* Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
-
 * Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 
 . Log in to an OpenShift cluster:
@@ -55,8 +53,6 @@ An example deployment scenario:
 
 
 ==== Prerequisites for a Kubernetes Cluster
-
-* Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
 
 * Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
 +
