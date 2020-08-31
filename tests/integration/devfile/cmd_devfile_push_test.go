@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -617,12 +616,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			// 6) Sort and compare the local and remote files; they should match
 			sort.Strings(localFiles)
 			sort.Strings(remoteFiles)
-
-			equal := reflect.DeepEqual(localFiles, remoteFiles)
-			if !equal {
-				fmt.Fprintf(GinkgoWriter, "Files mismatched between local and remote. local: {%v} remote: {%v}", localFiles, remoteFiles)
-				Fail("Mismatching files between local and remote")
-			}
+			Expect(localFiles).To(Equal(remoteFiles))
 		}
 
 		It("Should ensure that files are correctly synced on pod redeploy, with force push specified", func() {
