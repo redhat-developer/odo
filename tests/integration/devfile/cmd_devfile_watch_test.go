@@ -66,6 +66,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 			output := helper.CmdShouldFail("odo", "watch", "--context", context)
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
+
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "watch", "--devfile", "invalid.yaml")
+		})
 	})
 
 	Context("when executing odo watch after odo push", func() {

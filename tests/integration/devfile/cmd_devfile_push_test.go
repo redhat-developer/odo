@@ -74,6 +74,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
 		})
 
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "push", "--namespace", namespace, "--devfile", "invalid.yaml")
+		})
+
 	})
 
 	Context("Verify devfile push works", func() {
