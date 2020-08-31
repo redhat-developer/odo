@@ -275,7 +275,7 @@ test-cmd-devfile-url:
 .PHONY: test-cmd-devfile-debug
 test-cmd-devfile-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
-	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug
+	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug/
 
 # Run odo storage devfile command tests
 .PHONY: test-cmd-devfile-storage
@@ -338,6 +338,7 @@ test-cmd-watch:
 	ginkgo $(GINKGO_FLAGS) -focus="odo watch command tests" tests/integration/
 
 # Run odo debug command tests
+.PHONY: test-cmd-debug
 test-cmd-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo debug command tests" tests/integration/
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo debug command serial tests" tests/integration/debug/
@@ -347,11 +348,13 @@ test-cmd-debug:
 .PHONY: test-integration
 test-integration:
 	ginkgo $(GINKGO_FLAGS) tests/integration/
+	ginkgo $(GINKGO_FLAGS_SERIAL) tests/integration/debug/
 
 # Run devfile integration tests
 .PHONY: test-integration-devfile
 test-integration-devfile:
 	ginkgo $(GINKGO_FLAGS) tests/integration/devfile/
+	ginkgo $(GINKGO_FLAGS_SERIAL) tests/integration/devfile/debug/
 
 # Run command's integration tests which are depend on service catalog enabled cluster.
 # Only service and link command tests are the part of this test run
