@@ -143,7 +143,9 @@ func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { r
 
 func (d TestDevfileData) UpdateProject(project common.DevfileProject) {}
 
-func (d TestDevfileData) AddStarterProjects(projects []common.DevfileStarterProject) error { return nil }
+func (d TestDevfileData) AddStarterProjects(projects []common.DevfileStarterProject) error {
+	return nil
+}
 
 func (d TestDevfileData) UpdateStarterProject(project common.DevfileStarterProject) {}
 

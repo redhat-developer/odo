@@ -643,7 +643,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Verify the pvc size for firstvol
 			storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
 			// should be the default size
-			Expect(storageSize).To(ContainSubstring("5Gi"))
+			Expect(storageSize).To(ContainSubstring("1Gi"))
 
 			// Verify the pvc size for secondvol
 			storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)

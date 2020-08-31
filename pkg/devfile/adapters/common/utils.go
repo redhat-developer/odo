@@ -61,7 +61,7 @@ const (
 	BinBash = "/bin/sh"
 
 	// Default volume size for volumes defined in a devfile
-	volumeSize = "5Gi"
+	DefaultVolumeSize = "1Gi"
 
 	// EnvProjectsRoot is the env defined for /projects where component mountSources=true
 	EnvProjectsRoot = "PROJECTS_ROOT"
@@ -180,7 +180,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 	containerNameToVolumes := make(map[string][]DevfileVolume)
 	for _, containerComp := range containerComponents {
 		for _, volumeMount := range containerComp.Container.VolumeMounts {
-			size := volumeSize
+			size := DefaultVolumeSize
 
 			// check if there is a volume component name against the container component volume mount name
 			if volumeComp, ok := volumeNameToVolumeComponent[volumeMount.Name]; ok {
