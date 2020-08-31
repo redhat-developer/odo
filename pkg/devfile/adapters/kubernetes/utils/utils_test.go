@@ -635,7 +635,7 @@ func TestGetContainersMap(t *testing.T) {
 		{
 			name: "Case 1: single entry",
 			containers: []corev1.Container{
-				testingutil.CreateFakeContainer("container1", "image1", []string{"containercommand1"}, []string{"args1"}),
+				testingutil.CreateFakeContainer("container1"),
 			},
 			wantContainerKey: []string{
 				"container1",
@@ -644,8 +644,8 @@ func TestGetContainersMap(t *testing.T) {
 		{
 			name: "Case 2: multiple entries",
 			containers: []corev1.Container{
-				testingutil.CreateFakeContainer("container1", "image1", []string{"containercommand1"}, []string{"args1"}),
-				testingutil.CreateFakeContainer("container2", "image2", []string{"containercommand2"}, []string{"args2"}),
+				testingutil.CreateFakeContainer("container1"),
+				testingutil.CreateFakeContainer("container2"),
 			},
 			wantContainerKey: []string{
 				"container1",
@@ -672,8 +672,8 @@ func TestGetContainersMap(t *testing.T) {
 func TestAddPreStartEventInitContainer(t *testing.T) {
 
 	containers := []corev1.Container{
-		testingutil.CreateFakeContainer("container1", "image1", []string{"containercommand1"}, []string{"args1"}),
-		testingutil.CreateFakeContainer("container2", "image2", []string{"containercommand2"}, []string{"args2"}),
+		testingutil.CreateFakeContainer("container1"),
+		testingutil.CreateFakeContainer("container2"),
 	}
 
 	execCommands := []versionsCommon.Exec{
