@@ -138,7 +138,7 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 *Test guidelines:*
 
-Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`].
+Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`]. For better understanding of writing test please refer Ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation] and Ginkgo's preferred matcher library Gomega link:http://onsi.github.io/gomega/[documentation].
 
 * Before writing tests (Integration/e2e) scenario make sure that the test scenario (Integration or e2e) is identified properly.
 +
@@ -184,7 +184,13 @@ Context("when running help for storage command", func() {
 ----
 +
 
-* Due to parallel test run support make sure that the should run in isolation, otherwise the test result will lead to race condition. To achieve this ginkgo provides some in build functions `BeforeEach`, `AfterEach` etc.
+* Don't create a new test spec for the steps which can be run with the existing specs.
++ 
+
+* Spec level conditions, pre and post requirements should be run in ginkgo built-in tear down steps `JustBeforeEach` and `JustAfterEach`
++
+
+* Due to parallel test run support make sure that the spec should run in isolation, otherwise the test result will lead to race condition. To achieve this ginkgo provides some in build functions `BeforeEach`, `AfterEach` etc.
 +
 
 ----
@@ -238,7 +244,30 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 ----
 +
 
-* If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement.
+* If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. Avoid unnecessary function implementation within test files. Check to see if there is a helper function already implemented.
++
+
+* If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the link:https://github.com/openshift/odo/tree/master/tests/helper[`helper package`] for more such reference.
++
+
+----
+For example:
+func RetryInterval(maxRetry, intervalSeconds int, program string, args ...string) string {
+	for i := 0; i < maxRetry; i++ {
+		session := CmdRunner(program, args...)
+		session.Wait()
+		if session.ExitCode() == 0 {
+			time.Sleep(time.Duration(intervalSeconds) * time.Second)
+		} else {
+			Consistently(session).ShouldNot(gexec.Exit(0), runningCmd(session.Command))
+			return string(session.Err.Contents())
+		}
+	}
+	Fail(fmt.Sprintf("Failed after %d retries", maxRetry))
+	return ""
+}
+----
+or in Ginkgo there is an in-built link:http://onsi.github.io/ginkgo/#asynchronous-tests[`timeout feature`].
 +
 
 * The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.

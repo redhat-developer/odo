@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"github.com/openshift/odo/pkg/devfile"
+	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -26,8 +27,6 @@ var (
   %[1]s mystorage --path=/opt/app-root/src/storage/ --size=1Gi
 	`)
 )
-
-const defaultStorageSize = "1Gi"
 
 type StorageCreateOptions struct {
 	storageName      string
@@ -55,7 +54,7 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 		o.componentName = o.EnvSpecificInfo.GetName()
 		if o.storageSize == "" {
-			o.storageSize = defaultStorageSize
+			o.storageSize = adapterCommon.DefaultVolumeSize
 		}
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)

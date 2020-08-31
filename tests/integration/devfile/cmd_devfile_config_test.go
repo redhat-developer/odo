@@ -10,10 +10,10 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odo devfile env command tests", func() {
+var _ = Describe("odo devfile config command tests", func() {
 	const (
 		testName      = "testname"
-		testNamepace  = "testNamepace"
+		testMemory    = "500Mi"
 		testDebugPort = "8888"
 		fakeParameter = "fakeParameter"
 	)
@@ -46,44 +46,35 @@ var _ = Describe("odo devfile env command tests", func() {
 		helper.DeleteDir(context)
 	})
 
-	Context("When executing env view", func() {
+	Context("When executing config view", func() {
 		It("Should view all default parameters", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
-			output := helper.CmdShouldPass("odo", "env", "view")
+			output := helper.CmdShouldPass("odo", "config", "view")
 			wantOutput := []string{
-				"PARAMETER NAME",
-				"PARAMETER VALUE",
-				"NAME",
 				"nodejs",
-				"Namespace",
-				project,
-				"DebugPort",
+				"Ports",
+				"Memory",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
 	})
 
-	Context("When executing env set and unset", func() {
+	Context("When executing config set and unset", func() {
 		It("Should successfully set and unset the parameters", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
-			helper.CmdShouldPass("odo", "env", "set", "Name", testName, "-f")
-			helper.CmdShouldPass("odo", "env", "set", "Namespace", testNamepace, "-f")
-			helper.CmdShouldPass("odo", "env", "set", "DebugPort", testDebugPort, "-f")
-			output := helper.CmdShouldPass("odo", "env", "view")
+			helper.CmdShouldPass("odo", "config", "set", "Name", testName, "-f")
+			helper.CmdShouldPass("odo", "config", "set", "Ports", testDebugPort, "-f")
+			helper.CmdShouldPass("odo", "config", "set", "Memory", testMemory, "-f")
+			output := helper.CmdShouldPass("odo", "config", "view")
 			wantOutput := []string{
-				"PARAMETER NAME",
-				"PARAMETER VALUE",
-				"NAME",
 				testName,
-				"Namespace",
-				testNamepace,
-				"DebugPort",
+				testMemory,
 				testDebugPort,
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 
-			helper.CmdShouldPass("odo", "env", "unset", "DebugPort", "-f")
-			output = helper.CmdShouldPass("odo", "env", "view")
+			helper.CmdShouldPass("odo", "config", "unset", "Ports", "-f")
+			output = helper.CmdShouldPass("odo", "config", "view")
 			dontWantOutput := []string{
 				testDebugPort,
 			}
@@ -93,9 +84,8 @@ var _ = Describe("odo devfile env command tests", func() {
 
 		It("Should fail to set and unset an invalid parameter", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
-			helper.CmdShouldFail("odo", "env", "set", fakeParameter, fakeParameter, "-f")
-			helper.CmdShouldFail("odo", "env", "unset", fakeParameter, "-f")
+			helper.CmdShouldFail("odo", "config", "set", fakeParameter, fakeParameter, "-f")
+			helper.CmdShouldFail("odo", "config", "unset", fakeParameter, "-f")
 		})
 	})
-
 })

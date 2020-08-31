@@ -107,25 +107,24 @@ var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 // ConfigFilePath is the path of config.yaml for s2i component
 var ConfigFilePath = filepath.Join(LocalDirectoryDefaultLocation, configFile)
 
-var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
+var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.`)
 
-If a component name is not provided, it'll be auto-generated.
+var createExample = ktemplates.Examples(`# Create a new Node.JS component with existing sourcecode as well as specifying a name
+%[1]s nodejs mynodejs
 
-A full list of component types that can be deployed is available using: 'odo catalog list components'
-
-By default, builder images (component type) will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
-If version is not specified by default, latest will be chosen as the version.`)
-
-var createExample = ktemplates.Examples(`  # Create new Node.js component with the source in current directory.
-
-Note: When you use odo with experimental mode enabled and create devfile component, if you want to use existing devfile the first argument will be the component name
-# Create new Node.js component with existing devfile
-%[1]s mynodejs (devfile exists in current working directory)
-%[1]s mynodejs --devfile ./devfile.yaml (devfile exists in any other directory)
-%[1]s mynodejs --devfile https://raw.githubusercontent.com/elsony/devfile-registry/master/devfiles/nodejs/devfile.yaml (devfile exists in network)
-
-# Create new Node.js component
+# Name is not required and will be automatically generated if not passed
 %[1]s nodejs
+
+# List all available components before deploying
+odo catalog list components
+%[1]s java-quarkus
+
+# Download an example devfile and application before deploying
+%[1]s nodejs --starter
+
+# Using a specific devfile
+%[1]s mynodejs --devfile ./devfile.yaml
+%[1]s mynodejs --devfile https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml
 
 # Create new Node.js component named 'frontend' with the source in './frontend' directory
 %[1]s nodejs frontend --context ./frontend
@@ -137,12 +136,9 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
 
 # Create new Node.js component with custom ports and environment variables
-%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1
+%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1`)
 
-# Create new Node.js component and download the sample project named nodejs-starter
-%[1]s nodejs --starter=nodejs-starter`)
-
-const defaultProjectName = "devfile-project-name"
+const defaultStarterProjectName = "devfile-starter-project-name"
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
@@ -889,41 +885,33 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
-// Downloads first project from list of projects in devfile
+// Downloads first starter project from list of starter projects in devfile
 // Currently type git with a non github url is not supported
-func (co *CreateOptions) downloadProject(projectPassed string) error {
-	var project common.DevfileProject
+func (co *CreateOptions) downloadStarterProject(projectPassed string, interactive bool) error {
+	if projectPassed == "" && !interactive {
+		return nil
+	}
+
+	var project *common.DevfileStarterProject
 	// Parse devfile and validate
 	devObj, err := devfile.ParseAndValidate(DevfilePath)
 	if err != nil {
 		return err
 	}
+	// Retrieve starter projects
+	projects := devObj.Data.GetStarterProjects()
 
-	// Retrieve projects
-	projects := devObj.Data.GetProjects()
-	nOfProjects := len(projects)
-	if nOfProjects == 0 {
-		return errors.Errorf("No project found in devfile component.")
+	if interactive {
+		project = getStarterProjectInteractiveMode(projects)
+	} else {
+		project, err = getStarterProjectFromFlag(projects, projectPassed)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Determine what project to be used
-	if nOfProjects == 1 && projectPassed == defaultProjectName {
-		project = projects[0]
-	} else if nOfProjects > 1 && projectPassed == defaultProjectName {
-		project = projects[0]
-		log.Warning("There are multiple projects in this devfile but none have been specified in --starter. Downloading the first: " + project.Name)
-	} else { //If the user has specified a project
-		projectFound := false
-		for indexOfProject, projectInfo := range projects {
-			if projectInfo.Name == projectPassed { //Get the index
-				project = projects[indexOfProject]
-				projectFound = true
-			}
-		}
-
-		if !projectFound {
-			return errors.Errorf("The project: %s specified in --starter does not exist", projectPassed)
-		}
+	if project == nil {
+		return nil
 	}
 
 	// Retrieve the working directory in order to clone correctly
@@ -990,8 +978,8 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Errorf("Project type not supported")
 	}
 
-	log.Info("\nProject")
-	downloadSpinner := log.Spinnerf("Downloading project from %s", logUrl)
+	log.Info("\nStarter Project")
+	downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", project.Name, logUrl)
 	err = co.checkoutProject(sparseDir, url, path)
 
 	if err != nil {
@@ -1061,8 +1049,8 @@ func (co *CreateOptions) Run() (err error) {
 				}
 			}
 
-			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.starter != "" {
-				err = co.downloadProject(co.devfileMetadata.starter)
+			if util.CheckPathExists(DevfilePath) {
+				err = co.downloadStarterProject(co.devfileMetadata.starter, co.interactive)
 				if err != nil {
 					return errors.Wrap(err, "failed to download project for devfile component")
 				}
@@ -1162,6 +1150,60 @@ func (co *CreateOptions) checkoutProject(sparseCheckoutDir, zipURL, path string)
 	return nil
 }
 
+// getStarterProjectInteractiveMode gets starter project value by asking user in interactive mode.
+func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) *common.DevfileStarterProject {
+	projectName := ui.SelectStarterProject(projects)
+
+	// if user do not wish to download starter project or there are no projects in devfile, project name would be empty
+	if projectName == "" {
+		return nil
+	}
+
+	var project common.DevfileStarterProject
+
+	for _, value := range projects {
+		if value.Name == projectName {
+			project = value
+			break
+		}
+	}
+
+	return &project
+}
+
+// getStarterProjectFromFlag gets starter project value from flag --starter.
+func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectPassed string) (project *common.DevfileStarterProject, err error) {
+
+	nOfProjects := len(projects)
+
+	if nOfProjects == 0 {
+		return nil, errors.Errorf("no starter project found in devfile.")
+	}
+
+	// Determine what project to be used
+	if nOfProjects == 1 && projectPassed == defaultStarterProjectName {
+		project = &projects[0]
+	} else if nOfProjects > 1 && projectPassed == defaultStarterProjectName {
+		project = &projects[0]
+		log.Warning("There are multiple projects in this devfile but none have been specified in --starter. Downloading the first: " + project.Name)
+	} else { //If the user has specified a project
+		projectFound := false
+		for indexOfProject, projectInfo := range projects {
+			if projectInfo.Name == projectPassed { //Get the index
+				project = &projects[indexOfProject]
+				projectFound = true
+			}
+		}
+
+		if !projectFound {
+			return nil, errors.Errorf("the project: %s specified in --starter does not exist", projectPassed)
+		}
+	}
+
+	return project, err
+
+}
+
 // NewCmdCreate implements the create odo command
 func NewCmdCreate(name, fullName string) *cobra.Command {
 	co := NewCreateOptions()
@@ -1185,7 +1227,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
-		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
+		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultStarterProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")

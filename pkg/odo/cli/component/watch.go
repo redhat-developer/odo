@@ -209,6 +209,7 @@ func (wo *WatchOptions) Run() (err error) {
 			os.Stdout,
 			watch.WatchParameters{
 				ComponentName:       wo.componentName,
+				ApplicationName:     wo.Context.Application,
 				Path:                wo.sourcePath,
 				FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
 				PushDiffDelay:       wo.delay,

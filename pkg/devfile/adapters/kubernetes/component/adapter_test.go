@@ -85,7 +85,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components:   []versionsCommon.DevfileComponent{comp},
 					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
@@ -316,7 +316,7 @@ func TestDoesComponentExist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
 					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
@@ -398,7 +398,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
 				},
 			}
@@ -421,7 +421,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 			})
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			_, err := componentAdapter.waitAndGetComponentPod(false)
+			_, err := componentAdapter.getPod(false)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -521,7 +521,7 @@ func TestAdapterDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
+				Data: &testingutil.TestDevfileData{
 					// ComponentType: "nodejs",
 				},
 			}

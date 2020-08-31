@@ -37,12 +37,18 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	return adapter
 }
 
-// getPod lazily records and retrieves the pod associated with the component associated with this adapter
-func (a Adapter) getPod() (*corev1.Pod, error) {
-	if a.pod == nil {
-		pod, err := waitAndGetPod(true, a.ComponentName, a.Client)
+// getPod lazily records and retrieves the pod associated with the component associated with this adapter. If refresh parameter
+// is true, then the pod is refreshed from the cluster regardless of its current local state
+func (a Adapter) getPod(refresh bool) (*corev1.Pod, error) {
+	if refresh || a.pod == nil {
+		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+		watchOptions := metav1.ListOptions{
+			LabelSelector: podSelector,
+		}
+		// Wait for Pod to be in running state otherwise we can't sync data to it.
+		pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", true)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+			return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 		}
 		a.pod = pod
 	}
@@ -50,7 +56,7 @@ func (a Adapter) getPod() (*corev1.Pod, error) {
 }
 
 func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-	pod, err := a.getPod()
+	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
 	}
@@ -61,7 +67,7 @@ func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.Co
 }
 
 func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-	pod, err := a.getPod()
+	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
 	}
@@ -108,7 +114,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
 	if componentExists {
-		pod, err := a.waitAndGetComponentPod(true)
+		pod, err := a.getPod(true)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 		}
@@ -127,13 +133,20 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 
+	previousMode := parameters.EnvSpecificInfo.GetRunMode()
+	currentMode := envinfo.Run
+
 	if parameters.Debug {
 		pushDevfileDebugCommands, err := common.ValidateAndGetDebugDevfileCommands(a.Devfile.Data, a.devfileDebugCmd)
 		if err != nil {
 			return fmt.Errorf("debug command is not valid")
 		}
 		pushDevfileCommands[versionsCommon.DebugCommandGroupType] = pushDevfileDebugCommands
-		parameters.ForceBuild = true
+		currentMode = envinfo.Debug
+	}
+
+	if currentMode != previousMode {
+		parameters.RunModeChanged = true
 	}
 
 	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
@@ -152,7 +165,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(true)
+	pod, err := a.getPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
@@ -203,7 +216,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	if execRequired {
+	if execRequired || parameters.RunModeChanged {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
@@ -417,23 +430,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	return nil
-}
-
-func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
-	return waitAndGetPod(hideSpinner, a.ComponentName, a.Client)
-}
-
-func waitAndGetPod(hideSpinner bool, componentName string, client kclient.Client) (*corev1.Pod, error) {
-	podSelector := fmt.Sprintf("component=%s", componentName)
-	watchOptions := metav1.ListOptions{
-		LabelSelector: podSelector,
-	}
-	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
-	}
-	return pod, nil
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well

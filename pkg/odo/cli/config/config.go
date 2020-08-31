@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
@@ -13,9 +14,10 @@ import (
 // RecommendedCommandName is the recommended config command name
 const RecommendedCommandName = "config"
 
-var configLongDesc = ktemplates.LongDesc(`Modifies odo specific configuration settings within the config file.
+var configLongDesc = ktemplates.LongDesc(`Modifies odo specific configuration settings within the devfile or config file.
 
 %[1]s
+%[2]s
 `)
 
 // NewCmdConfiguration implements the utils config odo command
@@ -26,7 +28,7 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Change or view configuration",
-		Long:  fmt.Sprintf(configLongDesc, config.FormatLocallySupportedParameters()),
+		Long:  fmt.Sprintf(configLongDesc, parser.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf("%s\n%s\n%s",
 			configurationViewCmd.Example,
 			configurationSetCmd.Example,

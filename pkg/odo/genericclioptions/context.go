@@ -105,6 +105,16 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, er
 	}
 }
 
+// checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt errors out if user is trying to create or delete something other than project
+// compare to checkProjectCreateOrDeleteOnlyOnInvalidNamespace, no %s is needed
+func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Command, errFormatForCommand string) {
+	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
+		err := fmt.Errorf(errFormatForCommand)
+		util.LogErrorAndExit(err, "")
+	}
+}
+
 // getFirstChildOfCommand gets the first child command of the root command of command
 func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	// If command does not have a parent no point checking
@@ -163,19 +173,35 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 	return envInfo, nil
 }
 
+func GetContextFlagValue(command *cobra.Command) string {
+	contextDir := FlagValueIfSet(command, ContextFlagName)
+
+	// Grab the absolute path of the configuration
+	if contextDir != "" {
+		fAbs, err := pkgUtil.GetAbsPath(contextDir)
+		util.LogErrorAndExit(err, "")
+		contextDir = fAbs
+	} else {
+		fAbs, err := pkgUtil.GetAbsPath(".")
+		util.LogErrorAndExit(err, "")
+		contextDir = fAbs
+	}
+	return contextDir
+}
+
 func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*config.LocalConfigInfo, error) {
 
 	// Get details from the local config file
-	configFileName := FlagValueIfSet(command, ContextFlagName)
+	contextDir := FlagValueIfSet(command, ContextFlagName)
 
 	// Grab the absolute path of the configuration
-	if configFileName != "" {
-		fAbs, err := pkgUtil.GetAbsPath(configFileName)
+	if contextDir != "" {
+		fAbs, err := pkgUtil.GetAbsPath(contextDir)
 		util.LogErrorAndExit(err, "")
-		configFileName = fAbs
+		contextDir = fAbs
 	}
 	// Access the local configuration
-	localConfiguration, err := config.NewLocalConfigInfo(configFileName)
+	localConfiguration, err := config.NewLocalConfigInfo(contextDir)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +289,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		if err != nil {
 			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
 	}
 	client.Namespace = namespace

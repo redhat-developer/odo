@@ -3,28 +3,37 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"sigs.k8s.io/yaml"
 )
 
 const viewCommandName = "view"
 
-var viewExample = ktemplates.Examples(`# For viewing the current local configuration
+var viewExample = ktemplates.Examples(`# For viewing the current configuration from devfile or local config file
    %[1]s
    
   `)
 
 // ViewOptions encapsulates the options for the command
 type ViewOptions struct {
-	contextDir string
-	lci        *config.LocalConfigInfo
+	contextDir  string
+	lci         *config.LocalConfigInfo
+	devfilePath string
+	devfileObj  parser.DevfileObj
+	IsDevfile   bool
 }
 
 // NewViewOptions creates a new ViewOptions instance
@@ -35,26 +44,62 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
-	if err != nil {
-		return err
+	devfilePath := filepath.Join(o.contextDir, "devfile.yaml")
+	if util.CheckPathExists(devfilePath) {
+		o.devfilePath = devfilePath
+		o.IsDevfile = true
+		o.devfileObj, err = parser.Parse(o.devfilePath)
+		if err != nil {
+			return err
+		}
 	}
-	o.lci = cfg
+
+	if !o.IsDevfile {
+		cfg, err := config.NewLocalConfigInfo(o.contextDir)
+		if err != nil {
+			return err
+		}
+		o.lci = cfg
+	}
 	return
 }
 
 // Validate validates the ViewOptions based on completed values
 func (o *ViewOptions) Validate() (err error) {
-	if !o.lci.ConfigFileExists() {
-		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	if !o.IsDevfile {
+		if !o.lci.ConfigFileExists() {
+			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+		}
 	}
+
 	return
+}
+
+// DevfileRun is ran when the context detects a devfile locally
+func (o *ViewOptions) DevfileRun() (err error) {
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
+	repr := o.devfileObj.ToRepresentation()
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(o.devfileObj.WrapFromJSONOutput(repr))
+		return
+	}
+	representation, err := yaml.Marshal(o.devfileObj.ToRepresentation())
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(w, string(representation))
+	return err
 }
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run() (err error) {
-	cs := o.lci.GetComponentSettings()
+
+	if o.IsDevfile {
+		return o.DevfileRun()
+	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
+
+	cs := o.lci.GetComponentSettings()
 	envVarList := o.lci.GetEnvVars()
 	if len(envVarList) != 0 {
 		fmt.Fprintln(w, "ENVIRONMENT VARIABLES")
@@ -87,6 +132,7 @@ func (o *ViewOptions) Run() (err error) {
 	fmt.Fprintln(w, "MaxCPU", "\t", showBlankIfNil(cs.MaxCPU))
 	w.Flush()
 	return
+
 }
 
 func showBlankIfNil(intf interface{}) interface{} {
@@ -118,11 +164,12 @@ func formatArray(arr *[]string) string {
 func NewCmdView(name, fullName string) *cobra.Command {
 	o := NewViewOptions()
 	configurationViewCmd := &cobra.Command{
-		Use:     name,
-		Short:   "View current configuration values",
-		Long:    "View current configuration values",
-		Example: fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
-		Args:    cobra.ExactArgs(0),
+		Use:         name,
+		Short:       "View current configuration values",
+		Long:        "View current configuration values",
+		Annotations: map[string]string{"machineoutput": "json"},
+		Example:     fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
+		Args:        cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

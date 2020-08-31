@@ -29,6 +29,8 @@ type StorageSpec struct {
 	Size string `json:"size,omitempty"`
 	// if path is empty, it indicates that the storage is not mounted in any component
 	Path string `json:"path,omitempty"`
+
+	ContainerName string `json:"containerName,omitempty"`
 }
 
 // StorageList is a list of storages

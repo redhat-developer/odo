@@ -24,6 +24,10 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 			continue
 		}
 
+		if !strings.HasPrefix(line, "{") {
+			continue
+		}
+
 		// fmt.Println("Processing output line: " + line)
 
 		lineWrapper := machineoutput.MachineEventWrapper{}

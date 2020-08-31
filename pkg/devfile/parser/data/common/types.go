@@ -151,6 +151,13 @@ type Exec struct {
 
 	// Working directory where the command should be executed
 	WorkingDir string `json:"workingDir,omitempty" yaml:"workingDir,omitempty"`
+
+	// +optional
+	// Whether the command is capable to reload itself when source code changes.
+	// If set to `true` the command won't be restarted and it is expected to handle file changes on its own.
+	//
+	// Default value is `false`
+	HotReloadCapable bool `json:"hotReloadCapable,omitempty" yaml:"hotReloadCapable,omitempty"`
 }
 
 // Composite command containing a list of commands to execute in a component container
@@ -267,6 +274,9 @@ type DevfileParent struct {
 
 	// Bindings of commands to events. Each command is referred-to by its name.
 	Events DevfileEvents `json:"events,omitempty" yaml:"events,omitempty"`
+
+	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
+	StarterProjects []DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 }
 
 // Plugin Allows importing a plugin. Plugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as `DevWorkspaceTemplate` Kubernetes Custom Resources
@@ -306,6 +316,31 @@ type DevfileProject struct {
 
 	// Project name
 	Name string `json:"name" yaml:"name"`
+
+	// Project's Zip source
+	Zip *Zip `json:"zip,omitempty" yaml:"zip,omitempty"`
+}
+
+// DevfileStarterProject getting started project
+type DevfileStarterProject struct {
+
+	// Project name
+	Name string `json:"name" yaml:"name"`
+
+	// Description of a starter project
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+
+	// Description of a starter project
+	MarkdownDescription string `json:"markdownDescription,omitempty" yaml:"markdownDescription,omitempty"`
+
+	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
+	ClonePath string `json:"clonePath,omitempty" yaml:"clonePath,omitempty"`
+
+	// Project's Git source
+	Git *Git `json:"git,omitempty" yaml:"git,omitempty"`
+
+	// Project's GitHub source
+	Github *Github `json:"github,omitempty" yaml:"github,omitempty"`
 
 	// Project's Zip source
 	Zip *Zip `json:"zip,omitempty" yaml:"zip,omitempty"`

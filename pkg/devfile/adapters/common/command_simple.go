@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -70,7 +71,7 @@ func newOverriddenSimpleCommand(command common.DevfileCommand, executor commandE
 		component:   command.Exec.Component,
 		originalCmd: originalCmd,
 		group:       convertGroupKindToString(command.Exec),
-		msg:         fmt.Sprintf("Executing %s command %q, if not running", id, originalCmd),
+		msg:         fmt.Sprintf("Executing %s command %q", id, originalCmd),
 	}, nil
 }
 

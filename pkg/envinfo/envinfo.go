@@ -327,6 +327,26 @@ func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
 	return esi.writeToFile()
 }
 
+func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
+	index := -1
+
+	for i, link := range *esi.componentSettings.Link {
+		if link.Name == parameter {
+			index = i
+			break
+		}
+	}
+
+	if index != -1 {
+		s := *esi.componentSettings.Link
+		s = append(s[:index], s[index+1:]...)
+		esi.componentSettings.Link = &s
+		return esi.writeToFile()
+	} else {
+		return nil
+	}
+}
+
 // GetComponentSettings returns the componentSettings from envinfo
 func (esi *EnvSpecificInfo) GetComponentSettings() ComponentSettings {
 	return esi.componentSettings
@@ -449,9 +469,9 @@ var (
 // FormatLocallySupportedParameters outputs supported parameters and their description
 func FormatLocallySupportedParameters() (result string) {
 	for _, v := range GetLocallySupportedParameters() {
-		result = result + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
+		result = result + " " + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
 	}
-	return "\nAvailable Local Parameters:\n" + result
+	return "\nAvailable Parameter in the local Env file:\n" + result
 }
 
 func asLocallySupportedParameter(param string) (string, bool) {

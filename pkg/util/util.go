@@ -912,9 +912,6 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 	if zipURL == "" {
 		return errors.Errorf("Empty zip url: %s", zipURL)
 	}
-	if !strings.Contains(zipURL, ".zip") {
-		return errors.Errorf("Invalid zip url: %s", zipURL)
-	}
 
 	var pathToZip string
 	if strings.HasPrefix(zipURL, "file://") {

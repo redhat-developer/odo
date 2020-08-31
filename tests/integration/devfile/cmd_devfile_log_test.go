@@ -58,9 +58,12 @@ var _ = Describe("odo devfile log command tests", func() {
 			output := helper.CmdShouldPass("odo", "log")
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
 
-			// test with follow flag
-			output = helper.CmdShouldRunWithTimeout(1*time.Second, "odo", "log", "-f")
-			Expect(output).To(ContainSubstring("program=devrun"))
+			/*
+				Flaky Test odo log -f, see issue https://github.com/openshift/odo/issues/3809
+				match, err := helper.RunCmdWithMatchOutputFromBuffer(30*time.Second, "program=devrun", "odo", "log", "-f")
+				Expect(err).To(BeNil())
+				Expect(match).To(BeTrue())
+			*/
 
 		})
 
@@ -82,9 +85,12 @@ var _ = Describe("odo devfile log command tests", func() {
 			output := helper.CmdShouldPass("odo", "log", "--debug")
 			Expect(output).To(ContainSubstring("ODO_COMMAND_DEBUG"))
 
-			// test with follow flag
-			output = helper.CmdShouldRunWithTimeout(1*time.Second, "odo", "log", "-f")
-			Expect(output).To(ContainSubstring("program=debugrun"))
+			/*
+				Flaky Test odo log -f, see issue https://github.com/openshift/odo/issues/3809
+				match, err := helper.RunCmdWithMatchOutputFromBuffer(30*time.Second, "program=debugrun", "odo", "log", "-f")
+				Expect(err).To(BeNil())
+				Expect(match).To(BeTrue())
+			*/
 
 		})
 

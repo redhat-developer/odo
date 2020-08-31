@@ -35,22 +35,21 @@ If you haven't used odo yet, we recommend going through our [Deploying a devfile
 ```yaml
 schemaVersion: <string>
 metadata: <metadataObject>
-projects: 
-- <projectObject>
+starterProjects: 
+- <starterProjectObject>
 components: 
 - <componentObject>
 commands: 
 - <commandObject>
 ```
 
-| Key           | Type                                          | Required | Description                                                                       |
-|---------------|-----------------------------------------------|----------|-----------------------------------------------------------------------------------|
-| schemaVersion | string                                        | yes      | Schema version of devfile                                                         |
-| metadata      | [metadataObject](#metadataobject)             | no       | Metadata information that describes the project                                   |
-| projects      | array of [projectObject](#project-object)     | no       | List of projects that devfile will use when creating your development environment |
-| components    | array of [componentObject](#component-object) | no       | List of components to be used within your development environment                 |
-| commands      | array of [commandObject](#commandobject)      | no       | List of commands to be executed                                                   |
-
+| Key             | Type                                                    | Required | Description                                                             |
+|-----------------|---------------------------------------------------------|----------|-------------------------------------------------------------------------|
+| schemaVersion   | string                                                  | yes      | Schema version of devfile                                               |
+| metadata        | [metadataObject](#metadataobject)                       | no       | Metadata information that describes the project                         |
+| starterProjects | array of [starterProjectObject](#starterproject-object) | no       | List of starter projects that can be used to bootstrap new projects     |
+| components      | array of [componentObject](#component-object)           | no       | List of components to be used within your development environment       |
+| commands        | array of [commandObject](#commandobject)                | no       | List of commands to be executed                                         |                                             
 
 ## schemaVersion
 
@@ -75,45 +74,26 @@ metadata:
 |----------------|------------------------------------|---------------------|
 | metadataObject | [metadataObject](#metadata-object) | Metadata to be used |
 
-## projects
+## starter projects
 
-> Pulling from a git location
+> Example using a [Quarkus quickstart project](https://github.com/quarkusio/quarkus-quickstarts)
 
 ```yaml
-projects:
-  - name: nodejs-web-app
+starterProjects:
+  - name: quarkus-quickstart
+    description: minimal CRUD app with quarkus
     git:
-      location: https://github.com/odo-devfiles/nodejs-ex.git
+      location: https://github.com/quarkusio/quarkus-quickstarts
       branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
-      startPoint: 1.0.0 # tag or commit to start at
+      sparseCheckoutDir: /getting-started/ # optional checkout dir
+      startPoint: 1.7.0.Final # tag or commit to start at
 ```
 
-> Pulling from a GitHub location
 
-```yaml
-projects:
-  - name: nodejs-web-app
-    github:
-      location: https://github.com/odo-devfiles/nodejs-ex.git
-      branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
-      startPoint: 1.0.0 # tag or commit to start at
-```
+| Key                  | Type                                           | Description                         |
+|----------------------|------------------------------------------------|-------------------------------------|
+| starterProjectObject | [starterProjectObject](#starterproject-object) | List of starter projects to be used |
 
-> Pulling from a zip 
-
-```yaml
-projects:
-  - name: nodejs-web-app
-    zip:
-      location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
-      sparseCheckoutDir: /app/ # optional checkout dir
-```
-
-| Key           | Type                             | Description                 |
-|---------------|----------------------------------|-----------------------------|
-| projectObject | [projectObject](#project-object) | List of projects to be used |
 
 ## components
 
@@ -189,25 +169,28 @@ metadata:
 | version | string | yes      | Version of your devfile                                                           |
 
 
-# Project Object
+# StarterProject Object
 
 > Pulling from a git location
 
 ```yaml
-projects:
-  - name: nodejs-web-app
+starterProjects:
+  - name: quarkus-quickstart
+    description: minimal CRUD app with quarkus
     git:
-      location: https://github.com/odo-devfiles/nodejs-ex.git
+      location: https://github.com/quarkusio/quarkus-quickstarts
       branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
-      startPoint: 1.0.0 # tag or commit to start at
-```
+      sparseCheckoutDir: /getting-started/ # optional checkout dir
+      startPoint: 1.7.0.Final # tag or commit to start at
+```   
+
 
 > Pulling from a GitHub location
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
+    description: nodejs app
     github:
       location: https://github.com/odo-devfiles/nodejs-ex.git
       branch: master
@@ -218,31 +201,34 @@ projects:
 > Pulling from a zip 
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
+    description: nodejs web app
     zip:
       location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
       sparseCheckoutDir: /app/ # optional checkout dir
 ```
 
-Each project may contain three different objects, `git`, `github` or `zip`.
+Each starter project may contain three different objects, `git`, `github` or `zip`.
 
 
 
 | Key       | Type                          | Description                                                                        |
 |-----------|-------------------------------|------------------------------------------------------------------------------------|
 | name      | string                        | Name of your devfile                                                               |
+| description | string                      | Description of a starter project                                                   |
 | clonePath | string                        | Path relative the root of your projects to which the project should be cloned into |
 | git       | [gitObject](#gitobject)       | Pull from a Git location                                                           |
 | github    | [githubObject](#githubobject) | Pull from GitHub                                                                   |
 | zip       | [zipObject](#zipobject)       | Get from a zip location                                                            |
+
 
 ## gitObject
 
 > Using the gitObject
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
     git:
       location: https://github.com/odo-devfiles/nodejs-ex.git
@@ -263,7 +249,7 @@ projects:
 > Using the githubObject
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
     github:
       location: https://github.com/odo-devfiles/nodejs-ex.git
@@ -284,7 +270,7 @@ projects:
 > Using the zipObject
 
 ```yaml
-projects:
+starterProjects:
   - name: nodejs-web-app
     zip:
       location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
@@ -295,7 +281,6 @@ projects:
 |------------------|--------|------------------------------------|
 | location         | string | Location of the zip                |
 | spareCheckoutDir | string | What directory to use when pulling |
-
 
 
 # Component Object
@@ -519,21 +504,20 @@ commands:
 
 Please refer to the below table for a list of features which are *not yet* implemented:
 
-| Key                                | Key Description                           | Status      | Description                                                                                     |
-|------------------------------------|-------------------------------------------|-------------|-------------------------------------------------------------------------------------------------|
-| projects[].github.startPoint       | [githubObject](#githubObject)             | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
-| projects[].git.startPoint          | [gitObject](#gitObject)                   | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3002                                    |
-| projects[].zip                     | [zipObject](#zipobject)                   | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3442 |
-| parent                             | [parentObject](#parent-object)            | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
-| events                             | [eventObject](#event-object)              | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2919                                    |
-| component[].kubernetes             | [kubernetesObject](#kubernetesobject)     | IN PROGRESS |                                                                                                 |
-| component[].openshift              | [openshiftObject](#openshiftobject)       | IN PROGRESS |                                                                                                 |
-| component[].volume                 | [volumeObject](#volumeobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
-| component[].plugin                 | [pluginObject](#pluginobject)             | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
-| component[].container.endpoints    | [endpointObject](#endpointobject)         | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
-| component[].container.dedicatedPod | [containerObject](#containerobject)       | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].apply                   | [applyObject](#applyobject)               | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].composite               | [compositeObject](#compositeobject)       | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
-| commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject) | N/A         | Not applicable to odo.                                                                          |
-| commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)     | N/A         | Not applicable to odo.                                                                          |
+| Key                                | Key Description                                | Status      | Description                                                                                     |
+|------------------------------------|------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------|
+| starterProjects[].clonePath        | [starterProjectObject](#starterproject-object) | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3729                                     |
+| projects[]                         | [projectObject](#projectobject)                        | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798 |
+| parent                             | [parentObject](#parent-object)                 | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
+| events                             | [eventObject](#event-object)                   | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2919                                    |
+| component[].kubernetes             | [kubernetesObject](#kubernetesobject)          | IN PROGRESS |                                                                                                 |
+| component[].openshift              | [openshiftObject](#openshiftobject)            | IN PROGRESS |                                                                                                 |
+| component[].volume                 | [volumeObject](#volumeobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
+| component[].plugin                 | [pluginObject](#pluginobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
+| component[].container.endpoints    | [endpointObject](#endpointobject)              | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
+| component[].container.dedicatedPod | [containerObject](#containerobject)            | UNKNOWN     | In schema but not yet implemented.                                                              |
+| commands[].apply                   | [applyObject](#applyobject)                    | UNKNOWN     | In schema but not yet implemented.                                                              |
+| commands[].composite               | [compositeObject](#compositeobject)            | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
+| commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject)      | N/A         | Not applicable to odo.                                                                          |
+| commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)          | N/A         | Not applicable to odo.                                                                          |
 

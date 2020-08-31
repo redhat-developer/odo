@@ -206,6 +206,11 @@ test-cmd-pref-config:
 test-cmd-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
 
+# Run odo plugin handler tests
+.PHONY: test-plugin-handler
+test-plugin-handler:
+	ginkgo $(GINKGO_FLAGS) -focus="odo plugin functionality" tests/integration/
+
 # Run odo catalog devfile command tests
 .PHONY: test-cmd-devfile-catalog
 test-cmd-devfile-catalog:
@@ -270,7 +275,7 @@ test-cmd-devfile-url:
 .PHONY: test-cmd-devfile-debug
 test-cmd-devfile-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
-	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug
+	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug/
 
 # Run odo storage devfile command tests
 .PHONY: test-cmd-devfile-storage
@@ -286,6 +291,11 @@ test-cmd-devfile-log:
 .PHONY: test-cmd-devfile-env
 test-cmd-devfile-env:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile env command tests" tests/integration/devfile/
+
+# Run odo config devfile command tests
+.PHONY: test-cmd-devfile-config
+test-cmd-devfile-config:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile config command tests" tests/integration/devfile/
 
 # Run odo push docker devfile command tests
 .PHONY: test-cmd-docker-devfile-push
@@ -328,6 +338,7 @@ test-cmd-watch:
 	ginkgo $(GINKGO_FLAGS) -focus="odo watch command tests" tests/integration/
 
 # Run odo debug command tests
+.PHONY: test-cmd-debug
 test-cmd-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo debug command tests" tests/integration/
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo debug command serial tests" tests/integration/debug/
@@ -337,11 +348,13 @@ test-cmd-debug:
 .PHONY: test-integration
 test-integration:
 	ginkgo $(GINKGO_FLAGS) tests/integration/
+	ginkgo $(GINKGO_FLAGS_SERIAL) tests/integration/debug/
 
 # Run devfile integration tests
 .PHONY: test-integration-devfile
 test-integration-devfile:
 	ginkgo $(GINKGO_FLAGS) tests/integration/devfile/
+	ginkgo $(GINKGO_FLAGS_SERIAL) tests/integration/devfile/debug/
 
 # Run command's integration tests which are depend on service catalog enabled cluster.
 # Only service and link command tests are the part of this test run

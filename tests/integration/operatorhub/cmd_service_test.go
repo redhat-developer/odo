@@ -55,7 +55,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		It("should list operators installed in the namespace", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "mongodb-enterprise", "etcdoperator"})
+			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "percona-server-mongodb-operator", "etcdoperator"})
 		})
 
 		It("should not allow interactive mode command to be executed", func() {
@@ -308,7 +308,7 @@ spec:
 
 		It("listing catalog of services", func() {
 			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
-			helper.MatchAllInOutput(jsonOut, []string{"mongodb-enterprise", "etcdoperator"})
+			helper.MatchAllInOutput(jsonOut, []string{"percona-server-mongodb-operator", "etcdoperator"})
 		})
 	})
 
@@ -407,7 +407,7 @@ spec:
 			Expect(stdOut).To(ContainSubstring("Couldn't find service named %q", "EtcdCluster/example"))
 		})
 
-		It("should successfully connect a component with an existing service", func() {
+		It("should successfully connect and disconnect a component with an existing service", func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
 			}
@@ -433,6 +433,24 @@ spec:
 
 			stdOut := helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
+			helper.CmdShouldPass("odo", "push")
+			stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("already linked with the service"))
+
+			stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))
+			helper.CmdShouldPass("odo", "push")
+
+			// verify that sbr is deleted
+			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
+
+			// next, delete a link outside of odo (using oc) and ensure that it throws an error
+			helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
+			sbrName := strings.Join([]string{componentName, "etcdcluster", "example"}, "-")
+			helper.CmdShouldPass("oc", "delete", fmt.Sprintf("ServiceBindingRequest/%s", sbrName))
+			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
+			helper.MatchAllInOutput(stdOut, []string{"component's link with", "has been deleted outside odo"})
 		})
 	})
 })

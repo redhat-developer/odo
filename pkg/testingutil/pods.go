@@ -20,3 +20,10 @@ func CreateFakePod(componentName, podName string) *corev1.Pod {
 	}
 	return fakePod
 }
+
+// CreateFakePodWithContainers creates a fake pod with the given pod name, container name and containers
+func CreateFakePodWithContainers(componentName, podName string, containers []corev1.Container) *corev1.Pod {
+	fakePod := CreateFakePod(componentName, podName)
+	fakePod.Spec.Containers = containers
+	return fakePod
+}

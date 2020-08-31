@@ -4,8 +4,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/openshift/odo/pkg/envinfo"
-
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -66,7 +64,7 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 
 // ExecuteDevfileCommand executes the devfile init, build and test command actions synchronously
 func (a GenericAdapter) ExecuteDevfileCommand(command common.DevfileCommand, show bool) error {
-	c, err := New(command, GetCommandsMap(a.Devfile.Data.GetCommands()), a)
+	c, err := New(command, a.Devfile.Data.GetCommands(), a)
 	if err != nil {
 		return err
 	}
@@ -97,7 +95,7 @@ func convertGroupKindToString(exec *common.Exec) string {
 // Init only runs once when the component is created.
 func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists bool, params PushParameters) (err error) {
 	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-	devfileCommandMap := GetCommandsMap(a.Devfile.Data.GetCommands())
+	devfileCommandMap := a.Devfile.Data.GetCommands()
 
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
@@ -122,16 +120,13 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		return err
 	}
 
-	previousMode := params.EnvSpecificInfo.GetRunMode()
-	currentMode := envinfo.Run
-
 	group := common.RunCommandGroupType
 	defaultCmd := string(DefaultDevfileRunCommand)
 
 	if params.Debug {
 		group = common.DebugCommandGroupType
 		defaultCmd = string(DefaultDevfileDebugCommand)
-		currentMode = envinfo.Debug
+
 	}
 
 	if command, ok := commandsMap[group]; ok {
@@ -145,12 +140,13 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			}
 		}
 
-		restart := IsRestartRequired(command)
+		restart := IsRestartRequired(command.Exec.HotReloadCapable, params.RunModeChanged)
 
 		// if we need to restart, issue supervisor command to stop all running commands first
+		// we do not need to restart Hot reload capable commands
 		if componentExists {
-			if restart || (previousMode != currentMode) {
-				klog.V(4).Infof("supervisord stop command %s to restart or start other command", previousMode)
+			if restart {
+				klog.V(4).Infof("supervisord stop command to restart or start other command")
 				if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
 					if err != nil {
 						return err
@@ -158,13 +154,13 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 					commands = append(commands, cmd)
 				}
 			} else {
-				klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
+				klog.V(4).Infof("command is hot reload capable, not restarting %s", defaultCmd)
 			}
 		}
 
 		// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
 		// if the command is failed or not running supervisord would start it.
-		if cmd, err := newSupervisorStartCommand(command, defaultCmd, a); cmd != nil {
+		if cmd, err := newSupervisorStartCommand(command, defaultCmd, a, restart); cmd != nil {
 			if err != nil {
 				return err
 			}
@@ -196,7 +192,7 @@ func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType co
 func (a GenericAdapter) ExecDevfileEvent(events []string, eventType DevfileEventType, show bool) error {
 	if len(events) > 0 {
 		log.Infof("\nExecuting %s event commands for component %s", string(eventType), a.ComponentName)
-		commandMap := GetCommandsMap(a.Devfile.Data.GetCommands())
+		commandMap := a.Devfile.Data.GetCommands()
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
 			command, ok := commandMap[strings.ToLower(commandName)]

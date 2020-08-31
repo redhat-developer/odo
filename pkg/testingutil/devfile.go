@@ -1,6 +1,7 @@
 package testingutil
 
 import (
+	"fmt"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
@@ -10,7 +11,7 @@ type TestDevfileData struct {
 	Components        []versionsCommon.DevfileComponent
 	ExecCommands      []versionsCommon.Exec
 	CompositeCommands []versionsCommon.Composite
-	Commands          []versionsCommon.DevfileCommand
+	Commands          map[string]versionsCommon.DevfileCommand
 	Events            common.DevfileEvents
 }
 
@@ -74,23 +75,25 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 
 }
 
+// GetStarterProjects returns the fake starter projects
+func (d TestDevfileData) GetStarterProjects() []versionsCommon.DevfileStarterProject {
+	return []versionsCommon.DevfileStarterProject{}
+}
+
 // GetCommands is a mock function to get the commands from a devfile
-func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
+func (d *TestDevfileData) GetCommands() map[string]versionsCommon.DevfileCommand {
 	if d.Commands == nil {
-		var commands []versionsCommon.DevfileCommand
+		d.Commands = make(map[string]versionsCommon.DevfileCommand, len(d.ExecCommands)+len(d.CompositeCommands))
 
 		for i := range d.ExecCommands {
-			commands = append(commands, versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
+			_ = d.AddCommands(versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
 		}
 
 		for i := range d.CompositeCommands {
-			commands = append(commands, versionsCommon.DevfileCommand{Composite: &d.CompositeCommands[i]})
+			_ = d.AddCommands(versionsCommon.DevfileCommand{Composite: &d.CompositeCommands[i]})
 		}
-
-		return commands
-	} else {
-		return d.Commands
 	}
+	return d.Commands
 }
 
 func (d TestDevfileData) AddVolume(volume common.Volume, path string) error { return nil }
@@ -116,7 +119,21 @@ func (d TestDevfileData) AddComponents(components []common.DevfileComponent) err
 
 func (d TestDevfileData) UpdateComponent(component common.DevfileComponent) {}
 
-func (d TestDevfileData) AddCommands(commands []common.DevfileCommand) error { return nil }
+func (d *TestDevfileData) AddCommands(commands ...common.DevfileCommand) error {
+	if d.Commands == nil {
+		d.Commands = make(map[string]common.DevfileCommand, 7)
+	}
+
+	for _, command := range commands {
+		id := command.GetID()
+		if _, ok := d.Commands[id]; !ok {
+			d.Commands[id] = command
+		} else {
+			return fmt.Errorf("command with id '%s' already exists in this TestDevfileData", id)
+		}
+	}
+	return nil
+}
 
 func (d TestDevfileData) UpdateCommand(command common.DevfileCommand) {}
 
@@ -125,6 +142,12 @@ func (d TestDevfileData) SetEvents(events common.DevfileEvents) {}
 func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { return nil }
 
 func (d TestDevfileData) UpdateProject(project common.DevfileProject) {}
+
+func (d TestDevfileData) AddStarterProjects(projects []common.DevfileStarterProject) error {
+	return nil
+}
+
+func (d TestDevfileData) UpdateStarterProject(project common.DevfileStarterProject) {}
 
 func (d TestDevfileData) AddEvents(events common.DevfileEvents) error { return nil }
 

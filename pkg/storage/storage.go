@@ -2,20 +2,23 @@ package storage
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"reflect"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/openshift/odo/pkg/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -465,6 +468,21 @@ func GetMachineReadableFormat(storageName, storageSize, storagePath string) Stor
 	}
 }
 
+// GetMachineFormatWithContainer gives machine readable Storage definition
+// storagePath indicates the path to which the storage is mounted to, "" if not mounted
+func GetMachineFormatWithContainer(storageName, storageSize, storagePath string, container string) Storage {
+	storage := Storage{
+		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: apiVersion},
+		ObjectMeta: metav1.ObjectMeta{Name: storageName},
+		Spec: StorageSpec{
+			Size: storageSize,
+			Path: storagePath,
+		},
+	}
+	storage.Spec.ContainerName = container
+	return storage
+}
+
 func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (StorageList, error) {
 
 	storageConfig, err := localConfig.StorageList()
@@ -549,4 +567,128 @@ func MachineReadableSuccessOutput(storageName string, message string) {
 	}
 
 	machineoutput.OutputSuccess(machineOutput)
+}
+
+// devfileListMounted lists the storage which are mounted on a container
+func devfileListMounted(kClient *kclient.Client, componentName string) (StorageList, error) {
+	pod, err := kClient.GetPodUsingComponentName(componentName)
+	if err != nil {
+		if _, ok := err.(*kclient.PodNotFoundError); ok {
+			return StorageList{}, nil
+		}
+		return StorageList{}, err
+	}
+
+	var storage []Storage
+	var volumeMounts []Storage
+	for _, container := range pod.Spec.Containers {
+		for _, volumeMount := range container.VolumeMounts {
+			volumeMounts = append(volumeMounts, Storage{
+				ObjectMeta: metav1.ObjectMeta{Name: volumeMount.Name},
+				Spec: StorageSpec{
+					Path:          volumeMount.MountPath,
+					ContainerName: container.Name,
+				},
+			})
+		}
+	}
+
+	if len(volumeMounts) <= 0 {
+		return StorageList{}, nil
+	}
+
+	label := fmt.Sprintf("component=%s", componentName)
+	pvcs, err := kClient.GetPVCsFromSelector(label)
+	if err != nil {
+		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
+	}
+
+	for _, pvc := range pvcs {
+		found := false
+		for _, volumeMount := range volumeMounts {
+			if volumeMount.Name == pvc.Name+"-vol" {
+				found = true
+				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+				storage = append(storage, GetMachineFormatWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
+			}
+		}
+		if !found {
+			return StorageList{}, fmt.Errorf("mount path for pvc %s not found", pvc.Name)
+		}
+	}
+
+	return StorageList{Items: storage}, nil
+}
+
+// getLocalDevfileStorage lists the storage from the devfile
+func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
+	volumeSizeMap := make(map[string]string)
+	for _, component := range devfileData.GetComponents() {
+		if component.Volume == nil {
+			continue
+		}
+		if component.Volume.Size == "" {
+			component.Volume.Size = common.DefaultVolumeSize
+		}
+		volumeSizeMap[component.Volume.Name] = component.Volume.Size
+	}
+
+	components := devfileData.GetComponents()
+	var storage []Storage
+	for _, component := range components {
+		if component.Container == nil {
+			continue
+		}
+		for _, volumeMount := range component.Container.VolumeMounts {
+			size, ok := volumeSizeMap[volumeMount.Name]
+			if ok {
+				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, volumeMount.Path, component.Container.Name))
+			}
+		}
+	}
+
+	return StorageList{Items: storage}
+}
+
+// DevfileList lists the storage from the local devfile and cluster with their respective state
+func DevfileList(kClient *kclient.Client, devfileData data.DevfileData, componentName string) (StorageList, error) {
+	localStorage := getLocalDevfileStorage(devfileData)
+
+	clusterStorage, err := devfileListMounted(kClient, componentName)
+	if err != nil {
+		return StorageList{}, err
+	}
+
+	var storageList []Storage
+
+	// find the local storage which are in a pushed and not pushed state
+	for _, localStore := range localStorage.Items {
+		found := false
+		for _, clusterStore := range clusterStorage.Items {
+			if reflect.DeepEqual(localStore, clusterStore) {
+				found = true
+			}
+		}
+		if found {
+			localStore.Status = StateTypePushed
+		} else {
+			localStore.Status = StateTypeNotPushed
+		}
+		storageList = append(storageList, localStore)
+	}
+
+	// find the cluster storage which have been deleted locally
+	for _, clusterStore := range clusterStorage.Items {
+		found := false
+		for _, localStore := range localStorage.Items {
+			if reflect.DeepEqual(localStore, clusterStore) {
+				found = true
+			}
+		}
+		if !found {
+			clusterStore.Status = StateTypeLocallyDeleted
+			storageList = append(storageList, clusterStore)
+		}
+	}
+	return GetMachineReadableFormatForList(storageList), nil
 }

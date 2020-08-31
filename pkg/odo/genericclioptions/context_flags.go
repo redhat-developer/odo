@@ -7,7 +7,7 @@ const (
 	ApplicationFlagName = "app"
 	// ComponentFlagName is the name of the flag allowing a user to specify which component to operate on
 	ComponentFlagName = "component"
-	// OutputFlag is the name of the flag allowing use to specify output format
+	// OutputFlagName is the name of the flag allowing user to specify output format
 	OutputFlagName = "output"
 	// ContextFlagName is the name of the flag allowing a user to specify the location of the component settings
 	ContextFlagName = "context"

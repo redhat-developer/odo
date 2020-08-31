@@ -175,7 +175,7 @@ func ValidateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	// If the command is a composite command, need to validate that it is valid
 	if command.Composite != nil {
 		parentCommands := make(map[string]string)
-		commandsMap := GetCommandsMap(data.GetCommands())
+		commandsMap := data.GetCommands()
 		return validateCompositeCommand(data, command.Composite, parentCommands, commandsMap)
 	}
 

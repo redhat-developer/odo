@@ -2,13 +2,14 @@ package devfile
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/util"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
@@ -129,7 +130,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/test/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -154,7 +155,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -179,7 +180,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -205,7 +206,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/testfolder"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -328,7 +329,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -342,7 +343,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/projects/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
@@ -369,7 +370,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -462,8 +463,51 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecWithInvalidCommandGroup(context, cmpName, namespace)
 		})
 
-		It("should not restart the application if restart is false", func() {
-			utils.ExecWithRestartAttribute(context, cmpName, namespace)
+		It("should restart the application if it is not hot reload capable", func() {
+			utils.ExecWithHotReload(context, cmpName, namespace, false)
+		})
+
+		It("should not restart the application if it is hot reload capable", func() {
+			utils.ExecWithHotReload(context, cmpName, namespace, true)
+		})
+
+		It("should restart the application if run mode is changed, regardless of hotReloadCapable value", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+
+			helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+
+			logs := helper.CmdShouldPass("odo", "log")
+
+			helper.MatchAllInOutput(logs, []string{
+				"\"stop the program\" program=debugrun",
+				"\"stop the program\" program=devrun",
+			})
+
+		})
+
+		It("should run odo push successfully after odo push --debug", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command",
+				"Executing debugrun command",
+			})
+
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command",
+				"Executing devrun command",
+			})
+
 		})
 
 		It("should create pvc and reuse if it shares the same devfile volume name", func() {
@@ -492,7 +536,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -505,7 +549,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				[]string{"stat", "/data2"},
 				func(cmdOp string, err error) bool {
 					statErr = err
-					return true
+					return err == nil
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
@@ -524,6 +568,27 @@ var _ = Describe("odo devfile push command tests", func() {
 			}
 			Expect(volumesMatched).To(Equal(true))
 		})
+
+		It("Ensure that push -f correctly removes local deleted files from the remote target sync folder", func() {
+
+			// 1) Push a generic Java project
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// 2) Rename the pom.xml, which should cause the build to fail if sync is working as expected
+			err := os.Rename(filepath.Join(context, "pom.xml"), filepath.Join(context, "pom.xml.renamed"))
+			Expect(err).NotTo(HaveOccurred())
+
+			// 3) Ensure that the build fails due to missing 'pom.xml', which ensures that the sync operation
+			// correctly renamed pom.xml to pom.xml.renamed.
+			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--namespace", namespace)
+			helper.WaitForOutputToContain("Non-readable POM", 180, 10, session)
+
+		})
+
 	})
 
 	Context("Verify devfile volume components work", func() {
@@ -578,12 +643,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Verify the pvc size for firstvol
 			storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
 			// should be the default size
-			Expect(storageSize).To(ContainSubstring("5Gi"))
+			Expect(storageSize).To(ContainSubstring("1Gi"))
 
 			// Verify the pvc size for secondvol
 			storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)
 			// should be the specified size in the devfile volume component
 			Expect(storageSize).To(ContainSubstring("3Gi"))
+		})
+
+		It("should throw a validation error for v1 devfiles", func() {
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("unsupported devfile version"))
 		})
 
 	})
@@ -802,4 +877,5 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		})
 	})
+
 })

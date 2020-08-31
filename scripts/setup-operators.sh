@@ -9,15 +9,15 @@ install_mongo_operator() {
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    name: mongodb-enterprise
+    name: percona-server-mongodb-operator-certified
     namespace: openshift-operators
   spec:
     channel: stable
     installPlanApproval: Automatic
-    name: mongodb-enterprise
+    name: percona-server-mongodb-operator-certified
     source: certified-operators
     sourceNamespace: openshift-marketplace
-    startingCSV: mongodb-enterprise.v1.6.0
+    startingCSV: percona-server-mongodb-operator.v1.4.0
 EOF
 }
 

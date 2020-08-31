@@ -33,8 +33,6 @@ An example deployment scenario:
 
 ==== Prerequisites for an OpenShift Cluster
 
-* Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
-
 * Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 
 . Log in to an OpenShift cluster:
@@ -55,8 +53,6 @@ An example deployment scenario:
 
 
 ==== Prerequisites for a Kubernetes Cluster
-
-* Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
 
 * Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
 +
@@ -143,8 +139,8 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
 +
 [source,sh]
 ----
- $ odo url create 
-  ✓  URL myspring-8080.apps-crc.testing created for component: myspring
+ $ odo url create  --host example.com
+  ✓  URL myspring-8080.example.com created for component: myspring
 
  To apply the URL configuration changes, please use odo push
 ----
@@ -164,7 +160,7 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
    ✓  Waiting for component to start [5s]
 
   Applying URL changes
-   ✓  URL myspring-8080: http://myspring-8080.apps-crc.testing created
+   ✓  URL myspring-8080: http://myspring-8080.example.com created
 
   Syncing to component myspring
    ✓  Checking files for pushing [2ms]
@@ -185,14 +181,14 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
  $ odo url list
  Found the following URLs for component myspring
  NAME              URL                                       PORT     SECURE
- myspring-8080     http://myspring-8080.apps-crc.testing     8080     false
+ myspring-8080     http://myspring-8080.example.com     8080     false
 ----
 
 . View your deployed application using the generated URL:
 +
 [source,sh]
 ----
-  $ curl http://myspring-8080.apps-crc.testing
+  $ curl http://myspring-8080.example.com
 ----
 
 . To delete your deployed application:
@@ -250,8 +246,8 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
 +
 [source,sh]
 ----
- $ odo url create 
-  ✓  URL mynodejs-8080.apps-crc.testing created for component: mynodejs
+ $ odo url create --host example.com
+  ✓  URL mynodejs-8080.example.com created for component: mynodejs
 
  To apply the URL configuration changes, please use odo push
 ----
@@ -271,7 +267,7 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
    ✓  Waiting for component to start [3s]
 
   Applying URL changes
-   ✓  URL mynodejs-3000: http://mynodejs-3000.apps-crc.testing created
+   ✓  URL mynodejs-3000: http://mynodejs-3000.example.com created
 
   Syncing to component mynodejs
    ✓  Checking files for pushing [2ms]
@@ -292,14 +288,14 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
  $ odo url list
      Found the following URLs for component mynodejs
      NAME              URL                                       PORT     SECURE
-     mynodejs-8080     http://mynodejs-8080.apps-crc.testing     8080     false
+     mynodejs-8080     http://mynodejs-8080.example.com     8080     false
 ----
 
 . View your deployed application using the generated URL:
 +
 [source,sh]
 ----
-   $ curl http://mynodejs-8080.apps-crc.testing
+   $ curl http://mynodejs-8080.example.com
 ----
 
 . To delete your deployed application:
@@ -342,8 +338,8 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
 +
 [source,sh]
 ----
- $ odo url create 
-  ✓  URL myquarkus-8080.apps-crc.testing created for component: myquarkus
+ $ odo url create  --host example.com
+  ✓  URL myquarkus-8080.example.com created for component: myquarkus
 
  To apply the URL configuration changes, please use odo push
 ----
@@ -385,7 +381,7 @@ Pushing devfile component myquarkus
  $ odo url list
  Found the following URLs for component myspring
  NAME              URL                                       PORT     SECURE
- myquarkus-8080     http://myquarkus-8080.apps-crc.testing     8080     false
+ myquarkus-8080     http://myquarkus-8080.example.com     8080     false
 ----
 
 You can now continue developing your application. Just run `odo push` and refresh your browser to view the latest changes.

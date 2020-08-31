@@ -28,7 +28,7 @@ type Devfile200 struct {
 	Projects []common.DevfileProject `json:"projects,omitempty" yaml:"projects,omitempty"`
 
 	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
-	StarterProjects []StarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
+	StarterProjects []common.DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
 	Components []common.DevfileComponent `json:"components,omitempty" yaml:"components,omitempty"`
@@ -220,6 +220,13 @@ type Exec struct {
 
 	// Working directory where the command should be executed
 	WorkingDir string `json:"workingDir,omitempty"`
+
+	// +optional
+	// Whether the command is capable to reload itself when source code changes.
+	// If set to `true` the command won't be restarted and it is expected to handle file changes on its own.
+	//
+	// Default value is `false`
+	HotReloadCapable bool `json:"hotReloadCapable,omitempty"`
 }
 
 // Apply Command that consists in applying a given component definition, typically bound to a workspace event.
