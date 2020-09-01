@@ -4,8 +4,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/openshift/odo/pkg/envinfo"
-
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -122,16 +120,13 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		return err
 	}
 
-	previousMode := params.EnvSpecificInfo.GetRunMode()
-	currentMode := envinfo.Run
-
 	group := common.RunCommandGroupType
 	defaultCmd := string(DefaultDevfileRunCommand)
 
 	if params.Debug {
 		group = common.DebugCommandGroupType
 		defaultCmd = string(DefaultDevfileDebugCommand)
-		currentMode = envinfo.Debug
+
 	}
 
 	if command, ok := commandsMap[group]; ok {
@@ -145,12 +140,13 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			}
 		}
 
-		restart := IsRestartRequired(command)
+		restart := IsRestartRequired(command.Exec.HotReloadCapable, params.RunModeChanged)
 
 		// if we need to restart, issue supervisor command to stop all running commands first
+		// we do not need to restart Hot reload capable commands
 		if componentExists {
-			if restart || (previousMode != currentMode) {
-				klog.V(4).Infof("supervisord stop command %s to restart or start other command", previousMode)
+			if restart {
+				klog.V(4).Infof("supervisord stop command to restart or start other command")
 				if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
 					if err != nil {
 						return err
@@ -158,13 +154,13 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 					commands = append(commands, cmd)
 				}
 			} else {
-				klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
+				klog.V(4).Infof("command is hot reload capable, not restarting %s", defaultCmd)
 			}
 		}
 
 		// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
 		// if the command is failed or not running supervisord would start it.
-		if cmd, err := newSupervisorStartCommand(command, defaultCmd, a); cmd != nil {
+		if cmd, err := newSupervisorStartCommand(command, defaultCmd, a, restart); cmd != nil {
 			if err != nil {
 				return err
 			}

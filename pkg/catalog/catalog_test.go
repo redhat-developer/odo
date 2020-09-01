@@ -183,10 +183,10 @@ apiversion: odo.openshift.io/v1alpha1
 OdoSettings:
   Experimental: true
   RegistryList:
-  - Name: CheDevfileRegistry
-    URL: https://che-devfile-registry.openshift.io/
   - Name: DefaultDevfileRegistry
-    URL: https://github.com/elsony/devfile-registry`,
+    URL: https://github.com/elsony/devfile-registry
+  - Name: CheDevfileRegistry
+    URL: https://che-devfile-registry.openshift.io/`,
 	))
 	if err != nil {
 		t.Error(err)
@@ -198,29 +198,32 @@ OdoSettings:
 	tests := []struct {
 		name         string
 		registryName string
-		want         map[string]Registry
+		want         []Registry
 	}{
 		{
 			name:         "Case 1: Test get all devfile registries",
 			registryName: "",
-			want: map[string]Registry{
-				"CheDevfileRegistry": {
-					Name: "CheDevfileRegistry",
-					URL:  "https://che-devfile-registry.openshift.io/",
+			want: []Registry{
+				{
+					Name:   "CheDevfileRegistry",
+					URL:    "https://che-devfile-registry.openshift.io/",
+					Secure: false,
 				},
-				"DefaultDevfileRegistry": {
-					Name: "DefaultDevfileRegistry",
-					URL:  "https://github.com/elsony/devfile-registry",
+				{
+					Name:   "DefaultDevfileRegistry",
+					URL:    "https://github.com/elsony/devfile-registry",
+					Secure: false,
 				},
 			},
 		},
 		{
 			name:         "Case 2: Test get specific devfile registry",
 			registryName: "CheDevfileRegistry",
-			want: map[string]Registry{
-				"CheDevfileRegistry": {
-					Name: "CheDevfileRegistry",
-					URL:  "https://che-devfile-registry.openshift.io/",
+			want: []Registry{
+				{
+					Name:   "CheDevfileRegistry",
+					URL:    "https://che-devfile-registry.openshift.io/",
+					Secure: false,
 				},
 			},
 		},

@@ -1,9 +1,9 @@
 package common
 
 import (
-	"k8s.io/klog"
 	"os"
-	"strconv"
+
+	"k8s.io/klog"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
@@ -61,7 +61,7 @@ const (
 	BinBash = "/bin/sh"
 
 	// Default volume size for volumes defined in a devfile
-	volumeSize = "5Gi"
+	DefaultVolumeSize = "1Gi"
 
 	// EnvProjectsRoot is the env defined for /projects where component mountSources=true
 	EnvProjectsRoot = "PROJECTS_ROOT"
@@ -180,7 +180,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 	containerNameToVolumes := make(map[string][]DevfileVolume)
 	for _, containerComp := range containerComponents {
 		for _, volumeMount := range containerComp.Container.VolumeMounts {
-			size := volumeSize
+			size := DefaultVolumeSize
 
 			// check if there is a volume component name against the container component volume mount name
 			if volumeComp, ok := volumeNameToVolumeComponent[volumeMount.Name]; ok {
@@ -199,6 +199,15 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 		}
 	}
 	return containerNameToVolumes
+}
+
+// IsRestartRequired checks if restart required for run command
+func IsRestartRequired(hotReload bool, runModeChanged bool) bool {
+	if runModeChanged || !hotReload {
+		return true
+	}
+
+	return false
 }
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
@@ -221,22 +230,6 @@ func IsPortPresent(endpoints []common.Endpoint, port int) bool {
 	}
 
 	return false
-}
-
-// IsRestartRequired returns if restart is required for devrun command
-func IsRestartRequired(command common.DevfileCommand) bool {
-	var restart = true
-	var err error
-	rs, ok := command.Exec.Attributes["restart"]
-	if ok {
-		restart, err = strconv.ParseBool(rs)
-		// Ignoring error here as restart is true for all error and default cases.
-		if err != nil {
-			klog.V(4).Info("Error converting restart attribute to bool")
-		}
-	}
-
-	return restart
 }
 
 // GetComponentEnvVar returns true if a list of env vars contains the specified env var

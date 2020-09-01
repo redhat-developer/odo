@@ -186,7 +186,7 @@ func TestGetVolumes(t *testing.T) {
 				"comp1": {
 					{
 						Name:          "myvolume1",
-						Size:          "5Gi",
+						Size:          "1Gi",
 						ContainerPath: "/my/volume/mount/path1",
 					},
 				},

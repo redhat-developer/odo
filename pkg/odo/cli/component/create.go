@@ -106,25 +106,24 @@ var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 // ConfigFilePath is the path of config.yaml for s2i component
 var ConfigFilePath = filepath.Join(LocalDirectoryDefaultLocation, configFile)
 
-var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
+var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.`)
 
-If a component name is not provided, it'll be auto-generated.
+var createExample = ktemplates.Examples(`# Create a new Node.JS component with existing sourcecode as well as specifying a name
+%[1]s nodejs mynodejs
 
-A full list of component types that can be deployed is available using: 'odo catalog list components'
-
-By default, builder images (component type) will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
-If version is not specified by default, latest will be chosen as the version.`)
-
-var createExample = ktemplates.Examples(`  # Create new Node.js component with the source in current directory.
-
-Note: When you use odo with experimental mode enabled and create devfile component, if you want to use existing devfile the first argument will be the component name
-# Create new Node.js component with existing devfile
-%[1]s mynodejs (devfile exists in current working directory)
-%[1]s mynodejs --devfile ./devfile.yaml (devfile exists in any other directory)
-%[1]s mynodejs --devfile https://raw.githubusercontent.com/elsony/devfile-registry/master/devfiles/nodejs/devfile.yaml (devfile exists in network)
-
-# Create new Node.js component
+# Name is not required and will be automatically generated if not passed
 %[1]s nodejs
+
+# List all available components before deploying
+odo catalog list components
+%[1]s java-quarkus
+
+# Download an example devfile and application before deploying
+%[1]s nodejs --starter
+
+# Using a specific devfile
+%[1]s mynodejs --devfile ./devfile.yaml
+%[1]s mynodejs --devfile https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml
 
 # Create new Node.js component named 'frontend' with the source in './frontend' directory
 %[1]s nodejs frontend --context ./frontend
@@ -136,10 +135,7 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
 
 # Create new Node.js component with custom ports and environment variables
-%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1
-
-# Create new Node.js component and download the sample project named nodejs-starter
-%[1]s nodejs --starter=nodejs-starter`)
+%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1`)
 
 const defaultStarterProjectName = "devfile-starter-project-name"
 
@@ -1225,7 +1221,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
 		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultStarterProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specified devfile")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
 		componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Enforce S2I type components")
 	}

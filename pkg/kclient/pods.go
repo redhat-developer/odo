@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -43,7 +44,6 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 
 	podChannel := make(chan *corev1.Pod)
 	watchErrorChannel := make(chan error)
-
 	go func() {
 		defer close(podChannel)
 		defer close(watchErrorChannel)
@@ -56,6 +56,16 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
 				klog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				for _, cond := range e.Status.Conditions {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonCond, _ := json.Marshal(cond)
+					klog.V(4).Infof("Pod Conditions: %s", string(jsonCond))
+				}
+				for _, status := range e.Status.ContainerStatuses {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonStatus, _ := json.Marshal(status)
+					klog.V(4).Infof("Container Status: %s", string(jsonStatus))
+				}
 				switch e.Status.Phase {
 				case desiredPhase:
 					if !hideSpinner {

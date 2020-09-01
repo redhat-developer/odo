@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/openshift/odo/pkg/util"
-
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
 
@@ -72,6 +72,10 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace, name)
 			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
+		})
+
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "push", "--namespace", namespace, "--devfile", "invalid.yaml")
 		})
 
 	})
@@ -463,8 +467,51 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecWithInvalidCommandGroup(context, cmpName, namespace)
 		})
 
-		It("should not restart the application if restart is false", func() {
-			utils.ExecWithRestartAttribute(context, cmpName, namespace)
+		It("should restart the application if it is not hot reload capable", func() {
+			utils.ExecWithHotReload(context, cmpName, namespace, false)
+		})
+
+		It("should not restart the application if it is hot reload capable", func() {
+			utils.ExecWithHotReload(context, cmpName, namespace, true)
+		})
+
+		It("should restart the application if run mode is changed, regardless of hotReloadCapable value", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+
+			helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+
+			logs := helper.CmdShouldPass("odo", "log")
+
+			helper.MatchAllInOutput(logs, []string{
+				"\"stop the program\" program=debugrun",
+				"\"stop the program\" program=devrun",
+			})
+
+		})
+
+		It("should run odo push successfully after odo push --debug", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command",
+				"Executing debugrun command",
+			})
+
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command",
+				"Executing devrun command",
+			})
+
 		})
 
 		It("should create pvc and reuse if it shares the same devfile volume name", func() {
@@ -548,6 +595,87 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
+	Context("Verify files are correctly synced", func() {
+
+		// Tests https://github.com/openshift/odo/issues/3838
+		ensureFilesSyncedTest := func(namespace string, shouldForcePush bool) {
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+
+			fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
+
+			// 1) Push a standard spring boot project
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// 2) Update the devfile.yaml, causing push to redeploy the component
+			helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 769Mi")
+			commands := []string{"push", "-v", "4", "--namespace", namespace}
+			if shouldForcePush {
+				// Test both w/ and w/o '-f'
+				commands = append(commands, "-f")
+			}
+
+			// 3) Ensure the build passes, indicating that all files were correctly synced to the new pod
+			output = helper.CmdShouldPass("odo", commands...)
+			Expect(output).To(ContainSubstring("BUILD SUCCESS"))
+
+			// 4) Acquire files from remote container, filtering out target/* and .*
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.Exec(podName, namespace, "find", sourcePath)
+			remoteFiles := []string{}
+			outputArr := strings.Split(output, "\n")
+			for _, line := range outputArr {
+
+				if !strings.HasPrefix(line, sourcePath+"/") {
+					continue
+				}
+
+				newLine, err := filepath.Rel(sourcePath, line)
+				Expect(err).ToNot(HaveOccurred())
+
+				newLine = filepath.ToSlash(newLine)
+				if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
+					continue
+				}
+
+				remoteFiles = append(remoteFiles, newLine)
+			}
+
+			// 5) Acquire file from local context, filtering out .*
+			localFiles := []string{}
+			err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				newPath := filepath.ToSlash(path)
+
+				if strings.HasPrefix(newPath, ".") {
+					return nil
+				}
+
+				localFiles = append(localFiles, newPath)
+				return nil
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			// 6) Sort and compare the local and remote files; they should match
+			sort.Strings(localFiles)
+			sort.Strings(remoteFiles)
+			Expect(localFiles).To(Equal(remoteFiles))
+		}
+
+		It("Should ensure that files are correctly synced on pod redeploy, with force push specified", func() {
+			ensureFilesSyncedTest(namespace, true)
+		})
+
+		It("Should ensure that files are correctly synced on pod redeploy, without force push specified", func() {
+			ensureFilesSyncedTest(namespace, false)
+		})
+
+	})
+
 	Context("Verify devfile volume components work", func() {
 
 		It("should error out when duplicate volume components exist", func() {
@@ -600,7 +728,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Verify the pvc size for firstvol
 			storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
 			// should be the default size
-			Expect(storageSize).To(ContainSubstring("5Gi"))
+			Expect(storageSize).To(ContainSubstring("1Gi"))
 
 			// Verify the pvc size for secondvol
 			storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)

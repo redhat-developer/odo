@@ -22,11 +22,18 @@ commands:
         isDefault: true
   - exec:
       id: devrun
-      attributes:
-        restart: "false"
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}
+      hotReloadCapable: true
       group:
         kind: run
+        isDefault: true
+  - exec:
+      id: debugrun
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: debug
         isDefault: true

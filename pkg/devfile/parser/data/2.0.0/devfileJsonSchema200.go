@@ -1,6 +1,7 @@
 package version200
 
-const JsonSchema200 = `{
+const JsonSchema200 = `
+{
   "description": "Devfile schema.",
   "properties": {
     "commands": {
@@ -8,7 +9,7 @@ const JsonSchema200 = `{
       "items": {
         "properties": {
           "apply": {
-            "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
+            "description": "Command that consists in applying a given component definition, typically bound to a workspace event.\n\nFor example, when an 'apply' command is bound to a 'preStart' event, and references a 'container' component, it will start the container as a K8S initContainer in the workspace POD, unless the component has its 'dedicatedPod' field set to 'true'.\n\nWhen no 'apply' command exist for a given component, it is assumed the component will be applied at workspace start by default.",
             "properties": {
               "attributes": {
                 "additionalProperties": {
@@ -205,6 +206,11 @@ const JsonSchema200 = `{
                 "type": "object",
                 "markdownDescription": "Defines the group this command is part of",
                 "additionalProperties": false
+              },
+              "hotReloadCapable": {
+                "description": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'",
+                "type": "boolean",
+                "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
               },
               "id": {
                 "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
@@ -970,6 +976,11 @@ const JsonSchema200 = `{
                           "type": "object",
                           "markdownDescription": "Defines the group this command is part of",
                           "additionalProperties": false
+                        },
+                        "hotReloadCapable": {
+                          "description": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'",
+                          "type": "boolean",
+                          "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
                         },
                         "id": {
                           "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
@@ -1935,6 +1946,11 @@ const JsonSchema200 = `{
                     "markdownDescription": "Defines the group this command is part of",
                     "additionalProperties": false
                   },
+                  "hotReloadCapable": {
+                    "description": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'",
+                    "type": "boolean",
+                    "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
+                  },
                   "id": {
                     "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
                     "type": "string",
@@ -2696,6 +2712,11 @@ const JsonSchema200 = `{
                               "type": "object",
                               "markdownDescription": "Defines the group this command is part of",
                               "additionalProperties": false
+                            },
+                            "hotReloadCapable": {
+                              "description": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'",
+                              "type": "boolean",
+                              "markdownDescription": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'"
                             },
                             "id": {
                               "description": "Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.",
@@ -4014,4 +4035,5 @@ const JsonSchema200 = `{
   "required": [
     "schemaVersion"
   ]
-}`
+}
+`

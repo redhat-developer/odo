@@ -308,14 +308,19 @@ func ExecPushWithNewFileAndDir(projectDirPath, cmpName, namespace, newFilePath, 
 	helper.CmdShouldPass("odo", args...)
 }
 
-// ExecWithRestartAttribute executes odo push with a command attribute restart
-func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
+// ExecWithHotReload executes odo push with hot reload true
+func ExecWithHotReload(projectDirPath, cmpName, namespace string, hotReload bool) {
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-restart.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	if hotReload {
+		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+	} else {
+		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+	}
 
 	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
@@ -324,9 +329,15 @@ func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
 
 	args = []string{"push", "-f"}
 	args = useProjectIfAvailable(args, namespace)
-	output = helper.CmdShouldPass("odo", args...)
-	Expect(output).To(ContainSubstring("if not running"))
+	helper.CmdShouldPass("odo", args...)
 
+	args = useProjectIfAvailable([]string{"log"}, namespace)
+	logs := helper.CmdShouldPass("odo", args...)
+	if hotReload {
+		Expect(logs).To(ContainSubstring("Don't start program again, program is already started"))
+	} else {
+		Expect(logs).To(ContainSubstring("stop the program"))
+	}
 }
 
 type OdoV1Watch struct {
@@ -539,6 +550,23 @@ func ExecCommand(context, cmpName string) {
 	args = []string{"exec", "--context", context}
 	args = append(args, []string{"--", "touch", "/projects/blah.js"}...)
 	helper.CmdShouldPass("odo", args...)
+}
+
+// ExecCommandWithoutComponentAndDevfileFlag executes odo exec without a component and with a devfile flag
+func ExecCommandWithoutComponentAndDevfileFlag(context, cmpName string) {
+	args := []string{"create", "nodejs", cmpName, "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+	args = []string{"exec", "--context", context}
+	args = append(args, []string{"--", "touch", "/projects/blah.js"}...)
+	helper.CmdShouldFail("odo", args...)
+
+	args = []string{"exec", "--context", context, "--devfile", "invalid.yaml"}
+	args = append(args, []string{"--", "touch", "/projects/blah.js"}...)
+	helper.CmdShouldFail("odo", args...)
 }
 
 //ExecWithoutCommand executes odo exec with no user command and fails

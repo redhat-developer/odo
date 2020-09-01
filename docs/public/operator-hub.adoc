@@ -13,7 +13,6 @@ Odo utilizes Operators and link:https://operatorhub.io/[Operator Hub] in order t
 ==== Prerequisites
 
 * You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/4.3/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes].
-* Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
 
 == Creating a project
 

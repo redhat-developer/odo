@@ -109,16 +109,16 @@ oc annotate istag/ruby:latest --namespace=openshift tags=builder --overwrite
 oc import-image wildfly --confirm \--from docker.io/clefos/wildfly-120-centos7:latest --insecure -n openshift
 sleep 5
 oc annotate istag/wildfly:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nginx/imagestreams/nginx-rhel7.json
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nginx/imagestreams/nginx-rhel.json
 sleep 5
 oc annotate istag/nginx:latest --namespace=openshift tags=builder --overwrite
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/dotnet/imagestreams/dotnet-centos7.json
 sleep 5
 oc annotate istag/dotnet:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/php/imagestreams/php-rhel7.json
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/php/imagestreams/php-rhel.json
 sleep 5
 oc annotate istag/php:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/python/imagestreams/python-rhel7.json
+oc import-image python --from=registry.redhat.io/rhel8/python-27 -n openshift --confirm
 sleep 5
 oc annotate istag/python:latest --namespace=openshift tags=builder --overwrite
 

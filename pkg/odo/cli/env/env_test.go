@@ -15,9 +15,9 @@ func TestPrintSupportedParameters(t *testing.T) {
 	}
 
 	wantSetParameters := `Available parameters:
+  DebugPort: Use this value to set component debug port
   Name: Use this value to set component name
-  Namespace: Use this value to set component namespace
-  DebugPort: Use this value to set component debug port`
+  Namespace: Use this value to set component namespace`
 
 	supportedUnsetParameters := map[string]string{
 		debugportParameter: debugportParameterDescription,
@@ -55,43 +55,6 @@ func TestPrintSupportedParameters(t *testing.T) {
 
 			if !reflect.DeepEqual(wantStrings, gotStrings) {
 				t.Errorf("\nGot: %s\nWant: %s", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestIsSupportedParameter(t *testing.T) {
-	supportedSetParameters := map[string]string{
-		nameParameter:      nameParameterDescription,
-		namespaceParameter: namespaceParameterDescription,
-		debugportParameter: debugportParameterDescription,
-	}
-
-	tests := []struct {
-		name                string
-		parameter           string
-		supportedParameters map[string]string
-		want                bool
-	}{
-		{
-			name:                "Case 1: Test supported parameter",
-			parameter:           "Name",
-			supportedParameters: supportedSetParameters,
-			want:                true,
-		},
-		{
-			name:                "Case 2: Test unsupported parameter",
-			parameter:           "Fake",
-			supportedParameters: supportedSetParameters,
-			want:                false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isSupportedParameter(tt.parameter, tt.supportedParameters)
-			if got != tt.want {
-				t.Errorf("Got %t, want %t", got, tt.want)
 			}
 		})
 	}

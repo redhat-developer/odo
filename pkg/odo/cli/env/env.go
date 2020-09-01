@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/util"
+	genericUtil "github.com/openshift/odo/pkg/util"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -49,8 +50,8 @@ func NewCmdEnv(name, fullName string) *cobra.Command {
 
 func printSupportedParameters(supportedParameters map[string]string) string {
 	output := "\n\nAvailable parameters:\n"
-	for parameter, parameterDescription := range supportedParameters {
-		output = fmt.Sprintf("%s  %s: %s\n", output, parameter, parameterDescription)
+	for _, parameter := range genericUtil.GetSortedKeys(supportedParameters) {
+		output = fmt.Sprintf("%s  %s: %s\n", output, parameter, supportedParameters[parameter])
 	}
 
 	return output
