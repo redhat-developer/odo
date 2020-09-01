@@ -93,22 +93,25 @@ oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite
 oc import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
 sleep 15
 oc annotate istag/java:8 --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/ruby/imagestreams/ruby-rhel7.json
+oc import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
+sleep 15
+oc annotate istag/java:latest --namespace=openshift tags=builder --overwrite
+oc import-image ruby --from=registry.redhat.io/ubi8/ruby-26 -n openshift --confirm
 sleep 15
 oc annotate istag/ruby:latest --namespace=openshift tags=builder --overwrite
 oc import-image wildfly:latest --confirm \--from docker.io/saomany/wildfly-120-centos7:ppc64le --insecure -n openshift
 sleep 15
 oc annotate istag/wildfly:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/nginx/imagestreams/nginx-rhel7.json
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/nginx/imagestreams/nginx-rhel.json
 sleep 15
 oc annotate istag/nginx:latest --namespace=openshift tags=builder --overwrite
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/dotnet/imagestreams/dotnet-centos7.json
 sleep 15
 oc annotate istag/dotnet:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/php/imagestreams/php-rhel7.json
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/php/imagestreams/php-rhel.json
 sleep 15
 oc annotate istag/php:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/python/imagestreams/python-rhel7.json
+oc import-image python:latest --from=registry.redhat.io/rhel8/python-27 --confirm -n openshift
 sleep 15
 oc annotate istag/python:latest --namespace=openshift tags=builder --overwrite
 
