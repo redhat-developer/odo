@@ -14,8 +14,9 @@ type ComponentType struct {
 
 // Registry is the main struct of devfile registry
 type Registry struct {
-	Name string
-	URL  string
+	Name   string
+	URL    string
+	Secure bool
 }
 
 // DevfileComponentType is the main struct for devfile catalog components
@@ -59,7 +60,7 @@ type ComponentTypeList struct {
 
 // DevfileComponentTypeList lists all the DevfileComponentType's
 type DevfileComponentTypeList struct {
-	DevfileRegistries map[string]Registry
+	DevfileRegistries []Registry
 	Items             []DevfileComponentType
 }
 
