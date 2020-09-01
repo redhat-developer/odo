@@ -355,8 +355,15 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			containerPorts = append(containerPorts, c.Ports...)
 		} else {
 			for _, port := range c.Ports {
+				portExist := false
+				for _, entry := range containerPorts {
+					if entry.ContainerPort == port.ContainerPort {
+						portExist = true
+						break
+					}
+				}
 				// if Exposure == none, should not create a service for that port
-				if portExposureMap[port.ContainerPort] != versionsCommon.None {
+				if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
 					containerPorts = append(containerPorts, port)
 				}
 			}

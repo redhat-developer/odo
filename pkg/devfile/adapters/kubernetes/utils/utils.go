@@ -130,12 +130,10 @@ func GetContainerEndpoints(data data.DevfileData) (map[string]map[string]common.
 			for _, endpoint := range comp.Container.Endpoints {
 				// Name is a required entry for an Endpoint
 				// Devfile should not contains multiple endpoint with same Name, since it is considered as URL name
-				endpointName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
-				endpointName = util.TruncateString(endpointName, 15)
-				if _, keyexist := endpointsMap[endpointName]; keyexist {
-					return nil, fmt.Errorf("Devfile contains multiple endpoints with same Name: %v", endpointName)
+				if _, keyexist := endpointsMap[endpoint.Name]; keyexist {
+					return nil, fmt.Errorf("Devfile contains multiple endpoints with same Name: %v", endpoint.Name)
 				} else {
-					endpointsMap[endpointName] = endpoint
+					endpointsMap[endpoint.Name] = endpoint
 				}
 			}
 			containerEndpointsMap[comp.Container.Name] = endpointsMap

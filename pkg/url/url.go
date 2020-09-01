@@ -98,7 +98,9 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 
 	// route/ingress name is defined as <urlName>-<componentName>
 	// to avoid error due to duplicate ingress name defined in different devfile components
-	remoteURLName := fmt.Sprintf("%s-%s", urlName, componentName)
+	trimmedURLName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(urlName)))
+	trimmedURLName = util.TruncateString(trimmedURLName, 15)
+	remoteURLName := fmt.Sprintf("%s-%s", trimmedURLName, componentName)
 	// Check whether remote already created the ingress
 	ingress, getIngressErr := kClient.GetIngress(remoteURLName)
 	if kerrors.IsNotFound(getIngressErr) && routeSupported {
@@ -574,7 +576,10 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 				devfileURL.Kind = envinfo.ROUTE
 			}
 			localURL := ConvertEnvinfoURL(devfileURL, componentName)
-			localMap[localURL.Name] = localURL
+			// use the trimmed URL Name as the key since remote URLs' names are trimmed
+			trimmedURLName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(localURL.Name)))
+			trimmedURLName = util.TruncateString(trimmedURLName, 15)
+			localMap[trimmedURLName] = localURL
 
 		}
 	}
@@ -955,6 +960,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 					path = endpoint.Path
 				}
 				name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
+				name = util.TruncateString(name, 15)
 				envUrls := parameters.EnvURLS
 				existInEnv := false
 				for _, url := range envUrls {
