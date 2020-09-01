@@ -413,6 +413,9 @@ func (o *URLCreateOptions) Run() (err error) {
 				return errors.Wrapf(err, "failed to write endpoints information into devfile")
 			}
 			err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Host: o.host, TLSSecret: o.tlsSecret, Kind: o.urlType})
+			if err != nil {
+				return errors.Wrapf(err, "failed to persist the component settings to env file")
+			}
 		}
 	} else {
 		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
