@@ -49,9 +49,6 @@ func Test_parseParent(t *testing.T) {
 									},
 								},
 							},
-							Events: common.DevfileEvents{
-								PostStart: []string{"post-start-0-override"},
-							},
 							Projects: []common.DevfileProject{
 								{
 									ClonePath: "/projects",
@@ -181,8 +178,8 @@ func Test_parseParent(t *testing.T) {
 						},
 					},
 					Events: common.DevfileEvents{
-						PostStart: []string{"post-start-0-override"},
 						PostStop:  []string{"post-stop"},
+						PostStart: []string{"post-start-0"},
 					},
 					Projects: []common.DevfileProject{
 						{

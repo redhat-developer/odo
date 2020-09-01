@@ -112,11 +112,6 @@ func parseParent(d DevfileObj) error {
 		return err
 	}
 
-	err = parentData.OverrideEvents(d.Data.GetParent().Events)
-	if err != nil {
-		return err
-	}
-
 	err = parentData.OverrideProjects(d.Data.GetParent().Projects)
 	if err != nil {
 		return err

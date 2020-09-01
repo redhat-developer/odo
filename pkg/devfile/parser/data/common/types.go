@@ -273,9 +273,6 @@ type DevfileParent struct {
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
 	Components []DevfileComponent `json:"components,omitempty" yaml:"components,omitempty"`
 
-	// Bindings of commands to events. Each command is referred-to by its name.
-	Events DevfileEvents `json:"events,omitempty" yaml:"events,omitempty"`
-
 	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
 	StarterProjects []DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 }
