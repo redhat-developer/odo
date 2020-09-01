@@ -108,7 +108,16 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			}
 		}
 
-		// run the indexer and find the modified/added/deleted/renamed files
+		// If the pod changed, reset the index, which will cause the indexer to walk the directory
+		// tree and resync all local files.
+		if syncParameters.PodChanged {
+			err = util.DeleteIndexFile(pushParameters.Path)
+			if err != nil {
+				return false, errors.Wrap(err, "unable to reset the index file")
+			}
+		}
+
+		// Run the indexer and find the modified/added/deleted/renamed files
 		ret, err = util.RunIndexer(pushParameters.Path, absIgnoreRules)
 		s.End(true)
 
