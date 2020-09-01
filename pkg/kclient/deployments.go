@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -77,6 +78,11 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 			}
 			//based on https://github.com/kubernetes/kubectl/blob/9a3954bf653c874c8af6f855f2c754a8e1a44b9e/pkg/polymorphichelpers/rollout_status.go#L66-L91
 			if deployment, ok := val.Object.(*appsv1.Deployment); ok {
+				for _, cond := range deployment.Status.Conditions {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonCond, _ := json.Marshal(cond)
+					klog.V(4).Infof("Deployment Condition: %s", string(jsonCond))
+				}
 				if deployment.Generation <= deployment.Status.ObservedGeneration {
 					cond := getDeploymentCondition(deployment.Status, appsv1.DeploymentProgressing)
 					if cond != nil && cond.Reason == timedOutReason {
