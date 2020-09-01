@@ -48,20 +48,21 @@ var (
 	%[1]s example --port 8080
 	  `)
 
-	urlCreateExampleExperimental = ktemplates.Examples(`  # Create the URL myurl.example.com by automatically detecting the port used by the component
-	%[1]s myurl  --host example.com
-  
-	# Create a URL with a specific name and host
-	%[1]s myurl --host example.com
-
-	# Create a URL for the current component with a specific port and host
-	%[1]s --port 8080 --host example.com
+	urlCreateExampleExperimental = ktemplates.Examples(`
+	# Create a URL with a specific name and port
+	%[1]s myurl --port 8080
 
 	# Create a URL of ingress kind for the current component with a host
-	%[1]s --host example.com --ingress
+	%[1]s --port 8080 --host example.com --ingress
 
-	# Create a secure URL for the current component with a specific host
-	%[1]s --host example.com --secure
+	# Create a secure URL for the current component
+	%[1]s --port 8080 --secure
+
+	# Create a URL with a specific path, exposure type and protocol
+	%[1]s --port 8080 --path /hello --exposure public --protocol http
+
+	# Create a URL under a specific container
+	%[1]s --port 8080 --container runtime
 	  `)
 
 	urlCreateExampleDocker = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
