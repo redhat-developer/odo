@@ -274,7 +274,7 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 		}
 	}
 	o.Client.Namespace = namespace
-	o.Project = namespace
+	o.project = &namespace
 	if o.KClient != nil {
 		o.KClient.Namespace = namespace
 	}
@@ -312,7 +312,7 @@ func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvide
 		}
 	}
 	o.KClient.Namespace = namespace
-	o.Project = namespace
+	o.project = &namespace
 }
 
 // resolveApp resolves the app
@@ -462,11 +462,11 @@ type Context struct {
 	internalCxt
 }
 
-func (c *Context) GetProject() string {
-	if c.project == "" {
-		c.resolveProject(c.LocalConfigInfo)
+func (o *Context) GetProject() string {
+	if o.project == nil {
+		o.resolveProject(o.LocalConfigInfo)
 	}
-	return c.project
+	return *o.project
 }
 
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
@@ -474,7 +474,7 @@ func (c *Context) GetProject() string {
 type internalCxt struct {
 	Client          *occlient.Client
 	command         *cobra.Command
-	project         string
+	project         *string
 	Application     string
 	cmp             string
 	OutputFlag      string
