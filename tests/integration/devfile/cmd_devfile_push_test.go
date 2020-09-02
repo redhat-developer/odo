@@ -381,6 +381,64 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
 		})
 
+		It("should execute PreStart commands if present during pod startup", func() {
+			expectedInitContainers := []string{"tools-myprestart-1", "tools-myprestart-2", "runtime-secondprestart-3"}
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
+
+			firstPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+
+			firstPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
+			// 3 preStart events + 1 supervisord init containers
+			Expect(len(firstPushInitContainers)).To(Equal(4))
+			helper.MatchAllInOutput(strings.Join(firstPushInitContainers, ","), expectedInitContainers)
+
+			// Need to force so build and run get triggered again with the component already created.
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
+			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
+
+			secondPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+
+			secondPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
+			// 3 preStart events + 1 supervisord init containers
+			Expect(len(secondPushInitContainers)).To(Equal(4))
+			helper.MatchAllInOutput(strings.Join(secondPushInitContainers, ","), expectedInitContainers)
+
+			Expect(firstPushPodName).To(Equal(secondPushPodName))
+			Expect(firstPushInitContainers).To(Equal(secondPushInitContainers))
+
+			var statErr error
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				firstPushPodName,
+				"runtime",
+				namespace,
+				[]string{"cat", "/projects/test.txt"},
+				func(cmdOp string, err error) bool {
+					if err != nil {
+						statErr = err
+					} else if cmdOp == "" {
+						statErr = fmt.Errorf("prestart event action error, expected: hello test2\nhello test2\nhello test\n, got empty string")
+					} else {
+						fileContents := strings.Split(cmdOp, "\n")
+						if len(fileContents)-1 != 3 {
+							statErr = fmt.Errorf("prestart event action count error, expected: 3 strings, got %d strings: %s", len(fileContents), strings.Join(fileContents, ","))
+						} else if cmdOp != "hello test2\nhello test2\nhello test\n" {
+							statErr = fmt.Errorf("prestart event action error, expected: hello test2\nhello test2\nhello test\n, got: %s", cmdOp)
+						}
+					}
+
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+		})
+
 		It("should execute PostStart commands if present and not execute when component already exists", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 

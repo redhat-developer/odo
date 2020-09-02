@@ -21,6 +21,22 @@ components:
       memoryLimit: 1024Mi
 commands:
   - exec:
+      id: myPreStart
+      commandLine: echo hello test2 >> $PROJECTS_ROOT/test.txt
+      component: tools
+  - exec:
+      id: secondPreStart
+      commandLine: echo hello test >> $PROJECTS_ROOT/test.txt
+      component: runtime
+      workingDir: /
+  - composite:
+      id: preStartComp
+      label: pre start composite
+      commands:
+        - myPreStart
+        - secondPreStart
+      parallel: true
+  - exec:
       id: myPostStart
       commandLine: echo I am a PostStart
       component: tools
@@ -95,6 +111,9 @@ commands:
       group:
         kind: run
 events:
+  preStart:
+    - "myPreStart" 
+    - "preStartComp"
   postStart:
     - "myPostStart" 
     - "secondpoststart"

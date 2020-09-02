@@ -79,6 +79,13 @@ func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string)
 	return strings.TrimSpace(stdOut)
 }
 
+// GetPodInitContainers executes kubectl command and returns the init containers of the pod
+func (kubectl KubectlRunner) GetPodInitContainers(compName string, namespace string) []string {
+	selector := fmt.Sprintf("--selector=component=%s", compName)
+	stdOut := CmdShouldPass(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}")
+	return strings.Split(stdOut, " ")
+}
+
 // GetVolumeMountNamesandPathsFromContainer returns the volume name and mount path in the format name:path\n
 func (kubectl KubectlRunner) GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string {
 	volumeName := CmdShouldPass(kubectl.path, "get", "deploy", deployName, "--namespace", namespace,

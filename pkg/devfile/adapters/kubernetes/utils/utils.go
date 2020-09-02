@@ -19,6 +19,10 @@ import (
 	"k8s.io/klog"
 )
 
+const (
+	containerNameMaxLen = 55
+)
+
 // ComponentExists checks whether a deployment by the given name exists
 func ComponentExists(client kclient.Client, name string) (bool, error) {
 	deployment, err := client.GetDeploymentByName(name)
@@ -330,4 +334,54 @@ func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
 	}
 
 	return envFrom
+}
+
+// GetContainersMap gets the map of container name to containers
+func GetContainersMap(containers []corev1.Container) map[string]corev1.Container {
+	containersMap := make(map[string]corev1.Container)
+
+	for _, container := range containers {
+		containersMap[container.Name] = container
+	}
+	return containersMap
+}
+
+// AddPreStartEventInitContainer adds an init container for every preStart devfile event
+func AddPreStartEventInitContainer(podTemplateSpec *corev1.PodTemplateSpec, commandsMap map[string]common.DevfileCommand, eventCommands []string, containersMap map[string]corev1.Container) {
+
+	for i, commandName := range eventCommands {
+		if command, ok := commandsMap[commandName]; ok {
+			component := command.GetExecComponent()
+			commandLine := command.GetExecCommandLine()
+			workingDir := command.GetExecWorkingDir()
+
+			var cmdArr []string
+			if workingDir != "" {
+				// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
+				cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + workingDir + " && " + commandLine}
+			} else {
+				cmdArr = []string{adaptersCommon.ShellExecutable, "-c", commandLine}
+			}
+
+			// Get the container info for the given component
+			if container, ok := containersMap[component]; ok {
+				// override any container command and args with our event command cmdArr
+				container.Command = cmdArr
+				container.Args = []string{}
+
+				// Override the init container name since there cannot be two containers with the same
+				// name in a pod. This applies to pod containers and pod init containers. The convention
+				// for init container name here is, containername-eventname-<position of command in prestart events>
+				// If there are two events referencing the same devfile component, then we will have
+				// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
+				// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
+				initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
+				initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
+				initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
+				container.Name = initContainerName
+
+				podTemplateSpec.Spec.InitContainers = append(podTemplateSpec.Spec.InitContainers, container)
+			}
+		}
+	}
 }
