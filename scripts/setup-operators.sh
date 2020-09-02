@@ -52,7 +52,7 @@ install_service_binding_operator(){
     name: service-binding-operator
     source: community-operators
     sourceNamespace: openshift-marketplace
-    startingCSV: service-binding-operator.v0.1.1-352
+    startingCSV: service-binding-operator.v0.1.1-364
 EOF
 }
 
