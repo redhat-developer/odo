@@ -16,7 +16,6 @@ import (
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
-	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -2671,30 +2670,28 @@ func TestConvertEnvinfoURL(t *testing.T) {
 	}
 }
 
-func TestUpdateEndpointsInDevfile(t *testing.T) {
+func TestAddEndpointInDevfile(t *testing.T) {
 	fs := filesystem.NewFakeFs()
 	urlName := "testURL"
 	urlName2 := "testURL2"
 	tests := []struct {
-		name                 string
-		devObj               parser.DevfileObj
-		containerEndpointMap map[string]map[string]common.Endpoint
-		wantComponents       []common.DevfileComponent
+		name           string
+		devObj         parser.DevfileObj
+		endpoint       common.Endpoint
+		container      string
+		wantComponents []common.DevfileComponent
 	}{
 		{
 			name: "Case 1: devfile has single container with existing endpoint",
-			containerEndpointMap: map[string]map[string]common.Endpoint{
-				"testcontainer1": map[string]common.Endpoint{
-					urlName: common.Endpoint{
-						Name:       urlName,
-						TargetPort: 8080,
-						Secure:     false,
-					},
-				},
+			endpoint: common.Endpoint{
+				Name:       urlName,
+				TargetPort: 8080,
+				Secure:     false,
 			},
+			container: "testcontainer1",
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				Data: &v200.Devfile200{
+				Data: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -2718,6 +2715,10 @@ func TestUpdateEndpointsInDevfile(t *testing.T) {
 						Name:  "testcontainer1",
 						Endpoints: []common.Endpoint{
 							{
+								Name:       "port-3030",
+								TargetPort: 3000,
+							},
+							{
 								Name:       urlName,
 								TargetPort: 8080,
 								Secure:     false,
@@ -2729,18 +2730,15 @@ func TestUpdateEndpointsInDevfile(t *testing.T) {
 		},
 		{
 			name: "Case 2: devfile has single container with no endpoint",
-			containerEndpointMap: map[string]map[string]common.Endpoint{
-				"testcontainer1": map[string]common.Endpoint{
-					urlName: common.Endpoint{
-						Name:       urlName,
-						TargetPort: 8080,
-						Secure:     false,
-					},
-				},
+			endpoint: common.Endpoint{
+				Name:       urlName,
+				TargetPort: 8080,
+				Secure:     false,
 			},
+			container: "testcontainer1",
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				Data: &v200.Devfile200{
+				Data: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -2769,28 +2767,15 @@ func TestUpdateEndpointsInDevfile(t *testing.T) {
 		},
 		{
 			name: "Case 3: containerEndpointMap has multiple containers",
-			containerEndpointMap: map[string]map[string]common.Endpoint{
-				"testcontainer1": map[string]common.Endpoint{
-					urlName: common.Endpoint{
-						Name:       urlName,
-						TargetPort: 8080,
-						Secure:     false,
-					},
-				},
-				"testcontainer2": map[string]common.Endpoint{
-					urlName: common.Endpoint{
-						Name:       urlName2,
-						TargetPort: 9090,
-						Secure:     true,
-						Path:       "/testpath",
-						Exposure:   common.Internal,
-						Protocol:   common.HTTPS,
-					},
-				},
+			endpoint: common.Endpoint{
+				Name:       urlName,
+				TargetPort: 8080,
+				Secure:     false,
 			},
+			container: "testcontainer1",
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				Data: &v200.Devfile200{
+				Data: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
 							Container: &common.Container{
@@ -2801,6 +2786,16 @@ func TestUpdateEndpointsInDevfile(t *testing.T) {
 						{
 							Container: &common.Container{
 								Name: "testcontainer2",
+								Endpoints: []common.Endpoint{
+									{
+										Name:       urlName2,
+										TargetPort: 9090,
+										Secure:     true,
+										Path:       "/testpath",
+										Exposure:   common.Internal,
+										Protocol:   common.HTTPS,
+									},
+								},
 							},
 						},
 					},
@@ -2840,7 +2835,7 @@ func TestUpdateEndpointsInDevfile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := UpdateEndpointsInDevfile(tt.devObj, tt.containerEndpointMap)
+			err := AddEndpointInDevfile(tt.devObj, tt.endpoint, tt.container)
 			if err != nil {
 				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
 			}
@@ -2852,7 +2847,189 @@ func TestUpdateEndpointsInDevfile(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unexpected err from YAMLToJSON: %v", err)
 			}
-			var newData v200.Devfile200
+			var newData testingutil.TestDevfileData
+
+			err = json.Unmarshal(jsonval, &newData)
+			if err != nil {
+				t.Errorf("Unexpected err from json.Unmarshal: %v", err)
+			}
+			if !reflect.DeepEqual(tt.devObj.Data.GetComponents(), tt.wantComponents) {
+				t.Errorf("Expected: %v, got %v", tt.wantComponents, tt.devObj.Data.GetComponents())
+			}
+
+		})
+	}
+}
+
+func TestRemoveEndpointInDevfile(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+	urlName := "testURL"
+	urlName2 := "testURL2"
+	tests := []struct {
+		name           string
+		devObj         parser.DevfileObj
+		endpoint       common.Endpoint
+		urlName        string
+		container      string
+		wantComponents []common.DevfileComponent
+	}{
+		{
+			name:      "Case 1: devfile has single container with multiple existing endpoint",
+			urlName:   urlName,
+			container: "testcontainer1",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []common.DevfileComponent{
+						{
+							Container: &common.Container{
+								Image: "quay.io/nodejs-12",
+								Name:  "testcontainer1",
+								Endpoints: []common.Endpoint{
+									{
+										Name:       "port-3030",
+										TargetPort: 3000,
+									},
+									{
+										Name:       urlName,
+										TargetPort: 8080,
+										Secure:     false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       "port-3030",
+								TargetPort: 3000,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "Case 2: devfile has single container with a single endpoint",
+			urlName:   urlName,
+			container: "testcontainer1",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []common.DevfileComponent{
+						{
+							Container: &common.Container{
+								Image: "quay.io/nodejs-12",
+								Name:  "testcontainer1",
+								Endpoints: []common.Endpoint{
+									{
+										Name:       urlName,
+										TargetPort: 8080,
+										Secure:     false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image:     "quay.io/nodejs-12",
+						Name:      "testcontainer1",
+						Endpoints: []common.Endpoint{},
+					},
+				},
+			},
+		},
+		{
+			name:      "Case 3: containerEndpointMap has multiple containers",
+			urlName:   urlName,
+			container: "testcontainer1",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []common.DevfileComponent{
+						{
+							Container: &common.Container{
+								Image: "quay.io/nodejs-12",
+								Name:  "testcontainer1",
+								Endpoints: []common.Endpoint{
+									{
+										Name:       urlName,
+										TargetPort: 8080,
+										Secure:     false,
+									},
+								},
+							},
+						},
+						{
+							Container: &common.Container{
+								Name: "testcontainer2",
+								Endpoints: []common.Endpoint{
+									{
+										Name:       urlName2,
+										TargetPort: 9090,
+										Secure:     true,
+										Path:       "/testpath",
+										Exposure:   common.Internal,
+										Protocol:   common.HTTPS,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image:     "quay.io/nodejs-12",
+						Name:      "testcontainer1",
+						Endpoints: []common.Endpoint{},
+					},
+				},
+				{
+					Container: &common.Container{
+						Name: "testcontainer2",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName2,
+								TargetPort: 9090,
+								Secure:     true,
+								Path:       "/testpath",
+								Exposure:   common.Internal,
+								Protocol:   common.HTTPS,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := RemoveEndpointInDevfile(tt.devObj, tt.urlName, tt.container)
+			if err != nil {
+				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
+			}
+			retval, err := fs.ReadFile(parser.OutputDevfileYamlPath)
+			if err != nil {
+				t.Errorf("Unexpected err from ReadFile: %v", err)
+			}
+			jsonval, err := devfileCtx.YAMLToJSON(retval)
+			if err != nil {
+				t.Errorf("Unexpected err from YAMLToJSON: %v", err)
+			}
+			var newData testingutil.TestDevfileData
 
 			err = json.Unmarshal(jsonval, &newData)
 			if err != nil {

@@ -8,7 +8,6 @@ import (
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	devData "github.com/openshift/odo/pkg/devfile/parser/data"
-	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
@@ -644,7 +643,7 @@ func TestGetContainerEndpoints(t *testing.T) {
 					},
 				},
 			},
-			devfileData: &v200.Devfile200{
+			devfileData: &testingutil.TestDevfileData{
 				Components: []common.DevfileComponent{
 					{
 						Container: &common.Container{
@@ -665,7 +664,7 @@ func TestGetContainerEndpoints(t *testing.T) {
 		{
 			name:    "Case 2: devfile has multiple endpoints with same name",
 			wantMap: map[string]map[string]common.Endpoint{},
-			devfileData: &v200.Devfile200{
+			devfileData: &testingutil.TestDevfileData{
 				Components: []common.DevfileComponent{
 					{
 						Container: &common.Container{
@@ -680,7 +679,7 @@ func TestGetContainerEndpoints(t *testing.T) {
 		{
 			name:    "Case 3: devfile no endpoints",
 			wantMap: nil,
-			devfileData: &v200.Devfile200{
+			devfileData: &testingutil.TestDevfileData{
 				Components: []common.DevfileComponent{
 					{
 						Container: &common.Container{
@@ -723,7 +722,7 @@ func TestGetContainerEndpoints(t *testing.T) {
 					},
 				},
 			},
-			devfileData: &v200.Devfile200{
+			devfileData: &testingutil.TestDevfileData{
 				Components: []common.DevfileComponent{
 					{
 						Container: &common.Container{

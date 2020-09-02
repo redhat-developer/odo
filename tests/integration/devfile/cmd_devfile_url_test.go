@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
@@ -61,29 +60,29 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout := helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--ingress")
 			Expect(stdout).To(ContainSubstring("host must be provided"))
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "-f")
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			stdout = helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(stdout).Should(ContainSubstring(url1 + "." + host))
 		})
 
 		It("should be able to list ingress url in machine readable json format", func() {
-			url1 := "3000/tcp"
+			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "-f")
+			// remove the endpoint came with the devfile
+			// need to create an ingress to be more general for openshift/non-openshift cluster to run
+			helper.CmdShouldPass("odo", "url", "delete", "3000/tcp", "-f")
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
-			trimmedURLName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(url1)))
-			trimmedURLName = util.TruncateString(trimmedURLName, 15)
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
-				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"%s","port":3000,"secure": false,"path": "/", "kind":"ingress"},"status":{"state":"Pushed"}}]}`, trimmedURLName, trimmedURLName+"."+host)
-				if strings.Contains(output, trimmedURLName) {
+				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"%s","port":3000,"secure": false,"path": "/", "kind":"ingress"},"status":{"state":"Pushed"}}]}`, url1, url1+"."+host)
+				if strings.Contains(output, url1) {
 					Expect(desiredURLListJSON).Should(MatchJSON(output))
 					return true
 				}
@@ -283,22 +282,22 @@ var _ = Describe("odo devfile url command tests", func() {
 		})
 
 		It("should describe Ingress URL in json format", func() {
-			url1 := "3000/tcp"
+			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "-f")
+			// remove the endpoint came with the devfile
+			// need to create an ingress to be more general for openshift/non-openshift cluster to run
+			helper.CmdShouldPass("odo", "url", "delete", "3000/tcp", "-f")
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
-			trimmedURLName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(url1)))
-			trimmedURLName = util.TruncateString(trimmedURLName, 15)
 			// odo url describe url1 -o json
 			stdout := helper.CmdShouldPass("odo", "url", "describe", url1, "-o", "json")
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"%s","port":3000,"secure": false,"path": "/", "kind":"ingress"},"status":{"state":"Pushed"}}`, trimmedURLName, trimmedURLName+"."+host)
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"%s","port":3000,"secure": false,"path": "/", "kind":"ingress"},"status":{"state":"Pushed"}}`, url1, url1+"."+host)
 			Expect(desiredURLListJSON).Should(MatchJSON(stdout))
 		})
 	})

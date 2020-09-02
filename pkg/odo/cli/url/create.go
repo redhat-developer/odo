@@ -276,20 +276,6 @@ func (o *URLCreateOptions) Validate() (err error) {
 		} else if o.urlType == envinfo.INGRESS {
 			errorList = append(errorList, "host must be provided in order to create URLS of Ingress Kind")
 		}
-		if o.isDocker {
-			if len(o.exposure) > 0 {
-				errorList = append(errorList, "endpoint exposure is not supported in docker kind")
-			}
-			if len(o.protocol) > 0 {
-				errorList = append(errorList, "endpoint protocol is not supported in docker kind")
-			}
-			if len(o.path) > 0 {
-				errorList = append(errorList, "endpoint path is not supported in docker kind")
-			}
-			if o.secureURL {
-				errorList = append(errorList, "secure endpoint is not supported in docker kind")
-			}
-		}
 		if len(o.exposure) > 0 && (strings.ToLower(o.exposure) != string(common.None) && strings.ToLower(o.exposure) != string(common.Public) && strings.ToLower(o.exposure) != string(common.Internal)) {
 			errorList = append(errorList, fmt.Sprintf("endpoint exposure only supports %v|%v|%v", common.None, common.Internal, common.Public))
 		}
@@ -364,14 +350,7 @@ func (o *URLCreateOptions) Run() (err error) {
 					firstContainer = containerName
 				}
 				if _, exist := endpointMap[o.urlName]; exist {
-					if !o.forceFlag && !ui.Proceed(fmt.Sprintf("URL %v already exist in devfile endpoint entry under container %v. Do you want to override the endpoint", o.urlName, containerName)) {
-						log.Info("Aborted by the user")
-						return nil
-					}
-					if len(o.container) > 0 && o.container != containerName {
-						delete(endpointMap, o.urlName)
-					}
-					containerEndpointMap[containerName] = endpointMap
+					return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", o.urlName, containerName)
 				}
 				for _, endpoint := range endpointMap {
 					if int(endpoint.TargetPort) == o.componentPort {
@@ -379,15 +358,14 @@ func (o *URLCreateOptions) Run() (err error) {
 						// it is because containers in a single pod shares the network namespace
 						if len(o.container) > 0 && o.container != containerName {
 							return fmt.Errorf("cannot set URL %v under container %v, TargetPort %v is being used for endpoint %v under container %v", o.urlName, o.container, o.componentPort, endpoint.Name, containerName)
-						} else {
-							o.container = containerName
 						}
+						o.container = containerName
 						break
 					}
 				}
 			}
 			if reflect.DeepEqual(containerEndpointMap, map[string]map[string]common.Endpoint{}) {
-				// devfile have no containers had endpoint entry
+				// devfile have no containers with endpoints
 				// pick the first container to store the new enpoint
 				o.container = o.devfileContainers[0].Name
 			}
@@ -402,14 +380,8 @@ func (o *URLCreateOptions) Run() (err error) {
 				TargetPort: int32(o.componentPort),
 				Protocol:   common.ProtocolType(strings.ToLower(o.protocol)),
 			}
-			if _, exist := containerEndpointMap[o.container]; exist {
-				containerEndpointMap[o.container][o.urlName] = newEndpointEntry
-			} else {
-				containerEndpointMap[o.container] = make(map[string]common.Endpoint)
-				containerEndpointMap[o.container][o.urlName] = newEndpointEntry
-			}
 
-			err = url.UpdateEndpointsInDevfile(o.devObj, containerEndpointMap)
+			err = url.AddEndpointInDevfile(o.devObj, newEndpointEntry, o.container)
 			if err != nil {
 				return errors.Wrapf(err, "failed to write endpoints information into devfile")
 			}
@@ -470,6 +442,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		o.isDocker = pushtarget.IsPushTargetDocker()
 		if o.isDocker {
 			urlCreateCmd.Flags().IntVarP(&o.exposedPort, "exposed-port", "", -1, "External port to the application container")
+			urlCreateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, assign an exposed port directly")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleDocker, fullName)
 		} else {
 			urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
@@ -482,7 +455,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			urlCreateCmd.Flags().StringVarP(&o.container, "container", "", "", "container of the endpoint in devfile")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}
-		urlCreateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, assign an exposed port directly")
 	} else {
 		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "Create a secure HTTPS URL")
 		urlCreateCmd.Example = fmt.Sprintf(urlCreateExample, fullName)

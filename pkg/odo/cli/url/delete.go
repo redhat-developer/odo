@@ -6,7 +6,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -33,11 +32,11 @@ var (
 // URLDeleteOptions encapsulates the options for the odo url delete command
 type URLDeleteOptions struct {
 	*clicomponent.PushOptions
-	urlName              string
-	urlForceDeleteFlag   bool
-	now                  bool
-	devObj               parser.DevfileObj
-	containerEndpointMap map[string]map[string]common.Endpoint
+	urlName            string
+	urlForceDeleteFlag bool
+	now                bool
+	devObj             parser.DevfileObj
+	container          string
 }
 
 // NewURLDeleteOptions creates a new URLDeleteOptions instance
@@ -96,10 +95,10 @@ func (o *URLDeleteOptions) Validate() (err error) {
 		if err != nil {
 			return errors.Wrap(err, "failed to get container endpoint map")
 		}
-		o.containerEndpointMap = containerEndpointMap
-		for _, endpointMap := range containerEndpointMap {
+		for containerName, endpointMap := range containerEndpointMap {
 			if _, exist := endpointMap[o.urlName]; exist {
 				exists = true
+				o.container = containerName
 				break
 			}
 		}
@@ -145,18 +144,18 @@ func (o *URLDeleteOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			containerEndpointMap := o.containerEndpointMap
-			for containerName, endpointMap := range containerEndpointMap {
-				if _, exist := endpointMap[o.urlName]; exist {
-					delete(endpointMap, o.urlName)
-					containerEndpointMap[containerName] = endpointMap
-					break
-				}
-			}
-			err = url.UpdateEndpointsInDevfile(o.devObj, containerEndpointMap)
-			if err != nil {
-				return errors.Wrapf(err, "failed to write endpoints information into devfile")
-			}
+			err = url.RemoveEndpointInDevfile(o.devObj, o.urlName, o.container)
+			// containerEndpointMap := o.containerEndpointMap
+			// for containerName, endpointMap := range containerEndpointMap {
+			// 	if _, exist := endpointMap[o.urlName]; exist {
+			// 		// delete(endpointMap, o.urlName)
+			// 		err = url.RemoveEndpointInDevfile(o.devObj, o.urlName, containerName)
+			// 		if err != nil {
+			// 			return errors.Wrapf(err, "failed to write endpoints information into devfile")
+			// 		}
+			// 		break
+			// 	}
+			// }
 			if o.now {
 				err = o.DevfilePush()
 				if err != nil {

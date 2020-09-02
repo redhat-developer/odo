@@ -1126,17 +1126,36 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	return nil
 }
 
-// UpdateEndpointsInDevfile writes the provided endpoint information into devfile
-func UpdateEndpointsInDevfile(devObj parser.DevfileObj, containerEndpointMap map[string]map[string]parsercommon.Endpoint) error {
+// AddEndpointInDevfile writes the provided endpoint information into devfile
+func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint parsercommon.Endpoint, container string) error {
 	components := devObj.Data.GetComponents()
 	for _, component := range components {
-		if component.Container != nil {
-			var endpoints []common.Endpoint
-			for _, endpoint := range containerEndpointMap[component.Container.Name] {
-				endpoints = append(endpoints, endpoint)
-			}
-			component.Container.Endpoints = endpoints
+		if component.Container != nil && component.Container.Name == container {
+			component.Container.Endpoints = append(component.Container.Endpoints, endpoint)
 			devObj.Data.UpdateComponent(component)
+			break
+		}
+	}
+	return devObj.WriteYamlDevfile()
+}
+
+// RemoveEndpointInDevfile deletes the provided endpoint information from devfile
+func RemoveEndpointInDevfile(devObj parser.DevfileObj, urlName string, container string) error {
+	components := devObj.Data.GetComponents()
+	found := false
+	for _, component := range components {
+		if component.Container != nil && component.Container.Name == container {
+			for index, enpoint := range component.Container.Endpoints {
+				if enpoint.Name == urlName {
+					component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)
+					devObj.Data.UpdateComponent(component)
+					found = true
+					break
+				}
+			}
+		}
+		if found {
+			break
 		}
 	}
 	return devObj.WriteYamlDevfile()
