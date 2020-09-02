@@ -129,7 +129,10 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 
 	var urls urlpkg.URLList
 	if envInfo != nil {
-		routeSupported, _ := client.IsRouteSupported()
+		routeSupported, e := client.IsRouteSupported()
+		if e != nil {
+			return cfd, e
+		}
 		urls, err = urlpkg.ListIngressAndRoute(client, kClient, envInfo, componentName, routeSupported)
 	} else {
 		urls, err = urlpkg.List(client, localConfigInfo, componentName, applicationName)
