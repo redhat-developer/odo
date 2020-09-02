@@ -54,7 +54,7 @@ java-springboot      Spring Boot® using IBM Java           YES
 When creating a devfile component with the experimental flag enabled, a local config of the component settings in created at `.odo/env/env.yaml` in the project directory.
 
 ```
-$ odo create java-spring-boot myspring
+$ odo create java-springboot myspring
 Experimental mode is enabled, use at your own risk
 
 Validation
