@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+
 	"gopkg.in/yaml.v2"
 
 	"github.com/pkg/errors"

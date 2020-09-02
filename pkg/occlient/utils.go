@@ -91,6 +91,7 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 
 // GetS2IEnvForDevfile gets environment variable for builder image to be added in devfiles
 func GetS2IEnvForDevfile(sourceType string, env config.EnvVarList, imageStreamImage imagev1.ImageStreamImage) (config.EnvVarList, error) {
+	klog.V(2).Info("Get S2I environment variables to be added in devfile")
 
 	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(&imageStreamImage)
 	if err != nil {
