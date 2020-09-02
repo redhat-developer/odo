@@ -200,6 +200,13 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "com", "--port", "3000", "--container", containerName, "--ingress")
 			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("The container specified: %s does not exist in devfile", containerName)))
 		})
+		It("should not allow creating an endpoint with same name", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "3000/tcp", "--host", "com", "--port", "3000", "--ingress")
+			Expect(stdOut).To(ContainSubstring("url 3000/tcp already exist in devfile endpoint entry"))
+		})
 
 		It("should create URL with path defined in Endpoint", func() {
 			url1 := helper.RandString(5)
