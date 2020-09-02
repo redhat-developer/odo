@@ -230,12 +230,13 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 }
 
 // resolveNamespace resolves namespace for devfile component
-func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo envinfo.LocalConfigProvider) string {
+func (o *internalCxt) resolveNamespace(envSpecificInfo envinfo.LocalConfigProvider) {
 	var namespace string
+	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := client.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
+		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
 		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
 			util.LogErrorAndExit(err, "")
@@ -244,7 +245,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	} else {
 		namespace = envSpecificInfo.GetNamespace()
 		if namespace == "" {
-			namespace = client.Namespace
+			namespace = o.KClient.Namespace
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current project/namespace. Please create or set a project\n\t%s project create|set <project_name>"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
@@ -252,20 +253,23 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		}
 
 		// check that the specified namespace exists
-		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 		if err != nil {
 			errFormat := fmt.Sprintf("You don't have permission to create or set project/namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			errFormat = errFormat + "%s project create|set <project_name>"
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
 	}
-	client.Namespace = namespace
-	return namespace
+	// set the namespace on both clients
+	o.KClient.Namespace = namespace
+	o.Client.Namespace = namespace
+	o.Project = namespace
 }
 
 // resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
+func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) {
 	var app string
+	command := o.command
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
 		app = appFlag
@@ -273,11 +277,11 @@ func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfigurati
 		app = localConfiguration.GetApplication()
 		if app == "" {
 			if createAppIfNeeded {
-				return DefaultAppName
+				app = DefaultAppName
 			}
 		}
 	}
-	return app
+	o.Application = app
 }
 
 // ResolveAppFlag resolves the app from the flag
@@ -328,25 +332,20 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		util.LogErrorAndExit(err, "")
 	}
 
-	// Resolve project
-	namespace := resolveNamespace(command, KClient, localConfiguration)
-
-	// resolve application
-	app := resolveApp(command, createAppIfNeeded, localConfiguration)
-
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
 	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		Client:          client,
-		Project:         namespace,
-		Application:     app,
 		OutputFlag:      outputFlag,
 		command:         command,
 		LocalConfigInfo: localConfiguration,
 		KClient:         KClient,
 	}
+
+	internalCxt.resolveNamespace(localConfiguration)
+	internalCxt.resolveApp(createAppIfNeeded, localConfiguration)
 
 	// Once the component is resolved, add it to the context
 	internalCxt.resolveAndSetComponent(command, localConfiguration)
@@ -380,7 +379,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.Application = resolveApp(command, true, envInfo)
+	internalCxt.resolveApp(true, envInfo)
 
 	// If the push target is NOT Docker we will set the client to Kubernetes.
 	if !pushtarget.IsPushTargetDocker() {
@@ -390,7 +389,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 		internalCxt.Client = client(command)
 
 		// Gather the environment information
-		internalCxt.Project = resolveNamespace(command, internalCxt.KClient, envInfo)
+		internalCxt.resolveNamespace(envInfo)
 	}
 
 	// resolve the component
