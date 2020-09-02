@@ -72,7 +72,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		so.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Get the component name
-		so.componentName, err = getComponentName(so.componentContext)
+		so.componentName = so.EnvSpecificInfo.GetName()
 		if err != nil {
 			return err
 		}
