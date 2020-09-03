@@ -1,1 +1,0 @@
-The current directory(build/) is used by `operator-sdk up local` for running the operator locally.

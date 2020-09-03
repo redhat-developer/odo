@@ -26,7 +26,7 @@ func MakeVariantWithSignature(v interface{}, s Signature) Variant {
 }
 
 // ParseVariant parses the given string as a variant as described at
-// https://developer.gnome.org/glib/stable/gvariant-text.html. If sig is not
+// https://developer.gnome.org/glib/unstable/gvariant-text.html. If sig is not
 // empty, it is taken to be the expected signature for the variant.
 func ParseVariant(s string, sig Signature) (Variant, error) {
 	tokens := varLex(s)
@@ -129,7 +129,7 @@ func (v Variant) Signature() Signature {
 }
 
 // String returns the string representation of the underlying value of v as
-// described at https://developer.gnome.org/glib/stable/gvariant-text.html.
+// described at https://developer.gnome.org/glib/unstable/gvariant-text.html.
 func (v Variant) String() string {
 	s, unamb := v.format()
 	if !unamb {
@@ -141,10 +141,4 @@ func (v Variant) String() string {
 // Value returns the underlying value of v.
 func (v Variant) Value() interface{} {
 	return v.value
-}
-
-// Store converts the variant into a native go type using the same
-// mechanism as the "Store" function.
-func (v Variant) Store(value interface{}) error {
-	return storeInterfaces(v.value, value)
 }

@@ -23,7 +23,7 @@ type proc interface {
 	Call(a ...uintptr) (r1, r2 uintptr, lastErr error)
 }
 
-// https://docs.microsoft.com/en-us/windows/desktop/api/wincred/ns-wincred-_credentialw
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa374788(v=vs.85).aspx
 type sysCREDENTIAL struct {
 	Flags              uint32
 	Type               uint32
@@ -39,7 +39,7 @@ type sysCREDENTIAL struct {
 	UserName           *uint16
 }
 
-// https://docs.microsoft.com/en-us/windows/desktop/api/wincred/ns-wincred-_credential_attributew
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa374790(v=vs.85).aspx
 type sysCREDENTIAL_ATTRIBUTE struct {
 	Keyword   *uint16
 	Flags     uint32
@@ -47,7 +47,7 @@ type sysCREDENTIAL_ATTRIBUTE struct {
 	Value     uintptr
 }
 
-// https://docs.microsoft.com/en-us/windows/desktop/api/wincred/ns-wincred-_credentialw
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa374788(v=vs.85).aspx
 type sysCRED_TYPE uint32
 
 const (
@@ -58,12 +58,10 @@ const (
 	sysCRED_TYPE_GENERIC_CERTIFICATE     sysCRED_TYPE = 0x5
 	sysCRED_TYPE_DOMAIN_EXTENDED         sysCRED_TYPE = 0x6
 
-	// https://docs.microsoft.com/en-us/windows/desktop/Debug/system-error-codes
-	sysERROR_NOT_FOUND         = syscall.Errno(1168)
-	sysERROR_INVALID_PARAMETER = syscall.Errno(87)
+	sysERROR_NOT_FOUND = "Element not found."
 )
 
-// https://docs.microsoft.com/en-us/windows/desktop/api/wincred/nf-wincred-credreadw
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa374804(v=vs.85).aspx
 func sysCredRead(targetName string, typ sysCRED_TYPE) (*Credential, error) {
 	var pcred *sysCREDENTIAL
 	targetNamePtr, _ := syscall.UTF16PtrFromString(targetName)
@@ -81,7 +79,7 @@ func sysCredRead(targetName string, typ sysCRED_TYPE) (*Credential, error) {
 	return sysToCredential(pcred), nil
 }
 
-// https://docs.microsoft.com/en-us/windows/desktop/api/wincred/nf-wincred-credwritew
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa375187(v=vs.85).aspx
 func sysCredWrite(cred *Credential, typ sysCRED_TYPE) error {
 	ncred := sysFromCredential(cred)
 	ncred.Type = uint32(typ)
@@ -96,7 +94,7 @@ func sysCredWrite(cred *Credential, typ sysCRED_TYPE) error {
 	return nil
 }
 
-// https://docs.microsoft.com/en-us/windows/desktop/api/wincred/nf-wincred-creddeletew
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa374787(v=vs.85).aspx
 func sysCredDelete(cred *Credential, typ sysCRED_TYPE) error {
 	targetNamePtr, _ := syscall.UTF16PtrFromString(cred.TargetName)
 	ret, _, err := procCredDelete.Call(
@@ -111,16 +109,19 @@ func sysCredDelete(cred *Credential, typ sysCRED_TYPE) error {
 	return nil
 }
 
-// https://docs.microsoft.com/en-us/windows/desktop/api/wincred/nf-wincred-credenumeratew
+// https://msdn.microsoft.com/en-us/library/windows/desktop/aa374794(v=vs.85).aspx
 func sysCredEnumerate(filter string, all bool) ([]*Credential, error) {
 	var count int
 	var pcreds uintptr
-	var filterPtr *uint16
+	var filterPtr uintptr
 	if !all {
-		filterPtr, _ = syscall.UTF16PtrFromString(filter)
+		filterUtf16Ptr, _ := syscall.UTF16PtrFromString(filter)
+		filterPtr = uintptr(unsafe.Pointer(filterUtf16Ptr))
+	} else {
+		filterPtr = 0
 	}
 	ret, _, err := procCredEnumerate.Call(
-		uintptr(unsafe.Pointer(filterPtr)),
+		filterPtr,
 		0,
 		uintptr(unsafe.Pointer(&count)),
 		uintptr(unsafe.Pointer(&pcreds)),

@@ -2,10 +2,7 @@
 
 package wincred
 
-import (
-	"errors"
-	"syscall"
-)
+import "errors"
 
 const (
 	sysCRED_TYPE_GENERIC                 = 0
@@ -15,8 +12,7 @@ const (
 	sysCRED_TYPE_GENERIC_CERTIFICATE     = 0
 	sysCRED_TYPE_DOMAIN_EXTENDED         = 0
 
-	sysERROR_NOT_FOUND         = syscall.Errno(1)
-	sysERROR_INVALID_PARAMETER = syscall.Errno(1)
+	sysERROR_NOT_FOUND = ""
 )
 
 func sysCredRead(...interface{}) (*Credential, error) {

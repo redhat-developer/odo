@@ -5,9 +5,9 @@ else
         GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 endif
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests)
-COMMON_FLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
-BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
-DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
+COMMON_LDFLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
+BUILD_FLAGS := -mod=vendor -ldflags="$(COMMON_LDFLAGS)"
+CROSS_BUILD_FLAGS := -mod=vendor -ldflags="-s -w $(COMMON_LDFLAGS)"
 FILES := odo dist
 TIMEOUT ?= 7200s
 
@@ -44,10 +44,6 @@ GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 
 default: bin
 
-.PHONY: debug
-debug:
-	go build ${DEBUG_BUILD_FLAGS} cmd/odo/odo.go
-
 .PHONY: bin
 bin:
 	go build ${BUILD_FLAGS} cmd/odo/odo.go
@@ -66,7 +62,7 @@ gofmt:
 
 .PHONY: check-vendor
 check-vendor:
-	./scripts/check-vendor.sh
+	go mod verify
 
 .PHONY: check-fit
 check-fit:
@@ -100,14 +96,17 @@ clean:
 
 # install tools used for building, tests and  validations
 .PHONY: goget-tools
-goget-tools:
-	go get -u github.com/Masterminds/glide
-	go get -u github.com/frapposelli/wwhrd
-	go get -u github.com/onsi/ginkgo/ginkgo
-	go get -u github.com/securego/gosec/cmd/gosec
+goget-tools: goget-ginkgo
+	mkdir -p $(shell go env GOPATH)/bin
+	GOFLAGS='' go get github.com/frapposelli/wwhrd@v0.3.0
+	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.4.0
 	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
 
+.PHONY: goget-ginkgo
+goget-ginkgo:
+	# https://go-review.googlesource.com/c/go/+/198438/
+	GOFLAGS='' go get github.com/onsi/ginkgo/ginkgo@v1.14.0
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage
@@ -117,7 +116,7 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	./scripts/cross-compile.sh '$(COMMON_FLAGS)'
+	./scripts/cross-compile.sh $(CROSS_BUILD_FLAGS)
 
 .PHONY: generate-cli-structure
 generate-cli-structure:

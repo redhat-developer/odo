@@ -131,37 +131,21 @@ unset ODO_BOOTSTRAPPER_IMAGE
 
 == Dependency management
 
-`odo` uses `glide` to manage dependencies. `glide` is not strictly required for building `odo` but it is required when managing dependencies under the `vendor/` directory.
+`odo` uses `go mod` to manage dependencies. 
 
-If you want to make changes to dependencies please make sure that `glide` is installed and is in your `$PATH`.
+`odo` uses `go mod` with vendor directory.
+This means that you should use `-mod=vendor` flag with all `go` commands. Or use `GOFLAGS` to set it permanently (`export GOFLAGS=-mod=vendor`).
+Vendor is important to make sure that odo can alway be build even offline.
 
-=== Installing `glide`
 
-. Download `glide`:
+=== Adding a new dependency
+
+. Just add new `import` to your code
 +
-----
-$ go get -u github.com/Masterminds/glide
-----
-
-. Check that `glide` is working
+NOTE:  If you want to use specific version of a module you can do `go get <pkg>@<version>`, for example (`go get golang.org/x/text@v0.3.2`)
 +
-----
-$ glide --version
-----
-
-=== Using glide to add a new dependency
-
-==== Adding a new dependency
-
-. Update the `glide.yaml` file. Add the new package or sub-packages to the `glide.yaml` file. You can add a whole new package as a dependency or just a few sub-packages.
-. Run `make vendor-update` to get the new dependencies.
-. Commit the updated `glide.yaml`, `glide.lock` and `vendor` files to git.
-
-==== Updating dependencies
-
-. Set new package version in `glide.yaml` file.
-. Run `make vendor-update` to update dependencies
-. Commit the updated `glide.yaml`, `glide.lock` and `vendor` files to git.
+. Run `go mod tidy` and `go mod vendor`.
+. Commit the updated `go.mod`, `go.sum` and `vendor` files to git.
 
 == Release guide
 
