@@ -80,6 +80,10 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 
 		changedFiles = pushParameters.WatchFiles
 		deletedFiles = pushParameters.WatchDeletedFiles
+		deletedFiles, err = util.RemoveRelativePathFromFiles(deletedFiles, pushParameters.Path)
+		if err != nil {
+			return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
+		}
 		indexRegeneratedByWatch = true
 
 	}

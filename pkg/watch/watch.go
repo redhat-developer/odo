@@ -326,7 +326,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 
 			deletedPaths = removeDuplicates(deletedPaths)
 
-			for _, file := range changedFiles {
+			for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 				fmt.Fprintf(out, "File %s changed\n", file)
 			}
 			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
