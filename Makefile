@@ -5,9 +5,9 @@ else
         GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 endif
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests)
-COMMON_FLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
-BUILD_FLAGS := -mod=vendor -ldflags="-w $(COMMON_FLAGS)"
-DEBUG_BUILD_FLAGS := -mod=vendor -ldflags="$(COMMON_FLAGS)"
+COMMON_LDFLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
+BUILD_FLAGS := -mod=vendor -ldflags="$(COMMON_LDFLAGS)"
+CROSS_BUILD_FLAGS := -mod=vendor -ldflags="-s -w $(COMMON_LDFLAGS)"
 FILES := odo dist
 TIMEOUT ?= 7200s
 
@@ -43,10 +43,6 @@ GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 
 
 default: bin
-
-.PHONY: debug
-debug:
-	go build ${DEBUG_BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: bin
 bin:
@@ -120,7 +116,7 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	./scripts/cross-compile.sh '$(COMMON_FLAGS)'
+	./scripts/cross-compile.sh $(CROSS_BUILD_FLAGS)
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
