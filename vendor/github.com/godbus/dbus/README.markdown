@@ -14,7 +14,7 @@ D-Bus message bus system.
 
 ### Installation
 
-This packages requires Go 1.7. If you installed it and set up your GOPATH, just run:
+This packages requires Go 1.1. If you installed it and set up your GOPATH, just run:
 
 ```
 go get github.com/godbus/dbus
@@ -32,7 +32,6 @@ gives a short overview over the basic usage.
 #### Projects using godbus
 - [notify](https://github.com/esiqveland/notify) provides desktop notifications over dbus into a library.
 - [go-bluetooth](https://github.com/muka/go-bluetooth) provides a bluetooth client over bluez dbus API.
-- [playerbm](https://github.com/altdesktop/playerbm) a bookmark utility for media players.
 
 Please note that the API is considered unstable for now and may change without
 further notice.

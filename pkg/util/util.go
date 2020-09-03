@@ -29,7 +29,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v32/github"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"

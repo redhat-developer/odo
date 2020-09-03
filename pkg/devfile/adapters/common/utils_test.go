@@ -654,3 +654,68 @@ func TestGetComponentEnvVar(t *testing.T) {
 	}
 
 }
+
+func TestGetCommandsFromEvent(t *testing.T) {
+
+	execCommands := []versionsCommon.Exec{
+		{
+			Id: "exec1",
+		},
+		{
+			Id: "exec2",
+		},
+		{
+			Id: "exec3",
+		},
+	}
+
+	compCommands := []versionsCommon.Composite{
+		{
+			Id: "comp1",
+			Commands: []string{
+				"exec1",
+				"exec3",
+			},
+		},
+	}
+
+	tests := []struct {
+		name         string
+		eventName    string
+		wantCommands []string
+	}{
+		{
+			name:      "Case 1: composite event",
+			eventName: "comp1",
+			wantCommands: []string{
+				"exec1",
+				"exec3",
+			},
+		},
+		{
+			name:      "Case 2: exec event",
+			eventName: "exec2",
+			wantCommands: []string{
+				"exec2",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: &testingutil.TestDevfileData{
+					ExecCommands:      execCommands,
+					CompositeCommands: compCommands,
+				},
+			}
+
+			commandsMap := devObj.Data.GetCommands()
+			commands := GetCommandsFromEvent(commandsMap, tt.eventName)
+			if !reflect.DeepEqual(tt.wantCommands, commands) {
+				t.Errorf("TestGetCommandsFromEvent error - got %v expected %v", commands, tt.wantCommands)
+			}
+		})
+	}
+
+}
