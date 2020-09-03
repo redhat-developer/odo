@@ -95,7 +95,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	Context("When executing catalog describe component with a component name with a single project", func() {
 		It("should only give information about one project", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java-openliberty")
-			Expect(output).To(MatchRegexp("location: .+"))
+			Expect(output).To(MatchRegexp("origin: .+"))
 		})
 	})
 	Context("When executing catalog describe component with a component name with no starter projects", func() {
