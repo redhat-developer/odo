@@ -18,6 +18,11 @@ Exisiting users using s2i based components could migrate to devfile component by
 [source,sh]
 ----
  $ odo list
+
+Openshift Components: 
+APP     NAME      PROJECT        TYPE       SOURCETYPE     STATE
+app     myapp     default        nodejs     local          Pushed
+
 ----
 
 . Convert s2i component to devfile component, it would convert the s2i based configuration files to devfile configuration files.
@@ -25,6 +30,9 @@ Exisiting users using s2i based components could migrate to devfile component by
 [source,sh]
 ----
  $ odo utils convert-to-devfile
+ 
+ devfile.yaml is available in the current directory.
+
 ----
 
 . Push the devfile component to the cluster
@@ -32,6 +40,27 @@ Exisiting users using s2i based components could migrate to devfile component by
 [source,sh]
 ----
  $ odo push 
+ 
+ Validation
+  ✓  Validating the devfile [40136ns]
+
+ Creating Kubernetes resources for component myapp
+  ✓  Waiting for component to start [12s]
+
+ Applying URL changes
+  ✓  URL myapp-8080: http://myapp-8080-myapp-default.apps-crc.testing/ created
+
+ Syncing to component myapp
+  ✓  Checking files for pushing [499419ns]
+  ✓  Syncing files to the component [155ms]
+
+ Executing devfile commands for component myapp
+  ✓  Executing s2i-assemble command "/opt/odo/bin/s2i-setup && /opt/odo/bin/assemble-and-restart" [47s]
+  ✓  Executing s2i-run command "/opt/odo/bin/run" [1s]
+
+ Pushing devfile component myapp
+  ✓  Changes successfully pushed to component
+
 ----
 
 . Check the component status, at this point two components are running s2i based and devfile based.
@@ -39,6 +68,14 @@ Exisiting users using s2i based components could migrate to devfile component by
 [source,sh]
 ----
  $ odo push 
+ 
+ Devfile Components: 
+ APP     NAME      PROJECT        TYPE      STATE
+ app     myapp     rejreromll     myapp     Pushed
+
+ Openshift Components: 
+ APP     NAME      PROJECT        TYPE       SOURCETYPE     STATE
+ app     myapp     rejreromll     nodejs     local          Pushed
 ----
 
 . Delete the s2i component as devfile component is running
@@ -46,7 +83,10 @@ Exisiting users using s2i based components could migrate to devfile component by
 +
 [source,sh]
 ----
- $ odo delete --s2i
-----
+ $ odo delete --s2i -a -f
+ ✓  Deleting component myapp [277ms]
+ ✓  Component myapp from application app has been deleted
+ ✓  Config for the Component myapp has been deleted
 
+----
 
