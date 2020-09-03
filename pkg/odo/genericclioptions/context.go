@@ -256,12 +256,18 @@ func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvide
 	_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		// check oc client
-		_, err := o.Client.GetProject(namespace)
-		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-		if err != nil && command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
-			errFormat := fmt.Sprintf("You don't have permission to create or set project/namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
-			errFormat = errFormat + "%s project create|set <project_name>"
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
+		project, e := o.Client.GetProject(namespace)
+		if e == nil {
+			if project == nil && command.HasParent() && command.Parent().Name() != "project" && command.Name() != "create" {
+				util.LogErrorAndExit(err, "")
+			}
+		} else {
+			// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+			if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
+				errFormat := fmt.Sprintf("You don't have permission to create or set project/namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
+				errFormat = errFormat + "%s project create|set <project_name>"
+				checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
+			}
 		}
 	}
 	// set the namespace on both clients
