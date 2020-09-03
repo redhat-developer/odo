@@ -197,7 +197,7 @@ type GitLikeProjectSource struct {
 
 	// Defines from what the project should be checked out. Required if there are more than one remote configured
 	// +optional
-	CheckoutFrom *CheckoutFrom `json:"checkoutFrom,omitempty"`
+	CheckoutFrom *CheckoutFrom `json:"checkoutFrom,omitempty" yaml:"checkoutFrom,omitempty"`
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty" yaml:"sparseCheckoutDir,omitempty"`
@@ -206,12 +206,12 @@ type GitLikeProjectSource struct {
 // Git Project's Git source
 // Github Project's GitHub source
 type Git struct {
-	GitLikeProjectSource `json:",inline"`
+	GitLikeProjectSource `json:",inline" yaml:",inline"`
 }
 
 // Github Project's GitHub source
 type Github struct {
-	GitLikeProjectSource `json:",inline"`
+	GitLikeProjectSource `json:",inline" yaml:",inline"`
 }
 
 // Group Defines the group this command is part of
