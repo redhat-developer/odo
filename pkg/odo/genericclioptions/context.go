@@ -230,31 +230,35 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 }
 
 // resolveNamespace resolves namespace for devfile component
-func (o *internalCxt) resolveNamespace(envSpecificInfo envinfo.LocalConfigProvider) {
+func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvider) {
 	var namespace string
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	if len(projectFlag) > 0 {
-		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
-		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
-			util.LogErrorAndExit(err, "")
-		}
+	if projectFlag != "" {
 		namespace = projectFlag
 	} else {
-		namespace = envSpecificInfo.GetNamespace()
+		namespace = configProvider.GetNamespace()
 		if namespace == "" {
+			// check k8s client first
 			namespace = o.KClient.Namespace
-			if len(namespace) <= 0 {
-				errFormat := "Could not get current project/namespace. Please create or set a project\n\t%s project create|set <project_name>"
-				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+			if namespace == "" {
+				// check oc client
+				namespace = o.Client.Namespace
+				if namespace == "" {
+					errFormat := "Could not get current project/namespace. Please create or set a project\n\t%s project create|set <project_name>"
+					checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+				}
 			}
 		}
+	}
 
-		// check that the specified namespace exists
-		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
-		if err != nil {
+	// check that the specified namespace exists, checking k8s client first
+	_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err != nil {
+		// check oc client
+		_, err := o.Client.GetProject(namespace)
+		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+		if err != nil && command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
 			errFormat := fmt.Sprintf("You don't have permission to create or set project/namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			errFormat = errFormat + "%s project create|set <project_name>"
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
