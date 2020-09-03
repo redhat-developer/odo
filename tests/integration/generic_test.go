@@ -137,7 +137,7 @@ var _ = Describe("odo generic", func() {
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
 		It("should create the component in default application", func() {
-			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "e2e-xyzk", "--project", project, "--git", testPHPGitURL)
+			helper.CmdShouldPass("odo", "create", "--s2i", "php", "testcmp", "--app", "e2e-xyzk", "--project", project, "--git", testPHPGitURL)
 			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP", "-f")
 			helper.CmdShouldPass("odo", "push")
 			oc.VerifyCmpName("testcmp", project)
@@ -162,7 +162,7 @@ var _ = Describe("odo generic", func() {
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
 		It("should pass to build component if the given build timeout is more than the default(300s) value", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
 			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "600")
 			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
 			helper.MatchAllInOutput(buildTimeout, []string{"600"})
@@ -170,7 +170,7 @@ var _ = Describe("odo generic", func() {
 		})
 
 		It("should fail to build component if the given build timeout is pretty less(2s)", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
 			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "2")
 			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
 			helper.MatchAllInOutput(buildTimeout, []string{"2"})
@@ -192,7 +192,7 @@ var _ = Describe("odo generic", func() {
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
 		It("should be able to create a php component with application created", func() {
-			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "testing", "--project", project, "--ref", "master", "--git", testPHPGitURL, "--context", context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "php", "testcmp", "--app", "testing", "--project", project, "--ref", "master", "--git", testPHPGitURL, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			currentProject := helper.CreateRandProject()
 			currentAppNames := helper.CmdShouldPass("odo", "app", "list", "--project", currentProject)
@@ -217,7 +217,7 @@ var _ = Describe("odo generic", func() {
 		})
 		It("should be able to push changes", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", project, "--context", context)
 
 			// Push the changes with --show-log
 			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context)
@@ -239,7 +239,7 @@ var _ = Describe("odo generic", func() {
 		})
 		It("should deploy the component", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--project", project, "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs:latest", "testversioncmp", "--project", project, "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "delete", "-f", "--context", context+"/nodejs-ex")
 		})
@@ -316,7 +316,7 @@ var _ = Describe("odo generic", func() {
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
 		It("should not allow creating a URL with long name", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--project", project)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
 			Expect(stdOut).To(ContainSubstring("must be shorter than 63 characters"))
 		})
@@ -342,7 +342,7 @@ var _ = Describe("odo generic", func() {
 		})
 		It("should delete all OpenShift objects except the component's imagestream", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", componentRandomName, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", componentRandomName, "--project", project)
 			helper.CmdShouldPass("odo", "push")
 
 			// Delete the deployment config using oc delete
@@ -416,7 +416,7 @@ var _ = Describe("odo generic", func() {
 			}
 			for _, testCase := range cases {
 				helper.CopyExample(filepath.Join("source", "nodejs"), context)
-				output := helper.CmdShouldFail("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--"+testCase.paramName, testCase.paramValue)
+				output := helper.CmdShouldFail("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--"+testCase.paramName, testCase.paramValue)
 				Expect(output).To(ContainSubstring("unknown flag: --" + testCase.paramName))
 			}
 		})

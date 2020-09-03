@@ -69,7 +69,7 @@ var _ = Describe("odo app command tests", func() {
 
 		It("should successfully execute list, describe and delete along with machine readable output", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// changing directory to the context directory
@@ -93,7 +93,7 @@ var _ = Describe("odo app command tests", func() {
 	Context("when running app command without app parameter in directory that doesn't contain .odo config directory", func() {
 		It("should fail without app parameter (except the list command)", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// list should pass as the project exists
@@ -107,7 +107,7 @@ var _ = Describe("odo app command tests", func() {
 	Context("when running app command app parameter in directory that doesn't contain .odo config directory", func() {
 		It("should successfully execute list, describe and delete along with machine readable output", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", project)
@@ -130,7 +130,7 @@ var _ = Describe("odo app command tests", func() {
 	Context("When running app describe with storage added in component in directory that doesn't contain .odo config directory", func() {
 		It("should successfully execute describe", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "storage", "create", "storage-one", "--context", context, "--path", mountPath, "--size", size)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			helper.CmdShouldPass("odo", "app", "describe", appName, "--project", project)
