@@ -148,7 +148,7 @@ var _ = Describe("odo service command tests", func() {
 			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
 
 			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
-			helper.CmdShouldPass("odo", "create", "java:8", "sb-app", "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "sb-app", "--project", project)
 
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080")
@@ -213,7 +213,7 @@ var _ = Describe("odo service command tests", func() {
 		It("should be able to create, list and delete a service using a given value for --context", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "python"), context)
-			helper.CmdShouldPass("odo", "create", "python", "--app", app, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "python", "--app", app, "--project", project)
 
 			// cd to the originalDir to create service using --context
 			helper.Chdir(originalDir)
@@ -239,7 +239,7 @@ var _ = Describe("odo service command tests", func() {
 		It("should be able to list services, as well as json list in a given app and project combination", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--app", app, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--app", app, "--project", project)
 
 			// create a service from within a component directory
 			helper.CmdShouldPass("odo", "service", "create", "dh-prometheus-apb", "--plan", "ephemeral",
@@ -304,10 +304,10 @@ var _ = Describe("odo service command tests", func() {
 		})
 		It("should link backend to service successfully", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "frontend", "--context", context1, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context1)
 			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
 			// Switching to context2 dir because --context flag is not supported with service command
@@ -336,10 +336,10 @@ var _ = Describe("odo service command tests", func() {
 		})
 		It("should pass", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "frontend", "--context", context1, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context1)
 			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
 			helper.Chdir(context2)
@@ -373,10 +373,10 @@ var _ = Describe("odo service command tests", func() {
 
 		It("should print the environment variables being linked/unlinked", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context1)
-			helper.CmdShouldPass("odo", "create", "python", "component1", "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "python", "component1", "--context", context1, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context1)
 			helper.CopyExample(filepath.Join("source", "nodejs"), context2)
-			helper.CmdShouldPass("odo", "create", "nodejs", "component2", "--context", context2, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "component2", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 
 			// tests for linking a component to a component
@@ -417,7 +417,7 @@ var _ = Describe("odo service command tests", func() {
 		It("should succeed when we're describing service that could have integer value for default field", func() {
 			// https://github.com/openshift/odo/issues/2488
 			helper.CopyExample(filepath.Join("source", "python"), context)
-			helper.CmdShouldPass("odo", "create", "python", "component1", "--context", context, "--project", project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "python", "component1", "--context", context, "--project", project)
 			helper.Chdir(context)
 
 			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-es-apb")

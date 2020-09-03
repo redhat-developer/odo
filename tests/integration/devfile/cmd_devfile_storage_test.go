@@ -27,9 +27,6 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()

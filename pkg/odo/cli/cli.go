@@ -25,7 +25,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -204,15 +203,13 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		config.NewCmdConfiguration(config.RecommendedCommandName, util.GetFullName(fullName, config.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
+		registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
+		component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 	)
 
-	if experimental.IsExperimentalModeEnabled() {
-		rootCmd.AddCommand(
-			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
-			component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
-			env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
-		)
-	}
+	rootCmd.AddCommand(
+		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
+	)
 
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 

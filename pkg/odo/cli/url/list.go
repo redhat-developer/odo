@@ -14,9 +14,9 @@ import (
 	pkgutil "github.com/openshift/odo/pkg/util"
 
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 
-	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/config"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -24,7 +24,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
@@ -58,7 +57,7 @@ func NewURLListOptions() *URLListOptions {
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.devfilePath = filepath.Join(o.componentContext, clicomponent.DevfilePath)
-	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.devfilePath)
+	o.isDevFile = pkgutil.CheckPathExists(o.devfilePath)
 	if o.isDevFile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
@@ -158,9 +157,9 @@ func (o *URLListOptions) Run() (err error) {
 				outOfSync := false
 				for _, u := range urls.Items {
 					if u.Spec.Kind == envinfo.ROUTE {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 					} else {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 					}
 					if u.Status.State != url.StateTypePushed {
 						outOfSync = true
@@ -191,7 +190,7 @@ func (o *URLListOptions) Run() (err error) {
 			// are there changes between local and cluster states?
 			outOfSync := false
 			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", true), "\t", u.Spec.Port, "\t", u.Spec.Secure)
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}

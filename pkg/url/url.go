@@ -279,7 +279,7 @@ type CreateParameters struct {
 
 // Create creates a URL and returns url string and error if any
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateParameters, isRouteSupported bool, isExperimental bool) (string, error) {
+func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateParameters, isRouteSupported bool, isS2I bool) (string, error) {
 
 	if parameters.urlKind != envinfo.INGRESS && parameters.urlKind != envinfo.ROUTE {
 		return "", fmt.Errorf("urlKind %s is not supported for URL creation", parameters.urlKind)
@@ -293,7 +293,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 	serviceName := ""
 
-	if isExperimental && parameters.urlKind == envinfo.INGRESS && kClient != nil {
+	if !isS2I && parameters.urlKind == envinfo.INGRESS && kClient != nil {
 		if parameters.host == "" {
 			return "", errors.Errorf("the host cannot be empty")
 		}
@@ -356,14 +356,14 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create ingress")
 		}
-		return GetURLString(GetProtocol(routev1.Route{}, *ingress), "", ingressDomain, isExperimental), nil
+		return GetURLString(GetProtocol(routev1.Route{}, *ingress), "", ingressDomain, false), nil
 	} else {
 		if !isRouteSupported {
 			return "", errors.Errorf("routes are not available on non OpenShift clusters")
 		}
 
 		var ownerReference metav1.OwnerReference
-		if !isExperimental || kClient == nil {
+		if isS2I || kClient == nil {
 			var err error
 			parameters.urlName, err = util.NamespaceOpenShiftObject(parameters.urlName, parameters.applicationName)
 			if err != nil {
@@ -400,7 +400,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create route")
 		}
-		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", isExperimental), nil
+		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", true), nil
 	}
 
 }
@@ -753,8 +753,8 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 }
 
 // GetURLString returns a string representation of given url
-func GetURLString(protocol, URL string, ingressDomain string, isExperimentalMode bool) string {
-	if isExperimentalMode && URL == "" {
+func GetURLString(protocol, URL string, ingressDomain string, isS2I bool) string {
+	if !isS2I && URL == "" {
 		return protocol + "://" + ingressDomain
 	}
 	return protocol + "://" + URL
@@ -938,6 +938,7 @@ type PushParameters struct {
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool
 	ContainerComponents       []common.DevfileComponent
+	IsS2I                     bool
 }
 
 // Push creates and deletes the required URLs
@@ -946,7 +947,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 
 	// in case the component is a s2i one
 	// kClient will be nil
-	if parameters.IsExperimentalModeEnabled && kClient != nil {
+	if !parameters.IsS2I && kClient != nil {
 		envURLMap := make(map[string]envinfo.EnvInfoURL)
 		for _, url := range parameters.EnvURLS {
 			if url.Kind == envinfo.DOCKER {
@@ -1017,7 +1018,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	log.Info("\nApplying URL changes")
 
 	urlCLUSTER := make(map[string]URL)
-	if parameters.IsExperimentalModeEnabled && kClient != nil {
+	if !parameters.IsS2I && kClient != nil {
 		urlList, err := ListPushedIngress(kClient, parameters.ComponentName)
 		if err != nil {
 			return err
@@ -1077,7 +1078,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			}
 			// delete the url
 			deleteURLName := urlName
-			if parameters.IsExperimentalModeEnabled && kClient != nil {
+			if !parameters.IsS2I && kClient != nil {
 				// route/ingress name is defined as <urlName>-<componentName>
 				// to avoid error due to duplicate ingress name defined in different devfile components
 				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
@@ -1111,8 +1112,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				urlKind:         urlInfo.Spec.Kind,
 				path:            urlInfo.Spec.Path,
 			}
-
-			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
+			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsS2I)
 			if err != nil {
 				return err
 			}

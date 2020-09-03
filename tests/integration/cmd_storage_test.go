@@ -43,7 +43,7 @@ var _ = Describe("odo storage command tests", func() {
 	Context("when running storage command without required flag(s)", func() {
 		It("should fail", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
 			stdErr := helper.CmdShouldFail("odo", "storage", "create", "pv1", "--context", context)
 			Expect(stdErr).To(ContainSubstring("required flag"))
 			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--path", "/data", "--context", context)
@@ -56,7 +56,7 @@ var _ = Describe("odo storage command tests", func() {
 		It("should add a storage, list and delete it", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
 			// Default flag value
 			// --app string         Application, defaults to active application
 			// --component string   Component, defaults to active component.
@@ -94,7 +94,7 @@ var _ = Describe("odo storage command tests", func() {
 	Context("when using storage command with specified flag values", func() {
 		It("should add a storage, list and delete it", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context)
-			helper.CmdShouldPass("odo", "component", "create", "python", "python", "--app", "pyapp", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "python", "python", "--app", "pyapp", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "1Gi", "--context", context)
 			Expect(storAdd).To(ContainSubstring("python"))
@@ -130,7 +130,7 @@ var _ = Describe("odo storage command tests", func() {
 	Context("when using storage command with -o json", func() {
 		It("should create and list output in json format", func() {
 			helper.CopyExample(filepath.Join("source", "wildfly"), context)
-			helper.CmdShouldPass("odo", "component", "create", "wildfly", "wildfly", "--app", "wildflyapp", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "wildfly", "wildfly", "--app", "wildflyapp", "--project", project, "--context", context)
 			actualJSONStorage := helper.CmdShouldPass("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", context, "-o", "json")
 			desiredJSONStorage := `{"kind":"storage","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"}}`
 			Expect(desiredJSONStorage).Should(MatchJSON(actualJSONStorage))
@@ -147,7 +147,7 @@ var _ = Describe("odo storage command tests", func() {
 		It("should list storage with correct state", func() {
 
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// create storage, list storage should have state "Not Pushed"

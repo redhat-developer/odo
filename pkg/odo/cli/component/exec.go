@@ -8,8 +8,8 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/util"
 
 	"path/filepath"
 
@@ -64,7 +64,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 	eo.devfilePath = filepath.Join(eo.componentContext, devFile)
 
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() {
+	if util.CheckPathExists(eo.devfilePath) {
 		eo.componentOptions.Context = genericclioptions.NewDevfileContext(cmd)
 
 		if !pushtarget.IsPushTargetDocker() {
