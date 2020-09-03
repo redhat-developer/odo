@@ -5,7 +5,7 @@ metadata:
 starterProjects:
   - name: springbootproject
     git:
-      remote:
+      remotes:
         origin: "https://github.com/maysunfaisal/springboot.git"
 components:
   - container:

@@ -5,7 +5,7 @@ starterProjects:
   -
     name: nodejs-starter
     git:
-      remote:
+      remotes:
         origin: "https://github.com/che-samples/web-nodejs-sample.git"
       sparseCheckoutDir: /app/
 components:

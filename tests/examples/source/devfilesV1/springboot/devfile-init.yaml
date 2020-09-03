@@ -7,7 +7,7 @@ projects:
     name: springbootproject
     source:
       type: git
-      remote:
+      remotes:
         origin: "https://github.com/maysunfaisal/springboot.git"
 components:
   -

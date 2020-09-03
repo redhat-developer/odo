@@ -3,7 +3,7 @@ metadata:
   name: nodejs
 starterProjects:
   - name: nodejs-starter
-    remote:
+    remotes:
         origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
   - container:
