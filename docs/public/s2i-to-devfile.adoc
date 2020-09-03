@@ -1,0 +1,52 @@
+== Migrating from S2I components to Devfile components
+
+Devfiles are new way of deploying component with odo that offers more convenience and flexibility. Read more about devfiles https://devfile.github.io/[here]
+
+Before 2.0 release odo deploys component with a different mechanism called as s2i based components. The newer way of deploying components is with devfiles.
+
+Exisiting users using s2i based components could migrate to devfile component by following the below steps:
+
+. Change the current directory to the component directory you want to migrate.
++
+[source,sh]
+----
+ $ cd <directory-name>
+----
+
+. Check the component status 
++
+[source,sh]
+----
+ $ odo list
+----
+
+. Convert s2i component to devfile component, it would convert the s2i based configuration files to devfile configuration files.
++
+[source,sh]
+----
+ $ odo utils convert-to-devfile
+----
+
+. Push the devfile component to the cluster
++
+[source,sh]
+----
+ $ odo push 
+----
+
+. Check the component status, at this point two components are running s2i based and devfile based.
++
+[source,sh]
+----
+ $ odo push 
+----
+
+. Delete the s2i component as devfile component is running
+
++
+[source,sh]
+----
+ $ odo delete --s2i
+----
+
+
