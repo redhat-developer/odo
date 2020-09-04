@@ -99,7 +99,7 @@ clean:
 goget-tools: goget-ginkgo
 	mkdir -p $(shell go env GOPATH)/bin
 	GOFLAGS='' go get github.com/frapposelli/wwhrd@v0.3.0
-	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.4.0
+	GOFLAGS='' go get github.com/securego/gosec/v2/cmd/gosec@v2.4.0
 	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
 
