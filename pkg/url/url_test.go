@@ -2333,38 +2333,40 @@ func TestGetIngressOrRoute(t *testing.T) {
 		// discard the error, since no physical file to write
 		t.Log("Expected error since no physical env file to write")
 	}
-	containerEndpointMap := map[string]map[string]versionsCommon.Endpoint{
-		containerName: map[string]versionsCommon.Endpoint{
-			"ingressurl2": versionsCommon.Endpoint{
-				Name:       "ingressurl2",
-				Exposure:   versionsCommon.Public,
-				TargetPort: 8080,
-				Protocol:   versionsCommon.HTTP,
-				Path:       "/",
-			},
-			"ingressurl3": versionsCommon.Endpoint{
-				Name:       "ingressurl3",
-				Exposure:   versionsCommon.Public,
-				TargetPort: 8080,
-				Protocol:   versionsCommon.HTTP,
-				Secure:     true,
-				Path:       "/",
-			},
-			"example": versionsCommon.Endpoint{
-				Name:       "example",
-				Exposure:   versionsCommon.Public,
-				TargetPort: 8080,
-				Protocol:   versionsCommon.HTTP,
-				Path:       "/",
-			},
-			"routeurl2": versionsCommon.Endpoint{
-				Name:       "routeurl2",
-				Exposure:   versionsCommon.Public,
-				TargetPort: 8080,
-				Protocol:   versionsCommon.HTTP,
-				Path:       "/",
-			},
+	fakecomponent := testingutil.GetFakeContainerComponent(containerName)
+	fakecomponent.Container.Endpoints = []versionsCommon.Endpoint{
+		{
+			Name:       "ingressurl2",
+			Exposure:   versionsCommon.Public,
+			TargetPort: 8080,
+			Protocol:   versionsCommon.HTTP,
+			Path:       "/",
 		},
+		{
+			Name:       "ingressurl3",
+			Exposure:   versionsCommon.Public,
+			TargetPort: 8080,
+			Protocol:   versionsCommon.HTTP,
+			Secure:     true,
+			Path:       "/",
+		},
+		{
+			Name:       "example",
+			Exposure:   versionsCommon.Public,
+			TargetPort: 8080,
+			Protocol:   versionsCommon.HTTP,
+			Path:       "/",
+		},
+		{
+			Name:       "routeurl2",
+			Exposure:   versionsCommon.Public,
+			TargetPort: 8080,
+			Protocol:   versionsCommon.HTTP,
+			Path:       "/",
+		},
+	}
+	containerComponents := []versionsCommon.DevfileComponent{
+		fakecomponent,
 	}
 
 	tests := []struct {
@@ -2404,7 +2406,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-				Spec:       URLSpec{Host: "ingressurl2.com", Port: int(containerEndpointMap[containerName][testURL2.Name].TargetPort), Secure: containerEndpointMap[containerName][testURL2.Name].Secure, Kind: envinfo.INGRESS, Path: containerEndpointMap[containerName][testURL2.Name].Path},
+				Spec:       URLSpec{Host: "ingressurl2.com", Port: 8080, Secure: false, Kind: envinfo.INGRESS, Path: "/"},
 				Status: URLStatus{
 					State: StateTypePushed,
 				},
@@ -2421,7 +2423,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-				Spec:       URLSpec{Host: "ingressurl3.com", Port: int(containerEndpointMap[containerName][testURL3.Name].TargetPort), Secure: containerEndpointMap[containerName][testURL3.Name].Secure, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
+				Spec:       URLSpec{Host: "ingressurl3.com", Port: 8080, Secure: true, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
 				Status: URLStatus{
 					State: StateTypeNotPushed,
 				},
@@ -2443,11 +2445,11 @@ func TestGetIngressOrRoute(t *testing.T) {
 			urlName:        testURL4.Name,
 			routeSupported: true,
 			pushedIngress:  nil,
-			pushedRoute:    testingutil.GetSingleRoute(testURL4.Name, int(containerEndpointMap[containerName][testURL4.Name].TargetPort), componentName, ""),
+			pushedRoute:    testingutil.GetSingleRoute(testURL4.Name, 8080, componentName, ""),
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
-				Spec:       URLSpec{Protocol: "http", Port: int(containerEndpointMap[containerName][testURL4.Name].TargetPort), Secure: containerEndpointMap[containerName][testURL4.Name].Secure, Kind: envinfo.ROUTE, Path: containerEndpointMap[containerName][testURL4.Name].Path},
+				Spec:       URLSpec{Protocol: "http", Port: 8080, Secure: false, Kind: envinfo.ROUTE, Path: "/"},
 				Status: URLStatus{
 					State: StateTypePushed,
 				},
@@ -2464,7 +2466,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL5.Name},
-				Spec:       URLSpec{Port: int(containerEndpointMap[containerName][testURL5.Name].TargetPort), Secure: containerEndpointMap[containerName][testURL5.Name].Secure, Kind: envinfo.ROUTE},
+				Spec:       URLSpec{Port: 8080, Secure: false, Kind: envinfo.ROUTE},
 				Status: URLStatus{
 					State: StateTypeNotPushed,
 				},
@@ -2508,7 +2510,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-				Spec:       URLSpec{Host: "ingressurl3.com", Port: int(containerEndpointMap[containerName][testURL3.Name].TargetPort), Secure: containerEndpointMap[containerName][testURL3.Name].Secure, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
+				Spec:       URLSpec{Host: "ingressurl3.com", Port: 8080, Secure: true, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
 				Status: URLStatus{
 					State: StateTypeNotPushed,
 				},
@@ -2525,7 +2527,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-				Spec:       URLSpec{Host: "ingressurl2.com", Port: int(containerEndpointMap[containerName][testURL2.Name].TargetPort), Secure: containerEndpointMap[containerName][testURL2.Name].Secure, Kind: envinfo.INGRESS, Path: containerEndpointMap[containerName][testURL2.Name].Path},
+				Spec:       URLSpec{Host: "ingressurl2.com", Port: 8080, Secure: false, Kind: envinfo.INGRESS, Path: "/"},
 				Status: URLStatus{
 					State: StateTypePushed,
 				},
@@ -2565,7 +2567,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 					return true, &tt.pushedRoute, nil
 				})
 			}
-			url, err := GetIngressOrRoute(client, fkclient, esi, tt.urlName, containerEndpointMap, tt.component, tt.routeSupported)
+			url, err := GetIngressOrRoute(client, fkclient, esi, tt.urlName, containerComponents, tt.component, tt.routeSupported)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v", err)
 			}

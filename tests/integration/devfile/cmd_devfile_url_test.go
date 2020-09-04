@@ -250,7 +250,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			stdout := helper.CmdShouldFail("odo", "url", "create", url1, "--port", "8080", "--host", host, "--container", "tools", "--ingress")
-			helper.MatchAllInOutput(stdout, []string{fmt.Sprintf("cannot set URL %s under container tools", url1), "TargetPort 8080 is being used for endpoint 8080/tcp under container runtime"})
+			helper.MatchAllInOutput(stdout, []string{fmt.Sprintf("cannot set URL %s under container tools", url1), "TargetPort 8080 is being under container runtime"})
 		})
 
 		It("should error out on devfile flag", func() {

@@ -97,7 +97,6 @@ type URLCreateOptions struct {
 	isDocker         bool
 	isExperimental   bool
 	devObj           parser.DevfileObj
-	// devfileContainers []corev1.Container
 }
 
 // NewURLCreateOptions creates a new URLCreateOptions instance
@@ -155,14 +154,6 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			return fmt.Errorf("failed to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}
 		o.devObj = devObj
-		// containers, err := adapterutils.GetContainers(devObj)
-		// if err != nil {
-		// 	return err
-		// }
-		// o.devfileContainers = containers
-		// if len(containers) == 0 {
-		// 	return fmt.Errorf("No valid components found in the devfile")
-		// }
 		componentName := o.EnvSpecificInfo.GetName()
 
 		if o.isDocker {
@@ -203,18 +194,6 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 				return fmt.Errorf("Port must be provided to create an endpoint entry in devfile")
 			}
 			o.componentPort = o.urlPort
-			// if len(o.container) > 0 {
-			// 	foundContainer := false
-			// 	for _, c := range containers {
-			// 		if c.Name == o.container {
-			// 			foundContainer = true
-			// 			break
-			// 		}
-			// 	}
-			// 	if !foundContainer {
-			// 		return fmt.Errorf("The container specified: %v does not exist in devfile", o.container)
-			// 	}
-			// }
 			if len(args) != 0 {
 				o.urlName = args[0]
 			} else {
@@ -368,39 +347,6 @@ func (o *URLCreateOptions) Run() (err error) {
 			}
 			err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, ExposedPort: o.exposedPort, Kind: o.urlType})
 		} else {
-			// containerEndpointMap, err := adapterutils.GetContainerEndpoints(o.devObj.Data)
-			// if err != nil {
-			// 	return errors.Wrap(err, "failed to get container endpoint map")
-			// }
-			// var firstContainer string
-			// for containerName, endpointMap := range containerEndpointMap {
-			// 	// save the first container name to store the new endpoint entry
-			// 	if firstContainer == "" {
-			// 		firstContainer = containerName
-			// 	}
-			// 	if _, exist := endpointMap[o.urlName]; exist {
-			// 		return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", o.urlName, containerName)
-			// 	}
-			// 	for _, endpoint := range endpointMap {
-			// 		if int(endpoint.TargetPort) == o.componentPort {
-			// 			// devfile cannot have two endpoints within different containers share the same targetport
-			// 			// it is because containers in a single pod shares the network namespace
-			// 			if len(o.container) > 0 && o.container != containerName {
-			// 				return fmt.Errorf("cannot set URL %v under container %v, TargetPort %v is being used for endpoint %v under container %v", o.urlName, o.container, o.componentPort, endpoint.Name, containerName)
-			// 			}
-			// 			o.container = containerName
-			// 			break
-			// 		}
-			// 	}
-			// }
-			// if reflect.DeepEqual(containerEndpointMap, map[string]map[string]common.Endpoint{}) {
-			// 	// devfile have no containers with endpoints
-			// 	// pick the first container to store the new enpoint
-			// 	o.container = o.devfileContainers[0].Name
-			// }
-			// if len(o.container) == 0 {
-			// 	o.container = firstContainer
-			// }
 			newEndpointEntry := common.Endpoint{
 				Name:       o.urlName,
 				Path:       o.path,

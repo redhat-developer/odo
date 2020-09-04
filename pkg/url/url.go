@@ -91,7 +91,7 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 }
 
 // GetIngressOrRoute returns ingress/route spec for given URL name
-func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, containerEndpointsMap map[string]map[string]parsercommon.Endpoint, componentName string, routeSupported bool) (URL, error) {
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
@@ -121,53 +121,56 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 	for _, url := range envinfoURLs {
 		envURLMap[url.Name] = url
 	}
-	for _, endpointMap := range containerEndpointsMap {
-		if _, exist := endpointMap[urlName]; !exist {
-			continue
-		}
-		localEndpoint := endpointMap[urlName]
-		if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
-			return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
-		}
-		var devfileURL envinfo.EnvInfoURL
-		if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
-			if envinfoURL.Kind == envinfo.DOCKER {
-				return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Docker", urlName))
+
+	for _, comp := range containerComponents {
+		for _, localEndpoint := range comp.Container.Endpoints {
+			if localEndpoint.Name != urlName {
+				continue
 			}
-			if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
-				return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Route, but Route is not support in current cluster", urlName))
+
+			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
+				return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
 			}
-			devfileURL = envinfoURL
-			devfileURL.Port = int(localEndpoint.TargetPort)
-			devfileURL.Secure = localEndpoint.Secure
-		}
-		if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
-			// Devfile endpoint by default should create a route if no host information is provided in env.yaml
-			// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
-			if !routeSupported {
-				break
+			var devfileURL envinfo.EnvInfoURL
+			if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
+				if envinfoURL.Kind == envinfo.DOCKER {
+					return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Docker", urlName))
+				}
+				if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
+					return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Route, but Route is not support in current cluster", urlName))
+				}
+				devfileURL = envinfoURL
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
 			}
-			devfileURL.Name = urlName
-			devfileURL.Port = int(localEndpoint.TargetPort)
-			devfileURL.Secure = localEndpoint.Secure
-			devfileURL.Kind = envinfo.ROUTE
-		}
-		localURL := ConvertEnvinfoURL(devfileURL, componentName)
-		if remoteExist {
-			if ingress != nil && ingress.Spec.Rules != nil {
-				// Remote exist, but not in local, so it's deleted status
-				clusterURL := getMachineReadableFormatIngress(*ingress)
-				clusterURL.Status.State = StateTypePushed
-				return clusterURL, nil
-			} else if route != nil {
-				clusterURL := getMachineReadableFormat(*route)
-				clusterURL.Status.State = StateTypePushed
-				return clusterURL, nil
+			if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
+				// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
+				if !routeSupported {
+					break
+				}
+				devfileURL.Name = urlName
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
+				devfileURL.Kind = envinfo.ROUTE
 			}
-		} else {
-			localURL.Status.State = StateTypeNotPushed
+			localURL := ConvertEnvinfoURL(devfileURL, componentName)
+			if remoteExist {
+				if ingress != nil && ingress.Spec.Rules != nil {
+					// Remote exist, but not in local, so it's deleted status
+					clusterURL := getMachineReadableFormatIngress(*ingress)
+					clusterURL.Status.State = StateTypePushed
+					return clusterURL, nil
+				} else if route != nil {
+					clusterURL := getMachineReadableFormat(*route)
+					clusterURL.Status.State = StateTypePushed
+					return clusterURL, nil
+				}
+			} else {
+				localURL.Status.State = StateTypeNotPushed
+			}
+			return localURL, nil
 		}
-		return localURL, nil
 	}
 
 	if remoteExist {

@@ -7,22 +7,21 @@ import (
 	"strconv"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/occlient"
-	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/config"
-	kubeutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
+	"github.com/openshift/odo/pkg/devfile"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/occlient"
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/url"
 	pkgutil "github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -129,11 +128,8 @@ func (o *URLDescribeOptions) Run() (err error) {
 			if err != nil {
 				return errors.Wrap(err, "fail to parse the devfile")
 			}
-			containerEndpointMap, err := kubeutils.GetContainerEndpoints(devObj.Data)
-			if err != nil {
-				return errors.Wrap(err, "unable to get container endpoints")
-			}
-			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, containerEndpointMap, componentName, routeSupported)
+			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
+			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, containerComponents, componentName, routeSupported)
 			if err != nil {
 				return err
 			}
