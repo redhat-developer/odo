@@ -148,12 +148,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if currentMode != previousMode {
 		parameters.RunModeChanged = true
 	}
-
-	containerEndpointMap, err := utils.GetContainerEndpoints(a.Devfile.Data)
-	if err != nil {
-		return errors.Wrap(err, "unable to get container endpoints")
-	}
-	portExposureMap := utils.GetPortExposure(containerEndpointMap)
+	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	portExposureMap := utils.GetPortExposure(containerComponents)
 
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, portExposureMap)
 	if err != nil {
@@ -171,7 +167,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, containerEndpointMap)
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, containerComponents)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}

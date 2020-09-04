@@ -7,7 +7,6 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -123,35 +122,12 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 	return containers, nil
 }
 
-// GetEndpoints iterates through the container components in the devfile and returns endpoints of all containers
-func GetContainerEndpoints(data data.DevfileData) (map[string]map[string]common.Endpoint, error) {
-	containerEndpointsMap := make(map[string]map[string]common.Endpoint)
-
-	for _, comp := range adaptersCommon.GetDevfileContainerComponents(data) {
-		// Currently type container is the only devfile component that odo supports
-		if comp.Container.Endpoints != nil {
-			endpointsMap := make(map[string]common.Endpoint)
-			for _, endpoint := range comp.Container.Endpoints {
-				// Name is a required entry for an Endpoint
-				// Devfile should not contains multiple endpoint with same Name, since it is considered as URL name
-				if _, keyexist := endpointsMap[endpoint.Name]; keyexist {
-					return nil, fmt.Errorf("Devfile contains multiple endpoints with same Name: %v", endpoint.Name)
-				} else {
-					endpointsMap[endpoint.Name] = endpoint
-				}
-			}
-			containerEndpointsMap[comp.Container.Name] = endpointsMap
-		}
-	}
-	return containerEndpointsMap, nil
-}
-
 // GetPortExposure iterate through all endpoints and returns the highest exposure level of all TargetPort.
 // exposure level: public > internal > none
-func GetPortExposure(containerEndpointMap map[string]map[string]common.Endpoint) map[int32]common.ExposureType {
+func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]common.ExposureType {
 	portExposureMap := make(map[int32]common.ExposureType)
-	for _, endpointMap := range containerEndpointMap {
-		for _, endpoint := range endpointMap {
+	for _, comp := range containerComponents {
+		for _, endpoint := range comp.Container.Endpoints {
 			// if exposure=public, no need to check for existence
 			if endpoint.Exposure == common.Public || endpoint.Exposure == "" {
 				portExposureMap[endpoint.TargetPort] = common.Public

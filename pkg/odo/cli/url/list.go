@@ -19,7 +19,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/openshift/odo/pkg/config"
-	kubeutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -137,11 +137,9 @@ func (o *URLListOptions) Run() (err error) {
 			if err != nil {
 				return errors.Wrap(err, "fail to parse the devfile")
 			}
-			containerEndpointMap, err := kubeutils.GetContainerEndpoints(devObj.Data)
-			if err != nil {
-				return errors.Wrap(err, "unable to get container endpoints")
-			}
-			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, containerEndpointMap, componentName, routeSupported)
+
+			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
+			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, containerComponents, componentName, routeSupported)
 			if err != nil {
 				return err
 			}

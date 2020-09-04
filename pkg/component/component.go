@@ -567,7 +567,7 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 //  endpointMap: value is devfile endpoint entry, key is the TargetPort for each enpoint entry
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, containerEndpointMap map[string]map[string]parsercommon.Endpoint) (err error) {
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, containerComponents []parsercommon.DevfileComponent) (err error) {
 	isExperimentalModeEnabled := experimental.IsExperimentalModeEnabled()
 
 	if client == nil {
@@ -611,7 +611,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		EnvURLS:                   envSpecificInfo.GetURL(),
 		IsRouteSupported:          isRouteSupported,
 		IsExperimentalModeEnabled: isExperimentalModeEnabled,
-		ContainerEndpointMap:      containerEndpointMap,
+		ContainerComponents:       containerComponents,
 	})
 }
 

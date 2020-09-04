@@ -515,7 +515,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, containerEndpointsMap map[string]map[string]parsercommon.Endpoint, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
@@ -555,8 +555,8 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		clusterURL := getMachineReadableFormat(r)
 		clusterURLMap[clusterURL.Name] = clusterURL
 	}
-	for _, endpointMap := range containerEndpointsMap {
-		for _, localEndpoint := range endpointMap {
+	for _, comp := range containerComponents {
+		for _, localEndpoint := range comp.Container.Endpoints {
 			// only exposed endpoint will be shown as a URL in `odo url list`
 			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
 				continue
@@ -582,7 +582,6 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 			// use the trimmed URL Name as the key since remote URLs' names are trimmed
 			trimmedURLName := getValidURLName(localURL.Name)
 			localMap[trimmedURLName] = localURL
-
 		}
 	}
 
@@ -937,7 +936,7 @@ type PushParameters struct {
 	EnvURLS                   []envinfo.EnvInfoURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool
-	ContainerEndpointMap      map[string]map[string]parsercommon.Endpoint
+	ContainerComponents       []common.DevfileComponent
 }
 
 // Push creates and deletes the required URLs
@@ -954,8 +953,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			}
 			envURLMap[url.Name] = url
 		}
-		for _, endpointMap := range parameters.ContainerEndpointMap {
-			for _, endpoint := range endpointMap {
+		for _, comp := range parameters.ContainerComponents {
+			for _, endpoint := range comp.Container.Endpoints {
 				// skip URL creation if the URL is not publicly exposed
 				if endpoint.Exposure == common.None || endpoint.Exposure == common.Internal {
 					continue

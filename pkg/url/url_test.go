@@ -16,7 +16,6 @@ import (
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -752,18 +751,18 @@ func TestPush(t *testing.T) {
 		isExperimentalModeEnabled bool
 	}
 	tests := []struct {
-		name                 string
-		args                 args
-		componentName        string
-		applicationName      string
-		existingConfigURLs   []config.ConfigURL
-		existingEnvInfoURLs  []envinfo.EnvInfoURL
-		returnedRoutes       *routev1.RouteList
-		returnedIngress      *extensionsv1.IngressList
-		containerEndpointMap map[string]map[string]versionsCommon.Endpoint
-		deletedURLs          []URL
-		createdURLs          []URL
-		wantErr              bool
+		name                string
+		args                args
+		componentName       string
+		applicationName     string
+		existingConfigURLs  []config.ConfigURL
+		existingEnvInfoURLs []envinfo.EnvInfoURL
+		returnedRoutes      *routev1.RouteList
+		returnedIngress     *extensionsv1.IngressList
+		containerComponents []versionsCommon.DevfileComponent
+		deletedURLs         []URL
+		createdURLs         []URL
+		wantErr             bool
 	}{
 		{
 			name: "no urls on local config and cluster",
@@ -916,17 +915,22 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     false,
-					},
-					"example-1": versionsCommon.Endpoint{
-						Name:       "example-1",
-						TargetPort: 9090,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+							versionsCommon.Endpoint{
+								Name:       "example-1",
+								TargetPort: 9090,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -993,17 +997,22 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example-local-0": versionsCommon.Endpoint{
-						Name:       "example-local-0",
-						TargetPort: 8080,
-						Secure:     false,
-					},
-					"example-local-1": versionsCommon.Endpoint{
-						Name:       "example-local-1",
-						TargetPort: 9090,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example-local-0",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+							versionsCommon.Endpoint{
+								Name:       "example-local-1",
+								TargetPort: 9090,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -1062,17 +1071,22 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example-0": versionsCommon.Endpoint{
-						Name:       "example-0",
-						TargetPort: 8080,
-						Secure:     false,
-					},
-					"example-1": versionsCommon.Endpoint{
-						Name:       "example-1",
-						TargetPort: 9090,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example-0",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+							versionsCommon.Endpoint{
+								Name:       "example-1",
+								TargetPort: 9090,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -1096,17 +1110,22 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example-local-0": versionsCommon.Endpoint{
-						Name:       "example-local-0",
-						TargetPort: 8080,
-						Secure:     false,
-					},
-					"example-1": versionsCommon.Endpoint{
-						Name:       "example-local-1",
-						TargetPort: 9090,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example-local-0",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+							versionsCommon.Endpoint{
+								Name:       "example-local-1",
+								TargetPort: 9090,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -1160,12 +1179,17 @@ func TestPush(t *testing.T) {
 					Kind:      envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+							},
+						},
 					},
 				},
 			},
@@ -1196,12 +1220,17 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.ROUTE,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example-local-0": versionsCommon.Endpoint{
-						Name:       "example-local-0",
-						TargetPort: 8080,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example-local-0",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -1281,12 +1310,17 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.ROUTE,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+							},
+						},
 					},
 				},
 			},
@@ -1316,12 +1350,17 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+							},
+						},
 					},
 				},
 			},
@@ -1353,12 +1392,17 @@ func TestPush(t *testing.T) {
 					Kind:      envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+							},
+						},
 					},
 				},
 			},
@@ -1390,13 +1434,18 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
-						Exposure:   versionsCommon.Internal,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+								Exposure:   versionsCommon.Internal,
+							},
+						},
 					},
 				},
 			},
@@ -1416,13 +1465,18 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
-						Exposure:   versionsCommon.None,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+								Exposure:   versionsCommon.None,
+							},
+						},
 					},
 				},
 			},
@@ -1441,13 +1495,18 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.ROUTE,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
-						Exposure:   versionsCommon.Internal,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+								Exposure:   versionsCommon.Internal,
+							},
+						},
 					},
 				},
 			},
@@ -1466,13 +1525,18 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.ROUTE,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
-						Exposure:   versionsCommon.Internal,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+								Exposure:   versionsCommon.Internal,
+							},
+						},
 					},
 				},
 			},
@@ -1491,13 +1555,18 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.ROUTE,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     true,
-						Exposure:   versionsCommon.None,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     true,
+								Exposure:   versionsCommon.None,
+							},
+						},
 					},
 				},
 			},
@@ -1511,12 +1580,17 @@ func TestPush(t *testing.T) {
 			componentName:       "nodejs",
 			args:                args{isRouteSupported: false, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -1530,12 +1604,17 @@ func TestPush(t *testing.T) {
 			componentName:       "nodejs",
 			args:                args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -1567,12 +1646,17 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     false,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     false,
+							},
+						},
 					},
 				},
 			},
@@ -1599,13 +1683,18 @@ func TestPush(t *testing.T) {
 			componentName:       "nodejs",
 			args:                args{isRouteSupported: true, isExperimentalModeEnabled: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     false,
-						Path:       "/testpath",
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     false,
+								Path:       "/testpath",
+							},
+						},
 					},
 				},
 			},
@@ -1637,13 +1726,18 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				"container1": map[string]versionsCommon.Endpoint{
-					"example": versionsCommon.Endpoint{
-						Name:       "example",
-						TargetPort: 8080,
-						Secure:     false,
-						Path:       "/testpath",
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "container1",
+						Endpoints: []versionsCommon.Endpoint{
+							versionsCommon.Endpoint{
+								Name:       "example",
+								TargetPort: 8080,
+								Secure:     false,
+								Path:       "/testpath",
+							},
+						},
 					},
 				},
 			},
@@ -1710,7 +1804,7 @@ func TestPush(t *testing.T) {
 				EnvURLS:                   tt.existingEnvInfoURLs,
 				IsRouteSupported:          tt.args.isRouteSupported,
 				IsExperimentalModeEnabled: tt.args.isExperimentalModeEnabled,
-				ContainerEndpointMap:      tt.containerEndpointMap,
+				ContainerComponents:       tt.containerComponents,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
@@ -2029,7 +2123,7 @@ func TestListIngressAndRoute(t *testing.T) {
 		Name:       "ingressurl3",
 		Exposure:   versionsCommon.Public,
 		TargetPort: 8080,
-		Protocol:   versionsCommon.HTTP,
+		Protocol:   versionsCommon.HTTPS,
 		Secure:     true,
 	}
 
@@ -2046,27 +2140,28 @@ func TestListIngressAndRoute(t *testing.T) {
 		TargetPort: 8080,
 		Protocol:   versionsCommon.HTTP,
 	}
-
 	tests := []struct {
-		name                 string
-		component            string
-		envURLs              []envinfo.EnvInfoURL
-		containerEndpointMap map[string]map[string]versionsCommon.Endpoint
-		routeSupported       bool
-		routeList            *routev1.RouteList
-		ingressList          *extensionsv1.IngressList
-		wantURLs             []URL
+		name                string
+		component           string
+		envURLs             []envinfo.EnvInfoURL
+		containerComponents []versionsCommon.DevfileComponent
+		routeSupported      bool
+		routeList           *routev1.RouteList
+		ingressList         *extensionsv1.IngressList
+		wantURLs            []URL
 	}{
 		{
 			name:      "Should retrieve the URL list with both ingress and routes",
 			component: componentName,
 			envURLs:   []envinfo.EnvInfoURL{testURL2, testURL3, testURL4, testURL5},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				containerName: map[string]versionsCommon.Endpoint{
-					example1Endpoint.Name:    example1Endpoint,
-					ingressurl3Endpoint.Name: ingressurl3Endpoint,
-					exampleEndpoint.Name:     exampleEndpoint,
-					routeurl2Endpoint.Name:   routeurl2Endpoint,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: containerName,
+						Endpoints: []versionsCommon.Endpoint{
+							example1Endpoint, ingressurl3Endpoint, exampleEndpoint, routeurl2Endpoint,
+						},
+					},
 				},
 			},
 			routeSupported: true,
@@ -2132,12 +2227,14 @@ func TestListIngressAndRoute(t *testing.T) {
 			name:      "Should retrieve only ingress URLs with routeSupported equals to false",
 			component: componentName,
 			envURLs:   []envinfo.EnvInfoURL{testURL2, testURL3, testURL4, testURL5},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				containerName: map[string]versionsCommon.Endpoint{
-					example1Endpoint.Name:    example1Endpoint,
-					ingressurl3Endpoint.Name: ingressurl3Endpoint,
-					exampleEndpoint.Name:     exampleEndpoint,
-					routeurl2Endpoint.Name:   routeurl2Endpoint,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: containerName,
+						Endpoints: []versionsCommon.Endpoint{
+							example1Endpoint, ingressurl3Endpoint, exampleEndpoint, routeurl2Endpoint,
+						},
+					},
 				},
 			},
 			routeList:      &routev1.RouteList{},
@@ -2174,10 +2271,14 @@ func TestListIngressAndRoute(t *testing.T) {
 			name:      "Should retrieve only ingress URLs",
 			component: componentName,
 			envURLs:   []envinfo.EnvInfoURL{testURL2, testURL3},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				containerName: map[string]versionsCommon.Endpoint{
-					example1Endpoint.Name:    example1Endpoint,
-					ingressurl3Endpoint.Name: ingressurl3Endpoint,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: containerName,
+						Endpoints: []versionsCommon.Endpoint{
+							example1Endpoint, ingressurl3Endpoint,
+						},
+					},
 				},
 			},
 			routeSupported: true,
@@ -2214,10 +2315,14 @@ func TestListIngressAndRoute(t *testing.T) {
 			name:      "Should retrieve only route URLs",
 			component: componentName,
 			envURLs:   []envinfo.EnvInfoURL{testURL4, testURL5},
-			containerEndpointMap: map[string]map[string]versionsCommon.Endpoint{
-				containerName: map[string]versionsCommon.Endpoint{
-					exampleEndpoint.Name:   exampleEndpoint,
-					routeurl2Endpoint.Name: routeurl2Endpoint,
+			containerComponents: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: containerName,
+						Endpoints: []versionsCommon.Endpoint{
+							exampleEndpoint, routeurl2Endpoint,
+						},
+					},
 				},
 			},
 			routeSupported: true,
@@ -2278,7 +2383,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				return true, tt.routeList, nil
 			})
 
-			urls, err := ListIngressAndRoute(fakeoclient, fkclient, esi, tt.containerEndpointMap, componentName, tt.routeSupported)
+			urls, err := ListIngressAndRoute(fakeoclient, fkclient, esi, tt.containerComponents, componentName, tt.routeSupported)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}
@@ -2679,13 +2784,13 @@ func TestAddEndpointInDevfile(t *testing.T) {
 	tests := []struct {
 		name           string
 		devObj         parser.DevfileObj
-		endpoint       common.Endpoint
+		endpoint       versionsCommon.Endpoint
 		container      string
-		wantComponents []common.DevfileComponent
+		wantComponents []versionsCommon.DevfileComponent
 	}{
 		{
 			name: "Case 1: devfile has single container with existing endpoint",
-			endpoint: common.Endpoint{
+			endpoint: versionsCommon.Endpoint{
 				Name:       urlName,
 				TargetPort: 8080,
 				Secure:     false,
@@ -2694,12 +2799,12 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []versionsCommon.DevfileComponent{
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
 								Name:  "testcontainer1",
-								Endpoints: []common.Endpoint{
+								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       "port-3030",
 										TargetPort: 3000,
@@ -2710,12 +2815,12 @@ func TestAddEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
-			wantComponents: []common.DevfileComponent{
+			wantComponents: []versionsCommon.DevfileComponent{
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
 						Name:  "testcontainer1",
-						Endpoints: []common.Endpoint{
+						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "port-3030",
 								TargetPort: 3000,
@@ -2732,7 +2837,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 		},
 		{
 			name: "Case 2: devfile has single container with no endpoint",
-			endpoint: common.Endpoint{
+			endpoint: versionsCommon.Endpoint{
 				Name:       urlName,
 				TargetPort: 8080,
 				Secure:     false,
@@ -2741,9 +2846,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []versionsCommon.DevfileComponent{
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
 								Name:  "testcontainer1",
 							},
@@ -2751,12 +2856,12 @@ func TestAddEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
-			wantComponents: []common.DevfileComponent{
+			wantComponents: []versionsCommon.DevfileComponent{
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
 						Name:  "testcontainer1",
-						Endpoints: []common.Endpoint{
+						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName,
 								TargetPort: 8080,
@@ -2768,8 +2873,8 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			},
 		},
 		{
-			name: "Case 3: containerEndpointMap has multiple containers",
-			endpoint: common.Endpoint{
+			name: "Case 3: devfile has multiple containers",
+			endpoint: versionsCommon.Endpoint{
 				Name:       urlName,
 				TargetPort: 8080,
 				Secure:     false,
@@ -2778,24 +2883,24 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []versionsCommon.DevfileComponent{
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
 								Name:  "testcontainer1",
 							},
 						},
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Name: "testcontainer2",
-								Endpoints: []common.Endpoint{
+								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName2,
 										TargetPort: 9090,
 										Secure:     true,
 										Path:       "/testpath",
-										Exposure:   common.Internal,
-										Protocol:   common.HTTPS,
+										Exposure:   versionsCommon.Internal,
+										Protocol:   versionsCommon.HTTPS,
 									},
 								},
 							},
@@ -2803,12 +2908,12 @@ func TestAddEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
-			wantComponents: []common.DevfileComponent{
+			wantComponents: []versionsCommon.DevfileComponent{
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
 						Name:  "testcontainer1",
-						Endpoints: []common.Endpoint{
+						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName,
 								TargetPort: 8080,
@@ -2818,16 +2923,16 @@ func TestAddEndpointInDevfile(t *testing.T) {
 					},
 				},
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Name: "testcontainer2",
-						Endpoints: []common.Endpoint{
+						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName2,
 								TargetPort: 9090,
 								Secure:     true,
 								Path:       "/testpath",
-								Exposure:   common.Internal,
-								Protocol:   common.HTTPS,
+								Exposure:   versionsCommon.Internal,
+								Protocol:   versionsCommon.HTTPS,
 							},
 						},
 					},
@@ -2870,9 +2975,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 	tests := []struct {
 		name           string
 		devObj         parser.DevfileObj
-		endpoint       common.Endpoint
+		endpoint       versionsCommon.Endpoint
 		urlName        string
-		wantComponents []common.DevfileComponent
+		wantComponents []versionsCommon.DevfileComponent
 		wantErr        bool
 	}{
 		{
@@ -2881,12 +2986,12 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []versionsCommon.DevfileComponent{
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
 								Name:  "testcontainer1",
-								Endpoints: []common.Endpoint{
+								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       "port-3030",
 										TargetPort: 3000,
@@ -2902,12 +3007,12 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
-			wantComponents: []common.DevfileComponent{
+			wantComponents: []versionsCommon.DevfileComponent{
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
 						Name:  "testcontainer1",
-						Endpoints: []common.Endpoint{
+						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       "port-3030",
 								TargetPort: 3000,
@@ -2924,12 +3029,12 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []versionsCommon.DevfileComponent{
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
 								Name:  "testcontainer1",
-								Endpoints: []common.Endpoint{
+								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName,
 										TargetPort: 8080,
@@ -2941,29 +3046,29 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
-			wantComponents: []common.DevfileComponent{
+			wantComponents: []versionsCommon.DevfileComponent{
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Image:     "quay.io/nodejs-12",
 						Name:      "testcontainer1",
-						Endpoints: []common.Endpoint{},
+						Endpoints: []versionsCommon.Endpoint{},
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:    "Case 3: containerEndpointMap has multiple containers",
+			name:    "Case 3: devfile has multiple containers",
 			urlName: urlName,
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []versionsCommon.DevfileComponent{
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
 								Name:  "testcontainer1",
-								Endpoints: []common.Endpoint{
+								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName,
 										TargetPort: 8080,
@@ -2973,16 +3078,16 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 							},
 						},
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Name: "testcontainer2",
-								Endpoints: []common.Endpoint{
+								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName2,
 										TargetPort: 9090,
 										Secure:     true,
 										Path:       "/testpath",
-										Exposure:   common.Internal,
-										Protocol:   common.HTTPS,
+										Exposure:   versionsCommon.Internal,
+										Protocol:   versionsCommon.HTTPS,
 									},
 								},
 							},
@@ -2990,25 +3095,25 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
-			wantComponents: []common.DevfileComponent{
+			wantComponents: []versionsCommon.DevfileComponent{
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Image:     "quay.io/nodejs-12",
 						Name:      "testcontainer1",
-						Endpoints: []common.Endpoint{},
+						Endpoints: []versionsCommon.Endpoint{},
 					},
 				},
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Name: "testcontainer2",
-						Endpoints: []common.Endpoint{
+						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName2,
 								TargetPort: 9090,
 								Secure:     true,
 								Path:       "/testpath",
-								Exposure:   common.Internal,
-								Protocol:   common.HTTPS,
+								Exposure:   versionsCommon.Internal,
+								Protocol:   versionsCommon.HTTPS,
 							},
 						},
 					},
@@ -3022,12 +3127,12 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []versionsCommon.DevfileComponent{
 						{
-							Container: &common.Container{
+							Container: &versionsCommon.Container{
 								Image: "quay.io/nodejs-12",
 								Name:  "testcontainer1",
-								Endpoints: []common.Endpoint{
+								Endpoints: []versionsCommon.Endpoint{
 									{
 										Name:       urlName,
 										TargetPort: 8080,
@@ -3039,12 +3144,12 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
-			wantComponents: []common.DevfileComponent{
+			wantComponents: []versionsCommon.DevfileComponent{
 				{
-					Container: &common.Container{
+					Container: &versionsCommon.Container{
 						Image: "quay.io/nodejs-12",
 						Name:  "testcontainer1",
-						Endpoints: []common.Endpoint{
+						Endpoints: []versionsCommon.Endpoint{
 							{
 								Name:       urlName,
 								TargetPort: 8080,
