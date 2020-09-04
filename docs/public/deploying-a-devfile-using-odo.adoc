@@ -91,7 +91,7 @@ Ingress IP is usually the external IP of ingress controller service, for Minikub
 
 ----
 
-In our example, we will be using `java-spring-boot` to deploy a sample https://spring.io/projects/spring-boot[Springboot] component.
+In our example, we will be using `java-springboot` to deploy a sample https://spring.io/projects/spring-boot[Springboot] component.
 
 == Deploying a Java Spring Boot® component to an OpenShift / Kubernetes cluster
 
@@ -112,11 +112,11 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
  $ cd <directory-name>
 ----
 
-. Create a component configuration using the `java-spring-boot` component-type named `myspring`:
+. Create a component configuration using the `java-springboot` component-type named `myspring`:
 +
 [source,sh]
 ----
-   $ odo create java-spring-boot myspring
+   $ odo create java-springboot myspring
    Experimental mode is enabled, use at your own risk
 
    Validation
@@ -395,7 +395,7 @@ Run `odo delete` to delete the application from cluster.
 [source,sh]
 ----
    $ odo delete
-   ? Are you sure you want to delete the devfile component: java-spring-boot? Yes
-    ✓  Deleting devfile component java-spring-boot [139ms]
+   ? Are you sure you want to delete the devfile component: java-springboot? Yes
+    ✓  Deleting devfile component java-springboot [139ms]
     ✓  Successfully deleted component
 ----
