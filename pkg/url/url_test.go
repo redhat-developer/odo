@@ -2870,13 +2870,12 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 		devObj         parser.DevfileObj
 		endpoint       common.Endpoint
 		urlName        string
-		container      string
 		wantComponents []common.DevfileComponent
+		wantErr        bool
 	}{
 		{
-			name:      "Case 1: devfile has single container with multiple existing endpoint",
-			urlName:   urlName,
-			container: "testcontainer1",
+			name:    "Case 1: devfile has single container with multiple existing endpoint",
+			urlName: urlName,
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
@@ -2915,11 +2914,11 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
+			wantErr: false,
 		},
 		{
-			name:      "Case 2: devfile has single container with a single endpoint",
-			urlName:   urlName,
-			container: "testcontainer1",
+			name:    "Case 2: devfile has single container with a single endpoint",
+			urlName: urlName,
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
@@ -2949,11 +2948,11 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
+			wantErr: false,
 		},
 		{
-			name:      "Case 3: containerEndpointMap has multiple containers",
-			urlName:   urlName,
-			container: "testcontainer1",
+			name:    "Case 3: containerEndpointMap has multiple containers",
+			urlName: urlName,
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
@@ -3013,13 +3012,56 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 					},
 				},
 			},
+			wantErr: false,
+		},
+		{
+			name:    "Case 4: delete an invalid endpoint",
+			urlName: "invalidurl",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []common.DevfileComponent{
+						{
+							Container: &common.Container{
+								Image: "quay.io/nodejs-12",
+								Name:  "testcontainer1",
+								Endpoints: []common.Endpoint{
+									{
+										Name:       urlName,
+										TargetPort: 8080,
+										Secure:     false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Secure:     false,
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := RemoveEndpointInDevfile(tt.devObj, tt.urlName, tt.container)
-			if err != nil {
+			err := RemoveEndpointInDevfile(tt.devObj, tt.urlName)
+			if !tt.wantErr && err != nil {
 				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
 			}
 			retval, err := fs.ReadFile(parser.OutputDevfileYamlPath)
 			if err != nil {

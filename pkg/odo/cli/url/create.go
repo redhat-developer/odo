@@ -2,7 +2,6 @@ package url
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -10,6 +9,7 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -23,7 +23,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -58,8 +57,8 @@ var (
 	# Create a secure URL for the current component
 	%[1]s --port 8080 --secure
 
-	# Create a URL with a specific path, exposure type and protocol
-	%[1]s --port 8080 --path /hello --exposure public --protocol http
+	# Create a URL with a specific path and protocol type
+	%[1]s --port 8080 --path /hello --protocol http
 
 	# Create a URL under a specific container
 	%[1]s --port 8080 --container runtime
@@ -79,27 +78,26 @@ var (
 // URLCreateOptions encapsulates the options for the odo url create command
 type URLCreateOptions struct {
 	*clicomponent.PushOptions
-	urlName           string
-	urlPort           int
-	secureURL         bool
-	componentPort     int
-	now               bool
-	host              string
-	tlsSecret         string
-	exposedPort       int
-	exposure          string
-	path              string
-	protocol          string
-	container         string
-	forceFlag         bool
-	isRouteSupported  bool
-	wantIngress       bool
-	urlType           envinfo.URLKind
-	isDevFile         bool
-	isDocker          bool
-	isExperimental    bool
-	devObj            parser.DevfileObj
-	devfileContainers []corev1.Container
+	urlName          string
+	urlPort          int
+	secureURL        bool
+	componentPort    int
+	now              bool
+	host             string
+	tlsSecret        string
+	exposedPort      int
+	path             string
+	protocol         string
+	container        string
+	forceFlag        bool
+	isRouteSupported bool
+	wantIngress      bool
+	urlType          envinfo.URLKind
+	isDevFile        bool
+	isDocker         bool
+	isExperimental   bool
+	devObj           parser.DevfileObj
+	// devfileContainers []corev1.Container
 }
 
 // NewURLCreateOptions creates a new URLCreateOptions instance
@@ -109,7 +107,7 @@ func NewURLCreateOptions() *URLCreateOptions {
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
-	o.DevfilePath = clicomponent.DevfilePath
+	o.CompleteDevfilePath()
 
 	o.isDevFile = o.isExperimental && util.CheckPathExists(o.DevfilePath)
 	if o.isDevFile {
@@ -134,14 +132,6 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			} else {
 				o.urlType = envinfo.ROUTE
 			}
-			if len(o.protocol) == 0 {
-				// endpoint protocol default value is http
-				o.protocol = string(common.HTTP)
-			}
-			if len(o.exposure) == 0 {
-				// endpoint exposure default value is public
-				o.exposure = string(common.Public)
-			}
 			if len(o.path) > 0 && (strings.HasPrefix(o.path, "/") || strings.HasPrefix(o.path, "\\")) {
 				if len(o.path) <= 1 {
 					o.path = ""
@@ -162,21 +152,28 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 		// Parse devfile and validate
 		devObj, err := devfile.ParseAndValidate(o.DevfilePath)
 		if err != nil {
-			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
+			return fmt.Errorf("failed to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}
 		o.devObj = devObj
-		containers, err := adapterutils.GetContainers(devObj)
-		if err != nil {
-			return err
-		}
-		o.devfileContainers = containers
-		if len(containers) == 0 {
-			return fmt.Errorf("No valid components found in the devfile")
-		}
+		// containers, err := adapterutils.GetContainers(devObj)
+		// if err != nil {
+		// 	return err
+		// }
+		// o.devfileContainers = containers
+		// if len(containers) == 0 {
+		// 	return fmt.Errorf("No valid components found in the devfile")
+		// }
 		componentName := o.EnvSpecificInfo.GetName()
 
 		if o.isDocker {
 			var portList []string
+			containers, err := adapterutils.GetContainers(devObj)
+			if err != nil {
+				return err
+			}
+			if len(containers) == 0 {
+				return fmt.Errorf("No valid components found in the devfile")
+			}
 			compWithEndpoint := 0
 			for _, c := range containers {
 				if len(c.Ports) != 0 {
@@ -202,28 +199,63 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			}
 			o.urlType = envinfo.DOCKER
 		} else {
-			if len(o.container) > 0 {
-				foundContainer := false
-				for _, c := range containers {
-					if c.Name == o.container {
-						foundContainer = true
-						break
-					}
-				}
-				if !foundContainer {
-					return fmt.Errorf("The container specified: %v does not exist in devfile", o.container)
-				}
-			}
 			if o.urlPort == -1 {
 				return fmt.Errorf("Port must be provided to create an endpoint entry in devfile")
 			}
 			o.componentPort = o.urlPort
-		}
+			// if len(o.container) > 0 {
+			// 	foundContainer := false
+			// 	for _, c := range containers {
+			// 		if c.Name == o.container {
+			// 			foundContainer = true
+			// 			break
+			// 		}
+			// 	}
+			// 	if !foundContainer {
+			// 		return fmt.Errorf("The container specified: %v does not exist in devfile", o.container)
+			// 	}
+			// }
+			if len(args) != 0 {
+				o.urlName = args[0]
+			} else {
+				o.urlName = url.GetURLName(componentName, o.componentPort)
+			}
 
-		if len(args) != 0 {
-			o.urlName = args[0]
-		} else {
-			o.urlName = url.GetURLName(componentName, o.componentPort)
+			foundContainer := false
+			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
+			if len(containerComponents) == 0 {
+				return fmt.Errorf("No valid components found in the devfile")
+			}
+			// map TargetPort with containerName
+			containerPortMap := make(map[int]string)
+			for _, component := range containerComponents {
+				if len(o.container) > 0 && !foundContainer {
+					if component.Container.Name == o.container {
+						foundContainer = true
+					}
+				}
+				for _, endpoint := range component.Container.Endpoints {
+					if endpoint.Name == o.urlName {
+						return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", o.urlName, component.Container.Name)
+					}
+					containerPortMap[int(endpoint.TargetPort)] = component.Container.Name
+				}
+			}
+			if len(o.container) > 0 && !foundContainer {
+				return fmt.Errorf("The container specified: %v does not exist in devfile", o.container)
+			}
+			if containerName, exist := containerPortMap[o.componentPort]; exist {
+				if len(o.container) > 0 && o.container != containerName {
+					return fmt.Errorf("cannot set URL %v under container %v, TargetPort %v is being used under container %v", o.urlName, o.container, o.componentPort, containerName)
+				}
+				o.container = containerName
+			}
+			// container is not provided, or the specified port is not being used under any containers
+			// pick the first container to store the new enpoint
+			if len(o.container) == 0 {
+				o.container = containerComponents[0].Container.Name
+			}
+
 		}
 
 	} else {
@@ -275,9 +307,6 @@ func (o *URLCreateOptions) Validate() (err error) {
 			}
 		} else if o.urlType == envinfo.INGRESS {
 			errorList = append(errorList, "host must be provided in order to create URLS of Ingress Kind")
-		}
-		if len(o.exposure) > 0 && (strings.ToLower(o.exposure) != string(common.None) && strings.ToLower(o.exposure) != string(common.Public) && strings.ToLower(o.exposure) != string(common.Internal)) {
-			errorList = append(errorList, fmt.Sprintf("endpoint exposure only supports %v|%v|%v", common.None, common.Internal, common.Public))
 		}
 		if len(o.protocol) > 0 && (strings.ToLower(o.protocol) != string(common.HTTP) && strings.ToLower(o.protocol) != string(common.HTTPS) && strings.ToLower(o.protocol) != string(common.WS) &&
 			strings.ToLower(o.protocol) != string(common.WSS) && strings.ToLower(o.protocol) != string(common.TCP) && strings.ToLower(o.protocol) != string(common.UDP)) {
@@ -339,44 +368,44 @@ func (o *URLCreateOptions) Run() (err error) {
 			}
 			err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, ExposedPort: o.exposedPort, Kind: o.urlType})
 		} else {
-			containerEndpointMap, err := adapterutils.GetContainerEndpoints(o.devObj.Data)
-			if err != nil {
-				return errors.Wrap(err, "failed to get container endpoint map")
-			}
-			var firstContainer string
-			for containerName, endpointMap := range containerEndpointMap {
-				// save the first container name to store the new endpoint entry
-				if firstContainer == "" {
-					firstContainer = containerName
-				}
-				if _, exist := endpointMap[o.urlName]; exist {
-					return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", o.urlName, containerName)
-				}
-				for _, endpoint := range endpointMap {
-					if int(endpoint.TargetPort) == o.componentPort {
-						// devfile cannot have two endpoints within different containers share the same targetport
-						// it is because containers in a single pod shares the network namespace
-						if len(o.container) > 0 && o.container != containerName {
-							return fmt.Errorf("cannot set URL %v under container %v, TargetPort %v is being used for endpoint %v under container %v", o.urlName, o.container, o.componentPort, endpoint.Name, containerName)
-						}
-						o.container = containerName
-						break
-					}
-				}
-			}
-			if reflect.DeepEqual(containerEndpointMap, map[string]map[string]common.Endpoint{}) {
-				// devfile have no containers with endpoints
-				// pick the first container to store the new enpoint
-				o.container = o.devfileContainers[0].Name
-			}
-			if len(o.container) == 0 {
-				o.container = firstContainer
-			}
+			// containerEndpointMap, err := adapterutils.GetContainerEndpoints(o.devObj.Data)
+			// if err != nil {
+			// 	return errors.Wrap(err, "failed to get container endpoint map")
+			// }
+			// var firstContainer string
+			// for containerName, endpointMap := range containerEndpointMap {
+			// 	// save the first container name to store the new endpoint entry
+			// 	if firstContainer == "" {
+			// 		firstContainer = containerName
+			// 	}
+			// 	if _, exist := endpointMap[o.urlName]; exist {
+			// 		return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", o.urlName, containerName)
+			// 	}
+			// 	for _, endpoint := range endpointMap {
+			// 		if int(endpoint.TargetPort) == o.componentPort {
+			// 			// devfile cannot have two endpoints within different containers share the same targetport
+			// 			// it is because containers in a single pod shares the network namespace
+			// 			if len(o.container) > 0 && o.container != containerName {
+			// 				return fmt.Errorf("cannot set URL %v under container %v, TargetPort %v is being used for endpoint %v under container %v", o.urlName, o.container, o.componentPort, endpoint.Name, containerName)
+			// 			}
+			// 			o.container = containerName
+			// 			break
+			// 		}
+			// 	}
+			// }
+			// if reflect.DeepEqual(containerEndpointMap, map[string]map[string]common.Endpoint{}) {
+			// 	// devfile have no containers with endpoints
+			// 	// pick the first container to store the new enpoint
+			// 	o.container = o.devfileContainers[0].Name
+			// }
+			// if len(o.container) == 0 {
+			// 	o.container = firstContainer
+			// }
 			newEndpointEntry := common.Endpoint{
 				Name:       o.urlName,
 				Path:       o.path,
 				Secure:     o.secureURL,
-				Exposure:   common.ExposureType(strings.ToLower(o.exposure)),
+				Exposure:   common.Public,
 				TargetPort: int32(o.componentPort),
 				Protocol:   common.ProtocolType(strings.ToLower(o.protocol)),
 			}
@@ -449,9 +478,8 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster IP for this URL")
 			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
 			urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "Create a secure URL")
-			urlCreateCmd.Flags().StringVarP(&o.exposure, "exposure", "", "", "URL exposure")
 			urlCreateCmd.Flags().StringVarP(&o.path, "path", "", "", "path for this URL")
-			urlCreateCmd.Flags().StringVarP(&o.protocol, "protocol", "", "", "protocol for this URL")
+			urlCreateCmd.Flags().StringVarP(&o.protocol, "protocol", "", string(common.HTTP), "protocol for this URL")
 			urlCreateCmd.Flags().StringVarP(&o.container, "container", "", "", "container of the endpoint in devfile")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}

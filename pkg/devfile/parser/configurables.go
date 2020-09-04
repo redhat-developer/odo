@@ -236,7 +236,7 @@ func addEndpoints(current []common.Endpoint, other []common.Endpoint) []common.E
 
 			protocol := presentep.Protocol
 			if protocol == "" {
-				// endpoint protocol efault value is http
+				// endpoint protocol default value is http
 				protocol = "http"
 			}
 			// if the target port and protocol match, we add a case where the protocol is not provided and hence we assume that to be "tcp"

@@ -3,6 +3,7 @@ package url
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"text/tabwriter"
 
@@ -56,7 +57,7 @@ func NewURLListOptions() *URLListOptions {
 
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.devfilePath = clicomponent.DevfilePath
+	o.devfilePath = filepath.Join(o.componentContext, clicomponent.DevfilePath)
 	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.devfilePath)
 	if o.isDevFile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
