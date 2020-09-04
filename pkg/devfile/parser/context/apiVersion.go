@@ -47,7 +47,7 @@ func (d *DevfileCtx) SetDevfileAPIVersion() error {
 
 	// Successful
 	d.apiVersion = apiVer
-	klog.V(4).Infof("devfile apiVersion: '%s'", d.apiVersion)
+	klog.V(2).Infof("devfile apiVersion: '%s'", d.apiVersion)
 	return nil
 }
 

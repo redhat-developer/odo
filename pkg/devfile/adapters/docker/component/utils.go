@@ -58,13 +58,13 @@ func (a Adapter) createComponent() (err error) {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", comp.Container.Name, componentName)
 		}
 	}
-	klog.V(4).Infof("Successfully created all containers for component %s", componentName)
+	klog.V(2).Infof("Successfully created all containers for component %s", componentName)
 
 	return nil
 }
 
 func (a Adapter) updateComponent() (componentExists bool, err error) {
-	klog.V(4).Info("The component already exists, attempting to update it")
+	klog.V(2).Info("The component already exists, attempting to update it")
 	componentExists = true
 	componentName := a.ComponentName
 
@@ -142,7 +142,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 					return false, errors.Wrapf(err, "unable to start container for devfile component %s", comp.Container.Name)
 				}
 
-				klog.V(4).Infof("Successfully created container %s for component %s", comp.Container.Image, componentName)
+				klog.V(2).Infof("Successfully created container %s for component %s", comp.Container.Image, componentName)
 				s.End(true)
 
 				// Update componentExists so that we re-sync project and initialize supervisord if required
@@ -175,7 +175,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, comp versionsCommon
 		return errors.Wrapf(err, "unable to start container for devfile component %s", comp.Container.Name)
 	}
 
-	klog.V(4).Infof("Successfully created container %s for component %s", comp.Container.Image, a.ComponentName)
+	klog.V(2).Infof("Successfully created container %s for component %s", comp.Container.Image, a.ComponentName)
 	return nil
 }
 
@@ -450,7 +450,7 @@ func updateComponentWithSupervisord(comp *versionsCommon.DevfileComponent, runCo
 		utils.AddVolumeToContainer(supervisordVolumeName, common.SupervisordMountPath, hostConfig)
 
 		if len(comp.Container.Command) == 0 && len(comp.Container.Args) == 0 {
-			klog.V(4).Infof("Updating container %v entrypoint with supervisord", comp.Container.Name)
+			klog.V(2).Infof("Updating container %v entrypoint with supervisord", comp.Container.Name)
 			comp.Container.Command = append(comp.Container.Command, common.SupervisordBinaryPath)
 			comp.Container.Args = append(comp.Container.Args, "-c", common.SupervisordConfFile)
 		}

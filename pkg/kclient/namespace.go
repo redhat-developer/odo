@@ -101,10 +101,10 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 					watchErrorChannel <- errors.Errorf("watch channel was closed unexpectedly: %+v", val)
 					break
 				}
-				klog.V(4).Infof("Watch event.Type '%s'.", val.Type)
+				klog.V(3).Infof("Watch event.Type '%s'.", val.Type)
 
 				if namespaceStatus, ok := val.Object.(*corev1.Namespace); ok {
-					klog.V(4).Infof("Status of delete of namespace %s is '%s'.", name, namespaceStatus.Status.Phase)
+					klog.V(3).Infof("Status of delete of namespace %s is '%s'.", name, namespaceStatus.Status.Phase)
 					if val.Type == watch.Deleted {
 						namespaceChannel <- namespaceStatus
 						break
@@ -123,7 +123,7 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 
 		select {
 		case val := <-namespaceChannel:
-			klog.V(4).Infof("Namespace %s deleted", val.Name)
+			klog.V(3).Infof("Namespace %s deleted", val.Name)
 			return nil
 		case err := <-watchErrorChannel:
 			return err
@@ -178,7 +178,7 @@ func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName 
 				}
 				if serviceAccount, ok := val.Object.(*corev1.ServiceAccount); ok {
 					if serviceAccount.Name == serviceAccountName {
-						klog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
+						klog.V(3).Infof("Status of creation of service account %s is ready", serviceAccount)
 						return nil
 					}
 				}
