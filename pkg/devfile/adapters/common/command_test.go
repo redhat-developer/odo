@@ -338,11 +338,19 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			name: "Case 8: Valid devfile, has composite command",
 			execCommands: []common.DevfileCommand{
 				{
-					Id: "build",
+					Id: "build1",
 					Exec: &versionsCommon.Exec{
 						CommandLine: commands[0],
 						Component:   components[0],
-						Group:       &versionsCommon.Group{Kind: buildGroup, IsDefault: false},
+						Group:       &versionsCommon.Group{Kind: buildGroup},
+					},
+				},
+				{
+					Id: "build2",
+					Exec: &versionsCommon.Exec{
+						CommandLine: commands[0],
+						Component:   components[0],
+						Group:       &versionsCommon.Group{Kind: buildGroup},
 					},
 				},
 				{
@@ -356,14 +364,14 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			},
 			compCommands: []common.DevfileCommand{
 				{
-					Id: "myComp",
+					Id: "mycomp",
 					Composite: &versionsCommon.Composite{
-						Commands: []string{"build", "run"},
-						Group:    &versionsCommon.Group{Kind: buildGroup},
+						Commands: []string{"build1", "run"},
+						Group:    &versionsCommon.Group{Kind: buildGroup, IsDefault: true},
 					},
 				},
 			},
-			retCommandName: "myComp",
+			retCommandName: "mycomp",
 			requestedType:  []common.DevfileCommandGroupType{buildGroup},
 			wantErr:        false,
 		},
@@ -1590,15 +1598,15 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			buildCommand:     emptyString,
 			runCommand:       emptyString,
 			execCommands:     execCommands,
-			numberOfCommands: 3,
+			numberOfCommands: 2,
 			wantErr:          false,
 		},
 		{
-			name:             "Case 2: Default Init and Build Command, and Provided Run Command",
+			name:             "Case 2: Default Build Command, and Provided Run Command",
 			buildCommand:     emptyString,
 			runCommand:       "customcommand",
 			execCommands:     execCommands,
-			numberOfCommands: 3,
+			numberOfCommands: 2,
 			wantErr:          false,
 		},
 		{
@@ -1618,15 +1626,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			wantErr:          true,
 		},
 		{
-			name:             "Case 5: Provided Wrong Init Command and Provided Build and Run Command",
-			buildCommand:     emptyString,
-			runCommand:       "customcommand",
-			execCommands:     execCommands,
-			numberOfCommands: 1,
-			wantErr:          true,
-		},
-		{
-			name:         "Case 6: Missing Init and Build Command, and Provided Run Command",
+			name:         "Case 5: Missing Build Command, and Provided Run Command",
 			buildCommand: emptyString,
 			runCommand:   "customcommand",
 			execCommands: []common.DevfileCommand{
@@ -1640,56 +1640,6 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 				},
 			},
 			numberOfCommands: 1,
-			wantErr:          false,
-		},
-		{
-			name:         "Case 7: Missing Init Command with provided Build and Run Command",
-			buildCommand: "build command",
-			runCommand:   "run command",
-			execCommands: []common.DevfileCommand{
-				{
-					Id: "build command",
-					Exec: &versionsCommon.Exec{
-						Group:       &common.Group{Kind: buildGroup},
-						Component:   component,
-						CommandLine: command,
-					},
-				},
-				{
-					Id: "run command",
-					Exec: &versionsCommon.Exec{
-						Group:       &common.Group{Kind: runGroup},
-						Component:   component,
-						CommandLine: command,
-					},
-				},
-			},
-			numberOfCommands: 2,
-			wantErr:          false,
-		},
-		{
-			name:         "Case 8: Missing Build Command with provided Run Command",
-			buildCommand: emptyString,
-			runCommand:   "run command",
-			execCommands: []common.DevfileCommand{
-				{
-					Id: "run command",
-					Exec: &versionsCommon.Exec{
-						Group:       &common.Group{Kind: runGroup},
-						Component:   component,
-						CommandLine: command,
-					},
-				},
-			},
-			numberOfCommands: 2,
-			wantErr:          false,
-		},
-		{
-			name:             "Case 9: Optional Init Command with provided Build and Run Command",
-			buildCommand:     "build command",
-			runCommand:       "run command",
-			execCommands:     execCommands,
-			numberOfCommands: 3,
 			wantErr:          false,
 		},
 	}
