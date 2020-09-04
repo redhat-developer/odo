@@ -890,28 +890,33 @@ func componentTests(args ...string) {
 			cmpName := "mynodejs"
 			appName := "app"
 			urlName := "url1"
+			storageName := "storage1"
 
 			// create a s2i component
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName, "--s2i")
 			helper.CmdShouldPass("odo", "url", "create", urlName, "--port", "8080", "--context", context)
+			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", "/data1", "--size", "1Gi", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			helper.Chdir(context)
 
 			// convert it to devfile
-			helper.CmdShouldPass("odo", "utils", "convert-to-devfile")
-			helper.CmdShouldPass("odo", "push")
+			helper.CmdShouldPass("odo", "utils", "convert-to-devfile", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// check the status of devfile component
-			stdout := helper.CmdShouldPass("odo", "list")
+			stdout := helper.CmdShouldPass("odo", "list", "--context", context)
 			helper.MatchAllInOutput(stdout, []string{cmpName, "Devfile Components", "Pushed"})
 
 			// delete the s2i component
-			helper.CmdShouldPass("odo", "delete", "--s2i", "-a", "-f")
+			helper.CmdShouldPass("odo", "delete", "--s2i", "-a", "-f", "--context", context)
 
 			// verify the url
-			stdout = helper.CmdShouldPass("odo", "url", "list")
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
 			helper.MatchAllInOutput(stdout, []string{urlName, "Pushed", "false", "route"})
+			//verify storage
+			stdout = helper.CmdShouldPass("odo", "storage", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, []string{storageName, "Pushed"})
+
 		})
 
 	})

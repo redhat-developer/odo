@@ -96,12 +96,12 @@ func NewConvertOptions() *ConvertOptions {
 // Complete completes ConvertOptions after they've been created
 func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if !util.CheckPathExists(component.ConfigFilePath) {
+	if !util.CheckPathExists(filepath.Join(co.componentContext, component.ConfigFilePath)) {
 		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to convert s2i component to devfile")
 	}
 
 	co.context = genericclioptions.NewContext(cmd)
-	co.componentContext = component.LocalDirectoryDefaultLocation
+	// co.componentContext = component.LocalDirectoryDefaultLocation
 	co.componentName = co.context.LocalConfigInfo.GetName()
 	return nil
 
@@ -153,6 +153,9 @@ func NewCmdConvert(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	genericclioptions.AddContextFlag(convertCmd, &o.componentContext)
+
 	return convertCmd
 }
 
