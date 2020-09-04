@@ -1141,8 +1141,15 @@ func ValidateURL(sourceURL string) error {
 	if err != nil {
 		return err
 	}
+	scheme := u.Scheme
+	user := u.User.Username()
+	host := u.Host
 
-	if len(u.Host) == 0 || len(u.Scheme) == 0 {
+	// Valid URL needs to satisfy the following requirements:
+	// 1. URL has scheme and host components
+	// 2. Scheme, host and user (if applicable) components of the URL shouldn't contain reserved character
+	re := regexp.MustCompile(`[\/;?:@&=+$,]`)
+	if scheme == "" || host == "" || re.MatchString(scheme) || re.MatchString(host) || re.MatchString(user) {
 		return errors.New("URL is invalid")
 	}
 
