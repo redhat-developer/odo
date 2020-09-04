@@ -1,5 +1,5 @@
 [id="readme"]
-= `odo` - Developer-focused CLI for OpenShift and Kubernetes
+= `odo` - Developer-focused CLI for Kubernetes and OpenShift
 :toc: macro
 :toc-title:
 :toclevels: 1
@@ -12,9 +12,9 @@ image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[Li
 [[overview]]
 == Overview
 
-`odo` is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift and Kubernetes.
+`odo`  is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on Kubernetes and OpenShift.
 
-Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts for the developer.
+Existing tools such as `kubectl` and `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts for the developer.
 
 [[key-features]]
 == Key features
@@ -22,119 +22,120 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 `odo` is designed to be simple and concise with the following key features:
 
 * Simple syntax and design centered around concepts familiar to developers, such as projects, applications, and components.
-* Completely client based. No server is required within the cluster for deployment.
+* Completely client based. No additional server other than Kubernetes or OpenShift is required for deployment.
 * Official support for Node.js and Java components.
-* Partial compatibility with languages and frameworks such as Ruby, Perl, PHP, and Python. 
 * Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real time.
 * Lists all the available components and services from the cluster.
 
-[id="odo-supported-languages-and-images"]
-=== Officially supported languages and corresponding container images
+[[core-concepts]]
+== Core concepts
 
-.Supported container images
-[cols=",,,",options="header",]
+Project::
+A project is your source code, tests, and libraries organized in a separate single unit.
+Application::
+An application is a program designed for end users. An application consists of multiple microservices or components that work individually to build the entire application.
+Examples of applications: e-Shop, Hotel Reservation System, Online Booking
+Component::
+A component is a set of Kubernetes resources which host code or data. Each component can be run and deployed separately.
+Examples of components: Warehouse API Backend, Inventory API, Web Frontend, Payment Backend
+Service::
+A service is software that your component links to or depends on.
+Examples of services: MariaDB, MySQL.
+Devfile::
+A portable file responsible for your entire reproducable development environment.
+
+[id="odo-supported-devfiles"]
+=== Official Devfiles
+
+Devfiles describe your development environment link. link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Click here for more information on Devfile.]
+
+.List of Devfiles which are officially supported by odo
+[options="header"]
 |===
-|Language |Container Image |Supported Package Manager |Supported Platform
-|*Node.js*
-|https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-10-rhel7[rhscl/nodejs-10-rhel7]
-|NPM
-|amd64, s390x, ppc64le
+|Language | Devfile Name | Description | Devfile Source | Supported Platform
 
-|
-|https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-12-rhel7[rhscl/nodejs-12-rhel7]
-|NPM
-|amd64, s390x, ppc64le
+| Java
+| java-maven
+| Upstream Maven and OpenJDK 11
+| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-maven/devfile.yaml[java-maven/devfile.yaml]
+| amd64
 
-|
-|https://access.redhat.com/articles/3376841[rhoar-nodejs/nodejs-10]
-|NPM
-|amd64
+| Java
+| java-openliberty
+| Open Liberty microservice in Java      
+| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-openliberty/devfile.yaml[java-openliberty/devfile.yaml]
+| amd64
 
-|
-|https://github.com/sclorg/s2i-nodejs-container[centos/nodejs-10-centos7]
-|NPM
-|amd64
+| Java
+| java-quarkus
+| Upstream Quarkus with Java+GraalVM
+| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-quarkus/devfile.yaml[java-quarkus/devfile.yaml]
+| amd64
 
-|
-|https://github.com/sclorg/s2i-nodejs-container[centos/nodejs-12-centos7]
-|NPM
-|amd64
+| Java
+| java-springboot
+| Spring Boot® using Java 
+| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-springboot/devfile.yaml[java-springboot/devfile.yaml]
+| amd64
 
-|*Java*
-|https://access.redhat.com/containers/#/registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[redhat-openjdk-18/openjdk18-openshift]
-|Maven, Gradle
-|amd64, s390x, ppc64le
+| Node.JS
+| nodejs
+| Stack with NodeJS 12
+| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/nodejs/devfile.yaml[nodejs/devfile.yaml]
+| amd64, s390x, ppc64le
 
-|
-|https://access.redhat.com/containers/#/registry.access.redhat.com/openjdk/openjdk-11-rhel8[openjdk/openjdk-11-rhel8]
-|Maven, Gradle
-|amd64, s390x, ppc64le
-
-|
-|https://access.redhat.com/containers/#/registry.access.redhat.com/openjdk/openjdk-11-rhel7[openjdk/openjdk-11-rhel7]
-|Maven, Gradle
-|amd64, s390x, ppc64le
 |===
-
 [id="odo-listing-available-images"]
-==== Listing available container images
+==== Listing available Devfiles
 
 [NOTE]
 ====
-The list of available container images is sourced from the cluster's internal container registry and external registries associated with the cluster.
+The list of available Devfiles is sourced from the official link:https://github.com/odo-devfiles/registry[odo registry] as well as any other registies added via `odo registry add`.
 ====
 
-To list the available components and associated container images for your cluster:
+To list the available Devfiles:
 
-. Access your cluster. Authentication with `odo login` for Kubernetes clusters is currently not supported. For OpenShift cluster, you can authenticate with `odo login`: 
-+
-----
-$ odo login -u developer -p developer
-----
-
-. List the available `odo` supported and unsupported components and corresponding container images:
-+
 ----------------------------------------------------
 $ odo catalog list components
-Odo Supported OpenShift Components:
-NAME        PROJECT      TAGS      
-java       openshift     8,latest
-nodejs     openshift     10,8,8-RHOAR,latest
-Odo Unsupported OpenShift Components:
-NAME                      PROJECT       TAGS
-dotnet                    openshift     1.0,1.1,2.1,2.2,latest
-fuse7-eap-openshift       openshift     1.3
+Odo Devfile Components:
+NAME                 DESCRIPTION                            REGISTRY
+java-maven           Upstream Maven and OpenJDK 11          DefaultDevfileRegistry
+java-openliberty     Open Liberty microservice in Java      DefaultDevfileRegistry
+java-quarkus         Upstream Quarkus with Java+GraalVM     DefaultDevfileRegistry
+java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
+nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
 ----------------------------------------------------
-+
-The `TAGS` column represents the available image versions, for example, `10` represents the `rhoar-nodejs/nodejs-10` container image.
 
 [[official-documentation]]
 == Official documentation
 
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/installing-odo.html[Installing odo]
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/odo-architecture.html[Odo architecture]
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/creating-a-multicomponent-application-with-odo.html[Creating a multicomponent application with odo]
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/creating-an-application-with-a-database.html[Creating an application with a database]
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/configuring-the-odo-cli.html[Configuring the odo CLI]
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/odo-cli-reference.html[odo CLI reference]
-* link:https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/odo-release-notes.html[odo release notes]
+
+* link:https://odo.dev/docs/installing-odo/[Installing odo]
+* link:https://odo.dev/docs/understanding-odo/[Undestanding odo]
+* link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile using odo]
+* link:https://odo.dev/file-reference/[Devfile file reference]
+* link:https://odo.dev/docs/debugging-applications-in-odo/[Debugging applications in odo]
+* link:https://odo.dev/docs/managing-environment-variables-in-odo/[Managing environment variables]
+* link:https://odo.dev/docs/configuring-the-odo-cli/[Configuring the odo CLI]
+* link:https://odo.dev/docs/odo-architecture/[Architecture of odo]
+* link:https://odo.dev/docs/odo-cli-reference/[odo CLI reference]
+* link:https://odo.dev/docs/operator-hub/[Introduction to Operators]
 
 [[installing-odo]]
 == Installing `odo`
 
-To install on Linux / Windows / macOS follow our guide located on link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/installing-odo.html[docs.openshift.com]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
+To install on Linux / Windows / macOS follow our guide located on link:https://odo.dev/docs/installing-odo[odo.dev]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
 
 [[deploying-your-first-application]]
 == Deploying your first application
 
 Click on the tutorial below to deploy your first `odo` application:
 
-link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
+link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile using odo]
 
 The following demonstration provides an overview of `odo`:
 
-https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn[image:https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn.svg[asciicast]]
+https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicast]]
 
 [[contributing]]
 == Community, discussion, contribution, and support
@@ -184,14 +185,3 @@ These are some of the IDE plugins which use odo:
 == Experimental mode
 
 Want to try out the odo experimental mode? Please read the link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc[document] for more information.
-
-[[glossary]]
-== Glossary
-
-*Application:* An application consists of multiple microservices or components that work individually to build the entire application.
-
-*Component:* A component is similar to a microservice. Multiple components make up an application. A component has different attributes like storage. `odo` supports multiple component types like nodejs, perl, php, python, and ruby.
-
-*Service:* Typically a service is a database or a service that a
-component links to or depends on. For example: MariaDB, Jenkins, MySQL.
-This comes from the OpenShift Service Catalog and must be enabled within your cluster.
