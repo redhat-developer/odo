@@ -146,7 +146,7 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 		// we do not need to restart Hot reload capable commands
 		if componentExists {
 			if restart {
-				klog.V(4).Infof("supervisord stop command to restart or start other command")
+				klog.V(2).Infof("supervisord stop command to restart or start other command")
 				if cmd, err := newSupervisorStopCommand(command, a); cmd != nil {
 					if err != nil {
 						return err
@@ -154,7 +154,7 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 					commands = append(commands, cmd)
 				}
 			} else {
-				klog.V(4).Infof("command is hot reload capable, not restarting %s", defaultCmd)
+				klog.V(2).Infof("command is hot reload capable, not restarting %s", defaultCmd)
 			}
 		}
 

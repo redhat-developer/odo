@@ -27,7 +27,7 @@ const (
 func ComponentExists(client kclient.Client, name string) (bool, error) {
 	deployment, err := client.GetDeploymentByName(name)
 	if kerrors.IsNotFound(err) {
-		klog.V(4).Infof("Deployment %s not found", name)
+		klog.V(2).Infof("Deployment %s not found", name)
 		return false, nil
 	}
 	return deployment != nil, err
@@ -174,7 +174,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			}
 
 			// Always mount the supervisord volume in the run component container
-			klog.V(4).Infof("Updating container %v with supervisord volume mounts", container.Name)
+			klog.V(2).Infof("Updating container %v with supervisord volume mounts", container.Name)
 			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 				Name:      adaptersCommon.SupervisordVolumeName,
 				MountPath: adaptersCommon.SupervisordMountPath,
@@ -184,7 +184,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			// only if the env var is not set in the devfile
 			// This is done, so supervisord can use it in it's program
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
-				klog.V(4).Infof("Updating container %v env with run command", container.Name)
+				klog.V(2).Infof("Updating container %v env with run command", container.Name)
 				var setEnvVariable, command string
 				for _, envVar := range runCommand.Exec.Env {
 					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
@@ -202,7 +202,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			}
 
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != "" {
-				klog.V(4).Infof("Updating container %v env with run command's workdir", container.Name)
+				klog.V(2).Infof("Updating container %v env with run command's workdir", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandRunWorkingDir,
@@ -227,7 +227,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 
 			if !foundMountPath {
 				// Always mount the supervisord volume in the debug component container
-				klog.V(4).Infof("Updating container %v with supervisord volume mounts", container.Name)
+				klog.V(2).Infof("Updating container %v with supervisord volume mounts", container.Name)
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 					Name:      adaptersCommon.SupervisordVolumeName,
 					MountPath: adaptersCommon.SupervisordMountPath,
@@ -238,7 +238,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			// only if the env var is not set in the devfile
 			// This is done, so supervisord can use it in it's program
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebug) {
-				klog.V(4).Infof("Updating container %v env with debug command", container.Name)
+				klog.V(2).Infof("Updating container %v env with debug command", container.Name)
 				var setEnvVariable, command string
 				for _, envVar := range debugCommand.Exec.Env {
 					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
@@ -256,7 +256,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			}
 
 			if debugCommand.Exec.WorkingDir != "" && !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebugWorkingDir) {
-				klog.V(4).Infof("Updating container %v env with debug command's workdir", container.Name)
+				klog.V(2).Infof("Updating container %v env with debug command's workdir", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandDebugWorkingDir,
@@ -265,7 +265,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			}
 
 			if !isEnvPresent(container.Env, adaptersCommon.EnvDebugPort) {
-				klog.V(4).Infof("Updating container %v env with debug command's debugPort", container.Name)
+				klog.V(2).Infof("Updating container %v env with debug command's debugPort", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvDebugPort,
@@ -295,7 +295,7 @@ func GetResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
 
 // overrideContainerArgs overrides the container's entrypoint with supervisord
 func overrideContainerArgs(container *corev1.Container) {
-	klog.V(4).Infof("Updating container %v entrypoint with supervisord", container.Name)
+	klog.V(2).Infof("Updating container %v entrypoint with supervisord", container.Name)
 	container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
 	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 }

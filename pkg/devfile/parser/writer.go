@@ -25,7 +25,7 @@ func (d *DevfileObj) WriteJsonDevfile() error {
 	}
 
 	// Successful
-	klog.V(4).Infof("devfile json created at: '%s'", OutputDevfileJsonPath)
+	klog.V(2).Infof("devfile json created at: '%s'", OutputDevfileJsonPath)
 	return nil
 }
 
@@ -46,6 +46,6 @@ func (d *DevfileObj) WriteYamlDevfile() error {
 	}
 
 	// Successful
-	klog.V(4).Infof("devfile yaml created at: '%s'", OutputDevfileYamlPath)
+	klog.V(2).Infof("devfile yaml created at: '%s'", OutputDevfileYamlPath)
 	return nil
 }

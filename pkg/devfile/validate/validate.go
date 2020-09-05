@@ -34,7 +34,7 @@ func ValidateDevfileData(data interface{}) error {
 	}
 
 	// Successful
-	klog.V(4).Info("Successfully validated devfile sections")
+	klog.V(2).Info("Successfully validated devfile sections")
 	return nil
 
 }

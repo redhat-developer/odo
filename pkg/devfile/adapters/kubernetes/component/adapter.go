@@ -324,7 +324,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 				processedVolumes[vol.Name] = true
 
 				// Generate the PVC Names
-				klog.V(4).Infof("Generating PVC name for %v", vol.Name)
+				klog.V(2).Infof("Generating PVC name for %v", vol.Name)
 				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
 				if err != nil {
 					return err
@@ -336,7 +336,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 					return err
 				}
 				if len(existingPVCName) > 0 {
-					klog.V(4).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
+					klog.V(2).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
 				}
 
@@ -382,17 +382,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-	klog.V(4).Infof("The component name is %v", componentName)
+	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	klog.V(2).Infof("The component name is %v", componentName)
 
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
-		klog.V(4).Info("The component already exists, attempting to update it")
+		klog.V(2).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
-		klog.V(4).Infof("Successfully updated component %v", componentName)
+		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
 		ownerReference := kclient.GenerateOwnerReference(deployment)
@@ -404,7 +404,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 				if err != nil {
 					return err
 				}
-				klog.V(4).Infof("Successfully created Service for component %s", componentName)
+				klog.V(2).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
 			if len(serviceSpec.Ports) > 0 {
@@ -414,7 +414,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 				if err != nil {
 					return err
 				}
-				klog.V(4).Infof("Successfully update Service for component %s", componentName)
+				klog.V(2).Infof("Successfully update Service for component %s", componentName)
 			} else {
 				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
 				if err != nil {
@@ -427,7 +427,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		if err != nil {
 			return err
 		}
-		klog.V(4).Infof("Successfully created component %v", componentName)
+		klog.V(2).Infof("Successfully created component %v", componentName)
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -436,7 +436,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			if err != nil {
 				return err
 			}
-			klog.V(4).Infof("Successfully created Service for component %s", componentName)
+			klog.V(2).Infof("Successfully created Service for component %s", componentName)
 		}
 
 	}
@@ -477,7 +477,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if kerrors.IsForbidden(err) {
-		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
+		klog.V(2).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
 		podSpinner.End(false)
 		log.Warningf("%v", err)

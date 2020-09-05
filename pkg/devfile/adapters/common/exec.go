@@ -24,7 +24,7 @@ func ExecuteCommand(client ExecClient, compInfo ComponentInfo, command []string,
 
 	var cmdOutput string
 
-	klog.V(4).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
+	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
 
 	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
 	stdoutCompleteChannel := startReaderGoroutine(stdoutReader, show, &cmdOutput, consoleOutputStdout)
@@ -40,7 +40,7 @@ func ExecuteCommand(client ExecClient, compInfo ComponentInfo, command []string,
 
 	if err != nil {
 		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
-		klog.V(4).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
+		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
 
 		return errors.Wrapf(err, "unable to exec command %v: \n%v", command, cmdOutput)
 	}
@@ -104,7 +104,7 @@ func CreateConsoleOutputWriterAndChannel() (*io.PipeWriter, chan []string) {
 			line, _, err := bufReader.ReadLine()
 			if err != nil {
 				if err != io.EOF {
-					klog.V(4).Infof("Unexpected error on reading container output reader: %v", err)
+					klog.V(2).Infof("Unexpected error on reading container output reader: %v", err)
 				}
 
 				break
