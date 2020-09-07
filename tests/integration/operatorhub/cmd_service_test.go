@@ -371,6 +371,10 @@ spec:
 		})
 
 		JustAfterEach(func() {
+			helper.CmdShouldPass("oc", "describe", "pod", "-n", project)
+			helper.CmdShouldPass("oc", "get", "deployment", "-n", project)
+			helper.CmdShouldPass("oc", "describe", "deployment", "-n", project)
+			helper.CmdShouldPass("oc", "describe", "replicaset", "-n", project)
 			cleanPreSetup()
 			helper.Chdir(currentWorkingDirectory)
 			helper.DeleteDir(context)
@@ -439,7 +443,7 @@ spec:
 
 			stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))
-			helper.CmdShouldPass("odo", "push")
+			helper.CmdShouldPass("odo", "push", "--v", "4")
 
 			// verify that sbr is deleted
 			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
