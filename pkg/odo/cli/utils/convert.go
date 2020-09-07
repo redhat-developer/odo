@@ -101,7 +101,6 @@ func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []strin
 	}
 
 	co.context = genericclioptions.NewContext(cmd)
-	// co.componentContext = component.LocalDirectoryDefaultLocation
 	co.componentName = co.context.LocalConfigInfo.GetName()
 	return nil
 

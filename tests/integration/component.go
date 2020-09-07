@@ -882,7 +882,6 @@ func componentTests(args ...string) {
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.Chdir(originalDir)
 			os.Unsetenv("ODO_EXPERIMENTAL")
 		})
 
