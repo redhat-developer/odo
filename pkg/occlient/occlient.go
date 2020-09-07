@@ -3025,6 +3025,10 @@ func (c *Client) BuildPortForwardReq(podName string) *rest.Request {
 		SubResource("portforward")
 }
 
+func (c *Client) GetKubeClient() kubernetes.Interface {
+	return c.kubeClient
+}
+
 // GetVolumeMountsFromDC returns a list of all volume mounts in the given DC
 func (c *Client) GetVolumeMountsFromDC(dc *appsv1.DeploymentConfig) []corev1.VolumeMount {
 	var volumeMounts []corev1.VolumeMount

@@ -1345,12 +1345,7 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 }
 
 func GetComponentState(client *occlient.Client, componentName, applicationName string) State {
-	deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
-	if err != nil {
-		return StateTypeUnknown
-	}
-	_, err = client.GetDeploymentConfigFromName(deploymentName)
-
+	_, err := client.GetKubeClient().AppsV1().Deployments(client.Namespace).Get(componentName, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return StateTypeNotPushed
 	} else if err != nil {
