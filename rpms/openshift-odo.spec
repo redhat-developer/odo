@@ -23,8 +23,8 @@ URL:            https://github.com/openshift/odo/tree/%{odo_cli_version}
 Source0:        %{source_tar}
 BuildRequires:  gcc
 BuildRequires:  golang >= %{golang_version}
-Provides:       %{package_name}
-Obsoletes:      %{package_name}
+Provides:       %{package_name} = %{odo_version}
+Obsoletes:      %{package_name} <= %{odo_version}
 
 %description
 odo is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
@@ -69,8 +69,8 @@ cp -avrf dist/release/SHA256_SUM %{buildroot}%{_datadir}/%{name}-redistributable
 Summary:        %{product_name} client CLI binaries for Linux, macOS and Windows
 BuildRequires:  gcc
 BuildRequires:  golang >= %{golang_version}
-Provides:       %{package_name}-redistributable
-Obsoletes:      %{package_name}-redistributable
+Provides:       %{package_name}-redistributable = %{odo_version}
+Obsoletes:      %{package_name}-redistributable <= %{odo_version}
 
 %description redistributable
 %{product_name} client odo cross platform binaries for Linux, macOS and Windows.
