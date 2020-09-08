@@ -78,22 +78,27 @@ func NewContextCompletion(command *cobra.Command) *Context {
 }
 
 // Client returns an oc client configured for this command's options
-func Client(command *cobra.Command) *occlient.Client {
-	return client(command)
+func Client(command *cobra.Command) (c *occlient.Client) {
+	c, err := client(command)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	return
 }
 
 // ClientWithConnectionCheck returns an oc client configured for this command's options but forcing the connection check status
 // to the value of the provided bool, skipping it if true, checking the connection otherwise
-func ClientWithConnectionCheck(command *cobra.Command, skipConnectionCheck bool) *occlient.Client {
-	return client(command)
+func ClientWithConnectionCheck(command *cobra.Command, skipConnectionCheck bool) (c *occlient.Client) {
+	c, err := client(command)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	return
 }
 
 // client creates an oc client based on the command flags
-func client(command *cobra.Command) *occlient.Client {
-	client, err := occlient.New()
-	util.LogErrorAndExit(err, "")
-
-	return client
+func client(command *cobra.Command) (*occlient.Client, error) {
+	return occlient.New()
 }
 
 // kClient creates an kclient based on the command flags
@@ -245,6 +250,10 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 
 // resolveProject resolves project
 func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvider) {
+	/*
+		if client == nil {
+			return localConfiguration.GetProject()
+		}*/
 	var namespace string
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
@@ -272,6 +281,7 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
+
 	}
 	o.Client.Namespace = namespace
 	o.Project = namespace
@@ -367,11 +377,15 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	// Create a new occlient
-	client := client(command)
+	client, err := client(command)
+
+	if err != nil && !ignoreMissingConfiguration {
+		util.LogErrorAndExit(err, "")
+	}
 
 	// Create a new kclient
 	KClient, err := kclient.New()
-	if err != nil {
+	if err != nil && !ignoreMissingConfiguration {
 		util.LogErrorAndExit(err, "")
 	}
 
@@ -381,6 +395,16 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		util.LogErrorAndExit(err, "")
 	}
 
+	/*
+		namespace := "default"
+		// Resolve project
+		if ns := resolveProject(command, client, localConfiguration); ns != "" {
+			namespace = ns
+		}
+
+		// resolve application
+		app := resolveApp(command, createAppIfNeeded, localConfiguration)
+	*/
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
@@ -435,7 +459,9 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 		// Create a new kubernetes client
 		internalCxt.KClient = kClient(command)
-		internalCxt.Client = client(command)
+		if client, err := client(command); err != nil {
+			internalCxt.Client = client
+		}
 
 		// Gather the environment information
 		internalCxt.resolveNamespace(envInfo)

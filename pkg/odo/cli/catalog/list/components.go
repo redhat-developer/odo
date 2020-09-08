@@ -44,8 +44,18 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 
 	tasks := util.NewConcurrentTasks(2)
 
-	if !pushtarget.IsPushTargetDocker() {
-		o.Context = genericclioptions.NewContext(cmd)
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+		if o.catalogDevfileList.DevfileRegistries == nil {
+			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+		}
+		if err != nil {
+			errChannel <- err
+		}
+	}})
+
+	o.Context = genericclioptions.NewContext(cmd, true)
+	if !pushtarget.IsPushTargetDocker() && o.Client != nil {
 		supported, err := o.Client.IsImageStreamSupported()
 		if err != nil {
 			klog.V(4).Info("ignoring error while checking imagestream support:", err.Error())
@@ -62,16 +72,6 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 			}})
 		}
 	}
-
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
-		if o.catalogDevfileList.DevfileRegistries == nil {
-			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-		}
-		if err != nil {
-			errChannel <- err
-		}
-	}})
 
 	return tasks.Run()
 }
