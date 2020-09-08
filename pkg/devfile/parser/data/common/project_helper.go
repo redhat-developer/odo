@@ -6,13 +6,12 @@ import "fmt"
 // returns 3 strings: remote name, remote URL, reference(revision)
 func (ps GitLikeProjectSource) GetDefaultSource() (string, string, string, error) {
 	// get git checkout information
-	// if there are multiple remotes we are ignoring them, as we don't need to setup git repostiory as it is defined here,
+	// if there are multiple remotes we are ignoring them, as we don't need to setup git repository as it is defined here,
 	// the only thing that we need is to download the content
-	var remoteName, remoteURL string
-	reference := "HEAD"
+	var remoteName, remoteURL, revision string
 
 	if ps.CheckoutFrom != nil && ps.CheckoutFrom.Revision != "" {
-		reference = ps.CheckoutFrom.Revision
+		revision = ps.CheckoutFrom.Revision
 	}
 	if len(ps.Remotes) > 1 {
 		if ps.CheckoutFrom == nil {
@@ -34,6 +33,6 @@ func (ps GitLikeProjectSource) GetDefaultSource() (string, string, string, error
 
 	}
 
-	return remoteName, remoteURL, reference, nil
+	return remoteName, remoteURL, revision, nil
 
 }
