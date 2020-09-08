@@ -244,7 +244,8 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should fail to create the devfile component for an invalid devfile", func() {
 				helper.CmdShouldPass("touch", "./devfile.yaml")
-				helper.CmdShouldFail("odo", "create", "--devfile", "./devfile.yaml")
+				output := helper.CmdShouldFail("odo", "create", "--devfile", "./devfile.yaml")
+				helper.MatchAllInOutput(output, []string{"apiVersion or schemaVersion not present in devfile"})
 			})
 		})
 
