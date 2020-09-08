@@ -118,7 +118,7 @@ func (o *LinkOptions) Validate() (err error) {
 		return err
 	}
 
-	// Wat?
+	// Return if we are using Devfile, no need to validate anything else below
 	if util.CheckPathExists(o.commonLinkOptions.devfilePath) {
 		return
 	}

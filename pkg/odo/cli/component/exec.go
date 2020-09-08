@@ -63,7 +63,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 
 	eo.devfilePath = filepath.Join(eo.componentContext, devFile)
 
-	// if experimental mode is enabled and devfile is present
+	// If Devfile is present
 	if util.CheckPathExists(eo.devfilePath) {
 		eo.componentOptions.Context = genericclioptions.NewDevfileContext(cmd)
 
@@ -73,7 +73,9 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 		}
 		return nil
 	}
-	return
+
+	// If Devfile does not exist, it is implied that we are running s2i
+	return fmt.Errorf("exec command does not work with s2i components")
 }
 
 // Validate validates the exec parameters

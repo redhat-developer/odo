@@ -172,13 +172,13 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
 
-	// If the experimental flag is set and devfile is present, then we do *not* validate
-	// TODO: We need to clean this section up a bit.. We should also validate Devfile here
-	// too.
+	// If Devfile is present we do not need to validate the below S2I checks
+	// TODO: Perhaps one day move Devfile validation to here instead?
 	if util.CheckPathExists(po.DevfilePath) {
 		return nil
 	}
 
+	// Validation for S2i components
 	log.Info("Validation")
 
 	// First off, we check to see if the component exists. This is ran each time we do `odo push`
