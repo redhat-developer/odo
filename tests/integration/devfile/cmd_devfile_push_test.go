@@ -801,7 +801,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
-			Expect(output).To(ContainSubstring("unsupported devfile version"))
+			Expect(output).To(ContainSubstring("this Devfile version is not supported"))
 		})
 
 	})

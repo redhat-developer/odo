@@ -181,36 +181,37 @@ type Composite struct {
 	Parallel bool `json:"parallel,omitempty"`
 }
 
-// Git Project's Git source
-type Git struct {
+type CheckoutFrom struct {
+	// The revision to checkout from. Should be branch name, tag or commit id.
+	// Default branch is used if missing or specified revision is not found.
+	// +optional
+	Revision string `json:"revision,omitempty" yaml:"revision,omitempty"`
+	// The remote name should be used as init. Required if there are more than one remote configured
+	// +optional
+	Remote string `json:"remote,omitempty" yaml:"remote,omitempty"`
+}
 
-	// The branch to check
-	Branch string `json:"branch,omitempty" yaml:"branch,omitempty"`
+type GitLikeProjectSource struct {
+	// The remotes map which should be initialized in the git project. Must have at least one remote configured
+	Remotes map[string]string `json:"remotes,omitempty" yaml:"remotes,omitempty"`
 
-	// Project's source location address. Should be URL for git and github located projects, or; file:// for zip
-	Location string `json:"location,omitempty" yaml:"location,omitempty"`
+	// Defines from what the project should be checked out. Required if there are more than one remote configured
+	// +optional
+	CheckoutFrom *CheckoutFrom `json:"checkoutFrom,omitempty" yaml:"checkoutFrom,omitempty"`
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty" yaml:"sparseCheckoutDir,omitempty"`
+}
 
-	// The tag or commit id to reset the checked out branch to
-	StartPoint string `json:"startPoint,omitempty" yaml:"startPoint,omitempty"`
+// Git Project's Git source
+// Github Project's GitHub source
+type Git struct {
+	GitLikeProjectSource `json:",inline" yaml:",inline"`
 }
 
 // Github Project's GitHub source
 type Github struct {
-
-	// The branch to check
-	Branch string `json:"branch,omitempty" yaml:"branch,omitempty"`
-
-	// Project's source location address. Should be URL for git and github located projects, or; file:// for zip
-	Location string `json:"location,omitempty" yaml:"location,omitempty"`
-
-	// Part of project to populate in the working directory.
-	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty" yaml:"sparseCheckoutDir,omitempty"`
-
-	// The tag or commit id to reset the checked out branch to
-	StartPoint string `json:"startPoint,omitempty" yaml:"startPoint,omitempty"`
+	GitLikeProjectSource `json:",inline" yaml:",inline"`
 }
 
 // Group Defines the group this command is part of
@@ -272,9 +273,6 @@ type DevfileParent struct {
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
 	Components []DevfileComponent `json:"components,omitempty" yaml:"components,omitempty"`
 
-	// Bindings of commands to events. Each command is referred-to by its name.
-	Events DevfileEvents `json:"events,omitempty" yaml:"events,omitempty"`
-
 	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
 	StarterProjects []DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 }
@@ -329,9 +327,6 @@ type DevfileStarterProject struct {
 
 	// Description of a starter project
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-
-	// Description of a starter project
-	MarkdownDescription string `json:"markdownDescription,omitempty" yaml:"markdownDescription,omitempty"`
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
 	ClonePath string `json:"clonePath,omitempty" yaml:"clonePath,omitempty"`

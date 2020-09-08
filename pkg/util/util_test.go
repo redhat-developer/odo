@@ -1683,7 +1683,7 @@ func TestDownloadFileInMemory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data, err := DownloadFileInMemory(tt.url)
+			data, err := DownloadFileInMemory(HTTPRequestParams{URL: tt.url})
 			if tt.url != "invalid" && err != nil {
 				t.Errorf("Failed to download file with error %s", err)
 			}

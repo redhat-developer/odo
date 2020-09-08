@@ -2,8 +2,9 @@ package data
 
 import (
 	"fmt"
-	"k8s.io/klog"
 	"reflect"
+
+	"k8s.io/klog"
 )
 
 // String converts supportedApiVersion type to string type
@@ -30,7 +31,7 @@ func GetDevfileJSONSchema(version string) (string, error) {
 	// Fetch json schema from the devfileApiVersionToJSONSchema map
 	schema, ok := devfileApiVersionToJSONSchema[supportedApiVersion(version)]
 	if !ok {
-		return "", fmt.Errorf("unable to find schema for apiVersion '%s'", version)
+		return "", fmt.Errorf("unable to find schema for apiVersion '%s', this Devfile version is not supported by odo", version)
 	}
 	klog.V(2).Infof("devfile apiVersion '%s' is supported in odo", version)
 

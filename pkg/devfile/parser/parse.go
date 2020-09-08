@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
+	parser "github.com/openshift/odo/pkg/devfile/parser/context"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 
 	"reflect"
@@ -74,6 +75,22 @@ func ParseFromURL(url string) (d DevfileObj, err error) {
 	return parseDevfile(d)
 }
 
+// ParseFromData func parses and validates the devfile integrity.
+// Creates devfile context and runtime objects
+func ParseFromData(data []byte) (d DevfileObj, err error) {
+	d.Ctx = parser.DevfileCtx{}
+	err = d.Ctx.SetDevfileContentFromBytes(data)
+	if err != nil {
+		return d, errors.Wrap(err, "failed to set devfile content from bytes")
+	}
+	err = d.Ctx.PopulateFromRaw()
+	if err != nil {
+		return d, err
+	}
+
+	return parseDevfile(d)
+}
+
 func parseParent(d DevfileObj) error {
 	parent := d.Data.GetParent()
 
@@ -91,11 +108,6 @@ func parseParent(d DevfileObj) error {
 	}
 
 	err = parentData.OverrideCommands(d.Data.GetParent().Commands)
-	if err != nil {
-		return err
-	}
-
-	err = parentData.OverrideEvents(d.Data.GetParent().Events)
 	if err != nil {
 		return err
 	}
