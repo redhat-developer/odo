@@ -855,6 +855,43 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		})
 	})
+	Context("Verify source code sync location", func() {
+
+		It("Should sync to the correct dir in container if project is present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+
+			// devfile with clonePath set in project field
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(context, "devfile.yaml"))
+			// we do not need to check source code location inside the container, as the expected workingDir
+			// is already set in devfile.yaml, odo push would fail if it is not synced to correct location
+			// so we are only checking odo push should pass to verify location.
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context, "--v", "5")
+
+			// reset clonePath and change the workdir accordingly, it should sync to project name
+			helper.ReplaceString("devfile.yaml", "clonePath: webapp/ ", "clonepath: ")
+			helper.ReplaceString("devfile.yaml", "${PROJECTS_ROOT}/webapp ", "${PROJECTS_ROOT}/nodeshift")
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+		})
+
+		It("Should sync to the correct dir in container if multiple project is present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+		})
+
+		It("Should sync to the correct dir in container if no project is present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+		})
+
+	})
 
 	Context("push with listing the devfile component", func() {
 

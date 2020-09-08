@@ -1,0 +1,39 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+projects:
+  - name: nodeshift
+    clonePath: webapp/
+    git:
+      location: "https://github.com/nodeshift/nodeshift"
+starterProjects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      sourceMapping: apps/
+      endpoints:
+        - name: "3000/tcp"
+          targetPort: 3000
+      mountSources: true
+commands:
+  - exec:
+      id: devbuild
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}/webapp
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: devrun
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}/webapp
+      group:
+        kind: run
+        isDefault: true
