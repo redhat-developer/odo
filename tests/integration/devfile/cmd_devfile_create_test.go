@@ -241,6 +241,11 @@ var _ = Describe("odo devfile create command tests", func() {
 			It("should fail to create the devfile component with --devfile points to different devfile", func() {
 				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "/path/to/file")
 			})
+
+			It("should fail to create the devfile component for an invalid devfile", func() {
+				helper.CmdShouldPass("touch", "./devfile.yaml")
+				helper.CmdShouldFail("odo", "create", "--devfile", "./devfile.yaml")
+			})
 		})
 
 		Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {
