@@ -80,9 +80,7 @@ const (
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	//DefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
-	// TODO: just for testing change back before merging
-	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/kadel/registry/project-location"
+	DefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
 
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
 	DefaultRegistryCacheTime = 15

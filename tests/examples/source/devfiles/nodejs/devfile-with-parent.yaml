@@ -3,7 +3,7 @@ metadata:
   name: nodejs
   version: 1.0.0
 parent:
-  uri: https://raw.githubusercontent.com/kadel/registry/project-location/devfiles/nodejs/devfile.yaml
+  uri: https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml
 commands:
   - exec:
       id: devBuild
