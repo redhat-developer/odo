@@ -939,12 +939,12 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 }
 
 func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) Component {
-	component := getComponentFrom(info, "devfile")
-	if len(component.Name) > 0 {
+	if info.Exists() {
 		devfile, err := devfileParser.Parse(info.GetDevfilePath())
 		if err != nil {
 			panic(err)
 		}
+		component := getComponentFrom(info, "devfile: "+devfile.Data.GetMetadata().Name)
 		for _, cmp := range devfile.Data.GetComponents() {
 			if cmp.Container != nil {
 				for _, env := range cmp.Container.Env {
