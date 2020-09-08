@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -53,6 +54,7 @@ type CreateOptions struct {
 	now               bool
 	forceS2i          bool
 	*PushOptions
+	devObj          parser.DevfileObj
 	devfileMetadata DevfileMetadata
 }
 
@@ -885,19 +887,14 @@ func (co *CreateOptions) Validate() (err error) {
 
 // Downloads first starter project from list of starter projects in devfile
 // Currenty type git with a non github url is not supported
-func (co *CreateOptions) downloadStarterProject(projectPassed string, interactive bool) error {
+func (co *CreateOptions) downloadStarterProject(projectPassed string, interactive bool) (err error) {
 	if projectPassed == "" && !interactive {
 		return nil
 	}
 
 	var project *common.DevfileStarterProject
-	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(DevfilePath)
-	if err != nil {
-		return err
-	}
 	// Retrieve starter projects
-	projects := devObj.Data.GetStarterProjects()
+	projects := co.devObj.Data.GetStarterProjects()
 
 	if interactive {
 		project = getStarterProjectInteractiveMode(projects)
@@ -1062,6 +1059,12 @@ func (co *CreateOptions) devfileRun() (err error) {
 	}
 
 	if util.CheckPathExists(DevfilePath) {
+		// Parse devfile and validate
+		co.devObj, err = devfile.ParseAndValidate(DevfilePath)
+		if err != nil {
+			return err
+		}
+
 		err = co.downloadStarterProject(co.devfileMetadata.starter, co.interactive)
 		if err != nil {
 			return errors.Wrap(err, "failed to download project for devfile component")
