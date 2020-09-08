@@ -17,10 +17,10 @@ var _ = Describe("odo devfile create command tests", func() {
 	const envFile = ".odo/env/env.yaml"
 	var namespace, context, contextDevfile, cmpName, currentWorkingDirectory, devfilePath, originalKubeconfig string
 
-	// Using program commmand according to cliRunner in devfile
+	// Using program command according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
 
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
