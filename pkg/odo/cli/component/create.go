@@ -973,9 +973,8 @@ func downloadStarterProject(devObj parser.DevfileObj, projectPassed string, inte
 		// we don't want to download project be a git repo
 		err = os.RemoveAll(filepath.Join(path, ".git"))
 		if err != nil {
-			// we don't need to return (fail) if this happends
+			// we don't need to return (fail) if this happens
 			log.Warning("Unable to delete .git from cloned starter project")
-			downloadSpinner.End(true)
 		}
 		downloadSpinner.End(true)
 
