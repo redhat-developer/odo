@@ -140,7 +140,6 @@ func (d *Devfile200) GetCommands() map[string]common.DevfileCommand {
 		// cases efficiently without being error prone
 		// we also convert the odo push commands from build-command and run-command flags
 		commands[command.SetIDToLower()] = command
-
 	}
 
 	return commands

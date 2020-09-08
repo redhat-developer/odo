@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"strings"
 
-	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
 )
 
 // validateCommands validates all the devfile commands
-func validateCommands(commands []common.DevfileCommand, components []common.DevfileComponent) (err error) {
+func validateCommands(commands map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
-	commandsMap := adapterCommon.GetCommandsMap(commands)
+	// commandsMap := adapterCommon.GetCommandsMap(commands)
 
 	for _, command := range commands {
-		err = validateCommand(command, commandsMap, components)
+		err = validateCommand(command, commands, components)
 		if err != nil {
-			return errors.Wrap(err, "test")
+			// return errors.Wrapf(err, "command %s error", command.GetID())
 			// return fmt.Errorf("command %s has validation error: %v", command.GetID(), err)
+			return err
 		}
 	}
 
@@ -29,7 +29,7 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 
 	// type must be exec or composite
 	if command.Exec == nil && command.Composite == nil {
-		return fmt.Errorf("command must be of type \"exec\" or \"composite\"")
+		return fmt.Errorf("command %q must be of type \"exec\" or \"composite\"", command.GetID())
 	}
 
 	// If the command is a composite command, need to validate that it is valid
@@ -41,12 +41,12 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 
 	// component must be specified
 	if command.Exec.Component == "" {
-		return fmt.Errorf("exec commands must reference a component")
+		return fmt.Errorf("exec command %q must reference a component", command.GetID())
 	}
 
 	// must specify a command
 	if command.Exec.CommandLine == "" {
-		return fmt.Errorf("exec commands must have a command")
+		return fmt.Errorf("exec command %q must have a command", command.GetID())
 	}
 
 	// must map to a container component
@@ -59,7 +59,7 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 		}
 	}
 	if !isComponentValid {
-		return fmt.Errorf("the command does not map to a supported component")
+		return fmt.Errorf("the command %q does not map to a supported component", command.GetID())
 	}
 
 	return

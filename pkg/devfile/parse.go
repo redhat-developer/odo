@@ -65,10 +65,6 @@ func ParseAndValidate(path string) (d parser.DevfileObj, err error) {
 
 	// odo specific validation on devfile content
 	err = validate.ValidateDevfileData(d.Data)
-	if err != nil {
-		return d, err
-	}
 
-	// Successful
-	return d, nil
+	return d, err
 }

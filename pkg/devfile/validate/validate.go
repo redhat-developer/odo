@@ -12,7 +12,7 @@ import (
 // ValidateDevfileData validates whether sections of devfile are odo compatible
 func ValidateDevfileData(data interface{}) error {
 	var components []common.DevfileComponent
-	var commands []common.DevfileCommand
+	var commands map[string]common.DevfileCommand
 
 	switch d := data.(type) {
 	case *v200.Devfile200:
@@ -26,7 +26,7 @@ func ValidateDevfileData(data interface{}) error {
 
 		// Validate Commands
 		if err := validateCommands(commands, components); err != nil {
-			return fmt.Errorf("test2: %v", err)
+			return err
 		}
 	default:
 		return fmt.Errorf("unknown devfile type %T", d)
