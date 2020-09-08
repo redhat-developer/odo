@@ -12,6 +12,7 @@
 %global source_dir openshift-odo-%{odo_version}-%{odo_release}
 %global source_tar %{source_dir}.tar.gz
 %global gopath  %{_builddir}/gocode
+%global _missing_build_ids_terminate_build 0
 
 Name:           %{package_name}
 Version:        %{odo_version}
@@ -40,7 +41,7 @@ export GOPATH=%{gopath}
 cd %{gopath}/src/github.com/openshift/odo
 %ifarch x86_64
 # go test -race is not supported on all arches
-make test
+GOFLAGS=-mod=vendor make test
 %endif
 make prepare-release
 unlink %{gopath}/src/github.com/openshift/odo
