@@ -30,7 +30,7 @@ func YAMLToJSON(data []byte) ([]byte, error) {
 	}
 
 	// Successful
-	klog.V(4).Infof("converted devfile YAML to JSON")
+	klog.V(2).Infof("converted devfile YAML to JSON")
 	return data, nil
 }
 

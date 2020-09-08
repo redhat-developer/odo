@@ -82,7 +82,7 @@ func parseParent(d DevfileObj) error {
 		return err
 	}
 
-	klog.V(4).Infof("overriding data of devfile with URI: %v", parent.Uri)
+	klog.V(2).Infof("overriding data of devfile with URI: %v", parent.Uri)
 
 	// override the parent's components, commands, projects and events
 	err = parentData.OverrideComponents(d.Data.GetParent().Components)
@@ -110,7 +110,7 @@ func parseParent(d DevfileObj) error {
 		return err
 	}
 
-	klog.V(4).Infof("adding data of devfile with URI: %v", parent.Uri)
+	klog.V(2).Infof("adding data of devfile with URI: %v", parent.Uri)
 
 	// since the parent's data has been overriden
 	// add the items back to the current devfile

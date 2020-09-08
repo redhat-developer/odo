@@ -99,7 +99,7 @@ clean:
 goget-tools: goget-ginkgo
 	mkdir -p $(shell go env GOPATH)/bin
 	GOFLAGS='' go get github.com/frapposelli/wwhrd@v0.3.0
-	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.4.0
+	GOFLAGS='' go get github.com/securego/gosec/v2/cmd/gosec@v2.4.0
 	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
 
@@ -296,40 +296,41 @@ test-cmd-devfile-env:
 test-cmd-devfile-config:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile config command tests" tests/integration/devfile/
 
-# Run odo push docker devfile command tests
-.PHONY: test-cmd-docker-devfile-push
-test-cmd-docker-devfile-push:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile push command tests" tests/integration/devfile/docker/
+# Fix https://github.com/openshift/odo/issues/3714 to uncomment docker make target
+# # Run odo push docker devfile command tests
+# .PHONY: test-cmd-docker-devfile-push
+# test-cmd-docker-devfile-push:
+# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile push command tests" tests/integration/devfile/docker/
 
-# Run odo watch docker devfile command tests
-.PHONY: test-cmd-docker-devfile-watch
-test-cmd-docker-devfile-watch:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile watch command tests" tests/integration/devfile/docker/
+# # Run odo watch docker devfile command tests
+# .PHONY: test-cmd-docker-devfile-watch
+# test-cmd-docker-devfile-watch:
+# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile watch command tests" tests/integration/devfile/docker/
 
-# Run odo url docker devfile command tests
-.PHONY: test-cmd-docker-devfile-url
-test-cmd-docker-devfile-url:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url command tests" tests/integration/devfile/docker/
+# # Run odo url docker devfile command tests
+# .PHONY: test-cmd-docker-devfile-url
+# test-cmd-docker-devfile-url:
+# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url command tests" tests/integration/devfile/docker/
 
-# Run odo docker devfile delete command tests
-.PHONY: test-cmd-docker-devfile-delete
-test-cmd-docker-devfile-delete:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
+# # Run odo docker devfile delete command tests
+# .PHONY: test-cmd-docker-devfile-delete
+# test-cmd-docker-devfile-delete:
+# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
 
-# Run odo catalog devfile command tests
-.PHONY: test-cmd-docker-devfile-catalog
-test-cmd-docker-devfile-catalog:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile catalog command tests" tests/integration/devfile/docker/
+# # Run odo catalog devfile command tests
+# .PHONY: test-cmd-docker-devfile-catalog
+# test-cmd-docker-devfile-catalog:
+# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile catalog command tests" tests/integration/devfile/docker/
 
-# Run odo url docker devfile command tests
-.PHONY: test-cmd-docker-devfile-url-pushtarget
-test-cmd-docker-devfile-url-pushtarget:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url pushtarget command tests" tests/integration/devfile/docker/
+# # Run odo url docker devfile command tests
+# .PHONY: test-cmd-docker-devfile-url-pushtarget
+# test-cmd-docker-devfile-url-pushtarget:
+# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url pushtarget command tests" tests/integration/devfile/docker/
 
-# Run odo test docker devfile command tests
-.PHONY: test-cmd-docker-devfile-test
-test-cmd-docker-devfile-test:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile test command tests" tests/integration/devfile/docker/
+# # Run odo test docker devfile command tests
+# .PHONY: test-cmd-docker-devfile-test
+# test-cmd-docker-devfile-test:
+# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile test command tests" tests/integration/devfile/docker/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch

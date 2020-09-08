@@ -17,25 +17,25 @@ func validateEvents(data data.DevfileData) error {
 
 	switch {
 	case len(events.PreStart) > 0:
-		klog.V(4).Info("Validating preStart events")
+		klog.V(2).Info("Validating preStart events")
 		if preStartErr := isEventValid(data, events.PreStart, "preStart"); preStartErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", preStartErr.Error())
 		}
 		fallthrough
 	case len(events.PostStart) > 0:
-		klog.V(4).Info("Validating postStart events")
+		klog.V(2).Info("Validating postStart events")
 		if postStartErr := isEventValid(data, events.PostStart, "postStart"); postStartErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", postStartErr.Error())
 		}
 		fallthrough
 	case len(events.PreStop) > 0:
-		klog.V(4).Info("Validating preStop events")
+		klog.V(2).Info("Validating preStop events")
 		if preStopErr := isEventValid(data, events.PreStop, "preStop"); preStopErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", preStopErr.Error())
 		}
 		fallthrough
 	case len(events.PostStop) > 0:
-		klog.V(4).Info("Validating postStop events")
+		klog.V(2).Info("Validating postStop events")
 		if postStopErr := isEventValid(data, events.PostStop, "postStop"); postStopErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", postStopErr.Error())
 		}
@@ -67,7 +67,7 @@ func isEventValid(data data.DevfileData, eventNames []string, eventType string) 
 				// Check if the devfile command is valid
 				err := adapterCommon.ValidateCommand(data, command)
 				if err != nil {
-					klog.V(4).Infof("command %s is not valid: %s", command.GetID(), err.Error())
+					klog.V(2).Infof("command %s is not valid: %s", command.GetID(), err.Error())
 					eventErrorMsg[strings.ToLower(eventName)] = append(eventErrorMsg[strings.ToLower(eventName)], err.Error())
 				}
 				break
@@ -75,20 +75,20 @@ func isEventValid(data data.DevfileData, eventNames []string, eventType string) 
 		}
 
 		if !isEventPresent {
-			klog.V(4).Infof("%s type event %s does not map to a valid devfile command", eventType, eventName)
+			klog.V(2).Infof("%s type event %s does not map to a valid devfile command", eventType, eventName)
 			eventErrorMsg[strings.ToLower(eventName)] = append(eventErrorMsg[strings.ToLower(eventName)], fmt.Sprintf("event %s does not map to a valid devfile command", eventName))
 		}
 	}
 
 	for eventName, errors := range eventErrorMsg {
 		if len(errors) > 0 {
-			klog.V(4).Infof("errors found for event %s belonging to %s: %s", eventName, eventType, strings.Join(errors, ","))
+			klog.V(2).Infof("errors found for event %s belonging to %s: %s", eventName, eventType, strings.Join(errors, ","))
 			eventErrors += fmt.Sprintf("\n%s is invalid: %s", eventName, strings.Join(errors, ","))
 		}
 	}
 
 	if len(eventErrors) > 0 {
-		klog.V(4).Infof("errors found for event type %s", eventType)
+		klog.V(2).Infof("errors found for event type %s", eventType)
 		return &InvalidEventError{eventType: eventType, errorMsg: eventErrors}
 	}
 
