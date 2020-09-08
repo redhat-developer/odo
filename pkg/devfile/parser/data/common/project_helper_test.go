@@ -21,7 +21,7 @@ func TestGitLikeProjectSource_GetDefaultSource(t *testing.T) {
 			},
 			want1:   "origin",
 			want2:   "url",
-			want3:   "HEAD",
+			want3:   "",
 			wantErr: false,
 		},
 		{
@@ -48,7 +48,7 @@ func TestGitLikeProjectSource_GetDefaultSource(t *testing.T) {
 			},
 			want1:   "upstream",
 			want2:   "urlU",
-			want3:   "HEAD",
+			want3:   "",
 			wantErr: false,
 		},
 		{
