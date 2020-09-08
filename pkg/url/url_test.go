@@ -1,7 +1,6 @@
 package url
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -920,12 +919,12 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     false,
 							},
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-1",
 								TargetPort: 9090,
 								Secure:     false,
@@ -1002,12 +1001,12 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-local-0",
 								TargetPort: 8080,
 								Secure:     false,
 							},
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-local-1",
 								TargetPort: 9090,
 								Secure:     false,
@@ -1076,12 +1075,12 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-0",
 								TargetPort: 8080,
 								Secure:     false,
 							},
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-1",
 								TargetPort: 9090,
 								Secure:     false,
@@ -1115,12 +1114,12 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-local-0",
 								TargetPort: 8080,
 								Secure:     false,
 							},
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-local-1",
 								TargetPort: 9090,
 								Secure:     false,
@@ -1184,7 +1183,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1225,7 +1224,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example-local-0",
 								TargetPort: 8080,
 								Secure:     false,
@@ -1315,7 +1314,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1355,7 +1354,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1397,7 +1396,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1439,7 +1438,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1470,7 +1469,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1500,37 +1499,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
-								Name:       "example",
-								TargetPort: 8080,
-								Secure:     true,
-								Exposure:   versionsCommon.Internal,
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs:     []URL{},
-		},
-		{
-			name:          "env has route defined with same port, but endpoint port defined in devfile is internally exposed",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
-			existingEnvInfoURLs: []envinfo.EnvInfoURL{
-				{
-					Name: "example",
-					Kind: envinfo.ROUTE,
-				},
-			},
-			containerComponents: []versionsCommon.DevfileComponent{
-				{
-					Container: &versionsCommon.Container{
-						Name: "container1",
-						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1560,7 +1529,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     true,
@@ -1585,7 +1554,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     false,
@@ -1609,7 +1578,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     false,
@@ -1651,7 +1620,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     false,
@@ -1688,7 +1657,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     false,
@@ -1731,7 +1700,7 @@ func TestPush(t *testing.T) {
 					Container: &versionsCommon.Container{
 						Name: "container1",
 						Endpoints: []versionsCommon.Endpoint{
-							versionsCommon.Endpoint{
+							{
 								Name:       "example",
 								TargetPort: 8080,
 								Secure:     false,
@@ -2946,20 +2915,6 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
 			}
-			retval, err := fs.ReadFile(parser.OutputDevfileYamlPath)
-			if err != nil {
-				t.Errorf("Unexpected err from ReadFile: %v", err)
-			}
-			jsonval, err := devfileCtx.YAMLToJSON(retval)
-			if err != nil {
-				t.Errorf("Unexpected err from YAMLToJSON: %v", err)
-			}
-			var newData testingutil.TestDevfileData
-
-			err = json.Unmarshal(jsonval, &newData)
-			if err != nil {
-				t.Errorf("Unexpected err from json.Unmarshal: %v", err)
-			}
 			if !reflect.DeepEqual(tt.devObj.Data.GetComponents(), tt.wantComponents) {
 				t.Errorf("Expected: %v, got %v", tt.wantComponents, tt.devObj.Data.GetComponents())
 			}
@@ -3169,20 +3124,6 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
-			}
-			retval, err := fs.ReadFile(parser.OutputDevfileYamlPath)
-			if err != nil {
-				t.Errorf("Unexpected err from ReadFile: %v", err)
-			}
-			jsonval, err := devfileCtx.YAMLToJSON(retval)
-			if err != nil {
-				t.Errorf("Unexpected err from YAMLToJSON: %v", err)
-			}
-			var newData testingutil.TestDevfileData
-
-			err = json.Unmarshal(jsonval, &newData)
-			if err != nil {
-				t.Errorf("Unexpected err from json.Unmarshal: %v", err)
 			}
 			if !reflect.DeepEqual(tt.devObj.Data.GetComponents(), tt.wantComponents) {
 				t.Errorf("Expected: %v, got %v", tt.wantComponents, tt.devObj.Data.GetComponents())

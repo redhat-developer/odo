@@ -127,7 +127,7 @@ func (o *URLDeleteOptions) Run() (err error) {
 					return err
 				}
 			} else {
-				log.Successf("URL %s removed from the env file", o.urlName)
+				log.Successf("URL %s removed from component %s", o.urlName, o.EnvSpecificInfo.GetName())
 				log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
 			}
 		} else {
