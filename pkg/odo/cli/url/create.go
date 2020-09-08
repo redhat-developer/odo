@@ -163,7 +163,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 				return err
 			}
 			if len(containers) == 0 {
-				return fmt.Errorf("No valid components found in the devfile")
+				return fmt.Errorf("no valid components found in the devfile")
 			}
 			compWithEndpoint := 0
 			for _, c := range containers {
@@ -174,11 +174,11 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 					}
 				}
 				if compWithEndpoint > 1 {
-					return fmt.Errorf("Devfile should only have one component containing endpoint")
+					return fmt.Errorf("devfile should only have one component containing endpoint")
 				}
 			}
 			if compWithEndpoint == 0 {
-				return fmt.Errorf("No valid component with an endpoint found in the devfile")
+				return fmt.Errorf("no valid component with an endpoint found in the devfile")
 			}
 			o.componentPort, err = url.GetValidPortNumber(componentName, o.urlPort, portList)
 			if err != nil {
@@ -191,7 +191,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			o.urlType = envinfo.DOCKER
 		} else {
 			if o.urlPort == -1 {
-				return fmt.Errorf("Port must be provided to create an endpoint entry in devfile")
+				return fmt.Errorf("port must be provided to create an endpoint entry in devfile")
 			}
 			o.componentPort = o.urlPort
 			if len(args) != 0 {
@@ -203,7 +203,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			foundContainer := false
 			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
 			if len(containerComponents) == 0 {
-				return fmt.Errorf("No valid components found in the devfile")
+				return fmt.Errorf("no valid components found in the devfile")
 			}
 			// map TargetPort with containerName
 			containerPortMap := make(map[int]string)
@@ -221,7 +221,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 				}
 			}
 			if len(o.container) > 0 && !foundContainer {
-				return fmt.Errorf("The container specified: %v does not exist in devfile", o.container)
+				return fmt.Errorf("the container specified: %v does not exist in devfile", o.container)
 			}
 			if containerName, exist := containerPortMap[o.componentPort]; exist {
 				if len(o.container) > 0 && o.container != containerName {

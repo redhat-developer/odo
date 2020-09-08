@@ -53,7 +53,7 @@ func ConvertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 		for _, c := range containerPorts {
 			if c.Name == endpoint.Name {
 				// the name has to be unique within a single container since it is considered as the URL name
-				return nil, fmt.Errorf("Devfile contains multiple endpoint entries with same name: %v", endpoint.Name)
+				return nil, fmt.Errorf("devfile contains multiple endpoint entries with same name: %v", endpoint.Name)
 			}
 		}
 		containerPorts = append(containerPorts, corev1.ContainerPort{
@@ -80,12 +80,12 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 				for _, curPort := range container.Ports {
 					if curPort.Name == containerPort.Name {
 						// the name has to be unique across containers since it is considered as the URL name
-						return nil, fmt.Errorf("Devfile contains multiple endpoint entries with same name: %v", containerPort.Name)
+						return nil, fmt.Errorf("devfile contains multiple endpoint entries with same name: %v", containerPort.Name)
 					}
 					if curPort.ContainerPort == containerPort.ContainerPort {
 						// the same TargetPort present in different containers
 						// because containers in a single pod shares the network namespace
-						return nil, fmt.Errorf("Devfile contains multiple containers with same TargetPort: %v", containerPort.ContainerPort)
+						return nil, fmt.Errorf("devfile contains multiple containers with same TargetPort: %v", containerPort.ContainerPort)
 					}
 				}
 			}
