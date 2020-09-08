@@ -1137,19 +1137,17 @@ func CheckKubeConfigExist() bool {
 
 // ValidateURL validates the URL
 func ValidateURL(sourceURL string) error {
-	u, err := url.Parse(sourceURL)
+	// Valid URL needs to satisfy the following requirements:
+	// 1. URL has scheme and host components
+	// 2. Scheme, host of the URL shouldn't contain reserved character
+	url, err := url.ParseRequestURI(sourceURL)
 	if err != nil {
 		return err
 	}
-	scheme := u.Scheme
-	user := u.User.Username()
-	host := u.Host
+	host := url.Host
 
-	// Valid URL needs to satisfy the following requirements:
-	// 1. URL has scheme and host components
-	// 2. Scheme, host and user (if applicable) components of the URL shouldn't contain reserved character
-	re := regexp.MustCompile(`[\/;?:@&=+$,]`)
-	if scheme == "" || host == "" || re.MatchString(scheme) || re.MatchString(host) || re.MatchString(user) {
+	re := regexp.MustCompile(`[:\/\?#\[\]@]`)
+	if host == "" || re.MatchString(host) {
 		return errors.New("URL is invalid")
 	}
 

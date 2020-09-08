@@ -1766,17 +1766,12 @@ func TestValidateURL(t *testing.T) {
 		},
 		{
 			name:    "Case 4: Invalid URL - Host contains reserved character",
-			url:     "http://$$,,",
+			url:     "http://??##",
 			wantErr: true,
 		},
 		{
 			name:    "Case 5: Invalid URL - Scheme contains reserved character",
 			url:     "$$$,,://www.example.com",
-			wantErr: true,
-		},
-		{
-			name:    "Case 6: Invalid URL - User contains reserved character",
-			url:     "http://$$$,,@server.com",
 			wantErr: true,
 		},
 	}
