@@ -243,8 +243,11 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 
 			It("should fail to create the devfile component for an invalid devfile", func() {
-				helper.CmdShouldPass("touch", "./devfile.yaml")
-				output := helper.CmdShouldFail("odo", "create", "--devfile", "./devfile.yaml")
+				// Delete the devfile that was copied in as part of setup
+				helper.DeleteFile("devfile.yaml")
+
+				helper.CmdShouldPass("touch", "devfile.yaml")
+				output := helper.CmdShouldFail("odo", "create", "mycomp", "--devfile", "devfile.yaml")
 				helper.MatchAllInOutput(output, []string{"apiVersion or schemaVersion not present in devfile"})
 			})
 		})
@@ -262,7 +265,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 
 			It("should successfully create the devfile component with valid specifies URL path", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/elsony/devfile-registry/master/devfiles/nodejs/devfile.yaml")
+				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml")
 			})
 
 			It("should fail to create the devfile component with invalid file system path", func() {
