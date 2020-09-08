@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"strings"
@@ -45,25 +46,44 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 	return json.Unmarshal(d, cfd)
 }
 
-// loadStoragesFromClientAndLocalConfig collects information about storages in localconfig and cluster.
-func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, componentDesc *Component) error {
+// loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
+func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, envinfo *envinfo.EnvSpecificInfo, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, componentDesc *Component) error {
 	var storages storage.StorageList
 	var err error
+
+	isDevfile := envinfo != nil
+	var devfile devfileParser.DevfileObj
+	if isDevfile {
+		devfile, err = devfileParser.Parse(envinfo.GetDevfilePath())
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	// if component is pushed call ListWithState which gets storages from localconfig and cluster
 	// this result is already in mc readable form
 	if componentDesc.Status.State == StateTypePushed {
-		storages, err = storage.ListStorageWithState(client, localConfigInfo, componentName, applicationName)
+		if isDevfile {
+			storages, err = storage.DevfileList(kClient, devfile.Data, envinfo.GetName())
+		} else {
+			storages, err = storage.ListStorageWithState(client, localConfigInfo, componentName, applicationName)
+		}
 		if err != nil {
 			return err
 		}
 	} else {
-		// otherwise simply fetch storagelist from localconfig
-		storageLocal, err := localConfigInfo.StorageList()
-		if err != nil {
-			return err
+		// otherwise simply fetch storagelist locally
+		if isDevfile {
+			storages = storage.GetLocalDevfileStorage(devfile.Data)
+			storages = storage.GetMachineReadableFormatForList(storages.Items)
+		} else {
+			storageLocal, err := localConfigInfo.StorageList()
+			if err != nil {
+				return err
+			}
+			// convert to machine readable format
+			storages = storage.ConvertListLocalToMachine(storageLocal)
 		}
-		// convert to machine readable format
-		storages = storage.ConvertListLocalToMachine(storageLocal)
 	}
 	cfd.Spec.Storage = storages
 	return nil
@@ -142,7 +162,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	}
 	cfd.Spec.URL = urls
 
-	err = cfd.loadStoragesFromClientAndLocalConfig(client, localConfigInfo, componentName, applicationName, &componentDesc)
+	err = cfd.loadStoragesFromClientAndLocalConfig(client, kClient, envInfo, localConfigInfo, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
 	}
@@ -198,7 +218,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 	// URL
 	if len(cfd.Spec.URL.Items) > 0 {
 		var output string
-
+		// if the component is not pushed
 		for i, componentURL := range cfd.Spec.URL.Items {
 			if componentURL.Status.State == urlpkg.StateTypePushed {
 				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, "", true), componentURL.Spec.Port)
@@ -214,11 +234,8 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 		}
 
 		// Cut off the last newline and output
-		if len(output) > 0 {
-			output = output[:len(output)-1]
-			log.Describef("URLs:\n", output)
-		}
-
+		output = output[:len(output)-1]
+		log.Describef("URLs:\n", output)
 	}
 
 	// Linked components
