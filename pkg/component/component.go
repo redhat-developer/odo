@@ -933,7 +933,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		for _, localStorage := range localConfig.GetStorage() {
 			component.Spec.Storage = append(component.Spec.Storage, localStorage.Name)
 		}
-		return *component, nil
+		return component, nil
 	}
 	return Component{}, nil
 }
@@ -953,12 +953,12 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) Component {
 			}
 		}
 
-		return *component
+		return component
 	}
 	return Component{}
 }
 
-func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) *Component {
+func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Component {
 	if info.Exists() {
 		component := getMachineReadableFormat(info.GetName(), componentType)
 
@@ -977,9 +977,9 @@ func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) *C
 			}
 		}
 
-		return &component
+		return component
 	}
-	return &Component{}
+	return Component{}
 }
 
 // ListIfPathGiven lists all available component in given path directory
