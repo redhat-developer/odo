@@ -620,8 +620,8 @@ func devfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 	return StorageList{Items: storage}, nil
 }
 
-// getLocalDevfileStorage lists the storage from the devfile
-func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
+// GetLocalDevfileStorage lists the storage from the devfile
+func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 	volumeSizeMap := make(map[string]string)
 	for _, component := range devfileData.GetComponents() {
 		if component.Volume == nil {
@@ -652,7 +652,7 @@ func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 
 // DevfileList lists the storage from the local devfile and cluster with their respective state
 func DevfileList(kClient *kclient.Client, devfileData data.DevfileData, componentName string) (StorageList, error) {
-	localStorage := getLocalDevfileStorage(devfileData)
+	localStorage := GetLocalDevfileStorage(devfileData)
 
 	clusterStorage, err := devfileListMounted(kClient, componentName)
 	if err != nil {
