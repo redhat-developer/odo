@@ -57,7 +57,7 @@ func (o *ListOptions) Run() (err error) {
 	}
 
 	registryList := cfg.OdoSettings.RegistryList
-	if len(*registryList) == 0 {
+	if registryList == nil || len(*registryList) == 0 {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
 	}
 

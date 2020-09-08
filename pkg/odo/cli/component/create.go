@@ -1113,15 +1113,19 @@ func (co *CreateOptions) devfileRun() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
-	if util.CheckPathExists(co.DevfilePath) {
-		if !co.forceS2i && co.devfileMetadata.devfileSupport {
-			return co.devfileRun()
-		}
+
+	// By default we run Devfile
+	if !co.forceS2i && co.devfileMetadata.devfileSupport {
+		return co.devfileRun()
 	}
+
+	// If not, we run s2i (if the --s2i parameter has been passed in).
+	// It's implied that we have passed it in if Devfile did not run above
 	err = co.s2iRun()
 	if err != nil {
 		return err
 	}
+
 	if log.IsJSON() {
 		var componentDesc component.Component
 		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
