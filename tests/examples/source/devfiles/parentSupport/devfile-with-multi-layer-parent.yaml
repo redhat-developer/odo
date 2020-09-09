@@ -5,20 +5,20 @@ metadata:
 parent:
   uri: http://localhost:(-1)/devfile-middle-layer.yaml
   components:
-    - container:
-        name: runtime
+    - name: runtime
+      container:
         env:
           - name: ODO_TEST_ENV_2
             value: ENV_VALUE_2
           - name: ODO_TEST_ENV_3
             value: ENV_VALUE_3
   commands:
-    - exec:
-        id: devBuild
+    - id: devBuild
+      exec:
         commandLine: touch blah.js
 commands:
-  - exec:
-      id: build
+  - id: build
+    exec:
       component: runtime
       commandLine: touch new-blah.js
       workingDir: /project

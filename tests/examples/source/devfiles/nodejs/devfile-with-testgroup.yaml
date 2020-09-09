@@ -7,45 +7,45 @@ starterProjects:
       remotes:
         origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       mountSources: true
 commands:
-  - exec:
-      id: devbuild
+  - id: devbuild
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: devrun
+  - id: devrun
+    exec:
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
-  - exec:
-      id: test1
+  - id: test1
+    exec:
       component: runtime
       commandLine: "mkdir test1"
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: test
         isDefault: true
-  - exec:
-      id: test2
+  - id: test2
+    exec:
       component: runtime
       commandLine: "mkdir test2"
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: test
-  - composite:
-         id: compositetest
+  - id: compositetest
+    composite:
          label: Build and Mkdir
          commands:
            - test1

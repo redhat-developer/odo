@@ -7,8 +7,8 @@ starterProjects:
       remotes:
         origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       env:
@@ -19,16 +19,16 @@ components:
           targetPort: 3000
       mountSources: true
 commands:
-  - exec:
-      id: devbuild
+  - id: devbuild
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: devrun
+  - id: devrun
+    exec:
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}

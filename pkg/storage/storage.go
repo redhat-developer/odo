@@ -630,7 +630,7 @@ func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 		if component.Volume.Size == "" {
 			component.Volume.Size = common.DefaultVolumeSize
 		}
-		volumeSizeMap[component.Volume.Name] = component.Volume.Size
+		volumeSizeMap[component.Name] = component.Volume.Size
 	}
 
 	components := devfileData.GetComponents()
@@ -642,7 +642,7 @@ func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 		for _, volumeMount := range component.Container.VolumeMounts {
 			size, ok := volumeSizeMap[volumeMount.Name]
 			if ok {
-				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, volumeMount.Path, component.Container.Name))
+				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, volumeMount.Path, component.Name))
 			}
 		}
 	}

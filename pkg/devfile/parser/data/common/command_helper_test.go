@@ -15,8 +15,9 @@ func TestGetID(t *testing.T) {
 		{
 			name: "Case 1: Exec command ID",
 			command: DevfileCommand{
+				Id: "exec1",
 				Exec: &Exec{
-					Id: "exec1",
+					Component: "nodejs",
 				},
 			},
 			want: "exec1",
@@ -24,8 +25,9 @@ func TestGetID(t *testing.T) {
 		{
 			name: "Case 2: Composite command ID",
 			command: DevfileCommand{
+				Id: "composite1",
 				Composite: &Composite{
-					Id: "composite1",
+					Parallel: false,
 				},
 			},
 			want: "composite1",
@@ -57,8 +59,8 @@ func TestGetGroup(t *testing.T) {
 		{
 			name: "Case 1: Exec command group",
 			command: DevfileCommand{
+				Id: "exec1",
 				Exec: &Exec{
-					Id: "exec1",
 					Group: &Group{
 						IsDefault: true,
 						Kind:      RunCommandGroupType,
@@ -73,8 +75,8 @@ func TestGetGroup(t *testing.T) {
 		{
 			name: "Case 2: Composite command group",
 			command: DevfileCommand{
+				Id: "composite1",
 				Composite: &Composite{
-					Id: "composite1",
 					Group: &Group{
 						IsDefault: true,
 						Kind:      BuildCommandGroupType,
@@ -113,8 +115,8 @@ func TestGetExecComponent(t *testing.T) {
 		{
 			name: "Case 1: Exec component present",
 			command: DevfileCommand{
+				Id: "exec1",
 				Exec: &Exec{
-					Id:        "exec1",
 					Component: "component1",
 				},
 			},
@@ -123,9 +125,8 @@ func TestGetExecComponent(t *testing.T) {
 		{
 			name: "Case 2: Exec component absent",
 			command: DevfileCommand{
-				Exec: &Exec{
-					Id: "exec1",
-				},
+				Id:   "exec1",
+				Exec: &Exec{},
 			},
 			want: "",
 		},
@@ -156,8 +157,8 @@ func TestGetExecCommandLine(t *testing.T) {
 		{
 			name: "Case 1: Exec command line present",
 			command: DevfileCommand{
+				Id: "exec1",
 				Exec: &Exec{
-					Id:          "exec1",
 					CommandLine: "commandline1",
 				},
 			},
@@ -166,9 +167,8 @@ func TestGetExecCommandLine(t *testing.T) {
 		{
 			name: "Case 2: Exec command line absent",
 			command: DevfileCommand{
-				Exec: &Exec{
-					Id: "exec1",
-				},
+				Id:   "exec1",
+				Exec: &Exec{},
 			},
 			want: "",
 		},
@@ -199,8 +199,8 @@ func TestGetExecWorkingDir(t *testing.T) {
 		{
 			name: "Case 1: Exec working dir present",
 			command: DevfileCommand{
+				Id: "exec1",
 				Exec: &Exec{
-					Id:         "exec1",
 					WorkingDir: "workingdir1",
 				},
 			},
@@ -209,9 +209,8 @@ func TestGetExecWorkingDir(t *testing.T) {
 		{
 			name: "Case 2: Exec working dir absent",
 			command: DevfileCommand{
-				Exec: &Exec{
-					Id: "exec1",
-				},
+				Id:   "exec1",
+				Exec: &Exec{},
 			},
 			want: "",
 		},
@@ -242,18 +241,16 @@ func TestIsComposite(t *testing.T) {
 		{
 			name: "Case 1: Exec command",
 			command: DevfileCommand{
-				Exec: &Exec{
-					Id: "exec1",
-				},
+				Id:   "exec1",
+				Exec: &Exec{},
 			},
 			want: false,
 		},
 		{
 			name: "Case 2: composite command",
 			command: DevfileCommand{
-				Composite: &Composite{
-					Id: "comp1",
-				},
+				Id:        "comp1",
+				Composite: &Composite{},
 			},
 			want: true,
 		},

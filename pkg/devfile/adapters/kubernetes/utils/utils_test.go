@@ -115,7 +115,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		debugCommand            string
 		debugPort               int
 		containers              []corev1.Container
-		execCommands            []common.Exec
+		execCommands            []common.DevfileCommand
 		componentType           common.DevfileComponentType
 		expectRunCommand        string
 		expectDebugCommand      string
@@ -135,12 +135,14 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 			},
 			componentType:           common.ContainerComponentType,
@@ -161,11 +163,13 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					Group:       &execRunGroup,
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group:       &execRunGroup,
+					},
 				},
 			},
 			componentType:           common.ContainerComponentType,
@@ -184,12 +188,14 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 			},
 			componentType:           common.ContainerComponentType,
@@ -208,13 +214,15 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          "customcommand",
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Id: "customcommand",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 			},
 			componentType:           common.ContainerComponentType,
@@ -233,12 +241,14 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 			},
 			componentType:           common.ContainerComponentType,
@@ -249,7 +259,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 
 		{
 			name:         "Case: empty debug command",
-			runCommand:   "customRunCommand",
+			runCommand:   "customruncommand",
 			debugCommand: emptyString,
 			debugPort:    5858,
 			containers: []corev1.Container{
@@ -266,19 +276,23 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          "customRunCommand",
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Id: "customruncommand",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 				{
-					CommandLine: debugCommand,
-					Component:   debugComponent,
-					WorkingDir:  workDir,
-					Group:       &execDebugGroup,
+					Exec: &common.Exec{
+						CommandLine: debugCommand,
+						Component:   debugComponent,
+						WorkingDir:  workDir,
+						Group:       &execDebugGroup,
+					},
 				},
 			},
 			componentType:           common.ContainerComponentType,
@@ -300,19 +314,23 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 				{
-					Id:          "customdebugcommand",
-					CommandLine: debugCommand,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execDebugGroup,
+					Id: "customdebugcommand",
+					Exec: &common.Exec{
+						CommandLine: debugCommand,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execDebugGroup,
+					},
 				},
 			},
 			componentType:           common.ContainerComponentType,
@@ -340,22 +358,26 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          "run",
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Id: "run",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 				{
-					Id:          "debug",
-					CommandLine: debugCommand,
-					Component:   debugComponent,
-					WorkingDir:  workDir,
-					Group: &versionsCommon.Group{
-						IsDefault: true,
-						Kind:      versionsCommon.BuildCommandGroupType,
+					Id: "debug",
+					Exec: &common.Exec{
+						CommandLine: debugCommand,
+						Component:   debugComponent,
+						WorkingDir:  workDir,
+						Group: &versionsCommon.Group{
+							IsDefault: true,
+							Kind:      versionsCommon.BuildCommandGroupType,
+						},
 					},
 				},
 			},
@@ -367,7 +389,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		},
 		{
 			name:       "Case: custom run command with single environment variable",
-			runCommand: "customRunCommand",
+			runCommand: "customruncommand",
 			containers: []corev1.Container{
 				{
 					Name:            component,
@@ -376,17 +398,19 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          "customRunCommand",
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
-					Env: []versionsCommon.Env{
-						{
-							Name:  "env1",
-							Value: "value1",
+					Id: "customruncommand",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+						Env: []versionsCommon.Env{
+							{
+								Name:  "env1",
+								Value: "value1",
+							},
 						},
 					},
 				},
@@ -398,7 +422,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		},
 		{
 			name:       "Case: custom run command with multiple environment variable",
-			runCommand: "customRunCommand",
+			runCommand: "customruncommand",
 			containers: []corev1.Container{
 				{
 					Name:            component,
@@ -407,21 +431,23 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          "customRunCommand",
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
-					Env: []versionsCommon.Env{
-						{
-							Name:  "env1",
-							Value: "value1",
-						},
-						{
-							Name:  "env2",
-							Value: "value2 with space",
+					Id: "customruncommand",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+						Env: []versionsCommon.Env{
+							{
+								Name:  "env1",
+								Value: "value1",
+							},
+							{
+								Name:  "env2",
+								Value: "value2 with space",
+							},
 						},
 					},
 				},
@@ -444,23 +470,27 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 				{
-					Id:          "customdebugcommand",
-					CommandLine: debugCommand,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execDebugGroup,
-					Env: []versionsCommon.Env{
-						{
-							Name:  "env1",
-							Value: "value1",
+					Id: "customdebugcommand",
+					Exec: &common.Exec{
+						CommandLine: debugCommand,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execDebugGroup,
+						Env: []versionsCommon.Env{
+							{
+								Name:  "env1",
+								Value: "value1",
+							},
 						},
 					},
 				},
@@ -484,27 +514,31 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execRunGroup,
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execRunGroup,
+					},
 				},
 				{
-					Id:          "customdebugcommand",
-					CommandLine: debugCommand,
-					Component:   component,
-					WorkingDir:  workDir,
-					Group:       &execDebugGroup,
-					Env: []versionsCommon.Env{
-						{
-							Name:  "env1",
-							Value: "value1",
-						},
-						{
-							Name:  "env2",
-							Value: "value2 with space",
+					Id: "customdebugcommand",
+					Exec: &common.Exec{
+						CommandLine: debugCommand,
+						Component:   component,
+						WorkingDir:  workDir,
+						Group:       &execDebugGroup,
+						Env: []versionsCommon.Env{
+							{
+								Name:  "env1",
+								Value: "value1",
+							},
+							{
+								Name:  "env2",
+								Value: "value2 with space",
+							},
 						},
 					},
 				},
@@ -522,17 +556,18 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				Data: &testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: component,
 							Container: &versionsCommon.Container{
-								Name: component,
+								SourceMapping: "",
 							},
 						},
 						{
+							Name: debugComponent,
 							Container: &versionsCommon.Container{
-								Name: debugComponent,
-							},
+								SourceMapping: ""},
 						},
 					},
-					ExecCommands: tt.execCommands,
+					Commands: tt.execCommands,
 				},
 			}
 
@@ -559,12 +594,12 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			envDebugWorkDirMatched := false
 			envDebugPortMatched := false
 
-			if tt.execCommands[0].WorkingDir == "" {
+			if tt.execCommands[0].Exec.WorkingDir == "" {
 				// if workdir is not present, dont test for matching the env
 				envWorkDirMatched = true
 			}
 
-			if len(tt.execCommands) >= 2 && tt.execCommands[1].WorkingDir == "" {
+			if len(tt.execCommands) >= 2 && tt.execCommands[1].Exec.WorkingDir == "" {
 				// if workdir is not present, dont test for matching the env
 				envDebugWorkDirMatched = true
 			}
@@ -582,7 +617,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 							if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == tt.expectRunCommand {
 								envRunMatched = true
 							}
-							if tt.execCommands[0].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == tt.execCommands[0].WorkingDir {
+							if tt.execCommands[0].Exec.WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == tt.execCommands[0].Exec.WorkingDir {
 								envWorkDirMatched = true
 							}
 
@@ -593,7 +628,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 									envDebugMatched = true
 								}
 								// check if the debug command's workingDir env was set properly
-								if tt.execCommands[1].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandDebugWorkingDir && envVar.Value == tt.execCommands[1].WorkingDir {
+								if tt.execCommands[1].Exec.WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandDebugWorkingDir && envVar.Value == tt.execCommands[1].Exec.WorkingDir {
 									envDebugWorkDirMatched = true
 								}
 								// check if the debug command's debugPort env was set properly
@@ -642,9 +677,9 @@ func TestGetPortExposure(t *testing.T) {
 			},
 			containerComponents: []common.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &common.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []common.Endpoint{
 							{
 								Name:       urlName,
@@ -661,9 +696,9 @@ func TestGetPortExposure(t *testing.T) {
 			wantMap: map[int32]common.ExposureType{},
 			containerComponents: []common.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &common.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 					},
 				},
 			},
@@ -675,9 +710,9 @@ func TestGetPortExposure(t *testing.T) {
 			},
 			containerComponents: []common.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &common.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []common.Endpoint{
 							{
 								Name:       urlName,
@@ -701,9 +736,9 @@ func TestGetPortExposure(t *testing.T) {
 			},
 			containerComponents: []common.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &common.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []common.Endpoint{
 							{
 								Name:       urlName,
@@ -727,9 +762,9 @@ func TestGetPortExposure(t *testing.T) {
 			},
 			containerComponents: []common.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &common.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []common.Endpoint{
 							{
 								Name:       urlName,
@@ -755,9 +790,9 @@ func TestGetPortExposure(t *testing.T) {
 			},
 			containerComponents: []common.DevfileComponent{
 				{
+					Name: "testcontainer1",
 					Container: &common.Container{
 						Image: "quay.io/nodejs-12",
-						Name:  "testcontainer1",
 						Endpoints: []common.Endpoint{
 							{
 								Name:       urlName,
@@ -772,8 +807,8 @@ func TestGetPortExposure(t *testing.T) {
 					},
 				},
 				{
+					Name: "testcontainer2",
 					Container: &common.Container{
-						Name: "testcontainer2",
 						Endpoints: []common.Endpoint{
 							{
 								Name:       urlName2,
@@ -852,33 +887,41 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 		testingutil.CreateFakeContainer("container2"),
 	}
 
-	execCommands := []versionsCommon.Exec{
+	execCommands := []versionsCommon.DevfileCommand{
 		{
-			Id:          "exec1",
-			CommandLine: "execcommand1",
-			WorkingDir:  "execworkdir1",
-			Component:   "container1",
+			Id: "exec1",
+			Exec: &versionsCommon.Exec{
+				CommandLine: "execcommand1",
+				WorkingDir:  "execworkdir1",
+				Component:   "container1",
+			},
 		},
 		{
-			Id:          "exec2",
-			CommandLine: "execcommand2",
-			WorkingDir:  "",
-			Component:   "container1",
+			Id: "exec2",
+			Exec: &versionsCommon.Exec{
+				CommandLine: "execcommand2",
+				WorkingDir:  "",
+				Component:   "container1",
+			},
 		},
 		{
-			Id:          "exec3",
-			CommandLine: "execcommand3",
-			WorkingDir:  "execworkdir3",
-			Component:   "container2",
+			Id: "exec3",
+			Exec: &versionsCommon.Exec{
+				CommandLine: "execcommand3",
+				WorkingDir:  "execworkdir3",
+				Component:   "container2",
+			},
 		},
 	}
 
-	compCommands := []versionsCommon.Composite{
+	compCommands := []versionsCommon.DevfileCommand{
 		{
 			Id: "comp1",
-			Commands: []string{
-				"exec1",
-				"exec3",
+			Composite: &versionsCommon.Composite{
+				Commands: []string{
+					"exec1",
+					"exec3",
+				},
 			},
 		},
 	}
@@ -935,15 +978,14 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 
 			if tt.longName {
 				containers[0].Name = longContainerName
-				execCommands[1].Component = longContainerName
+				execCommands[1].Exec.Component = longContainerName
 			}
 
 			podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
 
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					ExecCommands:      execCommands,
-					CompositeCommands: compCommands,
+					Commands: append(execCommands, compCommands...),
 				},
 			}
 

@@ -296,8 +296,8 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 	klog.V(2).Info("Set devfile commands from s2i data")
 
 	buildCommand := common.DevfileCommand{
+		Id: buildCommandID,
 		Exec: &common.Exec{
-			Id:          buildCommandID,
 			Component:   containerName,
 			CommandLine: buildCommandS2i,
 			Group: &common.Group{
@@ -308,8 +308,8 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 	}
 
 	runCommand := common.DevfileCommand{
+		Id: runCommandID,
 		Exec: &common.Exec{
-			Id:          runCommandID,
 			Component:   containerName,
 			CommandLine: runCommandS2i,
 			Group: &common.Group{
@@ -341,10 +341,9 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	// convert s2i storage to devfile volumes
 	for _, vol := range volumes {
 		volume := common.Volume{
-			Name: vol.Name,
 			Size: vol.Size,
 		}
-		components = append(components, common.DevfileComponent{Volume: &volume})
+		components = append(components, common.DevfileComponent{Name: vol.Name, Volume: &volume})
 
 		volumeMount := common.VolumeMount{
 			Name: vol.Name,
@@ -388,7 +387,6 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	}
 
 	container := common.Container{
-		Name:          containerName,
 		Image:         s2iImage,
 		MountSources:  true,
 		SourceMapping: sourceMappingS2i,
@@ -398,7 +396,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		VolumeMounts:  volumeMounts,
 	}
 
-	components = append(components, common.DevfileComponent{Container: &container})
+	components = append(components, common.DevfileComponent{Name: containerName, Container: &container})
 
 	// Ignoring error here as we are writing a new file
 	_ = d.AddComponents(components)

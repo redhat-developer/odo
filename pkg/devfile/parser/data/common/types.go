@@ -65,10 +65,16 @@ type DevfileCommand struct {
 	Composite *Composite `json:"composite,omitempty" yaml:"composite,omitempty"`
 	// CLI Command executed in a component container
 	Exec *Exec `json:"exec,omitempty" yaml:"exec,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.
+	Id string `json:"id" yaml:"id"`
 }
 
 // DevfileComponent component specified in devfile
 type DevfileComponent struct {
+
+	// Mandatory name that allows referencing the component from other elements (such as commands) or from an external devfile that may reference this component through a parent or a plugin.
+	Name string `json:"name" yaml:"name"`
 
 	// Allows adding and configuring workspace-related containers
 	Container *Container `json:"container,omitempty" yaml:"container,omitempty"`
@@ -95,11 +101,13 @@ type Container struct {
 	Endpoints []Endpoint `json:"endpoints,omitempty" yaml:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Environment variables used in this container
-	Env          []Env  `json:"env,omitempty" yaml:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+	Env []Env `json:"env,omitempty" yaml:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+
+	// Image is a required field but we use omitempty
+	// because a empty image value will override a parent's image value with a empty string value
 	Image        string `json:"image,omitempty" yaml:"image,omitempty"`
 	MemoryLimit  string `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`
 	MountSources bool   `json:"mountSources,omitempty" yaml:"mountSources,omitempty"`
-	Name         string `json:"name" yaml:"name"`
 
 	// Optional specification of the path in the container where project sources should be transferred/mounted when `mountSources` is `true`. When omitted, the value of the `PROJECTS_ROOT` environment variable is used.
 	SourceMapping string `json:"sourceMapping,omitempty" yaml:"sourceMapping,omitempty"`
@@ -164,9 +172,6 @@ type Exec struct {
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty" yaml:"group,omitempty"`
 
-	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
-	Id string `json:"id" yaml:"id"`
-
 	// Optional label that provides a label for this command to be used in Editor UI menus for example
 	Label string `json:"label,omitempty" yaml:"label,omitempty"`
 
@@ -192,24 +197,11 @@ type Composite struct {
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty"`
 
-	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
-	Id string `json:"id"`
-
 	// Optional label that provides a label for this command to be used in Editor UI menus for example
 	Label string `json:"label,omitempty"`
 
 	// Whether or not the composite command should be executed in parallel
 	Parallel bool `json:"parallel,omitempty"`
-}
-
-type CheckoutFrom struct {
-	// The revision to checkout from. Should be branch name, tag or commit id.
-	// Default branch is used if missing or specified revision is not found.
-	// +optional
-	Revision string `json:"revision,omitempty" yaml:"revision,omitempty"`
-	// The remote name should be used as init. Required if there are more than one remote configured
-	// +optional
-	Remote string `json:"remote,omitempty" yaml:"remote,omitempty"`
 }
 
 type GitLikeProjectSource struct {
@@ -365,9 +357,6 @@ type DevfileStarterProject struct {
 // Volume Allows specifying the definition of a volume shared by several other components
 type Volume struct {
 
-	// Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent
-	Name string `json:"name" yaml:"name"`
-
 	// Size of the volume
 	Size string `json:"size,omitempty" yaml:"size,omitempty"`
 }
@@ -390,4 +379,14 @@ type Zip struct {
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty" yaml:"sparseCheckoutDir,omitempty"`
+}
+
+// CheckoutFrom Defines from what the project should be checked out. Required if there are more than one remote configured
+type CheckoutFrom struct {
+
+	// The remote name should be used as init. Required if there are more than one remote configured
+	Remote string `json:"remote,omitempty"`
+
+	// The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.
+	Revision string `json:"revision,omitempty"`
 }

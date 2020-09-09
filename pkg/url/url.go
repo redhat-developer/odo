@@ -1132,7 +1132,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint parsercommon.Endpoint, container string) error {
 	components := devObj.Data.GetComponents()
 	for _, component := range components {
-		if component.Container != nil && component.Container.Name == container {
+		if component.Container != nil && component.Name == container {
 			component.Container.Endpoints = append(component.Container.Endpoints, endpoint)
 			devObj.Data.UpdateComponent(component)
 			break

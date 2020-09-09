@@ -176,7 +176,7 @@ func ValidateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	if command.Composite != nil {
 		parentCommands := make(map[string]string)
 		commandsMap := data.GetCommands()
-		return validateCompositeCommand(data, command.Composite, parentCommands, commandsMap)
+		return validateCompositeCommand(data, &command, parentCommands, commandsMap)
 	}
 
 	// component must be specified
@@ -194,7 +194,7 @@ func ValidateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 	isComponentValid := false
 	for _, component := range components {
-		if command.Exec.Component == component.Container.Name {
+		if command.Exec.Component == component.Name {
 			isComponentValid = true
 		}
 	}
@@ -206,8 +206,8 @@ func ValidateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 }
 
 // validateCompositeCommand checks that the specified composite command is valid
-func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
-	if compositeCommand.Group != nil && compositeCommand.Group.Kind == common.RunCommandGroupType {
+func validateCompositeCommand(data data.DevfileData, compositeCommand *common.DevfileCommand, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
+	if compositeCommand.Composite.Group != nil && compositeCommand.Composite.Group.Kind == common.RunCommandGroupType {
 		return fmt.Errorf("composite commands of run Kind are not supported currently")
 	}
 
@@ -215,7 +215,7 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 	parentCommands[compositeCommand.Id] = compositeCommand.Id
 
 	// Loop over the commands and validate that each command points to a command that's in the devfile
-	for _, command := range compositeCommand.Commands {
+	for _, command := range compositeCommand.Composite.Commands {
 		if strings.ToLower(command) == compositeCommand.Id {
 			return fmt.Errorf("the composite command %q cannot reference itself", compositeCommand.Id)
 		}
@@ -233,7 +233,7 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 
 		if subCommand.Composite != nil {
 			// Recursively validate the composite subcommand
-			err := validateCompositeCommand(data, subCommand.Composite, parentCommands, devfileCommands)
+			err := validateCompositeCommand(data, &subCommand, parentCommands, devfileCommands)
 			if err != nil {
 				// Don't wrap the error message here to make the error message more readable to the user
 				return err
@@ -356,7 +356,7 @@ func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd s
 	debugCommand, debugCmdErr := GetDebugCommand(data, devfileDebugCmd)
 	if debugCmdErr == nil && !reflect.DeepEqual(emptyCommand, debugCommand) {
 		isDebugCommandValid = true
-		klog.V(2).Infof("Debug command: %v", debugCommand.Exec.Id)
+		klog.V(2).Infof("Debug command: %v", debugCommand.Id)
 	}
 
 	if !isDebugCommandValid {

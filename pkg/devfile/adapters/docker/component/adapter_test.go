@@ -41,20 +41,23 @@ func TestPush(t *testing.T) {
 		ForceBuild:        false,
 	}
 
-	execCommands := []versionsCommon.Exec{
+	execCommands := []versionsCommon.DevfileCommand{
 		{
-			CommandLine: command,
-			Component:   component,
-			Group: &versionsCommon.Group{
-				Kind: versionsCommon.RunCommandGroupType,
+			Exec: &versionsCommon.Exec{
+				CommandLine: command,
+				Component:   component,
+				Group: &versionsCommon.Group{
+					Kind: versionsCommon.RunCommandGroupType,
+				},
+				WorkingDir: workDir,
 			},
-			WorkingDir: workDir,
 		},
 	}
 	validComponents := []versionsCommon.DevfileComponent{
 		{
+			Name: component,
 			Container: &versionsCommon.Container{
-				Name: component,
+				Image: "image",
 			},
 		},
 	}
@@ -92,8 +95,8 @@ func TestPush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   tt.components,
-					ExecCommands: execCommands,
+					Components: tt.components,
+					Commands:   execCommands,
 				},
 			}
 
@@ -130,7 +133,7 @@ func TestDockerTest(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/root"
-	id := "testCmd"
+	id := "testcmd"
 
 	// create a temp dir for the file indexer
 	directory, err := ioutil.TempDir("", "")
@@ -140,8 +143,9 @@ func TestDockerTest(t *testing.T) {
 
 	validComponents := []versionsCommon.DevfileComponent{
 		{
+			Name: component,
 			Container: &versionsCommon.Container{
-				Name: component,
+				Image: "image",
 			},
 		},
 	}
@@ -151,13 +155,13 @@ func TestDockerTest(t *testing.T) {
 		components    []versionsCommon.DevfileComponent
 		componentType versionsCommon.DevfileComponentType
 		client        *lclient.Client
-		execCommands  []versionsCommon.Exec
+		execCommands  []versionsCommon.DevfileCommand
 		wantErr       bool
 	}{
 		{
 			name:         "Case 1: Invalid devfile",
 			components:   validComponents,
-			execCommands: []versionsCommon.Exec{},
+			execCommands: []versionsCommon.DevfileCommand{},
 			client:       fakeClient,
 			wantErr:      true,
 		},
@@ -165,15 +169,17 @@ func TestDockerTest(t *testing.T) {
 			name:       "Case 2: Valid devfile",
 			components: validComponents,
 			client:     fakeClient,
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          id,
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.TestCommandGroupType,
+					Id: id,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.TestCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			wantErr: false,
@@ -187,15 +193,17 @@ func TestDockerTest(t *testing.T) {
 		{
 			name:       "Case 4: No valid containers",
 			components: []versionsCommon.DevfileComponent{},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          id,
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.TestCommandGroupType,
+					Id: id,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.TestCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			client:  fakeClient,
@@ -204,15 +212,17 @@ func TestDockerTest(t *testing.T) {
 		{
 			name:       "Case 5: Invalid command",
 			components: []versionsCommon.DevfileComponent{},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          id,
-					CommandLine: "",
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.TestCommandGroupType,
+					Id: id,
+					Exec: &versionsCommon.Exec{
+						CommandLine: "",
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.TestCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			client:  fakeClient,
@@ -221,15 +231,17 @@ func TestDockerTest(t *testing.T) {
 		{
 			name:       "Case 6: No valid command group",
 			components: []versionsCommon.DevfileComponent{},
-			execCommands: []versionsCommon.Exec{
+			execCommands: []versionsCommon.DevfileCommand{
 				{
-					Id:          id,
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.RunCommandGroupType,
+					Id: id,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			client:  fakeClient,
@@ -240,8 +252,8 @@ func TestDockerTest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   tt.components,
-					ExecCommands: tt.execCommands,
+					Components: tt.components,
+					Commands:   tt.execCommands,
 				},
 			}
 

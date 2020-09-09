@@ -8,7 +8,7 @@ import (
 
 func TestValidateDevfileSchema(t *testing.T) {
 
-	t.Run("valid 1.0.0 json schema", func(t *testing.T) {
+	t.Run("valid 2.0.0 json schema", func(t *testing.T) {
 
 		var (
 			d = DevfileCtx{
@@ -23,7 +23,7 @@ func TestValidateDevfileSchema(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid 1.0.0 json schema", func(t *testing.T) {
+	t.Run("invalid 2.0.0 json schema", func(t *testing.T) {
 
 		var (
 			d = DevfileCtx{
