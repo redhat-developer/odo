@@ -21,6 +21,11 @@ func validateCommands(commands map[string]common.DevfileCommand, components []co
 	return
 }
 
+// validateCommand validates the given command
+// 1. command has to be of type exec or composite, if composite command is validated further
+// 2. component should be present
+// 3. commandline should be present
+// 4. command must map to a valid container component
 func validateCommand(command common.DevfileCommand, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
 	// type must be exec or composite
@@ -32,7 +37,7 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 	if command.Composite != nil {
 		parentCommands := make(map[string]string)
 		// commandsMap := adapterCommon.GetCommandsMap(commands)
-		return validateCompositeCommand(command.Composite, parentCommands, devfileCommands, components)
+		return validateCompositeCommand(&command, parentCommands, devfileCommands, components)
 	}
 
 	// component must be specified
@@ -48,7 +53,7 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 	// must map to a container component
 	isComponentValid := false
 	for _, component := range components {
-		if command.Exec.Component == component.Container.Name {
+		if component.IsContainer() && command.Exec.Component == component.Name {
 			isComponentValid = true
 		}
 	}
@@ -60,8 +65,8 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 }
 
 // validateCompositeCommand checks that the specified composite command is valid
-func validateCompositeCommand(compositeCommand *common.Composite, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
-	if compositeCommand.Group != nil && compositeCommand.Group.Kind == common.RunCommandGroupType {
+func validateCompositeCommand(compositeCommand *common.DevfileCommand, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
+	if compositeCommand.Composite.Group != nil && compositeCommand.Composite.Group.Kind == common.RunCommandGroupType {
 		return &CompositeRunKindError{}
 	}
 
@@ -69,7 +74,7 @@ func validateCompositeCommand(compositeCommand *common.Composite, parentCommands
 	parentCommands[compositeCommand.Id] = compositeCommand.Id
 
 	// Loop over the commands and validate that each command points to a command that's in the devfile
-	for _, command := range compositeCommand.Commands {
+	for _, command := range compositeCommand.Composite.Commands {
 		if strings.ToLower(command) == compositeCommand.Id {
 			return &CompositeDirectReferenceError{commandId: compositeCommand.Id}
 		}
@@ -87,7 +92,7 @@ func validateCompositeCommand(compositeCommand *common.Composite, parentCommands
 
 		if subCommand.Composite != nil {
 			// Recursively validate the composite subcommand
-			err := validateCompositeCommand(subCommand.Composite, parentCommands, devfileCommands, components)
+			err := validateCompositeCommand(&subCommand, parentCommands, devfileCommands, components)
 			if err != nil {
 				// Don't wrap the error message here to make the error message more readable to the user
 				return err

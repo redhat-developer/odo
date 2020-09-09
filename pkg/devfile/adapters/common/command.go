@@ -75,7 +75,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 		cmdGroup := command.GetGroup()
 		if cmdGroup != nil && cmdGroup.Kind == groupType {
 			if cmdGroup.IsDefault {
-				return command, ValidateCommand(data, command)
+				return command, nil
 			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
 				// return the only remaining command for the group if there is no default command
 				// NOTE: we return outside the for loop since the next iteration can have a default command
@@ -86,7 +86,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 
 	// if default command is not found return the first command found for the matching type.
 	if !reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
-		return onlyCommand, ValidateCommand(data, onlyCommand)
+		return onlyCommand, nil
 	}
 
 	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
@@ -121,7 +121,7 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
 
-			return command, ValidateCommand(data, command)
+			return command, nil
 		}
 	}
 
@@ -157,94 +157,6 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 		return fmt.Errorf("there should be exactly one default command for command group %v, currently there is more than one default command", groupType)
 	}
 
-	return nil
-}
-
-// ValidateCommand validates the given command
-// 1. command has to be of type exec or composite, if composite command is validated further
-// 2. component should be present
-// 3. commandline should be present
-// 4. command must map to a valid container component
-func ValidateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
-
-	// type must be exec or composite
-	if command.Exec == nil && command.Composite == nil {
-		return fmt.Errorf("command must be of type \"exec\" or \"composite\"")
-	}
-
-	// If the command is a composite command, need to validate that it is valid
-	if command.Composite != nil {
-		parentCommands := make(map[string]string)
-		commandsMap := data.GetCommands()
-		return validateCompositeCommand(data, &command, parentCommands, commandsMap)
-	}
-
-	// component must be specified
-	if command.Exec.Component == "" {
-		return fmt.Errorf("exec commands must reference a component")
-	}
-
-	// must specify a command
-	if command.Exec.CommandLine == "" {
-		return fmt.Errorf("exec commands must have a command")
-	}
-
-	// must map to a container component
-	components := GetDevfileContainerComponents(data)
-
-	isComponentValid := false
-	for _, component := range components {
-		if command.Exec.Component == component.Name {
-			isComponentValid = true
-		}
-	}
-	if !isComponentValid {
-		return fmt.Errorf("the command does not map to a supported component")
-	}
-
-	return
-}
-
-// validateCompositeCommand checks that the specified composite command is valid
-func validateCompositeCommand(data data.DevfileData, compositeCommand *common.DevfileCommand, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
-	if compositeCommand.Composite.Group != nil && compositeCommand.Composite.Group.Kind == common.RunCommandGroupType {
-		return fmt.Errorf("composite commands of run Kind are not supported currently")
-	}
-
-	// Store the command ID in a map of parent commands
-	parentCommands[compositeCommand.Id] = compositeCommand.Id
-
-	// Loop over the commands and validate that each command points to a command that's in the devfile
-	for _, command := range compositeCommand.Composite.Commands {
-		if strings.ToLower(command) == compositeCommand.Id {
-			return fmt.Errorf("the composite command %q cannot reference itself", compositeCommand.Id)
-		}
-
-		// Don't allow commands to indirectly reference themselves, so check if the command equals any of the parent commands in the command tree
-		_, ok := parentCommands[strings.ToLower(command)]
-		if ok {
-			return fmt.Errorf("the composite command %q cannot indirectly reference itself", compositeCommand.Id)
-		}
-
-		subCommand, ok := devfileCommands[strings.ToLower(command)]
-		if !ok {
-			return fmt.Errorf("the command %q mentioned in the composite command %q does not exist in the devfile", command, compositeCommand.Id)
-		}
-
-		if subCommand.Composite != nil {
-			// Recursively validate the composite subcommand
-			err := validateCompositeCommand(data, &subCommand, parentCommands, devfileCommands)
-			if err != nil {
-				// Don't wrap the error message here to make the error message more readable to the user
-				return err
-			}
-		} else {
-			err := ValidateCommand(data, subCommand)
-			if err != nil {
-				return errors.Wrapf(err, "the composite command %q references an invalid command %q", compositeCommand.Id, subCommand.GetID())
-			}
-		}
-	}
 	return nil
 }
 

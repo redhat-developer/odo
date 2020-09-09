@@ -93,7 +93,7 @@ type ExecCommandInvalidContainerError struct {
 }
 
 func (e *ExecCommandInvalidContainerError) Error() string {
-	return fmt.Sprintf("the command %q does not map to a supported component", e.commandId)
+	return fmt.Sprintf("the command %q does not map to a container component", e.commandId)
 }
 
 // CompositeRunKindError returns an error if the composite command is of kind run
