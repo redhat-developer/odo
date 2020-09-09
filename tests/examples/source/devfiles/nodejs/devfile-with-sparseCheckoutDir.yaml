@@ -4,9 +4,9 @@ metadata:
 starterProjects:
   -
     name: nodejs-starter
-    source:
-      type: git
-      location: "https://github.com/che-samples/web-nodejs-sample.git"
+    git:
+      remotes:
+        origin: "https://github.com/che-samples/web-nodejs-sample.git"
       sparseCheckoutDir: /app/
 components:
   - type: dockerimage

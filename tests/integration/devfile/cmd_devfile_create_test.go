@@ -179,12 +179,6 @@ var _ = Describe("odo devfile create command tests", func() {
 			output := helper.CmdShouldFail("odo", "create", "java:8", "sb-jar-test", "--binary", filepath.Join(context, "sb.jar"), "--context", context)
 			Expect(output).Should(ContainSubstring("flag --binary, requires --s2i flag to be set, when in experimental mode."))
 		})
-
-		It("should fail the create command as --now flag, which is specific to s2i component creation, is used without --s2i flag", func() {
-			componentName := helper.RandString(6)
-			output := helper.CmdShouldFail("odo", "create", "nodejs", componentName, "--now")
-			Expect(output).Should(ContainSubstring("flag --now, requires --s2i flag to be set, when in experimental mode."))
-		})
 	})
 
 	Context("When executing odo create with devfile component type argument and --project flag", func() {
@@ -262,7 +256,8 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 
 			It("should successfully create the devfile component with valid specifies URL path", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/elsony/devfile-registry/master/devfiles/nodejs/devfile.yaml")
+				// TODO change to odo-devfiles registry
+				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml")
 			})
 
 			It("should fail to create the devfile component with invalid file system path", func() {
@@ -330,6 +325,17 @@ var _ = Describe("odo devfile create command tests", func() {
 			output := helper.CmdShouldPass("odo", "create", "java-quarkus")
 			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
 		})
+	})
+
+	It("checks that odo push works with a devfile with now flag", func() {
+		originalDir := helper.Getwd()
+		context2 := helper.CreateNewContext()
+		helper.Chdir(context2)
+		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
+		output := helper.CmdShouldPass("odo", "create", "--starter", "nodejs", "--now")
+		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+		helper.Chdir(originalDir)
+		helper.DeleteDir(context2)
 	})
 
 	// Currently these tests need interactive mode in order to set the name of the component.

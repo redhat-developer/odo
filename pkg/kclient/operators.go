@@ -23,7 +23,7 @@ const (
 // GetClusterServiceVersionList returns a list of CSVs in the cluster
 // It is equivalent to doing `oc get csvs` using oc cli
 func (c *Client) GetClusterServiceVersionList() (*olm.ClusterServiceVersionList, error) {
-	klog.V(4).Infof("Fetching list of operators installed in cluster")
+	klog.V(3).Infof("Fetching list of operators installed in cluster")
 	csvs, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).List(v1.ListOptions{})
 	if err != nil {
 		return &olm.ClusterServiceVersionList{}, err

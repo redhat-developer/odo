@@ -5,8 +5,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedCommandName is the recommended debug command name
-const RecommendedCommandName = "debug"
+const (
+	// RecommendedCommandName is the recommended debug command name
+	RecommendedCommandName = "debug"
+
+	devfile = "devfile.yaml"
+)
 
 var DebugLongDesc = `Warning - Debug is currently in tech preview and hence is subject to change in future.
 

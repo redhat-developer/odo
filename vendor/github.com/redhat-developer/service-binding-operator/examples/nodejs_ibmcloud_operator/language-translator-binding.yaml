@@ -1,7 +1,0 @@
-apiVersion: ibmcloud.ibm.com/v1alpha1
-kind: Binding
-metadata:
-  name: mytranslator-binding
-  namespace: service-binding-demo
-spec:
-  serviceName: mytranslator

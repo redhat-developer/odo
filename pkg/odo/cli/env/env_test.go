@@ -15,9 +15,9 @@ func TestPrintSupportedParameters(t *testing.T) {
 	}
 
 	wantSetParameters := `Available parameters:
+  DebugPort: Use this value to set component debug port
   Name: Use this value to set component name
-  Namespace: Use this value to set component namespace
-  DebugPort: Use this value to set component debug port`
+  Namespace: Use this value to set component namespace`
 
 	supportedUnsetParameters := map[string]string{
 		debugportParameter: debugportParameterDescription,

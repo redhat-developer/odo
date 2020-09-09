@@ -90,28 +90,6 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 	return nil
 }
 
-// OverrideEvents overrides the events of the parent devfile
-// overridePatch contains the patches to be applied to the parent's events
-func (d DevfileObj) OverrideEvents(overridePatch common.DevfileEvents) error {
-	var updatedEvents common.DevfileEvents
-
-	merged, err := handleMerge(d.Data.GetEvents(), overridePatch, common.DevfileEvents{})
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(merged, &updatedEvents)
-	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal override events")
-	}
-
-	d.Data.UpdateEvents(updatedEvents.PostStart,
-		updatedEvents.PostStop,
-		updatedEvents.PreStart,
-		updatedEvents.PreStop)
-	return nil
-}
-
 // OverrideProjects overrides the projects of the parent devfile
 // overridePatch contains the patches to be applied to the parent's projects
 func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) error {
@@ -189,8 +167,10 @@ func handleMerge(original, patch, dataStruct interface{}) ([]byte, error) {
 	}
 
 	merged, err := strategicpatch.StrategicMergePatch(originalJson, patchJson, dataStruct)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return merged, nil
 }

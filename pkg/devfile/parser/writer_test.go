@@ -4,15 +4,16 @@ import (
 	"testing"
 
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
-	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
+	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 
 func TestWriteJsonDevfile(t *testing.T) {
 
 	var (
-		apiVersion = "1.0.0"
-		testName   = "TestName"
+		schemaVersion = "2.0.0"
+		testName      = "TestName"
 	)
 
 	t.Run("write json devfile", func(t *testing.T) {
@@ -23,9 +24,9 @@ func TestWriteJsonDevfile(t *testing.T) {
 		// DevfileObj
 		devfileObj := DevfileObj{
 			Ctx: devfileCtx.FakeContext(fs, OutputDevfileJsonPath),
-			Data: &v100.Devfile100{
-				ApiVersion: v100.ApiVersion(apiVersion),
-				Metadata: v100.Metadata{
+			Data: &v200.Devfile200{
+				SchemaVersion: schemaVersion,
+				Metadata: common.DevfileMetadata{
 					Name: testName,
 				},
 			},
@@ -50,9 +51,9 @@ func TestWriteJsonDevfile(t *testing.T) {
 		// DevfileObj
 		devfileObj := DevfileObj{
 			Ctx: devfileCtx.FakeContext(fs, OutputDevfileYamlPath),
-			Data: &v100.Devfile100{
-				ApiVersion: v100.ApiVersion(apiVersion),
-				Metadata: v100.Metadata{
+			Data: &v200.Devfile200{
+				SchemaVersion: schemaVersion,
+				Metadata: common.DevfileMetadata{
 					Name: testName,
 				},
 			},

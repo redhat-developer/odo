@@ -91,6 +91,10 @@ var _ = Describe("odo devfile test command tests", func() {
 			output := helper.CmdShouldFail("odo", "test", "--context", context)
 			Expect(output).To(ContainSubstring("there should be exactly one default command for command group test, currently there is more than one default command"))
 		})
+
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "test", "--devfile", "invalid.yaml")
+		})
 	})
 
 	Context("Should run test command successfully", func() {

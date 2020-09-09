@@ -205,6 +205,5 @@ func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevf
 		} else {
 			fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name)
 		}
-
 	}
 }

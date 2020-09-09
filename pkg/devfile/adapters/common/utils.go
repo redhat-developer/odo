@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"strings"
 
 	"k8s.io/klog"
 
@@ -110,7 +111,7 @@ type CommandNames struct {
 func isContainer(component common.DevfileComponent) bool {
 	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
 	if component.Container != nil {
-		klog.V(4).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Container.Name)
+		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Container.Name)
 		return true
 	}
 	return false
@@ -119,7 +120,7 @@ func isContainer(component common.DevfileComponent) bool {
 // isVolume checks if the component is a volume
 func isVolume(component common.DevfileComponent) bool {
 	if component.Volume != nil {
-		klog.V(4).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Volume.Name)
+		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Volume.Name)
 		return true
 	}
 	return false
@@ -241,4 +242,26 @@ func GetComponentEnvVar(env string, envs []common.Env) string {
 		}
 	}
 	return ""
+}
+
+// GetCommandsFromEvent returns the list of commands from the event name.
+// If the event is a composite command, it returns the sub-commands from the tree
+func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventName string) []string {
+	var commands []string
+
+	if command, ok := commandsMap[eventName]; ok {
+		if command.IsComposite() {
+			klog.V(4).Infof("%s is a composite command", command.GetID())
+			for _, compositeSubCmd := range command.Composite.Commands {
+				klog.V(4).Infof("checking if sub-command %s is either an exec or a composite command ", compositeSubCmd)
+				subCommands := GetCommandsFromEvent(commandsMap, strings.ToLower(compositeSubCmd))
+				commands = append(commands, subCommands...)
+			}
+		} else {
+			klog.V(4).Infof("%s is an exec command", command.GetID())
+			commands = append(commands, command.GetID())
+		}
+	}
+
+	return commands
 }

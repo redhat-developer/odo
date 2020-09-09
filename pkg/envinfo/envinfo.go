@@ -317,6 +317,9 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 
 // DeleteURL is used to delete environment specific info for url from envinfo
 func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
+	if esi.componentSettings.URL == nil {
+		return nil
+	}
 	for i, url := range *esi.componentSettings.URL {
 		if url.Name == parameter {
 			s := *esi.componentSettings.URL

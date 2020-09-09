@@ -16,7 +16,7 @@ else
 fi
 make bin
 mkdir -p $GOPATH/bin
-go get -u github.com/onsi/ginkgo/ginkgo
+make goget-ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR

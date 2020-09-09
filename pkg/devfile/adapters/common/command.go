@@ -94,7 +94,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 	if groupType == common.RunCommandGroupType || groupType == common.TestCommandGroupType {
 		err = fmt.Errorf(msg)
 	} else {
-		klog.V(4).Info(msg)
+		klog.V(2).Info(msg)
 	}
 
 	return
@@ -292,11 +292,11 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	if isInitCmdEmpty && initCmdErr == nil {
 		// If there was no init command specified through odo push and no default init command in the devfile, default validate to true since the init command is optional
 		isInitCommandValid = true
-		klog.V(4).Infof("No init command was provided")
+		klog.V(2).Infof("No init command was provided")
 	} else if !isInitCmdEmpty && initCmdErr == nil {
 		isInitCommandValid = true
 		commandMap[common.InitCommandGroupType] = initCommand
-		klog.V(4).Infof("Init command: %v", initCommand.GetID())
+		klog.V(2).Infof("Init command: %v", initCommand.GetID())
 	}
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
@@ -305,18 +305,18 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	if isBuildCmdEmpty && buildCmdErr == nil {
 		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
 		isBuildCommandValid = true
-		klog.V(4).Infof("No build command was provided")
+		klog.V(2).Infof("No build command was provided")
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
 		commandMap[common.BuildCommandGroupType] = buildCommand
-		klog.V(4).Infof("Build command: %v", buildCommand.GetID())
+		klog.V(2).Infof("Build command: %v", buildCommand.GetID())
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
 	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
 		isRunCommandValid = true
 		commandMap[common.RunCommandGroupType] = runCommand
-		klog.V(4).Infof("Run command: %v", runCommand.GetID())
+		klog.V(2).Infof("Run command: %v", runCommand.GetID())
 	}
 
 	// If either command had a problem, return an empty list of commands and an error
@@ -356,7 +356,7 @@ func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd s
 	debugCommand, debugCmdErr := GetDebugCommand(data, devfileDebugCmd)
 	if debugCmdErr == nil && !reflect.DeepEqual(emptyCommand, debugCommand) {
 		isDebugCommandValid = true
-		klog.V(4).Infof("Debug command: %v", debugCommand.Exec.Id)
+		klog.V(2).Infof("Debug command: %v", debugCommand.Exec.Id)
 	}
 
 	if !isDebugCommandValid {
@@ -377,7 +377,7 @@ func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd str
 	testCommand, testCmdErr := GetTestCommand(data, devfileTestCmd)
 	if testCmdErr == nil && !reflect.DeepEqual(emptyCommand, testCommand) {
 		isTestCommandValid = true
-		klog.V(4).Infof("Test command: %v", testCommand.GetID())
+		klog.V(2).Infof("Test command: %v", testCommand.GetID())
 	}
 
 	if !isTestCommandValid && testCmdErr != nil {

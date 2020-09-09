@@ -18,4 +18,5 @@ type CliRunner interface {
 	GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string
 	GetPVCSize(compName, storageName, namespace string) string
 	GetAllPVCNames(namespace string) []string
+	GetPodInitContainers(compName, namespace string) []string
 }

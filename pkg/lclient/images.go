@@ -21,7 +21,7 @@ func (dc *Client) PullImage(image string) error {
 	}
 	defer out.Close()
 
-	if klog.V(4) {
+	if klog.V(1) {
 		_, err := io.Copy(os.Stdout, out)
 		if err != nil {
 			return err

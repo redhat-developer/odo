@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -29,12 +28,10 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
-	"github.com/google/go-github/github"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -60,8 +57,6 @@ const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
-
-const defaultGithubRef = "master"
 
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
@@ -840,71 +835,6 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 	return remote
 }
 
-// GetGitHubZipURL downloads a repo from a URL to a destination
-func GetGitHubZipURL(repoURL string, branch string, startPoint string, token string) (string, error) {
-	var url string
-	// Convert ssh remote to https
-	if strings.HasPrefix(repoURL, "git@") {
-		repoURL = ConvertGitSSHRemoteToHTTPS(repoURL)
-	}
-	// expecting string in format 'https://github.com/<owner>/<repo>'
-	if strings.HasPrefix(repoURL, "https://") {
-		repoURL = strings.TrimPrefix(repoURL, "https://")
-	} else {
-		return "", errors.New("Invalid GitHub URL. Please use https://")
-	}
-
-	repoArray := strings.Split(repoURL, "/")
-	if len(repoArray) < 2 {
-		return url, errors.New("Invalid GitHub URL: Could not extract owner and repo, expecting 'https://github.com/<owner>/<repo>'")
-	}
-
-	owner := repoArray[1]
-	if len(owner) == 0 {
-		return url, errors.New("Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'")
-	}
-
-	repo := repoArray[2]
-	if len(repo) == 0 {
-		return url, errors.New("Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'")
-	}
-
-	if strings.HasSuffix(repo, ".git") {
-		repo = strings.TrimSuffix(repo, ".git")
-	}
-
-	var ref string
-	if branch != "" && startPoint != "" {
-		return url, errors.Errorf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint)
-	} else if branch != "" {
-		ref = branch
-	} else if startPoint != "" {
-		ref = startPoint
-	} else {
-		// Default to master if branch and startpoint are not set
-		ref = defaultGithubRef
-	}
-
-	ctx := context.Background()
-	opt := &github.RepositoryContentGetOptions{Ref: ref}
-	var httpClient *http.Client = nil
-	if token != "" {
-		tokenSource := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
-		)
-		httpClient = oauth2.NewClient(ctx, tokenSource)
-	}
-	client := github.NewClient(httpClient)
-
-	URL, response, err := client.Repositories.GetArchiveLink(ctx, owner, repo, "zipball", opt, true)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error getting zip url. Response: %s.", response.Status)
-		return url, errors.New(errMessage)
-	}
-	url = URL.String()
-	return url, nil
-}
-
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
 // takes an absolute path prefixed with file:// and extracts it to a destination.
 // pathToUnzip specifies the path within the zip folder to extract
@@ -1088,17 +1018,25 @@ func DownloadFile(params DownloadParams) error {
 }
 
 // DownloadFileInMemory uses the url to download the file and return bytes
-func DownloadFileInMemory(url string) ([]byte, error) {
-	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
-	}, Timeout: HTTPRequestTimeout}
-	resp, err := httpClient.Get(url)
+func DownloadFileInMemory(params HTTPRequestParams) ([]byte, error) {
+	data, err := HTTPGetRequest(params, 0)
+
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	return ioutil.ReadAll(resp.Body)
+	return data, nil
+}
+
+// DownloadFileInMemory uses the url to download the file and return bytes
+func DownloadFileInMemoryWithCache(params HTTPRequestParams, cacheFor int) ([]byte, error) {
+	data, err := HTTPGetRequest(params, cacheFor)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 // ValidateK8sResourceName sanitizes kubernetes resource name with the following requirements:

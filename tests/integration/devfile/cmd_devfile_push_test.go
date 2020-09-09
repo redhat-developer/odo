@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/openshift/odo/pkg/util"
-
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
 
@@ -72,6 +72,10 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace, name)
 			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
+		})
+
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "push", "--namespace", namespace, "--devfile", "invalid.yaml")
 		})
 
 	})
@@ -377,6 +381,64 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
 		})
 
+		It("should execute PreStart commands if present during pod startup", func() {
+			expectedInitContainers := []string{"tools-myprestart-1", "tools-myprestart-2", "runtime-secondprestart-3"}
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
+
+			firstPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+
+			firstPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
+			// 3 preStart events + 1 supervisord init containers
+			Expect(len(firstPushInitContainers)).To(Equal(4))
+			helper.MatchAllInOutput(strings.Join(firstPushInitContainers, ","), expectedInitContainers)
+
+			// Need to force so build and run get triggered again with the component already created.
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
+			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
+
+			secondPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+
+			secondPushInitContainers := cliRunner.GetPodInitContainers(cmpName, namespace)
+			// 3 preStart events + 1 supervisord init containers
+			Expect(len(secondPushInitContainers)).To(Equal(4))
+			helper.MatchAllInOutput(strings.Join(secondPushInitContainers, ","), expectedInitContainers)
+
+			Expect(firstPushPodName).To(Equal(secondPushPodName))
+			Expect(firstPushInitContainers).To(Equal(secondPushInitContainers))
+
+			var statErr error
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				firstPushPodName,
+				"runtime",
+				namespace,
+				[]string{"cat", "/projects/test.txt"},
+				func(cmdOp string, err error) bool {
+					if err != nil {
+						statErr = err
+					} else if cmdOp == "" {
+						statErr = fmt.Errorf("prestart event action error, expected: hello test2\nhello test2\nhello test\n, got empty string")
+					} else {
+						fileContents := strings.Split(cmdOp, "\n")
+						if len(fileContents)-1 != 3 {
+							statErr = fmt.Errorf("prestart event action count error, expected: 3 strings, got %d strings: %s", len(fileContents), strings.Join(fileContents, ","))
+						} else if cmdOp != "hello test2\nhello test2\nhello test\n" {
+							statErr = fmt.Errorf("prestart event action error, expected: hello test2\nhello test2\nhello test\n, got: %s", cmdOp)
+						}
+					}
+
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+		})
+
 		It("should execute PostStart commands if present and not execute when component already exists", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
@@ -591,6 +653,87 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
+	Context("Verify files are correctly synced", func() {
+
+		// Tests https://github.com/openshift/odo/issues/3838
+		ensureFilesSyncedTest := func(namespace string, shouldForcePush bool) {
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+
+			fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
+
+			// 1) Push a standard spring boot project
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// 2) Update the devfile.yaml, causing push to redeploy the component
+			helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 769Mi")
+			commands := []string{"push", "-v", "4", "--namespace", namespace}
+			if shouldForcePush {
+				// Test both w/ and w/o '-f'
+				commands = append(commands, "-f")
+			}
+
+			// 3) Ensure the build passes, indicating that all files were correctly synced to the new pod
+			output = helper.CmdShouldPass("odo", commands...)
+			Expect(output).To(ContainSubstring("BUILD SUCCESS"))
+
+			// 4) Acquire files from remote container, filtering out target/* and .*
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.Exec(podName, namespace, "find", sourcePath)
+			remoteFiles := []string{}
+			outputArr := strings.Split(output, "\n")
+			for _, line := range outputArr {
+
+				if !strings.HasPrefix(line, sourcePath+"/") {
+					continue
+				}
+
+				newLine, err := filepath.Rel(sourcePath, line)
+				Expect(err).ToNot(HaveOccurred())
+
+				newLine = filepath.ToSlash(newLine)
+				if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
+					continue
+				}
+
+				remoteFiles = append(remoteFiles, newLine)
+			}
+
+			// 5) Acquire file from local context, filtering out .*
+			localFiles := []string{}
+			err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				newPath := filepath.ToSlash(path)
+
+				if strings.HasPrefix(newPath, ".") {
+					return nil
+				}
+
+				localFiles = append(localFiles, newPath)
+				return nil
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			// 6) Sort and compare the local and remote files; they should match
+			sort.Strings(localFiles)
+			sort.Strings(remoteFiles)
+			Expect(localFiles).To(Equal(remoteFiles))
+		}
+
+		It("Should ensure that files are correctly synced on pod redeploy, with force push specified", func() {
+			ensureFilesSyncedTest(namespace, true)
+		})
+
+		It("Should ensure that files are correctly synced on pod redeploy, without force push specified", func() {
+			ensureFilesSyncedTest(namespace, false)
+		})
+
+	})
+
 	Context("Verify devfile volume components work", func() {
 
 		It("should error out when duplicate volume components exist", func() {
@@ -658,7 +801,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
-			Expect(output).To(ContainSubstring("unsupported devfile version"))
+			Expect(output).To(ContainSubstring("this Devfile version is not supported"))
 		})
 
 	})

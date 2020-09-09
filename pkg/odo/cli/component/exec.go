@@ -61,7 +61,8 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 		return fmt.Errorf("no parameter is expected for the command")
 	}
 
-	eo.devfilePath = filepath.Join(eo.componentContext, eo.devfilePath)
+	eo.devfilePath = filepath.Join(eo.componentContext, devFile)
+
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() {
 		eo.componentOptions.Context = genericclioptions.NewDevfileContext(cmd)
@@ -99,8 +100,6 @@ func NewCmdExec(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
-	execCmd.Flags().StringVar(&o.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 
 	execCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(execCmd, completion.ComponentNameCompletionHandler)

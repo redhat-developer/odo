@@ -15,7 +15,7 @@ func TestPopulateFromBytes(t *testing.T) {
 	t.Run("valid data passed", func(t *testing.T) {
 
 		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, err := w.Write(validJsonRawContent100())
+			_, err := w.Write(validJsonRawContent200())
 			if err != nil {
 				t.Error(err)
 			}
