@@ -56,7 +56,6 @@ type CreateOptions struct {
 	now               bool
 	forceS2i          bool
 	*PushOptions
-	devObj          parser.DevfileObj
 	devfileMetadata DevfileMetadata
 }
 
