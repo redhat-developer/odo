@@ -148,13 +148,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if currentMode != previousMode {
 		parameters.RunModeChanged = true
 	}
+	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	portExposureMap := utils.GetPortExposure(containerComponents)
 
-	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
-	if err != nil {
-		return errors.Wrap(err, "unable to get endpoints")
-	}
-
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, endpointsMap)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, portExposureMap)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -170,7 +167,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, endpointsMap)
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, containerComponents)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -255,7 +252,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, endpointMap map[int32]versionsCommon.Endpoint) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, portExposureMap map[int32]versionsCommon.ExposureType) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -373,8 +370,15 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			containerPorts = append(containerPorts, c.Ports...)
 		} else {
 			for _, port := range c.Ports {
+				portExist := false
+				for _, entry := range containerPorts {
+					if entry.ContainerPort == port.ContainerPort {
+						portExist = true
+						break
+					}
+				}
 				// if Exposure == none, should not create a service for that port
-				if endpointMap[port.ContainerPort].Exposure != "none" {
+				if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
 					containerPorts = append(containerPorts, port)
 				}
 			}

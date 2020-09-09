@@ -15,8 +15,11 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
@@ -88,12 +91,16 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 }
 
 // GetIngressOrRoute returns ingress/route spec for given URL name
-func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string, routeSupported bool) (URL, error) {
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
 	var getRouteErr error
-	remoteURLName := fmt.Sprintf("%s-%s", urlName, componentName)
+
+	// route/ingress name is defined as <urlName>-<componentName>
+	// to avoid error due to duplicate ingress name defined in different devfile components
+	trimmedURLName := getValidURLName(urlName)
+	remoteURLName := fmt.Sprintf("%s-%s", trimmedURLName, componentName)
 	// Check whether remote already created the ingress
 	ingress, getIngressErr := kClient.GetIngress(remoteURLName)
 	if kerrors.IsNotFound(getIngressErr) && routeSupported {
@@ -110,17 +117,44 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 	}
 
 	envinfoURLs := envSpecificInfo.GetURL()
+	envURLMap := make(map[string]envinfo.EnvInfoURL)
 	for _, url := range envinfoURLs {
-		// ignore Docker URLs
-		if url.Kind == envinfo.DOCKER {
-			continue
-		}
-		if !routeSupported && url.Kind == envinfo.ROUTE {
-			continue
-		}
-		localURL := ConvertEnvinfoURL(url, componentName)
-		// search local URL, if it exist in local, update state with remote status
-		if localURL.Name == urlName {
+		envURLMap[url.Name] = url
+	}
+
+	for _, comp := range containerComponents {
+		for _, localEndpoint := range comp.Container.Endpoints {
+			if localEndpoint.Name != urlName {
+				continue
+			}
+
+			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
+				return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
+			}
+			var devfileURL envinfo.EnvInfoURL
+			if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
+				if envinfoURL.Kind == envinfo.DOCKER {
+					return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Docker", urlName))
+				}
+				if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
+					return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Route, but Route is not support in current cluster", urlName))
+				}
+				devfileURL = envinfoURL
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
+			}
+			if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
+				// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
+				if !routeSupported {
+					break
+				}
+				devfileURL.Name = urlName
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
+				devfileURL.Kind = envinfo.ROUTE
+			}
+			localURL := ConvertEnvinfoURL(devfileURL, componentName)
 			if remoteExist {
 				if ingress != nil && ingress.Spec.Rules != nil {
 					// Remote exist, but not in local, so it's deleted status
@@ -481,7 +515,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
@@ -496,7 +530,16 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		}
 	}
 	localEnvinfoURLs := envSpecificInfo.GetURL()
-
+	envURLMap := make(map[string]envinfo.EnvInfoURL)
+	for _, url := range localEnvinfoURLs {
+		if url.Kind == envinfo.DOCKER {
+			continue
+		}
+		if !routeSupported && url.Kind == envinfo.ROUTE {
+			continue
+		}
+		envURLMap[url.Name] = url
+	}
 	var urls []URL
 
 	clusterURLMap := make(map[string]URL)
@@ -512,16 +555,35 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		clusterURL := getMachineReadableFormat(r)
 		clusterURLMap[clusterURL.Name] = clusterURL
 	}
-	for _, envinfoURL := range localEnvinfoURLs {
-		// only checks for Ingress and Route URLs
-		if envinfoURL.Kind == envinfo.DOCKER {
-			continue
+
+	for _, comp := range containerComponents {
+		for _, localEndpoint := range comp.Container.Endpoints {
+			// only exposed endpoint will be shown as a URL in `odo url list`
+			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
+				continue
+			}
+			var devfileURL envinfo.EnvInfoURL
+			if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
+				devfileURL = envinfoURL
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
+			}
+			if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
+				// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
+				if !routeSupported {
+					continue
+				}
+				devfileURL.Name = localEndpoint.Name
+				devfileURL.Port = int(localEndpoint.TargetPort)
+				devfileURL.Secure = localEndpoint.Secure
+				devfileURL.Kind = envinfo.ROUTE
+			}
+			localURL := ConvertEnvinfoURL(devfileURL, componentName)
+			// use the trimmed URL Name as the key since remote URLs' names are trimmed
+			trimmedURLName := getValidURLName(localURL.Name)
+			localMap[trimmedURLName] = localURL
 		}
-		if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
-			continue
-		}
-		localURL := ConvertEnvinfoURL(envinfoURL, componentName)
-		localMap[localURL.Name] = localURL
 	}
 
 	for URLName, clusterURL := range clusterURLMap {
@@ -875,7 +937,7 @@ type PushParameters struct {
 	EnvURLS                   []envinfo.EnvInfoURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool
-	EndpointMap               map[int32]parsercommon.Endpoint
+	ContainerComponents       []common.DevfileComponent
 }
 
 // Push creates and deletes the required URLs
@@ -885,16 +947,18 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	// in case the component is a s2i one
 	// kClient will be nil
 	if parameters.IsExperimentalModeEnabled && kClient != nil {
-		urls := parameters.EnvURLS
-		for _, url := range urls {
-			if url.Kind != envinfo.DOCKER {
-				if parameters.EndpointMap == nil {
-					klog.V(4).Infof("No Endpoint entry defined in devfile.")
-					return nil
-				}
-				endpoint, exist := parameters.EndpointMap[int32(url.Port)]
-				if !exist || endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
-					return fmt.Errorf("port %v defined in env.yaml file for URL %v is not exposed in devfile Endpoint entry", url.Port, url.Name)
+		envURLMap := make(map[string]envinfo.EnvInfoURL)
+		for _, url := range parameters.EnvURLS {
+			if url.Kind == envinfo.DOCKER {
+				continue
+			}
+			envURLMap[url.Name] = url
+		}
+		for _, comp := range parameters.ContainerComponents {
+			for _, endpoint := range comp.Container.Endpoints {
+				// skip URL creation if the URL is not publicly exposed
+				if endpoint.Exposure == common.None || endpoint.Exposure == common.Internal {
+					continue
 				}
 				secure := false
 				if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
@@ -904,15 +968,35 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				if endpoint.Path != "" {
 					path = endpoint.Path
 				}
-				urlLOCAL[url.Name] = URL{
-					Spec: URLSpec{
-						Host:      url.Host,
-						Port:      url.Port,
-						Secure:    secure,
-						TLSSecret: url.TLSSecret,
-						Kind:      url.Kind,
-						Path:      path,
-					},
+				name := getValidURLName(endpoint.Name)
+				existInEnv := false
+				if url, exist := envURLMap[endpoint.Name]; exist {
+					existInEnv = true
+					urlLOCAL[name] = URL{
+						Spec: URLSpec{
+							Host:      url.Host,
+							Port:      int(endpoint.TargetPort),
+							Secure:    secure,
+							TLSSecret: url.TLSSecret,
+							Kind:      url.Kind,
+							Path:      path,
+						},
+					}
+				}
+				if !existInEnv {
+					if !parameters.IsRouteSupported {
+						// display warning since Host info is missing
+						log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", endpoint.Name)
+					} else {
+						urlLOCAL[name] = URL{
+							Spec: URLSpec{
+								Port:   int(endpoint.TargetPort),
+								Secure: secure,
+								Kind:   envinfo.ROUTE,
+								Path:   path,
+							},
+						}
+					}
 				}
 			}
 		}
@@ -931,49 +1015,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	log.Info("\nApplying URL changes")
-
-	// iterate through endpoints defined in devfile
-	// add the url defination into urlLOCAL if it's not defined in env.yaml
-	if parameters.IsExperimentalModeEnabled && parameters.EndpointMap != nil {
-		for port, endpoint := range parameters.EndpointMap {
-			// should not create URL if Exposure is none or internal
-			if endpoint.Exposure == "none" || endpoint.Exposure == "internal" {
-				continue
-			}
-			exist := false
-			for _, envURL := range urlLOCAL {
-				if envURL.Spec.Port == int(port) {
-					exist = true
-					break
-				}
-			}
-			if !exist {
-				// create route against Openshift
-				if parameters.IsRouteSupported {
-					secure := false
-					if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
-						secure = true
-					}
-					path := "/"
-					if endpoint.Path != "" {
-						path = endpoint.Path
-					}
-					name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
-					urlLOCAL[name] = URL{
-						Spec: URLSpec{
-							Port:   int(port),
-							Secure: secure,
-							Kind:   envinfo.ROUTE,
-							Path:   path,
-						},
-					}
-				} else {
-					// display warning since Host info is missing
-					log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", endpoint.Name)
-				}
-			}
-		}
-	}
 
 	urlCLUSTER := make(map[string]URL)
 	if parameters.IsExperimentalModeEnabled && kClient != nil {
@@ -1085,4 +1126,46 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	return nil
+}
+
+// AddEndpointInDevfile writes the provided endpoint information into devfile
+func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint parsercommon.Endpoint, container string) error {
+	components := devObj.Data.GetComponents()
+	for _, component := range components {
+		if component.Container != nil && component.Container.Name == container {
+			component.Container.Endpoints = append(component.Container.Endpoints, endpoint)
+			devObj.Data.UpdateComponent(component)
+			break
+		}
+	}
+	return devObj.WriteYamlDevfile()
+}
+
+// RemoveEndpointInDevfile deletes the specific endpoint information from devfile
+func RemoveEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
+	found := false
+	for _, component := range adaptersCommon.GetDevfileContainerComponents(devObj.Data) {
+		for index, enpoint := range component.Container.Endpoints {
+			if enpoint.Name == urlName {
+				component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)
+				devObj.Data.UpdateComponent(component)
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("the URL %s does not exist", urlName)
+	}
+	return devObj.WriteYamlDevfile()
+}
+
+// getValidURLName returns valid URL resource name for Kubernetes based cluster
+func getValidURLName(name string) string {
+	trimmedName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(name)))
+	trimmedName = util.TruncateString(trimmedName, 15)
+	return trimmedName
 }

@@ -8,6 +8,7 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	devData "github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
@@ -620,6 +621,181 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			if len(tt.execCommands) >= 2 && (!envDebugMatched || !envDebugWorkDirMatched || !envDebugPortMatched) {
 				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found debug env: %v, found work dir env: %v, found debug port env: %v", component, envDebugMatched, envDebugWorkDirMatched, envDebugPortMatched)
 			}
+		})
+	}
+}
+
+func TestGetPortExposure(t *testing.T) {
+	urlName := "testurl"
+	urlName2 := "testurl2"
+	tests := []struct {
+		name                string
+		devfileData         devData.DevfileData
+		containerComponents []common.DevfileComponent
+		wantMap             map[int32]common.ExposureType
+		wantErr             bool
+	}{
+		{
+			name: "Case 1: devfile has single container with single endpoint",
+			wantMap: map[int32]common.ExposureType{
+				8080: common.Public,
+			},
+			containerComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Exposure:   common.Public,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "Case 2: devfile no endpoints",
+			wantMap: map[int32]common.ExposureType{},
+			containerComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+					},
+				},
+			},
+		},
+		{
+			name: "Case 3: devfile has multiple endpoints with same port, 1 public and 1 internal, should assign public",
+			wantMap: map[int32]common.ExposureType{
+				8080: common.Public,
+			},
+			containerComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Exposure:   common.Public,
+							},
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Exposure:   common.Internal,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Case 4: devfile has multiple endpoints with same port, 1 public and 1 none, should assign public",
+			wantMap: map[int32]common.ExposureType{
+				8080: common.Public,
+			},
+			containerComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Exposure:   common.Public,
+							},
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Exposure:   common.None,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Case 5: devfile has multiple endpoints with same port, 1 internal and 1 none, should assign internal",
+			wantMap: map[int32]common.ExposureType{
+				8080: common.Internal,
+			},
+			containerComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Exposure:   common.Internal,
+							},
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+								Exposure:   common.None,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Case 6: devfile has multiple endpoints with different port",
+			wantMap: map[int32]common.ExposureType{
+				8080: common.Public,
+				9090: common.Internal,
+				3000: common.None,
+			},
+			containerComponents: []common.DevfileComponent{
+				{
+					Container: &common.Container{
+						Image: "quay.io/nodejs-12",
+						Name:  "testcontainer1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName,
+								TargetPort: 8080,
+							},
+							{
+								Name:       urlName,
+								TargetPort: 3000,
+								Exposure:   common.None,
+							},
+						},
+					},
+				},
+				{
+					Container: &common.Container{
+						Name: "testcontainer2",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       urlName2,
+								TargetPort: 9090,
+								Secure:     true,
+								Path:       "/testpath",
+								Exposure:   common.Internal,
+								Protocol:   common.HTTPS,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mapCreated := GetPortExposure(tt.containerComponents)
+			if !reflect.DeepEqual(mapCreated, tt.wantMap) {
+				t.Errorf("Expected: %v, got %v", tt.wantMap, mapCreated)
+			}
+
 		})
 	}
 

@@ -68,7 +68,7 @@ var _ = Describe("odo docker devfile url pushtarget command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
+			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--port", "3000", "--ingress")
 
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
 			session := helper.CmdRunner("odo", "push")

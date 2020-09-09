@@ -3,12 +3,15 @@ package url
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -31,6 +34,7 @@ type URLDeleteOptions struct {
 	urlName            string
 	urlForceDeleteFlag bool
 	now                bool
+	devObj             parser.DevfileObj
 }
 
 // NewURLDeleteOptions creates a new URLDeleteOptions instance
@@ -77,16 +81,12 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 func (o *URLDeleteOptions) Validate() (err error) {
 	var exists bool
 	if experimental.IsExperimentalModeEnabled() {
-		urls := o.EnvSpecificInfo.GetURL()
-		componentName := o.EnvSpecificInfo.GetName()
-		for _, url := range urls {
-			if url.Name == o.urlName {
-				exists = true
-			}
+
+		devObj, err := devfile.ParseAndValidate(o.DevfilePath)
+		if err != nil {
+			return fmt.Errorf("failed to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}
-		if !exists {
-			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, componentName)
-		}
+		o.devObj = devObj
 	} else {
 		urls := o.LocalConfigInfo.GetURL()
 
@@ -117,13 +117,17 @@ func (o *URLDeleteOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
+			err = url.RemoveEndpointInDevfile(o.devObj, o.urlName)
+			if err != nil {
+				return errors.Wrap(err, "failed to delete URL")
+			}
 			if o.now {
 				err = o.DevfilePush()
 				if err != nil {
 					return err
 				}
 			} else {
-				log.Successf("URL %s removed from the env file", o.urlName)
+				log.Successf("URL %s removed from component %s", o.urlName, o.EnvSpecificInfo.GetName())
 				log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
 			}
 		} else {

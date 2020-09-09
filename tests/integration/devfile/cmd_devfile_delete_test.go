@@ -61,10 +61,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress", "--context", context)
 
 			if os.Getenv("KUBERNETES") != "true" {
-				helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", context)
+				helper.CmdShouldPass("odo", "url", "create", "example-1", "--port", "3000", "--context", context)
 				resourceTypes = append(resourceTypes, "routes")
 			}
 
@@ -83,10 +83,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress", "--context", context)
 
 			if os.Getenv("KUBERNETES") != "true" {
-				helper.CmdShouldPass("odo", "url", "create", "example-1")
+				helper.CmdShouldPass("odo", "url", "create", "example-1", "--port", "3000")
 			}
 
 			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f", "--all")
