@@ -15,6 +15,15 @@ v2.0.0-alpha of odo uses **devfile** as its default deployment mechanism.
 # chmod +x /usr/local/bin/odo
 ----
 
+== Installing odo on Linux on IBM Z
+
+=== Binary installation
+
+----
+# curl -L https://github.com/openshift/odo/releases/download/v2.0.0-alpha-2/odo-linux-s390x -o /usr/local/bin/odo
+# chmod +x /usr/local/bin/odo
+----
+
 == Installing odo on macOS
 
 === Binary installation
