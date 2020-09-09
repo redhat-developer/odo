@@ -515,7 +515,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
@@ -529,16 +529,19 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 			return URLList{}, errors.Wrap(err, "unable to list routes")
 		}
 	}
-	localEnvinfoURLs := envSpecificInfo.GetURL()
+
 	envURLMap := make(map[string]envinfo.EnvInfoURL)
-	for _, url := range localEnvinfoURLs {
-		if url.Kind == envinfo.DOCKER {
-			continue
+	if configProvider != nil {
+		localEnvinfoURLs := configProvider.GetURL()
+		for _, url := range localEnvinfoURLs {
+			if url.Kind == envinfo.DOCKER {
+				continue
+			}
+			if !routeSupported && url.Kind == envinfo.ROUTE {
+				continue
+			}
+			envURLMap[url.Name] = url
 		}
-		if !routeSupported && url.Kind == envinfo.ROUTE {
-			continue
-		}
-		envURLMap[url.Name] = url
 	}
 	var urls []URL
 
