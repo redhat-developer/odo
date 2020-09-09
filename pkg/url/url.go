@@ -555,6 +555,7 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		clusterURL := getMachineReadableFormat(r)
 		clusterURLMap[clusterURL.Name] = clusterURL
 	}
+
 	for _, comp := range containerComponents {
 		for _, localEndpoint := range comp.Container.Endpoints {
 			// only exposed endpoint will be shown as a URL in `odo url list`
@@ -571,7 +572,7 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
 				// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
 				if !routeSupported {
-					break
+					continue
 				}
 				devfileURL.Name = localEndpoint.Name
 				devfileURL.Port = int(localEndpoint.TargetPort)
