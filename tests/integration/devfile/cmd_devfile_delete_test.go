@@ -42,7 +42,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
 			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
-      
+
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
