@@ -3,10 +3,12 @@ package component
 import (
 	"fmt"
 	appsv1 "github.com/openshift/api/apps/v1"
+	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -135,6 +137,32 @@ func getType(component PushedComponent) (string, error) {
 		return componentType, nil
 	}
 	return "", fmt.Errorf("%s component doesn't provide a type label", component.GetName())
+}
+
+func GetPushedComponents(c *occlient.Client, applicationName string) (map[string]PushedComponent, error) {
+	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+	dcList, err := c.GetDeploymentConfigsFromSelector(applicationSelector)
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			dList, err := c.GetKubeClient().AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{LabelSelector: applicationSelector})
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to list components")
+			}
+			res := make(map[string]PushedComponent, len(dList.Items))
+			for _, d := range dList.Items {
+				comp := &devfileComponent{d: &d}
+				res[comp.GetName()] = comp
+			}
+			return res, nil
+		}
+		return nil, err
+	}
+	res := make(map[string]PushedComponent, len(dcList))
+	for _, dc := range dcList {
+		comp := &s2iComponent{dc: &dc}
+		res[comp.GetName()] = comp
+	}
+	return res, nil
 }
 
 // GetPushedComponent returns an abstraction over the cluster representation of the component

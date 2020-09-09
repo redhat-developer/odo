@@ -817,6 +817,18 @@ func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision
 	return nil
 }
 
+func GetComponentNames(client *occlient.Client, applicationName string) ([]string, error) {
+	components, err := GetPushedComponents(client, applicationName)
+	if err != nil {
+		return []string{}, err
+	}
+	names := make([]string, 0, len(components))
+	for name := range components {
+		names = append(names, name)
+	}
+	return names, nil
+}
+
 // List lists components in active application
 func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 
