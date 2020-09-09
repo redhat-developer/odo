@@ -47,6 +47,12 @@ const componentNameMaxLen = -1
 
 const apiVersion = "odo.dev/v1alpha1"
 
+var validSourceTypes = map[string]bool{
+	"git":    true,
+	"local":  true,
+	"binary": true,
+}
+
 // GetComponentDir returns source repo name
 // Parameters:
 //		path: git url or source path or binary path
@@ -120,17 +126,7 @@ func GetDefaultComponentName(componentPath string, componentPathType config.SrcT
 
 // validateSourceType check if given sourceType is supported
 func validateSourceType(sourceType string) bool {
-	validSourceTypes := []string{
-		"git",
-		"local",
-		"binary",
-	}
-	for _, valid := range validSourceTypes {
-		if valid == sourceType {
-			return true
-		}
-	}
-	return false
+	return validSourceTypes[sourceType]
 }
 
 // CreateFromGit inputPorts is the array containing the string port values
