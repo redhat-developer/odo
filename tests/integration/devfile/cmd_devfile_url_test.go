@@ -193,7 +193,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 		})
 
-		It("should not allow using tls secret if url is not secure or has invalid host ", func() {
+		It("should not allow using tls secret if url is not secure or has invalid host", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--port", "3000", "--ingress")
 			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
