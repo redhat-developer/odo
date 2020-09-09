@@ -57,7 +57,7 @@ func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client
 	if isDevfile {
 		devfile, err = devfileParser.Parse(envinfo.GetDevfilePath())
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
@@ -123,7 +123,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	var devfile devfileParser.DevfileObj
 	var err error
 	if envInfo != nil {
-		componentDesc, devfile = GetComponentFromDevfile(envInfo)
+		componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
 	} else {
 		componentDesc, err = GetComponentFromConfig(localConfigInfo)
 	}

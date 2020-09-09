@@ -906,11 +906,12 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 	return Component{}, nil
 }
 
-func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, devfileParser.DevfileObj) {
+// GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
+func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, devfileParser.DevfileObj, error) {
 	if info.Exists() {
 		devfile, err := devfileParser.Parse(info.GetDevfilePath())
 		if err != nil {
-			panic(err)
+			return Component{}, devfileParser.DevfileObj{}, err
 		}
 		component := getComponentFrom(info, devfile.Data.GetMetadata().Name)
 		for _, cmp := range devfile.Data.GetComponents() {
@@ -921,9 +922,9 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, devfileP
 			}
 		}
 
-		return component, devfile
+		return component, devfile, nil
 	}
-	return Component{}, devfileParser.DevfileObj{}
+	return Component{}, devfileParser.DevfileObj{}, nil
 }
 
 func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Component {
