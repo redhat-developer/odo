@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -119,9 +120,10 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	cfd := &ComponentFullDescription{}
 	state := GetComponentState(client, componentName, applicationName)
 	var componentDesc Component
+	var devfile devfileParser.DevfileObj
 	var err error
 	if envInfo != nil {
-		componentDesc = GetComponentFromDevfile(envInfo)
+		componentDesc, devfile = GetComponentFromDevfile(envInfo)
 	} else {
 		componentDesc, err = GetComponentFromConfig(localConfigInfo)
 	}
@@ -134,7 +136,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	}
 	cfd.Status.State = state
 	if state == StateTypePushed {
-		componentDescFromCluster, err := GetComponent(client, componentName, applicationName, projectName)
+		componentDescFromCluster, err := getRemoteComponentMetadata(client, kClient, componentName, applicationName, projectName, false, false)
 		if err != nil {
 			return cfd, err
 		}
@@ -153,7 +155,8 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		if e != nil {
 			return cfd, e
 		}
-		urls, err = urlpkg.ListIngressAndRoute(client, kClient, envInfo, componentName, routeSupported)
+		components := adaptersCommon.GetDevfileContainerComponents(devfile.Data)
+		urls, err = urlpkg.ListIngressAndRoute(client, kClient, envInfo, components, componentName, routeSupported)
 	} else {
 		urls, err = urlpkg.List(client, localConfigInfo, componentName, applicationName)
 	}

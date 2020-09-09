@@ -32,8 +32,6 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -819,32 +817,6 @@ func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision
 	return nil
 }
 
-// GetComponentType returns type of component in given application and project
-func GetComponentType(client *occlient.Client, componentName string, applicationName string) (string, error) {
-
-	// filter according to component and application name
-	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
-	componentImageTypes, err := client.GetDeploymentConfigLabelValues(componentlabels.ComponentTypeLabel, selector)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get type of %s component")
-	}
-	if len(componentImageTypes) < 1 {
-		// no type returned
-		return "", errors.Wrap(err, "unable to find type of %s component")
-
-	}
-	// check if all types are the same
-	// it should be as we are secting only exactly one component, and it doesn't make sense
-	// to have one component labeled with different component type labels
-	for _, componentImageType := range componentImageTypes {
-		if componentImageTypes[0] != componentImageType {
-			return "", errors.Wrap(err, "data mismatch: %s component has objects with different types")
-		}
-
-	}
-	return componentImageTypes[0], nil
-}
-
 // List lists components in active application
 func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 
@@ -934,7 +906,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 	return Component{}, nil
 }
 
-func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) Component {
+func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, devfileParser.DevfileObj) {
 	if info.Exists() {
 		devfile, err := devfileParser.Parse(info.GetDevfilePath())
 		if err != nil {
@@ -949,9 +921,9 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) Component {
 			}
 		}
 
-		return component
+		return component, devfile
 	}
-	return Component{}
+	return Component{}, devfileParser.DevfileObj{}
 }
 
 func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Component {
@@ -1026,30 +998,12 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 // The second returned string is a source (url to git repository or local path or path to binary)
 // we retrieve the source type by looking up the DeploymentConfig that's deployed
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string) (string, string, error) {
-
-	// Namespace the application
-	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	component, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", "", errors.Wrapf(err, "unable to get type of %s component", componentName)
+	} else {
+		return component.GetSource()
 	}
-
-	deploymentConfig, err := client.GetDeploymentConfigFromName(namespacedOpenShiftObject)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
-	}
-
-	sourceType := deploymentConfig.ObjectMeta.Annotations[ComponentSourceTypeAnnotation]
-	if !validateSourceType(sourceType) {
-		return "", "", fmt.Errorf("unsupported component source type %s", sourceType)
-	}
-
-	var sourcePath string
-	if sourceType == string(config.GIT) {
-		sourcePath = deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
-	}
-
-	klog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
-	return sourceType, sourcePath, nil
 }
 
 // Update updates the requested component
@@ -1342,69 +1296,88 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 
 func GetComponentState(client *occlient.Client, componentName, applicationName string) State {
 	// first check if a deployment exists
-	_, err := client.GetKubeClient().AppsV1().Deployments(client.Namespace).Get(componentName, metav1.GetOptions{})
+	c, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
-		if kerrors.IsNotFound(err) {
-			// if it's not found, check if there's a deploymentconfig
-			deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
-			if err != nil {
-				return StateTypeUnknown
-			}
-			_, err = client.GetDeploymentConfigFromName(deploymentName)
-			if err != nil {
-				if kerrors.IsNotFound(err) {
-					return StateTypeNotPushed
-				}
-			} else {
-				return StateTypePushed
-			}
-		}
 		return StateTypeUnknown
 	}
-
-	return StateTypePushed
+	if c != nil {
+		return StateTypePushed
+	} else {
+		return StateTypeNotPushed
+	}
 }
 
 // GetComponent provides component definition
 func GetComponent(client *occlient.Client, componentName string, applicationName string, projectName string) (component Component, err error) {
+	c, err := kclient.NewForConfig(client.KubeConfig)
+	if err != nil {
+		return Component{}, err
+	}
+	return getRemoteComponentMetadata(client, c, componentName, applicationName, projectName, true, true)
+}
+
+// getRemoteComponentMetadata provides component metadata from the cluster
+func getRemoteComponentMetadata(client *occlient.Client, kClient *kclient.Client, componentName string, applicationName string, projectName string, getUrls, getStorage bool) (component Component, err error) {
+	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
+	if err != nil {
+		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
+	}
+
 	// Component Type
-	componentType, err := GetComponentType(client, componentName, applicationName)
+	componentType, err := fromCluster.GetType()
 	if err != nil {
 		return component, errors.Wrap(err, "unable to get source type")
 	}
+
+	// init component
+	component = getMachineReadableFormat(componentName, componentType)
+
 	// Source
-	sourceType, path, err := GetComponentSource(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get source path")
+	sourceType, path, sourceError := fromCluster.GetSource()
+	if sourceError != nil {
+		_, sourceAbsent := sourceError.(noSourceError)
+		if !sourceAbsent {
+			return component, errors.Wrap(err, "unable to get source path")
+		}
+	} else {
+		component.Spec.Source = path
+		component.Spec.SourceType = sourceType
 	}
+
 	// URL
-	urlList, err := urlpkg.ListPushed(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get url list")
-	}
-	var urls []string
-	for _, url := range urlList.Items {
-		urls = append(urls, url.Name)
+	if getUrls {
+		routeSupported, e := client.IsRouteSupported()
+		if e != nil {
+			return component, e
+		}
+		urlList, err := urlpkg.ListIngressAndRoute(client, kClient, nil, nil, componentName, routeSupported)
+		if err != nil {
+			return component, errors.Wrap(err, "unable to get url list")
+		}
+		if len(urlList.Items) > 0 {
+			urls := make([]string, 0, len(urlList.Items))
+			for _, url := range urlList.Items {
+				urls = append(urls, url.Name)
+			}
+			component.Spec.URL = urls
+		}
 	}
 
 	// Storage
-	appStore, err := storage.List(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get storage list")
+	if getStorage {
+		appStore, err := storage.List(client, componentName, applicationName)
+		if err != nil {
+			return component, errors.Wrap(err, "unable to get storage list")
+		}
+		var storage []string
+		for _, store := range appStore.Items {
+			storage = append(storage, store.Name)
+		}
+		component.Spec.Storage = storage
 	}
-	var storage []string
-	for _, store := range appStore.Items {
-		storage = append(storage, store.Name)
-	}
+
 	// Environment Variables
-	DC, err := util.NamespaceOpenShiftObject(componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get DC list")
-	}
-	envVars, err := client.GetEnvVarsFromDC(DC)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get envVars list")
-	}
+	envVars := fromCluster.GetEnvVars()
 	var filteredEnv []corev1.EnvVar
 	for _, env := range envVars {
 		if !strings.Contains(env.Name, "ODO") {
@@ -1412,16 +1385,9 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 		}
 	}
 
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get envVars list")
-	}
-
 	linkedServices := make([]string, 0, 5)
 	linkedComponents := make(map[string][]string)
-	linkedSecretNames, err := GetComponentLinkedSecretNames(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to list linked secrets")
-	}
+	linkedSecretNames := fromCluster.GetLinkedSecretNames()
 	for _, secretName := range linkedSecretNames {
 		secret, err := client.GetSecret(secretName, projectName)
 		if err != nil {
@@ -1437,13 +1403,8 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 		}
 	}
 
-	component = getMachineReadableFormat(componentName, componentType)
 	component.Namespace = client.Namespace
 	component.Spec.App = applicationName
-	component.Spec.Source = path
-	component.Spec.URL = urls
-	component.Spec.SourceType = sourceType
-	component.Spec.Storage = storage
 	component.Spec.Env = filteredEnv
 	component.Status.LinkedComponents = linkedComponents
 	component.Status.LinkedServices = linkedServices
