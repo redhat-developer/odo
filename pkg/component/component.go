@@ -940,7 +940,7 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) Component {
 		if err != nil {
 			panic(err)
 		}
-		component := getComponentFrom(info, "devfile: "+devfile.Data.GetMetadata().Name)
+		component := getComponentFrom(info, devfile.Data.GetMetadata().Name)
 		for _, cmp := range devfile.Data.GetComponents() {
 			if cmp.Container != nil {
 				for _, env := range cmp.Container.Env {
