@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -514,6 +515,20 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 	return urlList, nil
 }
 
+type sortableURLs []URL
+
+func (s sortableURLs) Len() int {
+	return len(s)
+}
+
+func (s sortableURLs) Less(i, j int) bool {
+	return s[i].Name <= s[j].Name
+}
+
+func (s sortableURLs) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 // ListIngressAndRoute returns all Ingress and Route for given component.
 func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
@@ -543,7 +558,8 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, confi
 			envURLMap[url.Name] = url
 		}
 	}
-	var urls []URL
+
+	var urls sortableURLs
 
 	clusterURLMap := make(map[string]URL)
 	localMap := make(map[string]URL)
@@ -610,6 +626,9 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, confi
 			urls = append(urls, localURL)
 		}
 	}
+
+	// sort urls by name to get consistent output
+	sort.Sort(urls)
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
 }
