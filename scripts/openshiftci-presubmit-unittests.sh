@@ -19,3 +19,7 @@ GOFLAGS='' make test
 # crosscompile and publish artifacts
 make cross
 cp -r dist $ARTIFACTS_DIR
+
+# RPM Tests
+GOFLAGS='' scripts/rpm-x86_64-test.sh
+
