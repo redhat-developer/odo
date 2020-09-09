@@ -45,20 +45,34 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 
 	Context("Listing urls", func() {
-		It("should list url after push", func() {
+		It("should list url after push using context", func() {
+			// to confirm that --context works we are using a subfolder of the context
+			subFolderContext := filepath.Join(context, helper.RandString(6))
+			helper.MakeDir(subFolderContext)
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", subFolderContext, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), subFolderContext)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(subFolderContext, "devfile.yaml"))
 
-			stdout := helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--ingress")
+			stdout := helper.CmdShouldFail("odo", "url", "list", "--context", subFolderContext)
+			helper.MatchAllInOutput(stdout, []string{
+				"no URLs found",
+				"Refer `odo url create -h` to add one",
+			})
+
+			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "8080", "--context", subFolderContext)
+			Expect(stdout).To(ContainSubstring("is not exposed"))
+
+			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--ingress", "--context", subFolderContext)
 			Expect(stdout).To(ContainSubstring("host must be provided"))
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
-			stdout = helper.CmdShouldPass("odo", "push", "--project", namespace)
+			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--ingress")
+			Expect(stdout).To(ContainSubstring("The current directory does not represent an odo component"))
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext)
+			stdout = helper.CmdShouldPass("odo", "push", "--context", subFolderContext)
 			Expect(stdout).Should(ContainSubstring(url1 + "." + host))
 
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
@@ -179,22 +193,14 @@ var _ = Describe("odo devfile url command tests", func() {
 			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 		})
 
-		It("should not allow creating an invalid host", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
-			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--port", "3000", "--ingress")
-			Expect(stdOut).To(ContainSubstring("is not a valid host name"))
-		})
-
-		It("should not allow using tls secret if url is not secure", func() {
+		It("should not allow using tls secret if url is not secure or has invalid host ", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--port", "3000", "--ingress")
 			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
-		})
-
-		It("should report multiple issues when it's the case", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
-			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--port", "3000", "--ingress")
+			stdOut = helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--ingress")
 			Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
+			stdOut = helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--ingress")
+			Expect(stdOut).To(ContainSubstring("is not a valid host name"))
 		})
 
 		It("should not allow creating under an invalid container", func() {
