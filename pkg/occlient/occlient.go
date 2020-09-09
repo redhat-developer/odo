@@ -210,6 +210,7 @@ type Client struct {
 	KubeConfig           clientcmd.ClientConfig
 	discoveryClient      discovery.DiscoveryInterface
 	Namespace            string
+	supportedResources   map[string]bool
 }
 
 func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
@@ -3301,20 +3302,30 @@ func GenerateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 }
 
 func (c *Client) isResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
-
+	if c.supportedResources == nil {
+		c.supportedResources = make(map[string]bool, 7)
+	}
 	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
 
-	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
-	if kerrors.IsNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	for _, resources := range list.APIResources {
-		if resources.Name == resourceName {
-			return true, nil
+	supported, found := c.supportedResources[groupVersion]
+	if !found {
+		list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+		if err != nil {
+			if kerrors.IsNotFound(err) {
+				supported = false
+			} else {
+				// don't record, just attempt again next time in case it's a transient error
+				return false, err
+			}
+		} else {
+			for _, resources := range list.APIResources {
+				if resources.Name == resourceName {
+					supported = true
+					break
+				}
+			}
 		}
+		c.supportedResources[groupVersion] = supported
 	}
-	return false, nil
+	return supported, nil
 }
