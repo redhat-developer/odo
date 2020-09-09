@@ -27,6 +27,27 @@ const (
 	InitCommandGroupType DevfileCommandGroupType = "init"
 )
 
+// ExposureType is an enum to indicate the exposure type of the endpoint
+type ExposureType string
+
+const (
+	Public   ExposureType = "public"
+	Internal ExposureType = "internal"
+	None     ExposureType = "none"
+)
+
+// ProtocolType is an enum to indicate the protocol type of the endpoint
+type ProtocolType string
+
+const (
+	HTTP  ProtocolType = "http"
+	HTTPS ProtocolType = "https"
+	WS    ProtocolType = "ws"
+	WSS   ProtocolType = "wss"
+	TCP   ProtocolType = "tcp"
+	UDP   ProtocolType = "udp"
+)
+
 // DevfileMetadata metadata for devfile
 type DevfileMetadata struct {
 
@@ -92,7 +113,7 @@ type Endpoint struct {
 	Attributes map[string]string `json:"attributes,omitempty" yaml:"attributes,omitempty"`
 
 	// Describes how the endpoint should be exposed on the network. public|internal|none. Default value is "public"
-	Exposure string `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+	Exposure ExposureType `json:"exposure,omitempty" yaml:"exposure,omitempty"`
 
 	Path       string `json:"path,omitempty" yaml:"path,omitempty"`
 	Secure     bool   `json:"secure,omitempty" yaml:"secure,omitempty"`
@@ -100,7 +121,7 @@ type Endpoint struct {
 	TargetPort int32  `json:"targetPort" yaml:"targetPort"`
 
 	// Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is "http"
-	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Protocol ProtocolType `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 }
 
 // Env

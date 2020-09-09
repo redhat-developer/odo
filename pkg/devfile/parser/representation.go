@@ -23,10 +23,10 @@ func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 				port := PortRepr{
 					ExposedPort: endpoint.TargetPort,
 					Name:        endpoint.Name,
-					Protocol:    "tcp",
+					Protocol:    "http",
 				}
 				if endpoint.Protocol != "" {
-					port.Protocol = endpoint.Protocol
+					port.Protocol = string(endpoint.Protocol)
 				}
 				cont.Ports = append(cont.Ports, port)
 			}

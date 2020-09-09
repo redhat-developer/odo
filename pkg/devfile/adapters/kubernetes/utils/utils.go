@@ -7,7 +7,6 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -52,8 +51,9 @@ func ConvertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
 		name = util.TruncateString(name, 15)
 		for _, c := range containerPorts {
-			if c.ContainerPort == endpoint.TargetPort {
-				return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", endpoint.TargetPort)
+			if c.Name == endpoint.Name {
+				// the name has to be unique within a single container since it is considered as the URL name
+				return nil, fmt.Errorf("devfile contains multiple endpoint entries with same name: %v", endpoint.Name)
 			}
 		}
 		containerPorts = append(containerPorts, corev1.ContainerPort{
@@ -78,8 +78,14 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		for _, c := range containers {
 			for _, containerPort := range c.Ports {
 				for _, curPort := range container.Ports {
+					if curPort.Name == containerPort.Name {
+						// the name has to be unique across containers since it is considered as the URL name
+						return nil, fmt.Errorf("devfile contains multiple endpoint entries with same name: %v", containerPort.Name)
+					}
 					if curPort.ContainerPort == containerPort.ContainerPort {
-						return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", containerPort.ContainerPort)
+						// the same TargetPort present in different containers
+						// because containers in a single pod shares the network namespace
+						return nil, fmt.Errorf("devfile contains multiple containers with same TargetPort: %v", containerPort.ContainerPort)
 					}
 				}
 			}
@@ -116,25 +122,27 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 	return containers, nil
 }
 
-// GetEndpoints iterates through the components in the devfile and returns endpoints of all supported components
-func GetEndpoints(data data.DevfileData) (map[int32]common.Endpoint, error) {
-	endpointsMap := make(map[int32]common.Endpoint)
-
-	for _, comp := range adaptersCommon.GetDevfileContainerComponents(data) {
-		// Currently type container is the only devfile component that odo supports
-		if comp.Container.Endpoints != nil {
-			for _, endpoint := range comp.Container.Endpoints {
-				// TargetPort is a required entry for an Endpoint
-				// Devfile should not contains multiple identical TargetPorts, since all containers are inside one pod
-				if _, keyexist := endpointsMap[endpoint.TargetPort]; keyexist {
-					return nil, fmt.Errorf("Devfile contains multiple identical TargetPorts: %v", endpoint.TargetPort)
-				} else {
-					endpointsMap[endpoint.TargetPort] = endpoint
+// GetPortExposure iterate through all endpoints and returns the highest exposure level of all TargetPort.
+// exposure level: public > internal > none
+func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]common.ExposureType {
+	portExposureMap := make(map[int32]common.ExposureType)
+	for _, comp := range containerComponents {
+		for _, endpoint := range comp.Container.Endpoints {
+			// if exposure=public, no need to check for existence
+			if endpoint.Exposure == common.Public || endpoint.Exposure == "" {
+				portExposureMap[endpoint.TargetPort] = common.Public
+			} else if exposure, exist := portExposureMap[endpoint.TargetPort]; exist {
+				// if a container has multiple identical ports with different exposure levels, save the highest level in the map
+				if endpoint.Exposure == common.Internal && exposure == common.None {
+					portExposureMap[endpoint.TargetPort] = common.Internal
 				}
+			} else {
+				portExposureMap[endpoint.TargetPort] = endpoint.Exposure
 			}
 		}
+
 	}
-	return endpointsMap, nil
+	return portExposureMap
 }
 
 // isEnvPresent checks if the env variable is present in an array of env variables

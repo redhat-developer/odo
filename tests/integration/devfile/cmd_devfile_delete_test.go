@@ -42,14 +42,14 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
 			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
-
+      
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress", "--context", commonVar.Context)
 
 			if os.Getenv("KUBERNETES") != "true" {
-				helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+				helper.CmdShouldPass("odo", "url", "create", "example-1", "--port", "3000", "--context", commonVar.Context)
 				resourceTypes = append(resourceTypes, "routes")
 			}
 
@@ -68,10 +68,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress", "--context", commonVar.Context)
 
 			if os.Getenv("KUBERNETES") != "true" {
-				helper.CmdShouldPass("odo", "url", "create", "example-1")
+				helper.CmdShouldPass("odo", "url", "create", "example-1", "--port", "3000")
 			}
 
 			helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f", "--all")
