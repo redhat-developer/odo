@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set +x
 
 if [[ ! -d dist/rpmbuild  ]]; then
 	echo "Cannot build as artifacts are not generated. Run scrips/rpm-prepare.sh first"
