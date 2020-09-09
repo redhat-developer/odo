@@ -1423,65 +1423,6 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-<<<<<<< HEAD
-=======
-			name:          "env ingress port does not match endpoint defined in devfile",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []envinfo.EnvInfoURL{
-				{
-					Name: "example",
-					Port: 9090,
-					Host: "com",
-					Kind: envinfo.INGRESS,
-				},
-			},
-			endpintMap: map[int32]versionsCommon.Endpoint{
-				8080: versionsCommon.Endpoint{
-					Name:       "example",
-					TargetPort: 8080,
-					Secure:     false,
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:          "env route port does not match endpoint defined in devfile",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []envinfo.EnvInfoURL{
-				{
-					Name: "example",
-					Port: 9090,
-					Kind: envinfo.ROUTE,
-				},
-			},
-			endpintMap: map[int32]versionsCommon.Endpoint{
-				8080: versionsCommon.Endpoint{
-					Name:       "example",
-					TargetPort: 8080,
-					Secure:     false,
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:          "no endpoint defined in devfile",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []envinfo.EnvInfoURL{
-				{
-					Name: "example",
-					Port: 9090,
-					Host: "com",
-					Kind: envinfo.INGRESS,
-				},
-			},
-			endpintMap: map[int32]versionsCommon.Endpoint{},
-			wantErr:    true,
-		},
-		{
->>>>>>> Make Devfile the default deployment mechanism for odo
 			name:          "env has ingress defined with same port, but endpoint port defined in devfile is internally exposed",
 			componentName: "nodejs",
 			args:          args{isRouteSupported: true},
@@ -1523,25 +1464,7 @@ func TestPush(t *testing.T) {
 					Kind: envinfo.INGRESS,
 				},
 			},
-<<<<<<< HEAD
 			containerComponents: []versionsCommon.DevfileComponent{
-=======
-			endpintMap: map[int32]versionsCommon.Endpoint{
-				8080: versionsCommon.Endpoint{
-					Name:       "example",
-					TargetPort: 8080,
-					Secure:     false,
-					Exposure:   "none",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:          "env has route defined with same port, but endpoint port defined in devfile is internally exposed",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []envinfo.EnvInfoURL{
->>>>>>> Make Devfile the default deployment mechanism for odo
 				{
 					Container: &versionsCommon.Container{
 						Name: "container1",
@@ -1844,23 +1767,13 @@ func TestPush(t *testing.T) {
 			})
 
 			if err := Push(fakeClient, fakeKClient, PushParameters{
-<<<<<<< HEAD
-				ComponentName:             tt.componentName,
-				ApplicationName:           tt.applicationName,
-				ConfigURLs:                tt.existingConfigURLs,
-				EnvURLS:                   tt.existingEnvInfoURLs,
-				IsRouteSupported:          tt.args.isRouteSupported,
-				IsExperimentalModeEnabled: tt.args.isExperimentalModeEnabled,
-				ContainerComponents:       tt.containerComponents,
-=======
-				ComponentName:    tt.componentName,
-				ApplicationName:  tt.applicationName,
-				ConfigURLs:       tt.existingConfigURLs,
-				EnvURLS:          tt.existingEnvInfoURLs,
-				IsRouteSupported: tt.args.isRouteSupported,
-				EndpointMap:      tt.endpintMap,
-				IsS2I:            tt.args.isS2I,
->>>>>>> Make Devfile the default deployment mechanism for odo
+				ComponentName:       tt.componentName,
+				ApplicationName:     tt.applicationName,
+				ConfigURLs:          tt.existingConfigURLs,
+				EnvURLS:             tt.existingEnvInfoURLs,
+				IsRouteSupported:    tt.args.isRouteSupported,
+				ContainerComponents: tt.containerComponents,
+				IsS2I:               tt.args.isS2I,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
