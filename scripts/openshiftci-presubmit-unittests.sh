@@ -14,7 +14,7 @@ export GOLANGCI_LINT_CACHE="/tmp/.cache"
 
 make goget-tools
 make validate
-make test
+GOFLAGS='' make test
 
 # crosscompile and publish artifacts
 make cross
