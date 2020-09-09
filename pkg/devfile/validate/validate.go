@@ -6,7 +6,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"k8s.io/klog"
 
-	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 )
 
@@ -15,8 +14,6 @@ func ValidateDevfileData(data interface{}) error {
 	var components []common.DevfileComponent
 
 	switch d := data.(type) {
-	case *v100.Devfile100:
-		return fmt.Errorf("unsupported devfile version. Only devfiles with schema version 2.0.0 are supported")
 	case *v200.Devfile200:
 		components = d.GetComponents()
 

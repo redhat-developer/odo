@@ -2,8 +2,9 @@ package parser
 
 import (
 	"bytes"
-	"github.com/openshift/odo/pkg/util"
 	"unicode"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -52,7 +53,7 @@ func (d *DevfileCtx) SetDevfileContent() error {
 	var err error
 	var data []byte
 	if d.url != "" {
-		data, err = util.DownloadFileInMemory(d.url)
+		data, err = util.DownloadFileInMemory(util.HTTPRequestParams{URL: d.url})
 		if err != nil {
 			return errors.Wrap(err, "error getting parent info from url")
 		}

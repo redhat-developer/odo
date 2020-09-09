@@ -6,7 +6,8 @@ projects:
   - name: springbootproject
     source:
       type: git
-      location: "https://github.com/maysunfaisal/springboot.git"
+      remotes:
+        origin: "https://github.com/maysunfaisal/springboot.git"
 components:
   - type: chePlugin
     id: redhat/java/latest

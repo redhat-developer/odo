@@ -30,6 +30,27 @@ func ParseFromURLAndValidate(url string) (d parser.DevfileObj, err error) {
 	return d, nil
 }
 
+// ParseFromDataAndValidate func parses the devfile data
+// and validates the devfile integrity with the schema
+// and validates the devfile data.
+// Creates devfile context and runtime objects.
+func ParseFromDataAndValidate(data []byte) (d parser.DevfileObj, err error) {
+	// read and parse devfile from the given bytes
+	d, err = parser.ParseFromData(data)
+	if err != nil {
+		return d, err
+	}
+
+	// odo specific validation on devfile content
+	err = validate.ValidateDevfileData(d.Data)
+	if err != nil {
+		return d, err
+	}
+
+	// Successful
+	return d, nil
+}
+
 // ParseAndValidate func parses the devfile data
 // and validates the devfile integrity with the schema
 // and validates the devfile data.

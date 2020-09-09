@@ -10,8 +10,12 @@ import (
 const (
 	TempJSONDevfilePrefix = "odo-devfile.*.json"
 	InvalidDevfileContent = ":: invalid :: content"
+	validJson200          = `{ "schemaVersion": "2.0.0", "metadata": { "name": "java-maven", "version": "1.0.0" }, "components": [ { "container": { "name": "tools", "image": "quay.io/eclipse/che-java11-maven:nightly", "memoryLimit": "512Mi", "mountSources": true, "endpoints": [ { "name": "http-8080", "targetPort": 8080 } ], "volumeMounts": [ { "name": "m2", "path": "/home/user/.m2" } ] } }, { "volume": { "name": "m2" } } ], "commands": [ { "exec": { "id": "mvn-package", "component": "tools", "commandLine": "mvn package", "group": { "kind": "build", "isDefault": true } } }, { "exec": { "id": "run", "component": "tools", "commandLine": "java -jar target/*.jar", "group": { "kind": "run", "isDefault": true } } }, { "exec": { "id": "debug", "component": "tools", "commandLine": "java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n -jar target/*.jar", "group": { "kind": "debug", "isDefault": true } } } ] }`
 )
 
+func validJsonRawContent200() []byte {
+	return []byte(validJson200)
+}
 func TestSetDevfileContent(t *testing.T) {
 
 	const (
@@ -44,7 +48,7 @@ func TestSetDevfileContent(t *testing.T) {
 
 		var (
 			fakeFs      = filesystem.NewFakeFs()
-			tempDevfile = createTempDevfile(t, validJsonRawContent100(), fakeFs)
+			tempDevfile = createTempDevfile(t, validJsonRawContent200(), fakeFs)
 			d           = DevfileCtx{
 				absPath: tempDevfile.Name(),
 				Fs:      fakeFs,
@@ -132,7 +136,7 @@ func TestSetDevfileContentFromBytes(t *testing.T) {
 
 		var (
 			fakeFs      = filesystem.NewFakeFs()
-			tempDevfile = createTempDevfile(t, validJsonRawContent100(), fakeFs)
+			tempDevfile = createTempDevfile(t, validJsonRawContent200(), fakeFs)
 			d           = DevfileCtx{
 				absPath: tempDevfile.Name(),
 				Fs:      fakeFs,
@@ -141,7 +145,7 @@ func TestSetDevfileContentFromBytes(t *testing.T) {
 
 		defer os.Remove(tempDevfile.Name())
 
-		err := d.SetDevfileContentFromBytes(validJsonRawContent100())
+		err := d.SetDevfileContentFromBytes(validJsonRawContent200())
 
 		if err != nil {
 			t.Errorf("unexpected error '%v'", err)
@@ -156,7 +160,7 @@ func TestSetDevfileContentFromBytes(t *testing.T) {
 
 		var (
 			fakeFs      = filesystem.NewFakeFs()
-			tempDevfile = createTempDevfile(t, []byte(validJsonRawContent100()), fakeFs)
+			tempDevfile = createTempDevfile(t, []byte(validJsonRawContent200()), fakeFs)
 			d           = DevfileCtx{
 				absPath: tempDevfile.Name(),
 				Fs:      fakeFs,

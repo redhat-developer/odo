@@ -14,6 +14,8 @@ jobs:
         - make goget-tools
       script:
         - lsb_release -a
+        - free -m
+        - dmesg
         - export PATH="$PATH:$GOPATH/bin"
         - make bin
         - make validate
@@ -131,6 +133,8 @@ jobs:
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
+        - free -m
+        - dmesg
         - make bin
         - sudo cp odo /usr/bin
         # Commenting out the docker test target (though test-cmd-docker-devfile-url-pushtarget is not broken)
@@ -194,6 +198,8 @@ jobs:
         - sudo apt-get install -y socat
       script:
         - kubectl cluster-info
+        - free -m
+        - dmesg
         - make bin
         - sudo cp odo /usr/bin
         - export KUBERNETES=true

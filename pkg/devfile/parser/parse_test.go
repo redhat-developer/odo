@@ -49,9 +49,6 @@ func Test_parseParent(t *testing.T) {
 									},
 								},
 							},
-							Events: common.DevfileEvents{
-								PostStart: []string{"post-start-0-override"},
-							},
 							Projects: []common.DevfileProject{
 								{
 									ClonePath: "/projects",
@@ -127,7 +124,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "nodejs-starter",
 						},
@@ -136,7 +136,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "starter-project-1",
 						},
@@ -175,8 +178,8 @@ func Test_parseParent(t *testing.T) {
 						},
 					},
 					Events: common.DevfileEvents{
-						PostStart: []string{"post-start-0-override"},
 						PostStop:  []string{"post-stop"},
+						PostStart: []string{"post-start-0"},
 					},
 					Projects: []common.DevfileProject{
 						{
@@ -186,7 +189,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/projects",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "nodejs-starter",
 						},
@@ -199,7 +205,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/projects",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "starter-project-1",
 						},
@@ -275,7 +284,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "nodejs-starter",
 						},
@@ -284,7 +296,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "starter-project-2",
 						},
@@ -334,7 +349,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "nodejs-starter",
 						},
@@ -347,7 +365,10 @@ func Test_parseParent(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: "starter-project-2",
 						},
@@ -377,9 +398,6 @@ func Test_parseParent(t *testing.T) {
 										Name:  "nodejs",
 									},
 								},
-							},
-							Events: common.DevfileEvents{
-								PostStart: []string{"post-start-0-override"},
 							},
 							Projects: []common.DevfileProject{
 								{
