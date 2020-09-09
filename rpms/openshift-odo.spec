@@ -45,7 +45,6 @@ make test
 %endif
 make prepare-release
 unlink %{gopath}/src/github.com/openshift/odo
-rm -rf %{gopath}
 
 %install
 mkdir -p %{buildroot}/%{_bindir}
