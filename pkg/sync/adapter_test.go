@@ -478,7 +478,9 @@ func TestGetSyncFolder(t *testing.T) {
 				{
 					Name: projectNames[0],
 					Git: &versionsCommon.Git{
-						Location: projectRepos[0],
+						GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
 					},
 				},
 			},
@@ -491,13 +493,17 @@ func TestGetSyncFolder(t *testing.T) {
 				{
 					Name: projectNames[0],
 					Git: &versionsCommon.Git{
-						Location: projectRepos[0],
+						GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
 					},
 				},
 				{
 					Name: projectNames[1],
 					Github: &versionsCommon.Github{
-						Location: projectRepos[1],
+						GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[1]},
+						},
 					},
 				},
 				{
@@ -531,7 +537,9 @@ func TestGetSyncFolder(t *testing.T) {
 					ClonePath: invalidClonePaths[0],
 					Name:      projectNames[0],
 					Github: &versionsCommon.Github{
-						Location: projectRepos[0],
+						GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
 					},
 				},
 			},
@@ -545,7 +553,9 @@ func TestGetSyncFolder(t *testing.T) {
 					ClonePath: invalidClonePaths[1],
 					Name:      projectNames[0],
 					Git: &versionsCommon.Git{
-						Location: projectRepos[0],
+						GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
 					},
 				},
 			},
