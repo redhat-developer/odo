@@ -1322,15 +1322,11 @@ func GetComponentState(client *occlient.Client, componentName, applicationName s
 
 // GetComponent provides component definition
 func GetComponent(client *occlient.Client, componentName string, applicationName string, projectName string) (component Component, err error) {
-	c, err := kclient.NewForConfig(client.KubeConfig)
-	if err != nil {
-		return Component{}, err
-	}
-	return getRemoteComponentMetadata(client, c, componentName, applicationName, projectName, true, true)
+	return getRemoteComponentMetadata(client, componentName, applicationName, projectName, true, true)
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
-func getRemoteComponentMetadata(client *occlient.Client, kClient *kclient.Client, componentName string, applicationName string, projectName string, getUrls, getStorage bool) (component Component, err error) {
+func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, projectName string, getUrls, getStorage bool) (component Component, err error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
@@ -1359,20 +1355,14 @@ func getRemoteComponentMetadata(client *occlient.Client, kClient *kclient.Client
 
 	// URL
 	if getUrls {
-		routeSupported, e := client.IsRouteSupported()
-		if e != nil {
-			return component, e
-		}
-		urlList, err := urlpkg.ListIngressAndRoute(client, kClient, nil, nil, componentName, routeSupported)
-		if err != nil {
-			return component, errors.Wrap(err, "unable to get url list")
-		}
-		if len(urlList.Items) > 0 {
-			urls := make([]string, 0, len(urlList.Items))
-			for _, url := range urlList.Items {
-				urls = append(urls, url.Name)
+		urls := fromCluster.GetURLs()
+		urlsNb := len(urls)
+		if urlsNb > 0 {
+			res := make([]string, 0, urlsNb)
+			for _, url := range urls {
+				res = append(res, url.Name)
 			}
-			component.Spec.URL = urls
+			component.Spec.URL = res
 		}
 	}
 
