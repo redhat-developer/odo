@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -967,14 +968,23 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
 		defer downloadSpinner.End(false)
 
-		_, err = git.PlainClone(path, false, &git.CloneOptions{
+		cloneOptions := &git.CloneOptions{
 			URL:           remoteUrl,
 			RemoteName:    remoteName,
 			ReferenceName: plumbing.ReferenceName(revision),
 			SingleBranch:  true,
 			// we don't need history for starter projects
 			Depth: 1,
-		})
+		}
+
+		if co.devfileMetadata.starterToken != "" {
+			cloneOptions.Auth = &http.BasicAuth{
+				Username: registryUtil.RegistryUser,
+				Password: co.devfileMetadata.starterToken,
+			}
+		}
+
+		_, err = git.PlainClone(path, false, cloneOptions)
 		if err != nil {
 			return err
 		}
