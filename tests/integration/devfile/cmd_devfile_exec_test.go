@@ -13,9 +13,7 @@ import (
 )
 
 var _ = Describe("odo devfile exec command tests", func() {
-	var project, namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-
-	appName := "app"
+	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
 
 	// Using program command according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -24,7 +22,6 @@ var _ = Describe("odo devfile exec command tests", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
-		project = helper.CreateRandProject()
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 
@@ -46,16 +43,6 @@ var _ = Describe("odo devfile exec command tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
-	})
-
-	Context("Should fail when running against s2i", func() {
-
-		It("Fail when running against s2i", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
-			helper.CmdShouldFail("odo", "exec", "--context", context, "--", "ls")
-		})
-
 	})
 
 	Context("When devfile exec command is executed", func() {
