@@ -44,6 +44,7 @@ cd %{gopath}/src/github.com/openshift/odo
 GOFLAGS='-mod=vendor' make test
 %endif
 make prepare-release
+echo "%{odo_version}" > dist/release/VERSION
 unlink %{gopath}/src/github.com/openshift/odo
 
 %install
@@ -59,7 +60,7 @@ install -p -m 755 dist/release/odo-darwin-amd64 %{buildroot}%{_datadir}/%{name}-
 install -p -m 755 dist/release/odo-windows-amd64.exe %{buildroot}%{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
 cp -avrf dist/release/odo*.tar.gz %{buildroot}%{_datadir}/%{name}-redistributable
 cp -avrf dist/release/SHA256_SUM %{buildroot}%{_datadir}/%{name}-redistributable
-
+cp -avrf dist/release/VERSION %{buildroot}%{_datadir}/%{name}-redistributable
 
 %files
 %license LICENSE
@@ -91,3 +92,4 @@ Obsoletes:      %{package_name}-redistributable <= %{odo_version}
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe.tar.gz
 %{_datadir}/%{name}-redistributable/SHA256_SUM
+%{_datadir}/%{name}-redistributable/VERSION
