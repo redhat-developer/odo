@@ -5,17 +5,20 @@ projects:
   - name: nodeshift
     clonePath: webapp/
     git:
-      location: "https://github.com/nodeshift/nodeshift"
+      remotes:
+        origin: "https://github.com/nodeshift/nodeshift"
   - name: nodejs-health-check
     git:
-      location: "https://github.com/nodeshift-starters/nodejs-health-check"
+      remotes: 
+        origin: "https://github.com/nodeshift-starters/nodejs-health-check" 
 starterProjects:
   - name: nodejs-starter
     git:
-      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+      remotes: 
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       endpoints:
@@ -23,16 +26,16 @@ components:
           targetPort: 3000
       mountSources: true
 commands:
-  - exec:
-      id: devbuild
+  - id: devbuild
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: devrun
+  - id: devrun
+    exec:
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}
