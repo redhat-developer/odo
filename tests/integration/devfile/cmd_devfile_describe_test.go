@@ -20,7 +20,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		if os.Getenv("KUBERNETES") != "true" {
-			Skip("Plain Kubernetes scenario only, skipping}")
+			Skip("Plain Kubernetes scenario only, skipping")
 		}
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
