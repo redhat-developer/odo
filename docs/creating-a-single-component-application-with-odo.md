@@ -13,6 +13,8 @@ micro_nav: true
 ---
 With `odo`, you can create and deploy applications on clusters.
 
+# Prerequisites
+
   - `odo` is installed.
 
   - You have a running cluster. You can use [CodeReady Containers
@@ -51,7 +53,7 @@ the source code to your cluster with `odo`.
 1.  Create a directory for your components:
     
     ``` terminal
-    $ mkdir my_components $$ cd my_components
+    $ mkdir my_components && cd my_components
     ```
 
 2.  Download the example Node.js application:

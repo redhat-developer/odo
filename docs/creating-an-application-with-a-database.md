@@ -14,6 +14,8 @@ micro_nav: true
 This example describes how to deploy and connect a database to a
 front-end application.
 
+# Prerequisites
+
   - `odo` is installed.
 
   - `oc` client is installed.
@@ -76,11 +78,11 @@ application and push the source code to your cluster with `odo`.
     $ ls
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
-    assets  bin  index.html  kwww-frontend.iml  package.json  package-lock.json  playfield.png  README.md  server.js
+    README.md       openshift       server.js       views
+    helm            package.json    tests
     ```
     
     > **Note**

@@ -18,6 +18,8 @@ This example describes how to deploy a multicomponent application - a
 shooter game. The application consists of a front-end Node.js component
 and a back-end Java component.
 
+# Prerequisites
+
   - `odo` is installed.
 
   - You have a running cluster. Developers can use [CodeReady Containers
@@ -77,16 +79,33 @@ Java application and push the source code to your cluster with `odo`.
     **Example output.**
     
     ``` terminal
-    Odo Supported OpenShift Components:
-    NAME          PROJECT       TAGS
-    nodejs        openshift     10,8,8-RHOAR,latest
-    openjdk18     myproject     latest
+    Odo Devfile Components:
+    NAME                 DESCRIPTION                            REGISTRY
+    java-maven           Upstream Maven and OpenJDK 11          DefaultDevfileRegistry
+    java-openliberty     Open Liberty microservice in Java      DefaultDevfileRegistry
+    java-quarkus         Upstream Quarkus with Java+GraalVM     DefaultDevfileRegistry
+    java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
+    nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
+    
+    Odo OpenShift Components:
+    NAME        PROJECT       TAGS                                                                           SUPPORTED
+    java        openshift     11,8,latest                                                                    YES
+    dotnet      openshift     2.1,3.1,latest                                                                 NO
+    golang      openshift     1.13.4-ubi7,1.13.4-ubi8,latest                                                 NO
+    httpd       openshift     2.4-el7,2.4-el8,latest                                                         NO
+    nginx       openshift     1.14-el7,1.14-el8,1.16-el7,1.16-el8,latest                                     NO
+    nodejs      openshift     10-ubi7,10-ubi8,12-ubi7,12-ubi8,latest                                         NO
+    perl        openshift     5.26-el7,5.26-ubi8,5.30-el7,latest                                             NO
+    php         openshift     7.2-ubi7,7.2-ubi8,7.3-ubi7,7.3-ubi8,latest                                     NO
+    python      openshift     2.7-ubi7,2.7-ubi8,3.6-ubi7,3.6-ubi8,3.8-ubi7,3.8-ubi8,latest                   NO
+    ruby        openshift     2.5-ubi7,2.5-ubi8,2.6-ubi7,2.6-ubi8,2.7-ubi7,latest                            NO
+    wildfly     openshift     10.0,10.1,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,8.1,9.0,latest     NO
     ```
 
 4.  Create a directory for your components:
     
     ``` terminal
-    $ mkdir my_components $$ cd my_components
+    $ mkdir my_components && cd my_components
     ```
 
 5.  Download the example back-end
@@ -260,11 +279,11 @@ application and push the source code to your cluster with `odo`.
     $ ls
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
-    assets  bin  index.html  kwww-frontend.iml  package.json  package-lock.json  playfield.png  README.md  server.js
+    README.md       openshift       server.js       views
+    helm            package.json    tests
     ```
     
     > **Note**
@@ -322,13 +341,13 @@ bindings from a program to its clients.
     $ odo list
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
-    APP     NAME         TYPE          SOURCE                             STATE
-    app     backend      openjdk18     file://target/wildwest-1.0.jar     Pushed
-    app     frontend     nodejs        file://./                          Pushed
+    Openshift Components:
+    APP     NAME         PROJECT     TYPE          SOURCETYPE     STATE
+    app     backend      testpro     openjdk18     binary         Pushed
+    app     frontend     testpro     nodejs        local          Pushed
     ```
 
 2.  Link the current front-end component to the backend:

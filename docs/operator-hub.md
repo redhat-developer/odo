@@ -37,9 +37,6 @@ installation.
     or
     [Kubernetes](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md).
 
-  - Enable experimental mode for odo. This can be done by: `odo
-    preference set experimental true`
-
 # Creating a project
 
 Create a project to keep your source code, tests, and libraries

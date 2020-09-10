@@ -73,9 +73,6 @@ An example deployment scenario:
 
 **Prerequisites for an OpenShift Cluster**
 
-  - Enable experimental mode for odo. This can be done by: `odo
-    preference set experimental true`
-
   - Create a project to keep your source code, tests, and libraries
     organized in a separate single unit.
     
@@ -94,9 +91,6 @@ An example deployment scenario:
         ```
 
 ## Prerequisites for a Kubernetes Cluster
-
-  - Enable experimental mode for odo. This can be done by: `odo
-    preference set experimental true`
 
   - Before proceeding, you must know your ingress domain name or ingress
     IP to specify `--host` for `odo url create`.
@@ -137,7 +131,7 @@ An example deployment scenario:
       nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
     ```
 
-In our example, we will be using `java-spring-boot` to deploy a sample
+In our example, we will be using `java-springboot` to deploy a sample
 [Springboot](https://spring.io/projects/spring-boot)
 component.
 
@@ -162,11 +156,11 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      $ cd <directory-name>
     ```
 
-3.  Create a component configuration using the `java-spring-boot`
+3.  Create a component configuration using the `java-springboot`
     component-type named `myspring`:
     
     ``` sh
-       $ odo create java-spring-boot myspring
+       $ odo create java-springboot myspring
        Experimental mode is enabled, use at your own risk
     
        Validation
@@ -188,8 +182,8 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
 5.  Create a URL in order to access the deployed component:
     
     ``` sh
-     $ odo url create
-      ✓  URL myspring-8080.apps-crc.testing created for component: myspring
+     $ odo url create  --host example.com
+      ✓  URL myspring-8080.example.com created for component: myspring
     
      To apply the URL configuration changes, please use odo push
     ```
@@ -211,7 +205,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
        ✓  Waiting for component to start [5s]
     
       Applying URL changes
-       ✓  URL myspring-8080: http://myspring-8080.apps-crc.testing created
+       ✓  URL myspring-8080: http://myspring-8080.example.com created
     
       Syncing to component myspring
        ✓  Checking files for pushing [2ms]
@@ -231,13 +225,13 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      $ odo url list
      Found the following URLs for component myspring
      NAME              URL                                       PORT     SECURE
-     myspring-8080     http://myspring-8080.apps-crc.testing     8080     false
+     myspring-8080     http://myspring-8080.example.com     8080     false
     ```
 
 8.  View your deployed application using the generated URL:
     
     ``` sh
-      $ curl http://myspring-8080.apps-crc.testing
+      $ curl http://myspring-8080.example.com
     ```
 
 9.  To delete your deployed application:
@@ -293,8 +287,8 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
 5.  Create a URL in order to access the deployed component:
     
     ``` sh
-     $ odo url create
-      ✓  URL mynodejs-8080.apps-crc.testing created for component: mynodejs
+     $ odo url create --host example.com
+      ✓  URL mynodejs-8080.example.com created for component: mynodejs
     
      To apply the URL configuration changes, please use odo push
     ```
@@ -316,7 +310,7 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
        ✓  Waiting for component to start [3s]
     
       Applying URL changes
-       ✓  URL mynodejs-3000: http://mynodejs-3000.apps-crc.testing created
+       ✓  URL mynodejs-3000: http://mynodejs-3000.example.com created
     
       Syncing to component mynodejs
        ✓  Checking files for pushing [2ms]
@@ -336,13 +330,13 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
      $ odo url list
          Found the following URLs for component mynodejs
          NAME              URL                                       PORT     SECURE
-         mynodejs-8080     http://mynodejs-8080.apps-crc.testing     8080     false
+         mynodejs-8080     http://mynodejs-8080.example.com     8080     false
     ```
 
 8.  View your deployed application using the generated URL:
     
     ``` sh
-       $ curl http://mynodejs-8080.apps-crc.testing
+       $ curl http://mynodejs-8080.example.com
     ```
 
 9.  To delete your deployed application:
@@ -384,8 +378,8 @@ and JDK1.8+.
 3.  Create a URL in order to access the deployed component:
     
     ``` sh
-     $ odo url create
-      ✓  URL myquarkus-8080.apps-crc.testing created for component: myquarkus
+     $ odo url create  --host example.com
+      ✓  URL myquarkus-8080.example.com created for component: myquarkus
     
      To apply the URL configuration changes, please use odo push
     ```
@@ -427,7 +421,7 @@ and JDK1.8+.
      $ odo url list
      Found the following URLs for component myspring
      NAME              URL                                       PORT     SECURE
-     myquarkus-8080     http://myquarkus-8080.apps-crc.testing     8080     false
+     myquarkus-8080     http://myquarkus-8080.example.com     8080     false
     ```
 
 You can now continue developing your application. Just run `odo push`
@@ -442,7 +436,7 @@ Run `odo delete` to delete the application from cluster.
     
     ``` sh
        $ odo delete
-       ? Are you sure you want to delete the devfile component: java-spring-boot? Yes
-        ✓  Deleting devfile component java-spring-boot [139ms]
+       ? Are you sure you want to delete the devfile component: java-springboot? Yes
+        ✓  Deleting devfile component java-springboot [139ms]
         ✓  Successfully deleted component
     ```
