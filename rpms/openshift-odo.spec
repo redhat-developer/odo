@@ -41,7 +41,7 @@ export GOPATH=%{gopath}
 cd %{gopath}/src/github.com/openshift/odo
 %ifarch x86_64
 # go test -race is not supported on all arches
-make test
+GOFLAGS='-mod=vendor' make test
 %endif
 make prepare-release
 unlink %{gopath}/src/github.com/openshift/odo

@@ -14,12 +14,12 @@ export GOLANGCI_LINT_CACHE="/tmp/.cache"
 
 make goget-tools
 make validate
-GOFLAGS='' make test
+make test
 
 # crosscompile and publish artifacts
 make cross
 cp -r dist $ARTIFACTS_DIR
 
 # RPM Tests
-GOFLAGS='' scripts/rpm-x86_64-test.sh
+scripts/rpm-x86_64-test.sh
 

@@ -153,7 +153,7 @@ configure-supported-311-is:
 
 .PHONY: test
 test:
-	go test $(BUILD_FLAGS) $(UNIT_TEST_ARGS) -race $(PKGS)
+	go test $(UNIT_TEST_ARGS) -race $(PKGS)
 
 # Run generic integration tests
 .PHONY: test-generic
