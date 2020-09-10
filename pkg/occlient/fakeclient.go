@@ -7,6 +7,7 @@ import (
 	fakeImageClientset "github.com/openshift/client-go/image/clientset/versioned/fake"
 	fakeProjClientset "github.com/openshift/client-go/project/clientset/versioned/fake"
 	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
+	"github.com/openshift/odo/pkg/kclient"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -32,11 +33,12 @@ type FakeClientset struct {
 // returns Client that is filled with fake clients and
 // FakeClientSet that holds fake Clientsets to access Actions, Reactors etc... in fake client
 func FakeNew() (*Client, *FakeClientset) {
-	var client Client
-	var fkclientset FakeClientset
+	client := &Client{}
+	fkclientset := &FakeClientset{}
 
-	fkclientset.Kubernetes = fakeKubeClientset.NewSimpleClientset()
-	client.kubeClient = fkclientset.Kubernetes
+	kc, fkcs := kclient.FakeNew()
+	client.kubeClient = kc
+	fkclientset.Kubernetes = fkcs.Kubernetes
 
 	fkclientset.AppsClientset = fakeAppsClientset.NewSimpleClientset()
 	client.appsClient = fkclientset.AppsClientset.AppsV1()
@@ -65,7 +67,7 @@ func FakeNew() (*Client, *FakeClientset) {
 		client.SetDiscoveryInterface(&fake.FakeDiscovery{})
 	}
 
-	return &client, &fkclientset
+	return client, fkclientset
 }
 
 type resourceMapEntry struct {
