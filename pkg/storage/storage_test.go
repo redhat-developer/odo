@@ -963,8 +963,8 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
+							Name: "container-0",
 							Container: &common.Container{
-								Name: "container-0",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-0",
@@ -978,8 +978,8 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 							},
 						},
 						{
+							Name: "container-1",
 							Container: &common.Container{
-								Name: "container-1",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-1",
@@ -1007,8 +1007,8 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
+							Name: "container-0",
 							Container: &common.Container{
-								Name: "container-0",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-0",
@@ -1039,9 +1039,8 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-							},
+							Name:      "container-0",
+							Container: &common.Container{},
 						},
 						testingutil.GetFakeVolumeComponent("volume-0", ""),
 						testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
@@ -1307,8 +1306,8 @@ func TestDevfileList(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
+							Name: "container-0",
 							Container: &common.Container{
-								Name: "container-0",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-0",
@@ -1355,8 +1354,8 @@ func TestDevfileList(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
+							Name: "container-0",
 							Container: &common.Container{
-								Name: "container-0",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-0",
@@ -1405,8 +1404,8 @@ func TestDevfileList(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
+							Name: "container-0",
 							Container: &common.Container{
-								Name: "container-0",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-0",
@@ -1416,8 +1415,8 @@ func TestDevfileList(t *testing.T) {
 							},
 						},
 						{
+							Name: "container-1",
 							Container: &common.Container{
-								Name: "container-1",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-1",
@@ -1458,8 +1457,8 @@ func TestDevfileList(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
+							Name: "container-0",
 							Container: &common.Container{
-								Name: "container-0",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-0",
@@ -1502,8 +1501,8 @@ func TestDevfileList(t *testing.T) {
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
 						{
+							Name: "container-0",
 							Container: &common.Container{
-								Name: "container-0",
 								VolumeMounts: []common.VolumeMount{
 									{
 										Name: "volume-0",

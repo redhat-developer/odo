@@ -52,8 +52,8 @@ func TestCreateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					ExecCommands: testingutil.GetFakeExecRunCommands(),
-					Components:   tt.components,
+					Commands:   testingutil.GetFakeExecRunCommands(),
+					Components: tt.components,
 				},
 			}
 
@@ -111,8 +111,8 @@ func TestUpdateComponent(t *testing.T) {
 			name: "Case 4: Valid devfile, missing component",
 			components: []versionsCommon.DevfileComponent{
 				{
+					Name: "alias1",
 					Container: &versionsCommon.Container{
-						Name:  "alias1",
 						Image: "someimage",
 					},
 				},
@@ -126,8 +126,8 @@ func TestUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   tt.components,
-					ExecCommands: testingutil.GetFakeExecRunCommands(),
+					Components: tt.components,
+					Commands:   testingutil.GetFakeExecRunCommands(),
 				},
 			}
 
@@ -213,7 +213,7 @@ func TestPullAndStartContainer(t *testing.T) {
 					Components: []versionsCommon.DevfileComponent{
 						testingutil.GetFakeContainerComponent("alias1"),
 					},
-					ExecCommands: testingutil.GetFakeExecRunCommands(),
+					Commands: testingutil.GetFakeExecRunCommands(),
 				},
 			}
 
@@ -295,7 +295,7 @@ func TestStartContainer(t *testing.T) {
 					Components: []versionsCommon.DevfileComponent{
 						testingutil.GetFakeContainerComponent("alias1"),
 					},
-					ExecCommands: testingutil.GetFakeExecRunCommands(),
+					Commands: testingutil.GetFakeExecRunCommands(),
 				},
 			}
 
@@ -584,8 +584,9 @@ func TestExecTestCmd(t *testing.T) {
 
 	validComponents := []versionsCommon.DevfileComponent{
 		{
+			Name: component,
 			Container: &versionsCommon.Container{
-				Name: component,
+				Image: "image",
 			},
 		},
 	}
@@ -841,7 +842,7 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 
 	tests := []struct {
 		name                  string
-		commandExecs          []versionsCommon.Exec
+		commandExecs          []versionsCommon.DevfileCommand
 		commandName           string
 		comp                  versionsCommon.DevfileComponent
 		supervisordVolumeName string
@@ -853,23 +854,25 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 	}{
 		{
 			name: "Case 1: No component commands, args, env",
-			commandExecs: []versionsCommon.Exec{
+			commandExecs: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.RunCommandGroupType,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			commandName: emptyString,
 			comp: versionsCommon.DevfileComponent{
+				Name: component,
 				Container: &versionsCommon.Container{
 					Command: []string{},
 					Args:    []string{},
 					Env:     []versionsCommon.Env{},
-					Name:    component,
 				},
 			},
 			supervisordVolumeName: supervisordVolumeName,
@@ -898,23 +901,25 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 		},
 		{
 			name: "Case 2: Existing component command and no args, env",
-			commandExecs: []versionsCommon.Exec{
+			commandExecs: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.RunCommandGroupType,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			commandName: emptyString,
 			comp: versionsCommon.DevfileComponent{
+				Name: component,
 				Container: &versionsCommon.Container{
 					Command: []string{"some", "command"},
 					Args:    []string{},
 					Env:     []versionsCommon.Env{},
-					Name:    component,
 				},
 			},
 			supervisordVolumeName: supervisordVolumeName,
@@ -943,23 +948,25 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 		},
 		{
 			name: "Case 3: Existing component command and args and no env",
-			commandExecs: []versionsCommon.Exec{
+			commandExecs: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.RunCommandGroupType,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			commandName: emptyString,
 			comp: versionsCommon.DevfileComponent{
+				Name: component,
 				Container: &versionsCommon.Container{
 					Command: []string{"some", "command"},
 					Args:    []string{"some", "args"},
 					Env:     []versionsCommon.Env{},
-					Name:    component,
 				},
 			},
 			supervisordVolumeName: supervisordVolumeName,
@@ -988,18 +995,21 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 		},
 		{
 			name: "Case 4: Existing component command, args and env",
-			commandExecs: []versionsCommon.Exec{
+			commandExecs: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.RunCommandGroupType,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			commandName: emptyString,
 			comp: versionsCommon.DevfileComponent{
+				Name: component,
 				Container: &versionsCommon.Container{
 					Command: []string{"some", "command"},
 					Args:    []string{"some", "args"},
@@ -1013,7 +1023,6 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 							Value: garbageString,
 						},
 					},
-					Name: component,
 				},
 			},
 			supervisordVolumeName: supervisordVolumeName,
@@ -1042,18 +1051,21 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 		},
 		{
 			name: "Case 5: Existing host config, should append to it",
-			commandExecs: []versionsCommon.Exec{
+			commandExecs: []versionsCommon.DevfileCommand{
 				{
-					CommandLine: command,
-					Component:   component,
-					Group: &versionsCommon.Group{
-						Kind: versionsCommon.RunCommandGroupType,
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
+						},
+						WorkingDir: workDir,
 					},
-					WorkingDir: workDir,
 				},
 			},
 			commandName: emptyString,
 			comp: versionsCommon.DevfileComponent{
+				Name: component,
 				Container: &versionsCommon.Container{
 					Command: []string{"some", "command"},
 					Args:    []string{"some", "args"},
@@ -1067,7 +1079,6 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 							Value: garbageString,
 						},
 					},
-					Name: component,
 				},
 			},
 			supervisordVolumeName: supervisordVolumeName,
@@ -1112,11 +1123,12 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					ExecCommands: tt.commandExecs,
+					Commands: tt.commandExecs,
 					Components: []versionsCommon.DevfileComponent{
 						{
+							Name: tt.comp.Name,
 							Container: &versionsCommon.Container{
-								Name: tt.comp.Container.Name,
+								Image: "image",
 							},
 						},
 					},

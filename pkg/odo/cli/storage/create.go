@@ -88,9 +88,11 @@ func (o *StorageCreateOptions) devfileRun() error {
 		return err
 	}
 
-	err = devFile.Data.AddVolume(common.Volume{
+	err = devFile.Data.AddVolume(common.DevfileComponent{
 		Name: o.storageName,
-		Size: o.storageSize,
+		Volume: &common.Volume{
+			Size: o.storageSize,
+		},
 	}, o.storagePath)
 
 	if err != nil {
