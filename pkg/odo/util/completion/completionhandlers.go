@@ -2,11 +2,9 @@ package completion
 
 import (
 	"fmt"
-	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/service"
@@ -394,12 +392,6 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	}
 
 	return completions
-}
-
-func getDCOfComponent(context *genericclioptions.Context) (*appsv1.DeploymentConfig, error) {
-	componentLabels := componentlabels.GetLabels(context.Component(), context.Application, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	return context.Client.GetOneDeploymentConfigFromSelector(componentSelector)
 }
 
 // ComponentNameCompletionHandler provides component name completion
