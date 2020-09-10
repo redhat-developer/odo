@@ -7,28 +7,99 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
-// PushedComponent is an abstraction over the cluster representation of the component
-type PushedComponent interface {
+type provider interface {
 	GetLabels() map[string]string
 	GetAnnotations() map[string]string
 	GetName() string
-	GetType() (string, error)
-	GetSource() (string, string, error)
 	GetEnvVars() []v12.EnvVar
 	GetLinkedSecretNames() []string
 }
 
+// PushedComponent is an abstraction over the cluster representation of the component
+type PushedComponent interface {
+	provider
+	GetURLs() []url.URL
+	GetApplication() string
+	GetType() (string, error)
+	GetSource() (string, string, error)
+	retrieveURLsAndRoutes(c *occlient.Client) error
+}
+
+type defaultPushedComponent struct {
+	application string
+	urls        []url.URL
+	provider    provider
+}
+
+func (d defaultPushedComponent) GetLabels() map[string]string {
+	return d.provider.GetLabels()
+}
+
+func (d defaultPushedComponent) GetAnnotations() map[string]string {
+	return d.provider.GetAnnotations()
+}
+
+func (d defaultPushedComponent) GetName() string {
+	return d.provider.GetName()
+}
+
+func (d defaultPushedComponent) GetType() (string, error) {
+	return getType(d.provider)
+}
+
+func (d defaultPushedComponent) GetSource() (string, string, error) {
+	return getSource(d.provider)
+}
+
+func (d defaultPushedComponent) GetEnvVars() []v12.EnvVar {
+	return d.provider.GetEnvVars()
+}
+
+func (d defaultPushedComponent) GetLinkedSecretNames() []string {
+	return d.provider.GetLinkedSecretNames()
+}
+
+func (d defaultPushedComponent) GetURLs() []url.URL {
+	return d.urls
+}
+
+func (d defaultPushedComponent) GetApplication() string {
+	return d.application
+}
+
+func (d *defaultPushedComponent) retrieveURLsAndRoutes(c *occlient.Client) error {
+	name := d.GetName()
+	routes, err := url.ListPushed(c, name, d.GetApplication())
+	if err != nil {
+		return err
+	}
+	ingresses, err := url.ListPushedIngress(c.GetKubeClient(), name)
+	if err != nil {
+		return err
+	}
+	urls := make([]url.URL, 0, len(routes.Items)+len(ingresses.Items))
+	urls = append(urls, routes.Items...)
+	urls = append(urls, ingresses.Items...)
+	d.urls = urls
+	return nil
+}
+
 type s2iComponent struct {
-	dc *appsv1.DeploymentConfig
+	dc   *appsv1.DeploymentConfig
+	urls []url.URL
+}
+
+func (s s2iComponent) GetURLs() []url.URL {
+	panic("implement me")
 }
 
 func (s s2iComponent) GetLinkedSecretNames() (secretNames []string) {
@@ -115,7 +186,7 @@ func (n noSourceError) Error() string {
 	return n.msg
 }
 
-func getSource(component PushedComponent) (string, string, error) {
+func getSource(component provider) (string, string, error) {
 	annotations := component.GetAnnotations()
 	if sourceType, ok := annotations[ComponentSourceTypeAnnotation]; ok {
 		if !validateSourceType(sourceType) {
@@ -132,7 +203,7 @@ func getSource(component PushedComponent) (string, string, error) {
 	return "", "", noSourceError{msg: fmt.Sprintf("%s component doesn't provide a source type annotation", component.GetName())}
 }
 
-func getType(component PushedComponent) (string, error) {
+func getType(component provider) (string, error) {
 	if componentType, ok := component.GetLabels()[componentlabels.ComponentTypeLabel]; ok {
 		return componentType, nil
 	}
@@ -144,13 +215,16 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	dcList, err := c.GetDeploymentConfigsFromSelector(applicationSelector)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
-			dList, err := c.GetKubeClient().AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{LabelSelector: applicationSelector})
+			dList, err := c.GetKubeClient().ListDeployments(applicationSelector)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to list components")
 			}
 			res := make(map[string]PushedComponent, len(dList.Items))
 			for _, d := range dList.Items {
-				comp := &devfileComponent{d: &d}
+				comp, err := initPushComponent(applicationName, &devfileComponent{d: &d}, c)
+				if err != nil {
+					return nil, err
+				}
 				res[comp.GetName()] = comp
 			}
 			return res, nil
@@ -159,15 +233,29 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	}
 	res := make(map[string]PushedComponent, len(dcList))
 	for _, dc := range dcList {
-		comp := &s2iComponent{dc: &dc}
+		comp, err := initPushComponent(applicationName, &s2iComponent{dc: &dc}, c)
+		if err != nil {
+			return nil, err
+		}
 		res[comp.GetName()] = comp
 	}
 	return res, nil
 }
 
+func initPushComponent(applicationName string, p provider, c *occlient.Client) (PushedComponent, error) {
+	comp := &defaultPushedComponent{
+		application: applicationName,
+		provider:    p,
+	}
+	if err := comp.retrieveURLsAndRoutes(c); err != nil {
+		return nil, err
+	}
+	return comp, nil
+}
+
 // GetPushedComponent returns an abstraction over the cluster representation of the component
 func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
-	d, err := c.GetKubeClient().AppsV1().Deployments(c.Namespace).Get(componentName, metav1.GetOptions{})
+	d, err := c.GetKubeClient().GetDeploymentByName(componentName)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// if it's not found, check if there's a deploymentconfig
@@ -181,10 +269,10 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 					return nil, nil
 				}
 			} else {
-				return &s2iComponent{dc: dc}, nil
+				return initPushComponent(applicationName, &s2iComponent{dc: dc}, c)
 			}
 		}
 		return nil, err
 	}
-	return &devfileComponent{d: d}, nil
+	return initPushComponent(applicationName, &devfileComponent{d: d}, c)
 }
