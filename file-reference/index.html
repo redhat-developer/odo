@@ -235,7 +235,7 @@
                     <a href="#metadata" class="toc-h2 toc-link" data-title="metadata">metadata</a>
                   </li>
                   <li>
-                    <a href="#projects" class="toc-h2 toc-link" data-title="projects">projects</a>
+                    <a href="#starter-projects" class="toc-h2 toc-link" data-title="starter projects">starter projects</a>
                   </li>
                   <li>
                     <a href="#components" class="toc-h2 toc-link" data-title="components">components</a>
@@ -243,13 +243,16 @@
                   <li>
                     <a href="#commands" class="toc-h2 toc-link" data-title="commands">commands</a>
                   </li>
+                  <li>
+                    <a href="#events" class="toc-h2 toc-link" data-title="events">events</a>
+                  </li>
               </ul>
           </li>
           <li>
             <a href="#metadata-object" class="toc-h1 toc-link" data-title="Metadata Object">Metadata Object</a>
           </li>
           <li>
-            <a href="#project-object" class="toc-h1 toc-link" data-title="Project Object">Project Object</a>
+            <a href="#starterproject-object" class="toc-h1 toc-link" data-title="StarterProject Object">StarterProject Object</a>
               <ul class="toc-list-h2">
                   <li>
                     <a href="#gitobject" class="toc-h2 toc-link" data-title="gitObject">gitObject</a>
@@ -284,6 +287,20 @@
                   </li>
                   <li>
                     <a href="#groupobject" class="toc-h2 toc-link" data-title="groupObject">groupObject</a>
+                  </li>
+              </ul>
+          </li>
+          <li>
+            <a href="#event-object" class="toc-h1 toc-link" data-title="Event Object">Event Object</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#prestartobject" class="toc-h2 toc-link" data-title="preStartObject">preStartObject</a>
+                  </li>
+                  <li>
+                    <a href="#poststartobject" class="toc-h2 toc-link" data-title="postStartObject">postStartObject</a>
+                  </li>
+                  <li>
+                    <a href="#prestopobject" class="toc-h2 toc-link" data-title="preStopObject">preStopObject</a>
                   </li>
               </ul>
           </li>
@@ -326,8 +343,8 @@
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">schemaVersion</span><span class="pi">:</span> <span class="s">&lt;string&gt;</span>
 <span class="na">metadata</span><span class="pi">:</span> <span class="s">&lt;metadataObject&gt;</span>
-<span class="na">projects</span><span class="pi">:</span> 
-<span class="pi">-</span> <span class="s">&lt;projectObject&gt;</span>
+<span class="na">starterProjects</span><span class="pi">:</span> 
+<span class="pi">-</span> <span class="s">&lt;starterProjectObject&gt;</span>
 <span class="na">components</span><span class="pi">:</span> 
 <span class="pi">-</span> <span class="s">&lt;componentObject&gt;</span>
 <span class="na">commands</span><span class="pi">:</span> 
@@ -354,10 +371,10 @@
 <td>Metadata information that describes the project</td>
 </tr>
 <tr>
-<td>projects</td>
-<td>array of <a href="#project-object">projectObject</a></td>
+<td>starterProjects</td>
+<td>array of <a href="#starterproject-object">starterProjectObject</a></td>
 <td>no</td>
-<td>List of projects that devfile will use when creating your development environment</td>
+<td>List of starter projects that can be used to bootstrap new projects</td>
 </tr>
 <tr>
 <td>components</td>
@@ -406,37 +423,18 @@
 <td>Metadata to be used</td>
 </tr>
 </tbody></table>
-<h2 id='projects'>projects</h2>
+<h2 id='starter-projects'>starter projects</h2>
 <blockquote>
-<p>Pulling from a git location</p>
+<p>Example using a <a href="https://github.com/quarkusio/quarkus-quickstarts">Quarkus quickstart project</a></p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">starterProjects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">quarkus-quickstart</span>
+    <span class="na">description</span><span class="pi">:</span> <span class="s">minimal CRUD app with quarkus</span>
     <span class="na">git</span><span class="pi">:</span>
-      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/quarkusio/quarkus-quickstarts</span>
       <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
-      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
-      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
-</code></pre>
-<blockquote>
-<p>Pulling from a GitHub location</p>
-</blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
-    <span class="na">github</span><span class="pi">:</span>
-      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
-      <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
-      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
-      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
-</code></pre>
-<blockquote>
-<p>Pulling from a zip </p>
-</blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
-    <span class="na">zip</span><span class="pi">:</span>
-      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip</span>
-      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/getting-started/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.7.0.Final</span> <span class="c1"># tag or commit to start at</span>
 </code></pre>
 <table><thead>
 <tr>
@@ -446,9 +444,9 @@
 </tr>
 </thead><tbody>
 <tr>
-<td>projectObject</td>
-<td><a href="#project-object">projectObject</a></td>
-<td>List of projects to be used</td>
+<td>starterProjectObject</td>
+<td><a href="#starterproject-object">starterProjectObject</a></td>
+<td>List of starter projects to be used</td>
 </tr>
 </tbody></table>
 <h2 id='components'>components</h2>
@@ -521,6 +519,60 @@
 <td>Command to be executed in an existing component container</td>
 </tr>
 </tbody></table>
+<h2 id='events'>events</h2>
+<blockquote>
+<p>Example of various events</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">copy</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">cp</span><span class="nv"> </span><span class="s">/tools/myfile.txt</span><span class="nv"> </span><span class="s">tools.txt"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">initCache</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./init_cache.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">connectDB</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./connect_db.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">disconnectDB</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./disconnect_db.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">cleanup</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./cleanup.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+<span class="na">events</span><span class="pi">:</span>
+  <span class="na">preStart</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">connectDB"</span>
+  <span class="na">postStart</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">copy"</span> 
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">initCache"</span>
+  <span class="na">preStop</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">disconnectDB"</span>
+  <span class="na">postStop</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">cleanup"</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>eventObject</td>
+<td><a href="#event-object">eventObject</a></td>
+<td>Events to be executed during a project lifecycle</td>
+</tr>
+</tbody></table>
 <h1 id='metadata-object'>Metadata Object</h1>
 <blockquote>
 <p>Example using metadata</p>
@@ -550,23 +602,25 @@
 <td>Version of your devfile</td>
 </tr>
 </tbody></table>
-<h1 id='project-object'>Project Object</h1>
+<h1 id='starterproject-object'>StarterProject Object</h1>
 <blockquote>
 <p>Pulling from a git location</p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">starterProjects</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">quarkus-quickstart</span>
+    <span class="na">description</span><span class="pi">:</span> <span class="s">minimal CRUD app with quarkus</span>
     <span class="na">git</span><span class="pi">:</span>
-      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
+      <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/quarkusio/quarkus-quickstarts</span>
       <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
-      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
-      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.0.0</span> <span class="c1"># tag or commit to start at</span>
+      <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/getting-started/</span> <span class="c1"># optional checkout dir</span>
+      <span class="na">startPoint</span><span class="pi">:</span> <span class="s">1.7.0.Final</span> <span class="c1"># tag or commit to start at</span>
 </code></pre>
 <blockquote>
 <p>Pulling from a GitHub location</p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">starterProjects</span><span class="pi">:</span>
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">description</span><span class="pi">:</span> <span class="s">nodejs app</span>
     <span class="na">github</span><span class="pi">:</span>
       <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
       <span class="na">branch</span><span class="pi">:</span> <span class="s">master</span>
@@ -576,13 +630,14 @@
 <blockquote>
 <p>Pulling from a zip </p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">starterProjects</span><span class="pi">:</span>
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
+    <span class="na">description</span><span class="pi">:</span> <span class="s">nodejs web app</span>
     <span class="na">zip</span><span class="pi">:</span>
       <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip</span>
       <span class="na">sparseCheckoutDir</span><span class="pi">:</span> <span class="s">/app/</span> <span class="c1"># optional checkout dir</span>
 </code></pre>
-<p>Each project may contain three different objects, <code>git</code>, <code>github</code> or <code>zip</code>.</p>
+<p>Each starter project may contain three different objects, <code>git</code>, <code>github</code> or <code>zip</code>.</p>
 
 <table><thead>
 <tr>
@@ -595,6 +650,11 @@
 <td>name</td>
 <td>string</td>
 <td>Name of your devfile</td>
+</tr>
+<tr>
+<td>description</td>
+<td>string</td>
+<td>Description of a starter project</td>
 </tr>
 <tr>
 <td>clonePath</td>
@@ -621,7 +681,7 @@
 <blockquote>
 <p>Using the gitObject</p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">starterProjects</span><span class="pi">:</span>
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
     <span class="na">git</span><span class="pi">:</span>
       <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
@@ -661,7 +721,7 @@
 <blockquote>
 <p>Using the githubObject</p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">starterProjects</span><span class="pi">:</span>
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
     <span class="na">github</span><span class="pi">:</span>
       <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex.git</span>
@@ -701,7 +761,7 @@
 <blockquote>
 <p>Using the zipObject</p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">projects</span><span class="pi">:</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">starterProjects</span><span class="pi">:</span>
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">nodejs-web-app</span>
     <span class="na">zip</span><span class="pi">:</span>
       <span class="na">location</span><span class="pi">:</span> <span class="s">https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip</span>
@@ -1055,6 +1115,52 @@
 <td>Identifies that it is the default command to be ran. Only one default command can be defined for each group</td>
 </tr>
 </tbody></table>
+<h1 id='event-object'>Event Object</h1>
+<blockquote>
+<p>Example of using life cycle events where each event is an array of devfile commands to be executed of type <code>exec</code> or <code>composite</code></p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">copy</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">cp</span><span class="nv"> </span><span class="s">/tools/myfile.txt</span><span class="nv"> </span><span class="s">tools.txt"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">initCache</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./init_cache.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">connectDB</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./connect_db.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">disconnectDB</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./disconnect_db.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">id</span><span class="pi">:</span> <span class="s">cleanup</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./cleanup.sh"</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+<span class="na">events</span><span class="pi">:</span>
+  <span class="na">preStart</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">connectDB"</span>
+  <span class="na">postStart</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">copy"</span> 
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">initCache"</span>
+  <span class="na">preStop</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">disconnectDB"</span>
+  <span class="na">postStop</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s2">"</span><span class="s">cleanup"</span>
+</code></pre><h2 id='prestartobject'>preStartObject</h2>
+<p>PreStart events are executed as init containers for the project pod in the order they are specified. The devfile command&#39;s <code>commandLine</code> and <code>workingDir</code> become the init container&#39;s command and as a result the devfile component container&#39;s <code>command</code> and <code>args</code> or the container image&#39;s <code>Command</code> and <code>Args</code> are overwritten. If a composite command with <code>parallel: true</code> is used, it will be executed sequentially as Kubernetes init containers only execute in sequence.</p>
+<h2 id='poststartobject'>postStartObject</h2>
+<p>PostStart events are executed when the Kubernetes deployment for the odo component is created. </p>
+<h2 id='prestopobject'>preStopObject</h2>
+<p>PreStop events are executed before the Kubernetes deployment for the odo component is deleted. </p>
 <h1 id='universal-objects'>Universal objects</h1>
 <p>List of objects which are found in multiple parts of devfile. For example, the <a href="#envobject">envObject</a> is found within <a href="#containerobject">containerObject</a> and <a href="#execobject">execObject</a>.</p>
 <h2 id='envobject'>envObject</h2>
@@ -1118,22 +1224,16 @@
 </tr>
 </thead><tbody>
 <tr>
-<td>projects[].github.startPoint</td>
-<td><a href="#githubObject">githubObject</a></td>
+<td>starterProjects[].clonePath</td>
+<td><a href="#starterproject-object">starterProjectObject</a></td>
 <td>IN PROGRESS</td>
-<td>Refer to issue: https://github.com/openshift/odo/issues/3002</td>
+<td>Refer to issue: https://github.com/openshift/odo/issues/3729</td>
 </tr>
 <tr>
-<td>projects[].git.startPoint</td>
-<td><a href="#gitObject">gitObject</a></td>
+<td>projects[]</td>
+<td><a href="#projectobject">projectObject</a></td>
 <td>IN PROGRESS</td>
-<td>Refer to issue: https://github.com/openshift/odo/issues/3002</td>
-</tr>
-<tr>
-<td>projects[].zip</td>
-<td><a href="#zipobject">zipObject</a></td>
-<td>IN PROGRESS</td>
-<td>Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3442</td>
+<td>Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798</td>
 </tr>
 <tr>
 <td>parent</td>
@@ -1145,7 +1245,7 @@
 <td>events</td>
 <td><a href="#event-object">eventObject</a></td>
 <td>IN PROGRESS</td>
-<td>Refer to issue: https://github.com/openshift/odo/issues/2919</td>
+<td>Refer to postStop issue: https://github.com/openshift/odo/issues/3577</td>
 </tr>
 <tr>
 <td>component[].kubernetes</td>
