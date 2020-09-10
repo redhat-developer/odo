@@ -22,4 +22,3 @@ cp -r dist $ARTIFACTS_DIR
 
 # RPM Tests
 scripts/rpm-x86_64-test.sh
-
