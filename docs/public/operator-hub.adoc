@@ -6,7 +6,7 @@ An Operator is essentially a link:https://www.openshift.com/learn/topics/operato
 
 With Operators, odo allows you to create a service as defined by a Custom Resource Definition (CRD).
 
-Odo utilizes Operators and link:https://operatorhub.io/[Operator Hub] in order to provide a seamless method for custom controller service installation.
+odo utilizes Operators and link:https://operatorhub.io/[Operator Hub] in order to provide a seamless method for custom controller service installation.
 
 == Deploying your first Operator
 
