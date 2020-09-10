@@ -41,12 +41,12 @@ func NewDefaultPortForwarder(componentName, appName string, projectName string, 
 // portPair is a pair of port in format "localPort:RemotePort" that is to be forwarded
 // stop Chan is used to stop port forwarding
 // ready Chan is used to signal failure to the channel receiver
-func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan chan struct{}, isExperimental bool) error {
+func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan chan struct{}, isDevfile bool) error {
 	var pod *corev1.Pod
 	var conf *rest.Config
 	var err error
 
-	if f.kClient != nil && isExperimental {
+	if f.kClient != nil && isDevfile {
 		conf, err = f.kClient.KubeConfig.ClientConfig()
 		if err != nil {
 			return err
@@ -78,7 +78,7 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 	}
 
 	var req *rest.Request
-	if f.kClient != nil && isExperimental {
+	if f.kClient != nil && isDevfile {
 		req = f.kClient.GeneratePortForwardReq(pod.Name)
 	} else {
 		req = f.client.BuildPortForwardReq(pod.Name)

@@ -31,9 +31,6 @@ var _ = Describe("odo devfile push command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
@@ -897,7 +894,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring(cmpName))
 			Expect(output).To(ContainSubstring(cmpName2))
 
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
 			helper.DeleteDir(context2)
 
 		})
@@ -923,14 +919,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			context2 := helper.CreateNewContext()
 			cmpName2 := helper.RandString(6)
 			appName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "preference", "set", "--force", "Experimental", "false")
 			helper.CopyExample(filepath.Join("source", "nodejs"), context2)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--app", appName, "--context", context2, cmpName2)
 
 			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
 			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
-
-			helper.CmdShouldPass("odo", "preference", "set", "--force", "Experimental", "true")
 
 			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", namespace)
 

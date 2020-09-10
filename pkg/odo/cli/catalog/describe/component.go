@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -62,11 +61,11 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			catalogList, err := catalog.ListComponents(o.Client)
 			if err != nil {
-				if experimental.IsExperimentalModeEnabled() {
-					klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-				} else {
-					errChannel <- err
-				}
+				// TODO:
+				// This MAY have to change in the future.. There is no good way to determine whether the user
+				// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
+				// we are unable to list anything from OpenShift.
+				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
 			}
 			for _, image := range catalogList.Items {
 				if image.Name == o.componentName {
@@ -76,18 +75,16 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 		}})
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
-		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			catalogDevfileList, err := catalog.ListDevfileComponents("")
-			if catalogDevfileList.DevfileRegistries == nil {
-				log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-			}
-			if err != nil {
-				errChannel <- err
-			}
-			o.GetDevfileComponentsByName(catalogDevfileList)
-		}})
-	}
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+		catalogDevfileList, err := catalog.ListDevfileComponents("")
+		if catalogDevfileList.DevfileRegistries == nil {
+			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+		}
+		if err != nil {
+			errChannel <- err
+		}
+		o.GetDevfileComponentsByName(catalogDevfileList)
+	}})
 
 	return tasks.Run()
 }
@@ -103,50 +100,48 @@ func (o *DescribeComponentOptions) Validate() (err error) {
 
 // Run contains the logic for the command associated with DescribeComponentOptions
 func (o *DescribeComponentOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		if log.IsJSON() {
-			if len(o.devfileComponents) > 0 {
-				for _, devfileComponent := range o.devfileComponents {
-					devObj, err := GetDevfile(devfileComponent)
-					if err != nil {
-						return err
-					}
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	if log.IsJSON() {
+		if len(o.devfileComponents) > 0 {
+			for _, devfileComponent := range o.devfileComponents {
+				devObj, err := GetDevfile(devfileComponent)
+				if err != nil {
+					return err
+				}
 
-					machineoutput.OutputSuccess(devObj)
+				machineoutput.OutputSuccess(devObj)
+			}
+		}
+	} else {
+		if len(o.devfileComponents) > 1 {
+			log.Warningf("There are multiple components named \"%s\" in different multiple devfile registries.\n", o.componentName)
+		}
+		if len(o.devfileComponents) > 0 {
+			fmt.Fprintln(w, "Devfile Component(s):")
+
+			for _, devfileComponent := range o.devfileComponents {
+				fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry.Name)
+
+				devObj, err := GetDevfile(devfileComponent)
+				if err != nil {
+					return err
+				}
+
+				projects := devObj.Data.GetStarterProjects()
+				// only print project info if there is at least one project in the devfile
+				err = o.PrintDevfileStarterProjects(w, projects, devObj)
+				if err != nil {
+					return err
 				}
 			}
 		} else {
-			if len(o.devfileComponents) > 1 {
-				log.Warningf("There are multiple components named \"%s\" in different multiple devfile registries.\n", o.componentName)
-			}
-			if len(o.devfileComponents) > 0 {
-				fmt.Fprintln(w, "Devfile Component(s):")
-
-				for _, devfileComponent := range o.devfileComponents {
-					fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry.Name)
-
-					devObj, err := GetDevfile(devfileComponent)
-					if err != nil {
-						return err
-					}
-
-					projects := devObj.Data.GetStarterProjects()
-					// only print project info if there is at least one project in the devfile
-					err = o.PrintDevfileStarterProjects(w, projects, devObj)
-					if err != nil {
-						return err
-					}
-				}
-			} else {
-				fmt.Fprintln(w, "There are no Odo devfile components with the name \""+o.componentName+"\"")
-			}
-			if o.component != "" {
-				fmt.Fprintln(w, "\nS2I Based Components:")
-				fmt.Fprintln(w, "-"+o.component)
-			}
-			fmt.Fprintln(w)
+			fmt.Fprintln(w, "There are no Odo devfile components with the name \""+o.componentName+"\"")
 		}
+		if o.component != "" {
+			fmt.Fprintln(w, "\nS2I Based Components:")
+			fmt.Fprintln(w, "-"+o.component)
+		}
+		fmt.Fprintln(w)
 	}
 
 	return nil

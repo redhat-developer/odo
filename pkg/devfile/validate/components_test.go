@@ -130,7 +130,7 @@ func TestValidateComponents(t *testing.T) {
 		got := validateComponents(components)
 		want := "size randomgarbage for volume component myvol is invalid"
 
-		if !strings.Contains(got.Error(), want) {
+		if got != nil && !strings.Contains(got.Error(), want) {
 			t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
 		}
 	})

@@ -16,14 +16,13 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
-	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/url"
-	pkgutil "github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -53,10 +52,9 @@ func NewURLDescribeOptions() *URLDescribeOptions {
 
 // Complete completes URLDescribeOptions after they've been Listed
 func (o *URLDescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.devfilePath = filepath.Join(o.componentContext, clicomponent.DevfilePath)
+	o.devfilePath = filepath.Join(o.componentContext, component.DevfilePath)
 
-	o.isDevFile = experimental.IsExperimentalModeEnabled() && pkgutil.CheckPathExists(o.devfilePath)
-	if o.isDevFile {
+	if util.CheckPathExists(o.devfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
@@ -72,12 +70,12 @@ func (o *URLDescribeOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates the URLDescribeOptions based on completed values
 func (o *URLDescribeOptions) Validate() (err error) {
-	return util.CheckOutputFlag(o.OutputFlag)
+	return odoutil.CheckOutputFlag(o.OutputFlag)
 }
 
 // Run contains the logic for the odo url describe command
 func (o *URLDescribeOptions) Run() (err error) {
-	if o.isDevFile {
+	if util.CheckPathExists(o.devfilePath) {
 		if pushtarget.IsPushTargetDocker() {
 			client, err := lclient.New()
 			if err != nil {
@@ -142,9 +140,9 @@ func (o *URLDescribeOptions) Run() (err error) {
 				// are there changes between local and cluster states?
 				outOfSync := false
 				if u.Spec.Kind == envinfo.ROUTE {
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 				} else {
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName)), "", u.Spec.Host, o.isDevFile), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName)), "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 				}
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
@@ -170,7 +168,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 
 			// are there changes between local and cluster states?
 			outOfSync := false
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.isDevFile), "\t", u.Spec.Port)
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", false), "\t", u.Spec.Port)
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
 			}
@@ -198,7 +196,7 @@ func NewCmdURLDescribe(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	urlDescribeCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	urlDescribeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	genericclioptions.AddContextFlag(urlDescribeCmd, &o.componentContext)
 	completion.RegisterCommandHandler(urlDescribeCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDescribeCmd, "context", completion.FileCompletionHandler)
