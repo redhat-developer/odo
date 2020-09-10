@@ -77,46 +77,56 @@ Modify `odo` specific settings within the `config` file.
 **Example using config.**
 
 ``` terminal
-  # For viewing the current local configuration
-  odo config view
+# For viewing the current configuration from devfile or local config file
+odo config view
 
-  # Set a configuration value in the local configuration
-  odo config set Type java
-  odo config set Name test
-  odo config set MinMemory 50M
-  odo config set MaxMemory 500M
-  odo config set Memory 250M
-  odo config set Ignore false
-  odo config set MinCPU 0.5
-  odo config set MaxCPU 2
-  odo config set CPU 1
+# Set a configuration value in the devfile
+odo config set Name testapp
+odo config set Ports 8080/TCP,8443/TCP
+odo config set Memory 500M
 
-  # Set an environment variable in the local configuration
-  odo config set --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
+# Set a env variable in the devfiles
+odo config set --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
 
-  # Create a local configuration and apply the changes to the cluster immediately
-  odo config set --now
+# Set a configuration value in the local config
+odo config set Type java
+odo config set Name test
+odo config set MinMemory 50M
+odo config set MaxMemory 500M
+odo config set Memory 250M
+odo config set DebugPort 4040
+odo config set Ignore false
+odo config set MinCPU 0.5
+odo config set MaxCPU 2
+odo config set CPU 1
+odo config set Ports 8080/TCP,8443/TCP
 
-  # Unset a configuration value in the local config
-  odo config unset Type
-  odo config unset Name
-  odo config unset MinMemory
-  odo config unset MaxMemory
-  odo config unset Memory
-  odo config unset Ignore
-  odo config unset MinCPU
-  odo config unset MaxCPU
-  odo config unset CPU
+# Set a env variable in the local config
+odo config set --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
 
-  # Unset an env variable in the local config
-  odo config unset --env KAFKA_HOST --env KAFKA_PORT
+# Unset a configuration value in the devfile
+odo config unset Name
+odo config unset Ports
+odo config unset Memory
+
+# Unset a env variable in the devfiles
+odo config unset --env KAFKA_HOST --env KAFKA_PORT
+
+# Unset a configuration value in the local config
+odo config unset Type
+odo config unset Name
+odo config unset MinMemory
+odo config unset MaxMemory
+odo config unset Memory
+odo config unset DebugPort
+odo config unset Ignore
+odo config unset MinCPU
+odo config unset MaxCPU
+odo config unset CPU
+
+# Unset a env variable in the local config
+odo config unset --env KAFKA_HOST --env KAFKA_PORT
 ```
-
-|             |                                                                          |
-| ----------- | ------------------------------------------------------------------------ |
-| Application | Application is the name of application the component needs to be part of |
-| CPU         | The minimum and maximum CPU a component can consume                      |
-| Ignore      | Consider the .odoignore file for push and watch                          |
 
 |                |                                                                |
 | -------------- | -------------------------------------------------------------- |
@@ -138,8 +148,6 @@ Modify `odo` specific settings within the `config` file.
 | Type           | The type of component                                          |
 | Url            | The URL to access the component                                |
 
-Available Local Parameters:
-
 ## create
 
 Create a configuration describing a component to be deployed on
@@ -155,49 +163,34 @@ deployed.
 **Example using create.**
 
 ``` terminal
-  # Create new Node.js component with the source in current directory.
-  odo create nodejs
+# Create a new Node.js component with existing sourcecode as well as specifying a name
+odo create nodejs mynodejs
 
-  # Create new Node.js component and push it to the cluster immediately.
-  odo create nodejs --now
+# Name is not required and will be automatically generated if not passed
+odo create nodejs
 
-  # A specific image version may also be specified
-  odo create nodejs:latest
+# List all available components before deploying
+odo catalog list components
+odo create java-quarkus
 
-  # Create new Node.js component named 'frontend' with the source in './frontend' directory
-  odo create nodejs frontend --context ./frontend
+# Download an example devfile and application before deploying
+odo create nodejs --starter
 
-  # Create a new Node.js component of version 6 from the 'openshift' namespace
-  odo create openshift/nodejs:6 --context /nodejs-ex
+# Using a specific devfile
+odo create mynodejs --devfile ./devfile.yaml
+odo create mynodejs --devfile https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml
 
-  # Create new Wildfly component with binary named sample.war in './downloads' directory
-  odo create wildfly wildfly --binary ./downloads/sample.war
+# Create new Node.js component named 'frontend' with the source in './frontend' directory
+odo create nodejs frontend --context ./frontend
 
-  # Create new Node.js component with source from remote git repository
-  odo create nodejs --git https://github.com/openshift/nodejs-ex.git
+# Create new Java component with binary named sample.jar in './target' directory
+odo create java:8  --binary target/sample.jar
 
-  # Create new Node.js git component while specifying a branch, tag or commit ref
-  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
+# Create new Node.js component with source from remote git repository
+odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 
-  # Create new Node.js git component while specifying a tag
-  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
-
-  # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
-  odo create nodejs --port 8080,8100/tcp,9100/udp
-
-  # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
-  odo create nodejs --env key=value,key1=value1
-
-  # Create a new Python component with the source in a Git repository
-  odo create python --git https://github.com/openshift/django-ex.git
-
-  # Passing memory limits
-  odo create nodejs --memory 150Mi
-  odo create nodejs --min-memory 150Mi --max-memory 300 Mi
-
-  # Passing cpu limits
-  odo create nodejs --cpu 2
-  odo create nodejs --min-cpu 200m --max-cpu 2
+# Create new Node.js component with custom ports and environment variables
+odo create nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1
 ```
 
 ## debug
@@ -226,7 +219,7 @@ Delete an existing component.
 ``` terminal
   # Delete component named 'frontend'.
   odo delete frontend
-  odo delete frontend --all-apps
+  odo delete frontend --all
 ```
 
 ## describe
@@ -238,6 +231,36 @@ Describe the given component.
 ``` terminal
   # Describe nodejs component
   odo describe nodejs
+```
+
+## env
+
+Configure your environment.
+
+**Example using env.**
+
+``` terminal
+# For viewing the current environment configuration settings  
+  odo env view
+
+  # Set an individual value in the odo environment file
+  odo env set Name myNodejs
+  odo env set Namespace myProject
+  odo env set DebugPort 8888
+
+  # Unset an individual value in the environment file
+  odo env unset DebugPort
+
+```
+
+## exec 
+Execute a command inside the component.
+
+**Example using exec.**
+
+``` terminal
+  # Execute a command inside the component
+  odo exec -- ls -a
 ```
 
 ## link
@@ -287,9 +310,6 @@ components.
 ``` terminal
   # List all components in the application
   odo list
-
-  # List all the components in a given path
-  odo list --path <path_to_your_component>
 ```
 
 ## log
@@ -342,24 +362,29 @@ preference file.
 **Example using preference.**
 
 ``` terminal
-  # For viewing the current preferences
-  odo preference view
+# For viewing the current local preference
+odo preference view
 
-  # Set a preference value in the global preference
-  odo preference set UpdateNotification false
-  odo preference set NamePrefix "app"
-  odo preference set Timeout 20
+# For viewing the current global preference
+odo preference view
 
-  # Enable experimental mode
-  odo preference set experimental true
+# Set a preference value in the global preference
+odo preference set UpdateNotification false
+odo preference set NamePrefix "app"
+odo preference set Timeout 20
+odo preference set BuildTimeout 40
+odo preference set PushTimeout 30
+odo preference set Experimental true
+odo preference set PushTarget docker
 
-  # Unset a preference value in the global preference
-  odo preference unset  UpdateNotification
-  odo preference unset  NamePrefix
-  odo preference unset  Timeout
-
-  # Disable experimental mode
-  odo preference set experimental false
+# Unset a preference value in the global preference
+odo preference unset UpdateNotification
+odo preference unset NamePrefix
+odo preference unset Timeout
+odo preference unset BuildTimeout
+odo preference unset PushTimeout
+odo preference unset Experimental
+odo preference unset PushTarget
 ```
 
 > **Note**
@@ -372,11 +397,14 @@ preference file.
 
 |                    |                                                                                                |
 | ------------------ | ---------------------------------------------------------------------------------------------- |
-| NamePrefix         | The default prefix is the current directory name. Use this value to set a default name prefix. |
-| Timeout            | The timeout (in seconds) for OpenShift server connection checks.                               |
-| UpdateNotification | Controls whether an update notification is shown.                                              |
-
-Available Parameters:
+| BuildTimeout | BuildTimeout (in seconds) for waiting for a build of the git component to complete (Default: 300) |
+| Experimental | Set this value to true to expose features in development/experimental mode |
+| NamePrefix | Use this value to set a default name prefix (Default: current directory name) |
+| PushTarget | Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube) |
+| PushTimeout | PushTimeout (in seconds) for waiting for a Pod to come up (Default: 240) |
+| RegistryCacheTime | For how long (in minutes) odo will cache information from Devfile registry (Default: 15) |
+| Timeout | Timeout (in seconds) for OpenShift server connection check (Default: 1) |
+| UpdateNotification | Flag to control if an update notification is shown or not (Default: true) |
 
 ## project
 
@@ -408,17 +436,17 @@ Push source code to a component.
 **Example using push.**
 
 ``` terminal
-  # Push source code to the current component
-  odo push
+# Push source code to the current component
+odo push
 
-  # Push data to the current component from the original source.
-  odo push
+# Push data to the current component from the original source
+odo push
 
-  # Push source code in ~/mycode to component called my-component
-  odo push my-component --context ~/mycode
+# Push source code in ~/mycode to component called my-component
+odo push my-component --context ~/mycode
 
-  # Push source code and display event notifications in JSON format.
-  odo push -o json
+# Push source code with custom devfile commands using --build-command and --run-command for experimental mode
+odo push --build-command="mybuild" --run-command="myrun"
 ```
 
 ## registry
@@ -489,6 +517,19 @@ Perform storage operations.
   odo storage list -o json
 ```
 
+## test
+Run the test command defined in the devfile.
+
+**Example using test.**
+
+``` terminal
+  # Run default test command
+  odo test
+  
+  # Run a specific test command
+  odo test --test-command <command name>
+```
+
 ## unlink
 
 Unlink component or a service.
@@ -517,7 +558,8 @@ been linked prior to the invocation using `odo link`.
 
 ## update
 
-Update the source code path of a component
+Update the source code path of a component.
+WARNING: 'odo update' command will be removed in the future odo version.
 
 **Example using
 update.**
@@ -541,7 +583,7 @@ update.**
 
 ## url
 
-Expose a component to the outside world.
+Expose a component to the outside world. The URLs that are generated using this command can be used to access the deployed components from outside the cluster.
 
 **Example using url.**
 
