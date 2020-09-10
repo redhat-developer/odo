@@ -78,9 +78,12 @@ func (d defaultPushedComponent) GetApplication() string {
 
 func (d *defaultPushedComponent) retrieveURLsAndRoutes(c *occlient.Client) error {
 	name := d.GetName()
-	routes, err := url.ListPushed(c, name, d.GetApplication())
-	if err != nil {
-		return err
+	var routes url.URLList
+	if routeAvailable, err := c.IsRouteSupported(); routeAvailable && err != nil {
+		routes, err = url.ListPushed(c, name, d.GetApplication())
+		if err != nil {
+			return err
+		}
 	}
 	ingresses, err := url.ListPushedIngress(c.GetKubeClient(), name)
 	if err != nil {
