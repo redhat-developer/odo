@@ -97,7 +97,7 @@ func (d *defaultPushedComponent) retrieveURLsAndRoutes(c *occlient.Client) error
 }
 
 type s2iComponent struct {
-	dc   *appsv1.DeploymentConfig
+	dc   appsv1.DeploymentConfig
 	urls []url.URL
 }
 
@@ -139,7 +139,7 @@ func (s s2iComponent) GetSource() (string, string, error) {
 }
 
 type devfileComponent struct {
-	d *v1.Deployment
+	d v1.Deployment
 }
 
 func (d devfileComponent) GetLinkedSecretNames() (secretNames []string) {
@@ -224,7 +224,7 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 			}
 			res := make(map[string]PushedComponent, len(dList.Items))
 			for _, d := range dList.Items {
-				comp, err := initPushComponent(applicationName, &devfileComponent{d: &d}, c)
+				comp, err := initPushComponent(applicationName, &devfileComponent{d: d}, c)
 				if err != nil {
 					return nil, err
 				}
@@ -236,7 +236,7 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	}
 	res := make(map[string]PushedComponent, len(dcList))
 	for _, dc := range dcList {
-		comp, err := initPushComponent(applicationName, &s2iComponent{dc: &dc}, c)
+		comp, err := initPushComponent(applicationName, &s2iComponent{dc: dc}, c)
 		if err != nil {
 			return nil, err
 		}
@@ -272,10 +272,10 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 					return nil, nil
 				}
 			} else {
-				return initPushComponent(applicationName, &s2iComponent{dc: dc}, c)
+				return initPushComponent(applicationName, &s2iComponent{dc: *dc}, c)
 			}
 		}
 		return nil, err
 	}
-	return initPushComponent(applicationName, &devfileComponent{d: d}, c)
+	return initPushComponent(applicationName, &devfileComponent{d: *d}, c)
 }
