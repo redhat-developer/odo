@@ -41,7 +41,7 @@ type DevfileData interface {
 	AddCommands(commands ...common.DevfileCommand) error
 	UpdateCommand(command common.DevfileCommand)
 
-	AddVolume(volume common.Volume, path string) error
+	AddVolume(volume common.DevfileComponent, path string) error
 	DeleteVolume(name string) error
 	GetVolumeMountPath(name string) (string, error)
 }

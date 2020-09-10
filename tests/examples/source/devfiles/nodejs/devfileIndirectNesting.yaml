@@ -7,32 +7,32 @@ starterProjects:
       remotes:
         origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       mountSources: true
 commands:
-  - exec:
-      id: install
+  - id: install
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
-  - exec:
-      id: echo1
+  - id: echo1
+    exec:
       component: runtime
       commandLine: echo hi
       workingDir: ${PROJECTS_ROOT}
-  - exec:
-      id: run
+  - id: run
+    exec:
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
-  - composite:
-         id: buildAndEcho
+  - id: buildAndEcho
+    composite:
          label: Build and Echo
          commands:
            - echo1
@@ -43,8 +43,8 @@ commands:
          group:
            kind: build
            isDefault: true
-  - composite:
-         id: NestedCommand
+  - id: NestedCommand
+    composite:
          label: Build and Echo
          commands:
            - buildAndEcho
@@ -55,13 +55,13 @@ commands:
          group:
            kind: build
            isDefault: false
-  - exec:
-      id: echo2
+  - id: echo2
+    exec:
       component: runtime
       commandLine: echo hello
       workingDir: ${PROJECTS_ROOT}
-  - exec:
-      id: echo3
+  - id: echo3
+    exec:
       component: runtime
       commandLine: echo hellohii
       workingDir: ${PROJECTS_ROOT}

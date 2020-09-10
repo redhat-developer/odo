@@ -41,6 +41,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: commandLineBuild,
 								Component:   componentName0,
@@ -49,7 +50,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 									IsDefault: false,
 									Kind:      common.BuildCommandGroupType,
 								},
-								Id:         "devbuild",
 								WorkingDir: workingDir,
 							},
 						},
@@ -59,6 +59,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild",
 						Exec: &common.Exec{
 							CommandLine: overrideBuild,
 							Component:   overrideComponent0,
@@ -66,7 +67,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 								IsDefault: true,
 								Kind:      common.BuildCommandGroupType,
 							},
-							Id:         "devbuild",
 							WorkingDir: overrideWorkingDir,
 						},
 					},
@@ -77,6 +77,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: overrideBuild,
 								Component:   overrideComponent0,
@@ -84,7 +85,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 									IsDefault: true,
 									Kind:      common.BuildCommandGroupType,
 								},
-								Id:         "devbuild",
 								WorkingDir: overrideWorkingDir,
 							},
 						},
@@ -99,6 +99,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								Attributes: map[string]string{
 									"key-0": "value-0",
@@ -106,7 +107,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
-								Id: "devbuild",
 							},
 						},
 					},
@@ -115,6 +115,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild",
 						Exec: &common.Exec{
 							Attributes: map[string]string{
 								"key-1": "value-1",
@@ -123,7 +124,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 								testingutil.GetFakeEnv("env-0", "value-0-0"),
 								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
-							Id: "devbuild",
 						},
 					},
 				},
@@ -133,8 +133,8 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id: "devbuild",
 								Attributes: map[string]string{
 									"key-0": "value-0",
 									"key-1": "value-1",
@@ -156,15 +156,15 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: commandLineBuild,
-								Id:          "devbuild",
 							},
 						},
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
 								CommandLine: commandLineRun,
-								Id:          "devrun",
 							},
 						},
 					},
@@ -173,9 +173,9 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild",
 						Exec: &common.Exec{
 							CommandLine: overrideBuild,
-							Id:          "devbuild",
 						},
 					},
 				},
@@ -185,15 +185,15 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: overrideBuild,
-								Id:          "devbuild",
 							},
 						},
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
 								CommandLine: commandLineRun,
-								Id:          "devrun",
 							},
 						},
 					},
@@ -208,11 +208,11 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
-								Id: "devbuild",
 							},
 						},
 					},
@@ -221,12 +221,12 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild-custom",
 						Exec: &common.Exec{
 							Env: []common.Env{
 								testingutil.GetFakeEnv("env-0", "value-0-0"),
 								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
-							Id: "devbuild-custom",
 						},
 					},
 				},
@@ -284,13 +284,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Args:          []string{"arg-0", "arg-1"},
 								Command:       []string{"cmd-0", "cmd-1"},
 								Image:         containerImage0,
 								MemoryLimit:   "512Mi",
 								MountSources:  false,
-								Name:          "nodejs",
 								SourceMapping: "/source",
 							},
 						},
@@ -300,13 +300,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs",
 						Container: &common.Container{
 							Args:          []string{"arg-0-0", "arg-1-1"},
 							Command:       []string{"cmd-0-0", "cmd-1-1"},
 							Image:         overrideContainerImage,
 							MemoryLimit:   "1Gi",
 							MountSources:  true,
-							Name:          "nodejs",
 							SourceMapping: "/data",
 						},
 					},
@@ -317,13 +317,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Args:          []string{"arg-0-0", "arg-1-1"},
 								Command:       []string{"cmd-0-0", "cmd-1-1"},
 								Image:         overrideContainerImage,
 								MemoryLimit:   "1Gi",
 								MountSources:  true,
-								Name:          "nodejs",
 								SourceMapping: "/data",
 							},
 						},
@@ -339,6 +339,7 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Endpoints: []common.Endpoint{
 									{
@@ -353,7 +354,6 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
-								Name: "nodejs",
 								VolumeMounts: []common.VolumeMount{
 									testingutil.GetFakeVolumeMount("volume-0", "path-0"),
 								},
@@ -365,6 +365,7 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs",
 						Container: &common.Container{
 							Endpoints: []common.Endpoint{
 								{
@@ -387,7 +388,6 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 								testingutil.GetFakeEnv("env-0", "value-0-0"),
 								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
-							Name: "nodejs",
 							VolumeMounts: []common.VolumeMount{
 								testingutil.GetFakeVolumeMount("volume-0", "path-0-0"),
 								testingutil.GetFakeVolumeMount("volume-1", "path-1"),
@@ -401,12 +401,12 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0-0"),
 									testingutil.GetFakeEnv("env-1", "value-1"),
 								},
-								Name: "nodejs",
 								VolumeMounts: []common.VolumeMount{
 									testingutil.GetFakeVolumeMount("volume-0", "path-0-0"),
 									testingutil.GetFakeVolumeMount("volume-1", "path-1"),
@@ -443,15 +443,15 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: containerImage0,
-								Name:  "nodejs",
 							},
 						},
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: containerImage1,
-								Name:  "runtime",
 							},
 						},
 					},
@@ -460,15 +460,15 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs",
 						Container: &common.Container{
 							Image: overrideContainerImage,
-							Name:  "nodejs",
 						},
 					},
 					{
+						Name: "runtime",
 						Container: &common.Container{
 							Image: containerImage1,
-							Name:  "runtime",
 						},
 					},
 				},
@@ -478,15 +478,15 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: overrideContainerImage,
-								Name:  "nodejs",
 							},
 						},
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: containerImage1,
-								Name:  "runtime",
 							},
 						},
 					},
@@ -501,9 +501,9 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: containerImage0,
-								Name:  "nodejs",
 							},
 						},
 					},
@@ -512,9 +512,9 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs-custom",
 						Container: &common.Container{
 							Image: containerImage0,
-							Name:  "nodejs-custom",
 						},
 					},
 				},

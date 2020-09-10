@@ -14,13 +14,15 @@ func TestValidateEvents(t *testing.T) {
 	containers := []string{"container1", "container2"}
 	dummyComponents := []common.DevfileComponent{
 		{
+			Name: containers[0],
 			Container: &common.Container{
-				Name: containers[0],
+				Image: "",
 			},
 		},
 		{
+			Name: containers[1],
 			Container: &common.Container{
-				Name: containers[1],
+				Image: "",
 			},
 		},
 	}
@@ -29,31 +31,37 @@ func TestValidateEvents(t *testing.T) {
 		name         string
 		events       common.DevfileEvents
 		components   []common.DevfileComponent
-		execCommands []common.Exec
-		compCommands []common.Composite
+		execCommands []common.DevfileCommand
+		compCommands []common.DevfileCommand
 		wantErr      bool
 	}{
 		{
 			name:       "Case 1: Valid events",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   containers[0],
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   containers[0],
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1", "command2"},
+					},
 				},
 			},
 			events: common.DevfileEvents{
@@ -69,24 +77,30 @@ func TestValidateEvents(t *testing.T) {
 		{
 			name:       "Case 2: Invalid events with wrong mapping to devfile command",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   containers[0],
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   containers[0],
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1", "command2"},
+					},
 				},
 			},
 			events: common.DevfileEvents{
@@ -102,24 +116,30 @@ func TestValidateEvents(t *testing.T) {
 		{
 			name:       "Case 3: Invalid event command with mapping to wrong devfile container component",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   "wrongcomponent",
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   "wrongcomponent",
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1", "command2"},
+					},
 				},
 			},
 			events: common.DevfileEvents{
@@ -135,24 +155,30 @@ func TestValidateEvents(t *testing.T) {
 		{
 			name:       "Case 4: Invalid events with wrong child command in composite command",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   containers[0],
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   containers[0],
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1iswrong", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1iswrong", "command2"},
+					},
 				},
 			},
 			events: common.DevfileEvents{
@@ -170,10 +196,9 @@ func TestValidateEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:        tt.components,
-					ExecCommands:      tt.execCommands,
-					CompositeCommands: tt.compCommands,
-					Events:            tt.events,
+					Components: tt.components,
+					Commands:   append(tt.execCommands, tt.compCommands...),
+					Events:     tt.events,
 				},
 			}
 			err := validateEvents(devObj.Data)
@@ -190,13 +215,15 @@ func TestIsEventValid(t *testing.T) {
 	containers := []string{"container1", "container2"}
 	dummyComponents := []common.DevfileComponent{
 		{
+			Name: containers[0],
 			Container: &common.Container{
-				Name: containers[0],
+				Image: "image",
 			},
 		},
 		{
+			Name: containers[1],
 			Container: &common.Container{
-				Name: containers[1],
+				Image: "image",
 			},
 		},
 	}
@@ -205,8 +232,8 @@ func TestIsEventValid(t *testing.T) {
 		name         string
 		eventType    string
 		components   []common.DevfileComponent
-		execCommands []common.Exec
-		compCommands []common.Composite
+		execCommands []common.DevfileCommand
+		compCommands []common.DevfileCommand
 		eventNames   []string
 		wantErr      bool
 		wantErrMsg   string
@@ -215,24 +242,30 @@ func TestIsEventValid(t *testing.T) {
 			name:       "Case 1: Valid events",
 			eventType:  "preStart",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   containers[0],
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   containers[0],
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1", "command2"},
+					},
 				},
 			},
 			eventNames: []string{
@@ -245,24 +278,30 @@ func TestIsEventValid(t *testing.T) {
 			name:       "Case 2: Invalid events with wrong mapping to devfile command",
 			eventType:  "preStart",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   containers[0],
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   containers[0],
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1", "command2"},
+					},
 				},
 			},
 			eventNames: []string{
@@ -276,24 +315,30 @@ func TestIsEventValid(t *testing.T) {
 			name:       "Case 3: Invalid event command with mapping to wrong devfile container component",
 			eventType:  "preStart",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   "wrongcomponent",
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   "wrongcomponent",
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1", "command2"},
+					},
 				},
 			},
 			eventNames: []string{
@@ -307,24 +352,30 @@ func TestIsEventValid(t *testing.T) {
 			name:       "Case 4: Invalid events with wrong child command in composite command",
 			eventType:  "preStart",
 			components: dummyComponents,
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
-					Id:          "command1",
-					CommandLine: "/some/command1",
-					Component:   containers[0],
-					WorkingDir:  "workDir",
+					Id: "command1",
+					Exec: &common.Exec{
+						CommandLine: "/some/command1",
+						Component:   containers[0],
+						WorkingDir:  "workDir",
+					},
 				},
 				{
-					Id:          "command2",
-					CommandLine: "/some/command2",
-					Component:   containers[1],
-					WorkingDir:  "workDir",
+					Id: "command2",
+					Exec: &common.Exec{
+						CommandLine: "/some/command2",
+						Component:   containers[1],
+						WorkingDir:  "workDir",
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
-					Id:       "composite1",
-					Commands: []string{"command1iswrong", "command2"},
+					Id: "composite1",
+					Composite: &common.Composite{
+						Commands: []string{"command1iswrong", "command2"},
+					},
 				},
 			},
 			eventNames: []string{
@@ -339,9 +390,8 @@ func TestIsEventValid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:        tt.components,
-					ExecCommands:      tt.execCommands,
-					CompositeCommands: tt.compCommands,
+					Components: tt.components,
+					Commands:   append(tt.execCommands, tt.compCommands...),
 				},
 			}
 

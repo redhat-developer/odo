@@ -86,8 +86,8 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   []versionsCommon.DevfileComponent{comp},
-					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []versionsCommon.DevfileComponent{comp},
+					Commands:   []versionsCommon.DevfileCommand{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
 			}
 
@@ -317,8 +317,8 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
-					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
+					Commands:   []versionsCommon.DevfileCommand{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
 			}
 
@@ -564,18 +564,20 @@ func TestAdapterDelete(t *testing.T) {
 	}
 }
 
-func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.Exec {
+func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.DevfileCommand {
 
 	commands := [...]string{"ls -la", "pwd"}
 	component := "component"
 	workDir := [...]string{"/", "/root"}
 
-	return versionsCommon.Exec{
-		Id:          id,
-		CommandLine: commands[0],
-		Component:   component,
-		WorkingDir:  workDir[0],
-		Group:       &common.Group{Kind: group},
+	return versionsCommon.DevfileCommand{
+		Id: id,
+		Exec: &common.Exec{
+			CommandLine: commands[0],
+			Component:   component,
+			WorkingDir:  workDir[0],
+			Group:       &common.Group{Kind: group},
+		},
 	}
 
 }

@@ -89,28 +89,28 @@ func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
 
 	for _, component := range d.Components {
 		if component.Volume != nil {
-			volumeMap[component.Volume.Name] = true
+			volumeMap[component.Name] = true
 		}
 		if component.Container != nil {
-			containerMap[component.Container.Name] = true
+			containerMap[component.Name] = true
 		}
 	}
 
 	for _, component := range components {
 
 		if component.Volume != nil {
-			if _, ok := volumeMap[component.Volume.Name]; !ok {
+			if _, ok := volumeMap[component.Name]; !ok {
 				d.Components = append(d.Components, component)
 			} else {
-				return &common.AlreadyExistError{Name: component.Volume.Name, Field: "component"}
+				return &common.AlreadyExistError{Name: component.Name, Field: "component"}
 			}
 		}
 
 		if component.Container != nil {
-			if _, ok := containerMap[component.Container.Name]; !ok {
+			if _, ok := containerMap[component.Name]; !ok {
 				d.Components = append(d.Components, component)
 			} else {
-				return &common.AlreadyExistError{Name: component.Container.Name, Field: "component"}
+				return &common.AlreadyExistError{Name: component.Name, Field: "component"}
 			}
 		}
 	}
@@ -121,7 +121,7 @@ func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
 func (d *Devfile200) UpdateComponent(component common.DevfileComponent) {
 	index := -1
 	for i := range d.Components {
-		if d.Components[i].Container.Name == strings.ToLower(component.Container.Name) {
+		if d.Components[i].Name == strings.ToLower(component.Name) {
 			index = i
 			break
 		}
@@ -261,22 +261,22 @@ func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []strin
 }
 
 // AddVolume adds the volume to the devFile and mounts it to all the container components
-func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
+func (d *Devfile200) AddVolume(volumeComponent common.DevfileComponent, path string) error {
 	volumeExists := false
 	var pathErrorContainers []string
 	for _, component := range d.Components {
 		if component.Container != nil {
 			for _, volumeMount := range component.Container.VolumeMounts {
 				if volumeMount.Path == path {
-					var err = fmt.Errorf("another volume, %s, is mounted to the same path: %s, on the container: %s", volumeMount.Name, path, component.Container.Name)
+					var err = fmt.Errorf("another volume, %s, is mounted to the same path: %s, on the container: %s", volumeMount.Name, path, component.Name)
 					pathErrorContainers = append(pathErrorContainers, err.Error())
 				}
 			}
 			component.Container.VolumeMounts = append(component.Container.VolumeMounts, common.VolumeMount{
-				Name: volume.Name,
+				Name: volumeComponent.Name,
 				Path: path,
 			})
-		} else if component.Volume != nil && component.Volume.Name == volume.Name {
+		} else if component.Volume != nil && component.Name == volumeComponent.Name {
 			volumeExists = true
 			break
 		}
@@ -285,7 +285,7 @@ func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
 	if volumeExists {
 		return &common.AlreadyExistError{
 			Field: "volume",
-			Name:  volume.Name,
+			Name:  volumeComponent.Name,
 		}
 	}
 
@@ -293,9 +293,7 @@ func (d *Devfile200) AddVolume(volume common.Volume, path string) error {
 		return fmt.Errorf("errors while creating volume:\n%s", strings.Join(pathErrorContainers, "\n"))
 	}
 
-	d.Components = append(d.Components, common.DevfileComponent{
-		Volume: &volume,
-	})
+	d.Components = append(d.Components, volumeComponent)
 
 	return nil
 }
@@ -313,7 +311,7 @@ func (d *Devfile200) DeleteVolume(name string) error {
 			}
 			d.Components[i].Container.VolumeMounts = tmp
 		} else if d.Components[i].Volume != nil {
-			if d.Components[i].Volume.Name == name {
+			if d.Components[i].Name == name {
 				found = true
 				d.Components = append(d.Components[:i], d.Components[i+1:]...)
 			}

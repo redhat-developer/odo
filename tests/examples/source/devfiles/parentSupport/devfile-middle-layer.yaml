@@ -5,16 +5,16 @@ metadata:
 parent:
   uri: http://localhost:(-1)/devfile.yaml
   components:
-    - container:
-        name: runtime
+    - name: runtime
+      container:
         env:
           - name: ODO_TEST_ENV_1
             value: ENV_VALUE_1_1
           - name: ODO_TEST_ENV_3
             value: ENV_VALUE_3
 commands:
-  - exec:
-      id: devbuild
+  - id: devbuild
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: /project

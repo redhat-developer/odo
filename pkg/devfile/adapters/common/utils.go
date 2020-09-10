@@ -111,7 +111,7 @@ type CommandNames struct {
 func isContainer(component common.DevfileComponent) bool {
 	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
 	if component.Container != nil {
-		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Container.Name)
+		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Name)
 		return true
 	}
 	return false
@@ -120,7 +120,7 @@ func isContainer(component common.DevfileComponent) bool {
 // isVolume checks if the component is a volume
 func isVolume(component common.DevfileComponent) bool {
 	if component.Volume != nil {
-		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Volume.Name)
+		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Name)
 		return true
 	}
 	return false
@@ -152,7 +152,7 @@ func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.Devfile
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
 		if isVolume(comp) {
-			volumeNameToVolumeComponent[comp.Volume.Name] = comp
+			volumeNameToVolumeComponent[comp.Name] = comp
 		}
 	}
 	return volumeNameToVolumeComponent
@@ -196,7 +196,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 				ContainerPath: volumeMount.Path,
 				Size:          size,
 			}
-			containerNameToVolumes[containerComp.Container.Name] = append(containerNameToVolumes[containerComp.Container.Name], vol)
+			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)
 		}
 	}
 	return containerNameToVolumes
