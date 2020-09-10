@@ -97,12 +97,7 @@ func (d *defaultPushedComponent) retrieveURLsAndRoutes(c *occlient.Client) error
 }
 
 type s2iComponent struct {
-	dc   appsv1.DeploymentConfig
-	urls []url.URL
-}
-
-func (s s2iComponent) GetURLs() []url.URL {
-	panic("implement me")
+	dc appsv1.DeploymentConfig
 }
 
 func (s s2iComponent) GetLinkedSecretNames() (secretNames []string) {
