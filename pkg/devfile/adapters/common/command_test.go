@@ -20,10 +20,6 @@ func TestGetCommand(t *testing.T) {
 
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}
-	invalidComponent := "garbagealias"
-	workDir := [...]string{"/", "/root"}
-
-	emptyString := ""
 
 	tests := []struct {
 		name           string
@@ -53,37 +49,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "Case 4: Invalid devfile with empty component",
-			execCommands: []common.DevfileCommand{
-				{
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   emptyString,
-						WorkingDir:  workDir[0],
-						Group:       &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup},
-			wantErr:       true,
-		},
-		{
-			name: "Case 5: Invalid devfile with empty devbuild command",
-			execCommands: []common.DevfileCommand{
-				{
-					Exec: &common.Exec{
-						CommandLine: emptyString,
-						Component:   components[0],
-						WorkingDir:  workDir[0],
-						Group:       &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup},
-			wantErr:       true,
-		},
-		{
-			name: "Case 6: Valid devfile with empty workdir",
+			name: "Case 3: Valid devfile with empty workdir",
 			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
@@ -97,21 +63,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "Case 7: Invalid command referencing an absent component",
-			execCommands: []common.DevfileCommand{
-				{
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   invalidComponent,
-						Group:       &common.Group{Kind: runGroup},
-					},
-				},
-			},
-			requestedType: []common.DevfileCommandGroupType{runGroup},
-			wantErr:       true,
-		},
-		{
-			name: "Case 8: Mismatched command type",
+			name: "Case 4: Mismatched command type",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build command",
@@ -127,7 +79,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name: "Case 9: Default command is returned",
+			name: "Case 5: Default command is returned",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "defaultRunCommand",
@@ -151,7 +103,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 10: Composite command is returned",
+			name: "Case 6: Composite command is returned",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build",
@@ -187,9 +139,6 @@ func TestGetCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
-			if tt.execCommands[0].Exec.Component == invalidComponent {
-				components = []common.DevfileComponent{testingutil.GetFakeContainerComponent("randomComponent")}
-			}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands:   append(tt.execCommands, tt.compCommands...),
@@ -219,10 +168,6 @@ func TestGetCommandFromDevfile(t *testing.T) {
 
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}
-	invalidComponent := "garbagealias"
-	workDir := [...]string{"/", "/root"}
-
-	emptyString := ""
 
 	tests := []struct {
 		name           string
@@ -251,37 +196,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "Case 3: Invalid devfile with empty component",
-			execCommands: []common.DevfileCommand{
-				{
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   emptyString,
-						WorkingDir:  workDir[0],
-						Group:       &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup},
-			wantErr:       true,
-		},
-		{
-			name: "Case 4: Invalid devfile with empty devbuild command",
-			execCommands: []common.DevfileCommand{
-				{
-					Exec: &common.Exec{
-						CommandLine: emptyString,
-						Component:   components[0],
-						WorkingDir:  workDir[0],
-						Group:       &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup},
-			wantErr:       true,
-		},
-		{
-			name: "Case 5: Valid devfile with empty workdir",
+			name: "Case 3: Valid devfile with empty workdir",
 			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
@@ -295,21 +210,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "Case 6: Invalid command referencing an absent component",
-			execCommands: []common.DevfileCommand{
-				{
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   invalidComponent,
-						Group:       &common.Group{Kind: runGroup},
-					},
-				},
-			},
-			requestedType: []common.DevfileCommandGroupType{runGroup},
-			wantErr:       true,
-		},
-		{
-			name: "Case 7: Default command is returned",
+			name: "Case 4: Default command is returned",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "defaultruncommand",
@@ -333,7 +234,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 8: Valid devfile, has composite command",
+			name: "Case 5: Valid devfile, has composite command",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build1",
@@ -374,7 +275,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 9: Default composite command",
+			name: "Case 6: Default composite command",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build",
@@ -413,46 +314,10 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			requestedType:  []common.DevfileCommandGroupType{buildGroup},
 			wantErr:        false,
 		},
-		{
-			name: "Case 10: Invalid composite command",
-			execCommands: []common.DevfileCommand{
-				{
-					Id: "build",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: buildGroup, IsDefault: false},
-					},
-				},
-				{
-					Id: "run",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
-					},
-				},
-			},
-			compCommands: []common.DevfileCommand{
-				{
-					Id: "myComp",
-					Composite: &common.Composite{
-						Commands: []string{"fake"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
-					},
-				},
-			},
-			retCommandName: "myComp",
-			requestedType:  []common.DevfileCommandGroupType{buildGroup},
-			wantErr:        true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
-			if tt.execCommands[0].Exec.Component == invalidComponent {
-				components = []common.DevfileComponent{testingutil.GetFakeContainerComponent("randomComponent")}
-			}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands:   append(tt.execCommands, tt.compCommands...),
@@ -483,9 +348,6 @@ func TestGetCommandFromFlag(t *testing.T) {
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}
 	invalidComponent := "garbagealias"
-	workDir := [...]string{"/", "/root"}
-
-	emptyString := ""
 
 	tests := []struct {
 		name           string
@@ -508,24 +370,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 2: Invalid devfile with empty component",
-			execCommands: []common.DevfileCommand{
-				{
-					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   emptyString,
-						WorkingDir:  workDir[0],
-						Group:       &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			reqCommandName: "build command",
-			requestedType:  buildGroup,
-			wantErr:        true,
-		},
-		{
-			name: "Case 3: Valid devfile with empty workdir",
+			name: "Case 2: Valid devfile with empty workdir",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build command",
@@ -542,7 +387,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 4: Invalid command",
+			name: "Case 3: Invalid command",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build command",
@@ -558,7 +403,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name: "Case 5: Mismatched command type",
+			name: "Case 4: Mismatched command type",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build command",
@@ -574,7 +419,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name: "Case 6: Multiple default commands but should be with the flag",
+			name: "Case 5: Multiple default commands but should be with the flag",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "defaultruncommand",
@@ -599,7 +444,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 7: No default command but should be with the flag",
+			name: "Case 6: No default command but should be with the flag",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "defaultruncommand",
@@ -624,7 +469,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 8: No Command Group",
+			name: "Case 7: No Command Group",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "defaultruncommand",
@@ -640,7 +485,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 9: Valid devfile with composite commands",
+			name: "Case 8: Valid devfile with composite commands",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build",
@@ -681,7 +526,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "Case 10: Valid devfile with invalid composite commands",
+			name: "Case 9: Valid devfile with invalid composite commands",
 			execCommands: []common.DevfileCommand{
 				{
 					Id: "build",

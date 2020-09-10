@@ -16,7 +16,7 @@ func TestValidateCommands(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-
+	invalidComponent := "garbagealias"
 	emptyString := ""
 
 	tests := []struct {
@@ -26,9 +26,10 @@ func TestValidateCommands(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Case: Valid Exec Command",
+			name: "Case 1: Valid Exec Command",
 			exec: []common.DevfileCommand{
 				{
+					Id: "somecommand",
 					Exec: &common.Exec{
 						CommandLine: command,
 						Component:   component,
@@ -40,9 +41,10 @@ func TestValidateCommands(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Case: Invalid Exec Command with empty command",
+			name: "Case 2: Invalid Exec Command with empty command",
 			exec: []common.DevfileCommand{
 				{
+					Id: "somecommand",
 					Exec: &common.Exec{
 						CommandLine: emptyString,
 						Component:   component,
@@ -54,9 +56,10 @@ func TestValidateCommands(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case: Invalid Exec Command with missing component",
+			name: "Case 3: Invalid Exec Command with missing component",
 			exec: []common.DevfileCommand{
 				{
+					Id: "somecommand",
 					Exec: &common.Exec{
 						CommandLine: command,
 						WorkingDir:  workDir,
@@ -67,9 +70,25 @@ func TestValidateCommands(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case: valid Exec Command with Group nil",
+			name: "Case 4: Valid Exec Command with invalid component",
 			exec: []common.DevfileCommand{
 				{
+					Id: "somecommand",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   invalidComponent,
+						WorkingDir:  workDir,
+						Group:       &common.Group{Kind: runGroup},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 5: valid Exec Command with Group nil",
+			exec: []common.DevfileCommand{
+				{
+					Id: "somecommand",
 					Exec: &common.Exec{
 						CommandLine: command,
 						Component:   component,
@@ -80,7 +99,7 @@ func TestValidateCommands(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Case: valid Composite Command",
+			name: "Case 6: valid Composite Command",
 			exec: []common.DevfileCommand{
 				{
 					Id: "somecommand1",
@@ -111,7 +130,7 @@ func TestValidateCommands(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Case: Invalid Composite Command",
+			name: "Case 7: Invalid Composite Command",
 			exec: []common.DevfileCommand{
 				{
 					Id: "somecommand1",
