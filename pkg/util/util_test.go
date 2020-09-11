@@ -2065,7 +2065,7 @@ func TestDownloadInMemory(t *testing.T) {
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := DownloadFileInMemory(tt.url)
+			_, err := DownloadFileInMemory(HTTPRequestParams{URL: tt.url})
 
 			got := err == nil
 

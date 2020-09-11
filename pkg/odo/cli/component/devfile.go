@@ -146,10 +146,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 //DevfileDeploy
 func (do *DeployOptions) DevfileDeploy() (err error) {
-	componentName, err := getComponentName(do.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get component name")
-	}
+	componentName := do.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)
 	do.sourcePath, err = util.GetAbsPath(do.componentContext)
@@ -223,10 +220,7 @@ func (ddo *DeployDeleteOptions) DevfileDeployDelete() error {
 		return err
 	}
 
-	componentName, err := getComponentName(ddo.componentContext)
-	if err != nil {
-		return err
-	}
+	componentName := ddo.EnvSpecificInfo.GetName()
 	componentName = componentName + "-deploy"
 
 	kc := kubernetes.KubernetesContext{
