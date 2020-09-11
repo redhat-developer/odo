@@ -2,17 +2,17 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/util"
 
-	"github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"
@@ -88,6 +88,7 @@ odo link EtcdCluster/myetcd
 type LinkOptions struct {
 	waitForTarget    bool
 	componentContext string
+
 	*commonLinkOptions
 }
 
@@ -101,8 +102,10 @@ func NewLinkOptions() *LinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.commonLinkOptions.devfilePath = filepath.Join(o.componentContext, DevfilePath)
+
 	err = o.complete(name, cmd, args)
-	if !experimental.IsExperimentalModeEnabled() {
+	if !util.CheckPathExists(o.commonLinkOptions.devfilePath) {
 		o.operation = o.Client.LinkSecret
 	}
 	return err
@@ -115,7 +118,8 @@ func (o *LinkOptions) Validate() (err error) {
 		return err
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
+	// Return if we are using Devfile, no need to validate anything else below
+	if util.CheckPathExists(o.commonLinkOptions.devfilePath) {
 		return
 	}
 
@@ -160,22 +164,19 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 
-	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	// Modifications for the case when experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
-		linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
-		linkCmd.Long = linkLongDescExperimental
-	}
+	// Update the use / example / long to the Devfile description
+	linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
+	linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
+	linkCmd.Long = linkLongDescExperimental
+
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)
-	//Adding `--application` flag
-	if !experimental.IsExperimentalModeEnabled() {
-		appCmd.AddApplicationFlag(linkCmd)
-	}
+
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
+
 	//Adding context flag
 	genericclioptions.AddContextFlag(linkCmd, &o.componentContext)
 

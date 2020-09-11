@@ -25,7 +25,6 @@ var _ = Describe("odo devfile create command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
@@ -42,49 +41,6 @@ var _ = Describe("odo devfile create command tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
-	})
-
-	Context("Enabling experimental preference should show a disclaimer", func() {
-		It("checks that the experimental warning appears for create", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
-			// Check that it will contain the experimental mode output
-			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
-			Expect(helper.CmdShouldPass("odo", "create", "nodejs")).To(ContainSubstring(experimentalOutputMsg))
-
-		})
-	})
-
-	Context("Disabling experimental preference should show a disclaimer", func() {
-		JustBeforeEach(func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("Skipping test because s2i image is not supported on Kubernetes cluster")
-			}
-		})
-		It("checks that the experimental warning does *not* appear when Experimental is set to false for create", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
-			// Check that it will contain the experimental mode output
-			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
-			Expect(helper.CmdShouldPass("odo", "create", "nodejs")).To(Not(ContainSubstring(experimentalOutputMsg)))
-		})
-	})
-
-	Context("Disabling experimental preference should error out on providing --s2i flag", func() {
-		JustBeforeEach(func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("Skipping test because s2i image is not supported on Kubernetes cluster")
-			}
-		})
-		It("checks that the --s2i flag is unrecognised when Experimental is set to false for create", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
-			// Check that it will contain the experimental mode output
-			s2iFlagUnknownMsg := "Error: unknown flag: --s2i"
-			Expect(helper.CmdShouldFail("odo", "create", "nodejs", "--s2i")).To(ContainSubstring(s2iFlagUnknownMsg))
-		})
 	})
 
 	Context("When executing odo create with devfile component type argument", func() {
@@ -170,14 +126,14 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should fail the create command as --git flag, which is specific to s2i component creation, is used without --s2i flag", func() {
 			output := helper.CmdShouldFail("odo", "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")
-			Expect(output).Should(ContainSubstring("flag --git, requires --s2i flag to be set, when in experimental mode."))
+			Expect(output).Should(ContainSubstring("flag --git, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components."))
 		})
 
 		It("should fail the create command as --binary flag, which is specific to s2i component creation, is used without --s2i flag", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
 
 			output := helper.CmdShouldFail("odo", "create", "java:8", "sb-jar-test", "--binary", filepath.Join(context, "sb.jar"), "--context", context)
-			Expect(output).Should(ContainSubstring("flag --binary, requires --s2i flag to be set, when in experimental mode."))
+			Expect(output).Should(ContainSubstring("flag --binary, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components."))
 		})
 	})
 

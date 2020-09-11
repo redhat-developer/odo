@@ -34,7 +34,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -87,23 +86,11 @@ const CreateRecommendedCommandName = "create"
 // since the application will always be in the same directory as `.odo`, we will always set this as: ./
 const LocalDirectoryDefaultLocation = "./"
 
-// Constants for devfile component
-const (
-	devFile = "devfile.yaml"
-)
-
 var (
 	envFile    = filepath.Join(".odo", "env", "env.yaml")
 	configFile = filepath.Join(".odo", "config.yaml")
 	envDir     = filepath.Join(".odo", "env")
 )
-
-// DevfilePath is the devfile path that is used by odo,
-// which means odo can:
-// 1. Directly use the devfile in DevfilePath
-// 2. Download devfile from registry to DevfilePath then use the devfile in DevfilePath
-// 3. Copy user's own devfile (path is specified via --devfile flag) to DevfilePath then use the devfile in DevfilePath
-var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
 // EnvFilePath is the path of env file for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
@@ -311,7 +298,7 @@ func (co *CreateOptions) checkConflictingFlags() (err error) {
 
 func (co *CreateOptions) checkConflictingS2IFlags() error {
 	if !co.forceS2i {
-		errorString := "flag --%s, requires --s2i flag to be set, when in experimental mode."
+		errorString := "flag --%s, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components."
 
 		var flagName string
 		if len(co.componentBinary) != 0 {
@@ -358,9 +345,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// this populates the LocalConfigInfo as well
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
-	if experimental.IsExperimentalModeEnabled() {
-		// Add a disclaimer that we are in *experimental mode*
-		log.Experimental("Experimental mode is enabled, use at your own risk")
+	// If not using --s2i
+	if !co.forceS2i {
 
 		err = co.checkConflictingFlags()
 		if err != nil {
@@ -842,29 +828,27 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
-		if !co.forceS2i && co.devfileMetadata.devfileSupport {
-			// Validate if the devfile component that user wants to create already exists
-			spinner := log.Spinner("Validating devfile component")
-			defer spinner.End(false)
+	if !co.forceS2i && co.devfileMetadata.devfileSupport {
+		// Validate if the devfile component that user wants to create already exists
+		spinner := log.Spinner("Validating devfile component")
+		defer spinner.End(false)
 
-			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+		err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+		if err != nil {
+			return err
+		}
+
+		// Only validate namespace if pushtarget isn't docker
+		if !pushtarget.IsPushTargetDocker() {
+			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
 			if err != nil {
 				return err
 			}
-
-			// Only validate namespace if pushtarget isn't docker
-			if !pushtarget.IsPushTargetDocker() {
-				err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
-				if err != nil {
-					return err
-				}
-			}
-
-			spinner.End(true)
-
-			return nil
 		}
+
+		spinner.End(true)
+
+		return nil
 	}
 
 	log.Info("Validation")
@@ -1148,15 +1132,19 @@ func (co *CreateOptions) devfileRun() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		if !co.forceS2i && co.devfileMetadata.devfileSupport {
-			return co.devfileRun()
-		}
+
+	// By default we run Devfile
+	if !co.forceS2i && co.devfileMetadata.devfileSupport {
+		return co.devfileRun()
 	}
+
+	// If not, we run s2i (if the --s2i parameter has been passed in).
+	// It's implied that we have passed it in if Devfile did not run above
 	err = co.s2iRun()
 	if err != nil {
 		return err
 	}
+
 	if log.IsJSON() {
 		var componentDesc component.Component
 		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
@@ -1275,15 +1263,13 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
-	if experimental.IsExperimentalModeEnabled() {
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
-		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultStarterProjectName //Default value to pass to the flag if one is not specified.
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specified devfile")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starterToken, "starter-token", "", "Token to be used when downloading starter project")
-		componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Enforce S2I type components")
-	}
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
+	componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultStarterProjectName //Default value to pass to the flag if one is not specified.
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specified devfile")
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starterToken, "starter-token", "", "Token to be used when downloading starter project")
+	componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Enforce S2I type components")
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 

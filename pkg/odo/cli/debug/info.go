@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
@@ -47,7 +46,7 @@ func NewInfoOptions() *InfoOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
+	if util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// a small shortcut
