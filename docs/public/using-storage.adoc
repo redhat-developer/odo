@@ -1,0 +1,37 @@
+# Storage commands
+
+`odo` lets users manage storage in the cluster. A storage is a https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim[PVC], which is a way for users to "claim" durable storage (such as a GCE PersistentDisk or an iSCSI volume) without knowing the details of the particular cloud environment.
+
+# Adding a storage
+
+We can add a storage to the cluster using `odo storage create`
+
+```
+odo storage create store --path /data --size 1Gi
+ ✓  Added storage store to nodejs-project-ufyy
+
+Please use `odo push` command to make the storage accessible to the component
+```
+The storage in the above example has been mounted to the `/data` path and has a size of `1Gi`
+
+# Listing storage
+
+We can check the storage currently used by the component using `odo storage list`
+
+```
+odo storage list
+The component 'nodejs-project-ufyy' has the following storage attached:
+NAME      SIZE     PATH      STATE
+store     1Gi      /data     Not Pushed
+```
+
+# Deleting a storage
+
+We can delete a storage using `odo storage delete`
+
+```
+odo storage delete store -f
+Deleted storage store from nodejs-project-ufyy
+
+Please use `odo push` command to delete the storage from the cluster
+```
