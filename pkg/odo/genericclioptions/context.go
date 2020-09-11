@@ -20,7 +20,10 @@ import (
 )
 
 // DefaultAppName is the default name of the application when an application name is not provided
-const DefaultAppName = "app"
+const (
+	DefaultAppName = "app"
+	gitDirName     = ".git"
+)
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
@@ -506,6 +509,9 @@ func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 			util.LogErrorAndExit(err, "")
 		}
 		*ignores = append(*ignores, rules...)
+	} else {
+		indexFile := pkgUtil.GetIndexFileRelativeToContext()
+		*ignores = append(*ignores, []string{indexFile, gitDirName}...)
 	}
 	return nil
 }
