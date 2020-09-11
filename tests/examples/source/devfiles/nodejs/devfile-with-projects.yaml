@@ -17,7 +17,7 @@ components:
     container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
-      sourceMapping: apps/
+      sourceMapping: /apps
       endpoints:
         - name: "3000/tcp"
           targetPort: 3000
