@@ -35,22 +35,22 @@ func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) 
 	for _, patchComponent := range overridePatch {
 		found := false
 		for _, originalComponent := range d.Data.GetComponents() {
-			if strings.ToLower(patchComponent.Container.Name) == originalComponent.Container.Name {
+			if strings.ToLower(patchComponent.Name) == originalComponent.Name {
 				found = true
 
-				var updatedComponent common.Container
+				var updatedContainer common.Container
 
 				merged, err := handleMerge(originalComponent.Container, patchComponent.Container, common.Container{})
 				if err != nil {
 					return err
 				}
 
-				err = json.Unmarshal(merged, &updatedComponent)
+				err = json.Unmarshal(merged, &updatedContainer)
 				if err != nil {
 					return errors.Wrap(err, "failed to unmarshal override components")
 				}
 
-				d.Data.UpdateComponent(common.DevfileComponent{Container: &updatedComponent})
+				d.Data.UpdateComponent(common.DevfileComponent{Name: patchComponent.Name, Container: &updatedContainer})
 			}
 		}
 		if !found {
@@ -66,49 +66,27 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 	for _, patchCommand := range overridePatch {
 		found := false
 		for _, originalCommand := range d.Data.GetCommands() {
-			if strings.ToLower(patchCommand.Exec.Id) == originalCommand.Exec.Id {
+			if strings.ToLower(patchCommand.Id) == originalCommand.Id {
 				found = true
-				var updatedCommand common.Exec
+				var updatedExec common.Exec
 
 				merged, err := handleMerge(originalCommand.Exec, patchCommand.Exec, common.Exec{})
 				if err != nil {
 					return err
 				}
 
-				err = json.Unmarshal(merged, &updatedCommand)
+				err = json.Unmarshal(merged, &updatedExec)
 				if err != nil {
 					return errors.Wrap(err, "failed to unmarshal override commands")
 				}
 
-				d.Data.UpdateCommand(common.DevfileCommand{Exec: &updatedCommand})
+				d.Data.UpdateCommand(common.DevfileCommand{Id: patchCommand.Id, Exec: &updatedExec})
 			}
 		}
 		if !found {
 			return fmt.Errorf("the command to override is not found in the parent")
 		}
 	}
-	return nil
-}
-
-// OverrideEvents overrides the events of the parent devfile
-// overridePatch contains the patches to be applied to the parent's events
-func (d DevfileObj) OverrideEvents(overridePatch common.DevfileEvents) error {
-	var updatedEvents common.DevfileEvents
-
-	merged, err := handleMerge(d.Data.GetEvents(), overridePatch, common.DevfileEvents{})
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(merged, &updatedEvents)
-	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal override events")
-	}
-
-	d.Data.UpdateEvents(updatedEvents.PostStart,
-		updatedEvents.PostStop,
-		updatedEvents.PreStart,
-		updatedEvents.PreStop)
 	return nil
 }
 
@@ -189,8 +167,10 @@ func handleMerge(original, patch, dataStruct interface{}) ([]byte, error) {
 	}
 
 	merged, err := strategicpatch.StrategicMergePatch(originalJson, patchJson, dataStruct)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return merged, nil
 }

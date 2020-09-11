@@ -14,6 +14,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
 	const registryName string = "RegistryName"
 	const addRegistryURL string = "https://github.com/odo-devfiles/registry"
+
 	const updateRegistryURL string = "http://www.example.com/update"
 
 	// Using program commmand according to cliRunner in devfile
@@ -24,8 +25,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
 		project = cliRunner.CreateRandNamespaceProject()

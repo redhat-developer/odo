@@ -204,14 +204,13 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		config.NewCmdConfiguration(config.RecommendedCommandName, util.GetFullName(fullName, config.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
+		registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
+		component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
+		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 	)
-
 	if experimental.IsExperimentalModeEnabled() {
 		rootCmd.AddCommand(
-			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
 			component.NewCmdDeploy(component.DeployRecommendedCommandName, util.GetFullName(fullName, component.DeployRecommendedCommandName)),
-			component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
-			env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 		)
 	}
 

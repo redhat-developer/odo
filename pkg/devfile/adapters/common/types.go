@@ -60,6 +60,7 @@ type PushParameters struct {
 	EnvSpecificInfo          envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
 	Debug                    bool                    // Runs the component in debug mode
 	DebugPort                int                     // Port used for remote debugging
+	RunModeChanged           bool                    // It determines if run mode is changed from run to debug or vice versa
 }
 
 // SyncParameters is a struct containing the parameters to be used when syncing a devfile component

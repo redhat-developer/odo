@@ -2,6 +2,21 @@
 
 https://github.com/kubernetes/klog[Klog] is used for V style logging in `odo`.
 
+== Logging categories
+
+Each logging output is categorizes into logging levels.
+
+[cols=",",options="header",]
+|===
+|Logging value |Output
+|V(0) |General information
+|V(1) |Experimental debugging output / testing suite
+|V(2) |Devfile debugging output
+|V(3) |Kubernetes and OpenShift client debugging output
+|V(4) |Generic debugging information
+|V(10) |Kubernetes and OpenShift HTTP library debugging output
+|===
+
 == Working
 
 Every `odo` command takes an optional flag `-v` that must be used with an integer log level in the range from 0-9. Any INFO severity log statement that is logged at a level lesser than or equal to the one passed with the command alongside `-v` flag will be logged to STDOUT.
@@ -10,7 +25,7 @@ Alternatively, enviroment variable `ODO_LOG_LEVEL` can be used to set the verbos
 
 All ERROR severity level log messages will always be logged regardless of the values of `v` or `ODO_LOG_LEVEL`.
 
-In order to list multiple log levels, you can provide `--vmodule` to odo. For example: `--vmodule 1,2,3` to list log levels 1, 2 and 3.
+In order to list multiple log levels, you can provide `--vmodule` to odo. `--vmodule` takes a key=value command-deliminated output. For example: `--vmodule "*=1,*=2,*=3"` to list log levels 1, 2 and 3 for all files (`*`), while `--vmodule "occlient=3"` would list all 3 level log messages in the `occlient` folder.
 
 == Usage
 

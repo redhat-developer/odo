@@ -105,6 +105,16 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, er
 	}
 }
 
+// checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt errors out if user is trying to create or delete something other than project
+// compare to checkProjectCreateOrDeleteOnlyOnInvalidNamespace, no %s is needed
+func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Command, errFormatForCommand string) {
+	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
+		err := fmt.Errorf(errFormatForCommand)
+		util.LogErrorAndExit(err, "")
+	}
+}
+
 // getFirstChildOfCommand gets the first child command of the root command of command
 func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	// If command does not have a parent no point checking
@@ -279,7 +289,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		if err != nil {
 			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
 	}
 	client.Namespace = namespace

@@ -8,8 +8,8 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/util"
 
 	"path/filepath"
 
@@ -61,9 +61,10 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 		return fmt.Errorf("no parameter is expected for the command")
 	}
 
-	eo.devfilePath = filepath.Join(eo.componentContext, eo.devfilePath)
-	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() {
+	eo.devfilePath = filepath.Join(eo.componentContext, devFile)
+
+	// If Devfile is present
+	if util.CheckPathExists(eo.devfilePath) {
 		eo.componentOptions.Context = genericclioptions.NewDevfileContext(cmd)
 
 		if !pushtarget.IsPushTargetDocker() {
@@ -72,7 +73,9 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 		}
 		return nil
 	}
-	return
+
+	// If Devfile does not exist, it is implied that we are running s2i
+	return fmt.Errorf("exec command does not work with s2i components")
 }
 
 // Validate validates the exec parameters
@@ -99,8 +102,6 @@ func NewCmdExec(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
-	execCmd.Flags().StringVar(&o.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 
 	execCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(execCmd, completion.ComponentNameCompletionHandler)

@@ -57,7 +57,7 @@ func (o *ListOptions) Run() (err error) {
 	}
 
 	registryList := cfg.OdoSettings.RegistryList
-	if len(*registryList) == 0 {
+	if registryList == nil || len(*registryList) == 0 {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
 	}
 
@@ -78,7 +78,10 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 		return
 	}
 
-	for _, registry := range *registryList {
+	regList := *registryList
+	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
+	for i := len(regList) - 1; i >= 0; i-- {
+		registry := regList[i]
 		secure := "No"
 		if registry.Secure {
 			secure = "Yes"

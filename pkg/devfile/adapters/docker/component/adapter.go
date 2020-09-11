@@ -299,7 +299,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	for _, container := range componentContainer {
 
-		klog.V(4).Infof("Deleting container %s for component %s", container.ID, componentName)
+		klog.V(2).Infof("Deleting container %s for component %s", container.ID, componentName)
 		err = a.Client.RemoveContainer(container.ID)
 		if err != nil {
 			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
@@ -319,24 +319,24 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 			// Don't delete any volumes which are mapped into other containers
 			if _, exists := volumesNotToDelete[vol.Name]; exists {
-				klog.V(4).Infof("Skipping volume %s as it is mapped into a non-odo managed container", vol.Name)
+				klog.V(2).Infof("Skipping volume %s as it is mapped into a non-odo managed container", vol.Name)
 				continue
 			}
 
 			// If the volume was found to be attached to the component's container, then add the volume
 			// to the deletion list.
 			if _, ok := volumeNames[vol.Name]; ok {
-				klog.V(4).Infof("Adding volume %s to deletion list", vol.Name)
+				klog.V(2).Infof("Adding volume %s to deletion list", vol.Name)
 				volumesToDelete[vol.Name] = vol.Name
 			} else {
-				klog.V(4).Infof("Skipping volume %s as it was not attached to the component's container", vol.Name)
+				klog.V(2).Infof("Skipping volume %s as it was not attached to the component's container", vol.Name)
 			}
 		}
 	}
 
 	// Finally, delete the volumes we discovered during container deletion.
 	for name := range volumesToDelete {
-		klog.V(4).Infof("Deleting the volume %s for component %s", name, componentName)
+		klog.V(2).Infof("Deleting the volume %s for component %s", name, componentName)
 		err := a.Client.RemoveVolume(name)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)

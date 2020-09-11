@@ -21,8 +21,6 @@ func newIntrospectIntf(h *defaultHandler) *exportedIntf {
 //NewDefaultHandler returns an instance of the default
 //call handler. This is useful if you want to implement only
 //one of the two handlers but not both.
-//
-// Deprecated: this is the default value, don't use it, it will be unexported.
 func NewDefaultHandler() *defaultHandler {
 	h := &defaultHandler{
 		objects:     make(map[ObjectPath]*exportedObj),
@@ -47,7 +45,7 @@ func (h *defaultHandler) introspectPath(path ObjectPath) string {
 	subpath := make(map[string]struct{})
 	var xml bytes.Buffer
 	xml.WriteString("<node>")
-	for obj := range h.objects {
+	for obj, _ := range h.objects {
 		p := string(path)
 		if p != "/" {
 			p += "/"
@@ -57,7 +55,7 @@ func (h *defaultHandler) introspectPath(path ObjectPath) string {
 			subpath[node_name] = struct{}{}
 		}
 	}
-	for s := range subpath {
+	for s, _ := range subpath {
 		xml.WriteString("\n\t<node name=\"" + s + "\"/>")
 	}
 	xml.WriteString("\n</node>")
@@ -126,28 +124,14 @@ func (m exportedMethod) Call(args ...interface{}) ([]interface{}, error) {
 	}
 
 	ret := m.Value.Call(params)
-	var err error
-	nilErr := false // The reflection will find almost-nils, let's only pass back clean ones!
-	if t.NumOut() > 0 {
-		if e, ok := ret[t.NumOut()-1].Interface().(*Error); ok { // godbus *Error
-			nilErr = ret[t.NumOut()-1].IsNil()
-			ret = ret[:t.NumOut()-1]
-			err = e
-		} else if ret[t.NumOut()-1].Type().Implements(errType) { // Go error
-			i := ret[t.NumOut()-1].Interface()
-			if i == nil {
-				nilErr = ret[t.NumOut()-1].IsNil()
-			} else {
-				err = i.(error)
-			}
-			ret = ret[:t.NumOut()-1]
-		}
-	}
+
+	err := ret[t.NumOut()-1].Interface().(*Error)
+	ret = ret[:t.NumOut()-1]
 	out := make([]interface{}, len(ret))
 	for i, val := range ret {
 		out[i] = val.Interface()
 	}
-	if nilErr || err == nil {
+	if err == nil {
 		//concrete type to interface nil is a special case
 		return out, nil
 	}
@@ -177,7 +161,6 @@ func newExportedObject() *exportedObj {
 }
 
 type exportedObj struct {
-	mu         sync.RWMutex
 	interfaces map[string]*exportedIntf
 }
 
@@ -185,27 +168,19 @@ func (obj *exportedObj) LookupInterface(name string) (Interface, bool) {
 	if name == "" {
 		return obj, true
 	}
-	obj.mu.RLock()
-	defer obj.mu.RUnlock()
 	intf, exists := obj.interfaces[name]
 	return intf, exists
 }
 
 func (obj *exportedObj) AddInterface(name string, iface *exportedIntf) {
-	obj.mu.Lock()
-	defer obj.mu.Unlock()
 	obj.interfaces[name] = iface
 }
 
 func (obj *exportedObj) DeleteInterface(name string) {
-	obj.mu.Lock()
-	defer obj.mu.Unlock()
 	delete(obj.interfaces, name)
 }
 
 func (obj *exportedObj) LookupMethod(name string) (Method, bool) {
-	obj.mu.RLock()
-	defer obj.mu.RUnlock()
 	for _, intf := range obj.interfaces {
 		method, exists := intf.LookupMethod(name)
 		if exists {
@@ -245,98 +220,72 @@ func (obj *exportedIntf) isFallbackInterface() bool {
 //NewDefaultSignalHandler returns an instance of the default
 //signal handler. This is useful if you want to implement only
 //one of the two handlers but not both.
-//
-// Deprecated: this is the default value, don't use it, it will be unexported.
 func NewDefaultSignalHandler() *defaultSignalHandler {
 	return &defaultSignalHandler{}
 }
 
+func isDefaultSignalHandler(handler SignalHandler) bool {
+	_, ok := handler.(*defaultSignalHandler)
+	return ok
+}
+
 type defaultSignalHandler struct {
-	mu      sync.RWMutex
+	sync.RWMutex
 	closed  bool
-	signals []*signalChannelData
+	signals []chan<- *Signal
 }
 
 func (sh *defaultSignalHandler) DeliverSignal(intf, name string, signal *Signal) {
-	sh.mu.RLock()
-	defer sh.mu.RUnlock()
-	if sh.closed {
-		return
-	}
-	for _, scd := range sh.signals {
-		scd.deliver(signal)
-	}
+	go func() {
+		sh.RLock()
+		defer sh.RUnlock()
+		if sh.closed {
+			return
+		}
+		for _, ch := range sh.signals {
+			ch <- signal
+		}
+	}()
+}
+
+func (sh *defaultSignalHandler) Init() error {
+	sh.Lock()
+	sh.signals = make([]chan<- *Signal, 0)
+	sh.Unlock()
+	return nil
 }
 
 func (sh *defaultSignalHandler) Terminate() {
-	sh.mu.Lock()
-	defer sh.mu.Unlock()
-	if sh.closed {
-		return
-	}
-
-	for _, scd := range sh.signals {
-		scd.close()
-		close(scd.ch)
-	}
+	sh.Lock()
 	sh.closed = true
+	for _, ch := range sh.signals {
+		close(ch)
+	}
 	sh.signals = nil
+	sh.Unlock()
 }
 
-func (sh *defaultSignalHandler) AddSignal(ch chan<- *Signal) {
-	sh.mu.Lock()
-	defer sh.mu.Unlock()
+func (sh *defaultSignalHandler) addSignal(ch chan<- *Signal) {
+	sh.Lock()
+	defer sh.Unlock()
 	if sh.closed {
 		return
 	}
-	sh.signals = append(sh.signals, &signalChannelData{
-		ch:   ch,
-		done: make(chan struct{}),
-	})
+	sh.signals = append(sh.signals, ch)
+
 }
 
-func (sh *defaultSignalHandler) RemoveSignal(ch chan<- *Signal) {
-	sh.mu.Lock()
-	defer sh.mu.Unlock()
+func (sh *defaultSignalHandler) removeSignal(ch chan<- *Signal) {
+	sh.Lock()
+	defer sh.Unlock()
 	if sh.closed {
 		return
 	}
 	for i := len(sh.signals) - 1; i >= 0; i-- {
-		if ch == sh.signals[i].ch {
-			sh.signals[i].close()
+		if ch == sh.signals[i] {
 			copy(sh.signals[i:], sh.signals[i+1:])
 			sh.signals[len(sh.signals)-1] = nil
 			sh.signals = sh.signals[:len(sh.signals)-1]
 		}
 	}
-}
-
-type signalChannelData struct {
-	wg   sync.WaitGroup
-	ch   chan<- *Signal
-	done chan struct{}
-}
-
-func (scd *signalChannelData) deliver(signal *Signal) {
-	select {
-	case scd.ch <- signal:
-	case <-scd.done:
-		return
-	default:
-		scd.wg.Add(1)
-		go scd.deferredDeliver(signal)
-	}
-}
-
-func (scd *signalChannelData) deferredDeliver(signal *Signal) {
-	select {
-	case scd.ch <- signal:
-	case <-scd.done:
-	}
-	scd.wg.Done()
-}
-
-func (scd *signalChannelData) close() {
-	close(scd.done)
-	scd.wg.Wait() // wait until all spawned goroutines return
 }

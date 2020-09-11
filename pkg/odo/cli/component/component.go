@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
@@ -74,9 +73,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
 	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd, execCmd)
-	if experimental.IsExperimentalModeEnabled() {
-		componentCmd.AddCommand(testCmd)
-	}
+	componentCmd.AddCommand(testCmd)
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCmd.AddCommand(deployCmd)

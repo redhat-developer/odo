@@ -1,9 +1,10 @@
 package common
 
 import (
-	"k8s.io/klog"
 	"os"
-	"strconv"
+	"strings"
+
+	"k8s.io/klog"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
@@ -61,7 +62,7 @@ const (
 	BinBash = "/bin/sh"
 
 	// Default volume size for volumes defined in a devfile
-	volumeSize = "5Gi"
+	DefaultVolumeSize = "1Gi"
 
 	// EnvProjectsRoot is the env defined for /projects where component mountSources=true
 	EnvProjectsRoot = "PROJECTS_ROOT"
@@ -110,7 +111,7 @@ type CommandNames struct {
 func isContainer(component common.DevfileComponent) bool {
 	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
 	if component.Container != nil {
-		klog.V(4).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Container.Name)
+		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Name)
 		return true
 	}
 	return false
@@ -119,7 +120,7 @@ func isContainer(component common.DevfileComponent) bool {
 // isVolume checks if the component is a volume
 func isVolume(component common.DevfileComponent) bool {
 	if component.Volume != nil {
-		klog.V(4).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Volume.Name)
+		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Name)
 		return true
 	}
 	return false
@@ -151,7 +152,7 @@ func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.Devfile
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
 		if isVolume(comp) {
-			volumeNameToVolumeComponent[comp.Volume.Name] = comp
+			volumeNameToVolumeComponent[comp.Name] = comp
 		}
 	}
 	return volumeNameToVolumeComponent
@@ -180,7 +181,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 	containerNameToVolumes := make(map[string][]DevfileVolume)
 	for _, containerComp := range containerComponents {
 		for _, volumeMount := range containerComp.Container.VolumeMounts {
-			size := volumeSize
+			size := DefaultVolumeSize
 
 			// check if there is a volume component name against the container component volume mount name
 			if volumeComp, ok := volumeNameToVolumeComponent[volumeMount.Name]; ok {
@@ -195,10 +196,19 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 				ContainerPath: volumeMount.Path,
 				Size:          size,
 			}
-			containerNameToVolumes[containerComp.Container.Name] = append(containerNameToVolumes[containerComp.Container.Name], vol)
+			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)
 		}
 	}
 	return containerNameToVolumes
+}
+
+// IsRestartRequired checks if restart required for run command
+func IsRestartRequired(hotReload bool, runModeChanged bool) bool {
+	if runModeChanged || !hotReload {
+		return true
+	}
+
+	return false
 }
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
@@ -223,22 +233,6 @@ func IsPortPresent(endpoints []common.Endpoint, port int) bool {
 	return false
 }
 
-// IsRestartRequired returns if restart is required for devrun command
-func IsRestartRequired(command common.DevfileCommand) bool {
-	var restart = true
-	var err error
-	rs, ok := command.Exec.Attributes["restart"]
-	if ok {
-		restart, err = strconv.ParseBool(rs)
-		// Ignoring error here as restart is true for all error and default cases.
-		if err != nil {
-			klog.V(4).Info("Error converting restart attribute to bool")
-		}
-	}
-
-	return restart
-}
-
 // GetComponentEnvVar returns true if a list of env vars contains the specified env var
 // If the env exists, it returns the value of it
 func GetComponentEnvVar(env string, envs []common.Env) string {
@@ -248,4 +242,26 @@ func GetComponentEnvVar(env string, envs []common.Env) string {
 		}
 	}
 	return ""
+}
+
+// GetCommandsFromEvent returns the list of commands from the event name.
+// If the event is a composite command, it returns the sub-commands from the tree
+func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventName string) []string {
+	var commands []string
+
+	if command, ok := commandsMap[eventName]; ok {
+		if command.IsComposite() {
+			klog.V(4).Infof("%s is a composite command", command.GetID())
+			for _, compositeSubCmd := range command.Composite.Commands {
+				klog.V(4).Infof("checking if sub-command %s is either an exec or a composite command ", compositeSubCmd)
+				subCommands := GetCommandsFromEvent(commandsMap, strings.ToLower(compositeSubCmd))
+				commands = append(commands, subCommands...)
+			}
+		} else {
+			klog.V(4).Infof("%s is an exec command", command.GetID())
+			commands = append(commands, command.GetID())
+		}
+	}
+
+	return commands
 }

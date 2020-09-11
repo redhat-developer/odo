@@ -148,8 +148,8 @@ func TestGetVolumes(t *testing.T) {
 				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				testingutil.GetFakeVolumeComponent("myvolume3", size),
 				{
+					Name: "mycontainer",
 					Container: &versionsCommon.Container{
-						Name:  "mycontainer",
 						Image: "image",
 						VolumeMounts: []versionsCommon.VolumeMount{
 							{
@@ -186,7 +186,7 @@ func TestGetVolumes(t *testing.T) {
 				"comp1": {
 					{
 						Name:          "myvolume1",
-						Size:          "5Gi",
+						Size:          "1Gi",
 						ContainerPath: "/my/volume/mount/path1",
 					},
 				},
@@ -197,8 +197,8 @@ func TestGetVolumes(t *testing.T) {
 			component: []versionsCommon.DevfileComponent{
 				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				{
+					Name: "mycontainer",
 					Container: &versionsCommon.Container{
-						Name:  "mycontainer",
 						Image: "image",
 					},
 				},
@@ -407,51 +407,61 @@ func TestGetCommandsForGroup(t *testing.T) {
 	componentName := "alias1"
 	command := "ls -la"
 	workDir := "/"
-	execCommands := []common.Exec{
+	execCommands := []common.DevfileCommand{
 		{
-			Id:          "run command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group: &versionsCommon.Group{
-				Kind:      runGroup,
-				IsDefault: true,
+			Id: "run command",
+			Exec: &common.Exec{
+				CommandLine: command,
+				Component:   componentName,
+				WorkingDir:  workDir,
+				Group: &versionsCommon.Group{
+					Kind:      runGroup,
+					IsDefault: true,
+				},
 			},
 		},
 		{
-			Id:          "build command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: buildGroup},
+			Id: "build command",
+			Exec: &common.Exec{
+				CommandLine: command,
+				Component:   componentName,
+				WorkingDir:  workDir,
+				Group:       &versionsCommon.Group{Kind: buildGroup},
+			},
 		},
 		{
-			Id:          "test command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: testGroup},
+			Id: "test command",
+			Exec: &common.Exec{
+				CommandLine: command,
+				Component:   componentName,
+				WorkingDir:  workDir,
+				Group:       &versionsCommon.Group{Kind: testGroup},
+			},
 		},
 		{
-			Id:          "debug command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: debugGroup},
+			Id: "debug command",
+			Exec: &common.Exec{
+				CommandLine: command,
+				Component:   componentName,
+				WorkingDir:  workDir,
+				Group:       &versionsCommon.Group{Kind: debugGroup},
+			},
 		},
 		{
-			Id:          "customcommand",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: runGroup},
+			Id: "customcommand",
+			Exec: &common.Exec{
+				CommandLine: command,
+				Component:   componentName,
+				WorkingDir:  workDir,
+				Group:       &versionsCommon.Group{Kind: runGroup},
+			},
 		},
 	}
 
 	devObj := devfileParser.DevfileObj{
 		Data: &testingutil.TestDevfileData{
-			Components:   component,
-			ExecCommands: execCommands,
+			Components: component,
+			Commands:   execCommands,
 		},
 	}
 
@@ -512,54 +522,70 @@ func TestGetCommands(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		execCommands     []common.Exec
-		compCommands     []common.Composite
+		execCommands     []common.DevfileCommand
+		compCommands     []common.DevfileCommand
 		expectedCommands []versionsCommon.DevfileCommand
 	}{
 		{
 			name: "Case 1: One command",
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
 					Id: "somecommand",
+					Exec: &common.Exec{
+						HotReloadCapable: false,
+					},
 				},
 			},
 			expectedCommands: []versionsCommon.DevfileCommand{
 				{
+					Id: "somecommand",
 					Exec: &common.Exec{
-						Id: "somecommand",
+						HotReloadCapable: false,
 					},
 				},
 			},
 		},
 		{
 			name: "Case 2: Multiple commands",
-			execCommands: []common.Exec{
+			execCommands: []common.DevfileCommand{
 				{
 					Id: "somecommand",
+					Exec: &common.Exec{
+						HotReloadCapable: false,
+					},
 				},
 				{
 					Id: "somecommand2",
+					Exec: &common.Exec{
+						HotReloadCapable: false,
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []common.DevfileCommand{
 				{
 					Id: "mycomposite",
+					Composite: &common.Composite{
+						Commands: []string{},
+					},
 				},
 			},
 			expectedCommands: []versionsCommon.DevfileCommand{
 				{
+					Id: "somecommand",
 					Exec: &common.Exec{
-						Id: "somecommand",
+						HotReloadCapable: false,
 					},
 				},
 				{
+					Id: "somecommand2",
 					Exec: &common.Exec{
-						Id: "somecommand2",
+						HotReloadCapable: false,
 					},
 				},
 				{
+					Id: "mycomposite",
 					Composite: &common.Composite{
-						Id: "mycomposite",
+						Commands: []string{},
 					},
 				},
 			},
@@ -569,9 +595,8 @@ func TestGetCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:        component,
-					ExecCommands:      tt.execCommands,
-					CompositeCommands: tt.compCommands,
+					Components: component,
+					Commands:   append(tt.execCommands, tt.compCommands...),
 				},
 			}
 
@@ -650,6 +675,75 @@ func TestGetComponentEnvVar(t *testing.T) {
 				t.Errorf("TestGetComponentEnvVar error: env value mismatch, expected: %v got: %v", tt.want, value)
 			}
 
+		})
+	}
+
+}
+
+func TestGetCommandsFromEvent(t *testing.T) {
+
+	execCommands := []versionsCommon.DevfileCommand{
+		{
+			Id:   "exec1",
+			Exec: &versionsCommon.Exec{},
+		},
+		{
+			Id:   "exec2",
+			Exec: &versionsCommon.Exec{},
+		},
+		{
+			Id:   "exec3",
+			Exec: &versionsCommon.Exec{},
+		},
+	}
+
+	compCommands := []versionsCommon.DevfileCommand{
+		{
+			Id: "comp1",
+			Composite: &common.Composite{
+				Commands: []string{
+					"exec1",
+					"exec3",
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name         string
+		eventName    string
+		wantCommands []string
+	}{
+		{
+			name:      "Case 1: composite event",
+			eventName: "comp1",
+			wantCommands: []string{
+				"exec1",
+				"exec3",
+			},
+		},
+		{
+			name:      "Case 2: exec event",
+			eventName: "exec2",
+			wantCommands: []string{
+				"exec2",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: &testingutil.TestDevfileData{
+					Commands: append(compCommands, execCommands...),
+				},
+			}
+
+			commandsMap := devObj.Data.GetCommands()
+			commands := GetCommandsFromEvent(commandsMap, tt.eventName)
+			if !reflect.DeepEqual(tt.wantCommands, commands) {
+				t.Errorf("TestGetCommandsFromEvent error - got %v expected %v", commands, tt.wantCommands)
+			}
 		})
 	}
 

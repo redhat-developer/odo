@@ -20,8 +20,8 @@ func TestDevfile200_AddVolume(t *testing.T) {
 	volume1 := "volume1"
 
 	type args struct {
-		volume common.Volume
-		path   string
+		volumeComponent common.DevfileComponent
+		path            string
 	}
 	tests := []struct {
 		name              string
@@ -34,26 +34,26 @@ func TestDevfile200_AddVolume(t *testing.T) {
 			name: "case 1: it should add the volume to all the containers",
 			currentComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 					},
 				},
 				{
+					Name: container1,
 					Container: &common.Container{
-						Name:  container1,
 						Image: image1,
 					},
 				},
 			},
 			args: args{
-				volume: testingutil.GetFakeVolume(volume0, "5Gi"),
-				path:   "/path",
+				volumeComponent: testingutil.GetFakeVolumeComponent(volume0, "5Gi"),
+				path:            "/path",
 			},
 			wantComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume0, "/path"),
@@ -61,8 +61,8 @@ func TestDevfile200_AddVolume(t *testing.T) {
 					},
 				},
 				{
+					Name: container1,
 					Container: &common.Container{
-						Name:  container1,
 						Image: image1,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume0, "/path"),
@@ -76,8 +76,8 @@ func TestDevfile200_AddVolume(t *testing.T) {
 			name: "case 2: it should add the volume when other volumes are present",
 			currentComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume1, "/data"),
@@ -86,13 +86,13 @@ func TestDevfile200_AddVolume(t *testing.T) {
 				},
 			},
 			args: args{
-				volume: testingutil.GetFakeVolume(volume0, "5Gi"),
-				path:   "/path",
+				volumeComponent: testingutil.GetFakeVolumeComponent(volume0, "5Gi"),
+				path:            "/path",
 			},
 			wantComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume1, "/data"),
@@ -109,8 +109,8 @@ func TestDevfile200_AddVolume(t *testing.T) {
 				testingutil.GetFakeVolumeComponent(volume0, "1Gi"),
 			},
 			args: args{
-				volume: testingutil.GetFakeVolume(volume0, "5Gi"),
-				path:   "/path",
+				volumeComponent: testingutil.GetFakeVolumeComponent(volume0, "5Gi"),
+				path:            "/path",
 			},
 			wantErr: true,
 		},
@@ -118,8 +118,8 @@ func TestDevfile200_AddVolume(t *testing.T) {
 			name: "case 4: it should error out when another volume is mounted to the same path",
 			currentComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume1, "/path"),
@@ -129,8 +129,8 @@ func TestDevfile200_AddVolume(t *testing.T) {
 				testingutil.GetFakeVolumeComponent(volume1, "5Gi"),
 			},
 			args: args{
-				volume: testingutil.GetFakeVolume(volume0, "5Gi"),
-				path:   "/path",
+				volumeComponent: testingutil.GetFakeVolumeComponent(volume0, "5Gi"),
+				path:            "/path",
 			},
 			wantErr: true,
 		},
@@ -141,7 +141,7 @@ func TestDevfile200_AddVolume(t *testing.T) {
 				Components: tt.currentComponents,
 			}
 
-			err := d.AddVolume(tt.args.volume, tt.args.path)
+			err := d.AddVolume(tt.args.volumeComponent, tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AddVolume() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -181,8 +181,8 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 			name: "case 1: volume is present and mounted to multiple components",
 			currentComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume0, "/path"),
@@ -190,8 +190,8 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 					},
 				},
 				{
+					Name: container1,
 					Container: &common.Container{
-						Name:  container1,
 						Image: image1,
 						VolumeMounts: []common.VolumeMount{
 							{
@@ -201,23 +201,18 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 						},
 					},
 				},
-				{
-					Volume: &common.Volume{
-						Name: volume0,
-						Size: "5Gi",
-					},
-				},
+				testingutil.GetFakeVolumeComponent(volume0, "5Gi"),
 			},
 			wantComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 					},
 				},
 				{
+					Name: container1,
 					Container: &common.Container{
-						Name:  container1,
 						Image: image1,
 					},
 				},
@@ -231,8 +226,8 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 			name: "case 2: delete only the required volume in case of multiples",
 			currentComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume0, "/path"),
@@ -241,8 +236,8 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 					},
 				},
 				{
+					Name: container1,
 					Container: &common.Container{
-						Name:  container1,
 						Image: image1,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume1, "/data"),
@@ -254,8 +249,8 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 			},
 			wantComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume1, "/data"),
@@ -263,8 +258,8 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 					},
 				},
 				{
+					Name: container1,
 					Container: &common.Container{
-						Name:  container1,
 						Image: image1,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume1, "/data"),
@@ -282,8 +277,8 @@ func TestDevfile200_DeleteVolume(t *testing.T) {
 			name: "case 3: volume is not present",
 			currentComponents: []common.DevfileComponent{
 				{
+					Name: container0,
 					Container: &common.Container{
-						Name:  container0,
 						Image: image0,
 						VolumeMounts: []common.VolumeMount{
 							testingutil.GetFakeVolumeMount(volume1, "/data"),

@@ -27,8 +27,9 @@ func TestValidateComponents(t *testing.T) {
 
 		components := []common.DevfileComponent{
 			{
+				Name: "container",
 				Container: &common.Container{
-					Name: "container",
+					Image: "image",
 				},
 			},
 		}
@@ -44,13 +45,15 @@ func TestValidateComponents(t *testing.T) {
 
 		components := []common.DevfileComponent{
 			{
+				Name: "myvol",
 				Volume: &common.Volume{
-					Name: "myvol",
+					Size: "1Gi",
 				},
 			},
 			{
+				Name: "myvol",
 				Volume: &common.Volume{
-					Name: "myvol",
+					Size: "1Gi",
 				},
 			},
 		}
@@ -67,13 +70,14 @@ func TestValidateComponents(t *testing.T) {
 
 		components := []common.DevfileComponent{
 			{
+				Name: "myvol",
 				Volume: &common.Volume{
-					Name: "myvol",
+					Size: "1Gi",
 				},
 			},
 			{
+				Name: "container",
 				Container: &common.Container{
-					Name: "container",
 					VolumeMounts: []common.VolumeMount{
 						{
 							Name: "myvol",
@@ -83,8 +87,8 @@ func TestValidateComponents(t *testing.T) {
 				},
 			},
 			{
+				Name: "container2",
 				Container: &common.Container{
-					Name: "container2",
 					VolumeMounts: []common.VolumeMount{
 						{
 							Name: "myvol",
@@ -105,14 +109,14 @@ func TestValidateComponents(t *testing.T) {
 
 		components := []common.DevfileComponent{
 			{
+				Name: "myvol",
 				Volume: &common.Volume{
-					Name: "myvol",
 					Size: "randomgarbage",
 				},
 			},
 			{
+				Name: "container",
 				Container: &common.Container{
-					Name: "container",
 					VolumeMounts: []common.VolumeMount{
 						{
 							Name: "myvol",
@@ -126,7 +130,7 @@ func TestValidateComponents(t *testing.T) {
 		got := validateComponents(components)
 		want := "size randomgarbage for volume component myvol is invalid"
 
-		if !strings.Contains(got.Error(), want) {
+		if got != nil && !strings.Contains(got.Error(), want) {
 			t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
 		}
 	})
@@ -135,14 +139,14 @@ func TestValidateComponents(t *testing.T) {
 
 		components := []common.DevfileComponent{
 			{
+				Name: "myvol",
 				Volume: &common.Volume{
-					Name: "myvol",
 					Size: "2Gi",
 				},
 			},
 			{
+				Name: "container",
 				Container: &common.Container{
-					Name: "container",
 					VolumeMounts: []common.VolumeMount{
 						{
 							Name: "myinvalidvol",

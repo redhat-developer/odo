@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
@@ -32,6 +33,18 @@ the feature will be available with experimental mode enabled.
 The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
+
+// Constants for devfile component
+const (
+	devFile = "devfile.yaml"
+)
+
+// DevfilePath is the devfile path that is used by odo,
+// which means odo can:
+// 1. Directly use the devfile in DevfilePath
+// 2. Download devfile from registry to DevfilePath then use the devfile in DevfilePath
+// 3. Copy user's own devfile (path is specified via --devfile flag) to DevfilePath then use the devfile in DevfilePath
+var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() error {
@@ -71,10 +84,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		return err
 	}
 
-	componentName, err := getComponentName(po.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get component name")
-	}
+	componentName := po.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)
 	po.sourcePath, err = util.GetAbsPath(po.componentContext)
@@ -99,10 +109,10 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	}
 
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
-
 	if err != nil {
 		return err
 	}
+
 	pushParams := common.PushParameters{
 		Path:            po.sourcePath,
 		IgnoredFiles:    po.ignores,
@@ -263,11 +273,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 	if err != nil {
 		return err
 	}
-
-	componentName, err := getComponentName(lo.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get component name")
-	}
+	componentName := lo.Context.EnvSpecificInfo.GetName()
 
 	var platformContext interface{}
 	if pushtarget.IsPushTargetDocker() {
@@ -299,27 +305,6 @@ func (lo LogOptions) DevfileComponentLog() error {
 	return util.DisplayLog(lo.logFollow, rd, componentName)
 }
 
-// Get component name from env.yaml file
-func getComponentName(context string) (string, error) {
-	var dir string
-	var err error
-	if context == "" {
-		dir, err = os.Getwd()
-		if err != nil {
-			return "", err
-		}
-	} else {
-		dir = context
-	}
-
-	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
-	if err != nil {
-		return "", err
-	}
-	componentName := envInfo.GetName()
-	return componentName, nil
-}
-
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile and validate
@@ -327,11 +312,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	if err != nil {
 		return err
 	}
-
-	componentName, err := getComponentName(do.componentContext)
-	if err != nil {
-		return err
-	}
+	componentName := do.EnvSpecificInfo.GetName()
 
 	kc := kubernetes.KubernetesContext{
 		Namespace: do.namespace,
@@ -350,10 +331,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 
 // RunTestCommand runs the specific test command in devfile
 func (to *TestOptions) RunTestCommand() error {
-	componentName, err := getComponentName(to.componentContext)
-	if err != nil {
-		return err
-	}
+	componentName := to.Context.EnvSpecificInfo.GetName()
 
 	var platformContext interface{}
 	if pushtarget.IsPushTargetDocker() {

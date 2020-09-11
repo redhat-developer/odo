@@ -41,6 +41,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: commandLineBuild,
 								Component:   componentName0,
@@ -49,7 +50,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 									IsDefault: false,
 									Kind:      common.BuildCommandGroupType,
 								},
-								Id:         "devbuild",
 								WorkingDir: workingDir,
 							},
 						},
@@ -59,6 +59,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild",
 						Exec: &common.Exec{
 							CommandLine: overrideBuild,
 							Component:   overrideComponent0,
@@ -66,7 +67,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 								IsDefault: true,
 								Kind:      common.BuildCommandGroupType,
 							},
-							Id:         "devbuild",
 							WorkingDir: overrideWorkingDir,
 						},
 					},
@@ -77,6 +77,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: overrideBuild,
 								Component:   overrideComponent0,
@@ -84,7 +85,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 									IsDefault: true,
 									Kind:      common.BuildCommandGroupType,
 								},
-								Id:         "devbuild",
 								WorkingDir: overrideWorkingDir,
 							},
 						},
@@ -99,6 +99,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								Attributes: map[string]string{
 									"key-0": "value-0",
@@ -106,7 +107,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
-								Id: "devbuild",
 							},
 						},
 					},
@@ -115,6 +115,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild",
 						Exec: &common.Exec{
 							Attributes: map[string]string{
 								"key-1": "value-1",
@@ -123,7 +124,6 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 								testingutil.GetFakeEnv("env-0", "value-0-0"),
 								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
-							Id: "devbuild",
 						},
 					},
 				},
@@ -133,8 +133,8 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
-								Id: "devbuild",
 								Attributes: map[string]string{
 									"key-0": "value-0",
 									"key-1": "value-1",
@@ -156,15 +156,15 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: commandLineBuild,
-								Id:          "devbuild",
 							},
 						},
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
 								CommandLine: commandLineRun,
-								Id:          "devrun",
 							},
 						},
 					},
@@ -173,9 +173,9 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild",
 						Exec: &common.Exec{
 							CommandLine: overrideBuild,
-							Id:          "devbuild",
 						},
 					},
 				},
@@ -185,15 +185,15 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								CommandLine: overrideBuild,
-								Id:          "devbuild",
 							},
 						},
 						{
+							Id: "devrun",
 							Exec: &common.Exec{
 								CommandLine: commandLineRun,
-								Id:          "devrun",
 							},
 						},
 					},
@@ -208,11 +208,11 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 				Data: &v200.Devfile200{
 					Commands: []common.DevfileCommand{
 						{
+							Id: "devbuild",
 							Exec: &common.Exec{
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
-								Id: "devbuild",
 							},
 						},
 					},
@@ -221,12 +221,12 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileCommand{
 					{
+						Id: "devbuild-custom",
 						Exec: &common.Exec{
 							Env: []common.Env{
 								testingutil.GetFakeEnv("env-0", "value-0-0"),
 								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
-							Id: "devbuild-custom",
 						},
 					},
 				},
@@ -284,13 +284,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Args:          []string{"arg-0", "arg-1"},
 								Command:       []string{"cmd-0", "cmd-1"},
 								Image:         containerImage0,
 								MemoryLimit:   "512Mi",
 								MountSources:  false,
-								Name:          "nodejs",
 								SourceMapping: "/source",
 							},
 						},
@@ -300,13 +300,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs",
 						Container: &common.Container{
 							Args:          []string{"arg-0-0", "arg-1-1"},
 							Command:       []string{"cmd-0-0", "cmd-1-1"},
 							Image:         overrideContainerImage,
 							MemoryLimit:   "1Gi",
 							MountSources:  true,
-							Name:          "nodejs",
 							SourceMapping: "/data",
 						},
 					},
@@ -317,13 +317,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Args:          []string{"arg-0-0", "arg-1-1"},
 								Command:       []string{"cmd-0-0", "cmd-1-1"},
 								Image:         overrideContainerImage,
 								MemoryLimit:   "1Gi",
 								MountSources:  true,
-								Name:          "nodejs",
 								SourceMapping: "/data",
 							},
 						},
@@ -339,6 +339,7 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Endpoints: []common.Endpoint{
 									{
@@ -353,7 +354,6 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
-								Name: "nodejs",
 								VolumeMounts: []common.VolumeMount{
 									testingutil.GetFakeVolumeMount("volume-0", "path-0"),
 								},
@@ -365,6 +365,7 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs",
 						Container: &common.Container{
 							Endpoints: []common.Endpoint{
 								{
@@ -387,7 +388,6 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 								testingutil.GetFakeEnv("env-0", "value-0-0"),
 								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
-							Name: "nodejs",
 							VolumeMounts: []common.VolumeMount{
 								testingutil.GetFakeVolumeMount("volume-0", "path-0-0"),
 								testingutil.GetFakeVolumeMount("volume-1", "path-1"),
@@ -401,12 +401,12 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Env: []common.Env{
 									testingutil.GetFakeEnv("env-0", "value-0-0"),
 									testingutil.GetFakeEnv("env-1", "value-1"),
 								},
-								Name: "nodejs",
 								VolumeMounts: []common.VolumeMount{
 									testingutil.GetFakeVolumeMount("volume-0", "path-0-0"),
 									testingutil.GetFakeVolumeMount("volume-1", "path-1"),
@@ -443,15 +443,15 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: containerImage0,
-								Name:  "nodejs",
 							},
 						},
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: containerImage1,
-								Name:  "runtime",
 							},
 						},
 					},
@@ -460,15 +460,15 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs",
 						Container: &common.Container{
 							Image: overrideContainerImage,
-							Name:  "nodejs",
 						},
 					},
 					{
+						Name: "runtime",
 						Container: &common.Container{
 							Image: containerImage1,
-							Name:  "runtime",
 						},
 					},
 				},
@@ -478,15 +478,15 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: overrideContainerImage,
-								Name:  "nodejs",
 							},
 						},
 						{
+							Name: "runtime",
 							Container: &common.Container{
 								Image: containerImage1,
-								Name:  "runtime",
 							},
 						},
 					},
@@ -501,9 +501,9 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 				Data: &v200.Devfile200{
 					Components: []common.DevfileComponent{
 						{
+							Name: "nodejs",
 							Container: &common.Container{
 								Image: containerImage0,
-								Name:  "nodejs",
 							},
 						},
 					},
@@ -512,9 +512,9 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileComponent{
 					{
+						Name: "nodejs-custom",
 						Container: &common.Container{
 							Image: containerImage0,
-							Name:  "nodejs-custom",
 						},
 					},
 				},
@@ -531,91 +531,6 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			}
 
 			if tt.wantErr && err != nil {
-				return
-			}
-
-			if !reflect.DeepEqual(tt.wantDevFileObj, tt.devFileObj) {
-				t.Errorf("expected devfile and got devfile are different: %v", pretty.Compare(tt.wantDevFileObj, tt.devFileObj))
-			}
-		})
-	}
-}
-
-func TestDevfileObj_OverrideEvents(t *testing.T) {
-	type args struct {
-		overridePatch common.DevfileEvents
-	}
-	tests := []struct {
-		name           string
-		devFileObj     DevfileObj
-		args           args
-		wantDevFileObj DevfileObj
-		wantErr        bool
-	}{
-		{
-			name: "case 1: override the events",
-			devFileObj: DevfileObj{
-				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
-				Data: &v200.Devfile200{
-					Events: common.DevfileEvents{
-						PostStart: []string{"post-start-0", "post-start-1"},
-						PostStop:  []string{"post-stop-0", "post-stop-1"},
-						PreStart:  []string{"pre-start-0", "pre-start-1"},
-						PreStop:   []string{"pre-stop-0", "pre-stop-1"},
-					},
-				},
-			},
-			args: args{
-				overridePatch: common.DevfileEvents{
-					PostStart: []string{"override-post-start-0", "override-post-start-1"},
-					PostStop:  []string{"override-post-stop-0", "override-post-stop-1"},
-					PreStart:  []string{"override-pre-start-0", "override-pre-start-1"},
-					PreStop:   []string{"override-pre-stop-0", "override-pre-stop-1"},
-				},
-			},
-			wantDevFileObj: DevfileObj{
-				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
-				Data: &v200.Devfile200{
-					Events: common.DevfileEvents{
-						PostStart: []string{"override-post-start-0", "override-post-start-1"},
-						PostStop:  []string{"override-post-stop-0", "override-post-stop-1"},
-						PreStart:  []string{"override-pre-start-0", "override-pre-start-1"},
-						PreStop:   []string{"override-pre-stop-0", "override-pre-stop-1"},
-					},
-				},
-			},
-		},
-		{
-			name: "case 2: override some of the events",
-			devFileObj: DevfileObj{
-				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
-				Data: &v200.Devfile200{
-					Events: common.DevfileEvents{
-						PostStart: []string{"post-start-0", "post-start-1"},
-						PostStop:  []string{"post-stop-0", "post-stop-1"},
-					},
-				},
-			},
-			args: args{
-				overridePatch: common.DevfileEvents{
-					PostStart: []string{"override-post-start-0", "override-post-start-1"},
-				},
-			},
-			wantDevFileObj: DevfileObj{
-				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
-				Data: &v200.Devfile200{
-					Events: common.DevfileEvents{
-						PostStart: []string{"override-post-start-0", "override-post-start-1"},
-						PostStop:  []string{"post-stop-0", "post-stop-1"},
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.devFileObj.OverrideEvents(tt.args.overridePatch); (err != nil) != tt.wantErr {
-				t.Errorf("OverrideEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
@@ -649,7 +564,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
@@ -662,7 +580,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName0,
 						Zip:  nil,
@@ -676,7 +597,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
@@ -694,14 +618,20 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -713,7 +643,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName0,
 						Zip:  nil,
@@ -727,14 +660,20 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -751,7 +690,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName0,
 							Zip:  nil,
@@ -764,7 +706,10 @@ func TestDevfileObj_OverrideProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: "custom-project",
 						Zip:  nil,
@@ -818,7 +763,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -830,7 +778,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName1,
 						Zip:  nil,
@@ -844,7 +795,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName1,
 						},
@@ -861,13 +815,19 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName2,
 						},
@@ -879,7 +839,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: projectName1,
 					},
@@ -892,14 +855,20 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/source",
 							Github: &common.Github{
-								Branch: "release-1.0.0",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+								},
 							},
 							Name: projectName1,
 							Zip:  nil,
 						},
 						{
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName2,
 						},
@@ -916,7 +885,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 						{
 							ClonePath: "/data",
 							Github: &common.Github{
-								Branch: "master",
+								GitLikeProjectSource: common.GitLikeProjectSource{
+									Remotes:      map[string]string{"origin": "url"},
+									CheckoutFrom: &common.CheckoutFrom{Revision: "master"},
+								},
 							},
 							Name: projectName1,
 							Zip:  nil,
@@ -929,7 +901,10 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 					{
 						ClonePath: "/source",
 						Github: &common.Github{
-							Branch: "release-1.0.0",
+							GitLikeProjectSource: common.GitLikeProjectSource{
+								Remotes:      map[string]string{"origin": "url"},
+								CheckoutFrom: &common.CheckoutFrom{Revision: "release-1.0.0"},
+							},
 						},
 						Name: "custom-starter-project",
 						Zip:  nil,

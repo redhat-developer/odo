@@ -27,6 +27,27 @@ const (
 	InitCommandGroupType DevfileCommandGroupType = "init"
 )
 
+// ExposureType is an enum to indicate the exposure type of the endpoint
+type ExposureType string
+
+const (
+	Public   ExposureType = "public"
+	Internal ExposureType = "internal"
+	None     ExposureType = "none"
+)
+
+// ProtocolType is an enum to indicate the protocol type of the endpoint
+type ProtocolType string
+
+const (
+	HTTP  ProtocolType = "http"
+	HTTPS ProtocolType = "https"
+	WS    ProtocolType = "ws"
+	WSS   ProtocolType = "wss"
+	TCP   ProtocolType = "tcp"
+	UDP   ProtocolType = "udp"
+)
+
 // DevfileMetadata metadata for devfile
 type DevfileMetadata struct {
 
@@ -50,10 +71,16 @@ type DevfileCommand struct {
 	Composite *Composite `json:"composite,omitempty" yaml:"composite,omitempty"`
 	// CLI Command executed in a component container
 	Exec *Exec `json:"exec,omitempty" yaml:"exec,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, from a parent, or in events.
+	Id string `json:"id" yaml:"id"`
 }
 
 // DevfileComponent component specified in devfile
 type DevfileComponent struct {
+
+	// Mandatory name that allows referencing the component from other elements (such as commands) or from an external devfile that may reference this component through a parent or a plugin.
+	Name string `json:"name" yaml:"name"`
 
 	// Allows adding and configuring workspace-related containers
 	Container *Container `json:"container,omitempty" yaml:"container,omitempty"`
@@ -80,11 +107,13 @@ type Container struct {
 	Endpoints []Endpoint `json:"endpoints,omitempty" yaml:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Environment variables used in this container
-	Env          []Env  `json:"env,omitempty" yaml:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+	Env []Env `json:"env,omitempty" yaml:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+
+	// Image is a required field but we use omitempty
+	// because a empty image value will override a parent's image value with a empty string value
 	Image        string `json:"image,omitempty" yaml:"image,omitempty"`
 	MemoryLimit  string `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`
 	MountSources bool   `json:"mountSources,omitempty" yaml:"mountSources,omitempty"`
-	Name         string `json:"name" yaml:"name"`
 
 	// Optional specification of the path in the container where project sources should be transferred/mounted when `mountSources` is `true`. When omitted, the value of the `PROJECTS_ROOT` environment variable is used.
 	SourceMapping string `json:"sourceMapping,omitempty" yaml:"sourceMapping,omitempty"`
@@ -98,7 +127,7 @@ type Endpoint struct {
 	Attributes map[string]string `json:"attributes,omitempty" yaml:"attributes,omitempty"`
 
 	// Describes how the endpoint should be exposed on the network. public|internal|none. Default value is "public"
-	Exposure string `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+	Exposure ExposureType `json:"exposure,omitempty" yaml:"exposure,omitempty"`
 
 	Path       string `json:"path,omitempty" yaml:"path,omitempty"`
 	Secure     bool   `json:"secure,omitempty" yaml:"secure,omitempty"`
@@ -106,7 +135,7 @@ type Endpoint struct {
 	TargetPort int32  `json:"targetPort" yaml:"targetPort"`
 
 	// Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is "http"
-	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Protocol ProtocolType `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 }
 
 // Env
@@ -149,14 +178,18 @@ type Exec struct {
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty" yaml:"group,omitempty"`
 
-	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
-	Id string `json:"id" yaml:"id"`
-
 	// Optional label that provides a label for this command to be used in Editor UI menus for example
 	Label string `json:"label,omitempty" yaml:"label,omitempty"`
 
 	// Working directory where the command should be executed
 	WorkingDir string `json:"workingDir,omitempty" yaml:"workingDir,omitempty"`
+
+	// +optional
+	// Whether the command is capable to reload itself when source code changes.
+	// If set to `true` the command won't be restarted and it is expected to handle file changes on its own.
+	//
+	// Default value is `false`
+	HotReloadCapable bool `json:"hotReloadCapable,omitempty" yaml:"hotReloadCapable,omitempty"`
 }
 
 // Composite command containing a list of commands to execute in a component container
@@ -170,9 +203,6 @@ type Composite struct {
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty"`
 
-	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
-	Id string `json:"id"`
-
 	// Optional label that provides a label for this command to be used in Editor UI menus for example
 	Label string `json:"label,omitempty"`
 
@@ -180,36 +210,27 @@ type Composite struct {
 	Parallel bool `json:"parallel,omitempty"`
 }
 
-// Git Project's Git source
-type Git struct {
+type GitLikeProjectSource struct {
+	// The remotes map which should be initialized in the git project. Must have at least one remote configured
+	Remotes map[string]string `json:"remotes,omitempty" yaml:"remotes,omitempty"`
 
-	// The branch to check
-	Branch string `json:"branch,omitempty" yaml:"branch,omitempty"`
-
-	// Project's source location address. Should be URL for git and github located projects, or; file:// for zip
-	Location string `json:"location,omitempty" yaml:"location,omitempty"`
+	// Defines from what the project should be checked out. Required if there are more than one remote configured
+	// +optional
+	CheckoutFrom *CheckoutFrom `json:"checkoutFrom,omitempty" yaml:"checkoutFrom,omitempty"`
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty" yaml:"sparseCheckoutDir,omitempty"`
+}
 
-	// The tag or commit id to reset the checked out branch to
-	StartPoint string `json:"startPoint,omitempty" yaml:"startPoint,omitempty"`
+// Git Project's Git source
+// Github Project's GitHub source
+type Git struct {
+	GitLikeProjectSource `json:",inline" yaml:",inline"`
 }
 
 // Github Project's GitHub source
 type Github struct {
-
-	// The branch to check
-	Branch string `json:"branch,omitempty" yaml:"branch,omitempty"`
-
-	// Project's source location address. Should be URL for git and github located projects, or; file:// for zip
-	Location string `json:"location,omitempty" yaml:"location,omitempty"`
-
-	// Part of project to populate in the working directory.
-	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty" yaml:"sparseCheckoutDir,omitempty"`
-
-	// The tag or commit id to reset the checked out branch to
-	StartPoint string `json:"startPoint,omitempty" yaml:"startPoint,omitempty"`
+	GitLikeProjectSource `json:",inline" yaml:",inline"`
 }
 
 // Group Defines the group this command is part of
@@ -271,9 +292,6 @@ type DevfileParent struct {
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
 	Components []DevfileComponent `json:"components,omitempty" yaml:"components,omitempty"`
 
-	// Bindings of commands to events. Each command is referred-to by its name.
-	Events DevfileEvents `json:"events,omitempty" yaml:"events,omitempty"`
-
 	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
 	StarterProjects []DevfileStarterProject `json:"starterProjects,omitempty" yaml:"starterProjects,omitempty"`
 }
@@ -329,9 +347,6 @@ type DevfileStarterProject struct {
 	// Description of a starter project
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
-	// Description of a starter project
-	MarkdownDescription string `json:"markdownDescription,omitempty" yaml:"markdownDescription,omitempty"`
-
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
 	ClonePath string `json:"clonePath,omitempty" yaml:"clonePath,omitempty"`
 
@@ -347,9 +362,6 @@ type DevfileStarterProject struct {
 
 // Volume Allows specifying the definition of a volume shared by several other components
 type Volume struct {
-
-	// Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent
-	Name string `json:"name" yaml:"name"`
 
 	// Size of the volume
 	Size string `json:"size,omitempty" yaml:"size,omitempty"`
@@ -373,4 +385,14 @@ type Zip struct {
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty" yaml:"sparseCheckoutDir,omitempty"`
+}
+
+// CheckoutFrom Defines from what the project should be checked out. Required if there are more than one remote configured
+type CheckoutFrom struct {
+
+	// The remote name should be used as init. Required if there are more than one remote configured
+	Remote string `json:"remote,omitempty"`
+
+	// The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.
+	Revision string `json:"revision,omitempty"`
 }

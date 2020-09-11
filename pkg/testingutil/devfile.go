@@ -1,18 +1,15 @@
 package testingutil
 
 import (
-	"fmt"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
-	Components        []versionsCommon.DevfileComponent
-	ExecCommands      []versionsCommon.Exec
-	CompositeCommands []versionsCommon.Composite
-	Commands          map[string]versionsCommon.DevfileCommand
-	Events            common.DevfileEvents
+	Components []versionsCommon.DevfileComponent
+	Commands   []versionsCommon.DevfileCommand
+	Events     common.DevfileEvents
 }
 
 // GetComponents is a mock function to get the components from a devfile
@@ -41,7 +38,7 @@ func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponen
 
 	for _, comp := range d.Components {
 		if comp.Container != nil {
-			if comp.Container.Name != "" {
+			if comp.Name != "" {
 				aliasedComponents = append(aliasedComponents, comp)
 			}
 		}
@@ -60,7 +57,9 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 		ClonePath: clonePath[0],
 		Name:      projectName[0],
 		Git: &versionsCommon.Git{
-			Location: sourceLocation[0],
+			GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+				Remotes: map[string]string{"origin": sourceLocation[0]},
+			},
 		},
 	}
 
@@ -68,7 +67,9 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 		ClonePath: clonePath[1],
 		Name:      projectName[1],
 		Git: &versionsCommon.Git{
-			Location: sourceLocation[1],
+			GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+				Remotes: map[string]string{"origin": sourceLocation[1]},
+			},
 		},
 	}
 	return []versionsCommon.DevfileProject{project1, project2}
@@ -82,21 +83,22 @@ func (d TestDevfileData) GetStarterProjects() []versionsCommon.DevfileStarterPro
 
 // GetCommands is a mock function to get the commands from a devfile
 func (d *TestDevfileData) GetCommands() map[string]versionsCommon.DevfileCommand {
-	if d.Commands == nil {
-		d.Commands = make(map[string]versionsCommon.DevfileCommand, len(d.ExecCommands)+len(d.CompositeCommands))
+	commands := make(map[string]common.DevfileCommand, len(d.Commands))
 
-		for i := range d.ExecCommands {
-			_ = d.AddCommands(versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
-		}
+	for _, command := range d.Commands {
+		// we convert devfile command id to lowercase so that we can handle
+		// cases efficiently without being error prone
+		// we also convert the odo push commands from build-command and run-command flags
+		commands[command.SetIDToLower()] = command
 
-		for i := range d.CompositeCommands {
-			_ = d.AddCommands(versionsCommon.DevfileCommand{Composite: &d.CompositeCommands[i]})
-		}
 	}
-	return d.Commands
+
+	return commands
 }
 
-func (d TestDevfileData) AddVolume(volume common.Volume, path string) error { return nil }
+func (d TestDevfileData) AddVolume(volumeComponent common.DevfileComponent, path string) error {
+	return nil
+}
 
 func (d TestDevfileData) DeleteVolume(name string) error { return nil }
 
@@ -120,16 +122,14 @@ func (d TestDevfileData) AddComponents(components []common.DevfileComponent) err
 func (d TestDevfileData) UpdateComponent(component common.DevfileComponent) {}
 
 func (d *TestDevfileData) AddCommands(commands ...common.DevfileCommand) error {
-	if d.Commands == nil {
-		d.Commands = make(map[string]common.DevfileCommand, 7)
-	}
+	commandsMap := d.GetCommands()
 
 	for _, command := range commands {
 		id := command.GetID()
-		if _, ok := d.Commands[id]; !ok {
-			d.Commands[id] = command
+		if _, ok := commandsMap[id]; !ok {
+			d.Commands = append(d.Commands, command)
 		} else {
-			return fmt.Errorf("command with id '%s' already exists in this TestDevfileData", id)
+			return &common.AlreadyExistError{Name: id, Field: "command"}
 		}
 	}
 	return nil
@@ -143,7 +143,9 @@ func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { r
 
 func (d TestDevfileData) UpdateProject(project common.DevfileProject) {}
 
-func (d TestDevfileData) AddStarterProjects(projects []common.DevfileStarterProject) error { return nil }
+func (d TestDevfileData) AddStarterProjects(projects []common.DevfileStarterProject) error {
+	return nil
+}
 
 func (d TestDevfileData) UpdateStarterProject(project common.DevfileStarterProject) {}
 
@@ -161,8 +163,8 @@ func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
 	volumePath := "/my/volume/mount/path1"
 
 	return versionsCommon.DevfileComponent{
+		Name: name,
 		Container: &versionsCommon.Container{
-			Name:        name,
 			Image:       image,
 			Env:         []versionsCommon.Env{},
 			MemoryLimit: memoryLimit,
@@ -178,23 +180,25 @@ func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
 // GetFakeVolumeComponent returns a fake volume component for testing
 func GetFakeVolumeComponent(name, size string) versionsCommon.DevfileComponent {
 	return versionsCommon.DevfileComponent{
+		Name: name,
 		Volume: &versionsCommon.Volume{
-			Name: name,
 			Size: size,
 		}}
 
 }
 
 // GetFakeExecRunCommands returns fake commands for testing
-func GetFakeExecRunCommands() []versionsCommon.Exec {
-	return []versionsCommon.Exec{
+func GetFakeExecRunCommands() []versionsCommon.DevfileCommand {
+	return []versionsCommon.DevfileCommand{
 		{
-			CommandLine: "ls -a",
-			Component:   "alias1",
-			Group: &versionsCommon.Group{
-				Kind: versionsCommon.RunCommandGroupType,
+			Exec: &common.Exec{
+				CommandLine: "ls -a",
+				Component:   "alias1",
+				Group: &versionsCommon.Group{
+					Kind: versionsCommon.RunCommandGroupType,
+				},
+				WorkingDir: "/root",
 			},
-			WorkingDir: "/root",
 		},
 	}
 }
@@ -212,13 +216,5 @@ func GetFakeVolumeMount(name, path string) versionsCommon.VolumeMount {
 	return versionsCommon.VolumeMount{
 		Name: name,
 		Path: path,
-	}
-}
-
-// GetFakeVolume returns a fake volume for testing
-func GetFakeVolume(name, size string) versionsCommon.Volume {
-	return versionsCommon.Volume{
-		Name: name,
-		Size: size,
 	}
 }

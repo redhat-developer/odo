@@ -5,12 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
-
-	"github.com/openshift/odo/pkg/util"
 )
 
 func TestSetLocalConfiguration(t *testing.T) {
@@ -279,16 +276,6 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 	}
 }
 
-func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"name": true, "minmemory": true, "ignore": true, "project": true,
-		"application": true, "type": true, "ref": true, "mincpu": true, "cpu": true, "ports": true, "maxmemory": true,
-		"maxcpu": true, "sourcetype": true, "sourcelocation": true, "memory": true, "storage": true, "url": true, "debugport": true}
-	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
-	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("expected '%v', got '%v'", expected, actual)
-	}
-}
-
 func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
 	// cleaning up old odo files if any
 	filename, err := getLocalConfigFile("")
@@ -530,19 +517,4 @@ func createDirectoryAndFile(create bool, fs filesystem.Filesystem, odoDir string
 		return err
 	}
 	return nil
-}
-
-func mockLocalConfigInfo(configDir string, fs filesystem.Filesystem) (*LocalConfigInfo, error) {
-
-	lci := &LocalConfigInfo{
-		Filename: filepath.Join(configDir, ".odo", "config.yaml"),
-		fs:       fs,
-	}
-	err := fs.MkdirAll(filepath.Join(configDir, ".odo"), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-
-	return lci, nil
-
 }

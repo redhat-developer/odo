@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	"github.com/openshift/odo/pkg/util"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -50,12 +51,16 @@ func NewTestOptions() *TestOptions {
 func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	to.devfilePath = filepath.Join(to.componentContext, DevfilePath)
 	to.Context = genericclioptions.NewDevfileContext(cmd)
-
 	return
 }
 
 // Validate validates the TestOptions based on completed values
 func (to *TestOptions) Validate() (err error) {
+
+	if !util.CheckPathExists(to.devfilePath) {
+		return fmt.Errorf("unable to find devfile, odo test command is only supported by devfile components")
+	}
+
 	devObj, err := devfile.ParseAndValidate(to.devfilePath)
 	if err != nil {
 		return errors.Wrap(err, "fail to parse devfile")

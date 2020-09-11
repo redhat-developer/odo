@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -28,7 +29,7 @@ const (
 // WaitAndGetPod block and waits until pod matching selector is in the desired phase
 // desiredPhase cannot be PodFailed or PodUnknown
 func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase corev1.PodPhase, waitMessage string, hideSpinner bool) (*corev1.Pod, error) {
-	klog.V(4).Infof("Waiting for %s pod", watchOptions.LabelSelector)
+	klog.V(3).Infof("Waiting for %s pod", watchOptions.LabelSelector)
 	var s *log.Status
 	if !hideSpinner {
 		s = log.Spinner(waitMessage)
@@ -43,7 +44,6 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 
 	podChannel := make(chan *corev1.Pod)
 	watchErrorChannel := make(chan error)
-
 	go func() {
 		defer close(podChannel)
 		defer close(watchErrorChannel)
@@ -55,13 +55,23 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 				return
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
-				klog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				klog.V(3).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				for _, cond := range e.Status.Conditions {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonCond, _ := json.Marshal(cond)
+					klog.V(3).Infof("Pod Conditions: %s", string(jsonCond))
+				}
+				for _, status := range e.Status.ContainerStatuses {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonStatus, _ := json.Marshal(status)
+					klog.V(3).Infof("Container Status: %s", string(jsonStatus))
+				}
 				switch e.Status.Phase {
 				case desiredPhase:
 					if !hideSpinner {
 						s.End(true)
 					}
-					klog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
+					klog.V(3).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
 					return
 				case corev1.PodFailed, corev1.PodUnknown:
@@ -138,7 +148,7 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	klog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
+	klog.V(3).Infof("Executing command %s", strings.Join(cmdArr, " "))
 	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
 		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))

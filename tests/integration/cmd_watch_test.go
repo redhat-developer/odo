@@ -45,7 +45,7 @@ var _ = Describe("odo watch command tests", func() {
 	Context("when executing watch without pushing the component", func() {
 		It("should fail", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", project, "--context", context)
 			output := helper.CmdShouldFail("odo", "watch", "--context", context)
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
@@ -61,7 +61,7 @@ var _ = Describe("odo watch command tests", func() {
 		})
 		It("should fail with proper error", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", project)
 			output := helper.CmdShouldFail("odo", "watch", "--app", "dummy")
 			Expect(output).To(ContainSubstring("component does not exist"))
 		})
@@ -69,7 +69,7 @@ var _ = Describe("odo watch command tests", func() {
 
 	Context("when executing watch on a git source type component", func() {
 		It("should fail", func() {
-			helper.CmdShouldPass("odo", "create", "--context", context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
+			helper.CmdShouldPass("odo", "create", "--s2i", "--context", context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
 			output := helper.CmdShouldFail("odo", "watch", "--context", context)
 			Expect(output).To(ContainSubstring("Watch is supported by binary and local components only"))
 		})

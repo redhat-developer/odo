@@ -105,7 +105,7 @@ func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) 
 
 		// If PVC does not exist, we skip (as this is either EmptyDir or "shared-data" from SupervisorD
 		if volume.PersistentVolumeClaim == nil {
-			klog.V(4).Infof("Volume has no PVC, skipping %s", volume.Name)
+			klog.V(3).Infof("Volume has no PVC, skipping %s", volume.Name)
 			continue
 		}
 

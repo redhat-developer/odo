@@ -14,6 +14,8 @@ jobs:
         - make goget-tools
       script:
         - lsb_release -a
+        - free -m
+        - dmesg
         - export PATH="$PATH:$GOPATH/bin"
         - make bin
         - make validate
@@ -78,7 +80,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "preference, config, url,storage and debug command integration tests"
+      name: "preference, config, component sub-commands and debug command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -86,11 +88,8 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-pref-config
-        - travis_wait make test-cmd-url
-        - travis_wait make test-cmd-devfile-url
+        - travis_wait make test-cmd-cmp-sub
         - travis_wait make test-cmd-debug
-        - travis_wait make test-cmd-devfile-debug
-        - travis_wait make test-cmd-devfile-storage
         - odo logout
 
     # Run service-catalog e2e tests
@@ -105,12 +104,11 @@ jobs:
         - odo login -u developer
         - travis_wait make test-cmd-service
         - travis_wait make test-cmd-link-unlink
-        - travis_wait make test-cmd-cmp-sub
         - odo logout
 
     - <<: *base-test
       stage: test
-      name: "watch, storage, app, project and push command integration tests"
+      name: "watch, storage, app, project, URL and push command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -122,6 +120,7 @@ jobs:
         - travis_wait make test-cmd-app
         - travis_wait make test-cmd-push
         - travis_wait make test-cmd-project
+        - travis_wait make test-cmd-url
         - odo logout
 
     - <<: *base-test
@@ -130,10 +129,12 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete, registry, test, env, config and log command integration tests"
+      name: "devfile catalog, create, push, watch, delete, registry, exec, test, env, config, debug and log command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
+        - free -m
+        - dmesg
         - make bin
         - sudo cp odo /usr/bin
         # Commenting out the docker test target (though test-cmd-docker-devfile-url-pushtarget is not broken)
@@ -154,6 +155,7 @@ jobs:
         - travis_wait make test-cmd-devfile-exec
         - travis_wait make test-cmd-devfile-env
         - travis_wait make test-cmd-devfile-config
+        - travis_wait 60 make test-integration-devfile
         - odo logout
 
     - <<: *base-test
@@ -209,18 +211,10 @@ jobs:
         - sudo apt-get install -y socat
       script:
         - kubectl cluster-info
+        - free -m
+        - dmesg
         - make bin
         - sudo cp odo /usr/bin
         - export KUBERNETES=true
         - travis_wait make test-cmd-project
-        - travis_wait make test-cmd-devfile-catalog
-        - travis_wait make test-cmd-devfile-watch
-        - travis_wait make test-cmd-devfile-push
-        - travis_wait make test-cmd-devfile-debug
-        - travis_wait make test-cmd-devfile-exec
-        - travis_wait make test-cmd-devfile-delete
-        - travis_wait make test-cmd-devfile-create
-        - travis_wait make test-cmd-devfile-url
-        - travis_wait make test-cmd-devfile-test
-        - travis_wait make test-cmd-devfile-log
-        - travis_wait make test-cmd-devfile-storage
+        - travis_wait 60 make test-integration-devfile

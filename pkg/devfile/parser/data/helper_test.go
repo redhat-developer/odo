@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
+	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 )
 
 func TestNewDevfileData(t *testing.T) {
@@ -13,8 +13,8 @@ func TestNewDevfileData(t *testing.T) {
 	t.Run("valid devfile apiVersion", func(t *testing.T) {
 
 		var (
-			version  = APIVersion100
-			want     = reflect.TypeOf(&v100.Devfile100{})
+			version  = APIVersion200
+			want     = reflect.TypeOf(&v200.Devfile200{})
 			obj, err = NewDevfileData(string(version))
 			got      = reflect.TypeOf(obj)
 		)
@@ -49,8 +49,8 @@ func TestGetDevfileJSONSchema(t *testing.T) {
 	t.Run("valid devfile apiVersion", func(t *testing.T) {
 
 		var (
-			version  = APIVersion100
-			want     = v100.JsonSchema100
+			version  = APIVersion200
+			want     = v200.JsonSchema200
 			got, err = GetDevfileJSONSchema(string(version))
 		)
 
@@ -81,7 +81,7 @@ func TestIsApiVersionSupported(t *testing.T) {
 	t.Run("valid devfile apiVersion", func(t *testing.T) {
 
 		var (
-			version = APIVersion100
+			version = APIVersion200
 			want    = true
 			got     = IsApiVersionSupported(string(version))
 		)

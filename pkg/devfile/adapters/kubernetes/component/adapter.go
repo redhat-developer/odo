@@ -495,21 +495,25 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 
+	previousMode := parameters.EnvSpecificInfo.GetRunMode()
+	currentMode := envinfo.Run
+
 	if parameters.Debug {
 		pushDevfileDebugCommands, err := common.ValidateAndGetDebugDevfileCommands(a.Devfile.Data, a.devfileDebugCmd)
 		if err != nil {
 			return fmt.Errorf("debug command is not valid")
 		}
 		pushDevfileCommands[versionsCommon.DebugCommandGroupType] = pushDevfileDebugCommands
-		parameters.ForceBuild = true
+		currentMode = envinfo.Debug
 	}
 
-	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
-	if err != nil {
-		return errors.Wrap(err, "unable to get endpoints")
+	if currentMode != previousMode {
+		parameters.RunModeChanged = true
 	}
+	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	portExposureMap := utils.GetPortExposure(containerComponents)
 
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, endpointsMap)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, portExposureMap)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -525,7 +529,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, endpointsMap)
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, containerComponents, false)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -571,7 +575,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	if execRequired {
+	if execRequired || parameters.RunModeChanged {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
@@ -610,7 +614,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, endpointMap map[int32]versionsCommon.Endpoint) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, portExposureMap map[int32]versionsCommon.ExposureType) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -644,6 +648,25 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
+	// if there are preStart events, add them as init containers to the podTemplateSpec
+	preStartEvents := a.Devfile.Data.GetEvents().PreStart
+	if len(preStartEvents) > 0 {
+		var eventCommands []string
+		commandsMap := a.Devfile.Data.GetCommands()
+		containersMap := utils.GetContainersMap(containers)
+
+		for _, event := range preStartEvents {
+			eventSubCommands := common.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
+			eventCommands = append(eventCommands, eventSubCommands...)
+		}
+
+		klog.V(4).Infof("PreStart event commands are: %v", strings.Join(eventCommands, ","))
+		utils.AddPreStartEventInitContainer(podTemplateSpec, commandsMap, eventCommands, containersMap)
+		if len(eventCommands) > 0 {
+			log.Successf("PreStart commands have been added to the component: %s", strings.Join(eventCommands, ","))
+		}
+	}
+
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
@@ -660,7 +683,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 				processedVolumes[vol.Name] = true
 
 				// Generate the PVC Names
-				klog.V(4).Infof("Generating PVC name for %v", vol.Name)
+				klog.V(2).Infof("Generating PVC name for %v", vol.Name)
 				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
 				if err != nil {
 					return err
@@ -672,7 +695,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 					return err
 				}
 				if len(existingPVCName) > 0 {
-					klog.V(4).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
+					klog.V(2).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
 				}
 
@@ -709,8 +732,15 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			containerPorts = append(containerPorts, c.Ports...)
 		} else {
 			for _, port := range c.Ports {
+				portExist := false
+				for _, entry := range containerPorts {
+					if entry.ContainerPort == port.ContainerPort {
+						portExist = true
+						break
+					}
+				}
 				// if Exposure == none, should not create a service for that port
-				if endpointMap[port.ContainerPort].Exposure != "none" {
+				if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
 					containerPorts = append(containerPorts, port)
 				}
 			}
@@ -718,17 +748,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-	klog.V(4).Infof("The component name is %v", componentName)
+	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	klog.V(2).Infof("The component name is %v", componentName)
 
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
-		klog.V(4).Info("The component already exists, attempting to update it")
+		klog.V(2).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
-		klog.V(4).Infof("Successfully updated component %v", componentName)
+		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
 		ownerReference := kclient.GenerateOwnerReference(deployment)
@@ -740,7 +770,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 				if err != nil {
 					return err
 				}
-				klog.V(4).Infof("Successfully created Service for component %s", componentName)
+				klog.V(2).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
 			if len(serviceSpec.Ports) > 0 {
@@ -750,7 +780,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 				if err != nil {
 					return err
 				}
-				klog.V(4).Infof("Successfully update Service for component %s", componentName)
+				klog.V(2).Infof("Successfully update Service for component %s", componentName)
 			} else {
 				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
 				if err != nil {
@@ -763,7 +793,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		if err != nil {
 			return err
 		}
-		klog.V(4).Infof("Successfully created component %v", componentName)
+		klog.V(2).Infof("Successfully created component %v", componentName)
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -772,7 +802,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			if err != nil {
 				return err
 			}
-			klog.V(4).Infof("Successfully created Service for component %s", componentName)
+			klog.V(2).Infof("Successfully created Service for component %s", componentName)
 		}
 
 	}
@@ -813,7 +843,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if kerrors.IsForbidden(err) {
-		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
+		klog.V(2).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
 		podSpinner.End(false)
 		log.Warningf("%v", err)

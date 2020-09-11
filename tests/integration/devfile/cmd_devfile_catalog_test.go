@@ -24,13 +24,17 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
 		project = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
+
+		// For some reason on TravisCI, there are flakes with regards to registrycachetime and doing
+		// odo catalog list components.
+		// TODO: Investigate this more.
+		helper.CmdShouldPass("odo", "preference", "set", "registrycachetime", "0")
 	})
 
 	// This is run after every Spec (It)
@@ -92,7 +96,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	Context("When executing catalog describe component with a component name with a single project", func() {
 		It("should only give information about one project", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java-openliberty")
-			Expect(output).To(MatchRegexp("location: .+"))
+			Expect(output).To(MatchRegexp("origin: .+"))
 		})
 	})
 	Context("When executing catalog describe component with a component name with no starter projects", func() {

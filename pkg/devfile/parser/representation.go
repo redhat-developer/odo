@@ -16,17 +16,17 @@ func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 
 		if component.Container != nil {
 			cont := ContainerRepr{
-				ContainerName: component.Container.Name,
+				ContainerName: component.Name,
 			}
 			cont.EnvironmentVariables = config.NewEnvVarListFromDevfileEnv(component.Container.Env)
 			for _, endpoint := range component.Container.Endpoints {
 				port := PortRepr{
 					ExposedPort: endpoint.TargetPort,
 					Name:        endpoint.Name,
-					Protocol:    "tcp",
+					Protocol:    "http",
 				}
 				if endpoint.Protocol != "" {
-					port.Protocol = endpoint.Protocol
+					port.Protocol = string(endpoint.Protocol)
 				}
 				cont.Ports = append(cont.Ports, port)
 			}

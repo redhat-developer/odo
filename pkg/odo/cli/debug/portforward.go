@@ -5,14 +5,15 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -38,10 +39,9 @@ type PortForwardOptions struct {
 	StopChannel chan struct{}
 	// ReadChannel is used to receive status of port forwarding ( ready or not ready )
 	ReadyChannel chan struct{}
-	*genericclioptions.Context
-	DevfilePath string
 
-	isExperimental bool
+	*genericclioptions.Context
+	devfilePath string
 }
 
 var (
@@ -65,18 +65,18 @@ const (
 	portforwardCommandName = "port-forward"
 )
 
+// NewPortForwardOptions returns the PortForwardOptions struct
 func NewPortForwardOptions() *PortForwardOptions {
 	return &PortForwardOptions{}
 }
 
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.devfilePath = filepath.Join(o.contextDir, component.DevfilePath)
 
 	var remotePort int
 
-	o.isExperimental = experimental.IsExperimentalModeEnabled()
-
-	if o.isExperimental && util.CheckPathExists(o.DevfilePath) {
+	if util.CheckPathExists(o.devfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// a small shortcut
@@ -165,7 +165,7 @@ func (o PortForwardOptions) Run() error {
 		return err
 	}
 
-	return o.PortForwarder.ForwardPorts(o.PortPair, o.StopChannel, o.ReadyChannel, o.isExperimental)
+	return o.PortForwarder.ForwardPorts(o.PortPair, o.StopChannel, o.ReadyChannel, util.CheckPathExists(o.devfilePath))
 }
 
 // NewCmdPortForward implements the port-forward odo command
@@ -181,10 +181,8 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(opts, cmd, args)
 		},
 	}
+
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
-	if experimental.IsExperimentalModeEnabled() {
-		cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-	}
 	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", config.DefaultDebugPort, "Set the local port")
 
 	return cmd

@@ -44,7 +44,7 @@ func (a Adapter) createComponent() (err error) {
 	// Loop over each container component and start a container for it
 	for _, comp := range containerComponents {
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.containerNameToVolumes[comp.Container.Name] {
+		for _, vol := range a.containerNameToVolumes[comp.Name] {
 
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
@@ -55,16 +55,16 @@ func (a Adapter) createComponent() (err error) {
 		}
 		err = a.pullAndStartContainer(dockerVolumeMounts, comp)
 		if err != nil {
-			return errors.Wrapf(err, "unable to pull and start container %s for component %s", comp.Container.Name, componentName)
+			return errors.Wrapf(err, "unable to pull and start container %s for component %s", comp.Name, componentName)
 		}
 	}
-	klog.V(4).Infof("Successfully created all containers for component %s", componentName)
+	klog.V(2).Infof("Successfully created all containers for component %s", componentName)
 
 	return nil
 }
 
 func (a Adapter) updateComponent() (componentExists bool, err error) {
-	klog.V(4).Info("The component already exists, attempting to update it")
+	klog.V(2).Info("The component already exists, attempting to update it")
 	componentExists = true
 	componentName := a.ComponentName
 
@@ -80,13 +80,13 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	for _, comp := range containerComponents {
 		// Check to see if this component is already running and if so, update it
 		// If component isn't running, re-create it, as it either may be new, or crashed.
-		containers, err := a.Client.GetContainersByComponentAndAlias(componentName, comp.Container.Name)
+		containers, err := a.Client.GetContainersByComponentAndAlias(componentName, comp.Name)
 		if err != nil {
 			return false, errors.Wrapf(err, "unable to list containers for component %s", componentName)
 		}
 
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.containerNameToVolumes[comp.Container.Name] {
+		for _, vol := range a.containerNameToVolumes[comp.Name] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
 				Source: a.volumeNameToDockerVolName[vol.Name],
@@ -100,7 +100,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 			// Container doesn't exist, so need to pull its image (to be safe) and start a new container
 			err = a.pullAndStartContainer(dockerVolumeMounts, comp)
 			if err != nil {
-				return false, errors.Wrapf(err, "unable to pull and start container %s for component %s", comp.Container.Name, componentName)
+				return false, errors.Wrapf(err, "unable to pull and start container %s for component %s", comp.Name, componentName)
 			}
 
 			// Update componentExists so that we re-sync project and initialize supervisord if required
@@ -127,22 +127,22 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 			if utils.DoesContainerNeedUpdating(comp, containerConfig, hostConfig, dockerVolumeMounts, mounts, portMap) {
 				log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 
-				s := log.SpinnerNoSpin("Updating the component " + comp.Container.Name)
+				s := log.SpinnerNoSpin("Updating the component " + comp.Name)
 				defer s.End(false)
 
 				// Remove the container
 				err := a.Client.RemoveContainer(containerID)
 				if err != nil {
-					return componentExists, errors.Wrapf(err, "unable to remove container %s for component %s", containerID, comp.Container.Name)
+					return componentExists, errors.Wrapf(err, "unable to remove container %s for component %s", containerID, comp.Name)
 				}
 
 				// Start the container
 				err = a.startComponent(dockerVolumeMounts, comp)
 				if err != nil {
-					return false, errors.Wrapf(err, "unable to start container for devfile component %s", comp.Container.Name)
+					return false, errors.Wrapf(err, "unable to start container for devfile component %s", comp.Name)
 				}
 
-				klog.V(4).Infof("Successfully created container %s for component %s", comp.Container.Image, componentName)
+				klog.V(2).Infof("Successfully created container %s for component %s", comp.Container.Image, componentName)
 				s.End(true)
 
 				// Update componentExists so that we re-sync project and initialize supervisord if required
@@ -151,7 +151,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		} else {
 			// Multiple containers were returned with the specified label (which should be unique)
 			// Error out, as this isn't expected
-			return true, fmt.Errorf("found multiple running containers for devfile component %s and cannot push changes", comp.Container.Name)
+			return true, fmt.Errorf("found multiple running containers for devfile component %s and cannot push changes", comp.Name)
 		}
 	}
 
@@ -172,10 +172,10 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, comp versionsCommon
 	// Start the component container
 	err = a.startComponent(mounts, comp)
 	if err != nil {
-		return errors.Wrapf(err, "unable to start container for devfile component %s", comp.Container.Name)
+		return errors.Wrapf(err, "unable to start container for devfile component %s", comp.Name)
 	}
 
-	klog.V(4).Infof("Successfully created container %s for component %s", comp.Container.Image, a.ComponentName)
+	klog.V(2).Infof("Successfully created container %s for component %s", comp.Container.Image, a.ComponentName)
 	return nil
 }
 
@@ -238,7 +238,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 	// Convert the env vars in the Devfile to the format expected by Docker
 	envVars := utils.ConvertEnvs(comp.Container.Env)
 	ports := utils.ConvertPorts(comp.Container.Endpoints)
-	containerLabels := utils.GetContainerLabels(componentName, comp.Container.Name)
+	containerLabels := utils.GetContainerLabels(componentName, comp.Name)
 	containerConfig := a.Client.GenerateContainerConfig(comp.Container.Image, comp.Container.Command, comp.Container.Args, envVars, containerLabels, ports)
 
 	return containerConfig
@@ -446,11 +446,11 @@ func (a Adapter) startBootstrapSupervisordInitContainer(supervisordVolumeName st
 func updateComponentWithSupervisord(comp *versionsCommon.DevfileComponent, runCommand versionsCommon.DevfileCommand, supervisordVolumeName string, hostConfig *container.HostConfig) {
 
 	// Mount the supervisord volume for the run command container
-	if runCommand.Exec.Component == comp.Container.Name {
+	if runCommand.Exec.Component == comp.Name {
 		utils.AddVolumeToContainer(supervisordVolumeName, common.SupervisordMountPath, hostConfig)
 
 		if len(comp.Container.Command) == 0 && len(comp.Container.Args) == 0 {
-			klog.V(4).Infof("Updating container %v entrypoint with supervisord", comp.Container.Name)
+			klog.V(2).Infof("Updating container %v entrypoint with supervisord", comp.Name)
 			comp.Container.Command = append(comp.Container.Command, common.SupervisordBinaryPath)
 			comp.Container.Args = append(comp.Container.Args, "-c", common.SupervisordConfFile)
 		}

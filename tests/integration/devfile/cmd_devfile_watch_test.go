@@ -36,9 +36,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
-
-		// Set experimental mode to true
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	// Clean up after the test
@@ -65,6 +62,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
 			output := helper.CmdShouldFail("odo", "watch", "--context", context)
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
+		})
+
+		It("should error out on devfile flag", func() {
+			helper.CmdShouldFail("odo", "watch", "--devfile", "invalid.yaml")
 		})
 	})
 

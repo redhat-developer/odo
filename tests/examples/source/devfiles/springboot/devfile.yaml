@@ -5,10 +5,11 @@ metadata:
 starterProjects:
   - name: springbootproject
     git:
-      location: "https://github.com/maysunfaisal/springboot.git"
+      remotes:
+        origin: "https://github.com/maysunfaisal/springboot.git"
 components:
-  - container:
-      name: tools
+  - name: tools
+    container:
       image: maysunfaisal/springbootbuild
       memoryLimit: 768Mi
       command: ['tail']
@@ -17,8 +18,8 @@ components:
         - name: springbootpvc
           path: /data
       mountSources: true
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: maysunfaisal/springbootruntime
       memoryLimit: 768Mi
       command: ['tail']
@@ -30,19 +31,19 @@ components:
         - name: springbootpvc
           path: /data
       mountSources: false
-  - volume:
-      name: springbootpvc
+  - name: springbootpvc
+    volume: {}
 commands:
-  - exec:
-      id: defaultBuild
+  - id: defaultBuild
+    exec:
       component: tools
       commandLine: "/artifacts/bin/build-container-full.sh"
       workingDir: /projects
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: defaultRun
+  - id: defaultRun
+    exec:
       component: runtime
       commandLine: "/artifacts/bin/start-server.sh"
       workingDir: /

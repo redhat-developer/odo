@@ -409,6 +409,13 @@ func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
 	return strings.TrimSpace(stdOut)
 }
 
+// GetPodInitContainers executes oc command and returns the init containers of the pod
+func (oc OcRunner) GetPodInitContainers(compName string, namespace string) []string {
+	selector := fmt.Sprintf("--selector=component=%s", compName)
+	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}")
+	return strings.Split(stdOut, " ")
+}
+
 // GetRoute returns route URL
 func (oc OcRunner) GetRoute(urlName string, appName string) string {
 	session := CmdRunner(oc.path, "get", "routes", urlName+"-"+appName,

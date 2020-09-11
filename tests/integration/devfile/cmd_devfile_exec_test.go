@@ -1,11 +1,12 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/tests/integration/devfile/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,9 +28,6 @@ var _ = Describe("odo devfile exec command tests", func() {
 		helper.Chdir(context)
 
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
@@ -62,6 +60,10 @@ var _ = Describe("odo devfile exec command tests", func() {
 
 		It("should error out when a invalid command is given by the user", func() {
 			utils.ExecWithInvalidCommand(context, cmpName, "kube")
+		})
+
+		It("should error out when a component is not present or when a devfile flag is used", func() {
+			utils.ExecCommandWithoutComponentAndDevfileFlag(context, cmpName)
 		})
 	})
 })

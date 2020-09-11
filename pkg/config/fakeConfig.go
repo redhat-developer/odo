@@ -1,5 +1,12 @@
 package config
 
+import (
+	"os"
+	"path/filepath"
+
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
+)
+
 func GetOneExistingConfigInfo(componentName, applicationName, projectName string) LocalConfigInfo {
 	componentType := "nodejs"
 	sourceLocation := "./"
@@ -96,4 +103,19 @@ func GetOneNonExistingConfigInfo() LocalConfigInfo {
 		configFileExists: false,
 		LocalConfig:      LocalConfig{},
 	}
+}
+
+func mockLocalConfigInfo(configDir string, fs filesystem.Filesystem) (*LocalConfigInfo, error) {
+
+	lci := &LocalConfigInfo{
+		Filename: filepath.Join(configDir, ".odo", "config.yaml"),
+		fs:       fs,
+	}
+	err := fs.MkdirAll(filepath.Join(configDir, ".odo"), os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
+	return lci, nil
+
 }

@@ -2,26 +2,26 @@ package debug
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
-// PortForwardOptions contains all the options for running the port-forward cli command.
+// InfoOptions contains all the options for running the info cli command.
 type InfoOptions struct {
 	componentName   string
 	applicationName string
 	Namespace       string
 	PortForwarder   *debug.DefaultPortForwarder
 	*genericclioptions.Context
-	contextDir  string
-	DevfilePath string
+	contextDir string
 }
 
 var (
@@ -46,7 +46,7 @@ func NewInfoOptions() *InfoOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+	if util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// a small shortcut
@@ -104,9 +104,6 @@ func NewCmdInfo(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
-	if experimental.IsExperimentalModeEnabled() {
-		cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-	}
 
 	return cmd
 }

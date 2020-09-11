@@ -44,7 +44,7 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 	if latestRevision == 0 {
 		switch {
 		case appsutil.HasImageChangeTrigger(config):
-			klog.V(4).Infof("Deployment config %q waiting on image update", config.Name)
+			klog.V(3).Infof("Deployment config %q waiting on image update", config.Name)
 			return false
 
 		case len(config.Spec.Triggers) == 0:
@@ -55,7 +55,7 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 
 	// We use `<` due to OpenShift at times (in rare cases) updating the DeploymentConfig multiple times via ImageTrigger
 	if desiredRevision > 0 && latestRevision < desiredRevision {
-		klog.V(4).Infof("Desired revision (%d) is different from the running revision (%d)", desiredRevision, latestRevision)
+		klog.V(3).Infof("Desired revision (%d) is different from the running revision (%d)", desiredRevision, latestRevision)
 		return false
 	}
 
@@ -76,15 +76,15 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 			return true
 
 		case config.Status.UpdatedReplicas < config.Spec.Replicas:
-			klog.V(4).Infof("Waiting for rollout to finish: %d out of %d new replicas have been updated...", config.Status.UpdatedReplicas, config.Spec.Replicas)
+			klog.V(3).Infof("Waiting for rollout to finish: %d out of %d new replicas have been updated...", config.Status.UpdatedReplicas, config.Spec.Replicas)
 			return false
 
 		case config.Status.Replicas > config.Status.UpdatedReplicas:
-			klog.V(4).Infof("Waiting for rollout to finish: %d old replicas are pending termination...", config.Status.Replicas-config.Status.UpdatedReplicas)
+			klog.V(3).Infof("Waiting for rollout to finish: %d old replicas are pending termination...", config.Status.Replicas-config.Status.UpdatedReplicas)
 			return false
 
 		case config.Status.AvailableReplicas < config.Status.UpdatedReplicas:
-			klog.V(4).Infof("Waiting for rollout to finish: %d of %d updated replicas are available...", config.Status.AvailableReplicas, config.Status.UpdatedReplicas)
+			klog.V(3).Infof("Waiting for rollout to finish: %d of %d updated replicas are available...", config.Status.AvailableReplicas, config.Status.UpdatedReplicas)
 			return false
 		}
 	}
@@ -116,6 +116,7 @@ func getNamedConditionFromObjectStatus(baseObject *unstructured.Unstructured, co
 
 // GetS2IEnvForDevfile gets environment variable for builder image to be added in devfiles
 func GetS2IEnvForDevfile(sourceType string, env config.EnvVarList, imageStreamImage imagev1.ImageStreamImage) (config.EnvVarList, error) {
+	klog.V(2).Info("Get S2I environment variables to be added in devfile")
 
 	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(&imageStreamImage)
 	if err != nil {

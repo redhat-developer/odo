@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -94,12 +96,11 @@ func NewConvertOptions() *ConvertOptions {
 // Complete completes ConvertOptions after they've been created
 func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if !util.CheckPathExists(component.ConfigFilePath) {
+	if !util.CheckPathExists(filepath.Join(co.componentContext, component.ConfigFilePath)) {
 		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to convert s2i component to devfile")
 	}
 
 	co.context = genericclioptions.NewContext(cmd)
-	co.componentContext = component.LocalDirectoryDefaultLocation
 	co.componentName = co.context.LocalConfigInfo.GetName()
 	return nil
 
@@ -151,11 +152,15 @@ func NewCmdConvert(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	genericclioptions.AddContextFlag(convertCmd, &o.componentContext)
+
 	return convertCmd
 }
 
 // generateDevfileYaml generates a devfile.yaml from s2i data.
 func generateDevfileYaml(co *ConvertOptions) error {
+	klog.V(2).Info("Generating devfile.yaml")
 
 	// builder image to use
 	componentType := co.context.LocalConfigInfo.GetType()
@@ -191,20 +196,30 @@ func generateDevfileYaml(co *ConvertOptions) error {
 	// set commands
 	setDevfileCommandsForS2I(s2iDevfile)
 
+	ctx := devfileCtx.NewDevfileCtx(filepath.Join(co.componentContext, "devfile.yaml"))
+	err = ctx.SetAbsPath()
+	if err != nil {
+		return err
+	}
+
 	devObj := parser.DevfileObj{
-		Ctx:  devfileCtx.NewDevfileCtx(co.componentContext),
+		Ctx:  ctx,
 		Data: s2iDevfile,
 	}
 
 	err = devObj.WriteYamlDevfile()
+	klog.V(2).Info("Generated devfile.yaml successfully")
+
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 // generateEnvYaml generates .odo/env.yaml from s2i data.
 func generateEnvYaml(co *ConvertOptions) (err error) {
+	klog.V(2).Info("Generating env.yaml")
 
 	// list of urls having name, ports, secure
 	urls := co.context.LocalConfigInfo.GetURL()
@@ -244,11 +259,18 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 		componentSettings.DebugPort = &debugPort
 	}
 
-	return co.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
+	err = co.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
+	if err != nil {
+		return err
+	}
+	klog.V(2).Info("Generated env.yaml successfully")
+
+	return
 }
 
 // getImageforDevfile gets image details from s2i component type.
 func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1.ImageStreamImage, string, error) {
+	klog.V(2).Info("Getting container image details")
 
 	imageNS, imageName, imageTag, _, err := occlient.ParseImageName(componentType)
 	if err != nil {
@@ -271,10 +293,11 @@ func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1
 
 // setDevfileCommandsForS2I sets command in devfile.yaml from s2i data.
 func setDevfileCommandsForS2I(d data.DevfileData) {
+	klog.V(2).Info("Set devfile commands from s2i data")
 
 	buildCommand := common.DevfileCommand{
+		Id: buildCommandID,
 		Exec: &common.Exec{
-			Id:          buildCommandID,
 			Component:   containerName,
 			CommandLine: buildCommandS2i,
 			Group: &common.Group{
@@ -285,8 +308,8 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 	}
 
 	runCommand := common.DevfileCommand{
+		Id: runCommandID,
 		Exec: &common.Exec{
-			Id:          runCommandID,
 			Component:   containerName,
 			CommandLine: runCommandS2i,
 			Group: &common.Group{
@@ -303,6 +326,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 
 // setDevfileComponentsForS2I sets the devfile.yaml components field from s2i data.
 func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig *config.LocalConfigInfo, s2iEnv config.EnvVarList) error {
+	klog.V(2).Info("Set devfile components from s2i data")
 
 	maxMemory := localConfig.GetMaxMemory()
 	volumes := localConfig.GetStorage()
@@ -317,10 +341,9 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	// convert s2i storage to devfile volumes
 	for _, vol := range volumes {
 		volume := common.Volume{
-			Name: vol.Name,
 			Size: vol.Size,
 		}
-		components = append(components, common.DevfileComponent{Volume: &volume})
+		components = append(components, common.DevfileComponent{Name: vol.Name, Volume: &volume})
 
 		volumeMount := common.VolumeMount{
 			Name: vol.Name,
@@ -364,7 +387,6 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	}
 
 	container := common.Container{
-		Name:          containerName,
 		Image:         s2iImage,
 		MountSources:  true,
 		SourceMapping: sourceMappingS2i,
@@ -374,7 +396,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		VolumeMounts:  volumeMounts,
 	}
 
-	components = append(components, common.DevfileComponent{Container: &container})
+	components = append(components, common.DevfileComponent{Name: containerName, Container: &container})
 
 	// Ignoring error here as we are writing a new file
 	_ = d.AddComponents(components)

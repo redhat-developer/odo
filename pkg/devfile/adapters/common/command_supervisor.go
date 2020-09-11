@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/machineoutput"
 )
@@ -44,9 +46,17 @@ func newSupervisorStopCommand(command common.DevfileCommand, executor commandExe
 }
 
 // newSupervisorStartCommand creates a command implementation that starts the specified command via the supervisor
-func newSupervisorStartCommand(command common.DevfileCommand, cmd string, adapter commandExecutor) (command, error) {
+func newSupervisorStartCommand(command common.DevfileCommand, cmd string, adapter commandExecutor, restart bool) (command, error) {
 	cmdLine := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "start", cmd}
-	return newOverriddenSimpleCommand(command, adapter, cmdLine)
+	start, err := newOverriddenSimpleCommand(command, adapter, cmdLine)
+	if err != nil {
+		return nil, err
+	}
+	if !restart {
+		start.msg = fmt.Sprintf("%s, %s", start.msg, "if not running")
+	}
+
+	return start, nil
 }
 
 func (s supervisorCommand) Execute(show bool) error {
