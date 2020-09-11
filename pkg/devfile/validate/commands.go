@@ -9,8 +9,6 @@ import (
 // validateCommands validates all the devfile commands
 func validateCommands(commands map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
-	// commandsMap := adapterCommon.GetCommandsMap(commands)
-
 	for _, command := range commands {
 		err = validateCommand(command, commands, components)
 		if err != nil {
@@ -36,7 +34,6 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 	// If the command is a composite command, need to validate that it is valid
 	if command.Composite != nil {
 		parentCommands := make(map[string]string)
-		// commandsMap := adapterCommon.GetCommandsMap(commands)
 		return validateCompositeCommand(&command, parentCommands, devfileCommands, components)
 	}
 
