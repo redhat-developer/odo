@@ -6,11 +6,11 @@ starterProjects:
   - name: springbootproject
     git:
       remotes:
-        origin: "https://github.com/maysunfaisal/springboot.git"
+        origin: "https://github.com/odo-devfiles/springboot-ex.git"
 components:
   - name: tools
     container:
-      image: maysunfaisal/springbootbuild
+      image: quay.io/eclipse/che-java11-maven:nightly
       memoryLimit: 768Mi
       command: ['tail']
       args: [ '-f', '/dev/null']
@@ -20,10 +20,8 @@ components:
       mountSources: true
   - name: runtime
     container:
-      image: maysunfaisal/springbootruntime
+      image: quay.io/eclipse/che-java11-maven:nightly
       memoryLimit: 768Mi
-      command: ['tail']
-      args: [ '-f', '/dev/null']
       endpoints:
         - name: "8080/tcp"
           targetPort: 8080
@@ -37,7 +35,7 @@ commands:
   - id: defaultBuild
     exec:
       component: tools
-      commandLine: "/artifacts/bin/build-container-full.sh"
+      commandLine: "mvn clean -Dmaven.repo.local=/data/cache/.m2/repository package -Dmaven.test.skip=true"
       workingDir: /projects
       group:
         kind: build
@@ -45,8 +43,8 @@ commands:
   - id: defaultRun
     exec:
       component: runtime
-      commandLine: "/artifacts/bin/start-server.sh"
-      workingDir: /
+      commandLine: "mvn -Dmaven.repo.local=/data/cache/.m2/repository spring-boot:run"
+      workingDir: /projects
       group:
         kind: run
         isDefault: true

@@ -39,8 +39,10 @@ func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"Executing defaultbuild command \"mvn install\"",
-		"Executing defaultrun command \"java -jar target/*.jar\"",
+		"Executing defaultbuild command",
+		"mvn clean",
+		"Executing defaultrun command",
+		"spring-boot:run",
 	})
 }
 
