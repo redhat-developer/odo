@@ -6,17 +6,17 @@ A secure devfile registry is a devfile registry that user can only use credentia
 
 === Where to host secure devfile registry?
 
-User can host secure devfile registry on private GitHub repository and Enterprise GtiHub repository.
+User can host secure devfile registry on private GitHub repository and enterprise GtiHub repository.
 
-== Steps for adding secure devfile registry when the secure devfile registry is hosted on GitHub repository
+== Steps for adding a secure devfile registry when the secure devfile registry is hosted on a GitHub repository
 
 === Step 1: Creating a new GitHub repository to host the secure devfile registry
 
-Please follow https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-new-repository[this instruction] to create a new private or Enterprise GitHub repository and push the devfile registry to the created repository. The sample GitHub-hosted devfile registry can be found https://github.com/odo-devfiles/registry/[here].
+Please https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-new-repository[create a new private or enterprise GitHub repository] and push the devfile registry to the created repository. The sample GitHub-hosted devfile registry can be found https://github.com/odo-devfiles/registry/[here].
 
 === Step 2: Creating a personal access token to access the secure devfile registry
 
-Please follow https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token[this instruction] to create a personal access token, select `repo` as token scope.
+Please https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token[create a personal access token], select `repo` as token scope.
 
 === Step 3: Keyring setup
 
@@ -36,13 +36,13 @@ Please run `odo registry add <registry name> <registry URL> --token <token>` to 
 - <registry URL>: the URL of GitHub repository that you create on step 1.
 - <token>: the personal access token that you create on step 2.
 
-== Steps for setting up secure starter project when the secure starter project is hosted on GitHub repository
+== Steps for setting up a secure starter project when the secure starter project is hosted on a GitHub repository
 
 === Step 1: Creating a new GitHub repository to host the secure starter project
 
-1. Please follow https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-new-repository[this instruction] to create a new private or Enterprise GitHub repository and push the starter project to the created repository. The sample GitHub-hosted starter project can be found https://github.com/odo-devfiles/nodejs-ex[here].
+1. Please https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-new-repository[create a new private or enterprise GitHub repository] and push the starter project to the created repository. The sample GitHub-hosted starter project can be found https://github.com/odo-devfiles/nodejs-ex[here].
 
-2. Ensure the `projects` section in the corresponding devfile of secure devfile registry links to the secure starter project, for example:
+2. Ensure the `projects` section in the corresponding devfile of your secure devfile registry links to the secure starter project, for example:
 
 ```
 projects:
@@ -52,7 +52,7 @@ projects:
 ```
 
 === Step 2: Creating a personal access token to access the secure starter project
-Please follow https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token[this instruction] to create a personal access token, select `repo` as token scope.
+Please https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token[create a personal access token], select `repo` as token scope.
 
 === Step 3: Creating a devfile component from the secure devfile registry and downloading the secure starter project from the secure starter project host
 
@@ -61,4 +61,4 @@ Please run `odo create nodejs --registry <registry name> --starter --starter-tok
 - <registry name>: user-defined devfile registry name.
 - <starter project token>: the personal access token that you create on step 2.
 
-Note: given GitHub only supports user-scoped personal access token, so if the repository that hosts the secure registry and the repository that hosts the secure starter project are created under the same GitHub user, then the token can be used for both downloading devfile and starter project. For that case you don't need to explicitly pass in the flag --starter-token <starter project token>, odo can automatically use one token to download both devfile and starter project
+Note: GitHub only supports user-scoped personal access tokens. If the repository that hosts the secure registry and the repository that hosts the secure starter project are created under the same GitHub user, then the token can be used for both downloading the devfile and starter project. For that case you don't need to explicitly pass in the flag --starter-token <starter project token>, odo can automatically use one token to download both devfile and starter project
