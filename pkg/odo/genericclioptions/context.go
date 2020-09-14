@@ -513,7 +513,15 @@ func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 		*ignores = append(*ignores, rules...)
 	} else {
 		indexFile := pkgUtil.GetIndexFileRelativeToContext()
-		*ignores = append(*ignores, []string{indexFile, gitDirName}...)
+		// check if the ignores flag has the index file
+		if !pkgUtil.In(*ignores, indexFile) {
+			*ignores = append(*ignores, indexFile)
+		}
+
+		// check if the ignores flag has the git dir
+		if !pkgUtil.In(*ignores, gitDirName) {
+			*ignores = append(*ignores, gitDirName)
+		}
 	}
 	return nil
 }
