@@ -58,7 +58,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-with-metadataname-foobar.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
 		})
 
@@ -67,12 +67,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace, name)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace, name)
 			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
 		})
 
 		It("should error out on devfile flag", func() {
-			helper.CmdShouldFail("odo", "push", "--namespace", namespace, "--devfile", "invalid.yaml")
+			helper.CmdShouldFail("odo", "push", "--project", namespace, "--devfile", "invalid.yaml")
 		})
 
 	})
@@ -386,7 +386,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
 
 			firstPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
@@ -397,7 +397,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.MatchAllInOutput(strings.Join(firstPushInitContainers, ","), expectedInitContainers)
 
 			// Need to force so build and run get triggered again with the component already created.
-			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
+			output = helper.CmdShouldPass("odo", "push", "--project", namespace, "-f")
 			helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
 
 			secondPushPodName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
@@ -442,11 +442,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
 
 			// Need to force so build and run get triggered again with the component already created.
-			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
+			output = helper.CmdShouldPass("odo", "push", "--project", namespace, "-f")
 			helper.DontMatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
 			helper.MatchAllInOutput(output, []string{
 				"Executing devbuild command",
@@ -462,7 +462,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			helper.ReplaceString("devfile.yaml", "secondpoststart", "secondpoststart12345")
 
-			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldFail("odo", "push", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{"does not map to a valid devfile command"})
 		})
 
@@ -474,7 +474,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			helper.ReplaceString("devfile.yaml", "secondpoststart", "wrongPostStart")
 
-			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldFail("odo", "push", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{"the command does not map to a supported component"})
 		})
 
@@ -486,7 +486,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			helper.ReplaceString("devfile.yaml", "secondpoststart", "myWrongCompCmd")
 
-			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldFail("odo", "push", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{"does not exist in the devfile"})
 		})
 
@@ -536,9 +536,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
-			helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--debug", "--project", namespace)
 
 			logs := helper.CmdShouldPass("odo", "log")
 
@@ -555,13 +555,13 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--debug", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--debug", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{
 				"Executing devbuild command",
 				"Executing debugrun command",
 			})
 
-			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			output = helper.CmdShouldPass("odo", "push", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{
 				"Executing devbuild command",
 				"Executing devrun command",
@@ -575,7 +575,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			helper.MatchAllInOutput(output, []string{
 				"Executing devbuild command",
 				"Executing devrun command",
@@ -634,7 +634,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// 2) Rename the pom.xml, which should cause the build to fail if sync is working as expected
@@ -643,7 +643,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// 3) Ensure that the build fails due to missing 'pom.xml', which ensures that the sync operation
 			// correctly renamed pom.xml to pom.xml.renamed.
-			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--namespace", namespace)
+			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--project", namespace)
 			helper.WaitForOutputToContain("Non-readable POM", 180, 10, session)
 
 		})
@@ -660,12 +660,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
 
 			// 1) Push a standard spring boot project
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// 2) Update the devfile.yaml, causing push to redeploy the component
 			helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 769Mi")
-			commands := []string{"push", "-v", "4", "--namespace", namespace}
+			commands := []string{"push", "-v", "4", "--project", namespace}
 			if shouldForcePush {
 				// Test both w/ and w/o '-f'
 				commands = append(commands, "-f")
@@ -819,7 +819,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "singleenv", "--namespace", namespace, "--context", context)
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "singleenv", "--project", namespace, "--context", context)
 			Expect(output).To(ContainSubstring("mkdir $ENV1"))
 
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
@@ -832,7 +832,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "multipleenv", "--namespace", namespace, "--context", context)
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "multipleenv", "--project", namespace, "--context", context)
 			Expect(output).To(ContainSubstring("mkdir $ENV1 $ENV2"))
 
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
@@ -845,7 +845,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "envwithspace", "--namespace", namespace, "--context", context)
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "envwithspace", "--project", namespace, "--context", context)
 			Expect(output).To(ContainSubstring("mkdir \\\"$ENV1\\\""))
 
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)

@@ -370,12 +370,6 @@ func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
 		if err != nil {
 			return "", err
 		}
-	} else if cmd.Flags().Changed("namespace") {
-		// For "odo push" check to see if project has been passed
-		componentNamespace, err = cmd.Flags().GetString("namespace")
-		if err != nil {
-			return "", err
-		}
 	} else {
 		componentNamespace, err = retrieveKubernetesDefaultNamespace()
 		if err != nil {
