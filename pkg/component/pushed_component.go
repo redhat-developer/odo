@@ -208,6 +208,7 @@ func getType(component provider) (string, error) {
 	return "", fmt.Errorf("%s component doesn't provide a type label", component.GetName())
 }
 
+// GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
 func GetPushedComponents(c *occlient.Client, applicationName string) (map[string]PushedComponent, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	dcList, err := c.GetDeploymentConfigsFromSelector(applicationSelector)
