@@ -633,6 +633,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			// 1) Push a generic Java project
 			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
