@@ -164,11 +164,13 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			return fmt.Errorf("no valid components found in the devfile")
 		}
 		compWithEndpoint := 0
+		portMap := make(map[string]bool)
 		for _, c := range containers {
 			if len(c.Ports) != 0 {
 				compWithEndpoint++
 				for _, port := range c.Ports {
-					portList = append(portList, strconv.FormatInt(int64(port.ContainerPort), 10))
+					// use map to filter out duplicated ports
+					portMap[strconv.FormatInt(int64(port.ContainerPort), 10)] = true
 				}
 			}
 			if compWithEndpoint > 1 && o.isDocker {
@@ -177,6 +179,9 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 		}
 		if compWithEndpoint == 0 && o.isDocker {
 			return fmt.Errorf("no valid component with an endpoint found in the devfile")
+		}
+		for port := range portMap {
+			portList = append(portList, port)
 		}
 		if o.isDocker || o.urlPort == -1 {
 			o.componentPort, err = url.GetValidPortNumber(componentName, o.urlPort, portList)
