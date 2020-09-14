@@ -1,37 +1,40 @@
-# Storage commands
+== Storage
 
-`odo` lets users manage storage in the cluster. A storage is a https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim[PVC], which is a way for users to "claim" durable storage (such as a GCE PersistentDisk or an iSCSI volume) without knowing the details of the particular cloud environment.
+`odo` lets users manage storage volumes in the cluster. A storage volume is a https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim[PVC], which is a way for users to "claim" durable storage (such as a GCE PersistentDisk or an iSCSI volume) without knowing the details of the particular cloud environment. The storage volume can be used to persist data across restarts and rebuilds of the component.
 
-# Adding a storage
+== Adding a storage volume
 
-We can add a storage to the cluster using `odo storage create`
+We can add a storage volume to the cluster using `odo storage create`
 
-```
-odo storage create store --path /data --size 1Gi
- ✓  Added storage store to nodejs-project-ufyy
+[source,sh]
+----
+  $ odo storage create store --path /data --size 1Gi
+   ✓  Added storage store to nodejs-project-ufyy
 
-Please use `odo push` command to make the storage accessible to the component
-```
-The storage in the above example has been mounted to the `/data` path and has a size of `1Gi`
+  Please use `odo push` command to make the storage accessible to the component
+----
+The storage volume in the above example has been mounted to the `/data` path and has a size of `1Gi`
 
-# Listing storage
+== Listing storage volumes
 
-We can check the storage currently used by the component using `odo storage list`
+We can check the storage volumes currently used by the component using `odo storage list`
 
-```
-odo storage list
-The component 'nodejs-project-ufyy' has the following storage attached:
-NAME      SIZE     PATH      STATE
-store     1Gi      /data     Not Pushed
-```
+[source,sh]
+----
+  $ odo storage list
+  The component 'nodejs-project-ufyy' has the following storage attached:
+  NAME      SIZE     PATH      STATE
+  store     1Gi      /data     Not Pushed
+----
 
-# Deleting a storage
+== Deleting a storage volume
 
-We can delete a storage using `odo storage delete`
+We can delete a storage volume using `odo storage delete`
 
-```
-odo storage delete store -f
-Deleted storage store from nodejs-project-ufyy
+[source,sh]
+----
+  $ odo storage delete store -f
+  Deleted storage store from nodejs-project-ufyy
 
-Please use `odo push` command to delete the storage from the cluster
-```
+  Please use `odo push` command to delete the storage from the cluster
+----
