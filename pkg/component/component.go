@@ -817,6 +817,7 @@ func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision
 	return nil
 }
 
+// GetComponentNames retrieves the names of the components in the specified application
 func GetComponentNames(client *occlient.Client, applicationName string) ([]string, error) {
 	components, err := GetPushedComponents(client, applicationName)
 	if err != nil {
