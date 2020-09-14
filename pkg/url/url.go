@@ -772,7 +772,6 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 			Name: envinfoURL.Name,
 		},
 		Spec: URLSpec{
-			Path:   "/",
 			Port:   envinfoURL.Port,
 			Secure: envinfoURL.Secure,
 			Kind:   kind,
