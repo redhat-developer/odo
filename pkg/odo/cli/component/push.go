@@ -125,7 +125,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			}
 
 			// Create the environment file. This will actually *create* the env.yaml file in your context directory.
-			err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Namespace: namespace})
+			err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Project: namespace})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env.yaml for devfile component")
 			}

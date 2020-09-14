@@ -249,10 +249,10 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 	}
 
 	componentSettings := envinfo.ComponentSettings{
-		Name:      co.componentName,
-		Namespace: co.context.Project,
-		URL:       &urlList,
-		AppName:   application,
+		Name:    co.componentName,
+		Project: co.context.Project,
+		URL:     &urlList,
+		AppName: application,
 	}
 
 	if debugPort != 0 || debugPort == config.DefaultDebugPort {
