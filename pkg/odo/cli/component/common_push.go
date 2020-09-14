@@ -358,7 +358,7 @@ func retrieveKubernetesDefaultNamespace() (string, error) {
 	return client.Namespace, nil
 }
 
-// retrieveCmdNamespace retrieves the namespace from project or namespace, if neither of those are available
+// retrieveCmdNamespace retrieves the namespace from project flag, if unset
 // we revert to the default namespace available from Kubernetes
 func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
 	var componentNamespace string
