@@ -575,30 +575,39 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, confi
 		clusterURLMap[clusterURL.Name] = clusterURL
 	}
 
-	for _, comp := range containerComponents {
-		for _, localEndpoint := range comp.Container.Endpoints {
-			// only exposed endpoint will be shown as a URL in `odo url list`
-			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
-				continue
-			}
-			var devfileURL envinfo.EnvInfoURL
-			if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
-				devfileURL = envinfoURL
-				devfileURL.Port = int(localEndpoint.TargetPort)
-				devfileURL.Secure = localEndpoint.Secure
-			}
-			if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
-				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
-				// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
-				if !routeSupported {
+	if len(containerComponents) > 0 {
+		for _, comp := range containerComponents {
+			for _, localEndpoint := range comp.Container.Endpoints {
+				// only exposed endpoint will be shown as a URL in `odo url list`
+				if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
 					continue
 				}
-				devfileURL.Name = localEndpoint.Name
-				devfileURL.Port = int(localEndpoint.TargetPort)
-				devfileURL.Secure = localEndpoint.Secure
-				devfileURL.Kind = envinfo.ROUTE
+				var devfileURL envinfo.EnvInfoURL
+				if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
+					devfileURL = envinfoURL
+					devfileURL.Port = int(localEndpoint.TargetPort)
+					devfileURL.Secure = localEndpoint.Secure
+				}
+				if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+					// Devfile endpoint by default should create a route if no host information is provided in env.yaml
+					// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
+					if !routeSupported {
+						continue
+					}
+					devfileURL.Name = localEndpoint.Name
+					devfileURL.Port = int(localEndpoint.TargetPort)
+					devfileURL.Secure = localEndpoint.Secure
+					devfileURL.Kind = envinfo.ROUTE
+				}
+				localURL := ConvertEnvinfoURL(devfileURL, componentName)
+				// use the trimmed URL Name as the key since remote URLs' names are trimmed
+				trimmedURLName := getValidURLName(localURL.Name)
+				localMap[trimmedURLName] = localURL
 			}
-			localURL := ConvertEnvinfoURL(devfileURL, componentName)
+		}
+	} else {
+		for _, url := range envURLMap {
+			localURL := ConvertEnvinfoURL(url, componentName)
 			// use the trimmed URL Name as the key since remote URLs' names are trimmed
 			trimmedURLName := getValidURLName(localURL.Name)
 			localMap[trimmedURLName] = localURL

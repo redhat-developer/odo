@@ -5,6 +5,7 @@ import (
 	"fmt"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"strings"
@@ -150,16 +151,17 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
 
 	var urls urlpkg.URLList
-	if envInfo != nil {
-		routeSupported, e := client.IsRouteSupported()
-		if e != nil {
-			return cfd, e
-		}
-		components := adaptersCommon.GetDevfileContainerComponents(devfile.Data)
-		urls, err = urlpkg.ListIngressAndRoute(client, kClient, envInfo, components, componentName, routeSupported)
-	} else {
-		urls, err = urlpkg.List(client, localConfigInfo, componentName, applicationName)
+	routeSupported, e := client.IsRouteSupported()
+	if e != nil {
+		return cfd, e
 	}
+	var components []common.DevfileComponent
+	var configProvider envinfo.LocalConfigProvider = localConfigInfo
+	if envInfo != nil {
+		configProvider = envInfo
+		components = adaptersCommon.GetDevfileContainerComponents(devfile.Data)
+	}
+	urls, err = urlpkg.ListIngressAndRoute(client, kClient, configProvider, components, componentName, routeSupported)
 	if err != nil {
 		log.Warningf("URLs couldn't not be retrieved: %v", err)
 	}
@@ -222,17 +224,11 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 	if len(cfd.Spec.URL.Items) > 0 {
 		var output string
 		// if the component is not pushed
-		for i, componentURL := range cfd.Spec.URL.Items {
+		for _, componentURL := range cfd.Spec.URL.Items {
 			if componentURL.Status.State == urlpkg.StateTypePushed {
 				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, "", true), componentURL.Spec.Port)
 			} else {
-				var p string
-				if i >= len(cfd.Spec.Ports) {
-					p = cfd.Spec.Ports[len(cfd.Spec.Ports)-1]
-				} else {
-					p = cfd.Spec.Ports[i]
-				}
-				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, p)
+				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, componentURL.Spec.Port)
 			}
 		}
 
