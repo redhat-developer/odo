@@ -758,6 +758,11 @@ func ConvertConfigURL(configURL envinfo.EnvInfoURL) URL {
 // ConvertEnvinfoURL converts EnvinfoURL to URL
 func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
+	// default to route kind if none is provided
+	kind := envinfoURL.Kind
+	if kind == "" {
+		kind = envinfo.ROUTE
+	}
 	url := URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
@@ -767,16 +772,17 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 			Name: envinfoURL.Name,
 		},
 		Spec: URLSpec{
+			Path:   "/",
 			Port:   envinfoURL.Port,
 			Secure: envinfoURL.Secure,
-			Kind:   envinfoURL.Kind,
+			Kind:   kind,
 		},
 	}
-	if envinfoURL.Kind == envinfo.INGRESS {
+	if kind == envinfo.INGRESS {
 		url.Spec.Host = hostString
 		if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
 			url.Spec.TLSSecret = envinfoURL.TLSSecret
-		} else if envinfoURL.Secure && envinfoURL.Kind == envinfo.INGRESS {
+		} else if envinfoURL.Secure {
 			url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
 		}
 	}
