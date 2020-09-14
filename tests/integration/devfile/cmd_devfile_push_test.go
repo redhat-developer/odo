@@ -644,9 +644,8 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// 3) Ensure that the build fails due to missing 'pom.xml', which ensures that the sync operation
 			// correctly renamed pom.xml to pom.xml.renamed.
-			session := helper.CmdRunner("odo", "push", "-v", "5", "-f", "--namespace", namespace)
-			helper.WaitForOutputToContain("Non-readable POM", 180, 10, session)
-
+			output = helper.CmdShouldFail("odo", "push", "-f", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"no POM in this directory"})
 		})
 
 	})
