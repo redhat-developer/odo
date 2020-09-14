@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -827,6 +828,7 @@ func GetComponentNames(client *occlient.Client, applicationName string) ([]strin
 	for name := range components {
 		names = append(names, name)
 	}
+	sort.Strings(names)
 	return names, nil
 }
 
