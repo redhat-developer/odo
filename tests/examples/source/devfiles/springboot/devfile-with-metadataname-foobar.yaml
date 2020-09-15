@@ -16,7 +16,7 @@ components:
       args: [ '-f', '/dev/null']
       volumeMounts:
         - name: springbootpvc
-          path: /data
+          path: /data/cache/.m2
       mountSources: true
   - name: runtime
     container:
@@ -27,7 +27,7 @@ components:
           targetPort: 8080
       volumeMounts:
         - name: springbootpvc
-          path: /data
+          path: /data/cache/.m2
       mountSources: false
   - name: springbootpvc
     volume: {}

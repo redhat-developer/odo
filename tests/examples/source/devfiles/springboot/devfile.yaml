@@ -15,6 +15,9 @@ components:
       command: ['tail']
       args: [ '-f', '/dev/null']
       mountSources: true
+      volumeMounts:
+        - name: springbootpvc
+          path: /data/cache/.m2
   - name: runtime
     container:
       image: quay.io/eclipse/che-java11-maven:nightly
@@ -24,7 +27,7 @@ components:
           targetPort: 8080
       volumeMounts:
         - name: springbootpvc
-          path: /data
+          path: /data/cache/.m2
       mountSources: true
   - name: springbootpvc
     volume:
