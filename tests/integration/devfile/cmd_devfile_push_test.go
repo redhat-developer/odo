@@ -795,7 +795,8 @@ var _ = Describe("odo devfile push command tests", func() {
 		It("should throw a validation error for v1 devfiles", func() {
 			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
 
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.ReplaceString("devfile.yaml", "schemaVersion: 2.0.0", "apiVersion: 1.0.0")
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
