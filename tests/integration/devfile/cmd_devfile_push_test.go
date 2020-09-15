@@ -855,6 +855,66 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		})
 	})
+	Context("Verify source code sync location", func() {
+
+		It("Should sync to the correct dir in container if project and clonePath is present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+
+			// devfile with clonePath set in project field
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context, "--v", "5")
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			// source code is synced to $PROJECTS_ROOT/clonePath
+			// $PROJECTS_ROOT is /projects by default, if sourceMapping is set it is same as sourceMapping
+			// for devfile-with-projects.yaml, sourceMapping is apps and clonePath is webapp
+			// so source code would be synced to /apps/webapp
+			output := cliRunner.ExecListDir(podName, namespace, "/apps/webapp")
+			helper.MatchAllInOutput(output, []string{"package.json"})
+		})
+
+		It("Should sync to the correct dir in container if project present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// reset clonePath and change the workdir accordingly, it should sync to project name
+			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
+			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "workingDir: ${PROJECTS_ROOT}/webapp", "workingDir: ${PROJECTS_ROOT}/nodeshift")
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output := cliRunner.ExecListDir(podName, namespace, "/apps/nodeshift")
+			helper.MatchAllInOutput(output, []string{"package.json"})
+		})
+
+		It("Should sync to the correct dir in container if multiple project is present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			// for devfile-with-multiple-projects.yaml source mapping is not set so $PROJECTS_ROOT is /projects
+			// multiple projects, so source code would sync to /projects
+			output := cliRunner.ExecListDir(podName, namespace, "/projects")
+			helper.MatchAllInOutput(output, []string{"package.json"})
+		})
+
+		It("Should sync to the correct dir in container if no project is present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output := cliRunner.ExecListDir(podName, namespace, "/projects")
+			helper.MatchAllInOutput(output, []string{"package.json"})
+		})
+
+	})
 
 	Context("push with listing the devfile component", func() {
 
