@@ -75,11 +75,11 @@ func (d DevfileObj) IsSet(parameter string) bool {
 	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
 		switch parameter {
 		case "name":
-			return d.getMetadataName() != ""
+			return d.GetMetadataName() != ""
 		case "ports":
 			return d.hasPorts()
 		case "memory":
-			return d.getMemory() != ""
+			return d.GetMemory() != ""
 		}
 	}
 	return false
@@ -171,7 +171,7 @@ func (d DevfileObj) setMemory(memory string) error {
 	}
 	return d.WriteYamlDevfile()
 }
-func (d DevfileObj) getMemory() string {
+func (d DevfileObj) GetMemory() string {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
@@ -184,7 +184,7 @@ func (d DevfileObj) getMemory() string {
 	return ""
 }
 
-func (d DevfileObj) getMetadataName() string {
+func (d DevfileObj) GetMetadataName() string {
 	return d.Data.GetMetadata().Name
 }
 

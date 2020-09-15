@@ -1,14 +1,15 @@
-package parser
+package component
 
 import (
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (d DevfileObj) ToRepresentation() DevfileComponentRepr {
+func ToDevfileRepresentation(d parser.DevfileObj) DevfileComponentRepr {
 	confRepr := DevfileComponentRepr{
-		Name:   d.getMetadataName(),
-		Memory: d.getMemory(),
+		Name:   d.GetMetadataName(),
+		Memory: d.GetMemory(),
 	}
 	var contReprs []ContainerRepr
 	components := d.Data.GetComponents()
@@ -38,7 +39,7 @@ func (d DevfileObj) ToRepresentation() DevfileComponentRepr {
 	return confRepr
 }
 
-func (d DevfileObj) WrapFromJSONOutput(confRepr DevfileComponentRepr) JSONConfigRepr {
+func WrapFromJSONOutput(confRepr DevfileComponentRepr) JSONConfigRepr {
 	return JSONConfigRepr{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DevfileConfiguration",
@@ -61,7 +62,7 @@ type DevfileComponentRepr struct {
 
 	// the parameter below are not configurables
 	// Think of a better way
-	State       string `yaml:"State,omitempty" json:"state,omitempty"`
+	State       State  `yaml:"State,omitempty" json:"state,omitempty"`
 	Namespace   string `yaml:"Namespace,omitempty" json:"namespace,omitempty"`
 	Application string `yaml:"Application,omitempty" json:"application,omitempty"`
 }
