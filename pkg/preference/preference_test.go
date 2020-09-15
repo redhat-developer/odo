@@ -248,8 +248,6 @@ func TestSetConfiguration(t *testing.T) {
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
-	dockerValue := DockerPushTarget
-	kubeValue := KubePushTarget
 	zeroValue := 0
 
 	tests := []struct {
@@ -437,55 +435,15 @@ func TestSetConfiguration(t *testing.T) {
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
-		// pushtarget setting
 		{
-			name:           fmt.Sprintf("Case 21: %s set nil to docker", PushTargetSetting),
-			parameter:      PushTargetSetting,
-			value:          dockerValue,
-			existingConfig: Preference{},
-			want:           dockerValue,
-			wantErr:        false,
-		},
-		{
-			name:      fmt.Sprintf("Case 22: %s set kube to docker", PushTargetSetting),
-			parameter: PushTargetSetting,
-			value:     dockerValue,
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					PushTarget: &kubeValue,
-				},
-			},
-			want:    dockerValue,
-			wantErr: false,
-		},
-		{
-			name:      fmt.Sprintf("Case 23: %s set docker to kube", PushTargetSetting),
-			parameter: PushTargetSetting,
-			value:     kubeValue,
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					PushTarget: &dockerValue,
-				},
-			},
-			want:    kubeValue,
-			wantErr: false,
-		},
-		{
-			name:           fmt.Sprintf("Case 24: %s invalid value", PushTargetSetting),
-			parameter:      PushTargetSetting,
-			value:          "invalid_value",
-			existingConfig: Preference{},
-			wantErr:        true,
-		},
-		{
-			name:           "Case 25: set RegistryCacheTime to 1",
+			name:           "Case 21: set RegistryCacheTime to 1",
 			parameter:      "RegistryCacheTime",
 			value:          "1",
 			existingConfig: Preference{},
 			wantErr:        false,
 		},
 		{
-			name:           "Case 26: set RegistryCacheTime to non int value",
+			name:           "Case 22: set RegistryCacheTime to non int value",
 			parameter:      "RegistryCacheTime",
 			value:          "a",
 			existingConfig: Preference{},
@@ -517,10 +475,6 @@ func TestSetConfiguration(t *testing.T) {
 				case "experimental":
 					if *cfg.OdoSettings.Experimental != tt.want {
 						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.Experimental, tt.want)
-					}
-				case "pushtarget":
-					if *cfg.OdoSettings.PushTarget != tt.want {
-						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.PushTarget, tt.want)
 					}
 				case "registrycachetime":
 					if *cfg.OdoSettings.RegistryCacheTime != tt.want {
@@ -653,62 +607,6 @@ func TestGetExperimental(t *testing.T) {
 
 			if output != tt.want {
 				t.Errorf("GetExperimental returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
-			}
-
-		})
-	}
-}
-
-func TestGetPushTarget(t *testing.T) {
-
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
-	dockerValue := "docker"
-	kubeValue := "kube"
-
-	tests := []struct {
-		name           string
-		existingConfig Preference
-		want           string
-	}{
-		{
-			name:           fmt.Sprintf("Case 1: %s nil", PushTargetSetting),
-			existingConfig: Preference{},
-			want:           "kube",
-		},
-		{
-			name: fmt.Sprintf("Case 2: %s docker", PushTargetSetting),
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					PushTarget: &dockerValue,
-				},
-			},
-			want: "docker",
-		},
-		{
-			name: fmt.Sprintf("Case 3: %s kube", PushTargetSetting),
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					PushTarget: &kubeValue,
-				},
-			},
-			want: "kube",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := PreferenceInfo{
-				Preference: tt.existingConfig,
-			}
-			output := cfg.GetPushTarget()
-
-			if output != tt.want {
-				t.Errorf("GetExperimental returned unexpeced value expected \ngot: %s \nexpected: %s\n", output, tt.want)
 			}
 
 		})
