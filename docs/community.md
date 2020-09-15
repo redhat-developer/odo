@@ -27,10 +27,10 @@ micro_nav: true
 Join us on Slack via our [invite
 link](https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I)
 
-  - [Odo Dev Channel](https://openshiftdo.slack.com/messages/odo-dev) -
+  - [odo Dev Channel](https://openshiftdo.slack.com/messages/odo-dev) -
     Discuss odo development
 
-  - [Odo Users
+  - [odo Users
     Channel](https://openshiftdo.slack.com/messages/odo-users) - Ask
     questions and discuss your use cases with odo
 
@@ -77,7 +77,7 @@ Google group](https://groups.google.com/forum/#!forum/odo-dev).
 
 ## Where do I start?
 
-Odo is a complex project that touches both Kubernetes, OpenShift and
+odo is a complex project that touches both Kubernetes, OpenShift and
 Docker. We have a list of [good first
 issues](https://github.com/openshift/odo/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
 to help start.
