@@ -10,6 +10,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/openshift/odo/pkg/component"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -175,6 +176,28 @@ func (po *PushOptions) Validate() (err error) {
 	// If Devfile is present we do not need to validate the below S2I checks
 	// TODO: Perhaps one day move Devfile validation to here instead?
 	if util.CheckPathExists(po.DevfilePath) {
+		spinner := log.Spinner("Validating K8s Resources Name")
+		defer spinner.End(false)
+		err = util.ValidateK8sResourceName("component name", po.EnvSpecificInfo.GetName())
+		if err != nil {
+			return err
+		}
+		containerComponents := adaptersCommon.GetDevfileContainerComponents(po.Devfile.Data)
+		for _, comp := range containerComponents {
+			err := util.ValidateK8sResourceName("container name", comp.Name)
+			if err != nil {
+				return err
+			}
+		}
+		// Only validate namespace if pushtarget isn't docker
+		if !pushtarget.IsPushTargetDocker() {
+			err := util.ValidateK8sResourceName("component namespace", po.EnvSpecificInfo.GetNamespace())
+			if err != nil {
+				return err
+			}
+		}
+
+		spinner.End(true)
 		return nil
 	}
 
