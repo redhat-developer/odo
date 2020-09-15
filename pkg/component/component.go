@@ -987,7 +987,7 @@ func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Co
 }
 
 // ListIfPathGiven lists all available component in given path directory
-func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, error) {
+func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, error) {
 	var components []Component
 	var err error
 	for _, path := range paths {
@@ -1026,11 +1026,11 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 		})
 
 	}
-	return GetMachineReadableFormatForList(components), err
+	return components, err
 }
 
-func ListDeploymentsInPath(client *kclient.Client, paths []string) ([]DevfileComponentRepr, error) {
-	var components []DevfileComponentRepr
+func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]DevfileComponent, error) {
+	var components []DevfileComponent
 	var err error
 	for _, path := range paths {
 		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
@@ -1052,11 +1052,12 @@ func ListDeploymentsInPath(client *kclient.Client, paths []string) ([]DevfileCom
 				if err != nil {
 					return err
 				}
-				repr := ToDevfileRepresentation(devfileObj)
-				repr.State = StateTypeUnknown
-				repr.Application = data.GetApplication()
-				repr.Namespace = data.GetNamespace()
-				components = append(components, repr)
+				comp := DevfileComponent{}
+				comp.State = StateTypeUnknown
+				comp.Application = data.GetApplication()
+				comp.Namespace = data.GetNamespace()
+				comp.Name = devfileObj.GetMetadataName()
+				components = append(components, comp)
 
 				// since the config file maybe belong to a component of a different project
 				if client != nil {
@@ -1520,20 +1521,40 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 
 }
 
-// GetMachineReadableFormatForList returns list of components in machine readable format
-func GetMachineReadableFormatForList(components []Component) ComponentList {
-	if len(components) == 0 {
-		components = []Component{}
+// GetMachineReadableFormatForList returns list of devfile and s2i components in machine readable format
+func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
+	if len(s2iComps) == 0 {
+		s2iComps = []Component{}
 	}
+
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
 			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
-		Items:    components,
+		Items:    s2iComps,
+	}
+}
+
+// GetMachineReadableFormatForCombinedCompList returns list of devfile and s2i components in machine readable format
+func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []DevfileComponent) CombinedComponentList {
+	if len(s2iComps) == 0 {
+		s2iComps = []Component{}
+	}
+	if len(devfileComps) == 0 {
+		devfileComps = []DevfileComponent{}
 	}
 
+	return CombinedComponentList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: apiVersion,
+		},
+		ListMeta:          metav1.ListMeta{},
+		S2IComponents:     s2iComps,
+		DevfileComponents: devfileComps,
+	}
 }
 
 // getStorageFromConfig gets all the storage from the config

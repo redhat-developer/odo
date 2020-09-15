@@ -6,8 +6,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ToDevfileRepresentation(d parser.DevfileObj) DevfileComponentRepr {
-	confRepr := DevfileComponentRepr{
+func ToDevfileRepresentation(d parser.DevfileObj) ConfigurableRepr {
+	confRepr := ConfigurableRepr{
 		Name:   d.GetMetadataName(),
 		Memory: d.GetMemory(),
 	}
@@ -39,7 +39,7 @@ func ToDevfileRepresentation(d parser.DevfileObj) DevfileComponentRepr {
 	return confRepr
 }
 
-func WrapFromJSONOutput(confRepr DevfileComponentRepr) JSONConfigRepr {
+func WrapFromJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr {
 	return JSONConfigRepr{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DevfileConfiguration",
@@ -52,19 +52,13 @@ func WrapFromJSONOutput(confRepr DevfileComponentRepr) JSONConfigRepr {
 type JSONConfigRepr struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	DevfileConfigSpec DevfileComponentRepr `json:"spec" yaml:"spec"`
+	DevfileConfigSpec ConfigurableRepr `json:"spec" yaml:"spec"`
 }
 
-type DevfileComponentRepr struct {
+type ConfigurableRepr struct {
 	Name    string          `yaml:"ComponentName,omitempty" json:"componentName,omitempty"`
 	Memory  string          `yaml:"Memory,omitempty" json:"memory,omitempty"`
 	Configs []ContainerRepr `yaml:"Configs,omitempty" json:"configs,omitempty"`
-
-	// the parameter below are not configurables
-	// Think of a better way
-	State       State  `yaml:"State,omitempty" json:"state,omitempty"`
-	Namespace   string `yaml:"Namespace,omitempty" json:"namespace,omitempty"`
-	Application string `yaml:"Application,omitempty" json:"application,omitempty"`
 }
 
 type ContainerRepr struct {
@@ -77,4 +71,13 @@ type PortRepr struct {
 	Name        string `yaml:"Name" json:"name"`
 	ExposedPort int32  `yaml:"ExposedPort" json:"exposedPort"`
 	Protocol    string `yaml:"Protocol" json:"protocol"`
+}
+
+type DevfileComponent struct {
+	// the parameter below are not configurables
+	// Think of a better way
+	Name        string `json:"componentName,omitempty"`
+	State       State  `json:"state,omitempty"`
+	Namespace   string `json:"namespace,omitempty"`
+	Application string `json:"application,omitempty"`
 }

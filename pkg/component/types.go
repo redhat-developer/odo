@@ -40,7 +40,15 @@ type ComponentStatus struct {
 	LinkedServices   []string            `json:"linkedServices,omitempty"`
 }
 
-// State represents component state
+// CombinedComponentList is list of s2i and devfile components
+type CombinedComponentList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ListMeta   `json:"metadata,omitempty"`
+	S2IComponents     []Component        `json:"s2i_components"`
+	DevfileComponents []DevfileComponent `json:"devfile_components"`
+}
+
+// State reperesents component state
 type State string
 
 const (

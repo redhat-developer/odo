@@ -139,22 +139,45 @@ func (lo *ListOptions) Run() (err error) {
 
 	if len(lo.pathFlag) != 0 {
 
-		if util.CheckPathExists(lo.devfilePath) {
-			log.Experimental("--path flag is not supported for devfile components")
-		}
-		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
+		devfileComps, err := component.ListDevfileComponentsInPath(lo.KClient, filepath.SplitList(lo.pathFlag))
+		s2iComps, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps)
 		if err != nil {
 			return err
 		}
 		if log.IsJSON() {
-			machineoutput.OutputSuccess(components)
+			machineoutput.OutputSuccess(combinedComponents)
 		} else {
+			hasS2Icomponents := false
+			hasDevfileComponents := false
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE", "\t", "CONTEXT")
-			for _, comp := range components.Items {
-				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State, "\t", comp.Status.Context)
+			if len(s2iComps) != 0 {
+				hasS2Icomponents = true
+				fmt.Fprintln(w, "S2I Components: ")
+				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE", "\t", "CONTEXT")
+				for _, comp := range s2iComps {
+					fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State, "\t", comp.Status.Context)
 
+				}
 			}
+
+			if hasS2Icomponents {
+				fmt.Fprintln(w)
+			}
+
+			if len(devfileComps) != 0 {
+				hasDevfileComponents = true
+				fmt.Fprintln(w, "Devfile Components: ")
+				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE")
+				for _, comp := range devfileComps {
+					fmt.Fprintln(w, comp.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.State)
+				}
+			}
+			// if we dont have any then
+			if !hasDevfileComponents && !hasS2Icomponents {
+				fmt.Fprintln(w, "No components found")
+			}
+
 			w.Flush()
 		}
 		return nil
@@ -182,44 +205,39 @@ func (lo *ListOptions) Run() (err error) {
 	}
 
 	deploymentList, err = lo.KClient.ListDeployments(selector)
-
 	if err != nil {
 		return err
 	}
 
-	// Json output is not implemented yet for devfile
-	if !log.IsJSON() {
-		currentComponentState := UnpushedCompState
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		if len(deploymentList.Items) != 0 {
-			lo.hasDevfileComponents = true
-			fmt.Fprintln(w, "Devfile Components: ")
-			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
-			for _, comp := range deploymentList.Items {
-				app := comp.Labels[applabels.ApplicationLabel]
-				cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
-				if lo.EnvSpecificInfo != nil {
-					// if we can find a component from the listing from server then the local state is pushed
-					if lo.EnvSpecificInfo.EnvInfo.MatchComponent(&comp) {
-						currentComponentState = PushedCompState
-					}
+	currentComponentState := UnpushedCompState
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	if len(deploymentList.Items) != 0 {
+		lo.hasDevfileComponents = true
+		fmt.Fprintln(w, "Devfile Components: ")
+		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
+		for _, comp := range deploymentList.Items {
+			app := comp.Labels[applabels.ApplicationLabel]
+			cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
+			if lo.EnvSpecificInfo != nil {
+				// if we can find a component from the listing from server then the local state is pushed
+				if lo.EnvSpecificInfo.EnvInfo.MatchComponent(&comp) {
+					currentComponentState = PushedCompState
 				}
-				fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
 			}
-
+			fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
 		}
-
-		// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
-		// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
-		if lo.EnvSpecificInfo != nil {
-			envinfo := lo.EnvSpecificInfo.EnvInfo
-			if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
-				fmt.Fprintln(w, envinfo.GetApplication(), "\t", envinfo.GetName(), "\t", envinfo.GetNamespace(), "\t", lo.componentType, "\t", currentComponentState)
-			}
-		}
-		w.Flush()
 
 	}
+
+	// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
+	// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
+	if lo.EnvSpecificInfo != nil {
+		envinfo := lo.EnvSpecificInfo.EnvInfo
+		if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
+			fmt.Fprintln(w, envinfo.GetApplication(), "\t", envinfo.GetName(), "\t", envinfo.GetNamespace(), "\t", lo.componentType, "\t", currentComponentState)
+		}
+	}
+	w.Flush()
 
 	// non-experimental workflow
 
@@ -253,8 +271,6 @@ func (lo *ListOptions) Run() (err error) {
 				}
 				componentList = append(componentList, comps.Items...)
 			}
-			// Get machine readable component list format
-			components = component.GetMachineReadableFormatForList(componentList)
 		} else {
 
 			components, err = component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
@@ -263,9 +279,7 @@ func (lo *ListOptions) Run() (err error) {
 			}
 		}
 
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(components)
-		} else {
+		if !log.IsJSON() {
 			if len(components.Items) != 0 {
 				if lo.hasDevfileComponents {
 					fmt.Println()
