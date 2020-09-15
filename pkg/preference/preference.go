@@ -111,7 +111,6 @@ var (
 		BuildTimeoutSetting:       BuildTimeoutSettingDescription,
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
 		ExperimentalSetting:       ExperimentalDescription,
-		PushTargetSetting:         PushTargetDescription,
 		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
 	}
 
