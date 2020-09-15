@@ -5,8 +5,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (d DevfileObj) ToRepresentation() ConfigurableRepr {
-	confRepr := ConfigurableRepr{
+func (d DevfileObj) ToRepresentation() DevfileComponentRepr {
+	confRepr := DevfileComponentRepr{
 		Name:   d.getMetadataName(),
 		Memory: d.getMemory(),
 	}
@@ -38,7 +38,7 @@ func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 	return confRepr
 }
 
-func (d DevfileObj) WrapFromJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr {
+func (d DevfileObj) WrapFromJSONOutput(confRepr DevfileComponentRepr) JSONConfigRepr {
 	return JSONConfigRepr{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DevfileConfiguration",
@@ -51,23 +51,29 @@ func (d DevfileObj) WrapFromJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr
 type JSONConfigRepr struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	DevfileConfigSpec ConfigurableRepr `json:"spec" yaml:"spec"`
+	DevfileConfigSpec DevfileComponentRepr `json:"spec" yaml:"spec"`
 }
 
-type ConfigurableRepr struct {
-	Name    string          `yaml:"ComponentName,omitempty" json:"ComponentName,omitempty"`
-	Memory  string          `yaml:"Memory,omitempty" json:"Memory,omitempty"`
-	Configs []ContainerRepr `yaml:"Configs,omitempty" json:"Configs,omitempty"`
+type DevfileComponentRepr struct {
+	Name    string          `yaml:"ComponentName,omitempty" json:"componentName,omitempty"`
+	Memory  string          `yaml:"Memory,omitempty" json:"memory,omitempty"`
+	Configs []ContainerRepr `yaml:"Configs,omitempty" json:"configs,omitempty"`
+
+	// the parameter below are not configurables
+	// Think of a better way
+	State       string `yaml:"State,omitempty" json:"state,omitempty"`
+	Namespace   string `yaml:"Namespace,omitempty" json:"namespace,omitempty"`
+	Application string `yaml:"Application,omitempty" json:"application,omitempty"`
 }
 
 type ContainerRepr struct {
-	ContainerName        string            `yaml:"ContainerName" json:"ContainerName"`
-	EnvironmentVariables config.EnvVarList `yaml:"EnvironmentVariables" json:"EnvironmentVariables,omitempty"`
-	Ports                []PortRepr        `yaml:"Ports" json:"Ports,omitempty"`
+	ContainerName        string            `yaml:"ContainerName" json:"containerName"`
+	EnvironmentVariables config.EnvVarList `yaml:"EnvironmentVariables" json:"environmentVariables,omitempty"`
+	Ports                []PortRepr        `yaml:"Ports" json:"ports,omitempty"`
 }
 
 type PortRepr struct {
-	Name        string `yaml:"Name" json:"Name"`
-	ExposedPort int32  `yaml:"ExposedPort" json:"ExposedPort"`
-	Protocol    string `yaml:"Protocol" json:"Protocol"`
+	Name        string `yaml:"Name" json:"name"`
+	ExposedPort int32  `yaml:"ExposedPort" json:"exposedPort"`
+	Protocol    string `yaml:"Protocol" json:"protocol"`
 }

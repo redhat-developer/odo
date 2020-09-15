@@ -83,7 +83,7 @@ func (o *ViewOptions) DevfileRun() (err error) {
 		machineoutput.OutputSuccess(o.devfileObj.WrapFromJSONOutput(repr))
 		return
 	}
-	representation, err := yaml.Marshal(o.devfileObj.ToRepresentation())
+	representation, err := yaml.Marshal(repr)
 	if err != nil {
 		return err
 	}
