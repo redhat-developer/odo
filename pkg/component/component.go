@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/kclient"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -1026,6 +1027,39 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 
 	}
 	return GetMachineReadableFormatForList(components), err
+}
+
+func ListDeploymentsInPath(client *kclient.Client, paths []string) ([]parser.DevfileComponentRepr, error) {
+	var components []parser.DevfileComponentRepr
+	var err error
+	for _, path := range paths {
+		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+			// we check for .odo/env/env.yaml folder first and then find devfile.yaml - this is
+			// this could be changed
+			// TODO: optimise this
+			if f != nil && strings.Contains(f.Name(), ".odo") {
+				// lets find if there is a devfile and an env.yaml
+				data, err := envinfo.NewEnvSpecificInfo(filepath.Dir(f.Name()))
+				if err != nil {
+					return err
+				}
+
+				// if the .odo folder doesn't contain a proper config file
+				if data.GetName() == "" || data.GetApplication() == "" || data.GetNamespace() == "" {
+					return nil
+				}
+
+				// since the config file maybe belong to a component of a different project
+				if client != nil {
+					client.Namespace = data.GetNamespace()
+				}
+
+			}
+			return nil
+		})
+
+	}
+	return components, err
 }
 
 // GetComponentSource what source type given component uses

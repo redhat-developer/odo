@@ -84,7 +84,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
-			lo.Context = genericclioptions.NewContext(cmd)
+			lo.Context = genericclioptions.NewContext(cmd, false, true)
 			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 			if err != nil {
 				return err
@@ -95,7 +95,6 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			lo.Context = genericclioptions.NewConfigContext(cmd)
 			// for disconnected situation we just assume we have DC support
 			lo.hasDCSupport = true
-
 		}
 	}
 
@@ -126,7 +125,6 @@ func (lo *ListOptions) Validate() (err error) {
 		project = lo.Context.Project
 		app = lo.Application
 	}
-
 	if !lo.allAppsFlag && lo.pathFlag == "" && (project == "" || app == "") {
 		return odoutil.ThrowContextError()
 	}
@@ -173,56 +171,53 @@ func (lo *ListOptions) Run() (err error) {
 
 	// experimental workflow
 
-	if util.CheckPathExists(lo.devfilePath) {
+	var deploymentList *appsv1.DeploymentList
 
-		var deploymentList *appsv1.DeploymentList
-		var err error
+	var selector string
+	// TODO: wrap this into a component list for docker support
+	if lo.allAppsFlag {
+		selector = project.GetSelector()
+	} else {
+		selector = applabels.GetSelector(lo.Application)
+	}
 
-		var selector string
-		// TODO: wrap this into a component list for docker support
-		if lo.allAppsFlag {
-			selector = project.GetSelector()
+	deploymentList, err = lo.KClient.ListDeployments(selector)
 
-		} else {
-			selector = applabels.GetSelector(lo.Application)
-		}
+	if err != nil {
+		return err
+	}
 
-		deploymentList, err = lo.KClient.ListDeployments(selector)
-
-		if err != nil {
-			return err
-		}
-
-		// Json output is not implemented yet for devfile
-		if !log.IsJSON() {
-			envinfo := lo.EnvSpecificInfo.EnvInfo
-			if len(deploymentList.Items) != 0 || envinfo.GetApplication() == lo.Application {
-
-				currentComponentState := UnpushedCompState
-				currentComponentName := envinfo.GetName()
-				lo.hasDevfileComponents = true
-				w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-				fmt.Fprintln(w, "Devfile Components: ")
-				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
-				for _, comp := range deploymentList.Items {
-					app := comp.Labels[applabels.ApplicationLabel]
-					cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
-					if comp.Name == currentComponentName && app == envinfo.GetApplication() && comp.Namespace == envinfo.GetNamespace() {
+	// Json output is not implemented yet for devfile
+	if !log.IsJSON() {
+		currentComponentState := UnpushedCompState
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		if len(deploymentList.Items) != 0 {
+			lo.hasDevfileComponents = true
+			fmt.Fprintln(w, "Devfile Components: ")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
+			for _, comp := range deploymentList.Items {
+				app := comp.Labels[applabels.ApplicationLabel]
+				cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
+				if lo.EnvSpecificInfo != nil {
+					// if we can find a component from the listing from server then the local state is pushed
+					if lo.EnvSpecificInfo.EnvInfo.MatchComponent(&comp) {
 						currentComponentState = PushedCompState
 					}
-					fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
 				}
-
-				// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
-				// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
-				if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
-					fmt.Fprintln(w, envinfo.GetApplication(), "\t", currentComponentName, "\t", envinfo.GetNamespace(), "\t", lo.componentType, "\t", currentComponentState)
-				}
-
-				w.Flush()
+				fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
 			}
 
 		}
+
+		// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
+		// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
+		if lo.EnvSpecificInfo != nil {
+			envinfo := lo.EnvSpecificInfo.EnvInfo
+			if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
+				fmt.Fprintln(w, envinfo.GetApplication(), "\t", envinfo.GetName(), "\t", envinfo.GetNamespace(), "\t", lo.componentType, "\t", currentComponentState)
+			}
+		}
+		w.Flush()
 
 	}
 
