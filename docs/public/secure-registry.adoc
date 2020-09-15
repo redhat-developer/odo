@@ -8,7 +8,7 @@ A secure devfile registry is a devfile registry that user can only use credentia
 
 User can host secure devfile registry on private GitHub repository and enterprise GtiHub repository.
 
-== Steps for adding a secure devfile registry when the secure devfile registry is hosted on a GitHub repository
+== Steps for adding a secure devfile registry on a GitHub repository
 
 === Step 1: Creating a new GitHub repository to host the secure devfile registry
 
@@ -34,27 +34,28 @@ Please run `odo registry add <registry name> <registry URL> --token <token>` to 
 
 - <registry name>: user-defined devfile registry name.
 - <registry URL>: the URL of GitHub repository that you create on step 1.
-- <token>: the personal access token that you create on step 2.
+- <token>: the personal access token that you created on step 2.
 
-== Steps for setting up a secure starter project when the secure starter project is hosted on a GitHub repository
+== Steps for setting up a secure starter project on a GitHub repository
 
 === Step 1: Creating a new GitHub repository to host the secure starter project
 
 1. Please https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-new-repository[create a new private or enterprise GitHub repository] and push the starter project to the created repository. The sample GitHub-hosted starter project can be found https://github.com/odo-devfiles/nodejs-ex[here].
 
-2. Ensure the `projects` section in the corresponding devfile of your secure devfile registry links to the secure starter project, for example:
+2. Ensure the `starterProjects` section in the corresponding devfile of your secure devfile registry links to the secure starter project, for example:
 
 ```
-projects:
+starterProjects:
   - name: nodejs-starter
     git:
-      location: "<secure starter project link>"
+      remotes:
+        origin: "<secure starter project link>"
 ```
 
 === Step 2: Creating a personal access token to access the secure starter project
 Please https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token[create a personal access token], select `repo` as token scope.
 
-=== Step 3: Creating a devfile component from the secure devfile registry and downloading the secure starter project from the secure starter project host
+=== Step 3: Creating a devfile component from the secure devfile registry and downloading the secure starter project
 
 Please run `odo create nodejs --registry <registry name> --starter --starter-token <starter project token>`
 
