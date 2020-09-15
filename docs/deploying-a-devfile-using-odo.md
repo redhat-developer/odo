@@ -38,16 +38,16 @@ With a devfile you can describe:
 
   - Projects to initially clone
 
-Odo takes this devfile and transforms it into a workspace of multiple
+odo takes this devfile and transforms it into a workspace of multiple
 containers running on OpenShift, Kubernetes or Docker.
 
 Devfiles are YAML files with a defined
 [schema](https://devfile.github.io/devfile/_attachments/api-reference.html).
 
-# Odo and devfile
+# odo and devfile
 
-Odo can now create components from devfiles as recorded in registries.
-Odo automatically consults the [default
+odo can now create components from devfiles as recorded in registries.
+odo automatically consults the [default
 registry](https://github.com/odo-devfiles/registry) but users can also
 add their own registries. Devfiles contribute new component types that
 users can pull to begin development immediately.
@@ -108,20 +108,6 @@ An example deployment scenario:
     
     ``` sh
       $ odo catalog list components
-      Odo OpenShift Components:
-      NAME              PROJECT       TAGS                        SUPPORTED
-      java              openshift     11,8,latest                 YES
-      nodejs            openshift     10-SCL,8,8-RHOAR,latest     YES
-      dotnet            openshift     2.1,2.2,3.0,latest          NO
-      golang            openshift     1.11.5,latest               NO
-      httpd             openshift     2.4,latest                  NO
-      modern-webapp     openshift     10.x,latest                 NO
-      nginx             openshift     1.10,1.12,latest            NO
-      perl              openshift     5.24,5.26,latest            NO
-      php               openshift     7.0,7.1,7.2,latest          NO
-      python            openshift     2.7,3.6,latest              NO
-      ruby              openshift     2.4,2.5,latest              NO
-    
       Odo Devfile Components:
       NAME                 DESCRIPTION                            REGISTRY
       java-maven           Upstream Maven and OpenJDK 11          DefaultDevfileRegistry
@@ -129,6 +115,20 @@ An example deployment scenario:
       java-quarkus         Upstream Quarkus with Java+GraalVM     DefaultDevfileRegistry
       java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
       nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
+    
+      Odo OpenShift Components:
+      NAME        PROJECT       TAGS                                                                           SUPPORTED
+      java        openshift     11,8,latest                                                                    YES
+      dotnet      openshift     2.1,3.1,latest                                                                 NO
+      golang      openshift     1.13.4-ubi7,1.13.4-ubi8,latest                                                 NO
+      httpd       openshift     2.4-el7,2.4-el8,latest                                                         NO
+      nginx       openshift     1.14-el7,1.14-el8,1.16-el7,1.16-el8,latest                                     NO
+      nodejs      openshift     10-ubi7,10-ubi8,12-ubi7,12-ubi8,latest                                         NO
+      perl        openshift     5.26-el7,5.26-ubi8,5.30-el7,latest                                             NO
+      php         openshift     7.2-ubi7,7.2-ubi8,7.3-ubi7,7.3-ubi8,latest                                     NO
+      python      openshift     2.7-ubi7,2.7-ubi8,3.6-ubi7,3.6-ubi8,3.8-ubi7,3.8-ubi8,latest                   NO
+      ruby        openshift     2.5-ubi7,2.5-ubi8,2.6-ubi7,2.6-ubi8,2.7-ubi7,latest                            NO
+      wildfly     openshift     10.0,10.1,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,8.1,9.0,latest     NO
     ```
 
 In our example, we will be using `java-springboot` to deploy a sample
@@ -266,7 +266,7 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
     
     ``` sh
      $ ls
-     app  LICENSE  package.json  package-lock.json  README.md
+     LICENSE  package.json  package-lock.json  README.md  server.js  test
     ```
 
 4.  Create a component configuration using the `nodejs` component-type

@@ -24,7 +24,7 @@ application.
 With Operators, odo allows you to create a service as defined by a
 Custom Resource Definition (CRD).
 
-Odo utilizes Operators and [Operator Hub](https://operatorhub.io/) in
+odo utilizes Operators and [Operator Hub](https://operatorhub.io/) in
 order to provide a seamless method for custom controller service
 installation.
 
