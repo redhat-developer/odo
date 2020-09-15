@@ -136,8 +136,9 @@ func (e *CompositeMissingSubCommandError) Error() string {
 type CompositeInvalidSubCommandError struct {
 	commandId    string
 	subCommandId string
+	errorMsg     string
 }
 
 func (e *CompositeInvalidSubCommandError) Error() string {
-	return fmt.Sprintf("the composite command %q references an invalid command %q", e.commandId, e.subCommandId)
+	return fmt.Sprintf("the composite command %q references an invalid command %q: %s", e.commandId, e.subCommandId, e.errorMsg)
 }

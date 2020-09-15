@@ -97,7 +97,7 @@ func validateCompositeCommand(compositeCommand *common.DevfileCommand, parentCom
 		} else {
 			err := validateCommand(subCommand, devfileCommands, components)
 			if err != nil {
-				return &CompositeInvalidSubCommandError{commandId: compositeCommand.Id, subCommandId: subCommand.GetID()}
+				return &CompositeInvalidSubCommandError{commandId: compositeCommand.Id, subCommandId: subCommand.GetID(), errorMsg: err.Error()}
 			}
 		}
 	}

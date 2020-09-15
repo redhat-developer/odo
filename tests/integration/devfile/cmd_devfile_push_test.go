@@ -254,7 +254,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
-			Expect(output).To(ContainSubstring("references an invalid command"))
+			Expect(output).To(ContainSubstring("does not map to a container component"))
 		})
 
 		It("checks that odo push works outside of the context directory", func() {
