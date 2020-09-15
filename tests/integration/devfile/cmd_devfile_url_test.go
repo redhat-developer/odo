@@ -124,7 +124,9 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--host", host, "--secure", "--ingress")
+			helper.CmdShouldPass("odo", "url", "create", url1, "--host", host, "--ingress")
+			stdout := helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
 		})
 
 		It("should create a secure URL", func() {
