@@ -57,22 +57,23 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 
 	if !pushtarget.IsPushTargetDocker() {
 		o.Context = genericclioptions.NewContext(cmd, true)
-
-		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			catalogList, err := catalog.ListComponents(o.Client)
-			if err != nil {
-				// TODO:
-				// This MAY have to change in the future.. There is no good way to determine whether the user
-				// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
-				// we are unable to list anything from OpenShift.
-				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-			}
-			for _, image := range catalogList.Items {
-				if image.Name == o.componentName {
-					o.component = image.Name
+		if o.Client != nil {
+			tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+				catalogList, err := catalog.ListComponents(o.Client)
+				if err != nil {
+					// TODO:
+					// This MAY have to change in the future.. There is no good way to determine whether the user
+					// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
+					// we are unable to list anything from OpenShift.
+					klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
 				}
-			}
-		}})
+				for _, image := range catalogList.Items {
+					if image.Name == o.componentName {
+						o.component = image.Name
+					}
+				}
+			}})
+		}
 	}
 
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
