@@ -4,7 +4,7 @@ https://devfile.github.io/[Devfiles] are new way of deploying component with odo
 
 Existing users using S2I based components can migrate to a devfile component by following the below steps:
 
-. Change to your component directory you want to migrate:
+. Change to the component directory you want to migrate:
 +
 [source,sh]
 ----
@@ -19,7 +19,7 @@ Existing users using S2I based components can migrate to a devfile component by 
 
 Openshift Components: 
 APP     NAME      PROJECT        TYPE       SOURCETYPE     STATE
-app     myapp     default        nodejs     local          Pushed
+app     myapp     myproject      nodejs     local          Pushed
 
 ----
 
