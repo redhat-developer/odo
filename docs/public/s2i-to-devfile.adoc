@@ -1,19 +1,17 @@
-== Migrating from S2I components to Devfile components
+== Migrating from S2I (Source-to-Image) components to Devfile components
 
-Devfiles are new way of deploying component with odo that offers more convenience and flexibility. Read more about devfiles https://devfile.github.io/[here]
+https://devfile.github.io/[Devfiles] are new way of deploying component with odo.
 
-Before 2.0 release odo deploys component with a different mechanism called as s2i based components. The newer way of deploying components is with devfiles.
+Existing users using S2I based components can migrate to a devfile component by following the below steps:
 
-Exisiting users using s2i based components could migrate to devfile component by following the below steps:
-
-. Change the current directory to the component directory you want to migrate.
+. Change to your component directory you want to migrate:
 +
 [source,sh]
 ----
  $ cd <directory-name>
 ----
 
-. Check the component status 
+. List the component status 
 +
 [source,sh]
 ----
@@ -25,7 +23,7 @@ app     myapp     default        nodejs     local          Pushed
 
 ----
 
-. Convert s2i component to devfile component, it would convert the s2i based configuration files to devfile configuration files.
+. Convert s2i component to devfile component by running the following command:
 +
 [source,sh]
 ----
@@ -35,7 +33,7 @@ app     myapp     default        nodejs     local          Pushed
 
 ----
 
-. Push the devfile component to the cluster
+. Push the newly generated devfile component:
 +
 [source,sh]
 ----
@@ -48,7 +46,7 @@ app     myapp     default        nodejs     local          Pushed
   ✓  Waiting for component to start [12s]
 
  Applying URL changes
-  ✓  URL myapp-8080: http://myapp-8080-myapp-default.apps-crc.testing/ created
+  ✓  URL myapp-8080: http://myapp-8080-example.com/ created
 
  Syncing to component myapp
   ✓  Checking files for pushing [499419ns]
@@ -63,27 +61,27 @@ app     myapp     default        nodejs     local          Pushed
 
 ----
 
-. Check the component status, at this point two components are running s2i based and devfile based.
+. Check the component status, there should be two components running both S2I and devfile:
 +
 [source,sh]
 ----
- $ odo push 
+ $ odo list 
  
  Devfile Components: 
  APP     NAME      PROJECT        TYPE      STATE
- app     myapp     rejreromll     myapp     Pushed
+ app     myapp     myproject     myapp     Pushed
 
  Openshift Components: 
  APP     NAME      PROJECT        TYPE       SOURCETYPE     STATE
- app     myapp     rejreromll     nodejs     local          Pushed
+ app     myapp     myproject     nodejs     local          Pushed
 ----
 
-. Delete the s2i component as devfile component is running
+. Delete the unused S2I component:
 
 +
 [source,sh]
 ----
- $ odo delete --s2i -a -f
+ $ odo delete --s2i --all --force
  ✓  Deleting component myapp [277ms]
  ✓  Component myapp from application app has been deleted
  ✓  Config for the Component myapp has been deleted
