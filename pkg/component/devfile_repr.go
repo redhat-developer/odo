@@ -72,12 +72,3 @@ type PortRepr struct {
 	ExposedPort int32  `yaml:"ExposedPort" json:"exposedPort"`
 	Protocol    string `yaml:"Protocol" json:"protocol"`
 }
-
-type DevfileComponent struct {
-	// the parameter below are not configurables
-	// Think of a better way
-	Name        string `json:"componentName,omitempty"`
-	State       State  `json:"state,omitempty"`
-	Namespace   string `json:"namespace,omitempty"`
-	Application string `json:"application,omitempty"`
-}

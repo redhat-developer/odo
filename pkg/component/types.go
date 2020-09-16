@@ -48,6 +48,22 @@ type CombinedComponentList struct {
 	DevfileComponents []DevfileComponent `json:"devfile_components"`
 }
 
+type DevfileComponent struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              DevfileComponentSpec `json:"spec,omitempty"`
+	Status            ComponentStatus      `json:"status,omitempty"`
+}
+
+type DevfileComponentSpec struct {
+	Name        string `json:"componentName,omitempty"`
+	Namespace   string `json:"namespace,omitempty"`
+	Application string `json:"application,omitempty"`
+}
+
+type DevfileCompList struct {
+}
+
 // State reperesents component state
 type State string
 

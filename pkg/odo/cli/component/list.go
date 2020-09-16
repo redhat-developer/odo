@@ -170,7 +170,7 @@ func (lo *ListOptions) Run() (err error) {
 				fmt.Fprintln(w, "Devfile Components: ")
 				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE")
 				for _, comp := range devfileComps {
-					fmt.Fprintln(w, comp.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.State)
+					fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State)
 				}
 			}
 			// if we dont have any then
