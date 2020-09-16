@@ -256,7 +256,7 @@ func initPushComponent(applicationName string, p provider, c *occlient.Client) (
 func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
 	d, err := c.GetKubeClient().GetDeploymentByName(componentName)
 	if err != nil {
-		if kerrors.IsNotFound(err) {
+		if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) || kerrors.IsUnauthorized(err) {
 			// if it's not found, check if there's a deploymentconfig
 			deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 			if err != nil {
@@ -271,7 +271,7 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 				return initPushComponent(applicationName, &s2iComponent{dc: *dc}, c)
 			}
 		}
-		panic(err)
+		return nil, err
 	}
 	return initPushComponent(applicationName, &devfileComponent{d: *d}, c)
 }
