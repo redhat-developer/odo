@@ -69,11 +69,11 @@ app     myapp     myproject      nodejs     local          Pushed
  
  Devfile Components: 
  APP     NAME      PROJECT        TYPE      STATE
- app     myapp     myproject     myapp     Pushed
+ app     myapp     myproject      myapp     Pushed
 
  Openshift Components: 
  APP     NAME      PROJECT        TYPE       SOURCETYPE     STATE
- app     myapp     myproject     nodejs     local          Pushed
+ app     myapp     myproject      nodejs     local          Pushed
 ----
 
 . Delete the unused S2I component:
