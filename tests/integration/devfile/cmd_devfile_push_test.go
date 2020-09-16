@@ -649,6 +649,17 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		})
 
+		It("should fail to push the devfile component if the container name is too long", func() {
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.ReplaceString("devfile.yaml", "runtime", "runtimeruntimeruntimeruntimeruntimeruntimeruntimeruntimeruntimeruntime")
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).Should(ContainSubstring("Contain at most 63 characters"))
+		})
+
 	})
 
 	Context("Verify files are correctly synced", func() {

@@ -197,6 +197,12 @@ var _ = Describe("odo devfile create command tests", func() {
 			It("should fail to create the devfile component with --devfile points to different devfile", func() {
 				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "/path/to/file")
 			})
+
+			It("should fail to create the devfile component if the container name is too long", func() {
+				helper.ReplaceString("devfile.yaml", "runtime", "runtimeruntimeruntimeruntimeruntimeruntimeruntimeruntimeruntimeruntime")
+				output := helper.CmdShouldFail("odo", "create", "--devfile", "./devfile.yaml")
+				Expect(output).Should(ContainSubstring("Contain at most 63 characters"))
+			})
 		})
 
 		Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {
