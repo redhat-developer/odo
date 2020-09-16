@@ -1052,11 +1052,10 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Devf
 				if err != nil {
 					return err
 				}
-				comp := DevfileComponent{}
-				comp.State = StateTypeUnknown
-				comp.Application = data.GetApplication()
-				comp.Namespace = data.GetNamespace()
-				comp.Name = devfileObj.GetMetadataName()
+				comp := NewDevfileComponent(devfileObj.GetMetadataName())
+				comp.Status.State = StateTypeNotPushed
+				comp.Spec.Application = data.GetApplication()
+				comp.Spec.Namespace = data.GetNamespace()
 				components = append(components, comp)
 
 				// since the config file maybe belong to a component of a different project
