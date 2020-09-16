@@ -126,7 +126,7 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--host", host, "--ingress")
 			stdout := helper.CmdShouldPass("odo", "url", "list")
-			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
+			helper.MatchAllInOutput(stdout, []string{url1, "3000", "Not Pushed"})
 		})
 
 		It("should create a secure URL", func() {
