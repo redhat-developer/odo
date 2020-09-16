@@ -530,10 +530,10 @@ func (s sortableURLs) Swap(i, j int) {
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []parsercommon.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
-	ingresses, err := client.ListIngresses(labelSelector)
+	ingresses, err := oclient.GetKubeClient().ListIngresses(labelSelector)
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list ingress")
 	}

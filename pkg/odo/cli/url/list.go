@@ -138,7 +138,7 @@ func (o *URLListOptions) Run() (err error) {
 			}
 
 			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
-			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, containerComponents, componentName, routeSupported)
+			urls, err := url.ListIngressAndRoute(oclient, o.EnvSpecificInfo, containerComponents, componentName, routeSupported)
 			if err != nil {
 				return err
 			}

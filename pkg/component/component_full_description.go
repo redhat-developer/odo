@@ -161,7 +161,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		configProvider = envInfo
 		components = adaptersCommon.GetDevfileContainerComponents(devfile.Data)
 	}
-	urls, err = urlpkg.ListIngressAndRoute(client, kClient, configProvider, components, componentName, routeSupported)
+	urls, err = urlpkg.ListIngressAndRoute(client, configProvider, components, componentName, routeSupported)
 	if err != nil {
 		log.Warningf("URLs couldn't not be retrieved: %v", err)
 	}

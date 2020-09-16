@@ -2350,8 +2350,9 @@ func TestListIngressAndRoute(t *testing.T) {
 			fakeoclientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, tt.routeList, nil
 			})
+			fakeoclient.SetKubeClient(fkclient)
 
-			urls, err := ListIngressAndRoute(fakeoclient, fkclient, esi, tt.containerComponents, componentName, tt.routeSupported)
+			urls, err := ListIngressAndRoute(fakeoclient, esi, tt.containerComponents, componentName, tt.routeSupported)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}
