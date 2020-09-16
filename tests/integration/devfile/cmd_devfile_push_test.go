@@ -863,7 +863,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			// devfile with clonePath set in project field
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context, "--v", "5")
+			helper.CmdShouldPass("odo", "push", "--context", context, "--v", "5")
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			// source code is synced to $PROJECTS_ROOT/clonePath
 			// $PROJECTS_ROOT is /projects by default, if sourceMapping is set it is same as sourceMapping
@@ -882,7 +882,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
 			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "workingDir: ${PROJECTS_ROOT}/webapp", "workingDir: ${PROJECTS_ROOT}/nodeshift")
 
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			output := cliRunner.ExecListDir(podName, namespace, "/apps/nodeshift")
@@ -894,7 +894,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			// for devfile-with-multiple-projects.yaml source mapping is not set so $PROJECTS_ROOT is /projects
 			// multiple projects, so source code would sync to /projects
@@ -907,7 +907,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			output := cliRunner.ExecListDir(podName, namespace, "/projects")
 			helper.MatchAllInOutput(output, []string{"package.json"})
