@@ -23,7 +23,7 @@ app     myapp     myproject      nodejs     local          Pushed
 
 ----
 
-. Convert s2i component to devfile component by running the following command:
+. Convert the S2I component to a devfile component by running the following command:
 +
 [source,sh]
 ----
