@@ -79,14 +79,15 @@ func (d defaultPushedComponent) GetApplication() string {
 func (d *defaultPushedComponent) retrieveURLsAndRoutes(c *occlient.Client) error {
 	name := d.GetName()
 	var routes url.URLList
+
 	if routeAvailable, err := c.IsRouteSupported(); routeAvailable && err == nil {
 		routes, err = url.ListPushed(c, name, d.GetApplication())
-		if err != nil {
+		if err != nil && !isIgnorableError(err) {
 			return err
 		}
 	}
 	ingresses, err := url.ListPushedIngress(c.GetKubeClient(), name)
-	if err != nil {
+	if err != nil && !isIgnorableError(err) {
 		return err
 	}
 	urls := make([]url.URL, 0, len(routes.Items)+len(ingresses.Items))
@@ -213,7 +214,7 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	dcList, err := c.GetDeploymentConfigsFromSelector(applicationSelector)
 	if err != nil {
-		if kerrors.IsNotFound(err) {
+		if isIgnorableError(err) {
 			dList, err := c.GetKubeClient().ListDeployments(applicationSelector)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to list components")
@@ -256,7 +257,7 @@ func initPushComponent(applicationName string, p provider, c *occlient.Client) (
 func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
 	d, err := c.GetKubeClient().GetDeploymentByName(componentName)
 	if err != nil {
-		if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) || kerrors.IsUnauthorized(err) {
+		if isIgnorableError(err) {
 			// if it's not found, check if there's a deploymentconfig
 			deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 			if err != nil {
@@ -274,4 +275,8 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 		return nil, err
 	}
 	return initPushComponent(applicationName, &devfileComponent{d: *d}, c)
+}
+
+func isIgnorableError(err error) bool {
+	return kerrors.IsNotFound(err) || kerrors.IsForbidden(err) || kerrors.IsUnauthorized(err)
 }
