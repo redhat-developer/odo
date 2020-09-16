@@ -136,6 +136,11 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	return nil
 }
 
+// GetValidEnvInfo is juat a wrapper for getValidEnvInfo
+func GetValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
+	return getValidEnvInfo(command)
+}
+
 // getValidEnvInfo accesses the environment file
 func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 

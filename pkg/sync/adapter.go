@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	parserCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
@@ -187,7 +188,10 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	syncFolder := compInfo.SourceMount
+	syncFolder, err := getSyncFolder(compInfo.SourceMount, a.Devfile.Data.GetProjects())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get sync folder")
+	}
 
 	if syncFolder != kclient.OdoSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
@@ -228,6 +232,32 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s.End(true)
 
 	return nil
+}
+
+// sourceVolumePath: mount path of the empty dir volume the odo uses to sync source code
+// projects: list of projects from devfile
+// getSyncFolder gets the sync folder path for source code.
+func getSyncFolder(sourceVolumePath string, projects []parserCommon.DevfileProject) (string, error) {
+	// if there are no projects in devfile or multiple projects source would be synced to $PROJECTS_ROOT
+	if len(projects) != 1 {
+		return sourceVolumePath, nil
+	}
+
+	project := projects[0]
+
+	if project.ClonePath != "" {
+		if strings.HasPrefix(project.ClonePath, "/") {
+			return "", fmt.Errorf("the clonePath in the devfile must be a relative path")
+		}
+		if strings.Contains(project.ClonePath, "..") {
+			return "", fmt.Errorf("the clonePath in the devfile cannot escape the projects root. Don't use .. to try and do that")
+		}
+		// If clonepath exist source would be synced to $PROJECTS_ROOT/clonePath
+		return filepath.ToSlash(filepath.Join(sourceVolumePath, project.ClonePath)), nil
+	}
+	// If clonepath does not exist source would be synced to $PROJECTS_ROOT/projectName
+	return filepath.ToSlash(filepath.Join(sourceVolumePath, projects[0].Name)), nil
+
 }
 
 // updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
