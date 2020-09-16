@@ -27,17 +27,17 @@ type provider interface {
 // PushedComponent is an abstraction over the cluster representation of the component
 type PushedComponent interface {
 	provider
-	GetURLs() []url.URL
+	GetURLs() ([]url.URL, error)
 	GetApplication() string
 	GetType() (string, error)
 	GetSource() (string, string, error)
-	retrieveURLsAndRoutes(c *occlient.Client) error
 }
 
 type defaultPushedComponent struct {
 	application string
 	urls        []url.URL
 	provider    provider
+	client      *occlient.Client
 }
 
 func (d defaultPushedComponent) GetLabels() map[string]string {
@@ -68,33 +68,31 @@ func (d defaultPushedComponent) GetLinkedSecretNames() []string {
 	return d.provider.GetLinkedSecretNames()
 }
 
-func (d defaultPushedComponent) GetURLs() []url.URL {
-	return d.urls
+func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
+	if d.urls == nil {
+		name := d.GetName()
+		var routes url.URLList
+
+		if routeAvailable, err := d.client.IsRouteSupported(); routeAvailable && err == nil {
+			routes, err = url.ListPushed(d.client, name, d.GetApplication())
+			if err != nil && !isIgnorableError(err) {
+				return []url.URL{}, err
+			}
+		}
+		ingresses, err := url.ListPushedIngress(d.client.GetKubeClient(), name)
+		if err != nil && !isIgnorableError(err) {
+			return []url.URL{}, err
+		}
+		urls := make([]url.URL, 0, len(routes.Items)+len(ingresses.Items))
+		urls = append(urls, routes.Items...)
+		urls = append(urls, ingresses.Items...)
+		d.urls = urls
+	}
+	return d.urls, nil
 }
 
 func (d defaultPushedComponent) GetApplication() string {
 	return d.application
-}
-
-func (d *defaultPushedComponent) retrieveURLsAndRoutes(c *occlient.Client) error {
-	name := d.GetName()
-	var routes url.URLList
-
-	if routeAvailable, err := c.IsRouteSupported(); routeAvailable && err == nil {
-		routes, err = url.ListPushed(c, name, d.GetApplication())
-		if err != nil && !isIgnorableError(err) {
-			return err
-		}
-	}
-	ingresses, err := url.ListPushedIngress(c.GetKubeClient(), name)
-	if err != nil && !isIgnorableError(err) {
-		return err
-	}
-	urls := make([]url.URL, 0, len(routes.Items)+len(ingresses.Items))
-	urls = append(urls, routes.Items...)
-	urls = append(urls, ingresses.Items...)
-	d.urls = urls
-	return nil
 }
 
 type s2iComponent struct {
@@ -221,10 +219,7 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 			}
 			res := make(map[string]PushedComponent, len(dList.Items))
 			for _, d := range dList.Items {
-				comp, err := initPushComponent(applicationName, &devfileComponent{d: d}, c)
-				if err != nil {
-					return nil, err
-				}
+				comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c)
 				res[comp.GetName()] = comp
 			}
 			return res, nil
@@ -233,24 +228,18 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	}
 	res := make(map[string]PushedComponent, len(dcList))
 	for _, dc := range dcList {
-		comp, err := initPushComponent(applicationName, &s2iComponent{dc: dc}, c)
-		if err != nil {
-			return nil, err
-		}
+		comp := newPushedComponent(applicationName, &s2iComponent{dc: dc}, c)
 		res[comp.GetName()] = comp
 	}
 	return res, nil
 }
 
-func initPushComponent(applicationName string, p provider, c *occlient.Client) (PushedComponent, error) {
-	comp := &defaultPushedComponent{
+func newPushedComponent(applicationName string, p provider, c *occlient.Client) PushedComponent {
+	return &defaultPushedComponent{
 		application: applicationName,
 		provider:    p,
+		client:      c,
 	}
-	if err := comp.retrieveURLsAndRoutes(c); err != nil {
-		return nil, err
-	}
-	return comp, nil
 }
 
 // GetPushedComponent returns an abstraction over the cluster representation of the component
@@ -269,12 +258,12 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 					return nil, nil
 				}
 			} else {
-				return initPushComponent(applicationName, &s2iComponent{dc: *dc}, c)
+				return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c), nil
 			}
 		}
 		return nil, err
 	}
-	return initPushComponent(applicationName, &devfileComponent{d: *d}, c)
+	return newPushedComponent(applicationName, &devfileComponent{d: *d}, c), nil
 }
 
 func isIgnorableError(err error) bool {

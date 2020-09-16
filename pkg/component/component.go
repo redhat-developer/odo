@@ -1349,7 +1349,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	if sourceError != nil {
 		_, sourceAbsent := sourceError.(noSourceError)
 		if !sourceAbsent {
-			return component, errors.Wrap(err, "unable to get source path")
+			return Component{}, errors.Wrap(err, "unable to get source path")
 		}
 	} else {
 		component.Spec.Source = path
@@ -1358,7 +1358,10 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 
 	// URL
 	if getUrls {
-		urls := fromCluster.GetURLs()
+		urls, err := fromCluster.GetURLs()
+		if err != nil {
+			return Component{}, err
+		}
 		urlsNb := len(urls)
 		if urlsNb > 0 {
 			res := make([]string, 0, urlsNb)
@@ -1373,7 +1376,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	if getStorage {
 		appStore, err := storage.List(client, componentName, applicationName)
 		if err != nil {
-			return component, errors.Wrap(err, "unable to get storage list")
+			return Component{}, errors.Wrap(err, "unable to get storage list")
 		}
 		var storage []string
 		for _, store := range appStore.Items {
@@ -1397,7 +1400,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	for _, secretName := range linkedSecretNames {
 		secret, err := client.GetSecret(secretName, projectName)
 		if err != nil {
-			return component, errors.Wrapf(err, "unable to get info about secret %s", secretName)
+			return Component{}, errors.Wrapf(err, "unable to get info about secret %s", secretName)
 		}
 		componentName, containsComponentLabel := secret.Labels[componentlabels.ComponentLabel]
 		if containsComponentLabel {
