@@ -271,7 +271,7 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 				return initPushComponent(applicationName, &s2iComponent{dc: *dc}, c)
 			}
 		}
-		return nil, err
+		panic(err)
 	}
 	return initPushComponent(applicationName, &devfileComponent{d: *d}, c)
 }
