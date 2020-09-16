@@ -23,8 +23,6 @@ const (
 	RunCommandGroupType   DevfileCommandGroupType = "run"
 	TestCommandGroupType  DevfileCommandGroupType = "test"
 	DebugCommandGroupType DevfileCommandGroupType = "debug"
-	// To Support V1
-	InitCommandGroupType DevfileCommandGroupType = "init"
 )
 
 // ExposureType is an enum to indicate the exposure type of the endpoint
