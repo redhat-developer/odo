@@ -165,10 +165,15 @@ test-generic:
 test-cmd-login-logout:
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo login and logout command tests" tests/integration/loginlogout/
 
-# Run link and unlink command tests
-.PHONY: test-cmd-link-unlink
-test-cmd-link-unlink:
-	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/
+# Run link and unlink commnad tests against 4.x cluster
+.PHONY: test-cmd-link-unlink-4-cluster
+test-cmd-link-unlink-4-cluster:
+	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink commnad tests" tests/integration/
+
+# Run link and unlink command tests against 3.11 cluster
+.PHONY: test-cmd-link-unlink-311-cluster
+test-cmd-link-unlink-311-cluster:
+	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/servicecatalog/
 
 # Run odo service command tests
 .PHONY: test-cmd-service
