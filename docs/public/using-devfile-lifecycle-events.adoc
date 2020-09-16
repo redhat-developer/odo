@@ -6,8 +6,8 @@ Each event is an array of devfile commands to be executed. The devfile command t
 
 ```yaml
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       endpoints:
@@ -16,39 +16,39 @@ components:
       mountSources: true
       command: ['tail']
       args: [ '-f', '/dev/null']
-  - container:
-      name: "tools"
+  - name: "tools"
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       mountSources: true
       memoryLimit: 1024Mi
 commands:
-  - exec:
-      id: copy
+  - id: copy
+    exec:
       commandLine: "cp /tools/myfile.txt tools.txt"
       component: tools
       workingDir: /
-  - exec:
-      id: initCache
+  - id: initCache
+    exec:
       commandLine: "./init_cache.sh"
       component: tools
       workingDir: /
-  - exec:
-      id: connectDB
+  - id: connectDB
+    exec:
       commandLine: "./connect_db.sh"
       component: runtime
       workingDir: /
-  - exec:
-      id: disconnectDB
+  - id: disconnectDB
+    exec:
       commandLine: "./disconnect_db.sh"
       component: runtime
       workingDir: /
-  - exec:
-      id: cleanup
+  - id: cleanup
+    exec:
       commandLine: "./cleanup.sh"
       component: tools
       workingDir: /
-  - composite:
-      id: postStartCompositeCmd
+  - id: postStartCompositeCmd
+    composite:
       label: Copy and Init Cache
       commands:
         - copy

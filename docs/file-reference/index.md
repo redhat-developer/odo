@@ -101,8 +101,8 @@ starterProjects:
 
 ```yaml
 components:
-  - container:
-      name: appsodyrun
+  - name: appsodyrun
+    container:
       image: 'ajymau/java-openliberty-dev:latest'
       memoryLimit: 1512Mi
       mountSources: true
@@ -130,7 +130,8 @@ components:
 
 ```yaml
 commands:
-  - exec:
+  - id: devBuild
+    exec:
       id: devBuild
       commandLine: "/artifacts/bin/build-container-full.sh"
       component: tools
@@ -138,8 +139,8 @@ commands:
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: devRun
+  - id: devRun
+    exec:
       commandLine: "/artifacts/bin/start-server.sh"
       component: runtime
       workingDir: /
@@ -159,28 +160,28 @@ commands:
 
 ```yaml
 commands:
-  - exec:
-      id: copy
+  - id: copy
+    exec:
       commandLine: "cp /tools/myfile.txt tools.txt"
       component: tools
       workingDir: /
-  - exec:
-      id: initCache
+  - id: initCache
+    exec:
       commandLine: "./init_cache.sh"
       component: tools
       workingDir: /
-  - exec:
-      id: connectDB
+  - id: connectDB
+    exec:
       commandLine: "./connect_db.sh"
       component: runtime
       workingDir: /
-  - exec:
-      id: disconnectDB
+  - id: disconnectDB
+    exec:
       commandLine: "./disconnect_db.sh"
       component: runtime
       workingDir: /
-  - exec:
-      id: cleanup
+  - id: cleanup
+    exec:
       commandLine: "./cleanup.sh"
       component: tools
       workingDir: /
@@ -336,8 +337,8 @@ starterProjects:
 
 ```yaml
 components:
-  - container:
-      name: appsodyrun
+  - name: appsodyrun
+    container:
       image: 'ajymau/java-openliberty-dev:latest'
 ```
 
@@ -355,8 +356,8 @@ Each component must use the `container` object.
 
 ```yaml
 components:
-  - container:
-      name: appsodyrun
+  - name: appsodyrun
+    container:
       image: 'ajymau/java-openliberty-dev:latest'
       memoryLimit: 1512Mi
       mountSources: true
@@ -392,8 +393,8 @@ components:
 
 ```yaml
 components:
-  - container:
-      name: appsodyrun
+  - name: appsodyrun
+    container:
       image: 'ajymau/java-openliberty-dev:latest'
       endpoints:
         - name: 9080/tcp
@@ -419,8 +420,8 @@ components:
 
 ```yaml
 components:
-  - container:
-      name: tools
+  - name: tools
+    container:
       image: maysunfaisal/springbootbuild
       memoryLimit: 768Mi
       command: ['tail']
@@ -443,8 +444,8 @@ components:
 
 ```yaml
 commands:
-  - exec:
-      id: devBuild
+  - id: devBuild
+    exec:
       component: tools
       commandLine: "/artifacts/bin/build-container-full.sh"
       workingDir: /projects/springbootproject
@@ -465,8 +466,8 @@ Each command must use the `exec` object.
 
 ```yaml
 commands:
-  - exec:
-      id: devBuild
+  - id: devBuild
+    exec:
       commandLine: "/artifacts/bin/build-container-full.sh"
       component: tools
       workingDir: /projects/springbootproject
@@ -494,8 +495,8 @@ commands:
 
 ```yaml
 commands:
-  - exec:
-      id: devBuild
+  - id: devBuild
+    exec:
       commandLine: "/artifacts/bin/build-container-full.sh"
       group:
         kind: build
@@ -513,28 +514,28 @@ commands:
 
 ```yaml
 commands:
-  - exec:
-      id: copy
+  - id: copy
+    exec:
       commandLine: "cp /tools/myfile.txt tools.txt"
       component: tools
       workingDir: /
-  - exec:
-      id: initCache
+  - id: initCache
+    exec:
       commandLine: "./init_cache.sh"
       component: tools
       workingDir: /
-  - exec:
-      id: connectDB
+  - id: connectDB
+    exec:
       commandLine: "./connect_db.sh"
       component: runtime
       workingDir: /
-  - exec:
-      id: disconnectDB
+  - id: disconnectDB
+    exec:
       commandLine: "./disconnect_db.sh"
       component: runtime
       workingDir: /
-  - exec:
-      id: cleanup
+  - id: cleanup
+    exec:
       commandLine: "./cleanup.sh"
       component: tools
       workingDir: /
@@ -572,8 +573,8 @@ List of objects which are found in multiple parts of devfile. For example, the [
 
 ```yaml
 components:
-  - container:
-      name: appsodyrun
+  - name: appsodyrun
+    container:
       image: 'ajymau/java-openliberty-dev:latest'
           targetPort: 9080
       env:
@@ -587,8 +588,8 @@ components:
 
 ```yaml
 commands:
-  - exec:
-      id: devBuild
+  - id: devBuild
+    exec:
       commandLine: "/artifacts/bin/build-container-full.sh"
       env:
         - name: FOO
