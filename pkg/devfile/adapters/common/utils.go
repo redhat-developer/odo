@@ -61,7 +61,7 @@ const (
 	// BinBash The path to sh executable
 	BinBash = "/bin/sh"
 
-	// Default volume size for volumes defined in a devfile
+	// DefaultVolumeSize Default volume size for volumes defined in a devfile
 	DefaultVolumeSize = "1Gi"
 
 	// EnvProjectsRoot is the env defined for /projects where component mountSources=true
@@ -107,25 +107,6 @@ type CommandNames struct {
 	AdapterName string
 }
 
-// isContainer checks if the component is a container
-func isContainer(component common.DevfileComponent) bool {
-	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
-	if component.Container != nil {
-		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Name)
-		return true
-	}
-	return false
-}
-
-// isVolume checks if the component is a volume
-func isVolume(component common.DevfileComponent) bool {
-	if component.Volume != nil {
-		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Name)
-		return true
-	}
-	return false
-}
-
 // GetBootstrapperImage returns the odo-init bootstrapper image
 func GetBootstrapperImage() string {
 	if env, ok := os.LookupEnv(bootstrapperImageEnvName); ok {
@@ -139,7 +120,7 @@ func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileCompon
 	var components []common.DevfileComponent
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
-		if isContainer(comp) {
+		if comp.IsContainer() {
 			components = append(components, comp)
 		}
 	}
@@ -151,7 +132,7 @@ func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.Devfile
 	volumeNameToVolumeComponent := make(map[string]common.DevfileComponent)
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
-		if isVolume(comp) {
+		if comp.IsVolume() {
 			volumeNameToVolumeComponent[comp.Name] = comp
 		}
 	}

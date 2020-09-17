@@ -601,7 +601,21 @@ func getExposedPortsFromISI(image *imagev1.ImageStreamImage) ([]corev1.Container
 
 	var ports []corev1.ContainerPort
 
-	for exposedPort := range image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).ContainerConfig.ExposedPorts {
+	var exposedPorts = image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).ContainerConfig.ExposedPorts
+
+	if image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).Config != nil {
+		if exposedPorts == nil {
+			exposedPorts = make(map[string]struct{})
+		}
+
+		// add ports from Config
+		for exposedPort := range image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).Config.ExposedPorts {
+			var emptyStruct struct{}
+			exposedPorts[exposedPort] = emptyStruct
+		}
+	}
+
+	for exposedPort := range exposedPorts {
 		splits := strings.Split(exposedPort, "/")
 		if len(splits) != 2 {
 			return nil, fmt.Errorf("invalid port %s", exposedPort)
@@ -3278,6 +3292,11 @@ func (c *Client) IsImageStreamSupported() (bool, error) {
 // IsSBRSupported chekcs if resource of type service binding request present on the cluster
 func (c *Client) IsSBRSupported() (bool, error) {
 	return c.isResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
+}
+
+// IsCSVSupported chekcs if resource of type service binding request present on the cluster
+func (c *Client) IsCSVSupported() (bool, error) {
+	return c.isResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
 }
 
 // GenerateOwnerReference genertes an ownerReference which can then be set as

@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNew(t *testing.T) {
@@ -26,8 +28,22 @@ func TestNew(t *testing.T) {
 		{
 			name: "Test filename is being set",
 			output: &PreferenceInfo{
-				Filename:   tempConfigFile.Name(),
-				Preference: NewPreference(),
+				Filename: tempConfigFile.Name(),
+				Preference: Preference{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       preferenceKind,
+						APIVersion: preferenceAPIVersion,
+					},
+					OdoSettings: OdoSettings{
+						RegistryList: &[]Registry{
+							{
+								Name:   DefaultDevfileRegistryName,
+								URL:    DefaultDevfileRegistryURL,
+								Secure: false,
+							},
+						},
+					},
+				},
 			},
 			success: true,
 		},

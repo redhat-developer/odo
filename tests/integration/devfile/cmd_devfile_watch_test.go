@@ -219,6 +219,27 @@ var _ = Describe("odo devfile watch command tests", func() {
 		})
 	})
 
+	Context("when executing odo watch after odo push with ignores flag", func() {
+		It("should be able to ignore the specified file, .git and odo-file-index.json ", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			watchFlag := "--ignore doignoreme.txt"
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:               cmpName,
+				StringsToBeMatched:    []string{"donotignoreme.txt changed", "Executing devbuild command", "Executing devrun command"},
+				StringsNotToBeMatched: []string{"doignoreme.txt changed", "odo-file-index.json changed", ".git/index changed"},
+			}
+			// odo watch and validate
+			utils.OdoWatchWithIgnore(odoV2Watch, context, watchFlag)
+		})
+	})
+
 	Context("when executing odo watch", func() {
 		It("ensure that index information is updated by watch", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)

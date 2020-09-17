@@ -12,22 +12,31 @@ import (
 // ValidateDevfileData validates whether sections of devfile are odo compatible
 func ValidateDevfileData(data interface{}) error {
 	var components []common.DevfileComponent
+	var commands map[string]common.DevfileCommand
+	var events common.DevfileEvents
 
 	switch d := data.(type) {
 	case *v200.Devfile200:
 		components = d.GetComponents()
+		commands = d.GetCommands()
+		events = d.GetEvents()
 
-		// Validate Events
-		if err := validateEvents(d); err != nil {
+		// Validate all the devfile components before validating commands
+		if err := validateComponents(components); err != nil {
+			return err
+		}
+
+		// Validate all the devfile commands before validating events
+		if err := validateCommands(commands, components); err != nil {
+			return err
+		}
+
+		// Validate all the events
+		if err := validateEvents(events, commands, components); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("unknown devfile type %T", d)
-	}
-
-	// Validate Components
-	if err := validateComponents(components); err != nil {
-		return err
 	}
 
 	// Successful

@@ -19,8 +19,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DefaultAppName is the default name of the application when an application name is not provided
-const DefaultAppName = "app"
+const (
+	// DefaultAppName is the default name of the application when an application name is not provided
+	DefaultAppName = "app"
+
+	// gitDirName is the git dir name in a project
+	gitDirName = ".git"
+)
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
@@ -134,6 +139,11 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 		}
 	}
 	return nil
+}
+
+// GetValidEnvInfo is juat a wrapper for getValidEnvInfo
+func GetValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
+	return getValidEnvInfo(command)
 }
 
 // getValidEnvInfo accesses the environment file
@@ -497,8 +507,8 @@ func (o *Context) checkComponentExistsOrFail(cmp string) {
 	}
 }
 
-// ApplyIgnore will take the current ignores []string and either ignore it (if .odoignore is used)
-// or find the .gitignore file in the directory and use that instead.
+// ApplyIgnore will take the current ignores []string and append the mandatory odo-file-index.json and
+// .git ignores; or find the .odoignore/.gitignore file in the directory and use that instead.
 func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 	if len(*ignores) == 0 {
 		rules, err := pkgUtil.GetIgnoreRulesFromDirectory(sourcePath)
@@ -507,6 +517,18 @@ func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 		}
 		*ignores = append(*ignores, rules...)
 	}
+
+	indexFile := pkgUtil.GetIndexFileRelativeToContext()
+	// check if the ignores flag has the index file
+	if !pkgUtil.In(*ignores, indexFile) {
+		*ignores = append(*ignores, indexFile)
+	}
+
+	// check if the ignores flag has the git dir
+	if !pkgUtil.In(*ignores, gitDirName) {
+		*ignores = append(*ignores, gitDirName)
+	}
+
 	return nil
 }
 
