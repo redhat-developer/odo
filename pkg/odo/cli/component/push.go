@@ -10,8 +10,8 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/openshift/odo/pkg/component"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -182,12 +182,9 @@ func (po *PushOptions) Validate() (err error) {
 		if err != nil {
 			return err
 		}
-		containerComponents := adaptersCommon.GetDevfileContainerComponents(po.Devfile.Data)
-		for _, comp := range containerComponents {
-			err := util.ValidateK8sResourceName("container name", comp.Name)
-			if err != nil {
-				return err
-			}
+		err = validate.ValidateContatinerName(po.Devfile.Data)
+		if err != nil {
+			return err
 		}
 		// Only validate namespace if pushtarget isn't docker
 		if !pushtarget.IsPushTargetDocker() {

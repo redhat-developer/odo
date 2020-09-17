@@ -198,12 +198,6 @@ var _ = Describe("odo devfile create command tests", func() {
 				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "/path/to/file")
 			})
 
-			It("should fail to create the devfile component if the container name is too long", func() {
-				helper.ReplaceString("devfile.yaml", "runtime", "runtimeruntimeruntimeruntimeruntimeruntimeruntimeruntimeruntimeruntime")
-				output := helper.CmdShouldFail("odo", "create", "--devfile", "./devfile.yaml")
-				Expect(output).Should(ContainSubstring("Contain at most 63 characters"))
-			})
-
 			It("should fail to create the devfile component for an invalid devfile", func() {
 				// Delete the devfile that was copied in as part of setup
 				helper.DeleteFile("devfile.yaml")

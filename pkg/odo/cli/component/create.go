@@ -18,9 +18,9 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -1063,12 +1063,9 @@ func (co *CreateOptions) devfileRun() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "unable to parse devfile")
 	}
-	containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
-	for _, comp := range containerComponents {
-		err := util.ValidateK8sResourceName("container name", comp.Name)
-		if err != nil {
-			return err
-		}
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return err
 	}
 
 	err = downloadStarterProject(devObj, co.devfileMetadata.starter, co.interactive)
