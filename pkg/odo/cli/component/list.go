@@ -139,11 +139,15 @@ func (lo *ListOptions) Run() (err error) {
 	if len(lo.pathFlag) != 0 {
 
 		devfileComps, err := component.ListDevfileComponentsInPath(lo.KClient, filepath.SplitList(lo.pathFlag))
-		s2iComps, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps)
 		if err != nil {
 			return err
 		}
+		s2iComps, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
+		if err != nil {
+			return err
+		}
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps)
+
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(combinedComponents)
 		} else {
@@ -208,8 +212,8 @@ func (lo *ListOptions) Run() (err error) {
 		return err
 	}
 	currentComponentState := UnpushedCompState
-	devfileCompList := component.DevfileComponentsFromDeployments(deploymentList)
-	for _, comp := range devfileCompList {
+	devfileComponents := component.DevfileComponentsFromDeployments(deploymentList)
+	for _, comp := range devfileComponents {
 		if lo.EnvSpecificInfo != nil {
 			// if we can find a component from the listing from server then the local state is pushed
 			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.Application, comp.Spec.Namespace) {
@@ -227,13 +231,13 @@ func (lo *ListOptions) Run() (err error) {
 			comp.Spec.Namespace = envinfo.GetNamespace()
 			comp.Spec.Application = envinfo.GetApplication()
 			comp.Spec.ComponentType = lo.componentType
-			devfileCompList = append(devfileCompList, comp)
+			devfileComponents = append(devfileComponents, comp)
 		}
 	}
 
 	// non-experimental workflow
 
-	var components component.ComponentList
+	var components []component.Component
 	// we now check if DC is supported
 	if lo.hasDCSupport {
 
@@ -244,14 +248,12 @@ func (lo *ListOptions) Run() (err error) {
 				return err
 			}
 
-			var componentList []component.Component
-
 			if len(apps) == 0 && lo.LocalConfigInfo.Exists() {
 				comps, err := component.List(lo.Client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
 				if err != nil {
 					return err
 				}
-				componentList = append(componentList, comps.Items...)
+				components = append(components, comps.Items...)
 			}
 
 			// interating over list of application and get list of all components
@@ -260,11 +262,13 @@ func (lo *ListOptions) Run() (err error) {
 				if err != nil {
 					return err
 				}
-				componentList = append(componentList, comps.Items...)
+				components = append(components, comps.Items...)
 			}
 		} else {
 
-			components, err = component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
+			componentList, err := component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
+			// compat
+			components = componentList.Items
 			if err != nil {
 				return errors.Wrapf(err, "failed to fetch component list")
 			}
@@ -275,11 +279,11 @@ func (lo *ListOptions) Run() (err error) {
 
 	if !log.IsJSON() {
 
-		if len(devfileCompList) != 0 {
+		if len(devfileComponents) != 0 {
 			lo.hasDevfileComponents = true
 			fmt.Fprintln(w, "Devfile Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
-			for _, comp := range devfileCompList {
+			for _, comp := range devfileComponents {
 				fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Spec.Name, "\t", comp.Spec.Namespace, "\t", comp.Spec.ComponentType, "\t", "Pushed")
 			}
 			w.Flush()
@@ -289,7 +293,7 @@ func (lo *ListOptions) Run() (err error) {
 			fmt.Fprintln(w)
 		}
 
-		if len(components.Items) != 0 {
+		if len(components) != 0 {
 			if lo.hasDevfileComponents {
 				fmt.Println()
 			}
@@ -297,7 +301,7 @@ func (lo *ListOptions) Run() (err error) {
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "Openshift Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
-			for _, comp := range components.Items {
+			for _, comp := range components {
 				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
 			}
 			w.Flush()
@@ -308,7 +312,7 @@ func (lo *ListOptions) Run() (err error) {
 			return
 		}
 	} else {
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(components.Items, devfileCompList)
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(components, devfileComponents)
 		machineoutput.OutputSuccess(combinedComponents)
 	}
 
