@@ -85,6 +85,11 @@ func ResolveIndexFilePath(directory string) (string, error) {
 	return directory, nil
 }
 
+// GetIndexFileRelativeToContext returns the index file relative to context i.e.; .odo/odo-file-index.json
+func GetIndexFileRelativeToContext() string {
+	return filepath.Join(fileIndexDirectory, fileIndexName)
+}
+
 // AddOdoFileIndex adds odo-file-index.json to .gitignore
 func AddOdoFileIndex(gitIgnoreFile string) error {
 	return addOdoFileIndex(gitIgnoreFile, filesystem.DefaultFs{})
