@@ -45,7 +45,7 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 
 	Context("Listing urls", func() {
-		FIt("should list url after push using context", func() {
+		It("should list url after push using context", func() {
 			// to confirm that --context works we are using a subfolder of the context
 			subFolderContext := filepath.Join(context, helper.RandString(6))
 			helper.MakeDir(subFolderContext)
