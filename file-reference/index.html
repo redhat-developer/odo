@@ -454,8 +454,8 @@
 <p>Example using an <a href="https://github.com/odo-devfiles/registry/blob/master/devfiles/openLiberty/devfile.yaml">OpenLiberty</a> container</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
-      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+    <span class="na">container</span><span class="pi">:</span>
       <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
       <span class="na">memoryLimit</span><span class="pi">:</span> <span class="s">1512Mi</span>
       <span class="na">mountSources</span><span class="pi">:</span> <span class="s">true</span>
@@ -489,7 +489,8 @@
 <p>Example using the exec command</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
@@ -497,8 +498,8 @@
       <span class="na">group</span><span class="pi">:</span>
         <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
         <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">devRun</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devRun</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/start-server.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
@@ -524,28 +525,28 @@
 <p>Example of various events</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">copy</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">copy</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">cp</span><span class="nv"> </span><span class="s">/tools/myfile.txt</span><span class="nv"> </span><span class="s">tools.txt"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">initCache</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">initCache</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./init_cache.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">connectDB</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">connectDB</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./connect_db.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">disconnectDB</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">disconnectDB</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./disconnect_db.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">cleanup</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">cleanup</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./cleanup.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
@@ -790,8 +791,8 @@
 <p>Example using a container using the minimum amount of keys</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
-      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+    <span class="na">container</span><span class="pi">:</span>
       <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
 </code></pre>
 <p>Each component must use the <code>container</code> object.</p>
@@ -814,8 +815,8 @@
 <p>Example using an <a href="https://github.com/odo-devfiles/registry/blob/master/devfiles/openLiberty/devfile.yaml">OpenLiberty</a> container</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
-      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+    <span class="na">container</span><span class="pi">:</span>
       <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
       <span class="na">memoryLimit</span><span class="pi">:</span> <span class="s">1512Mi</span>
       <span class="na">mountSources</span><span class="pi">:</span> <span class="s">true</span>
@@ -893,8 +894,8 @@
 <p>Example using an endpoint</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
-      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+    <span class="na">container</span><span class="pi">:</span>
       <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
       <span class="na">endpoints</span><span class="pi">:</span>
         <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">9080/tcp</span>
@@ -953,8 +954,8 @@
 <p>Example using a volume with a container</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
-      <span class="na">name</span><span class="pi">:</span> <span class="s">tools</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">tools</span>
+    <span class="na">container</span><span class="pi">:</span>
       <span class="na">image</span><span class="pi">:</span> <span class="s">maysunfaisal/springbootbuild</span>
       <span class="na">memoryLimit</span><span class="pi">:</span> <span class="s">768Mi</span>
       <span class="na">command</span><span class="pi">:</span> <span class="pi">[</span><span class="s1">'</span><span class="s">tail'</span><span class="pi">]</span>
@@ -990,8 +991,8 @@
 <p>Example using an exec command within a command object</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/projects/springbootproject</span>
@@ -1019,8 +1020,8 @@
 <p>Example using exec command within a command object</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/projects/springbootproject</span>
@@ -1087,8 +1088,8 @@
 <p>Example using the group object within exec </p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
       <span class="na">group</span><span class="pi">:</span>
         <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
@@ -1120,28 +1121,28 @@
 <p>Example of using life cycle events where each event is an array of devfile commands to be executed of type <code>exec</code> or <code>composite</code></p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">copy</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">copy</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">cp</span><span class="nv"> </span><span class="s">/tools/myfile.txt</span><span class="nv"> </span><span class="s">tools.txt"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">initCache</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">initCache</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./init_cache.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">connectDB</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">connectDB</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./connect_db.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">disconnectDB</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">disconnectDB</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./disconnect_db.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">cleanup</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">cleanup</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">./cleanup.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
       <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
@@ -1168,8 +1169,8 @@
 <p>Example using environment variables with a container</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">container</span><span class="pi">:</span>
-      <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
+    <span class="na">container</span><span class="pi">:</span>
       <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">ajymau/java-openliberty-dev:latest'</span>
           <span class="na">targetPort</span><span class="pi">:</span> <span class="s">9080</span>
       <span class="na">env</span><span class="pi">:</span>
@@ -1182,8 +1183,8 @@
 <p>Example using environment variables within the exec command</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+    <span class="na">exec</span><span class="pi">:</span>
       <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
       <span class="na">env</span><span class="pi">:</span>
         <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">FOO</span>

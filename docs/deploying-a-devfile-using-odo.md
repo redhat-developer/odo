@@ -39,7 +39,7 @@ With a devfile you can describe:
   - Projects to initially clone
 
 odo takes this devfile and transforms it into a workspace of multiple
-containers running on OpenShift, Kubernetes or Docker.
+containers running on Kubernetes or OpenShift.
 
 Devfiles are YAML files with a defined
 [schema](https://devfile.github.io/devfile/_attachments/api-reference.html).
