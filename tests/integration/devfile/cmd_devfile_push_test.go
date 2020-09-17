@@ -254,7 +254,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
-			Expect(output).To(ContainSubstring("references an invalid command"))
+			Expect(output).To(ContainSubstring("does not map to a container component"))
 		})
 
 		It("checks that odo push works outside of the context directory", func() {
@@ -473,9 +473,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.ReplaceString("devfile.yaml", "secondpoststart", "wrongPostStart")
+			helper.ReplaceString("devfile.yaml", "runtime #wrongruntime", "wrongruntime")
 
 			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{"the command does not map to a supported component"})
+			helper.MatchAllInOutput(output, []string{"the command \"wrongpoststart\" does not map to a container component"})
 		})
 
 		It("should err out on an event composite command mentioning an invalid child command", func() {
@@ -485,6 +486,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.ReplaceString("devfile.yaml", "secondpoststart", "myWrongCompCmd")
+			helper.ReplaceString("devfile.yaml", "secondPreStop #secondPreStopisWrong", "secondPreStopisWrong")
 
 			output := helper.CmdShouldFail("odo", "push", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{"does not exist in the devfile"})
