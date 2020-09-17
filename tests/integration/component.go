@@ -909,9 +909,7 @@ func componentTests(args ...string) {
 			// verify the url
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
 
-			// temporary test fix, the url name of the url list output is expected to contain urlName instead
-			// issue to track: https://github.com/openshift/odo/issues/3910
-			helper.MatchAllInOutput(stdout, []string{"port-8080", "Pushed", "false", "route"})
+			helper.MatchAllInOutput(stdout, []string{urlName, "Pushed", "false", "route"})
 			//verify storage
 			stdout = helper.CmdShouldPass("odo", "storage", "list", "--context", context)
 			helper.MatchAllInOutput(stdout, []string{storageName, "Pushed"})
