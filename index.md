@@ -47,15 +47,15 @@ grid_navigation:
       cta: Read more
       url: 'docs/understanding-odo'
 
-    - title: Deploying a devfile using odo
-      excerpt: Deploying a portable devfile that decribes your development environment
+    - title: Deploying your first application using odo
+      excerpt: Learn how to deploy an application using odo and Devfile
       cta: Read more
       url: 'docs/deploying-a-devfile-using-odo'
       openshift: true
       kubernetes: true
 
     - title: Devfile file reference
-      excerpt: Devfile reference documentation
+      excerpt: An overview of the Devfile yaml file format, learn how to customize your devfile.yaml file
       cta: Read more
       url: 'file-reference/'
       openshift: true
