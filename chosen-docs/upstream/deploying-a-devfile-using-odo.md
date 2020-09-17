@@ -5,8 +5,8 @@ keywords:
 comments: false
 
 # Hero section
-title: Deploying a devfile using odo
-description: Deploying a portable devfile that describes your development environment
+title: Deploying your first application using odo
+description: Learn how to deploy an application using odo and Devfile
 
 # Micro navigation
 micro_nav: true
