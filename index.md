@@ -68,6 +68,13 @@ grid_navigation:
       openshift: true
       kubernetes: true
 
+    - title: Migrating S2I (Source-to-Image) components to Devfile components
+      excerpt: Use odo's built-in tool to convert your S2I deployment to devfile
+      cta: Read more
+      url: 'docs/s2i-to-devfile'
+      openshift: true
+      kubernetes: true
+
     - title: Managing environment variables
       excerpt: Manipulate both config and preference files to your liking
       cta: Read more
