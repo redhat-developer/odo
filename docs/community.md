@@ -77,8 +77,8 @@ Google group](https://groups.google.com/forum/#!forum/odo-dev).
 
 ## Where do I start?
 
-odo is a complex project that touches both Kubernetes, OpenShift and
-Docker. We have a list of [good first
+odo is a complex project that touches both Kubernetes and OpenShift. We
+have a list of [good first
 issues](https://github.com/openshift/odo/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
 to help start.
 

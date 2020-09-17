@@ -62,9 +62,9 @@ grid_navigation:
       kubernetes: true
 
     - title: Debugging applications in odo
-      excerpt: Learn how to debug an application in odo
+      excerpt: Learn how to debug an application in odo CLI and IDE
       cta: Read more
-      url: 'docs/debugging-applications-in-odo'
+      url: 'docs/debugging-using-devfile'
       openshift: true
       kubernetes: true
 
