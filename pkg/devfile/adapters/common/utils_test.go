@@ -337,68 +337,6 @@ func TestGetBootstrapperImage(t *testing.T) {
 
 }
 
-func TestIsContainer(t *testing.T) {
-
-	tests := []struct {
-		name            string
-		component       common.DevfileComponent
-		wantIsSupported bool
-	}{
-		{
-			name:            "Case 1: Container component",
-			component:       testingutil.GetFakeContainerComponent("comp1"),
-			wantIsSupported: true,
-		},
-		{
-			name: "Case 2: Not a container component",
-			component: common.DevfileComponent{
-				Openshift: &versionsCommon.Openshift{},
-			},
-			wantIsSupported: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			isSupported := isContainer(tt.component)
-			if isSupported != tt.wantIsSupported {
-				t.Errorf("TestIsContainer error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
-			}
-		})
-	}
-
-}
-
-func TestIsVolume(t *testing.T) {
-
-	tests := []struct {
-		name            string
-		component       common.DevfileComponent
-		wantIsSupported bool
-	}{
-		{
-			name:            "Case 1: Volume component",
-			component:       testingutil.GetFakeVolumeComponent("myvol", "4Gi"),
-			wantIsSupported: true,
-		},
-		{
-			name: "Case 2: Not a volume component",
-			component: common.DevfileComponent{
-				Openshift: &versionsCommon.Openshift{},
-			},
-			wantIsSupported: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			isSupported := isVolume(tt.component)
-			if isSupported != tt.wantIsSupported {
-				t.Errorf("TestIsVolume error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
-			}
-		})
-	}
-
-}
-
 func TestGetCommandsForGroup(t *testing.T) {
 
 	component := []versionsCommon.DevfileComponent{
@@ -489,11 +427,6 @@ func TestGetCommandsForGroup(t *testing.T) {
 			name:             "Case 4: Debug Group Command",
 			groupType:        debugGroup,
 			numberOfCommands: 1,
-		},
-		{
-			name:             "Case 5: Wrong Group Command",
-			groupType:        initGroup,
-			numberOfCommands: 0,
 		},
 	}
 	for _, tt := range tests {

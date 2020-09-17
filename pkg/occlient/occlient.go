@@ -601,7 +601,21 @@ func getExposedPortsFromISI(image *imagev1.ImageStreamImage) ([]corev1.Container
 
 	var ports []corev1.ContainerPort
 
-	for exposedPort := range image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).ContainerConfig.ExposedPorts {
+	var exposedPorts = image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).ContainerConfig.ExposedPorts
+
+	if image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).Config != nil {
+		if exposedPorts == nil {
+			exposedPorts = make(map[string]struct{})
+		}
+
+		// add ports from Config
+		for exposedPort := range image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).Config.ExposedPorts {
+			var emptyStruct struct{}
+			exposedPorts[exposedPort] = emptyStruct
+		}
+	}
+
+	for exposedPort := range exposedPorts {
 		splits := strings.Split(exposedPort, "/")
 		if len(splits) != 2 {
 			return nil, fmt.Errorf("invalid port %s", exposedPort)

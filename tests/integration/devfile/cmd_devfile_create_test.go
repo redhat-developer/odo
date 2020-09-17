@@ -197,6 +197,15 @@ var _ = Describe("odo devfile create command tests", func() {
 			It("should fail to create the devfile component with --devfile points to different devfile", func() {
 				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "/path/to/file")
 			})
+
+			It("should fail to create the devfile component for an invalid devfile", func() {
+				// Delete the devfile that was copied in as part of setup
+				helper.DeleteFile("devfile.yaml")
+
+				helper.CmdShouldPass("touch", "devfile.yaml")
+				output := helper.CmdShouldFail("odo", "create", "mycomp", "--devfile", "devfile.yaml")
+				helper.MatchAllInOutput(output, []string{"apiVersion or schemaVersion not present in devfile"})
+			})
 		})
 
 		Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {

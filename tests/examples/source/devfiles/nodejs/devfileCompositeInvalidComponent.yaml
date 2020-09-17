@@ -17,6 +17,16 @@ components:
         - name: http-3000
           targetPort: 3000
 commands:
+  - id: buildAndMkdir
+    composite:
+         label: Build and Mkdir
+         commands:
+           - mkdir
+           - install
+         parallel: false
+         group: 
+            kind: build
+            isDefault: true
   - id: install
     exec:
       component: runtime
@@ -41,13 +51,3 @@ commands:
       group:
         kind: run
         isDefault: true
-  - id: buildAndMkdir
-    composite:
-         label: Build and Mkdir
-         commands:
-           - mkdir
-           - install
-         parallel: false
-         group: 
-            kind: build
-            isDefault: true

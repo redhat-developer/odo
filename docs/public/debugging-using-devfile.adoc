@@ -5,46 +5,50 @@
 In order to use `odo debug` your devfile is required to have a `debugrun` step. Example of a nodejs devfile with a debugrun step:
 
 ```yaml
-apiVersion: 1.0.0
+schemaVersion: 2.0.0
 metadata:
-  name: test-devfile
-projects:
-  -
-    name: nodejs-starter
-    source:
-      type: git
-      location: "https://github.com/che-samples/web-nodejs-sample.git"
+  name: nodejs
+  version: 1.0.0
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
-  - type: dockerimage
-    image: quay.io/eclipse/che-nodejs10-ubi:nightly
-    endpoints:
-      - name: "3000/tcp"
-        port: 3000
-    alias: runtime
-    env:
-      - name: FOO
-        value: "bar"
-    memoryLimit: 1024Mi
-    mountSources: true
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-45
+      memoryLimit: 1024Mi
+      mountSources: true
+      sourceMapping: /project
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
 commands:
-  - name: devbuild
-    actions:
-      - type: exec
-        component: runtime
-        command: "npm install"
-        workdir: ${PROJECTS_ROOT}/nodejs-starter/app
-  - name: devrun
-    actions:
-      - type: exec
-        component: runtime
-        command: "nodemon app.js"
-        workdir: ${PROJECTS_ROOT}/nodejs-starter/app
-  - name: debugrun
-    actions:
-      - type: exec
-        component: runtime
-        command: "nodemon --inspect=${DEBUG_PORT}"
-        workdir: ${PROJECTS_ROOT}/nodejs-starter/
+  - id: install
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: /project
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: /project
+      group:
+        kind: run
+        isDefault: true
+  - id: debug
+    exec:
+      component: runtime
+      commandLine: npm run debug
+      workingDir: /project
+      group:
+        kind: debug
+        isDefault: true
 ```
 
 - Now we need to create the component using `odo create nodejs`

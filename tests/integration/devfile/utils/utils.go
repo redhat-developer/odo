@@ -349,8 +349,9 @@ type OdoV1Watch struct {
 }
 
 type OdoV2Watch struct {
-	CmpName            string
-	StringsToBeMatched []string
+	CmpName               string
+	StringsToBeMatched    []string
+	StringsNotToBeMatched []string
 }
 
 // OdoWatch creates files, dir in the context and watches for the changes to be pushed
@@ -493,6 +494,56 @@ func OdoWatchWithDebug(odoV2Watch OdoV2Watch, context, flag string) {
 				// We are just using this to validate if nodejs agent is listening on the other side
 				helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
 
+				return true
+			}
+
+			return false
+		},
+		startSimulationCh,
+		func(output string) bool {
+			return strings.Contains(output, "Waiting for something to change")
+		})
+
+	Expect(success).To(Equal(true))
+	Expect(err).To(BeNil())
+}
+
+// OdoWatchWithIgnore checks if odo watch ignores the specified files and
+// it also checks if odo-file-index.json and .git are ignored
+// when --ignores is used
+func OdoWatchWithIgnore(odoV2Watch OdoV2Watch, context, flag string) {
+
+	startSimulationCh := make(chan bool)
+	go func() {
+		startMsg := <-startSimulationCh
+		if startMsg {
+			_, err := os.Create(filepath.Join(context, "doignoreme.txt"))
+			Expect(err).To(BeNil())
+
+			_, err = os.Create(filepath.Join(context, "donotignoreme.txt"))
+			Expect(err).To(BeNil())
+		}
+	}()
+
+	success, err := helper.WatchNonRetCmdStdOut(
+		("odo watch " + flag + " --context " + context),
+		time.Duration(5)*time.Minute,
+		func(output string) bool {
+			stringsMatched := true
+			for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
+				if !strings.Contains(output, stringToBeMatched) {
+					stringsMatched = false
+				}
+			}
+
+			stringsNotMatched := true
+			for _, stringNotToBeMatched := range odoV2Watch.StringsNotToBeMatched {
+				if strings.Contains(output, stringNotToBeMatched) {
+					stringsNotMatched = false
+				}
+			}
+
+			if stringsMatched && stringsNotMatched {
 				return true
 			}
 

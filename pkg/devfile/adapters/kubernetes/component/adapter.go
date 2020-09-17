@@ -87,7 +87,6 @@ type Adapter struct {
 	Client kclient.Client
 	*common.GenericAdapter
 
-	devfileInitCmd   string
 	devfileBuildCmd  string
 	devfileRunCmd    string
 	devfileDebugCmd  string
@@ -103,7 +102,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 
-	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 	a.devfileDebugCmd = parameters.DevfileDebugCmd
@@ -124,7 +122,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileInitCmd, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")

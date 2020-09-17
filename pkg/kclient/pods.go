@@ -190,7 +190,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
 
 	// Set standard log options
-	podLogOptions := corev1.PodLogOptions{Follow: false}
+	podLogOptions := corev1.PodLogOptions{Follow: false, Container: containerName}
 
 	// If the log is being followed, set it to follow / don't wait
 	if followLog {

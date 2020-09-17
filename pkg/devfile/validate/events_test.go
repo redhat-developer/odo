@@ -201,7 +201,12 @@ func TestValidateEvents(t *testing.T) {
 					Events:     tt.events,
 				},
 			}
-			err := validateEvents(devObj.Data)
+
+			events := devObj.Data.GetEvents()
+			commands := devObj.Data.GetCommands()
+			components := devObj.Data.GetComponents()
+
+			err := validateEvents(events, commands, components)
 			if err != nil && !tt.wantErr {
 				t.Errorf("TestValidateEvents error - %v", err)
 			}
@@ -346,7 +351,7 @@ func TestIsEventValid(t *testing.T) {
 				"composite1",
 			},
 			wantErr:    true,
-			wantErrMsg: "does not map to a supported component",
+			wantErrMsg: "does not map to a container component",
 		},
 		{
 			name:       "Case 4: Invalid events with wrong child command in composite command",
@@ -395,7 +400,10 @@ func TestIsEventValid(t *testing.T) {
 				},
 			}
 
-			err := isEventValid(devObj.Data, tt.eventNames, tt.eventType)
+			commands := devObj.Data.GetCommands()
+			components := devObj.Data.GetComponents()
+
+			err := isEventValid(tt.eventNames, tt.eventType, commands, components)
 			if err != nil && !tt.wantErr {
 				t.Errorf("TestIsEventValid error: %v", err)
 			} else if err != nil && tt.wantErr {
