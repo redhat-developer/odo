@@ -188,7 +188,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	syncFolder, err := getSyncFolder(compInfo.SourceMount, a.Devfile.Data.GetProjects())
+	syncFolder, err := GetSyncFolder(compInfo.SourceMount, a.Devfile.Data.GetProjects())
 	if err != nil {
 		return errors.Wrapf(err, "failed to get sync folder")
 	}
@@ -234,15 +234,16 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	return nil
 }
 
+// GetSyncFolder gets the sync folder path for source code.
 // sourceVolumePath: mount path of the empty dir volume the odo uses to sync source code
 // projects: list of projects from devfile
-// getSyncFolder gets the sync folder path for source code.
-func getSyncFolder(sourceVolumePath string, projects []parserCommon.DevfileProject) (string, error) {
-	// if there are no projects in devfile or multiple projects source would be synced to $PROJECTS_ROOT
-	if len(projects) != 1 {
+func GetSyncFolder(sourceVolumePath string, projects []parserCommon.DevfileProject) (string, error) {
+	// if there are no projects in the devfile, source would be synced to $PROJECTS_ROOT
+	if len(projects) == 0 {
 		return sourceVolumePath, nil
 	}
 
+	// if there is one or more projects in the devfile, get the first project and check its clonepath
 	project := projects[0]
 
 	if project.ClonePath != "" {

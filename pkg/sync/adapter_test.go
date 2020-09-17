@@ -578,7 +578,7 @@ func TestGetSyncFolder(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		syncFolder, err := getSyncFolder(sourceVolumePath, tt.projects)
+		syncFolder, err := GetSyncFolder(sourceVolumePath, tt.projects)
 
 		if !tt.wantErr == (err != nil) {
 			t.Errorf("expected %v, actual %v", tt.wantErr, err)

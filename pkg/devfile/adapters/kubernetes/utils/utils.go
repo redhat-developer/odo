@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/sync"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -94,18 +95,18 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
 		// Sync to `Container.SourceMapping` if set
 		if comp.Container.MountSources {
-			var syncFolder, projectsRoot string
+			var syncRootFolder, projectsRoot string
 			if comp.Container.SourceMapping != "" {
-				syncFolder = comp.Container.SourceMapping
+				syncRootFolder = comp.Container.SourceMapping
 			} else if projectsRoot = adaptersCommon.GetComponentEnvVar(adaptersCommon.EnvProjectsRoot, comp.Container.Env); projectsRoot != "" {
-				syncFolder = projectsRoot
+				syncRootFolder = projectsRoot
 			} else {
-				syncFolder = kclient.OdoSourceVolumeMount
+				syncRootFolder = kclient.OdoSourceVolumeMount
 			}
 
 			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 				Name:      kclient.OdoSourceVolume,
-				MountPath: syncFolder,
+				MountPath: syncRootFolder,
 			})
 
 			// only add the env if it is not set by the devfile
@@ -113,9 +114,23 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvProjectsRoot,
+						Value: syncRootFolder,
+					})
+			}
+
+			if syncFolder := adaptersCommon.GetComponentEnvVar(adaptersCommon.EnvProjectsSrc, comp.Container.Env); syncFolder == "" {
+				syncFolder, err = sync.GetSyncFolder(syncRootFolder, devfileObj.Data.GetProjects())
+				if err != nil {
+					return nil, err
+				}
+
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  adaptersCommon.EnvProjectsSrc,
 						Value: syncFolder,
 					})
 			}
+
 		}
 		containers = append(containers, *container)
 	}
