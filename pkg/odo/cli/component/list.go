@@ -18,7 +18,6 @@ import (
 	"k8s.io/klog"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -148,11 +147,23 @@ func (lo *ListOptions) Run() (err error) {
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(combinedComponents)
 		} else {
-			hasS2Icomponents := false
-			hasDevfileComponents := false
+
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+			if len(devfileComps) != 0 {
+				lo.hasDevfileComponents = true
+				fmt.Fprintln(w, "Devfile Components: ")
+				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE")
+				for _, comp := range devfileComps {
+					fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State)
+				}
+			}
+			if lo.hasDevfileComponents {
+				fmt.Fprintln(w)
+			}
+
 			if len(s2iComps) != 0 {
-				hasS2Icomponents = true
+				lo.hasS2IComponents = true
 				fmt.Fprintln(w, "S2I Components: ")
 				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE", "\t", "CONTEXT")
 				for _, comp := range s2iComps {
@@ -161,20 +172,8 @@ func (lo *ListOptions) Run() (err error) {
 				}
 			}
 
-			if hasS2Icomponents {
-				fmt.Fprintln(w)
-			}
-
-			if len(devfileComps) != 0 {
-				hasDevfileComponents = true
-				fmt.Fprintln(w, "Devfile Components: ")
-				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE")
-				for _, comp := range devfileComps {
-					fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State)
-				}
-			}
 			// if we dont have any then
-			if !hasDevfileComponents && !hasS2Icomponents {
+			if !lo.hasDevfileComponents && !lo.hasS2IComponents {
 				fmt.Fprintln(w, "No components found")
 			}
 
@@ -208,43 +207,35 @@ func (lo *ListOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-
 	currentComponentState := UnpushedCompState
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	if len(deploymentList.Items) != 0 {
-		lo.hasDevfileComponents = true
-		fmt.Fprintln(w, "Devfile Components: ")
-		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
-		for _, comp := range deploymentList.Items {
-			app := comp.Labels[applabels.ApplicationLabel]
-			cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
-			if lo.EnvSpecificInfo != nil {
-				// if we can find a component from the listing from server then the local state is pushed
-				if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp) {
-					currentComponentState = PushedCompState
-				}
+	devfileCompList := component.DevfileComponentsFromDeployments(deploymentList)
+	for _, comp := range devfileCompList {
+		if lo.EnvSpecificInfo != nil {
+			// if we can find a component from the listing from server then the local state is pushed
+			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.Application, comp.Spec.Namespace) {
+				currentComponentState = PushedCompState
 			}
-			fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
 		}
-
 	}
-
 	// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
 	// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
 	if lo.EnvSpecificInfo != nil {
 		envinfo := lo.EnvSpecificInfo.EnvInfo
 		if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
-			fmt.Fprintln(w, envinfo.GetApplication(), "\t", envinfo.GetName(), "\t", envinfo.GetNamespace(), "\t", lo.componentType, "\t", currentComponentState)
+			comp := component.NewDevfileComponent(envinfo.GetName())
+			comp.Status.State = component.StateTypeNotPushed
+			comp.Spec.Namespace = envinfo.GetNamespace()
+			comp.Spec.Application = envinfo.GetApplication()
+			comp.Spec.ComponentType = lo.componentType
+			devfileCompList = append(devfileCompList, comp)
 		}
 	}
-	w.Flush()
 
 	// non-experimental workflow
 
+	var components component.ComponentList
 	// we now check if DC is supported
 	if lo.hasDCSupport {
-
-		var components component.ComponentList
 
 		if lo.allAppsFlag {
 			// retrieve list of application
@@ -278,30 +269,49 @@ func (lo *ListOptions) Run() (err error) {
 				return errors.Wrapf(err, "failed to fetch component list")
 			}
 		}
+	}
 
-		if !log.IsJSON() {
-			if len(components.Items) != 0 {
-				if lo.hasDevfileComponents {
-					fmt.Println()
-				}
-				lo.hasS2IComponents = true
-				w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-				fmt.Fprintln(w, "Openshift Components: ")
-				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
-				for _, comp := range components.Items {
-					fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
-				}
-				w.Flush()
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+	if !log.IsJSON() {
+
+		if len(devfileCompList) != 0 {
+			lo.hasDevfileComponents = true
+			fmt.Fprintln(w, "Devfile Components: ")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
+			for _, comp := range devfileCompList {
+				fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Spec.Name, "\t", comp.Spec.Namespace, "\t", comp.Spec.ComponentType, "\t", "Pushed")
 			}
+			w.Flush()
+
+		}
+		if lo.hasDevfileComponents {
+			fmt.Fprintln(w)
 		}
 
-		// if we dont have any of the components
+		if len(components.Items) != 0 {
+			if lo.hasDevfileComponents {
+				fmt.Println()
+			}
+			lo.hasS2IComponents = true
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "Openshift Components: ")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
+			for _, comp := range components.Items {
+				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
+			}
+			w.Flush()
+		}
+
 		if !lo.hasDevfileComponents && !lo.hasS2IComponents {
 			log.Error("There are no components deployed.")
 			return
 		}
-
+	} else {
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(components.Items, devfileCompList)
+		machineoutput.OutputSuccess(combinedComponents)
 	}
+
 	return
 }
 
