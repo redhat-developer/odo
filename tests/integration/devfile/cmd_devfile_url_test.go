@@ -45,7 +45,7 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 
 	Context("Listing urls", func() {
-		It("should list url after push using context", func() {
+		FIt("should list url after push using context", func() {
 			// to confirm that --context works we are using a subfolder of the context
 			subFolderContext := filepath.Join(context, helper.RandString(6))
 			helper.MakeDir(subFolderContext)
@@ -65,6 +65,8 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext)
 			stdout = helper.CmdShouldPass("odo", "push", "--context", subFolderContext)
 			Expect(stdout).Should(ContainSubstring(url1 + "." + host))
+
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", subFolderContext)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "false", "ingress"})
 		})
 
