@@ -137,7 +137,7 @@ func (o *LinkOptions) Validate() (err error) {
 			if o.isTargetAService {
 				targetType = "service"
 			}
-			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Project, targetType, o.suppliedName)
+			return fmt.Errorf("Component %s has previously been linked to %s %s", o.GetProject(), targetType, o.suppliedName)
 		}
 	}
 	return
