@@ -7,9 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	appsv1 "k8s.io/api/apps/v1"
-
-	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
@@ -435,10 +432,9 @@ func (ei *EnvInfo) GetApplication() string {
 	return ei.componentSettings.AppName
 }
 
-// MatchComponent matches a component information provided by a deployment with the local env info
-func (ei *EnvInfo) MatchComponent(comp appsv1.Deployment) bool {
-	app := comp.Labels[applabels.ApplicationLabel]
-	if comp.Name == ei.GetName() && app == ei.GetApplication() && comp.Namespace == ei.GetNamespace() {
+// MatchComponent matches a component information provided by a devfile compoment with the local env info
+func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
+	if name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace() {
 		return true
 	}
 	return false
