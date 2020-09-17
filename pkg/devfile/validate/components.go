@@ -3,6 +3,7 @@ package validate
 import (
 	"strings"
 
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -29,6 +30,13 @@ func validateComponents(components []common.DevfileComponent) error {
 			for _, volumeMount := range component.Container.VolumeMounts {
 				if _, ok := processedVolumeMounts[volumeMount.Name]; !ok {
 					processedVolumeMounts[volumeMount.Name] = true
+				}
+			}
+
+			// Check if any containers are customizing the reserved PROJECT_SOURCE env
+			for _, env := range component.Container.Env {
+				if env.Name == adaptersCommon.EnvProjectsSrc {
+					return &ReservedEnvError{envName: adaptersCommon.EnvProjectsSrc, componentName: component.Name}
 				}
 			}
 		}

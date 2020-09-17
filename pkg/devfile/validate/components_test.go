@@ -1,10 +1,12 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
@@ -102,6 +104,32 @@ func TestValidateComponents(t *testing.T) {
 
 		if got != nil {
 			t.Errorf("TestValidateComponents error - got: '%v'", got)
+		}
+	})
+
+	t.Run("Invalid container using reserved env", func(t *testing.T) {
+
+		envName := adaptersCommon.EnvProjectsSrc
+
+		components := []common.DevfileComponent{
+			{
+				Name: "container",
+				Container: &common.Container{
+					Env: []common.Env{
+						{
+							Name:  envName,
+							Value: "/some/path/",
+						},
+					},
+				},
+			},
+		}
+
+		got := validateComponents(components)
+		want := fmt.Sprintf("env variable %s is reserved and cannot be customized in component container", envName)
+
+		if got != nil && !strings.Contains(got.Error(), want) {
+			t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
 		}
 	})
 

@@ -129,6 +129,8 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 						Name:  adaptersCommon.EnvProjectsSrc,
 						Value: syncFolder,
 					})
+			} else {
+				return nil, fmt.Errorf("env variable %s is reserved and cannot be customized in component %s", adaptersCommon.EnvProjectsSrc, comp.Name)
 			}
 
 		}
