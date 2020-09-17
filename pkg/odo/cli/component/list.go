@@ -220,7 +220,7 @@ func (lo *ListOptions) Run() (err error) {
 			cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
 			if lo.EnvSpecificInfo != nil {
 				// if we can find a component from the listing from server then the local state is pushed
-				if lo.EnvSpecificInfo.EnvInfo.MatchComponent(&comp) {
+				if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp) {
 					currentComponentState = PushedCompState
 				}
 			}

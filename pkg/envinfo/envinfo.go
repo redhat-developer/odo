@@ -436,7 +436,7 @@ func (ei *EnvInfo) GetApplication() string {
 }
 
 // MatchComponent matches a component information provided by a deployment with the local env info
-func (ei *EnvInfo) MatchComponent(comp *appsv1.Deployment) bool {
+func (ei *EnvInfo) MatchComponent(comp appsv1.Deployment) bool {
 	app := comp.Labels[applabels.ApplicationLabel]
 	if comp.Name == ei.GetName() && app == ei.GetApplication() && comp.Namespace == ei.GetNamespace() {
 		return true
