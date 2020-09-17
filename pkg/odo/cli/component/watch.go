@@ -60,7 +60,6 @@ type WatchOptions struct {
 	initialDevfileHandler common.ComponentAdapter
 
 	// devfile commands
-	devfileInitCommand  string
 	devfileBuildCommand string
 	devfileRunCommand   string
 
@@ -212,7 +211,6 @@ func (wo *WatchOptions) Run() (err error) {
 				ExtChan:             make(chan bool),
 				DevfileWatchHandler: wo.regenerateAdapterAndPush,
 				Show:                wo.show,
-				DevfileInitCmd:      strings.ToLower(wo.devfileInitCommand),
 				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
 				DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
 				EnvSpecificInfo:     wo.EnvSpecificInfo,
@@ -273,7 +271,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	watchCmd.Flags().StringVar(&wo.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 	watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 	watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
 

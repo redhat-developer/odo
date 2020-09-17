@@ -203,6 +203,15 @@ var _ = Describe("odo devfile create command tests", func() {
 				output := helper.CmdShouldFail("odo", "create", "--devfile", "./devfile.yaml")
 				Expect(output).Should(ContainSubstring("Contain at most 63 characters"))
 			})
+
+			It("should fail to create the devfile component for an invalid devfile", func() {
+				// Delete the devfile that was copied in as part of setup
+				helper.DeleteFile("devfile.yaml")
+
+				helper.CmdShouldPass("touch", "devfile.yaml")
+				output := helper.CmdShouldFail("odo", "create", "mycomp", "--devfile", "devfile.yaml")
+				helper.MatchAllInOutput(output, []string{"apiVersion or schemaVersion not present in devfile"})
+			})
 		})
 
 		Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {

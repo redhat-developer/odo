@@ -104,16 +104,6 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 
 	commands := make([]command, 0, 7)
 
-	// Only add runinit to the expected commands if the component doesn't already exist
-	// This would be the case when first running the container
-	if !componentExists {
-		// Get Init Command
-		commands, err = a.addToComposite(commandsMap, common.InitCommandGroupType, devfileCommandMap, commands)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Get Build Command
 	commands, err = a.addToComposite(commandsMap, common.BuildCommandGroupType, devfileCommandMap, commands)
 	if err != nil {

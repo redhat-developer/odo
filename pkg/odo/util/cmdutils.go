@@ -303,3 +303,14 @@ func ThrowContextError() error {
 	return errors.Errorf(`Please specify the application name and project name
 Or use the command from inside a directory containing an odo component.`)
 }
+
+// IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
+func IsCSVSupported() (bool, error) {
+
+	oclient, err := occlient.New()
+	if err != nil {
+		return false, err
+	}
+
+	return oclient.IsCSVSupported()
+}

@@ -176,7 +176,7 @@ func (po *PushOptions) Validate() (err error) {
 	// If Devfile is present we do not need to validate the below S2I checks
 	// TODO: Perhaps one day move Devfile validation to here instead?
 	if util.CheckPathExists(po.DevfilePath) {
-		spinner := log.Spinner("Validating K8s Resources Name")
+		spinner := log.Spinner("Validating devfile component")
 		defer spinner.End(false)
 		err = util.ValidateK8sResourceName("component name", po.EnvSpecificInfo.GetName())
 		if err != nil {

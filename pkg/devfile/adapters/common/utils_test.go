@@ -490,11 +490,6 @@ func TestGetCommandsForGroup(t *testing.T) {
 			groupType:        debugGroup,
 			numberOfCommands: 1,
 		},
-		{
-			name:             "Case 5: Wrong Group Command",
-			groupType:        initGroup,
-			numberOfCommands: 0,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
