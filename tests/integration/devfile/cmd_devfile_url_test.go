@@ -45,23 +45,26 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 
 	Context("Listing urls", func() {
-		It("should list url after push", func() {
+		It("should list url after push using context", func() {
+			// to confirm that --context works we are using a subfolder of the context
+			subFolderContext := filepath.Join(context, helper.RandString(6))
+			helper.MakeDir(subFolderContext)
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", subFolderContext, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), subFolderContext)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(subFolderContext, "devfile.yaml"))
 
-			stdout := helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--ingress")
+			stdout := helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--ingress", "--context", subFolderContext)
 			Expect(stdout).To(ContainSubstring("host must be provided"))
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
-			stdout = helper.CmdShouldPass("odo", "push", "--project", namespace)
+			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
+			Expect(stdout).To(ContainSubstring("The current directory does not represent an odo component"))
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext)
+			stdout = helper.CmdShouldPass("odo", "push", "--context", subFolderContext)
 			Expect(stdout).Should(ContainSubstring(url1 + "." + host))
-
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "false", "ingress"})
 		})
 
