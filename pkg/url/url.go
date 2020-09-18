@@ -49,47 +49,6 @@ func (urls URLList) Get(urlName string) URL {
 
 }
 
-// Get returns URL definition for given URL name
-func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName string, applicationName string) (URL, error) {
-	remoteUrlName, err := util.NamespaceOpenShiftObject(urlName, applicationName)
-	if err != nil {
-		return URL{}, errors.Wrapf(err, "unable to create namespaced name")
-	}
-
-	// Check whether remote already created the route
-	remoteExist := true
-	route, err := client.GetRoute(remoteUrlName)
-	if err != nil {
-		remoteExist = false
-	}
-
-	localConfigURLs := localConfig.GetURL()
-	for _, configURL := range localConfigURLs {
-		localURL := ConvertConfigURL(configURL)
-		// search local URL, if it exist in local, update state with remote status
-		if localURL.Name == urlName {
-			if remoteExist {
-				clusterURL := getMachineReadableFormat(*route)
-				clusterURL.Status.State = StateTypePushed
-				return clusterURL, nil
-			} else {
-				localURL.Status.State = StateTypeNotPushed
-				return localURL, nil
-			}
-		}
-	}
-
-	if err == nil && remoteExist {
-		// Remote exist, but not in local, so it's deleted status
-		clusterURL := getMachineReadableFormat(*route)
-		clusterURL.Status.State = StateTypeLocallyDeleted
-		return clusterURL, nil
-	}
-
-	// can't find the URL in local and remote
-	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
-}
-
 // GetIngressOrRoute returns ingress/route spec for given URL name
 func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
@@ -187,62 +146,6 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 	}
 
 	// can't find the URL in local and remote
-	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
-}
-
-// GetContainer returns Docker URL definition for given URL name
-func GetContainerURL(client *lclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
-	localURLs := envSpecificInfo.GetURL()
-	containers, err := dockerutils.GetComponentContainers(*client, componentName)
-	if err != nil {
-		return URL{}, errors.Wrap(err, "unable to get component containers")
-	}
-	var remoteExist = false
-	var dockerURL URL
-	// iterating through each container's HostConfig, generate and cache the dockerURL if found a match urlName
-	for _, c := range containers {
-		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
-		if err != nil {
-			return URL{}, err
-		}
-		for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
-			remoteURLName := containerJSON.Config.Labels[internalPort.Port()]
-			if remoteURLName != urlName {
-				continue
-			}
-			// found urlName in Docker container's config
-			remoteExist = true
-			externalport, err := strconv.Atoi(portbinding[0].HostPort)
-			if err != nil {
-				return URL{}, err
-			}
-			dockerURL = getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, remoteURLName)
-		}
-	}
-
-	// iterating through URLs in local env.yaml
-	for _, localurl := range localURLs {
-		if localurl.Kind != envinfo.DOCKER || localurl.Name != urlName {
-			continue
-		}
-		localURL := getMachineReadableFormatDocker(localurl.Port, localurl.ExposedPort, dockercomponent.LocalhostIP, localurl.Name)
-		// found urlName in local env file
-		if remoteExist {
-			// URL is in both env file and Docker HostConfig
-			localURL.Status.State = StateTypePushed
-			return localURL, nil
-		} else {
-			// URL only exists in local env file
-			localURL.Status.State = StateTypeNotPushed
-			return localURL, nil
-		}
-	}
-	// URL only exists in pushed Docker container
-	if remoteExist {
-		dockerURL.Status.State = StateTypeLocallyDeleted
-		return dockerURL, nil
-	}
-	// can't find the URL in local env.yaml or Docker containers
 	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
 }
 
