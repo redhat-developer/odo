@@ -1,6 +1,7 @@
 package motd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -16,7 +17,7 @@ import (
 // should be in the "openshift" namespace. This needs to be configured
 // by the deployer.
 func DisplayMOTD(coreClient corev1client.CoreV1Interface, out io.Writer) error {
-	motdcm, err := coreClient.ConfigMaps("openshift").Get("motd", metav1.GetOptions{})
+	motdcm, err := coreClient.ConfigMaps("openshift").Get(context.TODO(), "motd", metav1.GetOptions{})
 	if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) {
 		// NOTE(jaosorior): If no motd is configured, it's fine. No need to
 		// print anything. If we get a "Forbidden" error, this is because no

@@ -30,29 +30,29 @@ require (
 	github.com/onsi/gomega v1.10.1
 	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240 // indirect
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
-	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
+	github.com/openshift/client-go v0.0.0-20200422192633-6f6c07fc2a70
 	github.com/openshift/custom-resource-status v0.0.0-20200602122900-c002fd1547ca // indirect
-	github.com/openshift/library-go v0.0.0-20200407165825-2e79bd232e72
-	github.com/openshift/oc v0.0.0-alpha.0.0.20200305142246-2576e482bf00
+	github.com/openshift/library-go v0.0.0-20200506083334-710b0bd21d0c
+	github.com/openshift/oc v0.0.0-alpha.0.0.20200620162412-b644a4b43e8d
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200422144016-a6acf50218ed
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.2
 	github.com/redhat-developer/service-binding-operator v0.1.1
 	github.com/spf13/afero v1.2.2
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/zalando/go-keyring v0.1.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gopkg.in/AlecAivazis/survey.v1 v1.8.0
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
-	k8s.io/cli-runtime v0.17.0
+	k8s.io/api v0.18.3
+	k8s.io/apimachinery v0.18.3
+	k8s.io/cli-runtime v0.18.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
-	k8s.io/kubectl v0.0.0
+	k8s.io/kubectl v0.18.2
 	sigs.k8s.io/controller-runtime v0.6.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )

@@ -2,8 +2,10 @@ package login
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -20,7 +22,6 @@ import (
 	kclientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	kterm "k8s.io/kubectl/pkg/util/term"
 
-	userv1 "github.com/openshift/api/user/v1"
 	projectv1typedclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	"github.com/openshift/oc/pkg/helpers/errors"
 	cliconfig "github.com/openshift/oc/pkg/helpers/kubeconfig"
@@ -79,18 +80,16 @@ func NewLoginOptions(streams genericclioptions.IOStreams) *LoginOptions {
 
 // Gather all required information in a comprehensive order.
 func (o *LoginOptions) GatherInfo() error {
+	defer o.prepareAndDisplayMOTD()
+
 	if err := o.gatherAuthInfo(); err != nil {
-		// Display MOTD even if authentication failed
-		o.prepareAndDisplayMOTD()
 		return err
 	}
 	if err := o.gatherProjectInfo(); err != nil {
-		// Display MOTD even project info gathering failed
-		o.prepareAndDisplayMOTD()
 		return err
 	}
 
-	return o.prepareAndDisplayMOTD()
+	return nil
 }
 
 // getClientConfig returns back the current clientConfig as we know it.  If there is no clientConfig, it builds one with enough information
@@ -191,20 +190,18 @@ func (o *LoginOptions) gatherAuthInfo() error {
 	// if a token were explicitly provided, try to use it
 	if o.tokenProvided() {
 		clientConfig.BearerToken = o.Token
-		if me, err := project.WhoAmI(clientConfig); err == nil {
-			o.Username = me.Name
-			o.Config = clientConfig
-
-			fmt.Fprintf(o.Out, "Logged into %q as %q using the token provided.\n\n", o.Config.Host, o.Username)
-			return nil
-
-		} else {
+		me, err := project.WhoAmI(clientConfig)
+		if err != nil {
 			if kerrors.IsUnauthorized(err) {
 				return fmt.Errorf("The token provided is invalid or expired.\n\n")
 			}
-
 			return err
 		}
+		o.Username = me.Name
+		o.Config = clientConfig
+
+		fmt.Fprintf(o.Out, "Logged into %q as %q using the token provided.\n\n", o.Config.Host, o.Username)
+		return nil
 	}
 
 	// if a username was provided try to make use of it, but if a password were provided we force a token
@@ -265,24 +262,38 @@ func (o *LoginOptions) gatherAuthInfo() error {
 // multiple projects.
 // Requires o.Username to be set.
 func (o *LoginOptions) gatherProjectInfo() error {
-	me, err := o.whoAmI()
-	if err != nil {
-		return err
-	}
-
-	if o.Username != me.Name {
-		return fmt.Errorf("current user, %v, does not match expected user %v", me.Name, o.Username)
-	}
-
 	projectClient, err := projectv1typedclient.NewForConfig(o.Config)
 	if err != nil {
 		return err
 	}
 
-	projectsList, err := projectClient.Projects().List(metav1.ListOptions{})
+	canRequest, err := loginutil.CanRequestProjects(o.Config, o.DefaultNamespace)
+	if err != nil {
+		return err
+	}
+	// check if ProjectRequestMessage is set
+	if !canRequest {
+		msg := ""
+		res, err := projectClient.RESTClient().Get().Resource("projectrequests").DoRaw(context.TODO())
+		if err != nil && res != nil {
+			// if err != nil, try to extract ProjectRequestMessage from status if set
+			status := metav1.Status{}
+			err := json.Unmarshal(res, &status)
+			if err != nil {
+				return err
+			}
+			if len(status.Details.Causes) != 0 && status.Details.Causes[0].Message != "" {
+				msg = status.Details.Causes[0].Message
+			}
+			// now return redirected error from !canRequest with the extracted ProjectRequestMessage if set
+			fmt.Fprintf(o.Out, errors.NoProjectsExistMessage(canRequest, msg, o.CommandName))
+			return nil
+		}
+	}
+	projectsList, err := projectClient.Projects().List(context.TODO(), metav1.ListOptions{})
 	// if we're running on kube (or likely kube), just set it to "default"
 	if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) {
-		fmt.Fprintf(o.Out, "Using \"default\".  You can switch projects with:\n\n '%s project <projectname>'\n", o.CommandName)
+		fmt.Fprintf(o.Out, "Using \"default\" namespace.  You can switch namespaces with:\n\n %s project <projectname>\n", o.CommandName)
 		o.Project = "default"
 		return nil
 	}
@@ -298,7 +309,7 @@ func (o *LoginOptions) gatherProjectInfo() error {
 
 	if len(o.DefaultNamespace) > 0 && !projects.Has(o.DefaultNamespace) {
 		// Attempt a direct get of our current project in case it hasn't appeared in the list yet
-		if currentProject, err := projectClient.Projects().Get(o.DefaultNamespace, metav1.GetOptions{}); err == nil {
+		if currentProject, err := projectClient.Projects().Get(context.TODO(), o.DefaultNamespace, metav1.GetOptions{}); err == nil {
 			// If we get it successfully, add it to the list
 			projectsItems = append(projectsItems, *currentProject)
 			projects.Insert(currentProject.Name)
@@ -307,11 +318,7 @@ func (o *LoginOptions) gatherProjectInfo() error {
 
 	switch len(projectsItems) {
 	case 0:
-		canRequest, err := loginutil.CanRequestProjects(o.Config, o.DefaultNamespace)
-		if err != nil {
-			return err
-		}
-		msg := errors.NoProjectsExistMessage(canRequest, o.CommandName)
+		msg := errors.NoProjectsExistMessage(canRequest, "", o.CommandName)
 		fmt.Fprintf(o.Out, msg)
 		o.Project = ""
 
@@ -330,7 +337,7 @@ func (o *LoginOptions) gatherProjectInfo() error {
 			}
 		}
 
-		current, err := projectClient.Projects().Get(namespace, metav1.GetOptions{})
+		current, err := projectClient.Projects().Get(context.TODO(), namespace, metav1.GetOptions{})
 		if err != nil && !kerrors.IsNotFound(err) && !kerrors.IsForbidden(err) {
 			return err
 		}
@@ -386,7 +393,7 @@ func (o *LoginOptions) SaveConfig() (bool, error) {
 		globalExistedBefore = false
 	}
 
-	newConfig, err := cliconfig.CreateConfig(o.Project, o.Config)
+	newConfig, err := cliconfig.CreateConfig(o.Project, o.Username, o.Config)
 	if err != nil {
 		return false, err
 	}
@@ -424,10 +431,6 @@ func (o *LoginOptions) SaveConfig() (bool, error) {
 	}
 
 	return created, nil
-}
-
-func (o LoginOptions) whoAmI() (*userv1.User, error) {
-	return project.WhoAmI(o.Config)
 }
 
 func (o *LoginOptions) usernameProvided() bool {
