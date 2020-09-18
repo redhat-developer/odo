@@ -267,5 +267,9 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 }
 
 func isIgnorableError(err error) bool {
+	e := errors.Cause(err)
+	if e != nil {
+		err = e
+	}
 	return kerrors.IsNotFound(err) || kerrors.IsForbidden(err) || kerrors.IsUnauthorized(err)
 }
