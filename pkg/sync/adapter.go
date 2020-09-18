@@ -248,16 +248,16 @@ func GetSyncFolder(sourceVolumePath string, projects []parserCommon.DevfileProje
 
 	if project.ClonePath != "" {
 		if strings.HasPrefix(project.ClonePath, "/") {
-			return "", fmt.Errorf("the clonePath in the devfile must be a relative path")
+			return "", fmt.Errorf("the clonePath %s in the devfile project %s must be a relative path", project.ClonePath, project.Name)
 		}
 		if strings.Contains(project.ClonePath, "..") {
-			return "", fmt.Errorf("the clonePath in the devfile cannot escape the projects root. Don't use .. to try and do that")
+			return "", fmt.Errorf("the clonePath %s in the devfile project %s cannot escape the value defined by $PROJECTS_ROOT. Please avoid using \"..\" in clonePath", project.ClonePath, project.Name)
 		}
 		// If clonepath exist source would be synced to $PROJECTS_ROOT/clonePath
 		return filepath.ToSlash(filepath.Join(sourceVolumePath, project.ClonePath)), nil
 	}
 	// If clonepath does not exist source would be synced to $PROJECTS_ROOT/projectName
-	return filepath.ToSlash(filepath.Join(sourceVolumePath, projects[0].Name)), nil
+	return filepath.ToSlash(filepath.Join(sourceVolumePath, project.Name)), nil
 
 }
 
