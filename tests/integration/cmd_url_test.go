@@ -95,47 +95,6 @@ var _ = Describe("odo url command tests", func() {
 		})
 	})
 
-	Context("Describing urls", func() {
-		It("should describe appropriate URLs and push message", func() {
-			var stdout string
-			url1 := helper.RandString(5)
-			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
-
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
-
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
-			helper.DontMatchAllInOutput(stdout, []string{"Not Pushed", "odo push"})
-
-			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url1, "odo push"})
-		})
-
-		It("should be able to describe a url in CLI format and machine readable json format for a secure url", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context)
-			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure", "--context", context)
-
-			actualURLDescribeJSON := helper.CmdShouldPass("odo", "url", "describe", "myurl", "-o", "json", "--context", context)
-			desiredURLDescribeJSON := `{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{"port": 8080,"secure": true,"path": "/", "kind": "route"},"status": {"state": "Not Pushed"}}`
-			Expect(desiredURLDescribeJSON).Should(MatchJSON(actualURLDescribeJSON))
-
-			helper.CmdShouldPass("odo", "push", "--context", context)
-
-			// odo url describe -o json
-			actualURLDescribeJSON = helper.CmdShouldPass("odo", "url", "describe", "myurl", "-o", "json", "--context", context)
-			// get the route URL
-			fullURLPath := helper.DetermineRouteURL(context)
-			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
-			desiredURLDescribeJSON = fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{"host":"%s","protocol": "https","port": 8080,"secure": true, "path": "/", "kind": "route"},"status": {"state": "Pushed"}}`, pathNoHTTP)
-			Expect(desiredURLDescribeJSON).Should(MatchJSON(actualURLDescribeJSON))
-		})
-	})
-
 	Context("when listing urls using -o json flag", func() {
 		JustBeforeEach(func() {
 			originalDir = helper.Getwd()
