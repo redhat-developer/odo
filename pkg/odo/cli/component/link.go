@@ -88,7 +88,6 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
-	options.commonLinkOptions.csvSupport, _ = util.IsCSVSupported()
 	options.commonLinkOptions.sbr = &sbo.ServiceBindingRequest{}
 	return &options
 }
