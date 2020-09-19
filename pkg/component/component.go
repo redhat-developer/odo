@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser"
@@ -1038,7 +1039,7 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Devf
 			// TODO: optimise this
 			if f != nil && strings.Contains(f.Name(), ".odo") {
 				// lets find if there is a devfile and an env.yaml
-				dir := filepath.Dir(f.Name())
+				dir := filepath.Dir(path)
 				data, err := envinfo.NewEnvSpecificInfo(dir)
 				if err != nil {
 					return err
@@ -1048,23 +1049,35 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Devf
 				if data.GetName() == "" || data.GetApplication() == "" || data.GetNamespace() == "" {
 					return nil
 				}
-				devfileObj, err := parser.Parse(filepath.Join(dir, "devfile.yaml"))
+
+				// we just want to confirm if the devfile is correct
+				_, err = parser.Parse(filepath.Join(dir, "devfile.yaml"))
 				if err != nil {
 					return err
 				}
-				comp := NewDevfileComponent(devfileObj.GetMetadataName())
-				comp.Status.State = StateTypeNotPushed
+				con, _ := filepath.Abs(filepath.Dir(path))
+
+				comp := NewDevfileComponent(data.GetName())
+				comp.Status.State = StateTypeUnknown
 				comp.Spec.Application = data.GetApplication()
-				comp.Spec.Namespace = data.GetNamespace()
-				components = append(components, comp)
+				comp.Namespace = data.GetNamespace()
+				comp.Spec.Name = data.GetName()
+				comp.Status.Context = con
 
 				// since the config file maybe belong to a component of a different project
 				if client != nil {
 					client.Namespace = data.GetNamespace()
+					deployment, err := client.GetDeploymentByName(data.GetName())
+					if err != nil {
+						comp.Status.State = StateTypeNotPushed
+					} else if deployment != nil {
+						comp.Status.State = StateTypePushed
+					}
 				}
-				// TODO: get if the component is present on the cluster
 
+				components = append(components, comp)
 			}
+
 			return nil
 		})
 
@@ -1381,9 +1394,8 @@ func GetComponentState(client *occlient.Client, componentName, applicationName s
 	}
 	if c != nil {
 		return StateTypePushed
-	} else {
-		return StateTypeNotPushed
 	}
+	return StateTypeNotPushed
 }
 
 // GetComponent provides component definition

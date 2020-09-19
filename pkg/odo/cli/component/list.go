@@ -157,9 +157,9 @@ func (lo *ListOptions) Run() (err error) {
 			if len(devfileComps) != 0 {
 				lo.hasDevfileComponents = true
 				fmt.Fprintln(w, "Devfile Components: ")
-				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE")
+				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE", "\t", "CONTEXT")
 				for _, comp := range devfileComps {
-					fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State)
+					fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State, "\t", comp.Status.Context)
 				}
 			}
 			if lo.hasDevfileComponents {
@@ -216,7 +216,7 @@ func (lo *ListOptions) Run() (err error) {
 	for _, comp := range devfileComponents {
 		if lo.EnvSpecificInfo != nil {
 			// if we can find a component from the listing from server then the local state is pushed
-			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.Application, comp.Spec.Namespace) {
+			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.Application, comp.Namespace) {
 				currentComponentState = PushedCompState
 			}
 		}
@@ -228,9 +228,10 @@ func (lo *ListOptions) Run() (err error) {
 		if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
 			comp := component.NewDevfileComponent(envinfo.GetName())
 			comp.Status.State = component.StateTypeNotPushed
-			comp.Spec.Namespace = envinfo.GetNamespace()
+			comp.Namespace = envinfo.GetNamespace()
 			comp.Spec.Application = envinfo.GetApplication()
 			comp.Spec.ComponentType = lo.componentType
+			comp.Spec.Name = envinfo.GetName()
 			devfileComponents = append(devfileComponents, comp)
 		}
 	}
@@ -284,7 +285,7 @@ func (lo *ListOptions) Run() (err error) {
 			fmt.Fprintln(w, "Devfile Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
 			for _, comp := range devfileComponents {
-				fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Spec.Name, "\t", comp.Spec.Namespace, "\t", comp.Spec.ComponentType, "\t", "Pushed")
+				fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Spec.Name, "\t", comp.Namespace, "\t", comp.Spec.ComponentType, "\t", comp.Status.State)
 			}
 			w.Flush()
 
