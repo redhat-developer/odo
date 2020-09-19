@@ -434,10 +434,7 @@ func (ei *EnvInfo) GetApplication() string {
 
 // MatchComponent matches a component information provided by a devfile compoment with the local env info
 func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
-	if name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace() {
-		return true
-	}
-	return false
+	return name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace()
 }
 
 // GetLink returns the EnvInfoLink, returns default if nil
