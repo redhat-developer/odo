@@ -27,9 +27,10 @@ func DevfileComponentsFromDeployments(deployList *appsv1.DeploymentList) []Devfi
 
 		comp := NewDevfileComponent(deployment.Name)
 		comp.Status.State = StateTypePushed
-		comp.Spec.Namespace = deployment.Namespace
+		comp.Namespace = deployment.Namespace
 		comp.Spec.Application = app
 		comp.Spec.ComponentType = cmpType
+		comp.Spec.Name = deployment.Name
 		compList = append(compList, comp)
 	}
 	return compList

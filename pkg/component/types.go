@@ -57,7 +57,6 @@ type DevfileComponent struct {
 
 type DevfileComponentSpec struct {
 	Name          string `json:"componentName,omitempty"`
-	Namespace     string `json:"namespace,omitempty"`
 	Application   string `json:"application,omitempty"`
 	ComponentType string `json:"componentType,omitempty"`
 }

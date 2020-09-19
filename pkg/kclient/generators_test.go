@@ -170,8 +170,8 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 				t.Errorf("expected %s, actual %s", tt.podName, podTemplateSpec.Name)
 			}
 
-			if podTemplateSpec.Namespace != tt.namespace {
-				t.Errorf("expected %s, actual %s", tt.namespace, podTemplateSpec.Namespace)
+			if podTemplateNamespace != tt.namespace {
+				t.Errorf("expected %s, actual %s", tt.namespace, podTemplateNamespace)
 			}
 
 			if !hasVolumeWithName(OdoSourceVolume, podTemplateSpec.Spec.Volumes) {
