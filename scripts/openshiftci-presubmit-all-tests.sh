@@ -5,3 +5,5 @@ set -e
 # show commands
 set -x
 
+python scripts/prow.py
+exit 1
