@@ -120,6 +120,20 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 
 	Context("Creating urls", func() {
+		It("should create a URL without port flag if only one port exposed in devfile", func() {
+			url1 := helper.RandString(5)
+			host := helper.RandString(5) + ".com"
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--host", host, "--ingress")
+			stdout := helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{url1, "3000", "Not Pushed"})
+		})
+
 		It("should create a secure URL", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
