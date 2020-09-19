@@ -242,7 +242,7 @@ func (lo *ListOptions) Run() (err error) {
 
 			var componentList []component.Component
 
-			if len(apps) == 0 && lo.LocalConfigInfo.ConfigFileExists() {
+			if len(apps) == 0 && lo.LocalConfigInfo.Exists() {
 				comps, err := component.List(lo.Client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
 				if err != nil {
 					return err

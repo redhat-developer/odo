@@ -268,6 +268,7 @@ func TestList(t *testing.T) {
 		getFakeDC("test", "test", "otherApp", "python"),
 	}}
 
+	const caseName = "Case 5: List component when openshift cluster not reachable"
 	tests := []struct {
 		name                    string
 		dcList                  appsv1.DeploymentConfigList
@@ -325,7 +326,7 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
-			name:                    "Case 5: List component when openshift cluster not reachable",
+			name:                    caseName,
 			wantErr:                 false,
 			projectExists:           false,
 			existingLocalConfigInfo: &existingSampleLocalConfig,
@@ -352,24 +353,31 @@ func TestList(t *testing.T) {
 
 			// Prepend reactor returns the last matched reactor added
 			// We need to return errorNotFound for localconfig only component
-			count := 0
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if tt.name == "Case 5: List component when openshift cluster not reachable" {
+				if tt.name == caseName {
 					return true, nil, errors.NewUnauthorized("user unauthorized")
 				}
-				switch count {
-				case 0, 1:
-					count++
+				getAction, ok := action.(ktesting.GetAction)
+				if !ok {
+					return false, nil, fmt.Errorf("expected a GetAction, got %v", action)
+				}
+				switch getAction.GetName() {
+				case "frontend-app":
 					return true, &tt.dcList.Items[0], nil
-				case 2, 3:
-					count++
+				case "backend-app":
 					return true, &tt.dcList.Items[1], nil
-				case 4:
-					count++
+				default:
 					return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deploymentconfigs"}, "")
 				}
-				count++
-				return true, &tt.dcList.Items[0], nil
+			})
+
+			fakeClientSet.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.name == caseName {
+					// simulate unavailable cluster
+					return true, nil, errors.NewUnauthorized("user unauthorized")
+				}
+				// the only other time this is called is when attempting to retrieve the state of the local component that is not pushed yet (case 4)
+				return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deployments"}, "comp")
 			})
 
 			results, err := List(client, "app", tt.existingLocalConfigInfo)
@@ -379,7 +387,7 @@ func TestList(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(tt.output, results) {
-				t.Errorf("expected output: %#v,got: %#v", tt.output, results)
+				t.Errorf("expected output:\n%#v\n\ngot:\n%#v", tt.output, results)
 			}
 		})
 	}

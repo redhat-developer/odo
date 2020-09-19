@@ -67,7 +67,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
-	if !o.cfg.EnvInfoFileExists() {
+	if !o.cfg.Exists() {
 		return errors.Errorf("the context directory doesn't contain a component, please refer `odo create --help` to create a component")
 	}
 

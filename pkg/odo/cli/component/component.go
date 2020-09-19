@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/storage"
 
@@ -28,15 +29,12 @@ type ComponentOptions struct {
 
 // Complete completes component options
 func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	co.Context = genericclioptions.NewContext(cmd)
-
-	// If no arguments have been passed, get the current component
-	// else, use the first argument and check to see if it exists
-	if len(args) == 0 {
-		co.componentName = co.Context.Component()
+	if util.CheckPathExists(DevfilePath) {
+		co.Context = genericclioptions.NewDevfileContext(cmd)
 	} else {
-		co.componentName = co.Context.Component(args[0])
+		co.Context = genericclioptions.NewContext(cmd)
 	}
+	co.componentName = co.Context.Component(args...)
 	return
 }
 

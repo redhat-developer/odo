@@ -1054,8 +1054,8 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getLocalDevfileStorage(tt.args.devfileData); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getLocalDevfileStorage() difference between got and want : %v", pretty.Compare(got, tt.want))
+			if got := GetLocalDevfileStorage(tt.args.devfileData); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLocalDevfileStorage() difference between got and want : %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}

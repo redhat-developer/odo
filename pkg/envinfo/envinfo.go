@@ -89,6 +89,11 @@ type EnvInfoPushCommand struct {
 // some day local config would get deprecated and hence to keep the interfaces in the new package
 type LocalConfigProvider interface {
 	GetApplication() string
+	GetName() string
+	GetNamespace() string
+	GetDebugPort() int
+	GetURL() []EnvInfoURL
+	Exists() bool
 }
 
 // EnvInfo holds all the env specific information relavent to a specific Component.
@@ -105,10 +110,15 @@ type proxyEnvInfo struct {
 // EnvSpecificInfo wraps the envinfo and provides helpers to
 // serialize it.
 type EnvSpecificInfo struct {
+	devfilePath       string
 	Filename          string `yaml:"FileName,omitempty"`
 	fs                filesystem.Filesystem
 	EnvInfo           `yaml:",omitempty"`
 	envinfoFileExists bool
+}
+
+func (esi EnvSpecificInfo) GetDevfilePath() string {
+	return esi.devfilePath
 }
 
 type EnvInfoLink struct {
@@ -122,20 +132,20 @@ type EnvInfoLink struct {
 
 // getEnvInfoFile first checks for the ENVINFO variable
 // then we check for directory and eventually the file (which we return as a string)
-func getEnvInfoFile(envDir string) (string, error) {
+func getEnvInfoFile(envDir string) (string, string, error) {
 	if env, ok := os.LookupEnv(envInfoEnvName); ok {
-		return env, nil
+		return env, filepath.Join(env, "..", "..", "..", "devfile.yaml"), nil
 	}
 
 	if envDir == "" {
 		var err error
 		envDir, err = os.Getwd()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 	}
 
-	return filepath.Join(envDir, ".odo", "env", envInfoFileName), nil
+	return filepath.Join(envDir, ".odo", "env", envInfoFileName), filepath.Join(envDir, "devfile.yaml"), nil
 }
 
 // New returns the EnvSpecificInfo
@@ -151,7 +161,7 @@ func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 // newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
 	// Get the path of the environemt file
-	envInfoFile, err := getEnvInfoFile(envDir)
+	envInfoFile, devfilePath, err := getEnvInfoFile(envDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the path of the environment file")
 	}
@@ -159,6 +169,7 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 	// Organize that information into a struct
 	e := EnvSpecificInfo{
 		EnvInfo:           NewEnvInfo(),
+		devfilePath:       devfilePath,
 		Filename:          envInfoFile,
 		envinfoFileExists: true,
 		fs:                fs,
@@ -280,8 +291,8 @@ func (esi *EnvSpecificInfo) IsSet(parameter string) bool {
 	return util.IsSet(esi.componentSettings, parameter)
 }
 
-// EnvInfoFileExists if the envinfo file exists or not
-func (esi *EnvSpecificInfo) EnvInfoFileExists() bool {
+// Exists returns whether the envinfo file exists or not
+func (esi *EnvSpecificInfo) Exists() bool {
 	return esi.envinfoFileExists
 }
 

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
-
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,8 +62,12 @@ func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServi
 	for _, service := range csvs.Items {
 		if strings.Contains(service.ObjectMeta.Name, name) {
 			result = append(result, service)
-		} else if strings.Contains(util.CsvOperators(service.Spec.CustomResourceDefinitions), name) {
-			result = append(result, service)
+		} else {
+			for _, crd := range service.Spec.CustomResourceDefinitions.Owned {
+				if name == crd.Kind {
+					result = append(result, service)
+				}
+			}
 		}
 	}
 

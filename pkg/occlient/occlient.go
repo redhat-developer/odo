@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/odo/pkg/kclient"
 	"io"
 	"net"
 	"path/filepath"
@@ -57,7 +58,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -199,7 +199,7 @@ odo login https://mycluster.mydomain.com
 `
 
 type Client struct {
-	kubeClient           kubernetes.Interface
+	kubeClient           *kclient.Client
 	imageClient          imageclientset.ImageV1Interface
 	appsClient           appsclientset.AppsV1Interface
 	buildClient          buildclientset.BuildV1Interface
@@ -210,6 +210,7 @@ type Client struct {
 	KubeConfig           clientcmd.ClientConfig
 	discoveryClient      discovery.DiscoveryInterface
 	Namespace            string
+	supportedResources   map[string]bool
 }
 
 func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
@@ -230,66 +231,55 @@ func New() (*Client, error) {
 		return nil, errors.New(err.Error() + errorMsg)
 	}
 
-	kubeClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.kubeClient = kubeClient
-
-	imageClient, err := imageclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.imageClient = imageClient
-
-	appsClient, err := appsclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.appsClient = appsClient
-
-	buildClient, err := buildclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.buildClient = buildClient
-
-	serviceCatalogClient, err := servicecatalogclienset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.serviceCatalogClient = serviceCatalogClient
-
-	projectClient, err := projectclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.projectClient = projectClient
-
-	routeClient, err := routeclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.routeClient = routeClient
-
-	userClient, err := userclientset.NewForConfig(config)
+	client.kubeClient, err = kclient.NewForConfig(client.KubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	client.userClient = userClient
-
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	client.imageClient, err = imageclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	client.discoveryClient = discoveryClient
 
-	namespace, _, err := client.KubeConfig.Namespace()
+	client.appsClient, err = appsclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	client.Namespace = namespace
+
+	client.buildClient, err = buildclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.serviceCatalogClient, err = servicecatalogclienset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.projectClient, err = projectclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.routeClient, err = routeclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.userClient, err = userclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.discoveryClient, err = discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.Namespace, _, err = client.KubeConfig.Namespace()
+	if err != nil {
+		return nil, err
+	}
 
 	return &client, nil
 }
@@ -756,7 +746,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 
 // GetSecret returns the Secret object in the given namespace
 func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
-	secret, err := c.kubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := c.kubeClient.KubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
 	}
@@ -1259,7 +1249,7 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 	}
 	svc.SetOwnerReferences(append(svc.GetOwnerReferences(), ownerReference))
 
-	createdSvc, err := c.kubeClient.CoreV1().Services(c.Namespace).Create(&svc)
+	createdSvc, err := c.kubeClient.KubeClient.CoreV1().Services(c.Namespace).Create(&svc)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
@@ -1276,7 +1266,7 @@ func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]stri
 		StringData: data,
 	}
 	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
-	_, err := c.kubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
+	_, err := c.kubeClient.KubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
 	}
@@ -1822,7 +1812,7 @@ func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.D
 func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int) {
 
 	// Secondly, we will start a go routine for watching for events related to the pod and update our pod status accordingly.
-	eventWatcher, err := c.kubeClient.CoreV1().Events(c.Namespace).Watch(metav1.ListOptions{})
+	eventWatcher, err := c.kubeClient.KubeClient.CoreV1().Events(c.Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
 		log.Warningf("Unable to watch for events: %s", err)
 		return
@@ -1882,7 +1872,7 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	spinner := log.Spinner(waitMessage)
 	defer spinner.End(false)
 
-	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
+	w, err := c.kubeClient.KubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -1983,7 +1973,7 @@ See below for a list of failed events that occured more than %d times during dep
 func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error) {
 	klog.V(3).Infof("Waiting for secret %s to become available", name)
 
-	w, err := c.kubeClient.CoreV1().Secrets(namespace).Watch(metav1.ListOptions{
+	w, err := c.kubeClient.KubeClient.CoreV1().Secrets(namespace).Watch(metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 	})
 	if err != nil {
@@ -2689,7 +2679,7 @@ func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 		}
 	}
 
-	secretList, err := c.kubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
+	secretList, err := c.kubeClient.KubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get secret list")
 	}
@@ -2776,7 +2766,7 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 // GetServicesFromSelector returns an array of Service resources which match the
 // given selector
 func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, error) {
-	serviceList, err := c.kubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{
+	serviceList, err := c.kubeClient.KubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -2798,7 +2788,7 @@ func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentCon
 
 // GetPVCsFromSelector returns the PVCs based on the given selector
 func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolumeClaim, error) {
-	pvcList, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
+	pvcList, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -2847,7 +2837,7 @@ func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.De
 // An error is thrown when exactly one Pod is not found.
 func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 
-	pods, err := c.kubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
+	pods, err := c.kubeClient.KubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -2932,7 +2922,8 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	}
 
 	// This will fetch the information about OpenShift Version
-	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
+	coreGet := c.kubeClient.KubeClient.CoreV1().RESTClient().Get()
+	rawOpenShiftVersion, err := coreGet.AbsPath("/version/openshift").Do().Raw()
 	if err != nil {
 		// when using Minishift (or plain 'oc cluster up' for that matter) with OKD 3.11, the version endpoint is missing...
 		klog.V(3).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
@@ -2945,7 +2936,7 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	}
 
 	// This will fetch the information about Kubernetes Version
-	rawKubernetesVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version").Do().Raw()
+	rawKubernetesVersion, err := coreGet.AbsPath("/version").Do().Raw()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get Kubernetes Version")
 	}
@@ -2973,7 +2964,7 @@ func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string,
 		podExecOptions.Container = compInfo.ContainerName
 	}
 
-	req := c.kubeClient.CoreV1().RESTClient().
+	req := c.kubeClient.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(c.Namespace).
 		Resource("pods").
@@ -3031,12 +3022,20 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 
 // BuildPortForwardReq builds a port forward request
 func (c *Client) BuildPortForwardReq(podName string) *rest.Request {
-	return c.kubeClient.CoreV1().RESTClient().
+	return c.kubeClient.KubeClient.CoreV1().RESTClient().
 		Post().
 		Resource("pods").
 		Namespace(c.Namespace).
 		Name(podName).
 		SubResource("portforward")
+}
+
+func (c *Client) GetKubeClient() *kclient.Client {
+	return c.kubeClient
+}
+
+func (c *Client) SetKubeClient(client *kclient.Client) {
+	c.kubeClient = client
 }
 
 // GetVolumeMountsFromDC returns a list of all volume mounts in the given DC
@@ -3075,7 +3074,7 @@ func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv
 
 // GetPVCFromName returns the PVC of the given name
 func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error) {
-	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
+	return c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
 }
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
@@ -3316,20 +3315,30 @@ func GenerateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 }
 
 func (c *Client) isResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
-
+	if c.supportedResources == nil {
+		c.supportedResources = make(map[string]bool, 7)
+	}
 	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
 
-	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
-	if kerrors.IsNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	for _, resources := range list.APIResources {
-		if resources.Name == resourceName {
-			return true, nil
+	supported, found := c.supportedResources[groupVersion]
+	if !found {
+		list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+		if err != nil {
+			if kerrors.IsNotFound(err) {
+				supported = false
+			} else {
+				// don't record, just attempt again next time in case it's a transient error
+				return false, err
+			}
+		} else {
+			for _, resources := range list.APIResources {
+				if resources.Name == resourceName {
+					supported = true
+					break
+				}
+			}
 		}
+		c.supportedResources[groupVersion] = supported
 	}
-	return false, nil
+	return supported, nil
 }

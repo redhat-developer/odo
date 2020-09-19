@@ -106,7 +106,7 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the UnsetOptions based on completed values
 func (o *UnsetOptions) Validate() (err error) {
 	if !o.IsDevfile {
-		if !o.LocalConfigInfo.ConfigFileExists() {
+		if !o.LocalConfigInfo.Exists() {
 			return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
 		}
 	}

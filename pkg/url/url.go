@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -417,11 +418,25 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 	return urlList, nil
 }
 
+type sortableURLs []URL
+
+func (s sortableURLs) Len() int {
+	return len(s)
+}
+
+func (s sortableURLs) Less(i, j int) bool {
+	return s[i].Name <= s[j].Name
+}
+
+func (s sortableURLs) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []parsercommon.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
-	ingresses, err := client.ListIngresses(labelSelector)
+	ingresses, err := oclient.GetKubeClient().ListIngresses(labelSelector)
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list ingress")
 	}
@@ -432,18 +447,22 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 			return URLList{}, errors.Wrap(err, "unable to list routes")
 		}
 	}
-	localEnvinfoURLs := envSpecificInfo.GetURL()
+
 	envURLMap := make(map[string]envinfo.EnvInfoURL)
-	for _, url := range localEnvinfoURLs {
-		if url.Kind == envinfo.DOCKER {
-			continue
+	if configProvider != nil {
+		localEnvinfoURLs := configProvider.GetURL()
+		for _, url := range localEnvinfoURLs {
+			if url.Kind == envinfo.DOCKER {
+				continue
+			}
+			if !routeSupported && url.Kind == envinfo.ROUTE {
+				continue
+			}
+			envURLMap[url.Name] = url
 		}
-		if !routeSupported && url.Kind == envinfo.ROUTE {
-			continue
-		}
-		envURLMap[url.Name] = url
 	}
-	var urls []URL
+
+	var urls sortableURLs
 
 	clusterURLMap := make(map[string]URL)
 	localMap := make(map[string]URL)
@@ -459,30 +478,39 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		clusterURLMap[clusterURL.Name] = clusterURL
 	}
 
-	for _, comp := range containerComponents {
-		for _, localEndpoint := range comp.Container.Endpoints {
-			// only exposed endpoint will be shown as a URL in `odo url list`
-			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
-				continue
-			}
-			var devfileURL envinfo.EnvInfoURL
-			if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
-				devfileURL = envinfoURL
-				devfileURL.Port = int(localEndpoint.TargetPort)
-				devfileURL.Secure = localEndpoint.Secure
-			}
-			if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
-				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
-				// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
-				if !routeSupported {
+	if len(containerComponents) > 0 {
+		for _, comp := range containerComponents {
+			for _, localEndpoint := range comp.Container.Endpoints {
+				// only exposed endpoint will be shown as a URL in `odo url list`
+				if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
 					continue
 				}
-				devfileURL.Name = localEndpoint.Name
-				devfileURL.Port = int(localEndpoint.TargetPort)
-				devfileURL.Secure = localEndpoint.Secure
-				devfileURL.Kind = envinfo.ROUTE
+				var devfileURL envinfo.EnvInfoURL
+				if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
+					devfileURL = envinfoURL
+					devfileURL.Port = int(localEndpoint.TargetPort)
+					devfileURL.Secure = localEndpoint.Secure
+				}
+				if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+					// Devfile endpoint by default should create a route if no host information is provided in env.yaml
+					// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
+					if !routeSupported {
+						continue
+					}
+					devfileURL.Name = localEndpoint.Name
+					devfileURL.Port = int(localEndpoint.TargetPort)
+					devfileURL.Secure = localEndpoint.Secure
+					devfileURL.Kind = envinfo.ROUTE
+				}
+				localURL := ConvertEnvinfoURL(devfileURL, componentName)
+				// use the trimmed URL Name as the key since remote URLs' names are trimmed
+				trimmedURLName := getValidURLName(localURL.Name)
+				localMap[trimmedURLName] = localURL
 			}
-			localURL := ConvertEnvinfoURL(devfileURL, componentName)
+		}
+	} else {
+		for _, url := range envURLMap {
+			localURL := ConvertEnvinfoURL(url, componentName)
 			// use the trimmed URL Name as the key since remote URLs' names are trimmed
 			trimmedURLName := getValidURLName(localURL.Name)
 			localMap[trimmedURLName] = localURL
@@ -510,6 +538,9 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 			urls = append(urls, localURL)
 		}
 	}
+
+	// sort urls by name to get consistent output
+	sort.Sort(urls)
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
 }
@@ -609,7 +640,7 @@ func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 }
 
 // ConvertConfigURL converts ConfigURL to URL
-func ConvertConfigURL(configURL config.ConfigURL) URL {
+func ConvertConfigURL(configURL envinfo.EnvInfoURL) URL {
 	return URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
@@ -630,6 +661,11 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 // ConvertEnvinfoURL converts EnvinfoURL to URL
 func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
+	// default to route kind if none is provided
+	kind := envinfoURL.Kind
+	if kind == "" {
+		kind = envinfo.ROUTE
+	}
 	url := URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
@@ -641,14 +677,14 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 		Spec: URLSpec{
 			Port:   envinfoURL.Port,
 			Secure: envinfoURL.Secure,
-			Kind:   envinfoURL.Kind,
+			Kind:   kind,
 		},
 	}
-	if envinfoURL.Kind == envinfo.INGRESS {
+	if kind == envinfo.INGRESS {
 		url.Spec.Host = hostString
 		if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
 			url.Spec.TLSSecret = envinfoURL.TLSSecret
-		} else if envinfoURL.Secure && envinfoURL.Kind == envinfo.INGRESS {
+		} else if envinfoURL.Secure {
 			url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
 		}
 	}
@@ -836,7 +872,7 @@ func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP s
 type PushParameters struct {
 	ComponentName             string
 	ApplicationName           string
-	ConfigURLs                []config.ConfigURL
+	ConfigURLs                []envinfo.EnvInfoURL
 	EnvURLS                   []envinfo.EnvInfoURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool

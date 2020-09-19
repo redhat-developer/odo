@@ -653,7 +653,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// check to see if config file exists or not, if it does that
 	// means we shouldn't allow the user to override the current component
-	if co.LocalConfigInfo.ConfigFileExists() {
+	if co.LocalConfigInfo.Exists() {
 		return errors.New("this directory already contains a component")
 	}
 
@@ -1212,6 +1212,7 @@ func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectP
 			if projectInfo.Name == projectPassed { //Get the index
 				project = &projects[indexOfProject]
 				projectFound = true
+				break
 			}
 		}
 

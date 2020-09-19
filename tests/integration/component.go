@@ -242,7 +242,7 @@ func componentTests(args ...string) {
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "describe", "-o", "json", "--context", context)...))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false, "path": "/", "kind": "route"}, "status": {"state": "Not Pushed"}}, {"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-2", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false, "path": "/", "kind": "route"}, "status": {"state": "Not Pushed"}}]},"storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"size": "1Gi", "path": "/data1"}}]},"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
+			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false,  "kind": "route"}, "status": {"state": "Not Pushed"}}, {"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-2", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false,  "kind": "route"}, "status": {"state": "Not Pushed"}}]},"storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"size": "1Gi", "path": "/data1"}}]},"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
 			Expect(err).Should(BeNil())
 			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
 
@@ -569,13 +569,13 @@ func componentTests(args ...string) {
 			Expect(output).To(ContainSubstring("Warning: python is not fully supported by odo, and it is not guaranteed to work"))
 		})
 
-		It("creates a local nodejs component and check unsupported warning hasn't occured", func() {
+		It("creates a local nodejs component and check unsupported warning hasn't occurred", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			output := helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs:latest", componentName, "--app", appName, "--project", project, "--context", context)...)
 			Expect(output).NotTo(ContainSubstring("Warning"))
 		})
 
-		It("creates a local java component and check unsupported warning hasn't occured", func() {
+		It("creates a local java component and check unsupported warning hasn't occurred", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
 			output := helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:latest", componentName, "--project", project, "--context", context)...)
 			Expect(output).NotTo(ContainSubstring("Warning"))

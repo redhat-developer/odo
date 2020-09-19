@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/envinfo"
 	"io"
 	"net/url"
 	"os"
@@ -77,17 +78,7 @@ type ComponentSettings struct {
 
 	Envs EnvVarList `yaml:"Envs,omitempty"`
 
-	URL *[]ConfigURL `yaml:"Url,omitempty"`
-}
-
-// ConfigURL holds URL related information
-type ConfigURL struct {
-	// Name of the URL
-	Name string `yaml:"Name,omitempty"`
-	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty"`
-	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty"`
+	URL *[]envinfo.EnvInfoURL `yaml:"Url,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
@@ -257,11 +248,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
 		case "url":
-			urlValue := value.(ConfigURL)
+			urlValue := value.(envinfo.EnvInfoURL)
 			if lci.componentSettings.URL != nil {
 				*lci.componentSettings.URL = append(*lci.componentSettings.URL, urlValue)
 			} else {
-				lci.componentSettings.URL = &[]ConfigURL{urlValue}
+				lci.componentSettings.URL = &[]envinfo.EnvInfoURL{urlValue}
 			}
 		}
 
@@ -319,8 +310,8 @@ func (lci *LocalConfigInfo) IsSet(parameter string) bool {
 	return util.IsSet(lci.componentSettings, parameter)
 }
 
-// ConfigFileExists if a config file exists or not
-func (lci *LocalConfigInfo) ConfigFileExists() bool {
+// Exists returns whether the config file exists or not
+func (lci *LocalConfigInfo) Exists() bool {
 	return lci.configFileExists
 }
 
@@ -395,10 +386,7 @@ func (lci *LocalConfigInfo) SetEnvVars(envVars EnvVarList) error {
 
 // GetEnvVars gets the env variables from the component settings
 func (lci *LocalConfigInfo) GetEnvVars() EnvVarList {
-	if lci.componentSettings.Envs == nil {
-		return EnvVarList{}
-	}
-	return lci.componentSettings.Envs
+	return lci.GetEnvs()
 }
 
 func (lci *LocalConfigInfo) writeToFile() error {
@@ -450,6 +438,11 @@ func (lc *LocalConfig) GetProject() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Project)
 }
 
+// GetProject returns the project, returns default if nil
+func (lc *LocalConfig) GetNamespace() string {
+	return lc.GetProject()
+}
+
 // GetName returns the Name, returns default if nil
 func (lc *LocalConfig) GetName() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Name)
@@ -486,9 +479,9 @@ func (lc *LocalConfig) GetMaxCPU() string {
 }
 
 // GetURL returns the ConfigURL, returns default if nil
-func (lc *LocalConfig) GetURL() []ConfigURL {
+func (lc *LocalConfig) GetURL() []envinfo.EnvInfoURL {
 	if lc.componentSettings.URL == nil {
-		return []ConfigURL{}
+		return []envinfo.EnvInfoURL{}
 	}
 	return *lc.componentSettings.URL
 }
