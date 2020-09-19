@@ -230,9 +230,9 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 	}
 
 	componentSettings := envinfo.ComponentSettings{
-		Name:      co.componentName,
-		Namespace: co.context.Project,
-		AppName:   application,
+		Name:    co.componentName,
+		Project: co.context.Project,
+		AppName: application,
 	}
 
 	if debugPort != 0 || debugPort == config.DefaultDebugPort {

@@ -19,7 +19,7 @@ import (
 type ComponentSettings struct {
 	Name string `yaml:"Name,omitempty"`
 
-	Namespace   string              `yaml:"Namespace,omitempty"`
+	Project     string              `yaml:"Project,omitempty"`
 	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
 	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
@@ -208,9 +208,9 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "name":
 			val := value.(string)
 			esi.componentSettings.Name = val
-		case "namespace":
+		case "project":
 			val := value.(string)
-			esi.componentSettings.Namespace = val
+			esi.componentSettings.Project = val
 		case "debugport":
 			val, err := strconv.Atoi(value.(string))
 			if err != nil {
@@ -289,7 +289,7 @@ var (
 	// Mandatory parameters in the environment file (env.yaml)
 	manParams = []string{
 		"name",
-		"namespace",
+		"project",
 	}
 )
 
@@ -413,7 +413,7 @@ func (esi *EnvSpecificInfo) SetRunMode(runMode RUNMode) error {
 
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
-	return ei.componentSettings.Namespace
+	return ei.componentSettings.Project
 }
 
 // GetApplication returns the application name
@@ -434,10 +434,10 @@ const (
 	Name = "Name"
 	// NameDescription is the human-readable description for name setting
 	NameDescription = "Set this value to user-defined component name to specify the component name"
-	// Namespace is the name of the setting controlling the component namespace
-	Namespace = "Namespace"
-	// NamespaceDescription is the human-readable description for namespace setting
-	NamespaceDescription = "Set this value to user-defined namespace to let the component create under the namespace"
+	// Project is the name of the setting controlling the component project
+	Project = "Project"
+	// ProjectDescription is the human-readable description for project setting
+	ProjectDescription = "Set this value to user-defined project to let the component create under the project"
 	// DebugPort is the name of the setting controlling the component debug port
 	DebugPort = "DebugPort"
 	// DebugPortDescription s the human-readable description for debug port setting
@@ -459,7 +459,7 @@ const (
 var (
 	supportedLocalParameterDescriptions = map[string]string{
 		Name:      NameDescription,
-		Namespace: NamespaceDescription,
+		Project:   ProjectDescription,
 		DebugPort: DebugPortDescription,
 		URL:       URLDescription,
 		Push:      PushDescription,

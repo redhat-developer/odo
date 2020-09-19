@@ -33,7 +33,7 @@ var (
 var (
 	supportedSetParameters = map[string]string{
 		nameParameter:      nameParameterDescription,
-		namespaceParameter: namespaceParameterDescription,
+		projectParameter:   projectParameterDescription,
 		debugportParameter: debugportParameterDescription,
 	}
 )
@@ -95,7 +95,7 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	log.Info("Environment was successfully updated")
-	if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "namespace" {
+	if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" {
 		log.Warningf("Updated %q would create a new component", o.paramName)
 	}
 
@@ -110,7 +110,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Short: "Set a value in odo environment file",
 		Long:  setLongDesc + printSupportedParameters(supportedSetParameters),
 		Example: fmt.Sprintf(fmt.Sprint(setExample), fullName,
-			envinfo.Name, envinfo.Namespace, envinfo.DebugPort),
+			envinfo.Name, envinfo.Project, envinfo.DebugPort),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("please provide a parameter name and value")
