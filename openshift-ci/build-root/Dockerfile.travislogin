@@ -2,6 +2,8 @@
 
 FROM registry.svc.ci.openshift.org/openshift/release:golang-1.13
 
+RUN yum -y install epel-release
+
 RUN yum install sudo -y \
     make \
     wget \
@@ -23,7 +25,11 @@ RUN yum install sudo -y \
     automake \
     libtool \
     bison \
-    sqlite-devel
+    sqlite-devel \
+    python-pip \
+    python-devel
+
+RUN sudo pip install pika --upgrade
 
 RUN sudo curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -
 RUN sleep 5

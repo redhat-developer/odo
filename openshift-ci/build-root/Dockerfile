@@ -6,4 +6,4 @@ RUN yum -y install epel-release
 
 RUN yum -y install make wget gcc git httpd-tools python-pip python-devel
 
-RUN pip install pika --upgrade
+RUN sudo pip install pika --upgrade
