@@ -14,7 +14,7 @@ channelsend = connectionsend.channel() # start a channel
 channelsend.queue_declare(queue='prow_send') # Declare a queue
 # send a message
 
-channel.basic_publish(exchange='', routing_key='prow_send', body=str(pr_no))
+channelsend.basic_publish(exchange='', routing_key='prow_send', body=str(pr_no))
 print ("[x] Message sent to consumer, " + str(pr_no))
 connectionsend.close()
 
