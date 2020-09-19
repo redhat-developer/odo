@@ -28,17 +28,18 @@ channelrcv.queue_bind(exchange=str(pr_no), queue='prow_rcv') # bind recieving qu
 
 # Callback to operate on messege
 def callback(ch, method, properties, body):
-    print(" [x] %r:%r" % (method.routing_key, body))
+    print(" [x] Recieved " + body)
     data = json.loads(body)
     success = data['success']
     logs = data['logs']
     if not success:
         print(logs)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
     ch.exchange_delete(str(body))
     ch.stop_consuming()
 
 
-channelrcv.basic_consume(queue='prow_rcv', on_message_callback=callback, auto_ack=True)
+channelrcv.basic_consume(callback, queue='prow_rcv')
 channelrcv.start_consuming()
 connectionrcv.close()
 if not success:
