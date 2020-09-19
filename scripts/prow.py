@@ -19,6 +19,7 @@ print ("[x] Message sent to consumer, " + str(pr_no))
 connectionsend.close()
 
 # Now wait for response
+params.blocked_connection_timeout = 2400
 connectionrcv = pika.BlockingConnection(params) # Connect to CloudAMQP
 channelrcv = connectionrcv.channel() # start a channel
 channelrcv.queue_declare('prow_rcv') # declare queue
@@ -33,10 +34,12 @@ def callback(ch, method, properties, body):
     logs = data['logs']
     if not success:
         print(logs)
+    ch.exchange_delete(str(body))
+    ch.stop_consuming()
+
 
 channelrcv.basic_consume(queue='prow_rcv', on_message_callback=callback, auto_ack=True)
-channelrcv.consume('prow_rcv', auto_ack=True, inactivity_timeout=2040)
-channelrcv.exchange_delete(str(pr_no))
+channelrcv.start_consuming()
 connectionrcv.close()
 if not success:
     sys.exit(1)
