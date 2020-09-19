@@ -1,8 +1,11 @@
 package debug
 
 import (
+	"fmt"
+
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const (
@@ -12,9 +15,7 @@ const (
 	devfile = "devfile.yaml"
 )
 
-var DebugLongDesc = `Warning - Debug is currently in tech preview and hence is subject to change in future.
-
-Debug allows you to remotely debug your application`
+var debugLongDesc = ktemplates.LongDesc(`Debug allows you to remotely debug your application.`)
 
 func NewCmdDebug(name, fullName string) *cobra.Command {
 
@@ -22,9 +23,12 @@ func NewCmdDebug(name, fullName string) *cobra.Command {
 	infoCmd := NewCmdInfo(infoCommandName, util.GetFullName(fullName, infoCommandName))
 
 	debugCmd := &cobra.Command{
-		Use:     name,
-		Short:   "Debug commands",
-		Long:    DebugLongDesc,
+		Use:   name,
+		Short: "Debug commands",
+		Example: fmt.Sprintf("%s\n\n%s",
+			portforwardCmd.Example,
+			infoCmd.Example),
+		Long:    debugLongDesc,
 		Aliases: []string{"d"},
 	}
 
