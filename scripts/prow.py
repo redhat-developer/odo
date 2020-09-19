@@ -16,7 +16,7 @@ channelsend.queue_declare(queue='prow_send') # Declare a queue
 
 channel.basic_publish(exchange='', routing_key='prow_send', body=str(pr_no))
 print ("[x] Message sent to consumer, " + str(pr_no))
-connection.close()
+connectionsend.close()
 
 # Now wait for response
 connectionrcv = pika.BlockingConnection(params) # Connect to CloudAMQP
