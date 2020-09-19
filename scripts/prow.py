@@ -7,7 +7,7 @@ params = pika.URLParameters(url)
 params.socket_timeout = 5
 jss = os.getenv('JOB_SPEC')
 js = json.loads(jss)
-pr_no = js['refs']['pulls'][0]['num']
+pr_no = js['refs']['pulls'][0]['number']
 
 connectionsend = pika.BlockingConnection(params) # Connect to CloudAMQP
 channelsend = connectionsend.channel() # start a channel
