@@ -81,10 +81,8 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context = genericclioptions.NewContext(cmd, false, true)
-			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
-			if err != nil {
-				return err
-			}
+			// we intentionally leave this error out
+			lo.hasDCSupport, _ = lo.Client.IsDeploymentConfigSupported()
 
 		} else {
 			klog.V(4).Infof("New Config Context")
