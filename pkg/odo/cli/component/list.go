@@ -204,20 +204,25 @@ func (lo *ListOptions) Run() (err error) {
 		selector = applabels.GetSelector(lo.Application)
 	}
 
-	deploymentList, err = lo.KClient.ListDeployments(selector)
-	if err != nil {
-		return err
-	}
+	var devfileComponents []component.DevfileComponent
 	currentComponentState := component.StateTypeNotPushed
-	devfileComponents := component.DevfileComponentsFromDeployments(deploymentList)
-	for _, comp := range devfileComponents {
-		if lo.EnvSpecificInfo != nil {
-			// if we can find a component from the listing from server then the local state is pushed
-			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.App, comp.Namespace) {
-				currentComponentState = component.StateTypePushed
+
+	if lo.KClient != nil {
+		deploymentList, err = lo.KClient.ListDeployments(selector)
+		if err != nil {
+			return err
+		}
+		devfileComponents = append(devfileComponents, component.DevfileComponentsFromDeployments(deploymentList)...)
+		for _, comp := range devfileComponents {
+			if lo.EnvSpecificInfo != nil {
+				// if we can find a component from the listing from server then the local state is pushed
+				if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.App, comp.Namespace) {
+					currentComponentState = component.StateTypePushed
+				}
 			}
 		}
 	}
+
 	// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
 	// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
 	if lo.EnvSpecificInfo != nil {
