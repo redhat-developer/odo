@@ -56,19 +56,19 @@ type JSONConfigRepr struct {
 }
 
 type ConfigurableRepr struct {
-	Name    string          `yaml:"ComponentName,omitempty" json:"componentName,omitempty"`
-	Memory  string          `yaml:"Memory,omitempty" json:"memory,omitempty"`
-	Configs []ContainerRepr `yaml:"Configs,omitempty" json:"configs,omitempty"`
+	Name    string          `yaml:"ComponentName,omitempty" json:"ComponentName,omitempty"`
+	Memory  string          `yaml:"Memory,omitempty" json:"Memory,omitempty"`
+	Configs []ContainerRepr `yaml:"Configs,omitempty" json:"Configs,omitempty"`
 }
 
 type ContainerRepr struct {
-	ContainerName        string            `yaml:"ContainerName" json:"containerName"`
-	EnvironmentVariables config.EnvVarList `yaml:"EnvironmentVariables" json:"environmentVariables,omitempty"`
-	Ports                []PortRepr        `yaml:"Ports" json:"ports,omitempty"`
+	ContainerName        string            `yaml:"ContainerName" json:"ContainerName"`
+	EnvironmentVariables config.EnvVarList `yaml:"EnvironmentVariables" json:"EnvironmentVariables,omitempty"`
+	Ports                []PortRepr        `yaml:"Ports" json:"Ports,omitempty"`
 }
 
 type PortRepr struct {
-	Name        string `yaml:"Name" json:"name"`
-	ExposedPort int32  `yaml:"ExposedPort" json:"exposedPort"`
-	Protocol    string `yaml:"Protocol" json:"protocol"`
+	Name        string `yaml:"Name" json:"Name"`
+	ExposedPort int32  `yaml:"ExposedPort" json:"ExposedPort"`
+	Protocol    string `yaml:"Protocol" json:"Protocol"`
 }

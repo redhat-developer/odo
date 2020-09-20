@@ -661,8 +661,6 @@ func componentTests(args ...string) {
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 
-			// list command should fail as no app flag is given
-			helper.CmdShouldFail("odo", append(args, "list", "--project", project)...)
 			// commands should fail as the component name is missing
 			helper.CmdShouldFail("odo", append(args, "describe", "--app", appName, "--project", project)...)
 			helper.CmdShouldFail("odo", append(args, "delete", "-f", "--app", appName, "--project", project)...)
