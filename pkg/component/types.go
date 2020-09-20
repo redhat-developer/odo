@@ -56,9 +56,10 @@ type DevfileComponent struct {
 }
 
 type DevfileComponentSpec struct {
-	Name          string `json:"componentName,omitempty"`
-	Application   string `json:"application,omitempty"`
-	ComponentType string `json:"componentType,omitempty"`
+	Name       string `json:"componentName,omitempty"`
+	App        string `json:"app,omitempty"`
+	Type       string `json:"type,omitempty"`
+	SourceType string `json:"sourceType,omitempty"`
 }
 
 type DevfileCompList struct {
