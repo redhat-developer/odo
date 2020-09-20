@@ -3,12 +3,13 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
-	"strings"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -102,10 +103,6 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 		cfd.Namespace = projectName
 	}
 
-	if len(cfd.Kind) <= 0 {
-		cfd.Kind = "Component"
-	}
-
 	if len(cfd.APIVersion) <= 0 {
 		cfd.APIVersion = apiVersion
 	}
@@ -125,8 +122,10 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	var err error
 	if envInfo != nil {
 		componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
+		cfd.Kind = KindDevfileComponent
 	} else {
 		componentDesc, err = GetComponentFromConfig(localConfigInfo)
+		cfd.Kind = KindComponent
 	}
 	if err != nil {
 		return cfd, err

@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
@@ -1462,7 +1463,7 @@ func GetLogs(client *occlient.Client, componentName string, applicationName stri
 func getMachineReadableFormat(componentName, componentType string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Component",
+			Kind:       KindComponent,
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{

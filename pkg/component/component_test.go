@@ -552,7 +552,7 @@ func Test_getMachineReadableFormat(t *testing.T) {
 			args: args{componentName: "frontend", componentType: "nodejs"},
 			want: Component{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "Component",
+					Kind:       KindComponent,
 					APIVersion: "odo.dev/v1alpha1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -590,7 +590,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 				components: []Component{
 					{
 						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
+							Kind:       KindComponent,
 							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
@@ -603,7 +603,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					{
 						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
+							Kind:       KindComponent,
 							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
@@ -625,7 +625,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 				Items: []Component{
 					{
 						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
+							Kind:       KindComponent,
 							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
@@ -638,7 +638,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					{
 						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
+							Kind:       KindComponent,
 							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
@@ -873,7 +873,7 @@ func getFakeDC(name, namespace, appName, componentType string) appsv1.Deployment
 func getFakeComponent(compName, namespace, appName, compType string, state State) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Component",
+			Kind:       KindComponent,
 			APIVersion: "odo.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
