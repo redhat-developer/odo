@@ -1059,7 +1059,7 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Devf
 
 				comp := NewDevfileComponent(data.GetName())
 				comp.Status.State = StateTypeUnknown
-				comp.Spec.Application = data.GetApplication()
+				comp.Spec.App = data.GetApplication()
 				comp.Namespace = data.GetNamespace()
 				comp.Spec.Name = data.GetName()
 				comp.Status.Context = con

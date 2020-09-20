@@ -156,7 +156,7 @@ func (lo *ListOptions) Run() (err error) {
 				fmt.Fprintln(w, "Devfile Components: ")
 				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE", "\t", "CONTEXT")
 				for _, comp := range devfileComps {
-					fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State, "\t", comp.Status.Context)
+					fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State, "\t", comp.Status.Context)
 				}
 			}
 			if lo.hasDevfileComponents {
@@ -213,7 +213,7 @@ func (lo *ListOptions) Run() (err error) {
 	for _, comp := range devfileComponents {
 		if lo.EnvSpecificInfo != nil {
 			// if we can find a component from the listing from server then the local state is pushed
-			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.Application, comp.Namespace) {
+			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.App, comp.Namespace) {
 				currentComponentState = component.StateTypePushed
 			}
 		}
@@ -226,8 +226,8 @@ func (lo *ListOptions) Run() (err error) {
 			comp := component.NewDevfileComponent(envinfo.GetName())
 			comp.Status.State = component.StateTypeNotPushed
 			comp.Namespace = envinfo.GetNamespace()
-			comp.Spec.Application = envinfo.GetApplication()
-			comp.Spec.ComponentType = lo.componentType
+			comp.Spec.App = envinfo.GetApplication()
+			comp.Spec.Type = lo.componentType
 			comp.Spec.Name = envinfo.GetName()
 			devfileComponents = append(devfileComponents, comp)
 		}
@@ -282,7 +282,7 @@ func (lo *ListOptions) Run() (err error) {
 			fmt.Fprintln(w, "Devfile Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
 			for _, comp := range devfileComponents {
-				fmt.Fprintln(w, comp.Spec.Application, "\t", comp.Spec.Name, "\t", comp.Namespace, "\t", comp.Spec.ComponentType, "\t", comp.Status.State)
+				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Spec.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Status.State)
 			}
 			w.Flush()
 
