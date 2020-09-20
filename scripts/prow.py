@@ -1,4 +1,4 @@
-import pika, sys, os, json
+import pika, sys, os, json, time
 
 # Parse CLODUAMQP_URL (fallback to localhost)
 success = False
@@ -7,24 +7,24 @@ params = pika.URLParameters(url)
 params.socket_timeout = 5
 jss = os.getenv('JOB_SPEC')
 js = json.loads(jss)
-pr_no = js['refs']['pulls'][0]['number']
+prn = js['refs']['pulls'][0]['number']
+pr_no="{}".format(prn)
+rcv_queue = "prow_recieve_{}".format(pr_no)
 
 connectionsend = pika.BlockingConnection(params) # Connect to CloudAMQP
 channelsend = connectionsend.channel() # start a channel
-channelsend.queue_declare(None, queue='prow_send', auto_delete=True) # Declare a queue
+channelsend.queue_declare(queue='prow_send') # Declare a queue
 # send a message
 
-channelsend.basic_publish(exchange='', routing_key='prow_send', body=str(pr_no))
-print ("[x] Message sent to consumer, " + str(pr_no))
+channelsend.basic_publish(exchange='', routing_key='prow_send', body=pr_no)
+print (" [x] Message sent to consumer, " + pr_no)
 connectionsend.close()
 
 # Now wait for response
 params.blocked_connection_timeout = 2400
 connectionrcv = pika.BlockingConnection(params) # Connect to CloudAMQP
 channelrcv = connectionrcv.channel() # start a channel
-channelrcv.queue_declare(None, queue='prow_rcv', auto_delete=True) # declare queue
-channelrcv.exchange_declare(None, exchange=str(pr_no), exchange_type='topic', auto_delete=True) # declare exchange for pr_no
-channelrcv.queue_bind(None, 'prow_rcv', str(pr_no)) # bind recieving queue to exchange
+channelrcv.queue_declare(queue=rcv_queue)
 
 # Callback to operate on messege
 def callback(ch, method, properties, body):
@@ -32,14 +32,19 @@ def callback(ch, method, properties, body):
     data = json.loads(body)
     success = data['success']
     logs = data['logs']
+    status = "Sucess"
     if not success:
+        print(" [x] See logs above  " )
         print(logs)
+        status = "Fail"
+    print(" [x] Status : %r " % status)
     ch.basic_ack(delivery_tag=method.delivery_tag)
-    ch.exchange_delete(None, str(body))
     ch.stop_consuming()
 
-channelrcv.basic_consume(callback, queue='prow_rcv')
+channelrcv.basic_consume(callback, queue=rcv_queue)
+print(" [x] starting consumption on  " + rcv_queue)
 channelrcv.start_consuming()
+channelrcv.queue_delete(queue=rcv_queue)
 connectionrcv.close()
 if not success:
     sys.exit(1)
