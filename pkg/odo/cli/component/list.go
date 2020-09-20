@@ -33,9 +33,6 @@ import (
 // ListRecommendedCommandName is the recommended watch command name
 const ListRecommendedCommandName = "list"
 
-const UnpushedCompState = "Unpushed"
-const PushedCompState = "Pushed"
-
 var listExample = ktemplates.Examples(`  # List all components in the application
 %[1]s
   `)
@@ -211,13 +208,13 @@ func (lo *ListOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	currentComponentState := UnpushedCompState
+	currentComponentState := component.StateTypeNotPushed
 	devfileComponents := component.DevfileComponentsFromDeployments(deploymentList)
 	for _, comp := range devfileComponents {
 		if lo.EnvSpecificInfo != nil {
 			// if we can find a component from the listing from server then the local state is pushed
 			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.Application, comp.Namespace) {
-				currentComponentState = PushedCompState
+				currentComponentState = component.StateTypePushed
 			}
 		}
 	}
@@ -225,7 +222,7 @@ func (lo *ListOptions) Run() (err error) {
 	// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
 	if lo.EnvSpecificInfo != nil {
 		envinfo := lo.EnvSpecificInfo.EnvInfo
-		if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
+		if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == component.StateTypeNotPushed {
 			comp := component.NewDevfileComponent(envinfo.GetName())
 			comp.Status.State = component.StateTypeNotPushed
 			comp.Namespace = envinfo.GetNamespace()
