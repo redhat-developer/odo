@@ -8,6 +8,7 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -32,11 +33,13 @@ type PushedComponent interface {
 	GetApplication() string
 	GetType() (string, error)
 	GetSource() (string, string, error)
+	GetStorage() ([]storage.Storage, error)
 }
 
 type defaultPushedComponent struct {
 	application string
 	urls        []url.URL
+	storage     []storage.Storage
 	provider    provider
 	client      *occlient.Client
 }
@@ -84,12 +87,31 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 		if err != nil && !isIgnorableError(err) {
 			return []url.URL{}, err
 		}
-		urls := make([]url.URL, 0, len(routes.Items)+len(ingresses.Items))
-		urls = append(urls, routes.Items...)
-		urls = append(urls, ingresses.Items...)
-		d.urls = urls
+		d.urls = append(routes.Items, ingresses.Items...)
 	}
 	return d.urls, nil
+}
+
+func (d defaultPushedComponent) GetStorage() ([]storage.Storage, error) {
+	if d.storage == nil {
+		var storageItems []storage.Storage
+		if _, ok := d.provider.(*s2iComponent); ok {
+			storageList, err := storage.ListMounted(d.client, d.GetName(), d.GetApplication())
+			if err != nil {
+				return nil, err
+			}
+			storageItems = append(storageItems, storageList.Items...)
+		}
+		if _, ok := d.provider.(*devfileComponent); ok {
+			storageList, err := storage.DevfileListMounted(d.client.GetKubeClient(), d.GetName())
+			if err != nil {
+				return nil, err
+			}
+			storageItems = append(storageItems, storageList.Items...)
+		}
+		d.storage = storageItems
+	}
+	return d.storage, nil
 }
 
 func (d defaultPushedComponent) GetApplication() string {

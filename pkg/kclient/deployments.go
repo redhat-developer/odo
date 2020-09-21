@@ -3,6 +3,7 @@ package kclient
 import (
 	"encoding/json"
 	"fmt"
+	sort "sort"
 	"time"
 
 	"github.com/openshift/odo/pkg/log"
@@ -326,4 +327,51 @@ func (c *Client) patchDeploymentOfComponent(componentName, applicationName strin
 	}
 
 	return nil
+}
+
+// GetDeploymentLabelValues get label values of given label from objects in project that are matching selector
+// returns slice of unique label values
+func (c *Client) GetDeploymentLabelValues(label string, selector string) ([]string, error) {
+
+	// List DeploymentConfig according to selectors
+	dcList, err := c.appsClient.Deployments(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
+	}
+
+	// Grab all the matched strings
+	var values []string
+	for _, elem := range dcList.Items {
+		for key, val := range elem.Labels {
+			if key == label {
+				values = append(values, val)
+			}
+		}
+	}
+
+	// Sort alphabetically
+	sort.Strings(values)
+
+	return values, nil
+}
+
+// GetDeploymentConfigsFromSelector returns an array of Deployment Config
+// resources which match the given selector
+func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Deployment, error) {
+	var dcList *appsv1.DeploymentList
+	var err error
+
+	if selector != "" {
+		dcList, err = c.appsClient.Deployments(c.Namespace).List(metav1.ListOptions{
+			LabelSelector: selector,
+		})
+	} else {
+		dcList, err = c.appsClient.Deployments(c.Namespace).List(metav1.ListOptions{
+			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
+		})
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
+	}
+	return dcList.Items, nil
 }

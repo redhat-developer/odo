@@ -102,13 +102,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	if len(componentDesc.Spec.Storage) > 0 {
 
 		var storages storage.StorageList
-		var err error
 
 		if componentDesc.Status.State == "Pushed" {
 			// Retrieve the storage list
-			storages, err = storage.List(client, currentComponentName, applicationName)
-			LogErrorAndExit(err, "")
-
+			storages = storage.StorageList{Items: componentDesc.Spec.StorageSpec}
 		} else {
 			localConfig, err := config.New()
 			LogErrorAndExit(err, "")
@@ -145,8 +142,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 			}
 		} else {
 			// Retrieve the URLs
-			urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
-			LogErrorAndExit(err, "")
+			urls := urlPkg.URLList{Items: componentDesc.Spec.URLSpec}
 
 			// Gather the output
 			for _, componentURL := range componentDesc.Spec.URL {

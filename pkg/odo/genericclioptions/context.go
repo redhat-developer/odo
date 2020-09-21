@@ -311,6 +311,8 @@ func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvide
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
 	}
+	o.Client.Namespace = namespace
+	o.Client.GetKubeClient().Namespace = namespace
 	o.KClient.Namespace = namespace
 	o.Project = namespace
 }
@@ -438,6 +440,8 @@ func newDevfileContext(command *cobra.Command) *Context {
 		internalCxt.Client = client(command)
 
 		// Gather the environment information
+		internalCxt.EnvSpecificInfo = envInfo
+
 		internalCxt.resolveNamespace(envInfo)
 	}
 

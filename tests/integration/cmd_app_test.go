@@ -30,7 +30,7 @@ var _ = Describe("odo app command tests", func() {
 	Context("when running help for app command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "app", "-h")
-			Expect(appHelp).To(ContainSubstring("Performs application operations related to your OpenShift project."))
+			Expect(appHelp).To(ContainSubstring("Performs application operations related to your project."))
 		})
 	})
 

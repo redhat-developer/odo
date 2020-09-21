@@ -2,12 +2,10 @@ package application
 
 import (
 	"fmt"
-
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -29,7 +27,7 @@ func NewCmdApplication(name, fullName string) *cobra.Command {
 	applicationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Perform application operations",
-		Long:  `Performs application operations related to your OpenShift project.`,
+		Long:  `Performs application operations related to your project.`,
 		Example: fmt.Sprintf("%s\n\n%s\n\n%s",
 			delete.Example,
 			describe.Example,
@@ -55,8 +53,9 @@ func AddApplicationFlag(cmd *cobra.Command) {
 	completion.RegisterCommandFlagHandler(cmd, "app", completion.AppCompletionHandler)
 }
 
-// printDeleteAppInfo will print things which will be deleted
-func printDeleteAppInfo(client *occlient.Client, appName string, projectName string) error {
+// printAppInfo will print things which will be deleted
+func printAppInfo(client *occlient.Client, kClient *kclient.Client, appName string, projectName string) error {
+
 	componentList, err := component.List(client, appName, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Component list")
@@ -65,29 +64,19 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 	if len(componentList.Items) != 0 {
 		log.Info("This application has following components that will be deleted")
 		for _, currentComponent := range componentList.Items {
-			componentDesc, err := component.GetComponent(client, currentComponent.Name, appName, projectName)
-			if err != nil {
-				return errors.Wrap(err, "unable to get component description")
-			}
 			log.Info("component named", currentComponent.Name)
 
-			if len(componentDesc.Spec.URL) != 0 {
-				ul, err := url.ListPushed(client, componentDesc.Name, appName)
-				if err != nil {
-					return errors.Wrap(err, "Could not get url list")
-				}
+			if len(currentComponent.Spec.URL) != 0 {
 				log.Info("This component has following urls that will be deleted with component")
-				for _, u := range ul.Items {
+				for _, u := range currentComponent.Spec.URLSpec {
 					log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
 				}
 			}
 
-			storages, err := storage.List(client, currentComponent.Name, appName)
-			odoutil.LogErrorAndExit(err, "")
-			if len(storages.Items) != 0 {
+			if len(currentComponent.Spec.Storage) != 0 {
 				log.Info("The component has following storages which will be deleted with the component")
-				for _, storageName := range componentDesc.Spec.Storage {
-					store := storages.Get(storageName)
+				for _, storage := range currentComponent.Spec.StorageSpec {
+					store := storage
 					log.Info("Storage named", store.GetName(), "of size", store.Spec.Size)
 				}
 			}

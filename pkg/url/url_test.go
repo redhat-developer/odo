@@ -178,13 +178,14 @@ func TestCreate(t *testing.T) {
 			name: "Case 4: Create a ingress, with same name as component,instead of route on openshift cluster",
 			args: args{
 				componentName:    "nodejs",
+				applicationName:  "app",
 				urlName:          "nodejs",
 				portNumber:       8080,
 				host:             "com",
 				isRouteSupported: true,
 				urlKind:          envinfo.INGRESS,
 			},
-			returnedIngress: fake.GetSingleIngress("nodejs-nodejs", "nodejs"),
+			returnedIngress: fake.GetSingleIngress("nodejs-nodejs", "nodejs", "app"),
 			want:            "http://nodejs.com",
 			wantErr:         false,
 		},
@@ -192,6 +193,7 @@ func TestCreate(t *testing.T) {
 			name: "Case 5: Create a ingress, with different name as component,instead of route on openshift cluster",
 			args: args{
 				componentName:    "nodejs",
+				applicationName:  "app",
 				urlName:          "example",
 				portNumber:       8080,
 				host:             "com",
@@ -220,7 +222,7 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			returnedIngress: fake.GetSingleIngress("example-nodejs", "nodejs"),
+			returnedIngress: fake.GetSingleIngress("example-nodejs", "nodejs", "app"),
 			want:            "http://example.com",
 			wantErr:         false,
 		},
@@ -228,6 +230,7 @@ func TestCreate(t *testing.T) {
 			name: "Case 6: Create a secure ingress, instead of route on openshift cluster, default tls exists",
 			args: args{
 				componentName:    "nodejs",
+				applicationName:  "app",
 				urlName:          "example",
 				portNumber:       8080,
 				host:             "com",
@@ -235,7 +238,7 @@ func TestCreate(t *testing.T) {
 				secure:           true,
 				urlKind:          envinfo.INGRESS,
 			},
-			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs"),
+			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs", "app"),
 			defaultTLSExists: true,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -244,6 +247,7 @@ func TestCreate(t *testing.T) {
 			name: "Case 7: Create a secure ingress, instead of route on openshift cluster and default tls doesn't exist",
 			args: args{
 				componentName:    "nodejs",
+				applicationName:  "app",
 				urlName:          "example",
 				portNumber:       8080,
 				host:             "com",
@@ -251,7 +255,7 @@ func TestCreate(t *testing.T) {
 				secure:           true,
 				urlKind:          envinfo.INGRESS,
 			},
-			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs"),
+			returnedIngress:  fake.GetSingleIngress("example-nodejs", "nodejs", "app"),
 			defaultTLSExists: false,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -259,6 +263,7 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 8: Fail when while creating ingress when user given tls secret doesn't exists",
 			args: args{
+				applicationName:  "app",
 				componentName:    "nodejs",
 				urlName:          "example",
 				portNumber:       8080,
@@ -268,7 +273,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:        "user-secret",
 				urlKind:          envinfo.INGRESS,
 			},
-			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example", "nodejs", "app"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: false,
 			want:               "http://example.com",
@@ -277,6 +282,7 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 9: Create a secure ingress, instead of route on openshift cluster, user tls secret does exists",
 			args: args{
+				applicationName:  "app",
 				componentName:    "nodejs",
 				urlName:          "example",
 				portNumber:       8080,
@@ -286,7 +292,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:        "user-secret",
 				urlKind:          envinfo.INGRESS,
 			},
-			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs", "app"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "https://example.com",
@@ -296,6 +302,7 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 10: invalid url kind",
 			args: args{
+				applicationName:  "app",
 				componentName:    "nodejs",
 				urlName:          "example",
 				portNumber:       8080,
@@ -305,7 +312,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:        "user-secret",
 				urlKind:          "blah",
 			},
-			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example-nodejs", "nodejs", "app"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "",
@@ -320,7 +327,7 @@ func TestCreate(t *testing.T) {
 				isRouteSupported: false,
 				urlKind:          envinfo.ROUTE,
 			},
-			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example", "nodejs", "app"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "",
@@ -336,7 +343,7 @@ func TestCreate(t *testing.T) {
 				tlsSecret:        "secret",
 				urlKind:          envinfo.ROUTE,
 			},
-			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
+			returnedIngress:    fake.GetSingleIngress("example", "nodejs", "app"),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "",
@@ -890,15 +897,17 @@ func TestPush(t *testing.T) {
 		{
 			name:                "0 urls on env file and cluster",
 			componentName:       "nodejs",
+			applicationName:     "app",
 			args:                args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			returnedRoutes:      &routev1.RouteList{},
 			returnedIngress:     &extensionsv1.IngressList{},
 		},
 		{
-			name:          "2 urls on env file and 0 on openshift cluster",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
+			name:            "2 urls on env file and 0 on openshift cluster",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example",
@@ -960,10 +969,11 @@ func TestPush(t *testing.T) {
 		{
 			name:                "0 urls on env file and 2 on openshift cluster",
 			componentName:       "nodejs",
+			applicationName:     "app",
 			args:                args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			returnedRoutes:      &routev1.RouteList{},
-			returnedIngress:     fake.GetIngressListWithMultiple("nodejs"),
+			returnedIngress:     fake.GetIngressListWithMultiple("nodejs", "app"),
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -978,9 +988,10 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "2 urls on env file and 2 on openshift cluster, but they are different",
-			componentName: "wildfly",
-			args:          args{isRouteSupported: true},
+			name:            "2 urls on env file and 2 on openshift cluster, but they are different",
+			componentName:   "wildfly",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example-local-0",
@@ -1013,7 +1024,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: fake.GetIngressListWithMultiple("wildfly"),
+			returnedIngress: fake.GetIngressListWithMultiple("wildfly", "app"),
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1052,9 +1063,10 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "2 urls on env file and openshift cluster are in sync",
-			componentName: "wildfly",
-			args:          args{isRouteSupported: true},
+			name:            "2 urls on env file and openshift cluster are in sync",
+			componentName:   "wildfly",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example-0",
@@ -1087,14 +1099,15 @@ func TestPush(t *testing.T) {
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: fake.GetIngressListWithMultiple("wildfly"),
+			returnedIngress: fake.GetIngressListWithMultiple("wildfly", "app"),
 			createdURLs:     []URL{},
 			deletedURLs:     []URL{},
 		},
 		{
-			name:          "2 (1 ingress,1 route) urls on env file and 2 on openshift cluster (1 ingress,1 route), but they are different",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
+			name:            "2 (1 ingress,1 route) urls on env file and 2 on openshift cluster (1 ingress,1 route), but they are different",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example-local-0",
@@ -1126,7 +1139,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: fake.GetIngressListWithMultiple("nodejs"),
+			returnedIngress: fake.GetIngressListWithMultiple("nodejs", "app"),
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1164,9 +1177,10 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "create a ingress on a kubernetes cluster",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: false},
+			name:            "create a ingress on a kubernetes cluster",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: false},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:      "example",
@@ -1207,8 +1221,9 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "url with same name exists on env and cluster but with different specs",
-			componentName: "nodejs",
+			name:            "url with same name exists on env and cluster but with different specs",
+			componentName:   "nodejs",
+			applicationName: "app",
 			args: args{
 				isRouteSupported: true,
 			},
@@ -1235,7 +1250,7 @@ func TestPush(t *testing.T) {
 			returnedRoutes: &routev1.RouteList{},
 			returnedIngress: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{
-					*fake.GetSingleIngress("example-local-0", "nodejs"),
+					*fake.GetSingleIngress("example-local-0", "nodejs", "app"),
 				},
 			},
 			createdURLs: []URL{
@@ -1299,9 +1314,10 @@ func TestPush(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:          "create a secure route url",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
+			name:            "create a secure route url",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example",
@@ -1338,9 +1354,10 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "create a secure ingress url with empty user given tls secret",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
+			name:            "create a secure ingress url with empty user given tls secret",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example",
@@ -1379,9 +1396,10 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "create a secure ingress url with user given tls secret",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
+			name:            "create a secure ingress url with user given tls secret",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:      "example",
@@ -1570,6 +1588,7 @@ func TestPush(t *testing.T) {
 		{
 			name:                "should create route in openshift cluster if endpoint is defined in devfile",
 			componentName:       "nodejs",
+			applicationName:     "app",
 			args:                args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			containerComponents: []versionsCommon.DevfileComponent{
@@ -1604,9 +1623,10 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "should create ingress if endpoint is defined in devfile",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
+			name:            "should create ingress if endpoint is defined in devfile",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example",
@@ -1649,6 +1669,7 @@ func TestPush(t *testing.T) {
 		{
 			name:                "should create route in openshift cluster with path defined in devfile",
 			componentName:       "nodejs",
+			applicationName:     "app",
 			args:                args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			containerComponents: []versionsCommon.DevfileComponent{
@@ -1684,9 +1705,10 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "should create ingress with path defined in devfile",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
+			name:            "should create ingress with path defined in devfile",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name: "example",
@@ -2041,7 +2063,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				},
 			},
 			routeSupported: true,
-			ingressList:    fake.GetIngressListWithMultiple(componentName),
+			ingressList:    fake.GetIngressListWithMultiple(componentName, "app"),
 			routeList: &routev1.RouteList{
 				Items: []routev1.Route{
 					testingutil.GetSingleRoute(testURL4.Name, int(exampleEndpoint.TargetPort), componentName, ""),
@@ -2114,7 +2136,7 @@ func TestListIngressAndRoute(t *testing.T) {
 				},
 			},
 			routeList:      &routev1.RouteList{},
-			ingressList:    fake.GetIngressListWithMultiple(componentName),
+			ingressList:    fake.GetIngressListWithMultiple(componentName, "app"),
 			routeSupported: false,
 			wantURLs: []URL{
 				URL{
@@ -2159,7 +2181,7 @@ func TestListIngressAndRoute(t *testing.T) {
 			},
 			routeSupported: true,
 			routeList:      &routev1.RouteList{},
-			ingressList:    fake.GetIngressListWithMultiple(componentName),
+			ingressList:    fake.GetIngressListWithMultiple(componentName, "app"),
 			wantURLs: []URL{
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
@@ -2366,7 +2388,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			component:      componentName,
 			urlName:        testURL1.Name,
 			routeSupported: true,
-			pushedIngress:  fake.GetSingleIngress(testURL1.Name, componentName),
+			pushedIngress:  fake.GetSingleIngress(testURL1.Name, componentName, "app"),
 			pushedRoute:    routev1.Route{},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
@@ -2383,7 +2405,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			component:      componentName,
 			urlName:        testURL2.Name,
 			routeSupported: true,
-			pushedIngress:  fake.GetSingleIngress(testURL2.Name, componentName),
+			pushedIngress:  fake.GetSingleIngress(testURL2.Name, componentName, "app"),
 			pushedRoute:    routev1.Route{},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
@@ -2504,7 +2526,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			component:      componentName,
 			urlName:        testURL2.Name,
 			routeSupported: false,
-			pushedIngress:  fake.GetSingleIngress(testURL2.Name, componentName),
+			pushedIngress:  fake.GetSingleIngress(testURL2.Name, componentName, "app"),
 			pushedRoute:    routev1.Route{},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
@@ -2521,7 +2543,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			component:      componentName,
 			urlName:        testURL1.Name,
 			routeSupported: false,
-			pushedIngress:  fake.GetSingleIngress(testURL1.Name, componentName),
+			pushedIngress:  fake.GetSingleIngress(testURL1.Name, componentName, "app"),
 			pushedRoute:    routev1.Route{},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},

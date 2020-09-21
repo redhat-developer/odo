@@ -612,6 +612,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		applicationName = componentConfig.GetApplication()
 	} else {
 		componentName = envSpecificInfo.GetName()
+		applicationName = envSpecificInfo.GetApplication()
 	}
 
 	isRouteSupported := false
@@ -855,6 +856,16 @@ func GetComponentNames(client *occlient.Client, applicationName string) ([]strin
 
 // List lists components in active application
 func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
+	if client == nil {
+		return ComponentList{}, nil
+	}
+
+	deploymentConfigSupported := false
+	var err error
+	deploymentConfigSupported, err = client.IsDeploymentConfigSupported()
+	if err != nil {
+		return ComponentList{}, err
+	}
 
 	var applicationSelector string
 	if applicationName != "" {
@@ -864,30 +875,38 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 	var components []Component
 	componentNamesMap := make(map[string]bool)
 
-	if client != nil {
-		project, err := client.GetProject(client.Namespace)
+	if deploymentConfigSupported {
+		// retrieve all the deployment configs that are associated with this application
+		dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
 		if err != nil {
-			return ComponentList{}, err
+			return ComponentList{}, errors.Wrapf(err, "unable to list components")
 		}
 
-		if project != nil {
-			// retrieve all the deployment configs that are associated with this application
-			dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+		// extract the labels we care about from each component
+		for _, elem := range dcList {
+			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
 			if err != nil {
-				return ComponentList{}, errors.Wrapf(err, "unable to list components")
+				return ComponentList{}, errors.Wrap(err, "Unable to get component")
 			}
-
-			// extract the labels we care about from each component
-			for _, elem := range dcList {
-				component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
-				if err != nil {
-					return ComponentList{}, errors.Wrap(err, "Unable to get component")
-				}
-				components = append(components, component)
-				componentNamesMap[component.Name] = true
-			}
+			components = append(components, component)
+			componentNamesMap[component.Name] = true
 		}
+	}
 
+	// retrieve all the deployment configs that are associated with this application
+	deploymentList, err := client.GetKubeClient().GetDeploymentFromSelector(applicationSelector)
+	if err != nil {
+		return ComponentList{}, errors.Wrapf(err, "unable to list components")
+	}
+
+	// extract the labels we care about from each component
+	for _, elem := range deploymentList {
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+		if err != nil {
+			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+		}
+		components = append(components, component)
+		componentNamesMap[component.Name] = true
 	}
 
 	if localConfigInfo != nil {
@@ -897,16 +916,10 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 			return GetMachineReadableFormatForList(components), err
 		}
 
-		if client != nil {
-			_, ok := componentNamesMap[component.Name]
-			if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
-				component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
-				components = append(components, component)
-			}
-		} else {
-			component.Status.State = StateTypeUnknown
+		_, ok := componentNamesMap[component.Name]
+		if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+			component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
 			components = append(components, component)
-
 		}
 
 	}
@@ -1437,6 +1450,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		if err != nil {
 			return Component{}, err
 		}
+		component.Spec.URLSpec = urls
 		urlsNb := len(urls)
 		if urlsNb > 0 {
 			res := make([]string, 0, urlsNb)
@@ -1449,15 +1463,17 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 
 	// Storage
 	if getStorage {
-		appStore, err := storage.List(client, componentName, applicationName)
+		appStore, err := fromCluster.GetStorage()
 		if err != nil {
 			return Component{}, errors.Wrap(err, "unable to get storage list")
 		}
-		var storage []string
-		for _, store := range appStore.Items {
-			storage = append(storage, store.Name)
+
+		component.Spec.StorageSpec = appStore
+		var storageList []string
+		for _, store := range appStore {
+			storageList = append(storageList, store.Name)
 		}
-		component.Spec.Storage = storage
+		component.Spec.Storage = storageList
 	}
 
 	// Environment Variables

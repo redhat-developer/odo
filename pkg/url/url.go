@@ -151,11 +151,11 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 }
 
 // Delete deletes a URL
-func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string, urlType envinfo.URLKind) error {
+func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string, urlType envinfo.URLKind, isS2i bool) error {
 	if urlType == envinfo.INGRESS {
 		return kClient.DeleteIngress(urlName)
 	} else if urlType == envinfo.ROUTE {
-		if applicationName != "" {
+		if isS2i {
 			// Namespace the URL name
 			var err error
 			urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
@@ -1022,7 +1022,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				// to avoid error due to duplicate ingress name defined in different devfile components
 				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
 			}
-			err := Delete(client, kClient, deleteURLName, parameters.ApplicationName, urlSpec.Spec.Kind)
+			err := Delete(client, kClient, deleteURLName, parameters.ApplicationName, urlSpec.Spec.Kind, parameters.IsS2I)
 			if err != nil {
 				return err
 			}

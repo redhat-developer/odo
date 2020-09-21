@@ -37,7 +37,7 @@ func NewDescribeOptions() *DescribeOptions {
 
 // Complete completes DescribeOptions after they've been created
 func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	o.Context = genericclioptions.NewDevfileContext(cmd)
 	o.appName = o.Application
 	if len(args) == 1 {
 		o.appName = args[0]
@@ -58,7 +58,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", o.Project)
 	}
 
-	exist, err := application.Exists(o.appName, o.Client)
+	exist, err := application.Exists(o.appName, o.Client, o.KClient)
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -71,7 +71,6 @@ func (o *DescribeOptions) Run() (err error) {
 		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
 		machineoutput.OutputSuccess(appDef)
 	} else {
-		// List of Component
 		componentList, err := component.List(o.Client, o.appName, nil)
 		if err != nil {
 			return err
@@ -87,9 +86,7 @@ func (o *DescribeOptions) Run() (err error) {
 				o.appName, len(componentList.Items), len(serviceList.Items))
 			if len(componentList.Items) > 0 {
 				for _, currentComponent := range componentList.Items {
-					componentDesc, err := component.GetComponent(o.Client, currentComponent.Name, o.appName, o.Project)
-					util.LogErrorAndExit(err, "")
-					util.PrintComponentInfo(o.Client, currentComponent.Name, componentDesc, o.appName, o.Project)
+					util.PrintComponentInfo(o.Client, currentComponent.Name, currentComponent, o.appName, o.Project)
 					fmt.Println("--------------------------------------")
 				}
 			}

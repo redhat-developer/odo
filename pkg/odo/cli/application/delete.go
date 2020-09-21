@@ -37,7 +37,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	o.Context = genericclioptions.NewDevfileContext(cmd)
 	o.appName = o.Application
 	if len(args) == 1 {
 		// If app name passed, consider it for deletion
@@ -56,7 +56,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
 
-	exist, err := application.Exists(o.appName, o.Client)
+	exist, err := application.Exists(o.appName, o.Client, o.KClient)
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -74,7 +74,7 @@ func (o *DeleteOptions) Run() (err error) {
 	}
 
 	// Print App Information which will be deleted
-	err = printDeleteAppInfo(o.Client, o.appName, o.Project)
+	err = printAppInfo(o.Client, o.KClient, o.appName, o.Project)
 	if err != nil {
 		return err
 	}
