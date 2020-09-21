@@ -14,6 +14,9 @@
 								{% if page.title %}
 									<h1 class="hero-subheader__title">{{ page.title }}</h1>
 								{% endif %}
+								{% if page.date %}
+									<p>{{ page.date | date: '%y %b %d' }}</p>
+								{% endif %}
 								{% if page.description %}
 									<p class="hero-subheader__desc">{{ page.description }}</p>
 								{% endif %}
@@ -52,6 +55,13 @@
 											</a>
 											{% endif %}
 										</p><!-- /.hero-subheader__author-title -->
+                    {% if page.author.img %}
+                      <img class="profile-picture" src="{{ page.author.img }}"/>
+                    {% endif %}
+
+                    {% if page.author.name %}
+                      <p class="author-name">{{ page.author.name }}</p>
+                    {% endif %}
 										<p>{{ page.author.description }}</p>
 									</div><!-- /.hero-subheader__author -->
 								</div><!-- /.align-inner -->

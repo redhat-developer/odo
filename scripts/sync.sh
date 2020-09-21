@@ -20,6 +20,7 @@ openshift_docs_repo="github.com/openshift/openshift-docs"
 odo_repo="github.com/openshift/odo"
 
 file_reference_doc="/docs/file-reference/index.md"
+blog_posts="/docs/blog"
 
 
 #########################
@@ -128,7 +129,9 @@ for f in $openshift_docs/*.md; do
 done
 
 echo ""
+
 echo "Merging upstream docs"
+cp $openshift_docs/
 for f in $upstream_docs/*.md; do
   file="$(basename -- $f)"
   if [ -f $output_dir/$file ]; then
@@ -140,6 +143,13 @@ for f in $upstream_docs/*.md; do
       exit 0
   fi
 done
+
+echo ""
+
+echo "Copying over blog posts"
+cp -r $tmp_public_docs_dir$blog_posts/* _posts/
+# Dont use the template file
+rm _posts/template.md
 
 #################################################
 # GENERATE FILE-REFERENCE / SLATE DOCUMENTATION #

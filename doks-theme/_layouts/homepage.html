@@ -6,6 +6,16 @@
   <body class="{{ site.doks.color_theme }}">
     {% include site-header.html %}
     <div class="hero-subheader{% if page.grid_navigation %} hero-subheader--before-out{% endif %}">
+      <div class="container blog-announcement">
+        <p>
+            {% for post in site.posts limit:1 %}
+            <a href="{{ post.url}}">
+            <b>Our latest blog post:</b>
+            {{ post.title }}
+            {% endfor %}
+            </a>
+        </p> 
+      </div>
       <div class="container">
         <div class="row">
           <div class="col-md-7">
