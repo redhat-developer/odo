@@ -98,12 +98,12 @@ func (kubectl KubectlRunner) GetVolumeMountNamesandPathsFromContainer(deployName
 
 // GetContainerEnv returns the container env in the format name:value\n
 func (kubectl KubectlRunner) GetContainerEnv(podName, containerName, namespace string) string {
-	volumeName := CmdShouldPass(kubectl.path, "get", "po", podName, "--namespace", namespace,
+	containerEnv := CmdShouldPass(kubectl.path, "get", "po", podName, "--namespace", namespace,
 		"-o", "go-template="+
 			"{{range .spec.containers}}{{if eq .name \""+containerName+
 			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
 
-	return strings.TrimSpace(volumeName)
+	return strings.TrimSpace(containerEnv)
 }
 
 // WaitAndCheckForExistence wait for the given and checks if the given resource type gets deleted on the cluster

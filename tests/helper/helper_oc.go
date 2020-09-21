@@ -450,12 +450,12 @@ func (oc OcRunner) GetVolumeMountNamesandPathsFromContainer(deployName string, c
 
 // GetContainerEnv returns the container env in the format name:value\n
 func (oc OcRunner) GetContainerEnv(podName, containerName, namespace string) string {
-	volumeName := CmdShouldPass(oc.path, "get", "po", podName, "--namespace", namespace,
+	containerEnv := CmdShouldPass(oc.path, "get", "po", podName, "--namespace", namespace,
 		"-o", "go-template="+
 			"{{range .spec.containers}}{{if eq .name \""+containerName+
 			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
 
-	return strings.TrimSpace(volumeName)
+	return strings.TrimSpace(containerEnv)
 }
 
 // GetVolumeMountName returns the name of the volume
