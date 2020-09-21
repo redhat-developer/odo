@@ -2,11 +2,9 @@ package completion
 
 import (
 	"fmt"
-	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/service"
@@ -303,11 +301,10 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	return completions
 }
 
-// LinkCompletionHandler provides completion for the odo link
+// LinkCompletionHandler provides completion for the odo link command
 // The function returns both components and services
 var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-	components, err := component.List(context.Client, context.Application, nil)
+	components, err := component.GetComponentNames(context.Client, context.Application)
 	if err != nil {
 		return completions
 	}
@@ -317,15 +314,16 @@ var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 		return completions
 	}
 
-	for _, component := range components.Items {
+	completions = make([]string, 0, len(components)+len(services.Items))
+	for _, component := range components {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[component.Name]; ok && val {
+		if val, ok := args.commands[component]; ok && val {
 			return nil
 		}
 		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
-		if component.Name != context.Component() {
-			completions = append(completions, component.Name)
+		if component != context.Component() {
+			completions = append(completions, component)
 		}
 	}
 
@@ -341,18 +339,16 @@ var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 	return completions
 }
 
-// LinkCompletionHandler provides completion for the odo link
+// LinkCompletionHandler provides completion for the odo unlink command
 // The function returns both components and services
 var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-
 	// first we need to retrieve the current component
-	dcOfCurrentComponent, err := getDCOfComponent(context)
-	if err != nil || dcOfCurrentComponent == nil {
+	comp, err := component.GetPushedComponent(context.Client, context.Component(), context.Application)
+	if err != nil {
 		return completions
 	}
 
-	components, err := component.List(context.Client, context.Application, nil)
+	components, err := component.GetComponentNames(context.Client, context.Application)
 	if err != nil {
 		return completions
 	}
@@ -362,45 +358,40 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 		return completions
 	}
 
-	for _, component := range components.Items {
+	completions = make([]string, 0, len(components)+len(services.Items))
+	secretNames := comp.GetLinkedSecretNames()
+	for _, component := range components {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[component.Name]; ok && val {
+		if val, ok := args.commands[component]; ok && val {
 			return nil
 		}
 		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
-		if component.Name != context.Component() {
+		if component != context.Component() {
 			// we also need to make sure that this component has been linked to the current component
-			for _, envFromSourceName := range dcOfCurrentComponent.Spec.Template.Spec.Containers[0].EnvFrom {
-				if strings.Contains(envFromSourceName.SecretRef.Name, component.Name) {
-					completions = append(completions, component.Name)
+			for _, secret := range secretNames {
+				if strings.Contains(secret, component) {
+					completions = append(completions, component)
 				}
 			}
-
 		}
 	}
 
 	for _, service := range services.Items {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[service.ObjectMeta.Name]; ok && val {
+		if val, ok := args.commands[service.Name]; ok && val {
 			return nil
 		}
 		// we also need to make sure that this component has been linked to the current component
-		for _, envFromSourceName := range dcOfCurrentComponent.Spec.Template.Spec.Containers[0].EnvFrom {
-			if strings.Contains(envFromSourceName.SecretRef.Name, service.ObjectMeta.Name) {
-				completions = append(completions, service.ObjectMeta.Name)
+		for _, secret := range secretNames {
+			if strings.Contains(secret, service.Name) {
+				completions = append(completions, service.Name)
 			}
 		}
 	}
 
 	return completions
-}
-
-func getDCOfComponent(context *genericclioptions.Context) (*appsv1.DeploymentConfig, error) {
-	componentLabels := componentlabels.GetLabels(context.Component(), context.Application, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	return context.Client.GetOneDeploymentConfigFromSelector(componentSelector)
 }
 
 // ComponentNameCompletionHandler provides component name completion

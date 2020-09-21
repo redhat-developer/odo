@@ -50,7 +50,7 @@ commands:
   - id: wrongPostStart
     exec:
       commandLine: echo I am also a PostStart
-      component: wrongruntime
+      component: runtime #wrongruntime #do not delete comment, tests rely on it for search & replace
       workingDir: /
   - id: myPreStop
     exec:
@@ -78,7 +78,7 @@ commands:
     composite:
       label: Build and Mkdir
       commands:
-        - secondPreStopisWrong
+        - secondPreStop #secondPreStopisWrong #do not delete comment, tests rely on it for search & replace
         - thirdPreStop
       parallel: true
   - id: devbuild

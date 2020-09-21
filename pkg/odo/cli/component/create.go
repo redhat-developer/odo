@@ -654,7 +654,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// check to see if config file exists or not, if it does that
 	// means we shouldn't allow the user to override the current component
-	if co.LocalConfigInfo.ConfigFileExists() {
+	if co.LocalConfigInfo.Exists() {
 		return errors.New("this directory already contains a component")
 	}
 
@@ -1082,9 +1082,9 @@ func (co *CreateOptions) devfileRun() (err error) {
 
 	// Generate env file
 	err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
-		Name:      co.devfileMetadata.componentName,
-		Namespace: co.devfileMetadata.componentNamespace,
-		AppName:   co.appName,
+		Name:    co.devfileMetadata.componentName,
+		Project: co.devfileMetadata.componentNamespace,
+		AppName: co.appName,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to create env file for devfile component")
@@ -1217,6 +1217,7 @@ func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectP
 			if projectInfo.Name == projectPassed { //Get the index
 				project = &projects[indexOfProject]
 				projectFound = true
+				break
 			}
 		}
 

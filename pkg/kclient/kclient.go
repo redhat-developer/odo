@@ -37,13 +37,20 @@ type Client struct {
 
 // New creates a new client
 func New() (*Client, error) {
-	var client Client
-	var err error
+	return NewForConfig(nil)
+}
 
-	// initialize client-go clients
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+// NewForConfig creates a new client with the provided configuration or initializes the configuration if none is provided
+func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
+	if config == nil {
+		// initialize client-go clients
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		configOverrides := &clientcmd.ConfigOverrides{}
+		config = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	}
+
+	client = new(Client)
+	client.KubeConfig = config
 
 	client.KubeClientConfig, err = client.KubeConfig.ClientConfig()
 	if err != nil {
@@ -70,7 +77,7 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
-	return &client, nil
+	return client, nil
 }
 
 // CreateObjectMeta creates a common object meta

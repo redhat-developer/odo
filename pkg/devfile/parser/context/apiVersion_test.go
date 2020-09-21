@@ -9,8 +9,8 @@ import (
 func TestSetDevfileAPIVersion(t *testing.T) {
 
 	const (
-		apiVersion          = "1.0.0"
-		validJson           = `{"apiVersion": "1.0.0"}`
+		apiVersion          = "2.0.0"
+		validJson           = `{"schemaVersion": "2.0.0"}`
 		emptyJson           = "{}"
 		emptyApiVersionJson = `{"apiVersion": ""}`
 	)
@@ -66,7 +66,7 @@ func TestSetDevfileAPIVersion(t *testing.T) {
 func TestGetApiVersion(t *testing.T) {
 
 	const (
-		apiVersion = "1.0.0"
+		apiVersion = "2.0.0"
 	)
 
 	t.Run("get apiVersion", func(t *testing.T) {

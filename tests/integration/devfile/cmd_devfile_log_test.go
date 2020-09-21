@@ -12,8 +12,7 @@ import (
 )
 
 var _ = Describe("odo devfile log command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig, projectDirPath string
-	var projectDir = "/projectDir"
+	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
 
@@ -29,7 +28,6 @@ var _ = Describe("odo devfile log command tests", func() {
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
-		projectDirPath = context + projectDir
 	})
 
 	// Clean up after the test
@@ -45,15 +43,17 @@ var _ = Describe("odo devfile log command tests", func() {
 
 	Context("Verify odo log for devfile works", func() {
 
-		It("should log run command output", func() {
-			helper.MakeDir(projectDirPath)
-			helper.Chdir(projectDirPath)
+		It("should log run command output and fail for debug command", func() {
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
-			output := helper.CmdShouldPass("odo", "log")
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName, "--context", context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldPass("odo", "log", "--context", context)
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
+
+			// It should fail for debug command as no debug command in devfile
+			helper.CmdShouldFail("odo", "log", "--debug")
 
 			/*
 				Flaky Test odo log -f, see issue https://github.com/openshift/odo/issues/3809
@@ -65,21 +65,21 @@ var _ = Describe("odo devfile log command tests", func() {
 		})
 
 		It("should error out if component does not exist", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName, "--context", context)
 			helper.CmdShouldFail("odo", "log")
 		})
 
 		It("should log debug command output", func() {
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
+			projectDir := filepath.Join(context, "projectDir")
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
-			helper.CmdShouldPass("odo", "push", "--debug")
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDir)
 
-			output := helper.CmdShouldPass("odo", "log", "--debug")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName, "--context", projectDir)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDir, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDir)
+
+			output := helper.CmdShouldPass("odo", "log", "--debug", "--context", projectDir)
 			Expect(output).To(ContainSubstring("ODO_COMMAND_DEBUG"))
 
 			/*
@@ -89,16 +89,6 @@ var _ = Describe("odo devfile log command tests", func() {
 				Expect(match).To(BeTrue())
 			*/
 
-		})
-
-		// we do not need test for run command as odo push fails
-		// if there is no run command in devfile.
-		It("should give error if no debug command in devfile", func() {
-
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
-			helper.CmdShouldFail("odo", "log", "--debug")
 		})
 
 	})

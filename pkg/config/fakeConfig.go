@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 
@@ -22,7 +23,7 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 
 	portsValue := []string{"8080/TCP", "45/UDP"}
 
-	urlValue := []ConfigURL{
+	urlValue := []envinfo.EnvInfoURL{
 		{
 			Name: "example-url-0",
 			Port: 8080,

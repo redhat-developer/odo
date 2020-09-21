@@ -17,8 +17,8 @@ const RecommendedCommandName = "env"
 const (
 	nameParameter                 = "Name"
 	nameParameterDescription      = "Use this value to set component name"
-	namespaceParameter            = "Namespace"
-	namespaceParameterDescription = "Use this value to set component namespace"
+	projectParameter              = "Project"
+	projectParameterDescription   = "Use this value to set component project"
 	debugportParameter            = "DebugPort"
 	debugportParameterDescription = "Use this value to set component debug port"
 )

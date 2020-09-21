@@ -358,7 +358,7 @@ func retrieveKubernetesDefaultNamespace() (string, error) {
 	return client.Namespace, nil
 }
 
-// retrieveCmdNamespace retrieves the namespace from project or namespace, if neither of those are available
+// retrieveCmdNamespace retrieves the namespace from project flag, if unset
 // we revert to the default namespace available from Kubernetes
 func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
 	var componentNamespace string
@@ -367,12 +367,6 @@ func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
 	// For "odo create" check to see if --project has been passed.
 	if cmd.Flags().Changed("project") {
 		componentNamespace, err = cmd.Flags().GetString("project")
-		if err != nil {
-			return "", err
-		}
-	} else if cmd.Flags().Changed("namespace") {
-		// For "odo push" check to see if project has been passed
-		componentNamespace, err = cmd.Flags().GetString("namespace")
 		if err != nil {
 			return "", err
 		}

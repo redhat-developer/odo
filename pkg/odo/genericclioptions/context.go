@@ -19,8 +19,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DefaultAppName is the default name of the application when an application name is not provided
-const DefaultAppName = "app"
+const (
+	// DefaultAppName is the default name of the application when an application name is not provided
+	DefaultAppName = "app"
+
+	// gitDirName is the git dir name in a project
+	gitDirName = ".git"
+)
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
@@ -171,7 +176,7 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 	}
 
 	// Check to see if the environment file exists
-	if !envInfo.EnvInfoFileExists() {
+	if !envInfo.Exists() {
 		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}
 
@@ -224,9 +229,9 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 	// If file does not exist at this point, raise an error
 	// HOWEVER..
 	// When using auto-completion, we should NOT error out, just ignore the fact that there is no configuration
-	if !localConfiguration.ConfigFileExists() && ignoreMissingConfiguration {
+	if !localConfiguration.Exists() && ignoreMissingConfiguration {
 		klog.V(4).Info("There is NO config file that exists, we are however ignoring this as the ignoreMissingConfiguration flag has been passed in as true")
-	} else if !localConfiguration.ConfigFileExists() {
+	} else if !localConfiguration.Exists() {
 		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}
 
@@ -235,20 +240,21 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 }
 
 // resolveProject resolves project
-func resolveProject(command *cobra.Command, client *occlient.Client, localConfiguration *config.LocalConfigInfo) string {
+func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvider) {
 	var namespace string
+	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
-		project, err := client.GetProject(projectFlag)
+		project, err := o.Client.GetProject(projectFlag)
 		if err != nil || project == nil {
 			util.LogErrorAndExit(err, "")
 		}
 		namespace = projectFlag
 	} else {
-		namespace = localConfiguration.GetProject()
+		namespace = localConfiguration.GetNamespace()
 		if namespace == "" {
-			namespace = client.Namespace
+			namespace = o.Client.Namespace
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
@@ -256,33 +262,34 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 		}
 
 		// check that the specified project exists
-		_, err := client.GetProject(namespace)
+		_, err := o.Client.GetProject(namespace)
 		if err != nil {
 			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
-	client.Namespace = namespace
-	return namespace
+	o.Client.Namespace = namespace
+	o.Project = namespace
 }
 
 // resolveNamespace resolves namespace for devfile component
-func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo) string {
+func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvider) {
 	var namespace string
-	projectFlag := FlagValueIfSet(command, "project")
+	command := o.command
+	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := client.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
+		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
 		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
 			util.LogErrorAndExit(err, "")
 		}
 		namespace = projectFlag
 	} else {
-		namespace = envSpecificInfo.GetNamespace()
+		namespace = configProvider.GetNamespace()
 		if namespace == "" {
-			namespace = client.Namespace
+			namespace = o.KClient.Namespace
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current namespace. Please create or set a namespace\n"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
@@ -290,20 +297,21 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 		}
 
 		// check that the specified namespace exists
-		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 		if err != nil {
 			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
 	}
-	client.Namespace = namespace
-	return namespace
+	o.KClient.Namespace = namespace
+	o.Project = namespace
 }
 
 // resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
+func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) {
 	var app string
+	command := o.command
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
 		app = appFlag
@@ -311,11 +319,11 @@ func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfigurati
 		app = localConfiguration.GetApplication()
 		if app == "" {
 			if createAppIfNeeded {
-				return DefaultAppName
+				app = DefaultAppName
 			}
 		}
 	}
-	return app
+	o.Application = app
 }
 
 // ResolveAppFlag resolves the app from the flag
@@ -328,7 +336,7 @@ func ResolveAppFlag(command *cobra.Command) string {
 }
 
 // resolveComponent resolves component
-func resolveComponent(command *cobra.Command, localConfiguration *config.LocalConfigInfo, context *Context) string {
+func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration envinfo.LocalConfigProvider) string {
 	var cmp string
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {
@@ -336,9 +344,10 @@ func resolveComponent(command *cobra.Command, localConfiguration *config.LocalCo
 		cmp = localConfiguration.GetName()
 	} else {
 		// if flag is set, check that the specified component exists
-		context.checkComponentExistsOrFail(cmpFlag)
+		o.checkComponentExistsOrFail(cmpFlag)
 		cmp = cmpFlag
 	}
+	o.cmp = cmp
 	return cmp
 }
 
@@ -365,32 +374,28 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		util.LogErrorAndExit(err, "")
 	}
 
-	// Resolve project
-	namespace := resolveProject(command, client, localConfiguration)
-
-	// resolve application
-	app := resolveApp(command, createAppIfNeeded, localConfiguration)
-
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
 	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		Client:          client,
-		Project:         namespace,
-		Application:     app,
 		OutputFlag:      outputFlag,
 		command:         command,
 		LocalConfigInfo: localConfiguration,
 		KClient:         KClient,
 	}
 
+	internalCxt.resolveProject(localConfiguration)
+	internalCxt.resolveApp(createAppIfNeeded, localConfiguration)
+
+	// Once the component is resolved, add it to the context
+	internalCxt.resolveAndSetComponent(command, localConfiguration)
+
 	// Create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
 	}
-	// Once the component is resolved, add it to the context
-	context.cmp = resolveComponent(command, localConfiguration, context)
 
 	return context
 }
@@ -416,19 +421,21 @@ func newDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.Application = resolveApp(command, true, envInfo)
+	internalCxt.resolveApp(true, envInfo)
 
 	// If the push target is NOT Docker we will set the client to Kubernetes.
 	if !pushtarget.IsPushTargetDocker() {
 
 		// Create a new kubernetes client
-		kClient := kClient(command)
-		internalCxt.KClient = kClient
+		internalCxt.KClient = kClient(command)
+		internalCxt.Client = client(command)
 
 		// Gather the environment information
-		internalCxt.EnvSpecificInfo = envInfo
-		resolveNamespace(command, kClient, envInfo)
+		internalCxt.resolveNamespace(envInfo)
 	}
+
+	// resolve the component
+	internalCxt.resolveAndSetComponent(command, envInfo)
 
 	// Create a context from the internal representation
 	context := &Context{
@@ -493,7 +500,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 }
 
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
-func (o *Context) checkComponentExistsOrFail(cmp string) {
+func (o *internalCxt) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
 	util.LogErrorAndExit(err, "")
 	if !exists {
@@ -502,8 +509,8 @@ func (o *Context) checkComponentExistsOrFail(cmp string) {
 	}
 }
 
-// ApplyIgnore will take the current ignores []string and either ignore it (if .odoignore is used)
-// or find the .gitignore file in the directory and use that instead.
+// ApplyIgnore will take the current ignores []string and append the mandatory odo-file-index.json and
+// .git ignores; or find the .odoignore/.gitignore file in the directory and use that instead.
 func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 	if len(*ignores) == 0 {
 		rules, err := pkgUtil.GetIgnoreRulesFromDirectory(sourcePath)
@@ -512,6 +519,18 @@ func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 		}
 		*ignores = append(*ignores, rules...)
 	}
+
+	indexFile := pkgUtil.GetIndexFileRelativeToContext()
+	// check if the ignores flag has the index file
+	if !pkgUtil.In(*ignores, indexFile) {
+		*ignores = append(*ignores, indexFile)
+	}
+
+	// check if the ignores flag has the git dir
+	if !pkgUtil.In(*ignores, gitDirName) {
+		*ignores = append(*ignores, gitDirName)
+	}
+
 	return nil
 }
 

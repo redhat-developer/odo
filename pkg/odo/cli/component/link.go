@@ -182,8 +182,8 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 
 	// Update the use / example / long to the Devfile description
 	linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
-	linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
-	linkCmd.Long = linkLongDescExperimental
+	linkCmd.Example = fmt.Sprintf(linkExample, fullName)
+	linkCmd.Long = linkLongDesc
 
 	// we ignore the error because it doesn't matter at this place to deal with it and the function returns a *cobra.Command
 	csvSupport, _ := cmdutil.IsCSVSupported()

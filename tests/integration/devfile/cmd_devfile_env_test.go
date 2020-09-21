@@ -13,7 +13,7 @@ import (
 var _ = Describe("odo devfile env command tests", func() {
 	const (
 		testName      = "testname"
-		testNamepace  = "testnamepace"
+		testProject   = "testProject"
 		testDebugPort = "8888"
 		fakeParameter = "fakeParameter"
 	)
@@ -54,7 +54,7 @@ var _ = Describe("odo devfile env command tests", func() {
 				"PARAMETER VALUE",
 				"NAME",
 				"nodejs",
-				"Namespace",
+				"Project",
 				project,
 				"DebugPort",
 			}
@@ -66,7 +66,7 @@ var _ = Describe("odo devfile env command tests", func() {
 		It("Should successfully set and unset the parameters", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
 			helper.CmdShouldPass("odo", "env", "set", "Name", testName, "-f")
-			helper.CmdShouldPass("odo", "env", "set", "Namespace", testNamepace, "-f")
+			helper.CmdShouldPass("odo", "env", "set", "Project", testProject, "-f")
 			helper.CmdShouldPass("odo", "env", "set", "DebugPort", testDebugPort, "-f")
 			output := helper.CmdShouldPass("odo", "env", "view")
 			wantOutput := []string{
@@ -74,8 +74,8 @@ var _ = Describe("odo devfile env command tests", func() {
 				"PARAMETER VALUE",
 				"NAME",
 				testName,
-				"Namespace",
-				testNamepace,
+				"Project",
+				testProject,
 				"DebugPort",
 				testDebugPort,
 			}

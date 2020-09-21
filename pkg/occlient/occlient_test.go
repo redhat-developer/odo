@@ -1412,13 +1412,108 @@ func TestGetExposedPorts(t *testing.T) {
 		want             []corev1.ContainerPort
 	}{
 		{
-			name:             "Case: Valid image ports",
-			imageTag:         "3.5",
-			imageStreamImage: fakeImageStreamImage("python", []string{"8080/tcp"}, ""),
+			name:     "Case: Valid image ports in ContainerConfig",
+			imageTag: "3.5",
+			imageStreamImage: &imagev1.ImageStreamImage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "name/imagename@@sha256:9579a93ee",
+				},
+				Image: imagev1.Image{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "@sha256:9579a93ee",
+					},
+					DockerImageMetadata: runtime.RawExtension{
+						Object: &dockerapiv10.DockerImage{
+							ContainerConfig: dockerapiv10.DockerConfig{
+								ExposedPorts: map[string]struct{}{
+									"8080/tcp": {},
+								},
+							},
+						},
+					},
+				},
+			},
 			want: []corev1.ContainerPort{
 				{
-					Name:          fmt.Sprintf("%d-%s", 8080, strings.ToLower(string("tcp"))),
+					Name:          "8080-tcp",
 					ContainerPort: 8080,
+					Protocol:      "TCP",
+				},
+			},
+		},
+		{
+			name:     "Case: Valid image ports in Config",
+			imageTag: "3.5",
+			imageStreamImage: &imagev1.ImageStreamImage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "name/imagename@@sha256:9579a93ee",
+				},
+				Image: imagev1.Image{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "@sha256:9579a93ee",
+					},
+					DockerImageMetadata: runtime.RawExtension{
+						Object: &dockerapiv10.DockerImage{
+							Config: &dockerapiv10.DockerConfig{
+								ExposedPorts: map[string]struct{}{
+									"8080/tcp": {},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      "TCP",
+				},
+			},
+		},
+		{
+			name:     "Case: Valid image ports in both Config and ContainerConfig",
+			imageTag: "3.5",
+			imageStreamImage: &imagev1.ImageStreamImage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "name/imagename@@sha256:9579a93ee",
+				},
+				Image: imagev1.Image{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "@sha256:9579a93ee",
+					},
+					DockerImageMetadata: runtime.RawExtension{
+						Object: &dockerapiv10.DockerImage{
+							ContainerConfig: dockerapiv10.DockerConfig{
+								ExposedPorts: map[string]struct{}{
+									"8080/tcp": {},
+									"9090/tcp": {},
+								},
+							},
+							Config: &dockerapiv10.DockerConfig{
+								ExposedPorts: map[string]struct{}{
+									"9090/tcp": {},
+									"9191/tcp": {},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      "TCP",
+				},
+				{
+					Name:          "9090-tcp",
+					ContainerPort: 9090,
+					Protocol:      "TCP",
+				},
+				{
+					Name:          "9191-tcp",
+					ContainerPort: 9191,
 					Protocol:      "TCP",
 				},
 			},
@@ -1435,6 +1530,11 @@ func TestGetExposedPorts(t *testing.T) {
 			fkclient, _ := FakeNew()
 			fkclient.Namespace = "testing"
 			got, err := fkclient.GetExposedPorts(tt.imageStreamImage)
+
+			// sort result, map is used behind the scene so the ordering might be different
+			sort.Slice(got, func(i, j int) bool {
+				return got[i].ContainerPort < got[j].ContainerPort
+			})
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("client.GetExposedPorts(imagestream imageTag) unexpected error %v, wantErr %v", err, tt.wantErr)

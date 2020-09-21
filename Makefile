@@ -412,3 +412,7 @@ openshiftci-presubmit-unittests:
 .PHONY: test-operator-hub
 test-operator-hub:
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo service command tests" tests/integration/operatorhub/
+
+.PHONY: test-cmd-devfile-describe
+test-cmd-devfile-describe:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile describe command tests" tests/integration/devfile/

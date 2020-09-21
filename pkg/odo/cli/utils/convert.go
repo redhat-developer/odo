@@ -3,8 +3,6 @@ package utils
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
-	"strings"
 
 	"github.com/fatih/color"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -221,8 +219,6 @@ func generateDevfileYaml(co *ConvertOptions) error {
 func generateEnvYaml(co *ConvertOptions) (err error) {
 	klog.V(2).Info("Generating env.yaml")
 
-	// list of urls having name, ports, secure
-	urls := co.context.LocalConfigInfo.GetURL()
 	debugPort := co.context.LocalConfigInfo.GetDebugPort()
 
 	application := co.context.LocalConfigInfo.GetApplication()
@@ -233,26 +229,10 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 		return err
 	}
 
-	var urlList []envinfo.EnvInfoURL
-
-	for _, url := range urls {
-		urlEnv := envinfo.EnvInfoURL{
-			Name:   url.Name,
-			Port:   url.Port,
-			Secure: url.Secure,
-			// s2i components are only run on openshift cluster
-			Kind: envinfo.ROUTE,
-		}
-
-		urlList = append(urlList, urlEnv)
-
-	}
-
 	componentSettings := envinfo.ComponentSettings{
-		Name:      co.componentName,
-		Namespace: co.context.Project,
-		URL:       &urlList,
-		AppName:   application,
+		Name:    co.componentName,
+		Project: co.context.Project,
+		AppName: application,
 	}
 
 	if debugPort != 0 || debugPort == config.DefaultDebugPort {
@@ -330,8 +310,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 
 	maxMemory := localConfig.GetMaxMemory()
 	volumes := localConfig.GetStorage()
-	// list of ports taken from builder image and set into local config
-	ports := localConfig.GetPorts()
+	urls := localConfig.GetURL()
 
 	var endpoints []common.Endpoint
 	var envs []common.Env
@@ -368,19 +347,12 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	envs = append(envs, env)
 
 	// convert s2i ports to devfile endpoints
-	for _, port := range ports {
-
-		port := strings.Split(port, "/")
-		// from s2i config.yaml port is of the form 8080/TCP
-		// Ignoring TCP and Udp values here
-		portInt, err := strconv.ParseInt(port[0], 10, 32)
-		if err != nil {
-			return errors.Wrapf(err, "Unable to convert port %s from config.yaml to devfile.yaml", port)
-		}
+	for _, url := range urls {
 
 		endpoint := common.Endpoint{
-			Name:       fmt.Sprintf("port-%s", port[0]),
-			TargetPort: int32(portInt),
+			Name:       url.Name,
+			TargetPort: int32(url.Port),
+			Secure:     url.Secure,
 		}
 
 		endpoints = append(endpoints, endpoint)

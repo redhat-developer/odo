@@ -7,7 +7,6 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/util/validation"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -155,55 +154,58 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 		o.devObj = devObj
 		componentName := o.EnvSpecificInfo.GetName()
 
-		if o.isDocker {
-			var portList []string
-			containers, err := adapterutils.GetContainers(devObj)
-			if err != nil {
-				return err
-			}
-			if len(containers) == 0 {
-				return fmt.Errorf("no valid components found in the devfile")
-			}
-			compWithEndpoint := 0
-			for _, c := range containers {
-				if len(c.Ports) != 0 {
-					compWithEndpoint++
-					for _, port := range c.Ports {
-						portList = append(portList, strconv.FormatInt(int64(port.ContainerPort), 10))
-					}
-				}
-				if compWithEndpoint > 1 {
-					return fmt.Errorf("devfile should only have one component containing endpoint")
+		var portList []string
+		containers, err := adapterutils.GetContainers(devObj)
+		if err != nil {
+			return err
+		}
+		if len(containers) == 0 {
+			return fmt.Errorf("no valid components found in the devfile")
+		}
+		compWithEndpoint := 0
+		portMap := make(map[string]bool)
+		for _, c := range containers {
+			if len(c.Ports) != 0 {
+				compWithEndpoint++
+				for _, port := range c.Ports {
+					// use map to filter out duplicated ports
+					portMap[strconv.FormatInt(int64(port.ContainerPort), 10)] = true
 				}
 			}
-			if compWithEndpoint == 0 {
-				return fmt.Errorf("no valid component with an endpoint found in the devfile")
+			if compWithEndpoint > 1 && o.isDocker {
+				return fmt.Errorf("devfile should only have one component containing endpoint")
 			}
+		}
+		if compWithEndpoint == 0 && o.isDocker {
+			return fmt.Errorf("no valid component with an endpoint found in the devfile")
+		}
+		for port := range portMap {
+			portList = append(portList, port)
+		}
+		if o.isDocker || o.urlPort == -1 {
 			o.componentPort, err = url.GetValidPortNumber(componentName, o.urlPort, portList)
 			if err != nil {
 				return err
 			}
+		} else {
+			o.componentPort = o.urlPort
+		}
+
+		if len(args) != 0 {
+			o.urlName = args[0]
+		} else {
+			o.urlName = url.GetURLName(componentName, o.componentPort)
+		}
+
+		if o.isDocker {
 			o.exposedPort, err = url.GetValidExposedPortNumber(o.exposedPort)
 			if err != nil {
 				return err
 			}
 			o.urlType = envinfo.DOCKER
 		} else {
-			if o.urlPort == -1 {
-				return fmt.Errorf("port must be provided to create an endpoint entry in devfile")
-			}
-			o.componentPort = o.urlPort
-			if len(args) != 0 {
-				o.urlName = args[0]
-			} else {
-				o.urlName = url.GetURLName(componentName, o.componentPort)
-			}
-
 			foundContainer := false
 			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
-			if len(containerComponents) == 0 {
-				return fmt.Errorf("no valid components found in the devfile")
-			}
 			// map TargetPort with containerName
 			containerPortMap := make(map[int]string)
 			for _, component := range containerComponents {
@@ -219,6 +221,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 					containerPortMap[int(endpoint.TargetPort)] = component.Name
 				}
 			}
+
 			if len(o.container) > 0 && !foundContainer {
 				return fmt.Errorf("the container specified: %v does not exist in devfile", o.container)
 			}
@@ -365,7 +368,7 @@ func (o *URLCreateOptions) Run() (err error) {
 			}
 		}
 	} else {
-		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
+		err = o.LocalConfigInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")

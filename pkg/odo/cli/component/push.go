@@ -100,7 +100,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 		// If the file does not exist, we should populate the environment file with the correct env.yaml information
 		// such as name and namespace.
-		if !envFileInfo.EnvInfoFileExists() {
+		if !envFileInfo.Exists() {
 			klog.V(4).Info("Environment file does not exist, creating the env.yaml file in order to use 'odo push'")
 
 			// Since the environment file does not exist, we will retrieve a correct namespace from
@@ -126,7 +126,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			}
 
 			// Create the environment file. This will actually *create* the env.yaml file in your context directory.
-			err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Namespace: namespace})
+			err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Project: namespace})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env.yaml for devfile component")
 			}
@@ -263,9 +263,8 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	pushCmd.Flags().BoolVar(&po.pushConfig, "config", false, "Use config flag to only apply config on to cluster")
 	pushCmd.Flags().BoolVar(&po.pushSource, "source", false, "Use source flag to only push latest source on to cluster")
-	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to force building the component")
+	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to re-sync the entire source code and re-build the component")
 
-	pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
 	pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 	pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 	pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")

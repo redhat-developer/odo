@@ -26,6 +26,17 @@ const (
 	apiVersion = "odo.dev/v1alpha1"
 )
 
+var supportedImages = map[string]bool{
+	"redhat-openjdk-18/openjdk18-openshift:latest": true,
+	"openjdk/openjdk-11-rhel8:latest":              true,
+	"openjdk/openjdk-11-rhel7:latest":              true,
+	"centos/nodejs-10-centos7:latest":              true,
+	"centos/nodejs-12-centos7:latest":              true,
+	"rhscl/nodejs-10-rhel7:latest":                 true,
+	"rhscl/nodejs-12-rhel7:latest":                 true,
+	"rhoar-nodejs/nodejs-10:latest":                true,
+}
+
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
 func GetDevfileRegistries(registryName string) ([]Registry, error) {
@@ -481,22 +492,7 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 // isSupportedImages returns if the image is supported or not. the supported images have been provided here
 // https://github.com/openshift/odo-init-image/blob/master/language-scripts/image-mappings.json
 func isSupportedImage(imgName string) bool {
-	supportedImages := []string{
-		"redhat-openjdk-18/openjdk18-openshift:latest",
-		"openjdk/openjdk-11-rhel8:latest",
-		"openjdk/openjdk-11-rhel7:latest",
-		"centos/nodejs-10-centos7:latest",
-		"centos/nodejs-12-centos7:latest",
-		"rhscl/nodejs-10-rhel7:latest",
-		"rhscl/nodejs-12-rhel7:latest",
-		"rhoar-nodejs/nodejs-10:latest",
-	}
-	for _, supImage := range supportedImages {
-		if supImage == imgName {
-			return true
-		}
-	}
-	return false
+	return supportedImages[imgName]
 }
 
 // getBuildersFromImageStreams returns all the builder Images from the image streams provided and also hides the builder images
