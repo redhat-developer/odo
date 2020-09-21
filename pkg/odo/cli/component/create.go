@@ -578,8 +578,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
 
 			hasComponent := false
-			existSpinner := log.Spinner("Checking devfile existence")
-			defer existSpinner.End(false)
+			devfileExistSpinner := log.Spinner("Checking devfile existence")
+			defer devfileExistSpinner.End(false)
 
 			for _, devfileComponent := range catalogDevfileList.Items {
 				if co.devfileMetadata.componentType == devfileComponent.Name {
@@ -605,9 +605,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			if hasComponent {
-				existSpinner.End(true)
+				devfileExistSpinner.End(true)
 			} else {
-				existSpinner.End(false)
+				devfileExistSpinner.End(false)
 			}
 
 			if co.devfileMetadata.devfileSupport {
