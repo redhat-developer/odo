@@ -59,7 +59,11 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 // getCommandFromDevfile iterates through the devfile commands and returns the command associated with the group
 func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
-	commands := data.GetCommands()
+	commands, err := data.GetCommands()
+	if err != nil {
+		return common.DevfileCommand{}, err
+	}
+
 	var onlyCommand common.DevfileCommand
 
 	// validate the command groups before searching for a command match
@@ -102,7 +106,10 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 
 // getCommandFromFlag iterates through the devfile commands and returns the command specified associated with the group
 func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGroupType, commandName string) (supportedCommand common.DevfileCommand, err error) {
-	commands := data.GetCommands()
+	commands, err := data.GetCommands()
+	if err != nil {
+		return common.DevfileCommand{}, err
+	}
 
 	for _, command := range commands {
 		if command.GetID() == commandName {
@@ -136,7 +143,10 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 // 2. multiple commands belonging to a single group cannot have more than one default
 func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) error {
 
-	commands := getCommandsByGroup(data, groupType)
+	commands, err := getCommandsByGroup(data, groupType)
+	if err != nil {
+		return err
+	}
 
 	defaultCommandCount := 0
 

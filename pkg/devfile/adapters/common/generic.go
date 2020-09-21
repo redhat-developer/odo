@@ -64,7 +64,11 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 
 // ExecuteDevfileCommand executes the devfile init, build and test command actions synchronously
 func (a GenericAdapter) ExecuteDevfileCommand(command common.DevfileCommand, show bool) error {
-	c, err := New(command, a.Devfile.Data.GetCommands(), a)
+	commands, err := a.Devfile.Data.GetCommands()
+	if err != nil {
+		return err
+	}
+	c, err := New(command, commands, a)
 	if err != nil {
 		return err
 	}
@@ -95,7 +99,10 @@ func convertGroupKindToString(exec *common.Exec) string {
 // Init only runs once when the component is created.
 func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists bool, params PushParameters) (err error) {
 	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-	devfileCommandMap := a.Devfile.Data.GetCommands()
+	devfileCommandMap, err := a.Devfile.Data.GetCommands()
+	if err != nil {
+		return err
+	}
 
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
@@ -182,7 +189,10 @@ func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType co
 func (a GenericAdapter) ExecDevfileEvent(events []string, eventType DevfileEventType, show bool) error {
 	if len(events) > 0 {
 		log.Infof("\nExecuting %s event commands for component %s", string(eventType), a.ComponentName)
-		commandMap := a.Devfile.Data.GetCommands()
+		commandMap, err := a.Devfile.Data.GetCommands()
+		if err != nil {
+			return errors.Wrap(err, "unable to get devfile commands")
+		}
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
 			command, ok := commandMap[strings.ToLower(commandName)]

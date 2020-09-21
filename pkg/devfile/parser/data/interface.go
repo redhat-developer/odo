@@ -37,7 +37,7 @@ type DevfileData interface {
 	UpdateStarterProject(project common.DevfileStarterProject)
 
 	// command related methods
-	GetCommands() map[string]common.DevfileCommand
+	GetCommands() (map[string]common.DevfileCommand, error)
 	AddCommands(commands ...common.DevfileCommand) error
 	UpdateCommand(command common.DevfileCommand)
 

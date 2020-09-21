@@ -127,7 +127,11 @@ func parseParent(d DevfileObj) error {
 	// since the parent's data has been overriden
 	// add the items back to the current devfile
 	// error indicates that the item has been defined again in the current devfile
-	commandsMap := parentData.Data.GetCommands()
+	commandsMap, err := parentData.Data.GetCommands()
+	if err != nil {
+		return err
+	}
+
 	commands := make([]common.DevfileCommand, 0, len(commandsMap))
 	for _, command := range commandsMap {
 		commands = append(commands, command)

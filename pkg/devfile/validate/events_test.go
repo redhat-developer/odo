@@ -203,10 +203,14 @@ func TestValidateEvents(t *testing.T) {
 			}
 
 			events := devObj.Data.GetEvents()
-			commands := devObj.Data.GetCommands()
+			commands, err := devObj.Data.GetCommands()
+			if err != nil && !tt.wantErr {
+				t.Errorf("TestValidateEvents error - %v", err)
+			}
+
 			components := devObj.Data.GetComponents()
 
-			err := validateEvents(events, commands, components)
+			err = validateEvents(events, commands, components)
 			if err != nil && !tt.wantErr {
 				t.Errorf("TestValidateEvents error - %v", err)
 			}
@@ -400,10 +404,13 @@ func TestIsEventValid(t *testing.T) {
 				},
 			}
 
-			commands := devObj.Data.GetCommands()
+			commands, err := devObj.Data.GetCommands()
+			if err != nil && !tt.wantErr {
+				t.Errorf("TestIsEventValid error: %v", err)
+			}
 			components := devObj.Data.GetComponents()
 
-			err := isEventValid(tt.eventNames, tt.eventType, commands, components)
+			err = isEventValid(tt.eventNames, tt.eventType, commands, components)
 			if err != nil && !tt.wantErr {
 				t.Errorf("TestIsEventValid error: %v", err)
 			} else if err != nil && tt.wantErr {

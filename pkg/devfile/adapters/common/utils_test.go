@@ -431,7 +431,10 @@ func TestGetCommandsForGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			commands := getCommandsByGroup(devObj.Data, tt.groupType)
+			commands, err := getCommandsByGroup(devObj.Data, tt.groupType)
+			if err != nil {
+				t.Errorf("TestGetCommandsForGroup unexpected error retrieving commands by group: %v", err)
+			}
 
 			if len(commands) != tt.numberOfCommands {
 				t.Errorf("TestGetCommandsForGroup error: number of commands mismatch for group %v, expected: %v got: %v", string(tt.groupType), tt.numberOfCommands, len(commands))
@@ -533,7 +536,11 @@ func TestGetCommands(t *testing.T) {
 				},
 			}
 
-			commandsMap := devObj.Data.GetCommands()
+			commandsMap, err := devObj.Data.GetCommands()
+			if err != nil {
+				t.Errorf("TestGetCommands unexpected error: %v", err)
+			}
+
 			if len(commandsMap) != len(tt.expectedCommands) {
 				t.Errorf("TestGetCommands error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}
@@ -672,7 +679,10 @@ func TestGetCommandsFromEvent(t *testing.T) {
 				},
 			}
 
-			commandsMap := devObj.Data.GetCommands()
+			commandsMap, err := devObj.Data.GetCommands()
+			if err != nil {
+				t.Errorf("TestGetCommandsFromEvent unexpected error: %v", err)
+			}
 			commands := GetCommandsFromEvent(commandsMap, tt.eventName)
 			if !reflect.DeepEqual(tt.wantCommands, commands) {
 				t.Errorf("TestGetCommandsFromEvent error - got %v expected %v", commands, tt.wantCommands)

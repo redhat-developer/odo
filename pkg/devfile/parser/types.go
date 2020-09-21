@@ -65,7 +65,12 @@ func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) 
 func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) error {
 	for _, patchCommand := range overridePatch {
 		found := false
-		for _, originalCommand := range d.Data.GetCommands() {
+		commands, err := d.Data.GetCommands()
+		if err != nil {
+			return err
+		}
+
+		for _, originalCommand := range commands {
 			if strings.ToLower(patchCommand.Id) == originalCommand.Id {
 				found = true
 				var updatedExec common.Exec
