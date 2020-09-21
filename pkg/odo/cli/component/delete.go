@@ -29,9 +29,9 @@ import (
 // DeleteRecommendedCommandName is the recommended delete command name
 const DeleteRecommendedCommandName = "delete"
 
-var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'. 
-%[1]s frontend
-%[1]s frontend --all
+var deleteExample = ktemplates.Examples(`  # Delete the component in your current directory
+%[1]s
+%[1]s --all
   `)
 
 // DeleteOptions is a container to attach complete, validate and run pattern
@@ -295,11 +295,11 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	do := NewDeleteOptions()
 
 	var componentDeleteCmd = &cobra.Command{
-		Use:         fmt.Sprintf("%s <component_name>", name),
+		Use:         fmt.Sprintf("%s", name),
 		Short:       "Delete component",
 		Long:        "Delete component.",
 		Example:     fmt.Sprintf(deleteExample, fullName),
-		Args:        cobra.MaximumNArgs(1),
+		Args:        cobra.MaximumNArgs(0),
 		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(do, cmd, args)
