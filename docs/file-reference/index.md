@@ -46,10 +46,10 @@ commands:
 | Key             | Type                                                    | Required | Description                                                             |
 |-----------------|---------------------------------------------------------|----------|-------------------------------------------------------------------------|
 | schemaVersion   | string                                                  | yes      | Schema version of devfile                                               |
-| metadata        | [metadataObject](#metadataobject)                       | no       | Metadata information that describes the project                         |
+| metadata        | [metadataObject](#metadata-object)                       | no       | Metadata information that describes the project                         |
 | starterProjects | array of [starterProjectObject](#starterproject-object) | no       | List of starter projects that can be used to bootstrap new projects     |
 | components      | array of [componentObject](#component-object)           | no       | List of components to be used within your development environment       |
-| commands        | array of [commandObject](#commandobject)                | no       | List of commands to be executed                                         |                                             
+| commands        | array of [commandObject](#command-object)                | no       | List of commands to be executed                                         |                                             
 
 ## schemaVersion
 
@@ -132,27 +132,41 @@ components:
 
 ## commands
 
-> Example using the exec command
+> Example using the exec and composite command
 
 ```yaml
 commands:
-  - id: devBuild
+  - id: install
     exec:
-      id: devBuild
-      commandLine: "/artifacts/bin/build-container-full.sh"
-      component: tools
-      workingDir: /projects/springbootproject
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-        isDefault: true
-  - id: devRun
+        isDefault: false
+  - id: mkdir
     exec:
-      commandLine: "/artifacts/bin/start-server.sh"
       component: runtime
-      workingDir: /
+      commandLine: mkdir /projects/testfolder
+      workingDir: ${PROJECTS_ROOT}
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
+  - id: buildAndMkdir
+    composite:
+         label: Build and Mkdir
+         commands:
+           - mkdir
+           - install
+         parallel: false
+         group: 
+            kind: build
+            isDefault: true
 ```
 
 | Key           | Type                             | Description                                               |
@@ -492,9 +506,10 @@ commands:
 
 Each command must use the `exec` object.
 
-| Key  | Type                      | Description               |
-|------|---------------------------|---------------------------|
-| exec | [execObject](#execobject) | The CLI command to be ran |
+| Key  | Type                                | Description                     |
+|------|-------------------------------------|---------------------------------|
+| exec | [execObject](#execobject)           | The exec command to be run      |
+| exec | [compositeObject](#compositeObject) | The composite command to be run |
 
 ## execObject
 
@@ -524,6 +539,56 @@ commands:
 | workingDir  | string                      | no       | Working directory where the command should be executed |
 | group       | [groupObject](#groupObject) | no       | Group that the command is part of                      |
 | env         | [envObject](#envObject)     | no       | List of environment variables used                     |
+
+## compositeObject
+
+> Example using composite command within a command object
+
+```yaml
+commands:
+  - id: install
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: false
+  - id: mkdir
+    exec:
+      component: runtime
+      commandLine: mkdir /projects/testfolder
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: false
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+        isDefault: true
+  - id: buildAndMkdir
+    composite:
+         label: Build and Mkdir
+         commands:
+           - mkdir
+           - install
+         parallel: false
+         group: 
+            kind: build
+            isDefault: true
+```
+
+| Key         | Type                        | Required | Description                                                                          |
+|-------------|-----------------------------|----------|--------------------------------------------------------------------------------------|
+| id          | string                      | yes      | ID of the command                                                                    |
+| commands    | []string                    | no       | Exec commands that constitute the composite command                                  |
+| parallel    | boolean                     | no       | Flag to indicate if commands will be executed in parallel, defaults to `false`         |
+| label       | string                      | no       | Optional label to be used to describe the command                                    |
+| group       | [groupObject](#groupObject) | no       | Group that the composite command is part of. Composite command cannot be of kind `run` |
 
 ## groupObject
 
@@ -655,7 +720,6 @@ Please refer to the below table for a list of features which are *not yet* imple
 | component[].container.endpoints    | [endpointObject](#endpointobject)              | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
 | component[].container.dedicatedPod | [containerObject](#containerobject)            | UNKNOWN     | In schema but not yet implemented.                                                              |
 | commands[].apply                   | [applyObject](#applyobject)                    | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].composite               | [compositeObject](#compositeobject)            | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
 | commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject)      | N/A         | Not applicable to odo.                                                                          |
 | commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)          | N/A         | Not applicable to odo.                                                                          |
 
