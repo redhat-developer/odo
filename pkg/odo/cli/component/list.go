@@ -81,8 +81,10 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context = genericclioptions.NewContext(cmd, false, true)
-			// we intentionally leave this error out
-			lo.hasDCSupport, _ = lo.Client.IsDeploymentConfigSupported()
+			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+			if err != nil {
+				return err
+			}
 
 		} else {
 			klog.V(4).Infof("New Config Context")
@@ -141,6 +143,11 @@ func (lo *ListOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
+		fmt.Println("GIRISH")
+		fmt.Println(lo.Context.Client.KubeConfig.Namespace())
+		fmt.Println(lo.KClient.Namespace)
+		fmt.Println(lo.Project)
+
 		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps)
 
 		if log.IsJSON() {
