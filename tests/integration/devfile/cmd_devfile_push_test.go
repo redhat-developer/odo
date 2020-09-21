@@ -857,6 +857,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		})
 	})
+
 	Context("Verify source code sync location", func() {
 
 		It("Should sync to the correct dir in container if project and clonePath is present", func() {
@@ -874,6 +875,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			// so source code would be synced to /apps/webapp
 			output := cliRunner.ExecListDir(podName, namespace, "/apps/webapp")
 			helper.MatchAllInOutput(output, []string{"package.json"})
+
+			// Verify the sync env variables are correct
+			utils.VerifyContainerSyncEnv(podName, "runtime", namespace, "/apps/webapp", "/apps", cliRunner)
 		})
 
 		It("Should sync to the correct dir in container if project present", func() {
@@ -890,6 +894,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			output := cliRunner.ExecListDir(podName, namespace, "/apps/nodeshift")
 			helper.MatchAllInOutput(output, []string{"package.json"})
+
+			// Verify the sync env variables are correct
+			utils.VerifyContainerSyncEnv(podName, "runtime", namespace, "/apps/nodeshift", "/apps", cliRunner)
 		})
 
 		It("Should sync to the correct dir in container if multiple project is present", func() {
@@ -900,9 +907,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			// for devfile-with-multiple-projects.yaml source mapping is not set so $PROJECTS_ROOT is /projects
-			// multiple projects, so source code would sync to /projects
-			output := cliRunner.ExecListDir(podName, namespace, "/projects")
+			// multiple projects, so source code would sync to the first project /projects/webapp
+			output := cliRunner.ExecListDir(podName, namespace, "/projects/webapp")
 			helper.MatchAllInOutput(output, []string{"package.json"})
+
+			// Verify the sync env variables are correct
+			utils.VerifyContainerSyncEnv(podName, "runtime", namespace, "/projects/webapp", "/projects", cliRunner)
 		})
 
 		It("Should sync to the correct dir in container if no project is present", func() {
@@ -914,6 +924,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 			output := cliRunner.ExecListDir(podName, namespace, "/projects")
 			helper.MatchAllInOutput(output, []string{"package.json"})
+
+			// Verify the sync env variables are correct
+			utils.VerifyContainerSyncEnv(podName, "runtime", namespace, "/projects", "/projects", cliRunner)
 		})
 
 	})
