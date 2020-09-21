@@ -65,7 +65,9 @@ func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	}
 
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
+	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, client, kClient, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	return err
 }

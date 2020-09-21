@@ -165,7 +165,7 @@ func generateDevfileYaml(co *ConvertOptions) error {
 	// git, local, binary, none
 	sourceType := co.context.LocalConfigInfo.GetSourceType()
 
-	imageStream, imageforDevfile, err := getImageforDevfile(co.context.Client, componentType)
+	imageStream, imageforDevfile, err := getImageforDevfile(co.context.GetClient(), componentType)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get image details")
 	}

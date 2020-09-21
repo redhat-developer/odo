@@ -55,7 +55,7 @@ func (o *StorageUnMountOptions) Complete(name string, cmd *cobra.Command, args [
 func (o *StorageUnMountOptions) Validate() (err error) {
 	// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
 	if len(o.storagePath) > 0 {
-		o.storageName, err = storage.GetStorageNameFromMountPath(o.Client, o.storagePath, o.Component(), o.Application)
+		o.storageName, err = storage.GetStorageNameFromMountPath(o.GetClient(), o.storagePath, o.Component(), o.Application)
 		if err != nil {
 			return fmt.Errorf("unable to get storage name from mount path, cause %v", err)
 		}
@@ -63,7 +63,7 @@ func (o *StorageUnMountOptions) Validate() (err error) {
 			return fmt.Errorf("no storage is mounted to %s in the component %s", o.storagePath, o.Component())
 		}
 	} else {
-		exists, err := storage.IsMounted(o.Client, o.storageName, o.Component(), o.Application)
+		exists, err := storage.IsMounted(o.GetClient(), o.storageName, o.Component(), o.Application)
 		if err != nil {
 			return fmt.Errorf("unable to check if storage is mounted or not, cause %v", err)
 		}
@@ -77,7 +77,7 @@ func (o *StorageUnMountOptions) Validate() (err error) {
 
 // Run contains the logic for the odo storage unmount command
 func (o *StorageUnMountOptions) Run() (err error) {
-	err = storage.Unmount(o.Client, o.storageName, o.Component(), o.Application, true)
+	err = storage.Unmount(o.GetClient(), o.storageName, o.Component(), o.Application, true)
 	if err != nil {
 		return fmt.Errorf("unable to unmount storage %v from component %v", o.storageName, o.Component())
 	}

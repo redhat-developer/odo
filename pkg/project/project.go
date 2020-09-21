@@ -12,12 +12,12 @@ const apiVersion = "odo.dev/v1alpha1"
 
 // GetCurrent return current project
 func GetCurrent(context *genericclioptions.Context) string {
-	return context.KClient.GetCurrentNamespace()
+	return context.GetClient().GetKubeClient().GetCurrentNamespace()
 }
 
 // SetCurrent sets the projectName as current project
 func SetCurrent(context *genericclioptions.Context, projectName string) error {
-	err := context.KClient.SetCurrentNamespace(projectName)
+	err := context.GetClient().GetKubeClient().SetCurrentNamespace(projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current project to"+projectName)
 	}
@@ -29,25 +29,26 @@ func Create(context *genericclioptions.Context, projectName string, wait bool) e
 		return errors.Errorf("no project name given")
 	}
 
-	projectSupport, err := context.Client.IsProjectSupported()
+	client := context.GetClient()
+	projectSupport, err := client.IsProjectSupported()
 	if err != nil {
 		return errors.Wrap(err, "unable to detect project support")
 	}
 	if projectSupport {
-		err := context.Client.CreateNewProject(projectName, wait)
+		err := client.CreateNewProject(projectName, wait)
 		if err != nil {
 			return errors.Wrap(err, "unable to create new project")
 		}
 
 	} else {
-		_, err := context.KClient.CreateNamespace(projectName)
+		_, err := client.GetKubeClient().CreateNamespace(projectName)
 		if err != nil {
 			return errors.Wrap(err, "unable to create new project")
 		}
 	}
 
 	if wait {
-		err = context.KClient.WaitForServiceAccountInNamespace(projectName, "default")
+		err = client.GetKubeClient().WaitForServiceAccountInNamespace(projectName, "default")
 		if err != nil {
 			return errors.Wrap(err, "unable to wait for service account")
 		}
@@ -61,19 +62,20 @@ func Delete(context *genericclioptions.Context, projectName string, wait bool) e
 		return errors.Errorf("no project name given")
 	}
 
-	projectSupport, err := context.Client.IsProjectSupported()
+	client := context.GetClient()
+	projectSupport, err := client.IsProjectSupported()
 	if err != nil {
 		return errors.Wrap(err, "unable to detect project support")
 	}
 
 	if projectSupport {
 		// Delete the requested project
-		err := context.Client.DeleteProject(projectName, wait)
+		err := client.DeleteProject(projectName, wait)
 		if err != nil {
 			return errors.Wrapf(err, "unable to delete project %s", projectName)
 		}
 	} else {
-		err := context.KClient.DeleteNamespace(projectName, wait)
+		err := client.GetKubeClient().DeleteNamespace(projectName, wait)
 		if err != nil {
 			return errors.Wrapf(err, "unable to delete namespace %s", projectName)
 		}
@@ -84,21 +86,22 @@ func Delete(context *genericclioptions.Context, projectName string, wait bool) e
 // List lists all the projects on the cluster
 // returns a list of the projects or the error if any
 func List(context *genericclioptions.Context) (ProjectList, error) {
-	currentProject := context.KClient.GetCurrentNamespace()
+	client := context.GetClient()
+	currentProject := client.GetKubeClient().GetCurrentNamespace()
 
-	projectSupport, err := context.Client.IsProjectSupported()
+	projectSupport, err := client.IsProjectSupported()
 	if err != nil {
 		return ProjectList{}, errors.Wrap(err, "unable to detect project support")
 	}
 
 	var allProjects []string
 	if projectSupport {
-		allProjects, err = context.Client.GetProjectNames()
+		allProjects, err = client.GetProjectNames()
 		if err != nil {
 			return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
 		}
 	} else {
-		allProjects, err = context.KClient.GetNamespaces()
+		allProjects, err = client.GetKubeClient().GetNamespaces()
 		if err != nil {
 			return ProjectList{}, errors.Wrap(err, "cannot get all the namespaces")
 		}
@@ -121,18 +124,19 @@ func List(context *genericclioptions.Context) (ProjectList, error) {
 // The first returned parameter is a bool indicating if a project with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(context *genericclioptions.Context, projectName string) (bool, error) {
-	projectSupport, err := context.Client.IsProjectSupported()
+	client := context.GetClient()
+	projectSupport, err := client.IsProjectSupported()
 	if err != nil {
 		return false, errors.Wrap(err, "unable to detect project support")
 	}
 
 	if projectSupport {
-		project, err := context.Client.GetProject(projectName)
+		project, err := client.GetProject(projectName)
 		if err != nil || project == nil {
 			return false, err
 		}
 	} else {
-		namespace, err := context.KClient.GetNamespace(projectName)
+		namespace, err := client.GetKubeClient().GetNamespace(projectName)
 		if err != nil || namespace == nil {
 			return false, err
 		}

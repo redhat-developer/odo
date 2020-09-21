@@ -270,7 +270,7 @@ func TestCreate(t *testing.T) {
 
 			// The function we are testing
 			context := genericclioptions.NewFakeContext(tt.projectName, "app", "cmp", client, kubeClient)
-			context.Client.SetDiscoveryInterface(fakeDiscoveryWithProject)
+			context.GetClient().SetDiscoveryInterface(fakeDiscoveryWithProject)
 
 			err := Create(context, tt.projectName, true)
 
@@ -295,7 +295,7 @@ func TestCreate(t *testing.T) {
 
 			// The function we are testing
 			context := genericclioptions.NewFakeContext(tt.projectName, "app", "cmp", client, kclient)
-			context.Client.SetDiscoveryInterface(fakeDiscoveryWithNamespace)
+			context.GetClient().SetDiscoveryInterface(fakeDiscoveryWithNamespace)
 
 			err := Create(context, tt.projectName, true)
 
@@ -363,7 +363,7 @@ func TestDelete(t *testing.T) {
 			kclient, _ := fakeDeleteKClient(tt.projectName, tt.deleteLast)
 
 			context := genericclioptions.NewFakeContext(tt.projectName, "app", "cmp", client, kclient)
-			context.Client.SetDiscoveryInterface(fakeDiscoveryWithProject)
+			context.GetClient().SetDiscoveryInterface(fakeDiscoveryWithProject)
 
 			// The function we are testing
 			err := Delete(context, tt.projectName, tt.wait)
@@ -389,7 +389,7 @@ func TestDelete(t *testing.T) {
 			kubeClient, fakeKClientSet := fakeDeleteKClient(tt.projectName, tt.deleteLast)
 
 			context := genericclioptions.NewFakeContext(tt.projectName, "app", "cmp", client, kubeClient)
-			context.Client.SetDiscoveryInterface(fakeDiscoveryWithNamespace)
+			context.GetClient().SetDiscoveryInterface(fakeDiscoveryWithNamespace)
 
 			// The function we are testing
 			err := Delete(context, tt.projectName, tt.wait)

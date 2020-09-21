@@ -63,8 +63,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if util.CheckPathExists(lo.devfilePath) {
 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
-		lo.Client = genericclioptions.Client(cmd)
-		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+		lo.hasDCSupport, err = lo.GetClient().IsDeploymentConfigSupported()
 		if err != nil {
 			return err
 		}
@@ -81,7 +80,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context = genericclioptions.NewContext(cmd, false, true)
-			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+			lo.hasDCSupport, err = lo.GetClient().IsDeploymentConfigSupported()
 			if err != nil {
 				return err
 			}
@@ -106,7 +105,7 @@ func (lo *ListOptions) Validate() (err error) {
 	}
 
 	if util.CheckPathExists(lo.devfilePath) {
-		if lo.Application == "" && lo.KClient.Namespace == "" {
+		if lo.Application == "" && lo.GetClient().GetKubeClient().Namespace == "" {
 			return odoutil.ThrowContextError()
 		}
 		return nil
@@ -133,13 +132,14 @@ func (lo *ListOptions) Run() (err error) {
 
 	// --path workflow
 
+	client := lo.GetClient()
 	if len(lo.pathFlag) != 0 {
 
-		devfileComps, err := component.ListDevfileComponentsInPath(lo.KClient, filepath.SplitList(lo.pathFlag))
+		devfileComps, err := component.ListDevfileComponentsInPath(client.GetKubeClient(), filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
 		}
-		s2iComps, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
+		s2iComps, err := component.ListIfPathGiven(client, filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
 		}
@@ -209,7 +209,7 @@ func (lo *ListOptions) Run() (err error) {
 	currentComponentState := component.StateTypeNotPushed
 
 	if lo.KClient != nil {
-		deploymentList, err = lo.KClient.ListDeployments(selector)
+		deploymentList, err = client.GetKubeClient().ListDeployments(selector)
 		if err != nil {
 			return err
 		}
@@ -247,13 +247,13 @@ func (lo *ListOptions) Run() (err error) {
 
 		if lo.allAppsFlag {
 			// retrieve list of application
-			apps, err := application.List(lo.Client)
+			apps, err := application.List(client)
 			if err != nil {
 				return err
 			}
 
 			if len(apps) == 0 && lo.LocalConfigInfo.Exists() {
-				comps, err := component.List(lo.Client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
+				comps, err := component.List(client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
 				if err != nil {
 					return err
 				}
@@ -262,7 +262,7 @@ func (lo *ListOptions) Run() (err error) {
 
 			// interating over list of application and get list of all components
 			for _, app := range apps {
-				comps, err := component.List(lo.Client, app, lo.LocalConfigInfo)
+				comps, err := component.List(client, app, lo.LocalConfigInfo)
 				if err != nil {
 					return err
 				}
@@ -270,7 +270,7 @@ func (lo *ListOptions) Run() (err error) {
 			}
 		} else {
 
-			componentList, err := component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
+			componentList, err := component.List(client, lo.Application, lo.LocalConfigInfo)
 			// compat
 			components = componentList.Items
 			if err != nil {

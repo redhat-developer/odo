@@ -3342,3 +3342,8 @@ func (c *Client) isResourceSupported(apiGroup, apiVersion, resourceName string) 
 	}
 	return supported, nil
 }
+
+func (c *Client) SetNamespace(namespace string) {
+	c.Namespace = namespace
+	c.kubeClient.Namespace = namespace
+}

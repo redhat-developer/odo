@@ -61,7 +61,9 @@ func (do *DescribeOptions) Run() (err error) {
 		return fmt.Errorf("Component %v does not exist", do.componentName)
 	}
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.Context.KClient, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, project)
+	client := do.GetClient()
+	kClient := client.GetKubeClient()
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(client, kClient, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, project)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,7 @@ func (do *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(cfd)
 	} else {
-		err = cfd.Print(do.Context.Client)
+		err = cfd.Print(client)
 		if err != nil {
 			return err
 		}

@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -82,26 +81,12 @@ func Client(command *cobra.Command) *occlient.Client {
 	return client(command)
 }
 
-// ClientWithConnectionCheck returns an oc client configured for this command's options but forcing the connection check status
-// to the value of the provided bool, skipping it if true, checking the connection otherwise
-func ClientWithConnectionCheck(command *cobra.Command, skipConnectionCheck bool) *occlient.Client {
-	return client(command)
-}
-
 // client creates an oc client based on the command flags
 func client(command *cobra.Command) *occlient.Client {
 	client, err := occlient.New()
 	util.LogErrorAndExit(err, "")
 
 	return client
-}
-
-// kClient creates an kclient based on the command flags
-func kClient(command *cobra.Command) *kclient.Client {
-	kClient, err := kclient.New()
-	util.LogErrorAndExit(err, "")
-
-	return kClient
 }
 
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
@@ -248,9 +233,10 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 	var namespace string
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+	client := o.GetClient()
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
-		project, err := o.Client.GetProject(projectFlag)
+		project, err := client.GetProject(projectFlag)
 		if err != nil || project == nil {
 			util.LogErrorAndExit(err, "")
 		}
@@ -258,7 +244,7 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 	} else {
 		namespace = localConfiguration.GetNamespace()
 		if namespace == "" {
-			namespace = o.Client.Namespace
+			namespace = client.Namespace
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
@@ -266,14 +252,14 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 		}
 
 		// check that the specified project exists
-		_, err := o.Client.GetProject(namespace)
+		_, err := client.GetProject(namespace)
 		if err != nil {
 			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
-	o.Client.Namespace = namespace
+	client.SetNamespace(namespace)
 	o.project = &namespace
 	if o.KClient != nil {
 		o.KClient.Namespace = namespace
@@ -285,9 +271,11 @@ func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvide
 	var namespace string
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+	client := o.GetClient()
+	kubeClient := client.GetKubeClient()
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
+		_, err := kubeClient.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
 		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
 			util.LogErrorAndExit(err, "")
@@ -296,7 +284,7 @@ func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvide
 	} else {
 		namespace = configProvider.GetNamespace()
 		if namespace == "" {
-			namespace = o.KClient.Namespace
+			namespace = kubeClient.Namespace
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current namespace. Please create or set a namespace\n"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
@@ -304,14 +292,14 @@ func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvide
 		}
 
 		// check that the specified namespace exists
-		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		_, err := kubeClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 		if err != nil {
 			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
 		}
 	}
-	o.KClient.Namespace = namespace
+	client.SetNamespace(namespace)
 	o.project = &namespace
 }
 
@@ -366,15 +354,6 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
-	// Create a new occlient
-	client := client(command)
-
-	// Create a new kclient
-	KClient, err := kclient.New()
-	if err != nil {
-		util.LogErrorAndExit(err, "")
-	}
-
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
 	if err != nil {
@@ -386,11 +365,9 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
-		Client:          client,
 		OutputFlag:      outputFlag,
 		command:         command,
 		LocalConfigInfo: localConfiguration,
-		KClient:         KClient,
 	}
 
 	internalCxt.resolveApp(createAppIfNeeded, localConfiguration)
@@ -431,11 +408,6 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 	// If the push target is NOT Docker we will set the client to Kubernetes.
 	if !pushtarget.IsPushTargetDocker() {
-
-		// Create a new kubernetes client
-		internalCxt.KClient = kClient(command)
-		internalCxt.Client = client(command)
-
 		// Gather the environment information
 		internalCxt.resolveNamespace(envInfo)
 	}
@@ -469,17 +441,23 @@ func (o *Context) GetProject() string {
 	return *o.project
 }
 
+func (o *internalCxt) GetClient() *occlient.Client {
+	if o.client == nil {
+		o.client = client(o.command)
+	}
+	return o.client
+}
+
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	Client          *occlient.Client
+	client          *occlient.Client
 	command         *cobra.Command
 	project         *string
 	Application     string
 	cmp             string
 	OutputFlag      string
 	LocalConfigInfo *config.LocalConfigInfo
-	KClient         *kclient.Client
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
@@ -514,7 +492,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
 func (o *internalCxt) checkComponentExistsOrFail(cmp string) {
-	exists, err := component.Exists(o.Client, cmp, o.Application)
+	exists, err := component.Exists(o.GetClient(), cmp, o.Application)
 	util.LogErrorAndExit(err, "")
 	if !exists {
 		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)

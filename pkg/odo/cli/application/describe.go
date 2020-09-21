@@ -47,7 +47,7 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 
 // Validate validates the DescribeOptions based on completed values
 func (o *DescribeOptions) Validate() (err error) {
-	project := o.Context.GetProject()
+	project := o.GetProject()
 	if project == "" || o.appName == "" {
 		return util.ThrowContextError()
 	}
@@ -59,7 +59,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", project)
 	}
 
-	exist, err := application.Exists(o.appName, o.Client)
+	exist, err := application.Exists(o.appName, o.GetClient())
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -68,18 +68,19 @@ func (o *DescribeOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run() (err error) {
+	client := o.GetClient()
 	if log.IsJSON() {
-		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.GetProject())
+		appDef := application.GetMachineReadableFormat(client, o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)
 	} else {
 		// List of Component
-		componentList, err := component.List(o.Client, o.appName, nil)
+		componentList, err := component.List(client, o.appName, nil)
 		if err != nil {
 			return err
 		}
 
 		//we ignore service errors here because it's entirely possible that the service catalog has not been installed
-		serviceList, _ := service.ListWithDetailedStatus(o.Client, o.appName)
+		serviceList, _ := service.ListWithDetailedStatus(client, o.appName)
 
 		if len(componentList.Items) == 0 && len(serviceList.Items) == 0 {
 			fmt.Printf("Application %s has no components or services deployed.", o.appName)
@@ -89,9 +90,9 @@ func (o *DescribeOptions) Run() (err error) {
 			project := o.GetProject()
 			if len(componentList.Items) > 0 {
 				for _, currentComponent := range componentList.Items {
-					componentDesc, err := component.GetComponent(o.Client, currentComponent.Name, o.appName, project)
+					componentDesc, err := component.GetComponent(client, currentComponent.Name, o.appName, project)
 					util.LogErrorAndExit(err, "")
-					util.PrintComponentInfo(o.Client, currentComponent.Name, componentDesc, o.appName, project)
+					util.PrintComponentInfo(client, currentComponent.Name, componentDesc, o.appName, project)
 					fmt.Println("--------------------------------------")
 				}
 			}

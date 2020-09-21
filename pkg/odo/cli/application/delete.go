@@ -56,7 +56,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
 
-	exist, err := application.Exists(o.appName, o.Client)
+	exist, err := application.Exists(o.appName, o.GetClient())
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -65,8 +65,9 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *DeleteOptions) Run() (err error) {
+	client := o.GetClient()
 	if log.IsJSON() {
-		err = application.Delete(o.Client, o.appName)
+		err = application.Delete(client, o.appName)
 		if err != nil {
 			return err
 		}
@@ -75,13 +76,13 @@ func (o *DeleteOptions) Run() (err error) {
 
 	// Print App Information which will be deleted
 	project := o.GetProject()
-	err = printDeleteAppInfo(o.Client, o.appName, project)
+	err = printDeleteAppInfo(client, o.appName, project)
 	if err != nil {
 		return err
 	}
 
 	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, project)) {
-		err = application.Delete(o.Client, o.appName)
+		err = application.Delete(client, o.appName)
 		if err != nil {
 			return err
 		}

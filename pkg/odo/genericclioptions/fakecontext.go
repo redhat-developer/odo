@@ -6,10 +6,10 @@ import (
 )
 
 func NewFakeContext(project, application, component string, client *occlient.Client, kclient *kclient.Client) *Context {
+	client.SetKubeClient(kclient)
 	return &Context{
 		internalCxt{
-			Client:      client,
-			KClient:     kclient,
+			client:      client,
 			project:     &project,
 			Application: application,
 			cmp:         component,

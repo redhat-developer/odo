@@ -88,12 +88,13 @@ func (cpo *CommonPushOptions) ValidateComponentCreate() error {
 	var err error
 	s := log.Spinner("Checking component")
 	defer s.End(false)
-	cpo.doesComponentExist, err = component.Exists(cpo.Context.Client, cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
+	client := cpo.GetClient()
+	cpo.doesComponentExist, err = component.Exists(client, cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
 	}
 
-	if err = component.ValidateComponentCreateRequest(cpo.Context.Client, cpo.LocalConfigInfo.GetComponentSettings(), cpo.componentContext); err != nil {
+	if err = component.ValidateComponentCreateRequest(client, cpo.LocalConfigInfo.GetComponentSettings(), cpo.componentContext); err != nil {
 		s.End(false)
 		log.Italic("\nRun 'odo catalog list components' for a list of supported component types")
 		return fmt.Errorf("Invalid component type %s, %v", *cpo.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
@@ -114,11 +115,12 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	// Output the "new" section (applying changes)
 	log.Info("\nConfiguration changes")
 
+	client := cpo.GetClient()
 	// If the component does not exist, we will create it for the first time.
 	if !cpo.doesComponentExist {
 
 		// Classic case of component creation
-		if err := component.CreateComponent(cpo.Context.Client, *cpo.LocalConfigInfo, cpo.componentContext, stdout); err != nil {
+		if err := component.CreateComponent(client, *cpo.LocalConfigInfo, cpo.componentContext, stdout); err != nil {
 			log.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %v",
 				cmpName,
@@ -128,7 +130,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		}
 	}
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, []parsercommon.DevfileComponent{}, true)
+	err := component.ApplyConfig(client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, []parsercommon.DevfileComponent{}, true)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -154,7 +156,7 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 			)
 		}
 	}
-	cpo.Context.Client.Namespace = prjName
+	cpo.GetClient().SetNamespace(prjName)
 	return
 }
 
@@ -267,7 +269,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	case config.LOCAL:
 		klog.V(4).Infof("Copying directory %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
-			cpo.Context.Client,
+			cpo.GetClient(),
 			cmpName,
 			appName,
 			cpo.sourcePath,
@@ -290,7 +292,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 		klog.V(4).Infof("Copying binary file %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
-			cpo.Context.Client,
+			cpo.GetClient(),
 			cmpName,
 			appName,
 			binaryDirectory,

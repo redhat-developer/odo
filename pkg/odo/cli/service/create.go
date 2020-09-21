@@ -144,7 +144,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	}
 
-	client := o.Client
+	client := o.GetClient()
 
 	var class scv1beta1.ClusterServiceClass
 
@@ -250,7 +250,7 @@ func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	if err != nil {
 		return err
 	}
-	exists, err := svc.SvcExists(o.Client, s, o.Application)
+	exists, err := svc.SvcExists(o.GetClient(), s, o.Application)
 	if err != nil {
 		return err
 	}
@@ -281,6 +281,8 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		return nil
 	}
 
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
 	// we want to find an Operator only if something's passed to the crd flag on CLI
 	if o.csvSupport {
 		d := NewDynamicCRD()
@@ -305,7 +307,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 
 			// Check if the operator and the CR exist on cluster
 			var csv olm.ClusterServiceVersion
-			o.CustomResource, csv, err = svc.GetCSV(o.KClient, d.OriginalCRD)
+			o.CustomResource, csv, err = svc.GetCSV(kClient, d.OriginalCRD)
 			if err != nil {
 				return err
 			}
@@ -324,7 +326,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			if o.ServiceName != "" && !o.DryRun {
 				// First check if service with provided name already exists
 				svcFullName := strings.Join([]string{o.CustomResource, o.ServiceName}, "/")
-				exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+				exists, err := svc.OperatorSvcExists(kClient, svcFullName)
 				if err != nil {
 					return err
 				}
@@ -346,7 +348,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			return nil
 		} else if o.CustomResource != "" {
 			// make sure that CSV of the specified ServiceType exists
-			csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
+			csv, err := kClient.GetClusterServiceVersion(o.ServiceType)
 			if err != nil {
 				// error only occurs when OperatorHub is not installed.
 				// k8s does't have it installed by default but OCP does
@@ -368,7 +370,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			if o.ServiceName != "" && !o.DryRun {
 				// First check if service with provided name already exists
 				svcFullName := strings.Join([]string{o.CustomResource, o.ServiceName}, "/")
-				exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+				exists, err := svc.OperatorSvcExists(kClient, svcFullName)
 				if err != nil {
 					return err
 				}
@@ -399,7 +401,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		}
 	}
 	// make sure the service type exists
-	classPtr, err := o.Client.GetClusterServiceClass(o.ServiceType)
+	classPtr, err := client.GetClusterServiceClass(o.ServiceType)
 	if err != nil {
 		return errors.Wrap(err, "unable to create service because Service Catalog is not enabled in your cluster")
 	}
@@ -408,7 +410,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	}
 
 	// check plan
-	plans, err := o.Client.GetMatchingPlans(*classPtr)
+	plans, err := client.GetMatchingPlans(*classPtr)
 	if err != nil {
 		return err
 	}
@@ -451,6 +453,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 		log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
 	}
 
+	client := o.GetClient()
 	if o.csvSupport && o.CustomResource != "" {
 		// if cluster has resources of type CSV and o.CustomResource is not
 		// empty, we're expected to create an Operator backed service
@@ -471,11 +474,11 @@ func (o *ServiceCreateOptions) Run() (err error) {
 
 			return nil
 		} else {
-			err = svc.CreateOperatorService(o.KClient, o.group, o.version, o.resource, o.CustomResourceDefinition)
+			err = svc.CreateOperatorService(client.GetKubeClient(), o.group, o.version, o.resource, o.CustomResourceDefinition)
 		}
 	} else {
 		// otherwise just create a ServiceInstance
-		err = svc.CreateService(o.Client, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
+		err = svc.CreateService(client, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
 	}
 	if err != nil {
 		return err
@@ -484,7 +487,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 
 	if o.wait {
 		s = log.Spinner("Waiting for service to come up")
-		_, err = o.Client.WaitAndGetSecret(o.ServiceName, o.GetProject())
+		_, err = client.WaitAndGetSecret(o.ServiceName, o.GetProject())
 		if err == nil {
 			s.End(true)
 			log.Successf(`Service '%s' is ready for use`, o.ServiceName)

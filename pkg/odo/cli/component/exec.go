@@ -69,7 +69,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 
 		if !pushtarget.IsPushTargetDocker() {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
-			eo.namespace = eo.componentOptions.KClient.Namespace
+			eo.namespace = eo.componentOptions.GetClient().GetKubeClient().Namespace
 		}
 		return nil
 	}

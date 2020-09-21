@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
@@ -78,19 +77,10 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	}
 
-	o.Client, err = occlient.New()
-	if err != nil {
-		return err
-	}
-
+	client := o.GetClient()
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 
-		// oclient, err := occlient.New()
-		// if err != nil {
-		// 	return err
-		// }
-
-		sboSupport, err := o.Client.IsSBRSupported()
+		sboSupport, err := client.IsSBRSupported()
 		if err != nil {
 			return err
 		}
@@ -120,7 +110,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		o.sbr.Namespace = o.EnvSpecificInfo.GetNamespace()
 		o.sbr.Spec.DetectBindingResources = true // because we want the operator what to bind from the service
 
-		deployment, err := o.KClient.GetDeploymentByName(componentName)
+		deployment, err := client.GetKubeClient().GetDeploymentByName(componentName)
 		if err != nil {
 			return err
 		}
@@ -149,14 +139,14 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return nil
 	}
 
-	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
+	svcExists, err := svc.SvcExists(client, suppliedName, o.Application)
 	if err != nil {
 		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
 		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Proceesing to only use components", suppliedName)
 		svcExists = false
 	}
 
-	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
+	cmpExists, err := component.Exists(client, suppliedName, o.Application)
 	if err != nil {
 		return fmt.Errorf("Unable to determine if component exists:\n%v", err)
 	}
@@ -174,7 +164,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		o.secretName = suppliedName
 	} else {
-		secretName, err := secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
+		secretName, err := secret.DetermineSecretName(client, suppliedName, o.Application, o.port)
 		if err != nil {
 			return err
 		}
@@ -185,10 +175,12 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 }
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		// let's validate if the service exists
 		svcFullName := strings.Join([]string{o.serviceType, o.serviceName}, "/")
-		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+		svcExists, err := svc.OperatorSvcExists(kClient, svcFullName)
 		if err != nil {
 			return err
 		}
@@ -209,7 +201,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 
 			// Verify if the underlying service binding request actually exists
 			sbrSvcFullName := strings.Join([]string{sbrKind, sbrName}, "/")
-			sbrExists, err := svc.OperatorSvcExists(o.KClient, sbrSvcFullName)
+			sbrExists, err := svc.OperatorSvcExists(kClient, sbrSvcFullName)
 			if err != nil {
 				return err
 			}
@@ -227,7 +219,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 
 		// since the service exists, let's get more info to populate service binding request
 		// first get the CR itself
-		cr, err := o.KClient.GetCustomResource(o.serviceType)
+		cr, err := kClient.GetCustomResource(o.serviceType)
 		if err != nil {
 			return err
 		}
@@ -245,7 +237,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 				Kind:    kind,
 			},
 			ResourceRef: o.serviceName,
-			Namespace:   &o.KClient.Namespace,
+			Namespace:   &kClient.Namespace,
 		}
 
 		return nil
@@ -255,7 +247,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
 		project := o.GetProject()
-		_, err = o.Client.GetServiceBinding(o.secretName, project)
+		_, err = client.GetServiceBinding(o.secretName, project)
 		if err != nil {
 			return fmt.Errorf("The service was not created via odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
 		}
@@ -266,11 +258,11 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			// service is in running state.
 			// This can take a long time to occur if the image of the service has yet to be downloaded
 			log.Progressf("Waiting for secret of service %s to come up", o.secretName)
-			_, err = o.Client.WaitAndGetSecret(o.secretName, project)
+			_, err = client.WaitAndGetSecret(o.secretName, project)
 		} else {
 			// we also need to check whether there is a secret with the same name as the service
 			// the secret should have been created along with the secret
-			_, err = o.Client.GetSecret(o.secretName, project)
+			_, err = client.GetSecret(o.secretName, project)
 			if err != nil {
 				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
 			}
@@ -281,11 +273,13 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 }
 
 func (o *commonLinkOptions) run() (err error) {
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
 			sbrName := getSBRName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
 			svcFullName := getSvcFullName(sbrKind, sbrName)
-			err = svc.DeleteServiceBindingRequest(o.KClient, svcFullName)
+			err = svc.DeleteServiceBindingRequest(kClient, svcFullName)
 			if err != nil {
 				return err
 			}
@@ -312,7 +306,7 @@ func (o *commonLinkOptions) run() (err error) {
 
 		// this creates a link by creating a service of type
 		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
-		err = o.KClient.CreateDynamicResource(sbrMap, sbrGroup, sbrVersion, sbrResource)
+		err = kClient.CreateDynamicResource(sbrMap, sbrGroup, sbrVersion, sbrResource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				return fmt.Errorf("component %q is already linked with the service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
@@ -360,7 +354,7 @@ func (o *commonLinkOptions) run() (err error) {
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
 
-	secret, err := o.Client.GetSecret(o.secretName, o.GetProject())
+	secret, err := client.GetSecret(o.secretName, o.GetProject())
 	if err != nil {
 		return err
 	}
@@ -419,16 +413,17 @@ func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
 	}
 	podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
 
+	client := o.GetClient()
 	// first wait for the pod to be pending (meaning that the deployment is being put into effect)
 	// we need this intermediate wait because there is a change that the this point could be reached
 	// without Openshift having had the time to launch the new deployment
-	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodPending, "Waiting for component to redeploy")
+	_, err = client.WaitAndGetPod(podSelector, corev1.PodPending, "Waiting for component to redeploy")
 	if err != nil {
 		return err
 	}
 
 	// now wait for the pod to be running
-	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	_, err = client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
 	return err
 }
 

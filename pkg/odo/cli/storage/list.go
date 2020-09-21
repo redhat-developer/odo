@@ -75,13 +75,13 @@ func (o *StorageListOptions) Run() (err error) {
 	var componentName string
 	if o.isDevfile {
 		componentName = o.EnvSpecificInfo.GetName()
-		storageList, err = storage.DevfileList(o.KClient, o.DevfileObj.Data, o.EnvSpecificInfo.GetName())
+		storageList, err = storage.DevfileList(o.GetClient().GetKubeClient(), o.DevfileObj.Data, o.EnvSpecificInfo.GetName())
 		if err != nil {
 			return err
 		}
 	} else {
 		componentName = o.LocalConfigInfo.GetName()
-		storageList, err = storage.ListStorageWithState(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
+		storageList, err = storage.ListStorageWithState(o.GetClient(), o.LocalConfigInfo, o.Component(), o.Application)
 		if err != nil {
 			return err
 		}

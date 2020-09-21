@@ -53,7 +53,8 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *ListOptions) Run() (err error) {
-	apps, err := application.List(o.Client)
+	client := o.GetClient()
+	apps, err := application.List(client)
 	if err != nil {
 		return fmt.Errorf("unable to get list of applications: %v", err)
 	}
@@ -63,7 +64,7 @@ func (o *ListOptions) Run() (err error) {
 		if log.IsJSON() {
 			var appList []application.App
 			for _, app := range apps {
-				appDef := application.GetMachineReadableFormat(o.Client, app, p)
+				appDef := application.GetMachineReadableFormat(client, app, p)
 				appList = append(appList, appDef)
 			}
 

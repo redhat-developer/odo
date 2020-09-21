@@ -139,7 +139,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		// If the push target has been set to Docker, we will have to change the current namespace.
 		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 		if !pushtarget.IsPushTargetDocker() {
-			po.namespace = po.KClient.Namespace
+			po.namespace = po.GetClient().GetKubeClient().Namespace
 		}
 
 		return nil
@@ -185,12 +185,13 @@ func (po *PushOptions) Validate() (err error) {
 	s := log.Spinner("Checking component")
 	defer s.End(false)
 
-	po.doesComponentExist, err = component.Exists(po.Context.Client, po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
+	client := po.GetClient()
+	po.doesComponentExist, err = component.Exists(client, po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
 	}
 
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.LocalConfigInfo.GetComponentSettings(), po.componentContext); err != nil {
+	if err = component.ValidateComponentCreateRequest(client, po.LocalConfigInfo.GetComponentSettings(), po.componentContext); err != nil {
 		s.End(false)
 		log.Italic("\nRun 'odo catalog list components' for a list of supported component types")
 		return fmt.Errorf("Invalid component type %s, %v", *po.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))

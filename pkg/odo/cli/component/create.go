@@ -373,7 +373,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		var catalogList catalog.ComponentTypeList
 		if co.forceS2i {
-			client := co.Client
+			client := co.GetClient()
 			catalogList, err = catalog.ListComponents(client)
 			if err != nil {
 				return err
@@ -643,7 +643,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// return from here, if it is not an openshift cluster.
 	var openshiftCluster bool
 	if !pushtarget.IsPushTargetDocker() {
-		openshiftCluster, _ = co.Client.IsImageStreamSupported()
+		openshiftCluster, _ = co.GetClient().IsImageStreamSupported()
 	} else {
 		openshiftCluster = false
 	}
@@ -662,7 +662,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// Below code is for INTERACTIVE mode
 	project := co.Context.GetProject()
 	if co.interactive {
-		client := co.Client
+		client := co.GetClient()
 
 		catalogList, err := catalog.ListComponents(client)
 		if err != nil {
@@ -774,7 +774,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// if user didn't opt for advanced options, "ports" value remains empty which panics the "odo push"
 		// so we set the ports here
 		if len(ports) == 0 {
-			ports, err = co.Client.GetPortsFromBuilderImage(*co.componentSettings.Type)
+			ports, err = co.GetClient().GetPortsFromBuilderImage(*co.componentSettings.Type)
 			if err != nil {
 				return err
 			}
@@ -798,7 +798,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if len(co.componentPorts) > 0 {
 			portList = co.componentPorts
 		} else {
-			portList, err = co.Client.GetPortsFromBuilderImage(*co.componentSettings.Type)
+			portList, err = co.GetClient().GetPortsFromBuilderImage(*co.componentSettings.Type)
 			if err != nil {
 				return err
 			}
@@ -852,7 +852,7 @@ func (co *CreateOptions) Validate() (err error) {
 
 	log.Info("Validation")
 
-	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
+	supported, err := catalog.IsComponentTypeSupported(co.GetClient(), *co.componentSettings.Type)
 	if err != nil {
 		return err
 	}
@@ -863,7 +863,7 @@ func (co *CreateOptions) Validate() (err error) {
 
 	s := log.Spinner("Validating component")
 	defer s.End(false)
-	if err := component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, co.componentContext); err != nil {
+	if err := component.ValidateComponentCreateRequest(co.GetClient(), co.componentSettings, co.componentContext); err != nil {
 		return err
 	}
 
@@ -1133,7 +1133,7 @@ func (co *CreateOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
+		state := component.GetComponentState(co.GetClient(), *co.componentSettings.Name, co.Context.Application)
 
 		if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
 			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
@@ -1142,7 +1142,7 @@ func (co *CreateOptions) Run() (err error) {
 				return err
 			}
 		} else {
-			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.GetProject())
+			componentDesc, err = component.GetComponent(co.GetClient(), *co.componentSettings.Name, co.Context.Application, co.Context.GetProject())
 			if err != nil {
 				return err
 			}

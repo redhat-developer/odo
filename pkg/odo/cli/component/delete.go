@@ -88,7 +88,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		do.Context = genericclioptions.NewDevfileContext(cmd)
 		if !pushtarget.IsPushTargetDocker() {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
-			do.namespace = do.KClient.Namespace
+			do.namespace = do.GetClient().GetKubeClient().Namespace
 		}
 
 		return nil
@@ -111,7 +111,7 @@ func (do *DeleteOptions) Validate() (err error) {
 	if do.Context.GetProject() == "" || do.Application == "" {
 		return odoutil.ThrowContextError()
 	}
-	do.isCmpExists, err = component.Exists(do.Client, do.componentName, do.Application)
+	do.isCmpExists, err = component.Exists(do.GetClient(), do.componentName, do.Application)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,8 @@ func (do *DeleteOptions) Run() (err error) {
 func (do *DeleteOptions) s2iRun() (err error) {
 	if do.isCmpExists {
 		project := do.Context.GetProject()
-		err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, project)
+		client := do.GetClient()
+		err = printDeleteComponentInfo(client, do.componentName, do.Context.Application, project)
 		if err != nil {
 			return err
 		}
@@ -153,12 +154,12 @@ func (do *DeleteOptions) s2iRun() (err error) {
 			// 1. Get list of active components in the cluster
 			// 2. Use this list to find the components to which our component is linked and generate secret names that are linked
 			// 3. Unlink these secrets from the components
-			compoList, err := component.List(do.Client, do.Context.Application, do.LocalConfigInfo)
+			compoList, err := component.List(client, do.Context.Application, do.LocalConfigInfo)
 			if err != nil {
 				return err
 			}
 
-			parentComponent, err := component.GetComponent(do.Client, do.componentName, do.Context.Application, project)
+			parentComponent, err := component.GetComponent(client, do.componentName, do.Context.Application, project)
 			if err != nil {
 				return err
 			}
@@ -171,7 +172,7 @@ func (do *DeleteOptions) s2iRun() (err error) {
 
 					defer spinner.End(false)
 
-					err = do.Client.UnlinkSecret(secretName, component, do.Context.Application)
+					err = client.UnlinkSecret(secretName, component, do.Context.Application)
 					if err != nil {
 						log.Errorf("Unlinking failed")
 						return err
@@ -181,7 +182,7 @@ func (do *DeleteOptions) s2iRun() (err error) {
 					log.Successf(fmt.Sprintf("Unlinked component %q from component %q for secret %q", parentComponent.Name, component, secretName))
 				}
 			}
-			err = component.Delete(do.Client, do.componentDeleteWaitFlag, do.componentName, do.Application)
+			err = component.Delete(client, do.componentDeleteWaitFlag, do.componentName, do.Application)
 			if err != nil {
 				return err
 			}

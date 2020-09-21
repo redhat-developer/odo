@@ -60,7 +60,7 @@ func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 // Validate validates the ServiceDeleteOptions based on completed values
 func (o *ServiceDeleteOptions) Validate() (err error) {
 	if o.csvSupport {
-		svcExists, err := svc.OperatorSvcExists(o.KClient, o.serviceName)
+		svcExists, err := svc.OperatorSvcExists(o.GetClient().GetKubeClient(), o.serviceName)
 		if err != nil {
 			return err
 		}
@@ -71,7 +71,7 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 		return nil
 	}
 
-	exists, err := svc.SvcExists(o.Client, o.serviceName, o.Application)
+	exists, err := svc.SvcExists(o.GetClient(), o.serviceName, o.Application)
 	if err != nil {
 		return fmt.Errorf("unable to delete service because Service Catalog is not enabled in your cluster:\n%v", err)
 	}
@@ -89,7 +89,7 @@ func (o *ServiceDeleteOptions) Run() (err error) {
 			s := log.Spinner("Waiting for service to be deleted")
 			defer s.End(false)
 
-			err = svc.DeleteOperatorService(o.KClient, o.serviceName)
+			err = svc.DeleteOperatorService(o.GetClient().GetKubeClient(), o.serviceName)
 			if err != nil {
 				return err
 			}
@@ -102,7 +102,7 @@ func (o *ServiceDeleteOptions) Run() (err error) {
 	}
 
 	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v", o.serviceName, o.Application)) {
-		err = svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
+		err = svc.DeleteServiceAndUnlinkComponents(o.GetClient(), o.serviceName, o.Application)
 		if err != nil {
 			return fmt.Errorf("unable to delete service %s:\n%v", o.serviceName, err)
 		}

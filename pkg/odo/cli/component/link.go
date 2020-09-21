@@ -101,15 +101,17 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		return err
 	}
 
-	o.csvSupport, err = o.Client.IsCSVSupported()
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
+	o.csvSupport, err = client.IsCSVSupported()
 	if err != nil {
 		return err
 	}
 
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
-		o.operation = o.KClient.LinkSecret
+		o.operation = kClient.LinkSecret
 	} else {
-		o.operation = o.Client.LinkSecret
+		o.operation = client.LinkSecret
 	}
 
 	return err
@@ -126,7 +128,7 @@ func (o *LinkOptions) Validate() (err error) {
 		return
 	}
 
-	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, o.Component(), o.Application)
+	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.GetClient(), o.Component(), o.Application)
 	if err != nil {
 		return err
 	}

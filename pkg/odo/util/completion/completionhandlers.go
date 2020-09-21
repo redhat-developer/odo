@@ -20,7 +20,7 @@ import (
 var ServiceCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	services, err := service.List(context.Client, context.Application)
+	services, err := service.List(context.GetClient(), context.Application)
 	if err != nil {
 		return completions
 	}
@@ -38,7 +38,7 @@ var ServiceCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context
 // ServiceClassCompletionHandler provides catalog service class name completion
 var ServiceClassCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	services, err := context.Client.GetClusterServiceClasses()
+	services, err := context.GetClient().GetClusterServiceClasses()
 	if err != nil {
 		complete.Log("error retrieving services")
 		return completions
@@ -69,13 +69,13 @@ var ServicePlanCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 
 	complete.Log(fmt.Sprintf("Using input: serviceName = %s", inputServiceName))
 
-	clusterServiceClass, err := context.Client.GetClusterServiceClass(inputServiceName)
+	clusterServiceClass, err := context.GetClient().GetClusterServiceClass(inputServiceName)
 	if err != nil {
 		complete.Log("Error retrieving details of service")
 		return completions
 	}
 
-	servicePlans, err := context.Client.GetClusterPlansFromServiceName(clusterServiceClass.Name)
+	servicePlans, err := context.GetClient().GetClusterPlansFromServiceName(clusterServiceClass.Name)
 	if err != nil {
 		complete.Log("Error retrieving details of plans of service")
 		return completions
@@ -101,7 +101,7 @@ var ServiceParameterCompletionHandler = func(cmd *cobra.Command, args parsedArgs
 
 	complete.Log(fmt.Sprintf("Using input: serviceName = %s, servicePlan = %s", inputServiceName, inputPlanName))
 
-	_, servicePlans, err := service.GetServiceClassAndPlans(context.Client, inputServiceName)
+	_, servicePlans, err := service.GetServiceClassAndPlans(context.GetClient(), inputServiceName)
 	if err != nil {
 		complete.Log("Error retrieving details of service")
 		return completions
@@ -142,7 +142,7 @@ var ServiceParameterCompletionHandler = func(cmd *cobra.Command, args parsedArgs
 var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	applications, err := application.List(context.Client)
+	applications, err := application.List(context.GetClient())
 	if err != nil {
 		return completions
 	}
@@ -165,7 +165,7 @@ var FileCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 // ProjectNameCompletionHandler provides project name completion
 var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	projects, err := context.Client.GetProjectNames()
+	projects, err := context.GetClient().GetProjectNames()
 	if err != nil {
 		return completions
 	}
@@ -185,7 +185,7 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	urls, err := url.ListPushed(context.Client, context.Component(), context.Application)
+	urls, err := url.ListPushed(context.GetClient(), context.Component(), context.Application)
 	if err != nil {
 		return completions
 	}
@@ -229,7 +229,7 @@ var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 // StorageMountCompletionHandler provides storage name completion for storage mount
 var StorageMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	storages, err := storage.ListUnmounted(context.Client, context.Application)
+	storages, err := storage.ListUnmounted(context.GetClient(), context.Application)
 	if err != nil {
 		return completions
 	}
@@ -248,7 +248,7 @@ var StorageMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, co
 // StorageUnMountCompletionHandler provides storage name completion for storage unmount
 var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	storageList, err := storage.ListMounted(context.Client, context.Component(), context.Application)
+	storageList, err := storage.ListMounted(context.GetClient(), context.Component(), context.Application)
 	if err != nil {
 		return completions
 	}
@@ -272,7 +272,7 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 
 	tasks := util.NewConcurrentTasks(2)
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		catalogList, _ := catalog.ListComponents(context.Client)
+		catalogList, _ := catalog.ListComponents(context.GetClient())
 		for _, builder := range catalogList.Items {
 			if args.commands[builder.Name] {
 				found = true
@@ -304,12 +304,12 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 // LinkCompletionHandler provides completion for the odo link command
 // The function returns both components and services
 var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	components, err := component.GetComponentNames(context.Client, context.Application)
+	components, err := component.GetComponentNames(context.GetClient(), context.Application)
 	if err != nil {
 		return completions
 	}
 
-	services, err := service.List(context.Client, context.Application)
+	services, err := service.List(context.GetClient(), context.Application)
 	if err != nil {
 		return completions
 	}
@@ -343,17 +343,17 @@ var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 // The function returns both components and services
 var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	// first we need to retrieve the current component
-	comp, err := component.GetPushedComponent(context.Client, context.Component(), context.Application)
+	comp, err := component.GetPushedComponent(context.GetClient(), context.Component(), context.Application)
 	if err != nil {
 		return completions
 	}
 
-	components, err := component.GetComponentNames(context.Client, context.Application)
+	components, err := component.GetComponentNames(context.GetClient(), context.Application)
 	if err != nil {
 		return completions
 	}
 
-	services, err := service.List(context.Client, context.Application)
+	services, err := service.List(context.GetClient(), context.Application)
 	if err != nil {
 		return completions
 	}
@@ -397,7 +397,7 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 // ComponentNameCompletionHandler provides component name completion
 var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	components, err := component.List(context.Client, context.Application, nil)
+	components, err := component.List(context.GetClient(), context.Application, nil)
 
 	if err != nil {
 		return completions

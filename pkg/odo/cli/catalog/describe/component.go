@@ -59,7 +59,7 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 		o.Context = genericclioptions.NewContext(cmd, true)
 
 		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			catalogList, err := catalog.ListComponents(o.Client)
+			catalogList, err := catalog.ListComponents(o.GetClient())
 			if err != nil {
 				// TODO:
 				// This MAY have to change in the future.. There is no good way to determine whether the user

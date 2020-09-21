@@ -59,15 +59,17 @@ func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string)
 		return err
 	}
 
-	o.csvSupport, err = o.Client.IsCSVSupported()
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
+	o.csvSupport, err = client.IsCSVSupported()
 	if err != nil {
 		return err
 	}
 
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
-		o.operation = o.KClient.UnlinkSecret
+		o.operation = kClient.UnlinkSecret
 	} else {
-		o.operation = o.Client.UnlinkSecret
+		o.operation = client.UnlinkSecret
 	}
 	return err
 }

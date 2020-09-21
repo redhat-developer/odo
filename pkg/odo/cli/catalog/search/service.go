@@ -34,7 +34,8 @@ func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []
 	var noCsvs, noServices bool
 	o.Context = genericclioptions.NewContext(cmd)
 	o.searchTerm = args[0]
-	o.csvs, err = o.KClient.SearchClusterServiceVersionList(o.searchTerm)
+	client := o.GetClient()
+	o.csvs, err = client.GetKubeClient().SearchClusterServiceVersionList(o.searchTerm)
 	if err != nil {
 		// Error only occurs when OperatorHub is not installed/enabled on the
 		// Kubernetes or OpenShift 4.x cluster. It doesn't occur when there are
@@ -43,7 +44,7 @@ func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []
 	}
 
 	// Checks service catalog, but if its not available, we do not error.
-	o.services, err = catalog.SearchService(o.Client, o.searchTerm)
+	o.services, err = catalog.SearchService(client, o.searchTerm)
 	if err != nil {
 		// Error occurs if Service Catalog is not enabled on the OpenShift
 		// 3.x/4.x cluster

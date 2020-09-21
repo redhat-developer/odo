@@ -202,7 +202,7 @@ func createComponentNameValidator(context *genericclioptions.Context) survey.Val
 				return err
 			}
 
-			exists, err := component.Exists(context.Client, s, context.Application)
+			exists, err := component.Exists(context.GetClient(), s, context.Application)
 			if err != nil {
 				klog.V(4).Info(err)
 				return fmt.Errorf("Unable to determine if component '%s' exists or not", s)

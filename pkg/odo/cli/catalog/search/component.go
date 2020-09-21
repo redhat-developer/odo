@@ -32,7 +32,7 @@ func (o *SearchComponentOptions) Complete(name string, cmd *cobra.Command, args 
 	o.Context = genericclioptions.NewContext(cmd)
 	o.searchTerm = args[0]
 
-	o.components, err = catalog.SearchComponent(o.Client, o.searchTerm)
+	o.components, err = catalog.SearchComponent(o.GetClient(), o.searchTerm)
 	return err
 }
 

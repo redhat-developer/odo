@@ -69,17 +69,19 @@ func (o *ServiceListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
 	if o.csvSupport {
 		// if cluster supports Operators, we list only operator backed services
 		// and not service catalog ones
 		var list []unstructured.Unstructured
-		list, err = svc.ListOperatorServices(o.KClient)
+		list, err = svc.ListOperatorServices(kClient)
 		if err != nil {
 			return err
 		}
 
 		if len(list) == 0 {
-			return fmt.Errorf("No operator backed services found in namespace: %s", o.KClient.Namespace)
+			return fmt.Errorf("No operator backed services found in namespace: %s", kClient.Namespace)
 		}
 
 		if log.IsJSON() {
@@ -102,7 +104,7 @@ func (o *ServiceListOptions) Run() (err error) {
 		return err
 	}
 
-	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
+	services, err := svc.ListWithDetailedStatus(client, o.Application)
 	if err != nil {
 		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
 	}

@@ -106,7 +106,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		var platformContext interface{}
 		if !pushtarget.IsPushTargetDocker() {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
-			wo.namespace = wo.KClient.Namespace
+			wo.namespace = wo.GetClient().GetKubeClient().Namespace
 			platformContext = kubernetes.KubernetesContext{
 				Namespace: wo.namespace,
 			}
@@ -184,7 +184,7 @@ func (wo *WatchOptions) Validate() (err error) {
 		appName = wo.Application
 	}
 
-	exists, err := component.Exists(wo.Client, cmpName, appName)
+	exists, err := component.Exists(wo.GetClient(), cmpName, appName)
 	if err != nil {
 		return
 	}
@@ -223,7 +223,7 @@ func (wo *WatchOptions) Run() (err error) {
 	}
 
 	err = watch.WatchAndPush(
-		wo.Context.Client,
+		wo.Context.GetClient(),
 		os.Stdout,
 		watch.WatchParameters{
 			ComponentName:       wo.LocalConfigInfo.GetName(),

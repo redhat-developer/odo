@@ -69,7 +69,7 @@ func (lo *LogOptions) Run() (err error) {
 		err = lo.DevfileComponentLog()
 	} else {
 		// Retrieve the log
-		err = component.GetLogs(lo.Context.Client, lo.componentName, lo.Context.Application, lo.logFollow, stdout)
+		err = component.GetLogs(lo.GetClient(), lo.componentName, lo.Context.Application, lo.logFollow, stdout)
 	}
 	return
 }

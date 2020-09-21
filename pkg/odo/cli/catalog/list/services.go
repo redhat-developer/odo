@@ -41,10 +41,14 @@ func NewListServicesOptions() *ListServicesOptions {
 func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if o.csvSupport, err = cmdutil.IsCSVSupported(); err != nil {
 		return err
-	} else if o.csvSupport {
+	}
+
+	o.Context = genericclioptions.NewContext(cmd)
+	client := o.GetClient()
+	if o.csvSupport {
 		var noCsvs, noServices bool
-		o.Context = genericclioptions.NewContext(cmd)
-		o.csvs, err = o.KClient.GetClusterServiceVersionList()
+		kClient := client.GetKubeClient()
+		o.csvs, err = kClient.GetClusterServiceVersionList()
 		if err != nil {
 			// Error only occurs when OperatorHub is not installed/enabled on the
 			// Kubernetes or OpenShift 4.x cluster. It doesn't occur when there are
@@ -52,7 +56,7 @@ func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []s
 			noCsvs = true
 		}
 
-		o.services, err = catalog.ListServices(o.Client)
+		o.services, err = catalog.ListServices(client)
 		if err != nil {
 			// Error occurs if Service Catalog is not enabled on the OpenShift
 			// 3.x/4.x cluster
@@ -70,8 +74,7 @@ func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []s
 		}
 		o.services = util.FilterHiddenServices(o.services)
 	} else {
-		o.Context = genericclioptions.NewContext(cmd)
-		o.services, err = catalog.ListServices(o.Client)
+		o.services, err = catalog.ListServices(client)
 		if err != nil {
 			return fmt.Errorf("unable to list services because neither Service Catalog nor Operator Hub is enabled in your cluster: %v", err)
 		}

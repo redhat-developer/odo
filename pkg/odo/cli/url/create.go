@@ -117,9 +117,8 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 
 	if o.isDevfile {
 		if !o.isDocker {
-			o.Client = genericclioptions.Client(cmd)
 
-			o.isRouteSupported, err = o.Client.IsRouteSupported()
+			o.isRouteSupported, err = o.GetClient().IsRouteSupported()
 			if err != nil {
 				return err
 			}

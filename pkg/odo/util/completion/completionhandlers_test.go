@@ -542,7 +542,7 @@ func TestUnlinkCompletionHandler(t *testing.T) {
 		parsedArgs := parsedArgs{
 			commands: make(map[string]bool),
 		}
-		context := genericclioptions.NewFakeContext("project", "app", tt.component, client, nil)
+		context := genericclioptions.NewFakeContext("project", "app", tt.component, client, client.GetKubeClient())
 
 		//fake the services
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {

@@ -49,7 +49,7 @@ func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args 
 
 // Validate validates the DescribeServiceOptions based on completed values
 func (o *DescribeServiceOptions) Validate() (err error) {
-	o.service, o.plans, err = svc.GetServiceClassAndPlans(o.Client, o.serviceName)
+	o.service, o.plans, err = svc.GetServiceClassAndPlans(o.GetClient(), o.serviceName)
 	return err
 }
 

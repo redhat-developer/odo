@@ -122,7 +122,9 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
 
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
+	client := o.GetClient()
+	kClient := client.GetKubeClient()
+	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, client, kClient, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})

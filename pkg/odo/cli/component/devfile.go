@@ -102,7 +102,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		platformContext = nil
 	} else {
 		kc := kubernetes.KubernetesContext{
-			Namespace: po.KClient.Namespace,
+			Namespace: po.GetClient().GetKubeClient().Namespace,
 		}
 		platformContext = kc
 	}
@@ -156,7 +156,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 		platformContext = nil
 	} else {
 		kc := kubernetes.KubernetesContext{
-			Namespace: lo.KClient.Namespace,
+			Namespace: lo.GetClient().GetKubeClient().Namespace,
 		}
 		platformContext = kc
 	}
@@ -214,7 +214,7 @@ func (to *TestOptions) RunTestCommand() error {
 		platformContext = nil
 	} else {
 		kc := kubernetes.KubernetesContext{
-			Namespace: to.KClient.Namespace,
+			Namespace: to.GetClient().GetKubeClient().Namespace,
 		}
 		platformContext = kc
 	}
