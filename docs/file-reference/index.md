@@ -490,26 +490,12 @@ components:
 
 # Command Object
 
-> Example using an exec command within a command object
+Each command must use the either the `exec` or `composite` object. However, `run` command can only be of type `exec` 
 
-```yaml
-commands:
-  - id: devBuild
-    exec:
-      component: tools
-      commandLine: "/artifacts/bin/build-container-full.sh"
-      workingDir: /projects/springbootproject
-      group:
-        kind: build
-        isDefault: true
-```
-
-Each command must use the `exec` object.
-
-| Key  | Type                                | Description                     |
-|------|-------------------------------------|---------------------------------|
-| exec | [execObject](#execobject)           | The exec command to be run      |
-| exec | [compositeObject](#compositeObject) | The composite command to be run |
+| Key       | Type                                | Description                     |
+|-----------|-------------------------------------|---------------------------------|
+| exec      | [execObject](#execobject)           | The exec command to be run      |
+| composite | [compositeObject](#compositeObject) | The composite command to be run |
 
 ## execObject
 
