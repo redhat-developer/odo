@@ -117,6 +117,12 @@ components:
           value: TEST2
         - name: myprop2
           value: myval2
+      volumeMounts:
+        - name: myvol
+          path: /home/user/myvolpath
+  - name: myvol
+    volume:
+      size: 3Gi
 ```
 
 | Key             | Type                                 | Description                   |
@@ -352,7 +358,7 @@ Each component must use the `container` object.
 
 ## containerObject
 
-> Example using an [OpenLiberty](https://github.com/odo-devfiles/registry/blob/master/devfiles/openLiberty/devfile.yaml) container
+> Example using an [OpenLiberty](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-openliberty/devfile.yaml) container
 
 ```yaml
 components:
@@ -387,7 +393,7 @@ components:
 
 
 
-## endpointObject
+### endpointObject
 
 > Example using an endpoint
 
@@ -414,7 +420,7 @@ components:
 | secure     | boolean | no       | Whether or not the endpoint is defined as secure                                                                                               |
 
 
-## volumeMountsObject
+### volumeMountsObject
 
 > Example using a volume with a container
 
@@ -430,12 +436,42 @@ components:
       volumeMounts:
         - name: springbootpvc
           path: /data
+  - name: springbootpvc
+    volume:
+      size: 2Gi
 ```
 
 | Key  | Type   | Required | Description                                                                                        |
 |------|--------|----------|----------------------------------------------------------------------------------------------------|
-| name | string | yes      | Name of the volume                                                                                 |
+| name | string | yes      | Name of the volume component to be used. Errors out if no volume component is present with the name|
 | path | string | no       | Path in the component container where the volume should be mounted. Defaults to `/<name>` if blank |
+
+## volumeObject
+
+> Example using a [Springboot](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-springboot/devfile.yaml) container and volume
+
+```yaml
+components:
+  - name: tools
+    container:
+      image: quay.io/eclipse/che-java11-maven:nightly
+      memoryLimit: 768Mi
+      mountSources: true
+      endpoints:
+      - name: '8080-tcp'
+        targetPort: 8080
+      volumeMounts:
+        - name: m2
+          path: /home/user/.m2
+  - name: m2
+    volume:
+      size: 2Gi
+```
+
+| Key  | Type   | Required | Description                                                                                        |
+|------|--------|----------|----------------------------------------------------------------------------------------------------|
+| name | string | yes      | Name of the volume component                                                                       |
+| size | string | no       | Size of the storage to be created. Defaults to `1Gi`                                               |
 
 
 # Command Object
@@ -615,7 +651,6 @@ Please refer to the below table for a list of features which are *not yet* imple
 | events                             | [eventObject](#event-object)                   | IN PROGRESS | Refer to postStop issue: https://github.com/openshift/odo/issues/3577                                    |
 | component[].kubernetes             | [kubernetesObject](#kubernetesobject)          | IN PROGRESS |                                                                                                 |
 | component[].openshift              | [openshiftObject](#openshiftobject)            | IN PROGRESS |                                                                                                 |
-| component[].volume                 | [volumeObject](#volumeobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
 | component[].plugin                 | [pluginObject](#pluginobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
 | component[].container.endpoints    | [endpointObject](#endpointobject)              | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
 | component[].container.dedicatedPod | [containerObject](#containerobject)            | UNKNOWN     | In schema but not yet implemented.                                                              |
