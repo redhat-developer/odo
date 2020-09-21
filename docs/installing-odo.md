@@ -18,9 +18,9 @@ page_nav:
         url: '/docs/understanding-odo'
 ---
 The following section describes how to install `odo` on different
-platforms using the CLI.
+platforms via CLI as well as IDEs.
 
-# Installing v2.0.0-beta-1 of odo
+# Installing the odo command-line tool (v2.0.0-beta-1)
 
 v2.0.0-beta-1 of odo uses **devfile** as its default deployment
 mechanism.
@@ -29,15 +29,19 @@ mechanism.
 
 ### Binary installation
 
-    # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-beta-1/odo-linux-amd64 -o /usr/local/bin/odo
-    # chmod +x /usr/local/bin/odo
+``` sh
+  # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-beta-1/odo-linux-amd64 -o /usr/local/bin/odo
+  # chmod +x /usr/local/bin/odo
+```
 
 ## Installing odo on macOS
 
 ### Binary installation
 
-    # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-beta-1/odo-darwin-amd64 -o /usr/local/bin/odo
-    # chmod +x /usr/local/bin/odo
+``` sh
+  # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-beta-1/odo-darwin-amd64 -o /usr/local/bin/odo
+  # chmod +x /usr/local/bin/odo
+```
 
 ## Installing odo on Windows
 
@@ -82,11 +86,19 @@ C:\\go-bin as the location.
 6.  Click **New** and type `C:\go-bin` into the field or click
     **Browse** and select the directory, and click **OK**.
 
-# Installing v1.2.5 of odo
+# Installing odo in Visual Studio Code (VSCode)
 
-v1.2.5 of odo uses **Source-to-Image** as its default deployment
-mechanism.
+The [OpenShift VSCode
+extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector)
+uses both `odo` and the `oc` binary to interact with your Kubernetes or
+OpenShift cluster.
 
-Visit the latest [OpenShift
-documentation](https://docs.openshift.com/container-platform/4.5/cli_reference/developer_cli_odo/installing-odo.html)
-for installation details.
+## Plugin installation
+
+1.  Launch VS Code Quick Open (Ctrl+P)
+
+2.  Paste the following command:
+    
+    ``` sh
+      $ ext install redhat.vscode-openshift-connector
+    ```
