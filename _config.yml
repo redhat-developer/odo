@@ -8,6 +8,8 @@ doks:
             text: odo
             image:
         nav:
+            - item_name: Blog
+              item_url: '/blog'
             - item_name: Community
               item_url: '/docs/community'
     footer:
@@ -33,4 +35,4 @@ sass:
 layouts_dir: ./doks-theme/_layouts
 includes_dir: ./doks-theme/_includes
 exclude: [ 'README.md', 'CHANGELOG.md' ]
-permalink: /:title/
+permalink: /blog/:title/

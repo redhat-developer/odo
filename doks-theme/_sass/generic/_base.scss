@@ -249,3 +249,18 @@ button {
   height:50px;
   margin:10px
 }
+
+/* ---------- Profile picture -------------- */
+.profile-picture {
+  height: 150px;
+  width: 150px;
+  border-radius: 50%;
+}
+
+.author-name {
+  font-weight: 600;
+}
+
+.blog-announcement {
+  text-align: center;
+}
