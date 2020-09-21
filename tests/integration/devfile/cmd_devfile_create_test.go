@@ -135,6 +135,15 @@ var _ = Describe("odo devfile create command tests", func() {
 			output := helper.CmdShouldFail("odo", "create", "java:8", "sb-jar-test", "--binary", filepath.Join(context, "sb.jar"), "--context", context)
 			Expect(output).Should(ContainSubstring("flag --binary, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components."))
 		})
+
+		It("should fail the create command as --env flag, which is specific to s2i component creation, is used without --s2i flag", func() {
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "cmp-env", "--env", "HTTPS_PROXY=https://1.2.3.4:3128", "--context", context, "--app", "testing")
+			Expect(output).Should(ContainSubstring("flag --env, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components."))
+		})
+		It("should fail the create command as --port flag, which is specific to s2i component creation, is used without --s2i flag", func() {
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "cmp-port", "--port", "8080", "--context", context, "--app", "testing")
+			Expect(output).Should(ContainSubstring("flag --port, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components."))
+		})
 	})
 
 	Context("When executing odo create with devfile component type argument and --project flag", func() {
