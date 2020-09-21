@@ -250,14 +250,15 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 
 // resolveProject resolves project
 func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvider) {
-	/*
-		if client == nil {
-			return localConfiguration.GetProject()
-		}*/
-	var namespace string
+
+	var namespace string = "default"
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	if len(projectFlag) > 0 {
+	if o.Client == nil {
+		if ns := localConfiguration.GetNamespace(); len(ns) > 0 {
+			namespace = ns
+		}
+	} else if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
 		project, err := o.Client.GetProject(projectFlag)
 		if err != nil || project == nil {
@@ -283,7 +284,9 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 		}
 
 	}
-	o.Client.Namespace = namespace
+	if o.Client != nil {
+		o.Client.Namespace = namespace
+	}
 	o.Project = namespace
 	if o.KClient != nil {
 		o.KClient.Namespace = namespace
