@@ -13,7 +13,7 @@ import (
 var _ = Describe("odo devfile env command tests", func() {
 	const (
 		testName      = "testname"
-		testProject   = "testProject"
+		testProject   = "testproject"
 		testDebugPort = "8888"
 		fakeParameter = "fakeParameter"
 	)
