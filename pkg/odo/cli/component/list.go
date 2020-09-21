@@ -85,6 +85,10 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			if err != nil {
 				return err
 			}
+			fmt.Println("GIRISH")
+			fmt.Println(lo.Context.Client.KubeConfig.Namespace())
+			fmt.Println(lo.KClient.Namespace)
+			fmt.Println(lo.Project)
 
 		} else {
 			klog.V(4).Infof("New Config Context")
@@ -143,10 +147,6 @@ func (lo *ListOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		fmt.Println("GIRISH")
-		fmt.Println(lo.Context.Client.KubeConfig.Namespace())
-		fmt.Println(lo.KClient.Namespace)
-		fmt.Println(lo.Project)
 
 		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps)
 
