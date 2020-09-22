@@ -161,7 +161,37 @@ func TestValidateCommands(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case 8: Duplicate commands",
+			name: "Case 9: Duplicate commands",
+			exec: []common.DevfileCommand{
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+				{
+					Id: "somecommand2",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 9: Duplicate commands, different types",
 			exec: []common.DevfileCommand{
 				{
 					Id: "somecommand1",
@@ -186,36 +216,6 @@ func TestValidateCommands(t *testing.T) {
 					Composite: &common.Composite{
 						Commands: []string{"fakecommand"},
 						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case 9: Duplicate commands, different types",
-			exec: []common.DevfileCommand{
-				{
-					Id: "somecommand1",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-					},
-				},
-				{
-					Id: "somecommand1",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-					},
-				},
-				{
-					Id: "somecommand2",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
 					},
 				},
 			},
