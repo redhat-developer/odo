@@ -337,7 +337,7 @@ func TestList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client, fakeClientSet := occlient.FakeNew()
-			client.Namespace = "test"
+			client.SetNamespace("test")
 
 			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				if !tt.projectExists {

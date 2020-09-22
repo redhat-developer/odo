@@ -593,7 +593,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 			return err
 		}
 		// new client created to support route URLs for devfile components should use the same namespace as kClient's
-		client.Namespace = kClient.Namespace
+		client.SetNamespace(kClient.Namespace)
 	}
 
 	if isS2I {
@@ -865,7 +865,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 	componentNamesMap := make(map[string]bool)
 
 	if client != nil {
-		project, err := client.GetProject(client.Namespace)
+		project, err := client.GetProject(client.GetCurrentProjectName())
 		if err != nil {
 			return ComponentList{}, err
 		}
@@ -879,7 +879,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 
 			// extract the labels we care about from each component
 			for _, elem := range dcList {
-				component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+				component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.GetCurrentProjectName())
 				if err != nil {
 					return ComponentList{}, errors.Wrap(err, "Unable to get component")
 				}
@@ -899,7 +899,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 
 		if client != nil {
 			_, ok := componentNamesMap[component.Name]
-			if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+			if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.GetCurrentProjectName() {
 				component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
 				components = append(components, component)
 			}
@@ -1006,7 +1006,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, erro
 
 				// since the config file maybe belong to a component of a different project
 				if client != nil {
-					client.Namespace = data.GetProject()
+					client.SetNamespace(data.GetProject())
 				}
 
 				con, _ := filepath.Abs(filepath.Dir(path))
@@ -1487,7 +1487,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		}
 	}
 
-	component.Namespace = client.Namespace
+	component.Namespace = client.GetCurrentProjectName()
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
 	component.Status.LinkedComponents = linkedComponents

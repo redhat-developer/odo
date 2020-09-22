@@ -244,7 +244,7 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 	} else {
 		namespace = localConfiguration.GetNamespace()
 		if namespace == "" {
-			namespace = client.Namespace
+			namespace = client.GetCurrentProjectName()
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)

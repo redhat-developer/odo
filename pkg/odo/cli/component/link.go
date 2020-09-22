@@ -13,7 +13,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	"github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"

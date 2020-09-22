@@ -122,7 +122,7 @@ func fakeDeleteClient(namespace string, deleteLast bool) (*occlient.Client, *occ
 	configOverrides := &clientcmd.ConfigOverrides{}
 	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	client.Namespace = "testing"
+	client.SetNamespace("testing")
 	fkWatch := watch.NewFake()
 
 	fakeClientSet.ProjClientset.PrependReactor("list", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {

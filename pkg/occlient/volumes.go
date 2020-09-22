@@ -40,7 +40,7 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string, o
 		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 
-	createdPvc, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
+	createdPvc, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.GetCurrentProjectName()).Create(pvc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}
@@ -80,7 +80,7 @@ func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc strin
 // UpdatePVCLabels updates the given PVC with the given labels
 func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
 	pvc.Labels = labels
-	_, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
+	_, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.GetCurrentProjectName()).Update(pvc)
 	if err != nil {
 		return errors.Wrap(err, "unable to remove storage label from PVC")
 	}
@@ -89,7 +89,7 @@ func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[s
 
 // DeletePVC deletes the given PVC by name
 func (c *Client) DeletePVC(name string) error {
-	return c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(name, nil)
+	return c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.GetCurrentProjectName()).Delete(name, nil)
 }
 
 // IsAppSupervisorDVolume checks if the volume is a supervisorD volume
@@ -244,14 +244,15 @@ func updateStorageOwnerReference(client *Client, pvc *corev1.PersistentVolumeCla
 		return errors.New("owner references are empty")
 	}
 	// get the latest version of the PVC to avoid conflict errors
-	latestPVC, err := client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Get(pvc.Name, metav1.GetOptions{})
+	ns := client.GetCurrentProjectName()
+	latestPVC, err := client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(ns).Get(pvc.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	for _, owRf := range ownerReference {
 		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
-	_, err = client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Update(latestPVC)
+	_, err = client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(ns).Update(latestPVC)
 	if err != nil {
 		return err
 	}

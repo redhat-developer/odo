@@ -32,7 +32,7 @@ func componentTests(args ...string) {
 
 	// Clean up after the test
 	// This is run after every Spec (It)
-	var _ = AfterEach(func() {
+	AfterEach(func() {
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 		// KUBECONFIG defaults to ~/.kube/config so it can be empty in some cases.
