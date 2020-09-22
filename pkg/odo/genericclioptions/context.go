@@ -28,12 +28,16 @@ const (
 )
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
+func NewContext(command *cobra.Command, toggles ...bool) *Context {
 	ignoreMissingConfig := false
-	if len(ignoreMissingConfiguration) == 1 {
-		ignoreMissingConfig = ignoreMissingConfiguration[0]
+	createApp := false
+	if len(toggles) == 1 {
+		ignoreMissingConfig = toggles[0]
 	}
-	return newContext(command, false, ignoreMissingConfig)
+	if len(toggles) == 2 {
+		createApp = toggles[1]
+	}
+	return newContext(command, createApp, ignoreMissingConfig)
 }
 
 // NewDevfileContext creates a new Context struct populated with the current state based on flags specified for the provided command
@@ -271,6 +275,9 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 	}
 	o.Client.Namespace = namespace
 	o.Project = namespace
+	if o.KClient != nil {
+		o.KClient.Namespace = namespace
+	}
 }
 
 // resolveNamespace resolves namespace for devfile component
