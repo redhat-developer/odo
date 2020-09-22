@@ -193,7 +193,7 @@ func componentTests(args ...string) {
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", project)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", project, "-o", "json")...)
-			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"cmp-git","namespace":"%s","creationTimestamp":null},"spec":{"app":"testing","type":"nodejs","source":"https://github.com/openshift/nodejs-ex","sourceType": "git","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}]}`, project)
+			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"s2iComponents":[{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"cmp-git","namespace":"%s","creationTimestamp":null},"spec":{"app":"testing","type":"nodejs","source":"https://github.com/openshift/nodejs-ex","sourceType":"git","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}],"devfileComponents":[]}`, project)
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 			cmpAllList := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
 			Expect(cmpAllList).To(ContainSubstring("cmp-git"))
@@ -559,7 +559,6 @@ func componentTests(args ...string) {
 			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", project)...)
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(context)
-			fmt.Println(files)
 			Expect(files).NotTo(ContainElement(".odo"))
 		})
 
@@ -661,8 +660,6 @@ func componentTests(args ...string) {
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 
-			// list command should fail as no app flag is given
-			helper.CmdShouldFail("odo", append(args, "list", "--project", project)...)
 			// commands should fail as the component name is missing
 			helper.CmdShouldFail("odo", append(args, "describe", "--app", appName, "--project", project)...)
 			helper.CmdShouldFail("odo", append(args, "delete", "-f", "--app", appName, "--project", project)...)

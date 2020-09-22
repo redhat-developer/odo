@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,7 +11,10 @@ import (
 	"strings"
 	"time"
 
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/kclient"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -986,7 +988,7 @@ func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Co
 }
 
 // ListIfPathGiven lists all available component in given path directory
-func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, error) {
+func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, error) {
 	var components []Component
 	var err error
 	for _, path := range paths {
@@ -1025,7 +1027,62 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 		})
 
 	}
-	return GetMachineReadableFormatForList(components), err
+	return components, err
+}
+
+func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]DevfileComponent, error) {
+	var components []DevfileComponent
+	var err error
+	for _, path := range paths {
+		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+			// we check for .odo/env/env.yaml folder first and then find devfile.yaml, this could be changed
+			// TODO: optimise this
+			if f != nil && strings.Contains(f.Name(), ".odo") {
+				// lets find if there is a devfile and an env.yaml
+				dir := filepath.Dir(path)
+				data, err := envinfo.NewEnvSpecificInfo(dir)
+				if err != nil {
+					return err
+				}
+
+				// if the .odo folder doesn't contain a proper env file
+				if data.GetName() == "" || data.GetApplication() == "" || data.GetNamespace() == "" {
+					return nil
+				}
+
+				// we just want to confirm if the devfile is correct
+				_, err = parser.Parse(filepath.Join(dir, "devfile.yaml"))
+				if err != nil {
+					return err
+				}
+				con, _ := filepath.Abs(filepath.Dir(path))
+
+				comp := NewDevfileComponent(data.GetName())
+				comp.Status.State = StateTypeUnknown
+				comp.Spec.App = data.GetApplication()
+				comp.Namespace = data.GetNamespace()
+				comp.Spec.Name = data.GetName()
+				comp.Status.Context = con
+
+				// since the config file maybe belong to a component of a different project
+				if client != nil {
+					client.Namespace = data.GetNamespace()
+					deployment, err := client.GetDeploymentByName(data.GetName())
+					if err != nil {
+						comp.Status.State = StateTypeNotPushed
+					} else if deployment != nil {
+						comp.Status.State = StateTypePushed
+					}
+				}
+
+				components = append(components, comp)
+			}
+
+			return nil
+		})
+
+	}
+	return components, err
 }
 
 // GetComponentSource what source type given component uses
@@ -1337,9 +1394,8 @@ func GetComponentState(client *occlient.Client, componentName, applicationName s
 	}
 	if c != nil {
 		return StateTypePushed
-	} else {
-		return StateTypeNotPushed
 	}
+	return StateTypeNotPushed
 }
 
 // GetComponent provides component definition
@@ -1476,20 +1532,40 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 
 }
 
-// GetMachineReadableFormatForList returns list of components in machine readable format
-func GetMachineReadableFormatForList(components []Component) ComponentList {
-	if len(components) == 0 {
-		components = []Component{}
+// GetMachineReadableFormatForList returns list of devfile and s2i components in machine readable format
+func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
+	if len(s2iComps) == 0 {
+		s2iComps = []Component{}
 	}
+
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
 			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
-		Items:    components,
+		Items:    s2iComps,
+	}
+}
+
+// GetMachineReadableFormatForCombinedCompList returns list of devfile and s2i components in machine readable format
+func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []DevfileComponent) CombinedComponentList {
+	if len(s2iComps) == 0 {
+		s2iComps = []Component{}
+	}
+	if len(devfileComps) == 0 {
+		devfileComps = []DevfileComponent{}
 	}
 
+	return CombinedComponentList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: apiVersion,
+		},
+		ListMeta:          metav1.ListMeta{},
+		S2IComponents:     s2iComps,
+		DevfileComponents: devfileComps,
+	}
 }
 
 // getStorageFromConfig gets all the storage from the config

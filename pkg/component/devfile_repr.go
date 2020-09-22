@@ -1,14 +1,15 @@
-package parser
+package component
 
 import (
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (d DevfileObj) ToRepresentation() ConfigurableRepr {
+func ToDevfileRepresentation(d parser.DevfileObj) ConfigurableRepr {
 	confRepr := ConfigurableRepr{
-		Name:   d.getMetadataName(),
-		Memory: d.getMemory(),
+		Name:   d.GetMetadataName(),
+		Memory: d.GetMemory(),
 	}
 	var contReprs []ContainerRepr
 	components := d.Data.GetComponents()
@@ -38,7 +39,7 @@ func (d DevfileObj) ToRepresentation() ConfigurableRepr {
 	return confRepr
 }
 
-func (d DevfileObj) WrapFromJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr {
+func WrapFromJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr {
 	return JSONConfigRepr{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DevfileConfiguration",
