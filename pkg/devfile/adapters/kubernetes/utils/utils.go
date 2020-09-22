@@ -95,11 +95,9 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
 		// Sync to `Container.SourceMapping` if set
 		if comp.Container.MountSources {
-			var syncRootFolder, projectsRoot string
+			var syncRootFolder string
 			if comp.Container.SourceMapping != "" {
 				syncRootFolder = comp.Container.SourceMapping
-			} else if projectsRoot = adaptersCommon.GetComponentEnvVar(adaptersCommon.EnvProjectsRoot, comp.Container.Env); projectsRoot != "" {
-				syncRootFolder = projectsRoot
 			} else {
 				syncRootFolder = kclient.OdoSourceVolumeMount
 			}
@@ -109,30 +107,24 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 				MountPath: syncRootFolder,
 			})
 
-			// only add the env if it is not set by the devfile
-			if projectsRoot == "" {
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  adaptersCommon.EnvProjectsRoot,
-						Value: syncRootFolder,
-					})
+			// Note: PROJECTS_ROOT & PROJECT_SOURCE are validated at the devfile parser level
+			// Add PROJECTS_ROOT to the container
+			container.Env = append(container.Env,
+				corev1.EnvVar{
+					Name:  adaptersCommon.EnvProjectsRoot,
+					Value: syncRootFolder,
+				})
+
+			// Add PROJECT_SOURCE to the container
+			syncFolder, err := sync.GetSyncFolder(syncRootFolder, devfileObj.Data.GetProjects())
+			if err != nil {
+				return nil, err
 			}
-
-			if syncFolder := adaptersCommon.GetComponentEnvVar(adaptersCommon.EnvProjectsSrc, comp.Container.Env); syncFolder == "" {
-				syncFolder, err = sync.GetSyncFolder(syncRootFolder, devfileObj.Data.GetProjects())
-				if err != nil {
-					return nil, err
-				}
-
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  adaptersCommon.EnvProjectsSrc,
-						Value: syncFolder,
-					})
-			} else {
-				return nil, fmt.Errorf("env variable %s is reserved and cannot be customized in component %s", adaptersCommon.EnvProjectsSrc, comp.Name)
-			}
-
+			container.Env = append(container.Env,
+				corev1.EnvVar{
+					Name:  adaptersCommon.EnvProjectsSrc,
+					Value: syncFolder,
+				})
 		}
 		containers = append(containers, *container)
 	}

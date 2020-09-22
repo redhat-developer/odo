@@ -737,67 +737,7 @@ func TestGetContainers(t *testing.T) {
 			},
 		},
 		{
-			name: "Case 3: Container with custom PROJECTS_ROOT env",
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: containerNames[0],
-					Container: &common.Container{
-						Image:        containerImages[0],
-						MountSources: true,
-						Env: []common.Env{
-							{
-								Name:  "PROJECTS_ROOT",
-								Value: "/my/custom/path",
-							},
-						},
-					},
-				},
-			},
-			wantContainerName:  containerNames[0],
-			wantContainerImage: containerImages[0],
-			wantContainerEnv: []corev1.EnvVar{
-
-				{
-					Name:  "PROJECTS_ROOT",
-					Value: "/my/custom/path",
-				},
-				{
-					Name:  "PROJECT_SOURCE",
-					Value: "/my/custom/path/test-project",
-				},
-			},
-			wantContainerVolMount: []corev1.VolumeMount{
-				{
-					Name:      "odo-projects",
-					MountPath: "/my/custom/path",
-				},
-			},
-		},
-		{
-			name: "Case 4: Invalid container with custom PROJECT_SOURCE env",
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: containerNames[0],
-					Container: &common.Container{
-						Image:        containerImages[0],
-						MountSources: true,
-						Env: []common.Env{
-							{
-								Name:  "PROJECTS_ROOT",
-								Value: "/my/custom/path",
-							},
-							{
-								Name:  "PROJECT_SOURCE",
-								Value: "/my/invalid/path",
-							},
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case 5: Container with no mount source",
+			name: "Case 3: Container with no mount source",
 			containerComponents: []common.DevfileComponent{
 				{
 					Name: containerNames[0],
@@ -810,7 +750,7 @@ func TestGetContainers(t *testing.T) {
 			wantContainerImage: containerImages[0],
 		},
 		{
-			name: "Case 6: Invalid container with same endpoint names",
+			name: "Case 4: Invalid container with same endpoint names",
 			containerComponents: []common.DevfileComponent{
 				{
 					Name: containerNames[0],
@@ -844,7 +784,7 @@ func TestGetContainers(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case 7: Invalid container with same endpoint target ports",
+			name: "Case 5: Invalid container with same endpoint target ports",
 			containerComponents: []common.DevfileComponent{
 				{
 					Name: containerNames[0],

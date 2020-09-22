@@ -109,27 +109,29 @@ func TestValidateComponents(t *testing.T) {
 
 	t.Run("Invalid container using reserved env", func(t *testing.T) {
 
-		envName := adaptersCommon.EnvProjectsSrc
+		envName := []string{adaptersCommon.EnvProjectsSrc, adaptersCommon.EnvProjectsRoot}
 
-		components := []common.DevfileComponent{
-			{
-				Name: "container",
-				Container: &common.Container{
-					Env: []common.Env{
-						{
-							Name:  envName,
-							Value: "/some/path/",
+		for _, env := range envName {
+			components := []common.DevfileComponent{
+				{
+					Name: "container",
+					Container: &common.Container{
+						Env: []common.Env{
+							{
+								Name:  env,
+								Value: "/some/path/",
+							},
 						},
 					},
 				},
-			},
-		}
+			}
 
-		got := validateComponents(components)
-		want := fmt.Sprintf("env variable %s is reserved and cannot be customized in component container", envName)
+			got := validateComponents(components)
+			want := fmt.Sprintf("env variable %s is reserved and cannot be customized in component container", env)
 
-		if got != nil && !strings.Contains(got.Error(), want) {
-			t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
+			if got != nil && !strings.Contains(got.Error(), want) {
+				t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
+			}
 		}
 	})
 

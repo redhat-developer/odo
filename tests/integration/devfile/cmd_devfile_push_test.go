@@ -887,7 +887,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// reset clonePath and change the workdir accordingly, it should sync to project name
 			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
-			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "workingDir: ${PROJECTS_ROOT}/webapp", "workingDir: ${PROJECTS_ROOT}/nodeshift")
 
 			helper.CmdShouldPass("odo", "push", "--context", context)
 

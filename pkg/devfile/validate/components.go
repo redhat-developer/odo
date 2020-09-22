@@ -33,10 +33,12 @@ func validateComponents(components []common.DevfileComponent) error {
 				}
 			}
 
-			// Check if any containers are customizing the reserved PROJECT_SOURCE env
+			// Check if any containers are customizing the reserved PROJECT_SOURCE or PROJECTS_ROOT env
 			for _, env := range component.Container.Env {
 				if env.Name == adaptersCommon.EnvProjectsSrc {
 					return &ReservedEnvError{envName: adaptersCommon.EnvProjectsSrc, componentName: component.Name}
+				} else if env.Name == adaptersCommon.EnvProjectsRoot {
+					return &ReservedEnvError{envName: adaptersCommon.EnvProjectsRoot, componentName: component.Name}
 				}
 			}
 		}
