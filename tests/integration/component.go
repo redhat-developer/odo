@@ -125,7 +125,7 @@ func componentTests(args ...string) {
 			Expect(output).To(ContainSubstring("this directory already contains a component"))
 		})
 
-		It("should list out component in json format along with path flag", func() {
+		FIt("should list out component in json format along with path flag", func() {
 			var contextPath string
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", project)...)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,nodejs", "Application,app")
@@ -193,7 +193,7 @@ func componentTests(args ...string) {
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", project)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", project, "-o", "json")...)
-			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"s2i_components":[{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"cmp-git","namespace":"%s","creationTimestamp":null},"spec":{"app":"testing","type":"nodejs","source":"https://github.com/openshift/nodejs-ex","sourceType":"git","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}],"devfile_components":[]}`, project)
+			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"s2iComponents":[{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"cmp-git","namespace":"%s","creationTimestamp":null},"spec":{"app":"testing","type":"nodejs","source":"https://github.com/openshift/nodejs-ex","sourceType":"git","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}],"devfileComponents":[]}`, project)
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 			cmpAllList := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
 			Expect(cmpAllList).To(ContainSubstring("cmp-git"))
