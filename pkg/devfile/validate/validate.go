@@ -48,8 +48,8 @@ func ValidateDevfileData(data interface{}) error {
 
 }
 
-// ValidateContatinerName validates whether the container name is valid for K8
-func ValidateContatinerName(devfileData data.DevfileData) error {
+// ValidateContainerName validates whether the container name is valid for K8
+func ValidateContainerName(devfileData data.DevfileData) error {
 	containerComponents := adaptersCommon.GetDevfileContainerComponents(devfileData)
 	for _, comp := range containerComponents {
 		err := util.ValidateK8sResourceName("container name", comp.Name)

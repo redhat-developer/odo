@@ -182,7 +182,7 @@ func (po *PushOptions) Validate() (err error) {
 		if err != nil {
 			return err
 		}
-		err = validate.ValidateContatinerName(po.Devfile.Data)
+		err = validate.ValidateContainerName(po.Devfile.Data)
 		if err != nil {
 			return err
 		}
