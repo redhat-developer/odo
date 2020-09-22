@@ -44,8 +44,8 @@ type ComponentStatus struct {
 type CombinedComponentList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ListMeta   `json:"metadata,omitempty"`
-	S2IComponents     []Component        `json:"s2i_components"`
-	DevfileComponents []DevfileComponent `json:"devfile_components"`
+	S2IComponents     []Component        `json:"s2iComponents"`
+	DevfileComponents []DevfileComponent `json:"devfileComponents"`
 }
 
 type DevfileComponent struct {
@@ -60,9 +60,6 @@ type DevfileComponentSpec struct {
 	App        string `json:"app,omitempty"`
 	Type       string `json:"type,omitempty"`
 	SourceType string `json:"sourceType,omitempty"`
-}
-
-type DevfileCompList struct {
 }
 
 // State reperesents component state
