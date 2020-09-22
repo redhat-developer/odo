@@ -261,9 +261,6 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 	}
 	client.SetNamespace(namespace)
 	o.project = &namespace
-	if o.KClient != nil {
-		o.KClient.Namespace = namespace
-	}
 }
 
 // resolveNamespace resolves namespace for devfile component

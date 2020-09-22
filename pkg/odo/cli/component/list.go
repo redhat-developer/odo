@@ -208,18 +208,16 @@ func (lo *ListOptions) Run() (err error) {
 	var devfileComponents []component.DevfileComponent
 	currentComponentState := component.StateTypeNotPushed
 
-	if lo.KClient != nil {
-		deploymentList, err = client.GetKubeClient().ListDeployments(selector)
-		if err != nil {
-			return err
-		}
-		devfileComponents = append(devfileComponents, component.DevfileComponentsFromDeployments(deploymentList)...)
-		for _, comp := range devfileComponents {
-			if lo.EnvSpecificInfo != nil {
-				// if we can find a component from the listing from server then the local state is pushed
-				if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.App, comp.Namespace) {
-					currentComponentState = component.StateTypePushed
-				}
+	deploymentList, err = client.GetKubeClient().ListDeployments(selector)
+	if err != nil {
+		return err
+	}
+	devfileComponents = append(devfileComponents, component.DevfileComponentsFromDeployments(deploymentList)...)
+	for _, comp := range devfileComponents {
+		if lo.EnvSpecificInfo != nil {
+			// if we can find a component from the listing from server then the local state is pushed
+			if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Spec.Name, comp.Spec.App, comp.Namespace) {
+				currentComponentState = component.StateTypePushed
 			}
 		}
 	}
