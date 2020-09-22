@@ -223,25 +223,19 @@ func TestValidateCommands(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		devfileData := testingutil.TestDevfileData{
+			Commands:   append(tt.comp, tt.exec...),
+			Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+		}
 		devObj := devfileParser.DevfileObj{
-			Data: &testingutil.TestDevfileData{
-				Commands:   append(tt.comp, tt.exec...),
-				Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
-			},
+			Data: &devfileData,
 		}
 
+		commands := devObj.Data.GetCommands()
+		components := devObj.Data.GetComponents()
+
 		t.Run(tt.name, func(t *testing.T) {
-			commands, err := devObj.Data.GetCommands()
-			if !tt.wantErr && (err != nil) {
-				t.Errorf("TestValidateAction unexpected error: %v", err)
-				return
-			} else if tt.wantErr && err != nil {
-				return
-			}
-
-			components := devObj.Data.GetComponents()
-
-			err = validateCommands(commands, components)
+			err := validateCommands(devfileData.Commands, commands, components)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return
@@ -523,14 +517,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 			},
 		}
 
-		commands, err := devObj.Data.GetCommands()
-		if err != nil {
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("TestValidateAction unexpected error: %v", err)
-				return
-			}
-		}
-
+		commands := devObj.Data.GetCommands()
 		components := devObj.Data.GetComponents()
 
 		t.Run(tt.name, func(t *testing.T) {

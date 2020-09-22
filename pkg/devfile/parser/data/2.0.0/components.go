@@ -131,33 +131,24 @@ func (d *Devfile200) UpdateComponent(component common.DevfileComponent) {
 	}
 }
 
-// GetCommands returns the slice of DevfileCommand objects parsed from the Devfile.
-// If the devfile has multiple commands with the same ID, an error is returned
-func (d *Devfile200) GetCommands() (map[string]common.DevfileCommand, error) {
+// GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
+func (d *Devfile200) GetCommands() map[string]common.DevfileCommand {
 	commands := make(map[string]common.DevfileCommand, len(d.Commands))
 
 	for _, command := range d.Commands {
 		// we convert devfile command id to lowercase so that we can handle
 		// cases efficiently without being error prone
 		// we also convert the odo push commands from build-command and run-command flags
-		commandID := command.SetIDToLower()
-		if _, exists := commands[commandID]; exists {
-			return nil, fmt.Errorf("devfile has duplicate command IDs %q", commandID)
-		}
-
-		commands[commandID] = command
+		commands[command.SetIDToLower()] = command
 	}
 
-	return commands, nil
+	return commands
 }
 
 // AddCommands adds the slice of DevfileCommand objects to the Devfile's commands
 // if a command is already defined, error out
 func (d *Devfile200) AddCommands(commands ...common.DevfileCommand) error {
-	commandsMap, err := d.GetCommands()
-	if err != nil {
-		return err
-	}
+	commandsMap := d.GetCommands()
 
 	for _, command := range commands {
 		id := command.GetID()

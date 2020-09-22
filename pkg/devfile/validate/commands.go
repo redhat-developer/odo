@@ -1,16 +1,26 @@
 package validate
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
-// validateCommands validates all the devfile commands
-func validateCommands(commands map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
+// validateCommands validates all the devfile commands. If there are commands with duplicate IDs, an erroor is returned
+func validateCommands(commands []common.DevfileCommand, commandsMap map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
+	processedCommands := make(map[string]string, len(commands))
 
 	for _, command := range commands {
-		err = validateCommand(command, commands, components)
+		// Check if the command is in the list of already processed commands
+		// If there's a hit, it means more than one command share the same ID and we should error out
+		commandID := command.SetIDToLower()
+		if _, exists := processedCommands[commandID]; exists {
+			return fmt.Errorf("devfile has duplicate command IDs %q", commandID)
+		}
+		processedCommands[commandID] = commandID
+
+		err = validateCommand(command, commandsMap, components)
 		if err != nil {
 			return err
 		}

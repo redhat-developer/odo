@@ -989,10 +989,7 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 				},
 			}
 
-			commandsMap, err := devObj.Data.GetCommands()
-			if err != nil {
-				t.Errorf("TestAddPreStartEventInitContainer error: %v", err)
-			}
+			commandsMap := devObj.Data.GetCommands()
 			containersMap := GetContainersMap(containers)
 
 			AddPreStartEventInitContainer(podTemplateSpec, commandsMap, tt.eventCommands, containersMap)

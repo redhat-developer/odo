@@ -10,18 +10,15 @@ import (
 )
 
 // ValidateDevfileData validates whether sections of devfile are odo compatible
-func ValidateDevfileData(data interface{}) (err error) {
+func ValidateDevfileData(data interface{}) error {
 	var components []common.DevfileComponent
-	var commands map[string]common.DevfileCommand
+	var commandsMap map[string]common.DevfileCommand
 	var events common.DevfileEvents
 
 	switch d := data.(type) {
 	case *v200.Devfile200:
 		components = d.GetComponents()
-		commands, err = d.GetCommands()
-		if err != nil {
-			return err
-		}
+		commandsMap = d.GetCommands()
 		events = d.GetEvents()
 
 		// Validate all the devfile components before validating commands
@@ -30,12 +27,12 @@ func ValidateDevfileData(data interface{}) (err error) {
 		}
 
 		// Validate all the devfile commands before validating events
-		if err := validateCommands(commands, components); err != nil {
+		if err := validateCommands(d.Commands, commandsMap, components); err != nil {
 			return err
 		}
 
 		// Validate all the events
-		if err := validateEvents(events, commands, components); err != nil {
+		if err := validateEvents(events, commandsMap, components); err != nil {
 			return err
 		}
 	default:

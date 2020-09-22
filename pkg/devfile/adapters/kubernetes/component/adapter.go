@@ -288,11 +288,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	preStartEvents := a.Devfile.Data.GetEvents().PreStart
 	if len(preStartEvents) > 0 {
 		var eventCommands []string
-		commandsMap, err := a.Devfile.Data.GetCommands()
-		if err != nil {
-			return err
-		}
-
+		commandsMap := a.Devfile.Data.GetCommands()
 		containersMap := utils.GetContainersMap(containers)
 
 		for _, event := range preStartEvents {

@@ -1,8 +1,6 @@
 package testingutil
 
 import (
-	"fmt"
-
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
@@ -84,23 +82,18 @@ func (d TestDevfileData) GetStarterProjects() []versionsCommon.DevfileStarterPro
 }
 
 // GetCommands is a mock function to get the commands from a devfile
-// An error is returned if there are multiple commands with the same ID
-func (d *TestDevfileData) GetCommands() (map[string]versionsCommon.DevfileCommand, error) {
+func (d *TestDevfileData) GetCommands() map[string]versionsCommon.DevfileCommand {
 	commands := make(map[string]common.DevfileCommand, len(d.Commands))
 
 	for _, command := range d.Commands {
 		// we convert devfile command id to lowercase so that we can handle
 		// cases efficiently without being error prone
 		// we also convert the odo push commands from build-command and run-command flags
-		commandID := command.SetIDToLower()
-		if _, exists := commands[commandID]; exists {
-			return nil, fmt.Errorf("devfile has multiple commands with duplicate ID %q", commandID)
-		}
-		commands[commandID] = command
+		commands[command.SetIDToLower()] = command
 
 	}
 
-	return commands, nil
+	return commands
 }
 
 func (d TestDevfileData) AddVolume(volumeComponent common.DevfileComponent, path string) error {
@@ -129,10 +122,7 @@ func (d TestDevfileData) AddComponents(components []common.DevfileComponent) err
 func (d TestDevfileData) UpdateComponent(component common.DevfileComponent) {}
 
 func (d *TestDevfileData) AddCommands(commands ...common.DevfileCommand) error {
-	commandsMap, err := d.GetCommands()
-	if err != nil {
-		return err
-	}
+	commandsMap := d.GetCommands()
 
 	for _, command := range commands {
 		id := command.GetID()

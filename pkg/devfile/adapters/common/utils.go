@@ -140,21 +140,17 @@ func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.Devfile
 }
 
 // getCommandsByGroup gets commands by the group kind
-func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) ([]common.DevfileCommand, error) {
+func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
 	var commands []common.DevfileCommand
-	commandsMap, err := data.GetCommands()
-	if err != nil {
-		return nil, err
-	}
 
-	for _, command := range commandsMap {
+	for _, command := range data.GetCommands() {
 		commandGroup := command.GetGroup()
 		if commandGroup != nil && commandGroup.Kind == groupType {
 			commands = append(commands, command)
 		}
 	}
 
-	return commands, nil
+	return commands
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
