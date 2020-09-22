@@ -19,6 +19,7 @@ func componentTests(args ...string) {
 	var project string
 	var context string
 	var originalDir string
+	var kubeconfigOrig string
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
@@ -26,6 +27,7 @@ func componentTests(args ...string) {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		oc = helper.NewOcRunner("oc")
+		kubeconfigOrig = os.Getenv("KUBECONFIG")
 	})
 
 	// Clean up after the test
@@ -33,6 +35,12 @@ func componentTests(args ...string) {
 	var _ = AfterEach(func() {
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
+		// KUBECONFIG defaults to ~/.kube/config so it can be empty in some cases.
+		if kubeconfigOrig != "" {
+			os.Setenv("KUBECONFIG", kubeconfigOrig)
+		} else {
+			os.Unsetenv("KUBECONFIG")
+		}
 	})
 
 	Context("Generic machine readable output tests", func() {
@@ -210,17 +218,10 @@ func componentTests(args ...string) {
 		It("should list the state as unknown for disconnected cluster", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing")
-			kubeconfigOrig := os.Getenv("KUBECONFIG")
+			// temporarily set an invalid kubeconfig, it should be reset to its initial value (recorded in BeforeEach) in AfterEach function
 			os.Setenv("KUBECONFIG", "/no/such/path")
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context, "--v", "9")...)
 			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "Unknown"})
-			// KUBECONFIG defaults to ~/.kube/config so it can be empty in some cases.
-			if kubeconfigOrig != "" {
-				os.Setenv("KUBECONFIG", kubeconfigOrig)
-			} else {
-				os.Unsetenv("KUBECONFIG")
-			}
-			fmt.Printf("kubeconfig before delete %v", os.Getenv("KUBECONFIG"))
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 
