@@ -21,7 +21,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -66,15 +65,14 @@ type devfilePath struct {
 
 // DevfileMetadata includes devfile component metadata
 type DevfileMetadata struct {
-	componentType      string
-	componentName      string
-	componentNamespace string
-	devfileSupport     bool
-	devfileLink        string
-	devfileRegistry    catalog.Registry
-	devfilePath        devfilePath
-	starter            string
-	token              string
+	componentType   string
+	componentName   string
+	devfileSupport  bool
+	devfileLink     string
+	devfileRegistry catalog.Registry
+	devfilePath     devfilePath
+	starter         string
+	token           string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -414,21 +412,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.interactive = true
 		}
 
-		// Configure the default namespace
-		var defaultComponentNamespace string
-		// If the push target is set to Docker, we can't assume we have an active Kube context
-		if !pushtarget.IsPushTargetDocker() {
-			// Get current active namespace
-			client, err := kclient.New()
-			if err != nil {
-				return err
-			}
-			defaultComponentNamespace = client.Namespace
-		}
-
 		var componentType string
 		var componentName string
-		var componentNamespace string
 		var catalogDevfileList catalog.DevfileComponentTypeList
 		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
 
@@ -452,16 +437,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 				// Component name: User needs to specify the componet name, by default it is component type that user chooses
 				componentName = ui.EnterDevfileComponentName(componentType)
-
-				// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-				if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
-					componentNamespace, err = cmd.Flags().GetString("project")
-					if err != nil {
-						return err
-					}
-				} else if !pushtarget.IsPushTargetDocker() {
-					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
-				}
 			}
 
 		} else {
@@ -518,25 +493,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 				}
 			}
-
-			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
-			if co.devfileMetadata.componentNamespace == "" && !pushtarget.IsPushTargetDocker() {
-
-				// Check to see if we've passed in "project", if not, default to the standard Kubernetes namespace
-				componentNamespace, err = retrieveCmdNamespace(cmd)
-				if err != nil {
-					return err
-				}
-
-			} else {
-				componentNamespace = defaultComponentNamespace
-			}
 		}
 
 		// Set devfileMetadata struct
 		co.devfileMetadata.componentType = componentType
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
-		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
 		if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 			// Categorize the sections
@@ -837,14 +798,6 @@ func (co *CreateOptions) Validate() (err error) {
 			return err
 		}
 
-		// Only validate namespace if pushtarget isn't docker
-		if !pushtarget.IsPushTargetDocker() {
-			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
-			if err != nil {
-				return err
-			}
-		}
-
 		spinner.End(true)
 
 		return nil
@@ -1079,7 +1032,6 @@ func (co *CreateOptions) devfileRun() (err error) {
 	// Generate env file
 	err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
 		Name:    co.devfileMetadata.componentName,
-		Project: co.devfileMetadata.componentNamespace,
 		AppName: co.appName,
 	})
 	if err != nil {
