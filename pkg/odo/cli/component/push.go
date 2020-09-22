@@ -97,39 +97,50 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
 
+		// Since the environment file does not exist, we will retrieve a correct namespace from
+		// either cmd commands or the current default kubernetes namespace
+		namespace, err := retrieveCmdNamespace(cmd)
+		if err != nil {
+			return errors.Wrap(err, "unable to determine target namespace for devfile")
+		}
+
+		// Retrieve a default name
+		// 1. Use args[0] if the user has supplied a name to be used
+		// 2. If the user did not provide a name, use gatherName to retrieve a name from the devfile.Metadata
+		// 3. Use the folder name that we are pushing from as a default name if none of the above exist
+
+		var name string
+		if len(args) == 1 {
+			name = args[0]
+		} else {
+			name, err = gatherName(po.Devfile, po.DevfilePath)
+			if err != nil {
+				return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
+			}
+		}
+
 		// If the file does not exist, we should populate the environment file with the correct env.yaml information
 		// such as name and namespace.
+		var settings envinfo.ComponentSettings
+		changed := false
 		if !envFileInfo.Exists() {
 			klog.V(4).Info("Environment file does not exist, creating the env.yaml file in order to use 'odo push'")
 
-			// Since the environment file does not exist, we will retrieve a correct namespace from
-			// either cmd commands or the current default kubernetes namespace
-			namespace, err := retrieveCmdNamespace(cmd)
-			if err != nil {
-				return errors.Wrap(err, "unable to determine target namespace for devfile")
-			}
-
-			// Retrieve a default name
-			// 1. Use args[0] if the user has supplied a name to be used
-			// 2. If the user did not provide a name, use gatherName to retrieve a name from the devfile.Metadata
-			// 3. Use the folder name that we are pushing from as a default name if none of the above exist
-
-			var name string
-			if len(args) == 1 {
-				name = args[0]
-			} else {
-				name, err = gatherName(po.Devfile, po.DevfilePath)
-				if err != nil {
-					return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
-				}
-			}
-
 			// Create the environment file. This will actually *create* the env.yaml file in your context directory.
-			err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Project: namespace})
+			settings = envinfo.ComponentSettings{Name: name, Project: namespace}
+			changed = true
+		} else if envFileInfo.GetName() != name || envFileInfo.GetNamespace() != namespace {
+			// update the envinfo file with updated name and namespace
+			settings = envFileInfo.GetComponentSettings()
+			settings.Name = name
+			settings.Project = namespace
+			changed = true
+		}
+		if changed {
+			err = envFileInfo.SetComponentSettings(settings)
 			if err != nil {
-				return errors.Wrap(err, "failed to create env.yaml for devfile component")
+				return errors.Wrap(err, "failed to create or update env.yaml for devfile component")
 			}
-
 		}
 
 		po.EnvSpecificInfo = envFileInfo
