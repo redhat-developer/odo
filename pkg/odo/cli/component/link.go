@@ -52,7 +52,7 @@ For example:
 We have created a frontend application called 'frontend' using:
 odo create nodejs frontend
 
-If you wish to connect an EtcdCluster service craeted using etcd Operator to this component:
+If you wish to connect an EtcdCluster service created using etcd Operator to this component:
 odo link EtcdCluster/myetcdcluster
 
 Here myetcdcluster is the name of the EtcdCluster service which can be found using "odo service list"
