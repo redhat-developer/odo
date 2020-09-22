@@ -559,7 +559,6 @@ func componentTests(args ...string) {
 			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", project)...)
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(context)
-			fmt.Println(files)
 			Expect(files).NotTo(ContainElement(".odo"))
 		})
 
