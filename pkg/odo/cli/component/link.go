@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
 	"github.com/openshift/odo/pkg/odo/util"
-	cmdutil "github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"
@@ -24,7 +23,10 @@ import (
 const LinkRecommendedCommandName = "link"
 
 var (
-	linkExample = ktemplates.Examples(`# Link the current component to the 'my-postgresql' service
+	linkExample = ktemplates.Examples(`# Link the current component to the 'EtcdCluster' named 'myetcd'
+%[1]s EtcdCluster/myetcd
+
+# Link the current component to the 'my-postgresql' service
 %[1]s my-postgresql
 
 # Link component 'nodejs' to the 'my-postgresql' service
@@ -39,7 +41,7 @@ var (
 # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
 %[1]s backend --port 8080`)
 
-	linkLongDesc = `Link component to a service or component
+	linkLongDesc = `Link component to a service (backed by an Operator or Service Catalog) or component (works only with s2i components)
 
 If the source component is not provided, the current active component is assumed.
 In both use cases, link adds the appropriate secret to the environment of the source component. 
@@ -50,10 +52,15 @@ For example:
 We have created a frontend application called 'frontend' using:
 odo create nodejs frontend
 
+If you wish to connect an EtcdCluster service craeted using etcd Operator to this component:
+odo link EtcdCluster/myetcdcluster
+
+Here myetcdcluster is the name of the EtcdCluster service which can be found using "odo service list"
+
 We've also created a backend application called 'backend' with port 8080 exposed:
 odo create nodejs backend --port 8080
 
-We can now link the two applications:
+We can now link the two applications (works only with s2i components):
 odo link backend --component frontend
 
 Now the frontend has 2 ENV variables it can use:
@@ -67,23 +74,6 @@ odo link dh-postgresql-apb
 Now backend has 2 ENV variables it can use:
 DB_USER=luke
 DB_PASSWORD=secret`
-
-	linkExampleExperimental = ktemplates.Examples(`# Link the current component to the 'EtcdCluster' named 'myetcd'
-%[1]s EtcdCluster/myetcd
-	`)
-
-	linkLongDescExperimental = `Link component to an operator backed service
-
-If the source component is not provided, the current active component is assumed.
-
-For example:
-
-We have created a frontend application called 'frontend' using:
-odo create nodejs frontend
-
-If you wish to connect this nodejs based component to, for example, an EtcdCluster named 'myetcd' created from etcd Operator:
-odo link EtcdCluster/myetcd
-	`
 )
 
 // LinkOptions encapsulates the options for the odo link command
@@ -163,7 +153,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	o := NewLinkOptions()
 
 	linkCmd := &cobra.Command{
-		Use:         fmt.Sprintf("%s <service> --component [component] OR %s <component> --component [component]", name, name),
+		Use:         fmt.Sprintf("%s <operator-service-type>/<service-name> OR %s <service> --component [component] OR %s <component> --component [component]", name, name, name),
 		Short:       "Link component to a service or component",
 		Long:        linkLongDesc,
 		Example:     fmt.Sprintf(linkExample, fullName),
@@ -180,26 +170,10 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	// Update the use / example / long to the Devfile description
-	linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
-	linkCmd.Example = fmt.Sprintf(linkExample, fullName)
-	linkCmd.Long = linkLongDesc
-
-	// we ignore the error because it doesn't matter at this place to deal with it and the function returns a *cobra.Command
-	csvSupport, _ := cmdutil.IsCSVSupported()
-
-	// Modifications for the case when Operators are supported
-	if csvSupport {
-		linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
-		linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
-		linkCmd.Long = linkLongDescExperimental
-	}
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)
 	//Adding `--application` flag
-	if !csvSupport {
-		appCmd.AddApplicationFlag(linkCmd)
-	}
+	appCmd.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
 
