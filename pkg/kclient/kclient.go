@@ -1,9 +1,9 @@
 package kclient
 
 import (
-	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/klog"
@@ -122,11 +122,11 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 	if wait {
 		deletionPolicy = metav1.DeletePropagationForeground
 	}
-	// Delete DeploymentConfig
-	klog.V(3).Info("Deleting DeploymentConfigs")
+	// Delete Deployments
+	klog.V(3).Info("Deleting Deployments")
 	err := c.appsClient.Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
-		errorList = append(errorList, "unable to delete deploymentconfig")
+		errorList = append(errorList, "unable to delete deployments")
 	}
 
 	// for --wait it waits for component to be deleted
@@ -163,16 +163,16 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 	for {
 		select {
 		case event, ok := <-eventCh:
-			_, typeOk := event.Object.(*appsv1.DeploymentConfig)
+			_, typeOk := event.Object.(*appsv1.Deployment)
 			if !ok || !typeOk {
-				return errors.New("Unable to watch deployment config")
+				return errors.New("Unable to watch deployments")
 			}
 			if event.Type == watch.Deleted {
 				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
 				return nil
 			} else if event.Type == watch.Error {
 				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
-				return errors.New("Unable to watch deployment config")
+				return errors.New("Unable to watch deployments")
 			}
 		case <-time.After(waitForComponentDeletionTimeout):
 			klog.V(3).Infof("WaitForComponentDeletion, Timeout")

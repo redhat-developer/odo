@@ -42,7 +42,7 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	// Get all DeploymentConfigs with the "app" label
 	deploymentAppNames, err := client.GetKubeClient().GetDeploymentLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list applications from deployment config")
+		return nil, errors.Wrap(err, "unable to list applications from deployments")
 	}
 
 	appNames = append(appNames, deploymentAppNames...)
