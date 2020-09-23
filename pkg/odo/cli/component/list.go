@@ -312,7 +312,7 @@ func (lo *ListOptions) Run() (err error) {
 		}
 
 		if !lo.hasDevfileComponents && !lo.hasS2IComponents {
-			log.Error("There are no components deployed.")
+			log.Info("There are no components deployed.")
 			return
 		}
 	} else {
