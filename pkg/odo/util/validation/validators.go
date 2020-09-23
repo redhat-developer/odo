@@ -92,11 +92,11 @@ func KeyEqValFormatValidator(portsStr interface{}) error {
 		for _, part := range parts {
 			kvParts := strings.Split(part, "=")
 			if len(kvParts) != 2 {
-				return fmt.Errorf("Part '%s' does not have the correct format", part)
+				return fmt.Errorf("part '%s' does not have the correct format", part)
 			}
 			if len(strings.TrimSpace(kvParts[0])) != len(kvParts[0]) ||
 				len(strings.TrimSpace(kvParts[1])) != len(kvParts[1]) {
-				return fmt.Errorf("Spaces are not allowed in '%s'", part)
+				return fmt.Errorf("spaces are not allowed in '%s'", part)
 			}
 		}
 

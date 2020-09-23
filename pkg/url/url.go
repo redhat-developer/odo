@@ -21,7 +21,6 @@ import (
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
@@ -432,7 +431,7 @@ func (s sortableURLs) Swap(i, j int) {
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []parsercommon.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := oclient.GetKubeClient().ListIngresses(labelSelector)
@@ -1067,7 +1066,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 }
 
 // AddEndpointInDevfile writes the provided endpoint information into devfile
-func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint parsercommon.Endpoint, container string) error {
+func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint common.Endpoint, container string) error {
 	components := devObj.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil && component.Name == container {

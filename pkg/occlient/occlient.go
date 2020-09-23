@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/openshift/odo/pkg/kclient"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 
@@ -64,8 +66,7 @@ import (
 )
 
 var (
-	DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR string = "deploymentconfigs.apps.openshift.io \"%s\" not found"
-	DEPLOYMENT_CONFIG_NOT_FOUND           error  = fmt.Errorf("Requested deployment config does not exist")
+	DEPLOYMENT_CONFIG_NOT_FOUND error = fmt.Errorf("Requested deployment config does not exist")
 )
 
 // We use a mutex here in order to make 100% sure that functions such as CollectEvents
@@ -1688,17 +1689,6 @@ func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
 	return nil
 }
 
-// GetLatestBuildName gets the name of the latest build
-// buildConfigName is the name of the buildConfig for which we are fetching the build name
-// returns the name of the latest build or the error
-func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
-	buildConfig, err := c.buildClient.BuildConfigs(c.Namespace).Get(buildConfigName, metav1.GetOptions{})
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get the latest build name")
-	}
-	return fmt.Sprintf("%s-%d", buildConfigName, buildConfig.Status.LastVersion), nil
-}
-
 // StartBuild starts new build as it is, returns name of the build stat was started
 func (c *Client) StartBuild(name string) (string, error) {
 	klog.V(3).Infof("Build %s started.", name)
@@ -2662,22 +2652,6 @@ func (c *Client) GetRoute(name string) (*routev1.Route, error) {
 	route, err := c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
 	return route, err
 
-}
-
-// ListRouteNames lists all the names of the routes based on the given label
-// selector
-func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
-	routes, err := c.ListRoutes(labelSelector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list routes")
-	}
-
-	var routeNames []string
-	for _, r := range routes {
-		routeNames = append(routeNames, r.Name)
-	}
-
-	return routeNames, nil
 }
 
 // ListSecrets lists all the secrets based on the given label selector

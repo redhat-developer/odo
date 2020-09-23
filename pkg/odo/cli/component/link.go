@@ -6,7 +6,6 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
 	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -137,7 +136,7 @@ func (o *LinkOptions) Validate() (err error) {
 			if o.isTargetAService {
 				targetType = "service"
 			}
-			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Project, targetType, o.suppliedName)
+			return fmt.Errorf("component %s has previously been linked to %s %s", o.Project, targetType, o.suppliedName)
 		}
 	}
 	return
@@ -168,7 +167,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 
-	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)

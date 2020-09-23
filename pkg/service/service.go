@@ -327,27 +327,6 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	return allCRInstances, nil
 }
 
-// GetGVKRFromCR returns values for group, version, kind and resource for a
-// given Custom Resource (CR)
-func GetGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
-	return getGVKRFromCR(cr)
-}
-
-func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
-	version = cr.Version
-	kind = cr.Kind
-
-	gr := strings.SplitN(cr.Name, ".", 2)
-	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
-		return
-	}
-	resource = gr[0]
-	group = gr[1]
-
-	return
-}
-
 func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, version, resource string, err error) {
 	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
 		custRes := customresource

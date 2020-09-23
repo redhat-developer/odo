@@ -2,10 +2,11 @@ package testingutil
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
 )
@@ -98,7 +99,7 @@ func SimulateFileModifications(basePath string, fileModification FileProperties)
 		}
 	case UPDATE:
 		if fileModification.FileType == Directory {
-			return "", fmt.Errorf("Updating directory %s is not supported", fileModification.FilePath)
+			return "", fmt.Errorf("updating directory %s is not supported", fileModification.FilePath)
 		} else if fileModification.FileType == RegularFile {
 			f, err := os.Open(filepath.Join(basePath, fileModification.FilePath))
 			if err != nil {
@@ -124,10 +125,10 @@ func SimulateFileModifications(basePath string, fileModification FileProperties)
 			return filepath.Join(basePath, fileModification.FilePath), nil
 		}
 
-		return "", fmt.Errorf("Append not supported for file of type %v", fileModification.FileType)
+		return "", fmt.Errorf("append not supported for file of type %v", fileModification.FileType)
 
 	default:
-		return "", fmt.Errorf("Unsupported file operation %s", fileModification.ModificationType)
+		return "", fmt.Errorf("unsupported file operation %s", fileModification.ModificationType)
 	}
 	return "", nil
 }

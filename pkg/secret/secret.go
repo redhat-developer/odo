@@ -23,7 +23,7 @@ func DetermineSecretName(client *occlient.Client, componentName, applicationName
 	}
 
 	if len(secrets) == 0 {
-		return "", fmt.Errorf(`A secret should have been created for component %s. 
+		return "", fmt.Errorf(`a secret should have been created for component %s. 
 Please delete the component and recreate it using 'odo create'`, componentName)
 	}
 
@@ -33,7 +33,7 @@ Please delete the component and recreate it using 'odo create'`, componentName)
 		if len(secrets) == 1 {
 			return secrets[0].Name, nil
 		}
-		return "", fmt.Errorf("Unable to properly link to component %s. "+
+		return "", fmt.Errorf("unable to properly link to component %s. "+
 			"Please select one of the following ports: '%s' "+
 			"by supplying the --port option and rerun the command", componentName, strings.Join(availablePorts(secrets), ","))
 	}
@@ -44,7 +44,7 @@ Please delete the component and recreate it using 'odo create'`, componentName)
 			return secret.Name, nil
 		}
 	}
-	return "", fmt.Errorf("Unable to properly link to component %s using port %s. "+
+	return "", fmt.Errorf("unable to properly link to component %s using port %s. "+
 		"Please select one of the following ports: '%s' "+
 		"by supplying the --port option and rerun the command", componentName, port, strings.Join(availablePorts(secrets), ","))
 }

@@ -237,20 +237,6 @@ func (oc OcRunner) MinMemory(componentName string, appName string, project strin
 	return minMemory
 }
 
-// MaxCPU returns maximum cpu
-func (oc OcRunner) MaxCPU(componentName string, appName string, project string) string {
-	maxCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.cpu}}{{end}}'")
-	return maxCPU
-}
-
-// MinCPU returns minimum cpu
-func (oc OcRunner) MinCPU(componentName string, appName string, project string) string {
-	minCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'")
-	return minCPU
-}
-
 // SourceTypeDC returns the source type from the deployment config
 func (oc OcRunner) SourceTypeDC(componentName string, appName string, project string) string {
 	sourceType := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
@@ -269,13 +255,6 @@ func (oc OcRunner) SourceTypeBC(componentName string, appName string, project st
 func (oc OcRunner) SourceLocationDC(componentName string, appName string, project string) string {
 	sourceLocation := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'")
-	return sourceLocation
-}
-
-// SourceLocationBC returns the source location from the build config
-func (oc OcRunner) SourceLocationBC(componentName string, appName string, project string) string {
-	sourceLocation := CmdShouldPass(oc.path, "get", "bc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{index .spec.source.git \"uri\"}}'")
 	return sourceLocation
 }
 

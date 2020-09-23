@@ -34,17 +34,6 @@ func FakeProjects() *v1.ProjectList {
 	}
 }
 
-// FakeNamespaces returns fake namespace list for use by API mock functions for Unit tests
-func FakeNamespaces() *corev1.NamespaceList {
-	return &corev1.NamespaceList{
-		Items: []corev1.Namespace{
-			getFakeNamespace("testing"),
-			getFakeNamespace("prj1"),
-			getFakeNamespace("prj2"),
-		},
-	}
-}
-
 // FakeProjectStatus returns fake project status for use by mock watch on project
 func FakeProjectStatus(prjStatus corev1.NamespacePhase, prjName string) *projectv1.Project {
 	return &projectv1.Project{
@@ -81,14 +70,4 @@ func FakeOnlyOneExistingNamespace() *corev1.NamespaceList {
 			getFakeNamespace("testing"),
 		},
 	}
-}
-
-// FakeRemoveProject removes the delete requested project from the list of projects passed
-func FakeRemoveProject(project string, projects *v1.ProjectList) *v1.ProjectList {
-	for index, proj := range projects.Items {
-		if proj.Name == project {
-			projects.Items = append(projects.Items[:index], projects.Items[index+1:]...)
-		}
-	}
-	return projects
 }

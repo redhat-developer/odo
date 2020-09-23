@@ -61,7 +61,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return err
 	}
 	if o.appName == "" {
-		return fmt.Errorf("There's no active application in project: %v", o.Project)
+		return fmt.Errorf("there's no active application in project: %v", o.Project)
 	}
 
 	exist, err := application.Exists(o.appName, o.Client, o.KClient)

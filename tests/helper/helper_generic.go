@@ -219,7 +219,7 @@ func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, pr
 		select {
 		case <-timeoutCh:
 			fmt.Fprintln(GinkgoWriter, errBuf.String())
-			return false, errors.New("Timeout waiting for the conditon")
+			return false, errors.New("timeout waiting for the conditon")
 		case <-matchOutputCh:
 			return true, nil
 		case <-errorCh:

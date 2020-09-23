@@ -3,8 +3,8 @@ package testingutil
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -130,8 +130,8 @@ func FakePlanInstanceCreateParameterSchemasRaw() [][]byte {
 // serviceClassName is the name of the service class
 // planName is the name of the plan
 // status is the status of the service instance
-func FakeServiceClassInstance(serviceInstanceName string, serviceClassName string, planName string, status string) scv1beta1.ServiceInstance {
-	var service = scv1beta1.ServiceInstance{
+func FakeServiceClassInstance(serviceInstanceName string, serviceClassName string, planName string, status string) v1beta1.ServiceInstance {
+	var service = v1beta1.ServiceInstance{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: serviceInstanceName,
 			Labels: map[string]string{
@@ -141,14 +141,14 @@ func FakeServiceClassInstance(serviceInstanceName string, serviceClassName strin
 			},
 			Namespace: "myproject",
 		},
-		Spec: scv1beta1.ServiceInstanceSpec{
-			PlanReference: scv1beta1.PlanReference{
+		Spec: v1beta1.ServiceInstanceSpec{
+			PlanReference: v1beta1.PlanReference{
 				ClusterServiceClassExternalName: serviceClassName,
 				ClusterServicePlanExternalName:  planName,
 			},
 		},
-		Status: scv1beta1.ServiceInstanceStatus{
-			Conditions: []scv1beta1.ServiceInstanceCondition{
+		Status: v1beta1.ServiceInstanceStatus{
+			Conditions: []v1beta1.ServiceInstanceCondition{
 				{
 					Reason: status,
 				},
