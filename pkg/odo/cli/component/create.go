@@ -578,6 +578,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
 
 			hasComponent := false
+			devfileExistSpinner := log.Spinner("Checking devfile existence")
+			defer devfileExistSpinner.End(false)
 
 			for _, devfileComponent := range catalogDevfileList.Items {
 				if co.devfileMetadata.componentType == devfileComponent.Name {
@@ -602,14 +604,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			}
 
-			existSpinner := log.Spinner("Checking devfile existence")
 			if hasComponent {
-				existSpinner.End(true)
+				devfileExistSpinner.End(true)
 			} else {
-				existSpinner.End(false)
+				devfileExistSpinner.End(false)
 			}
 
-			supportSpinner := log.Spinner("Checking devfile compatibility")
 			if co.devfileMetadata.devfileSupport {
 				registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
 
@@ -619,11 +619,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return err
 				}
 
-				supportSpinner.End(true)
 				registrySpinner.End(true)
 				return nil
 			}
-			supportSpinner.End(false)
 
 			// Currently only devfile component supports --registry flag, so if user specifies --registry when creating devfile component,
 			// we should error out instead of running s2i componet code and throw warning message
