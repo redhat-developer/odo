@@ -7,7 +7,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
-// validateCommands validates all the devfile commands. If there are commands with duplicate IDs, an erroor is returned
+// validateCommands validates all the devfile commands. If there are commands with duplicate IDs, an error is returned
 func validateCommands(commands []common.DevfileCommand, commandsMap map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 	processedCommands := make(map[string]string, len(commands))
 
