@@ -31,7 +31,6 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
@@ -210,14 +209,14 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		if parameters.secureURL {
 			if len(parameters.secretName) != 0 {
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, metav1.GetOptions{})
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, v1.GetOptions{})
 				if err != nil {
 					return "", errors.Wrap(err, "unable to get the provided secret: "+parameters.secretName)
 				}
 			}
 			if len(parameters.secretName) == 0 {
 				defaultTLSSecretName := parameters.componentName + "-tlssecret"
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, v1.GetOptions{})
 				// create tls secret if it does not exist
 				if kerrors.IsNotFound(err) {
 					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(parameters.host)
@@ -226,7 +225,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 					}
 					// create tls secret
 					secretlabels := componentlabels.GetLabels(parameters.componentName, parameters.applicationName, true)
-					objectMeta := metav1.ObjectMeta{
+					objectMeta := v1.ObjectMeta{
 						Name:   defaultTLSSecretName,
 						Labels: secretlabels,
 						OwnerReferences: []v1.OwnerReference{
@@ -266,7 +265,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 			return "", errors.Errorf("routes are not available on non OpenShift clusters")
 		}
 
-		var ownerReference metav1.OwnerReference
+		var ownerReference v1.OwnerReference
 		if isS2I || kClient == nil {
 			var err error
 			parameters.urlName, err = util.NamespaceOpenShiftObject(parameters.urlName, parameters.applicationName)
@@ -642,11 +641,11 @@ func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 // ConvertConfigURL converts ConfigURL to URL
 func ConvertConfigURL(configURL envinfo.EnvInfoURL) URL {
 	return URL{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: v1.TypeMeta{
 			Kind:       "url",
 			APIVersion: apiVersion,
 		},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: v1.ObjectMeta{
 			Name: configURL.Name,
 		},
 		Spec: URLSpec{
@@ -667,11 +666,11 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 		kind = envinfo.ROUTE
 	}
 	url := URL{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: v1.TypeMeta{
 			Kind:       "url",
 			APIVersion: apiVersion,
 		},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: v1.ObjectMeta{
 			Name: envinfoURL.Name,
 		},
 		Spec: URLSpec{
@@ -782,8 +781,8 @@ func GetValidExposedPortNumber(exposedPort int) (int, error) {
 // getMachineReadableFormat gives machine readable URL definition
 func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
-		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
+		TypeMeta:   v1.TypeMeta{Kind: "url", APIVersion: apiVersion},
+		ObjectMeta: v1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
 		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: envinfo.ROUTE},
 	}
 
@@ -791,19 +790,19 @@ func getMachineReadableFormat(r routev1.Route) URL {
 
 func getMachineReadableFormatForList(urls []URL) URLList {
 	return URLList{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: v1.TypeMeta{
 			Kind:       "List",
 			APIVersion: apiVersion,
 		},
-		ListMeta: metav1.ListMeta{},
+		ListMeta: v1.ListMeta{},
 		Items:    urls,
 	}
 }
 
 func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
 	url := URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
-		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
+		TypeMeta:   v1.TypeMeta{Kind: "url", APIVersion: apiVersion},
+		ObjectMeta: v1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
 		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: envinfo.INGRESS},
 	}
 	if i.Spec.TLS != nil {
@@ -820,11 +819,11 @@ func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv
 		IntVal: int32(ingressURL.Spec.Port),
 	}
 	ingress := iextensionsv1.Ingress{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: v1.TypeMeta{
 			Kind:       "Ingress",
 			APIVersion: "extensions/v1beta1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: v1.ObjectMeta{
 			Name: ingressURL.Name,
 		},
 		Spec: iextensionsv1.IngressSpec{
@@ -863,8 +862,8 @@ func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv
 
 func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP string, urlName string) URL {
 	return URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
-		ObjectMeta: metav1.ObjectMeta{Name: urlName},
+		TypeMeta:   v1.TypeMeta{Kind: "url", APIVersion: apiVersion},
+		ObjectMeta: v1.ObjectMeta{Name: urlName},
 		Spec:       URLSpec{Host: hostIP, Port: internalPort, ExternalPort: externalPort},
 	}
 }

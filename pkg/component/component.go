@@ -12,10 +12,8 @@ import (
 	"strings"
 	"time"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/kclient"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -1072,7 +1070,7 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Devf
 				}
 
 				// we just want to confirm if the devfile is correct
-				_, err = parser.Parse(filepath.Join(dir, "devfile.yaml"))
+				_, err = devfileParser.Parse(filepath.Join(dir, "devfile.yaml"))
 				if err != nil {
 					return err
 				}

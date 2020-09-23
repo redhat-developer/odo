@@ -609,7 +609,7 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 		Expect(len(containers)).To(Equal(1))
 		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la /projects")
 	default:
-		return fmt.Errorf("Platform %s is not supported", platform)
+		return fmt.Errorf("platform %s is not supported", platform)
 	}
 
 	helper.MatchAllInOutput(stdOut, []string{"a.txt", ".abc"})

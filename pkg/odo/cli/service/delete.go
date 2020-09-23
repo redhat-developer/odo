@@ -66,7 +66,7 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 		}
 
 		if !svcExists {
-			return fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", o.serviceName, "odo service list")
+			return fmt.Errorf("couldn't find service named %q. Refer %q to see list of running services", o.serviceName, "odo service list")
 		}
 		return nil
 	}

@@ -284,7 +284,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	if len(containers) == 0 {
-		return fmt.Errorf("No valid components found in the devfile")
+		return fmt.Errorf("no valid components found in the devfile")
 	}
 
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
@@ -486,7 +486,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 		}
 	}
 
-	return "", "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // Delete deletes the component

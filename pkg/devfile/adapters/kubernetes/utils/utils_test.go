@@ -9,7 +9,6 @@ import (
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -26,7 +25,7 @@ func TestComponentExists(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		componentType    versionsCommon.DevfileComponentType
+		componentType    common.DevfileComponentType
 		componentName    string
 		getComponentName string
 		want             bool
@@ -96,13 +95,13 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	workDir := "/root"
 	emptyString := ""
 	defaultCommand := []string{"tail"}
-	execRunGroup := versionsCommon.Group{
+	execRunGroup := common.Group{
 		IsDefault: true,
-		Kind:      versionsCommon.RunCommandGroupType,
+		Kind:      common.RunCommandGroupType,
 	}
-	execDebugGroup := versionsCommon.Group{
+	execDebugGroup := common.Group{
 		IsDefault: true,
-		Kind:      versionsCommon.DebugCommandGroupType,
+		Kind:      common.DebugCommandGroupType,
 	}
 	defaultArgs := []string{"-f", "/dev/null"}
 	supervisordCommand := []string{adaptersCommon.SupervisordBinaryPath}
@@ -134,7 +133,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
 						CommandLine: command,
@@ -162,7 +161,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
 						CommandLine: command,
@@ -213,7 +212,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Id: "customcommand",
 					Exec: &common.Exec{
@@ -240,7 +239,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
 						CommandLine: command,
@@ -275,7 +274,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Id: "customruncommand",
 					Exec: &common.Exec{
@@ -313,7 +312,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
 						CommandLine: command,
@@ -357,7 +356,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Id: "run",
 					Exec: &common.Exec{
@@ -373,9 +372,9 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 						CommandLine: debugCommand,
 						Component:   debugComponent,
 						WorkingDir:  workDir,
-						Group: &versionsCommon.Group{
+						Group: &common.Group{
 							IsDefault: true,
-							Kind:      versionsCommon.BuildCommandGroupType,
+							Kind:      common.BuildCommandGroupType,
 						},
 					},
 				},
@@ -397,7 +396,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Id: "customruncommand",
 					Exec: &common.Exec{
@@ -405,7 +404,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 						Component:   component,
 						WorkingDir:  workDir,
 						Group:       &execRunGroup,
-						Env: []versionsCommon.Env{
+						Env: []common.Env{
 							{
 								Name:  "env1",
 								Value: "value1",
@@ -430,7 +429,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Id: "customruncommand",
 					Exec: &common.Exec{
@@ -438,7 +437,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 						Component:   component,
 						WorkingDir:  workDir,
 						Group:       &execRunGroup,
-						Env: []versionsCommon.Env{
+						Env: []common.Env{
 							{
 								Name:  "env1",
 								Value: "value1",
@@ -469,7 +468,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
 						CommandLine: command,
@@ -485,7 +484,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 						Component:   component,
 						WorkingDir:  workDir,
 						Group:       &execDebugGroup,
-						Env: []versionsCommon.Env{
+						Env: []common.Env{
 							{
 								Name:  "env1",
 								Value: "value1",
@@ -513,7 +512,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			execCommands: []versionsCommon.DevfileCommand{
+			execCommands: []common.DevfileCommand{
 				{
 					Exec: &common.Exec{
 						CommandLine: command,
@@ -529,7 +528,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 						Component:   component,
 						WorkingDir:  workDir,
 						Group:       &execDebugGroup,
-						Env: []versionsCommon.Env{
+						Env: []common.Env{
 							{
 								Name:  "env1",
 								Value: "value1",
@@ -553,16 +552,16 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
+					Components: []common.DevfileComponent{
 						{
 							Name: component,
-							Container: &versionsCommon.Container{
+							Container: &common.Container{
 								SourceMapping: "",
 							},
 						},
 						{
 							Name: debugComponent,
-							Container: &versionsCommon.Container{
+							Container: &common.Container{
 								SourceMapping: ""},
 						},
 					},
@@ -1075,10 +1074,10 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 		testingutil.CreateFakeContainer("container2"),
 	}
 
-	execCommands := []versionsCommon.DevfileCommand{
+	execCommands := []common.DevfileCommand{
 		{
 			Id: "exec1",
-			Exec: &versionsCommon.Exec{
+			Exec: &common.Exec{
 				CommandLine: "execcommand1",
 				WorkingDir:  "execworkdir1",
 				Component:   "container1",
@@ -1086,7 +1085,7 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 		},
 		{
 			Id: "exec2",
-			Exec: &versionsCommon.Exec{
+			Exec: &common.Exec{
 				CommandLine: "execcommand2",
 				WorkingDir:  "",
 				Component:   "container1",
@@ -1094,7 +1093,7 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 		},
 		{
 			Id: "exec3",
-			Exec: &versionsCommon.Exec{
+			Exec: &common.Exec{
 				CommandLine: "execcommand3",
 				WorkingDir:  "execworkdir3",
 				Component:   "container2",
@@ -1102,10 +1101,10 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 		},
 	}
 
-	compCommands := []versionsCommon.DevfileCommand{
+	compCommands := []common.DevfileCommand{
 		{
 			Id: "comp1",
-			Composite: &versionsCommon.Composite{
+			Composite: &common.Composite{
 				Commands: []string{
 					"exec1",
 					"exec3",

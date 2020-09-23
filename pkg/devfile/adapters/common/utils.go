@@ -18,12 +18,6 @@ type PredefinedDevfileCommands string
 type DevfileEventType string
 
 const (
-	// DefaultDevfileInitCommand is a predefined devfile command for init
-	DefaultDevfileInitCommand PredefinedDevfileCommands = "devinit"
-
-	// DefaultDevfileBuildCommand is a predefined devfile command for build
-	DefaultDevfileBuildCommand PredefinedDevfileCommands = "devbuild"
-
 	// DefaultDevfileRunCommand is a predefined devfile command for run
 	DefaultDevfileRunCommand PredefinedDevfileCommands = "devrun"
 
@@ -36,9 +30,6 @@ const (
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
 	defaultBootstrapperImage = "registry.access.redhat.com/ocp-tools-4/odo-init-container-rhel8:1.1.5"
-
-	// SupervisordControlCommand sub command which stands for control
-	SupervisordControlCommand = "ctl"
 
 	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
 	SupervisordVolumeName = "odo-supervisord-shared-data"

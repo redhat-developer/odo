@@ -11,7 +11,6 @@ import (
 	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -287,7 +286,7 @@ func TestDoesComponentExist(t *testing.T) {
 	tests := []struct {
 		name             string
 		client           *lclient.Client
-		components       []common.DevfileComponent
+		components       []versionsCommon.DevfileComponent
 		componentName    string
 		getComponentName string
 		want             bool
@@ -296,7 +295,7 @@ func TestDoesComponentExist(t *testing.T) {
 		{
 			name:   "Case 1: Valid component name",
 			client: fakeClient,
-			components: []common.DevfileComponent{
+			components: []versionsCommon.DevfileComponent{
 				testingutil.GetFakeContainerComponent("alias1"),
 				testingutil.GetFakeContainerComponent("alias2"),
 			},
@@ -308,7 +307,7 @@ func TestDoesComponentExist(t *testing.T) {
 		{
 			name:   "Case 2: Non-existent component name",
 			client: fakeClient,
-			components: []common.DevfileComponent{
+			components: []versionsCommon.DevfileComponent{
 				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			componentName:    "test",
@@ -321,14 +320,14 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test",
 			getComponentName: "golang",
 			client:           fakeClient,
-			components:       []common.DevfileComponent{},
+			components:       []versionsCommon.DevfileComponent{},
 			want:             true,
 			wantErr:          true,
 		},
 		{
 			name:   "Case 4: Docker client error",
 			client: fakeErrorClient,
-			components: []common.DevfileComponent{
+			components: []versionsCommon.DevfileComponent{
 				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			componentName:    "test",

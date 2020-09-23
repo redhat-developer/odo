@@ -7,7 +7,6 @@ import (
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
@@ -15,35 +14,35 @@ func TestGetDevfileContainerComponents(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		component            []versionsCommon.DevfileComponent
+		component            []common.DevfileComponent
 		alias                []string
 		expectedMatchesCount int
 	}{
 		{
 			name:                 "Case 1: Invalid devfile",
-			component:            []versionsCommon.DevfileComponent{},
+			component:            []common.DevfileComponent{},
 			expectedMatchesCount: 0,
 		},
 		{
 			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
+			component:            []common.DevfileComponent{{Openshift: &common.Openshift{}}},
 			expectedMatchesCount: 0,
 		},
 		{
 			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
+			component:            []common.DevfileComponent{{Kubernetes: &common.Kubernetes{}}},
 			expectedMatchesCount: 0,
 		},
 
 		{
 			name:                 "Case 4 : Valid devfile with correct component type (Container)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
+			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
 			expectedMatchesCount: 2,
 		},
 
 		{
 			name:                 "Case 5: Valid devfile with correct component type (Container) without name",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("")},
+			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("")},
 			expectedMatchesCount: 1,
 		},
 	}
@@ -69,35 +68,35 @@ func TestGetDevfileVolumeComponents(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		component            []versionsCommon.DevfileComponent
+		component            []common.DevfileComponent
 		alias                []string
 		expectedMatchesCount int
 	}{
 		{
 			name:                 "Case 1: Invalid devfile",
-			component:            []versionsCommon.DevfileComponent{},
+			component:            []common.DevfileComponent{},
 			expectedMatchesCount: 0,
 		},
 		{
 			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
+			component:            []common.DevfileComponent{{Openshift: &common.Openshift{}}},
 			expectedMatchesCount: 0,
 		},
 		{
 			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
+			component:            []common.DevfileComponent{{Kubernetes: &common.Kubernetes{}}},
 			expectedMatchesCount: 0,
 		},
 
 		{
 			name:                 "Case 4 : Valid devfile with wrong component type (Container)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
+			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
 			expectedMatchesCount: 0,
 		},
 
 		{
 			name:                 "Case 5: Valid devfile with correct component type (Volume)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
+			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
 			expectedMatchesCount: 1,
 		},
 	}
@@ -125,12 +124,12 @@ func TestGetVolumes(t *testing.T) {
 
 	tests := []struct {
 		name                       string
-		component                  []versionsCommon.DevfileComponent
+		component                  []common.DevfileComponent
 		wantContainerNameToVolumes map[string][]DevfileVolume
 	}{
 		{
 			name:      "Case 1: Valid devfile with container referencing a volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1", size)},
+			component: []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
@@ -143,15 +142,15 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 2: Valid devfile with container referencing multiple volume components",
-			component: []versionsCommon.DevfileComponent{
+			component: []common.DevfileComponent{
 				testingutil.GetFakeVolumeComponent("myvolume1", size),
 				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				testingutil.GetFakeVolumeComponent("myvolume3", size),
 				{
 					Name: "mycontainer",
-					Container: &versionsCommon.Container{
+					Container: &common.Container{
 						Image: "image",
-						VolumeMounts: []versionsCommon.VolumeMount{
+						VolumeMounts: []common.VolumeMount{
 							{
 								Name: "myvolume1",
 								Path: "/myvolume1",
@@ -181,7 +180,7 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name:      "Case 3: Valid devfile with container referencing no volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2", size)},
+			component: []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
@@ -194,11 +193,11 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 4: Valid devfile with no container volume mounts",
-			component: []versionsCommon.DevfileComponent{
+			component: []common.DevfileComponent{
 				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				{
 					Name: "mycontainer",
-					Container: &versionsCommon.Container{
+					Container: &common.Container{
 						Image: "image",
 					},
 				},
@@ -400,7 +399,7 @@ func TestGetVolumeMountPath(t *testing.T) {
 
 func TestGetCommandsForGroup(t *testing.T) {
 
-	component := []versionsCommon.DevfileComponent{
+	component := []common.DevfileComponent{
 		testingutil.GetFakeContainerComponent("alias1"),
 	}
 	componentName := "alias1"
@@ -413,7 +412,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 				CommandLine: command,
 				Component:   componentName,
 				WorkingDir:  workDir,
-				Group: &versionsCommon.Group{
+				Group: &common.Group{
 					Kind:      runGroup,
 					IsDefault: true,
 				},
@@ -425,7 +424,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 				CommandLine: command,
 				Component:   componentName,
 				WorkingDir:  workDir,
-				Group:       &versionsCommon.Group{Kind: buildGroup},
+				Group:       &common.Group{Kind: buildGroup},
 			},
 		},
 		{
@@ -434,7 +433,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 				CommandLine: command,
 				Component:   componentName,
 				WorkingDir:  workDir,
-				Group:       &versionsCommon.Group{Kind: testGroup},
+				Group:       &common.Group{Kind: testGroup},
 			},
 		},
 		{
@@ -443,7 +442,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 				CommandLine: command,
 				Component:   componentName,
 				WorkingDir:  workDir,
-				Group:       &versionsCommon.Group{Kind: debugGroup},
+				Group:       &common.Group{Kind: debugGroup},
 			},
 		},
 		{
@@ -452,7 +451,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 				CommandLine: command,
 				Component:   componentName,
 				WorkingDir:  workDir,
-				Group:       &versionsCommon.Group{Kind: runGroup},
+				Group:       &common.Group{Kind: runGroup},
 			},
 		},
 	}
@@ -510,7 +509,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 
 func TestGetCommands(t *testing.T) {
 
-	component := []versionsCommon.DevfileComponent{
+	component := []common.DevfileComponent{
 		testingutil.GetFakeContainerComponent("alias1"),
 	}
 
@@ -518,7 +517,7 @@ func TestGetCommands(t *testing.T) {
 		name             string
 		execCommands     []common.DevfileCommand
 		compCommands     []common.DevfileCommand
-		expectedCommands []versionsCommon.DevfileCommand
+		expectedCommands []common.DevfileCommand
 	}{
 		{
 			name: "Case 1: One command",
@@ -530,7 +529,7 @@ func TestGetCommands(t *testing.T) {
 					},
 				},
 			},
-			expectedCommands: []versionsCommon.DevfileCommand{
+			expectedCommands: []common.DevfileCommand{
 				{
 					Id: "somecommand",
 					Exec: &common.Exec{
@@ -563,7 +562,7 @@ func TestGetCommands(t *testing.T) {
 					},
 				},
 			},
-			expectedCommands: []versionsCommon.DevfileCommand{
+			expectedCommands: []common.DevfileCommand{
 				{
 					Id: "somecommand",
 					Exec: &common.Exec{
@@ -676,22 +675,22 @@ func TestGetComponentEnvVar(t *testing.T) {
 
 func TestGetCommandsFromEvent(t *testing.T) {
 
-	execCommands := []versionsCommon.DevfileCommand{
+	execCommands := []common.DevfileCommand{
 		{
 			Id:   "exec1",
-			Exec: &versionsCommon.Exec{},
+			Exec: &common.Exec{},
 		},
 		{
 			Id:   "exec2",
-			Exec: &versionsCommon.Exec{},
+			Exec: &common.Exec{},
 		},
 		{
 			Id:   "exec3",
-			Exec: &versionsCommon.Exec{},
+			Exec: &common.Exec{},
 		},
 	}
 
-	compCommands := []versionsCommon.DevfileCommand{
+	compCommands := []common.DevfileCommand{
 		{
 			Id: "comp1",
 			Composite: &common.Composite{
