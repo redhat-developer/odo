@@ -187,7 +187,7 @@ func (do *DeleteOptions) s2iRun() (err error) {
 			log.Successf("Component %s from application %s has been deleted", do.componentName, do.Application)
 
 		} else {
-			return fmt.Errorf("Aborting deletion of component: %v", do.componentName)
+			return fmt.Errorf("aborting deletion of component: %v", do.componentName)
 		}
 	}
 
@@ -212,7 +212,7 @@ func (do *DeleteOptions) s2iRun() (err error) {
 
 			log.Successf("Config for the Component %s has been deleted", do.componentName)
 		} else {
-			return fmt.Errorf("Aborting deletion of config for component: %s", do.componentName)
+			return fmt.Errorf("aborting deletion of config for component: %s", do.componentName)
 		}
 	}
 	return

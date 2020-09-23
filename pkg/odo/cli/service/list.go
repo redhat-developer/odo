@@ -104,11 +104,11 @@ func (o *ServiceListOptions) Run() (err error) {
 
 	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {
-		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
+		return fmt.Errorf("service catalog is not enabled within your cluster: %v", err)
 	}
 
 	if len(services.Items) == 0 {
-		return fmt.Errorf("There are no services deployed for this application")
+		return fmt.Errorf("there are no services deployed for this application")
 	}
 
 	if log.IsJSON() {

@@ -24,7 +24,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -173,8 +172,8 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
-	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
-	cobra.AddTemplateFunc("ModifyAdditionalFlags", odoutil.ModifyAdditionalFlags)
+	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", util.CapitalizeFlagDescriptions)
+	cobra.AddTemplateFunc("ModifyAdditionalFlags", util.ModifyAdditionalFlags)
 
 	// Add all subcommands to base commands
 	rootCmd.AddCommand(
@@ -208,7 +207,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 	)
 
-	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
+	util.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
 	return rootCmd
 }
@@ -247,7 +246,7 @@ func ShowSubcommands(cmd *cobra.Command, args []string) error {
 			strs = append(strs, subcmd.Name())
 		}
 	}
-	return fmt.Errorf("Subcommand not found, use one of the available commands: %s", strings.Join(strs, ", "))
+	return fmt.Errorf("subcommand not found, use one of the available commands: %s", strings.Join(strs, ", "))
 }
 
 // ShowHelp will show the help correctly (and whether or not the command is invalid...)
@@ -266,5 +265,5 @@ func ShowHelp(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return fmt.Errorf("Invalid command - see available commands/subcommands above")
+	return fmt.Errorf("invalid command - see available commands/subcommands above")
 }

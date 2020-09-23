@@ -205,10 +205,10 @@ func createComponentNameValidator(context *genericclioptions.Context) survey.Val
 			exists, err := component.Exists(context.Client, s, context.Application)
 			if err != nil {
 				klog.V(4).Info(err)
-				return fmt.Errorf("Unable to determine if component '%s' exists or not", s)
+				return fmt.Errorf("unable to determine if component '%s' exists or not", s)
 			}
 			if exists {
-				return fmt.Errorf("Component with name '%s' already exists in application '%s'", s, context.Application)
+				return fmt.Errorf("component with name '%s' already exists in application '%s'", s, context.Application)
 			}
 
 			return nil

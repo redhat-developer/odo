@@ -100,7 +100,7 @@ func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, 
 		}
 	}
 
-	return &olm.CRDDescription{}, fmt.Errorf("Couldn't find a Custom Resource named %q in the namespace", customResource)
+	return &olm.CRDDescription{}, fmt.Errorf("couldn't find a Custom Resource named %q in the namespace", customResource)
 }
 
 // GetCSVWithCR returns the CSV (Operator) that contains the CR (service)
@@ -118,5 +118,5 @@ func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 			}
 		}
 	}
-	return &olm.ClusterServiceVersion{}, fmt.Errorf("Could not find any Operator containing requested CR: %s", name)
+	return &olm.ClusterServiceVersion{}, fmt.Errorf("could not find any Operator containing requested CR: %s", name)
 }

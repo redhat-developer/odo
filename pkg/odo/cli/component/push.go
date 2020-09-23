@@ -193,11 +193,11 @@ func (po *PushOptions) Validate() (err error) {
 	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.LocalConfigInfo.GetComponentSettings(), po.componentContext); err != nil {
 		s.End(false)
 		log.Italic("\nRun 'odo catalog list components' for a list of supported component types")
-		return fmt.Errorf("Invalid component type %s, %v", *po.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
+		return fmt.Errorf("invalid component type %s, %v", *po.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
 	}
 
 	if !po.doesComponentExist && po.pushSource && !po.pushConfig {
-		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.LocalConfigInfo.GetName())
+		return fmt.Errorf("component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.LocalConfigInfo.GetName())
 	}
 
 	s.End(true)

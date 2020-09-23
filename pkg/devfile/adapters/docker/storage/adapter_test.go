@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
@@ -83,7 +82,7 @@ func TestCreate(t *testing.T) {
 				},
 			}
 
-			adapterCtx := adaptersCommon.AdapterContext{
+			adapterCtx := common.AdapterContext{
 				ComponentName: testComponentName,
 				Devfile:       devObj,
 			}

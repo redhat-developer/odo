@@ -12,7 +12,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
@@ -32,47 +31,6 @@ const (
 func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
 	return deployment, err
-}
-
-// GetOneDeploymentFromSelector returns the Deployment object associated
-// with the given selector.
-// An error is thrown when exactly one Deployment is not found for the
-// selector.
-func (c *Client) GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error) {
-	deployments, err := c.GetDeploymentFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Deployments for the selector: %v", selector)
-	}
-
-	num := len(deployments)
-	if num == 0 {
-		return nil, fmt.Errorf("no Deployment was found for the selector: %v", selector)
-	} else if num > 1 {
-		return nil, fmt.Errorf("multiple Deployments exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &deployments[0], nil
-}
-
-// GetDeploymentsFromSelector returns an array of Deployment resources which
-// match the given selector
-func (c *Client) GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error) {
-	var deploymentList *appsv1.DeploymentList
-	var err error
-
-	if selector != "" {
-		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
-			LabelSelector: selector,
-		})
-	} else {
-		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
-			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
-		})
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list Deployments")
-	}
-	return deploymentList.Items, nil
 }
 
 // getDeploymentCondition returns the condition with the provided type

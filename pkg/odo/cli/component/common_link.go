@@ -152,11 +152,11 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
 	if err != nil {
-		return fmt.Errorf("Unable to determine if component exists:\n%v", err)
+		return fmt.Errorf("unable to determine if component exists:\n%v", err)
 	}
 
 	if !cmpExists && !svcExists {
-		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo %s'", suppliedName, o.operationName)
+		return fmt.Errorf("neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo %s'", suppliedName, o.operationName)
 	}
 
 	o.isTargetAService = svcExists

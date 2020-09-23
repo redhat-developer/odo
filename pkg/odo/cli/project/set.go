@@ -56,7 +56,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 	exists, err := project.Exists(pso.Context, pso.projectName)
 
 	if !exists {
-		return fmt.Errorf("The project %s does not exist", pso.projectName)
+		return fmt.Errorf("the project %s does not exist", pso.projectName)
 	}
 
 	return

@@ -3219,12 +3219,12 @@ func (c *Client) IsImageStreamSupported() (bool, error) {
 	return c.isResourceSupported("image.openshift.io", "v1", "imagestreams")
 }
 
-// IsSBRSupported chekcs if resource of type service binding request present on the cluster
+// IsSBRSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsSBRSupported() (bool, error) {
 	return c.isResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
 }
 
-// IsCSVSupported chekcs if resource of type service binding request present on the cluster
+// IsCSVSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsCSVSupported() (bool, error) {
 	return c.isResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
 }
