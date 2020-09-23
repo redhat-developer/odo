@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -95,16 +94,6 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, er
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
-		util.LogErrorAndExit(err, "")
-	}
-}
-
-// checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt errors out if user is trying to create or delete something other than project
-// compare to checkProjectCreateOrDeleteOnlyOnInvalidNamespace, no %s is needed
-func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Command, errFormatForCommand string) {
-	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
-		err := fmt.Errorf(errFormatForCommand)
 		util.LogErrorAndExit(err, "")
 	}
 }
@@ -235,69 +224,33 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	client := o.GetClient()
 	if len(projectFlag) > 0 {
-		// if project flag was set, check that the specified project exists and use it
-		project, err := client.GetProject(projectFlag)
-		if err != nil || project == nil {
-			util.LogErrorAndExit(err, "")
-		}
 		namespace = projectFlag
 	} else {
 		namespace = localConfiguration.GetNamespace()
 		if namespace == "" {
 			namespace = client.GetCurrentProjectName()
-			if len(namespace) <= 0 {
-				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
-				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
-			}
-		}
-
-		// check that the specified project exists
-		_, err := client.GetProject(namespace)
-		if err != nil {
-			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
-			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
-	client.SetNamespace(namespace)
-	o.project = &namespace
-}
 
-// resolveNamespace resolves namespace for devfile component
-func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvider) {
-	var namespace string
-	command := o.command
-	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	client := o.GetClient()
-	kubeClient := client.GetKubeClient()
-	if len(projectFlag) > 0 {
-		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := kubeClient.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
-		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
-			util.LogErrorAndExit(err, "")
-		}
-		namespace = projectFlag
+	if len(namespace) <= 0 {
+		errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
+		checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 	} else {
-		namespace = configProvider.GetNamespace()
-		if namespace == "" {
-			namespace = kubeClient.Namespace
-			if len(namespace) <= 0 {
-				errFormat := "Could not get current namespace. Please create or set a namespace\n"
+		// check that the specified project exists
+		// if project flag was set, check that the specified project exists and use it
+		project, err := client.GetProject(namespace)
+		if err != nil || project == nil {
+			// try namespace
+			_, err = client.GetKubeClient().KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+			if err != nil {
+				e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
+				errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 			}
 		}
-
-		// check that the specified namespace exists
-		_, err := kubeClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
-		if err != nil {
-			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
-			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
-		}
+		client.SetNamespace(namespace)
+		o.project = &namespace
 	}
-	client.SetNamespace(namespace)
-	o.project = &namespace
 }
 
 // resolveApp resolves the app
@@ -402,12 +355,6 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 	internalCxt.EnvSpecificInfo = envInfo
 	internalCxt.resolveApp(true, envInfo)
-
-	// If the push target is NOT Docker we will set the client to Kubernetes.
-	if !pushtarget.IsPushTargetDocker() {
-		// Gather the environment information
-		internalCxt.resolveNamespace(envInfo)
-	}
 
 	// resolve the component
 	internalCxt.resolveAndSetComponent(command, envInfo)

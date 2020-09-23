@@ -70,7 +70,7 @@ func TestCompletions(t *testing.T) {
 			},
 		}, nil
 	})
-	context := genericclioptions.NewFakeContext("", "", "", client, nil)
+	context := genericclioptions.NewFakeContext("", "", "", client)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := complete.Args{Last: tt.last}

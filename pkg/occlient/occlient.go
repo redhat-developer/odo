@@ -458,7 +458,10 @@ func isServerUp(server string) bool {
 }
 
 func (c *Client) GetCurrentProjectName() string {
-	return c.namespace
+	if c.namespace != "" {
+		return c.namespace
+	}
+	return c.kubeClient.Namespace
 }
 
 // GetProjectNames return list of existing projects that user has access to.
