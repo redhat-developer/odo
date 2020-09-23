@@ -135,7 +135,7 @@ link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile usi
 
 The following demonstration provides an overview of `odo`:
 
-https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicast]]
+https://asciinema.org/a/uIcSZvdbrFKKeH2sqrLsFdXym[image:https://asciinema.org/a/uIcSZvdbrFKKeH2sqrLsFdXym.svg[asciicast]]
 
 [[contributing]]
 == Community, discussion, contribution, and support
