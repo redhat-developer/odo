@@ -76,7 +76,7 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 		return fmt.Errorf("unable to delete service because Service Catalog is not enabled in your cluster:\n%v", err)
 	}
 	if !exists {
-		return fmt.Errorf("Service with the name %s does not exist in the current application\n", o.serviceName)
+		return fmt.Errorf("service with the name %s does not exist in the current application", o.serviceName)
 	}
 	return
 }

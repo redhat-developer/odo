@@ -187,7 +187,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			return err
 		}
 		if !svcExists {
-			return fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", svcFullName, "odo service list")
+			return fmt.Errorf("couldn't find service named %q. Refer %q to see list of running services", svcFullName, "odo service list")
 		}
 
 		if o.operationName == unlink {
@@ -250,7 +250,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 		// which we can link to
 		_, err = o.Client.GetServiceBinding(o.secretName, o.Project)
 		if err != nil {
-			return fmt.Errorf("The service was not created via odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
+			return fmt.Errorf("the service was not created via odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
 		}
 
 		if wait {
@@ -265,7 +265,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			// the secret should have been created along with the secret
 			_, err = o.Client.GetSecret(o.secretName, o.Project)
 			if err != nil {
-				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
+				return fmt.Errorf("the service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
 			}
 		}
 	}

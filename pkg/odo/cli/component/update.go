@@ -145,20 +145,20 @@ func (uo *UpdateOptions) Validate() (err error) {
 		return err
 	}
 	if !fileInfo.IsDir() {
-		return fmt.Errorf("Please provide a path to the directory as --context")
+		return fmt.Errorf("please provide a path to the directory as --context")
 	}
 
 	if checkFlag != 1 {
-		return fmt.Errorf("The source can be either --binary or --local or --git")
+		return fmt.Errorf("the source can be either --binary or --local or --git")
 	}
 
 	// if --git is not specified but --ref is still given then error has to be thrown
 	if len(uo.git) == 0 && len(uo.ref) != 0 {
-		return fmt.Errorf("The --ref flag is only valid for --git flag")
+		return fmt.Errorf("the --ref flag is only valid for --git flag")
 	}
 
 	if len(uo.Context.Application) == 0 {
-		return fmt.Errorf("Cannot update as no application is set as active")
+		return fmt.Errorf("tannot update as no application is set as active")
 	}
 
 	return

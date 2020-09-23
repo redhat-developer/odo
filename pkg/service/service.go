@@ -162,7 +162,7 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 	}
 
 	if csv == nil {
-		return fmt.Errorf("Unable to find any Operator providing the service %q", kind)
+		return fmt.Errorf("unable to find any Operator providing the service %q", kind)
 	}
 
 	crs := client.GetCustomResourcesFromCSV(csv)
@@ -365,7 +365,7 @@ func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err erro
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
+		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	group = gr[1]
@@ -470,7 +470,7 @@ func IsOperatorServiceNameValid(name string) (string, string, error) {
 	checkName := strings.SplitN(name, "/", 2)
 
 	if len(checkName) != 2 || checkName[0] == "" || checkName[1] == "" {
-		return "", "", fmt.Errorf("Invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services.", "EtcdCluster/example", "odo service list")
+		return "", "", fmt.Errorf("invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services.", "EtcdCluster/example", "odo service list")
 	}
 	return checkName[0], checkName[1], nil
 }

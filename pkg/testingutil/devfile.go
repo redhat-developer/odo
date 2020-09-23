@@ -2,38 +2,37 @@ package testingutil
 
 import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
-	Components []versionsCommon.DevfileComponent
-	Commands   []versionsCommon.DevfileCommand
+	Components []common.DevfileComponent
+	Commands   []common.DevfileCommand
 	Events     common.DevfileEvents
 }
 
 // GetComponents is a mock function to get the components from a devfile
-func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
+func (d TestDevfileData) GetComponents() []common.DevfileComponent {
 	return d.Components
 }
 
 // GetMetadata is a mock function to get metadata from devfile
-func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
-	return versionsCommon.DevfileMetadata{}
+func (d TestDevfileData) GetMetadata() common.DevfileMetadata {
+	return common.DevfileMetadata{}
 }
 
 // GetEvents is a mock function to get events from devfile
-func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
+func (d TestDevfileData) GetEvents() common.DevfileEvents {
 	return d.Events
 }
 
 // GetParent is a mock function to get parent from devfile
-func (d TestDevfileData) GetParent() versionsCommon.DevfileParent {
-	return versionsCommon.DevfileParent{}
+func (d TestDevfileData) GetParent() common.DevfileParent {
+	return common.DevfileParent{}
 }
 
 // GetAliasedComponents is a mock function to get the components that have an alias from a devfile
-func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponent {
+func (d TestDevfileData) GetAliasedComponents() []common.DevfileComponent {
 	var aliasedComponents = []common.DevfileComponent{}
 
 	for _, comp := range d.Components {
@@ -48,41 +47,41 @@ func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponen
 }
 
 // GetProjects is a mock function to get the components that have an alias from a devfile
-func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
+func (d TestDevfileData) GetProjects() []common.DevfileProject {
 	projectName := [...]string{"test-project", "anotherproject"}
 	clonePath := [...]string{"test-project/", "anotherproject/"}
 	sourceLocation := [...]string{"https://github.com/someproject/test-project.git", "https://github.com/another/project.git"}
 
-	project1 := versionsCommon.DevfileProject{
+	project1 := common.DevfileProject{
 		ClonePath: clonePath[0],
 		Name:      projectName[0],
-		Git: &versionsCommon.Git{
-			GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+		Git: &common.Git{
+			GitLikeProjectSource: common.GitLikeProjectSource{
 				Remotes: map[string]string{"origin": sourceLocation[0]},
 			},
 		},
 	}
 
-	project2 := versionsCommon.DevfileProject{
+	project2 := common.DevfileProject{
 		ClonePath: clonePath[1],
 		Name:      projectName[1],
-		Git: &versionsCommon.Git{
-			GitLikeProjectSource: versionsCommon.GitLikeProjectSource{
+		Git: &common.Git{
+			GitLikeProjectSource: common.GitLikeProjectSource{
 				Remotes: map[string]string{"origin": sourceLocation[1]},
 			},
 		},
 	}
-	return []versionsCommon.DevfileProject{project1, project2}
+	return []common.DevfileProject{project1, project2}
 
 }
 
 // GetStarterProjects returns the fake starter projects
-func (d TestDevfileData) GetStarterProjects() []versionsCommon.DevfileStarterProject {
-	return []versionsCommon.DevfileStarterProject{}
+func (d TestDevfileData) GetStarterProjects() []common.DevfileStarterProject {
+	return []common.DevfileStarterProject{}
 }
 
 // GetCommands is a mock function to get the commands from a devfile
-func (d *TestDevfileData) GetCommands() map[string]versionsCommon.DevfileCommand {
+func (d *TestDevfileData) GetCommands() map[string]common.DevfileCommand {
 	commands := make(map[string]common.DevfileCommand, len(d.Commands))
 
 	for _, command := range d.Commands {
@@ -156,19 +155,19 @@ func (d TestDevfileData) UpdateEvents(postStart, postStop, preStart, preStop []s
 func (d TestDevfileData) SetParent(parent common.DevfileParent) {}
 
 // GetFakeContainerComponent returns a fake container component for testing
-func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
+func GetFakeContainerComponent(name string) common.DevfileComponent {
 	image := "docker.io/maven:latest"
 	memoryLimit := "128Mi"
 	volumeName := "myvolume1"
 	volumePath := "/my/volume/mount/path1"
 
-	return versionsCommon.DevfileComponent{
+	return common.DevfileComponent{
 		Name: name,
-		Container: &versionsCommon.Container{
+		Container: &common.Container{
 			Image:       image,
-			Env:         []versionsCommon.Env{},
+			Env:         []common.Env{},
 			MemoryLimit: memoryLimit,
-			VolumeMounts: []versionsCommon.VolumeMount{{
+			VolumeMounts: []common.VolumeMount{{
 				Name: volumeName,
 				Path: volumePath,
 			}},
@@ -178,24 +177,24 @@ func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
 }
 
 // GetFakeVolumeComponent returns a fake volume component for testing
-func GetFakeVolumeComponent(name, size string) versionsCommon.DevfileComponent {
-	return versionsCommon.DevfileComponent{
+func GetFakeVolumeComponent(name, size string) common.DevfileComponent {
+	return common.DevfileComponent{
 		Name: name,
-		Volume: &versionsCommon.Volume{
+		Volume: &common.Volume{
 			Size: size,
 		}}
 
 }
 
 // GetFakeExecRunCommands returns fake commands for testing
-func GetFakeExecRunCommands() []versionsCommon.DevfileCommand {
-	return []versionsCommon.DevfileCommand{
+func GetFakeExecRunCommands() []common.DevfileCommand {
+	return []common.DevfileCommand{
 		{
 			Exec: &common.Exec{
 				CommandLine: "ls -a",
 				Component:   "alias1",
-				Group: &versionsCommon.Group{
-					Kind: versionsCommon.RunCommandGroupType,
+				Group: &common.Group{
+					Kind: common.RunCommandGroupType,
 				},
 				WorkingDir: "/root",
 			},
@@ -204,16 +203,16 @@ func GetFakeExecRunCommands() []versionsCommon.DevfileCommand {
 }
 
 // GetFakeExecRunCommands returns a fake env for testing
-func GetFakeEnv(name, value string) versionsCommon.Env {
-	return versionsCommon.Env{
+func GetFakeEnv(name, value string) common.Env {
+	return common.Env{
 		Name:  name,
 		Value: value,
 	}
 }
 
 // GetFakeVolumeMount returns a fake volume mount for testing
-func GetFakeVolumeMount(name, path string) versionsCommon.VolumeMount {
-	return versionsCommon.VolumeMount{
+func GetFakeVolumeMount(name, path string) common.VolumeMount {
+	return common.VolumeMount{
 		Name: name,
 		Path: path,
 	}

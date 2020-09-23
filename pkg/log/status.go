@@ -212,14 +212,6 @@ func (s *Status) End(success bool) {
 	s.status = ""
 }
 
-// Namef will output the name of the component / application / project in a *bolded* manner
-func Namef(format string, a ...interface{}) {
-	bold := color.New(color.Bold).SprintFunc()
-	if !IsJSON() {
-		fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
-	}
-}
-
 // Progressf will output in an appropriate "progress" manner
 func Progressf(format string, a ...interface{}) {
 	if !IsJSON() {

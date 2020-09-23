@@ -463,11 +463,6 @@ func (lc *LocalConfig) GetDebugPort() int {
 	return util.GetIntOrDefault(lc.componentSettings.DebugPort, DefaultDebugPort)
 }
 
-// GetIgnore returns the Ignore, returns default if nil
-func (lc *LocalConfig) GetIgnore() bool {
-	return util.GetBoolOrDefault(lc.componentSettings.Ignore, false)
-}
-
 // GetMinCPU returns the MinCPU, returns default if nil
 func (lc *LocalConfig) GetMinCPU() string {
 	return util.GetStringOrEmpty(lc.componentSettings.MinCPU)
@@ -665,11 +660,11 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 	componentContext := strings.TrimSuffix(filepath.Dir(lci.Filename), ".odo")
 
 	if sourceLocation == "" {
-		return "", fmt.Errorf("Blank source location, does the .odo directory exist?")
+		return "", fmt.Errorf("blank source location, does the .odo directory exist?")
 	}
 
 	if sourceType == GIT {
-		klog.V(4).Info("Git source type detected, not correcting SourcePath location")
+		klog.V(4).Info("git source type detected, not correcting SourcePath location")
 		return sourceLocation, nil
 	}
 

@@ -109,7 +109,7 @@ func setUpConfig(testFile string, conf interface{}, configEnvName string) (*os.F
 		return nil, errors.Wrap(err, "unable to create mock config file")
 	}
 	if !foundConfigType {
-		return nil, fmt.Errorf("Config %+v not of recognisable type", conf)
+		return nil, fmt.Errorf("config %+v not of recognisable type", conf)
 	}
 	configFile, err := setupTempConfigFile(testFile)
 	if err != nil {

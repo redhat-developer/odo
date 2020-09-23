@@ -18,7 +18,6 @@ import (
 	v1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentLabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/storage/labels"
 	storageLabels "github.com/openshift/odo/pkg/storage/labels"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -46,7 +45,7 @@ func Test_GetStorageFromPVC(t *testing.T) {
 				pvc: &corev1.PersistentVolumeClaim{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							labels.StorageLabel: "example-pvc",
+							storageLabels.StorageLabel: "example-pvc",
 						},
 					},
 				},
@@ -276,7 +275,7 @@ func TestCreate(t *testing.T) {
 			},
 			wantLabels: map[string]string{
 				"app":                          "app-ex",
-				labels.StorageLabel:            "storage-0",
+				storageLabels.StorageLabel:     "storage-0",
 				applabels.ApplicationLabel:     "app-ex",
 				applabels.OdoManagedBy:         "odo",
 				applabels.OdoVersion:           version.VERSION,

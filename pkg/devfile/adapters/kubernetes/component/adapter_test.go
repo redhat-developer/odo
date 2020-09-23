@@ -10,7 +10,6 @@ import (
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -39,9 +38,9 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		componentType   versionsCommon.DevfileComponentType
+		componentType   common.DevfileComponentType
 		envInfo         envinfo.EnvSpecificInfo
-		portExposureMap map[int32]versionsCommon.ExposureType
+		portExposureMap map[int32]common.ExposureType
 		running         bool
 		wantErr         bool
 	}{
@@ -49,15 +48,15 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:            "Case 1: Invalid devfile",
 			componentType:   "",
 			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
+			portExposureMap: map[int32]common.ExposureType{},
 			running:         false,
 			wantErr:         true,
 		},
 		{
 			name:            "Case 2: Valid devfile",
-			componentType:   versionsCommon.ContainerComponentType,
+			componentType:   common.ContainerComponentType,
 			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
+			portExposureMap: map[int32]common.ExposureType{},
 			running:         false,
 			wantErr:         false,
 		},
@@ -65,29 +64,29 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:            "Case 3: Invalid devfile, already running component",
 			componentType:   "",
 			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
+			portExposureMap: map[int32]common.ExposureType{},
 			running:         true,
 			wantErr:         true,
 		},
 		{
 			name:            "Case 4: Valid devfile, already running component",
-			componentType:   versionsCommon.ContainerComponentType,
+			componentType:   common.ContainerComponentType,
 			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
+			portExposureMap: map[int32]common.ExposureType{},
 			running:         true,
 			wantErr:         false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var comp versionsCommon.DevfileComponent
+			var comp common.DevfileComponent
 			if tt.componentType != "" {
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{comp},
-					Commands:   []versionsCommon.DevfileCommand{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []common.DevfileComponent{comp},
+					Commands:   []common.DevfileCommand{getExecCommand("run", common.RunCommandGroupType)},
 				},
 			}
 
@@ -277,11 +276,11 @@ func TestDoesComponentExist(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		componentType    versionsCommon.DevfileComponentType
+		componentType    common.DevfileComponentType
 		componentName    string
 		getComponentName string
 		envInfo          envinfo.EnvSpecificInfo
-		portExposureMap  map[int32]versionsCommon.ExposureType
+		portExposureMap  map[int32]common.ExposureType
 		want             bool
 		wantErr          bool
 	}{
@@ -290,7 +289,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			portExposureMap:  map[int32]versionsCommon.ExposureType{},
+			portExposureMap:  map[int32]common.ExposureType{},
 			want:             true,
 			wantErr:          false,
 		},
@@ -299,7 +298,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "fake-component",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			portExposureMap:  map[int32]versionsCommon.ExposureType{},
+			portExposureMap:  map[int32]common.ExposureType{},
 			want:             false,
 			wantErr:          false,
 		},
@@ -308,7 +307,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			portExposureMap:  map[int32]versionsCommon.ExposureType{},
+			portExposureMap:  map[int32]common.ExposureType{},
 			want:             false,
 			wantErr:          true,
 		},
@@ -317,8 +316,8 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
-					Commands:   []versionsCommon.DevfileCommand{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
+					Commands:   []common.DevfileCommand{getExecCommand("run", common.RunCommandGroupType)},
 				},
 			}
 
@@ -375,7 +374,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		componentType versionsCommon.DevfileComponentType
+		componentType common.DevfileComponentType
 		status        corev1.PodPhase
 		wantErr       bool
 	}{
@@ -399,7 +398,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
+					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
 				},
 			}
 
@@ -564,13 +563,13 @@ func TestAdapterDelete(t *testing.T) {
 	}
 }
 
-func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.DevfileCommand {
+func getExecCommand(id string, group common.DevfileCommandGroupType) common.DevfileCommand {
 
 	commands := [...]string{"ls -la", "pwd"}
 	component := "component"
 	workDir := [...]string{"/", "/root"}
 
-	return versionsCommon.DevfileCommand{
+	return common.DevfileCommand{
 		Id: id,
 		Exec: &common.Exec{
 			CommandLine: commands[0],

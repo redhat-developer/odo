@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"os/user"
 	"path"
@@ -355,27 +354,6 @@ func SliceDifference(s1 []string, s2 []string) []string {
 		}
 	}
 	return difference
-}
-
-// OpenBrowser opens the URL within the users default browser
-func OpenBrowser(url string) error {
-	var err error
-
-	switch runtime.GOOS {
-	case "linux":
-		err = exec.Command("xdg-open", url).Start()
-	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		err = exec.Command("open", url).Start()
-	default:
-		err = fmt.Errorf("unsupported platform")
-	}
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // FetchResourceQuantity takes passed min, max and requested resource quantities and returns min and max resource requests
