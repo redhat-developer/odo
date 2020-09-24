@@ -131,7 +131,6 @@ done
 echo ""
 
 echo "Merging upstream docs"
-cp $openshift_docs/
 for f in $upstream_docs/*.md; do
   file="$(basename -- $f)"
   if [ -f $output_dir/$file ]; then

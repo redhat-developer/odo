@@ -62,9 +62,9 @@ Every two weeks, we have a contributors call meeting.
 
 Every three weeks, we have two planning calls:
 
-  - \`\`Sprint Planning Preparation and Issue Triage'' - on Monday
+  - "Sprint Planning Preparation and Issue Triage" - on Monday
 
-  - \`\`Sprint Planning'' - on Wednesday
+  - "Sprint Planning" - on Wednesday
 
 You can find the exact dates of all scheduled odo calls together with
 sprint dates in the [odo
