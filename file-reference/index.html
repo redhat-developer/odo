@@ -272,10 +272,7 @@
                     <a href="#containerobject" class="toc-h2 toc-link" data-title="containerObject">containerObject</a>
                   </li>
                   <li>
-                    <a href="#endpointobject" class="toc-h2 toc-link" data-title="endpointObject">endpointObject</a>
-                  </li>
-                  <li>
-                    <a href="#volumemountsobject" class="toc-h2 toc-link" data-title="volumeMountsObject">volumeMountsObject</a>
+                    <a href="#volumeobject" class="toc-h2 toc-link" data-title="volumeObject">volumeObject</a>
                   </li>
               </ul>
           </li>
@@ -284,6 +281,9 @@
               <ul class="toc-list-h2">
                   <li>
                     <a href="#execobject" class="toc-h2 toc-link" data-title="execObject">execObject</a>
+                  </li>
+                  <li>
+                    <a href="#compositeobject" class="toc-h2 toc-link" data-title="compositeObject">compositeObject</a>
                   </li>
                   <li>
                     <a href="#groupobject" class="toc-h2 toc-link" data-title="groupObject">groupObject</a>
@@ -366,7 +366,7 @@
 </tr>
 <tr>
 <td>metadata</td>
-<td><a href="#metadataobject">metadataObject</a></td>
+<td><a href="#metadata-object">metadataObject</a></td>
 <td>no</td>
 <td>Metadata information that describes the project</td>
 </tr>
@@ -384,7 +384,7 @@
 </tr>
 <tr>
 <td>commands</td>
-<td>array of <a href="#commandobject">commandObject</a></td>
+<td>array of <a href="#command-object">commandObject</a></td>
 <td>no</td>
 <td>List of commands to be executed</td>
 </tr>
@@ -470,6 +470,12 @@
           <span class="na">value</span><span class="pi">:</span> <span class="s">TEST2</span>
         <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">myprop2</span>
           <span class="na">value</span><span class="pi">:</span> <span class="s">myval2</span>
+      <span class="na">volumeMounts</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">myvol</span>
+          <span class="na">path</span><span class="pi">:</span> <span class="s">/home/user/myvolpath</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">myvol</span>
+    <span class="na">volume</span><span class="pi">:</span>
+      <span class="na">size</span><span class="pi">:</span> <span class="s">3Gi</span>
 </code></pre>
 <table><thead>
 <tr>
@@ -486,26 +492,40 @@
 </tbody></table>
 <h2 id='commands'>commands</h2>
 <blockquote>
-<p>Example using the exec command</p>
+<p>Example using the exec and composite command</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">install</span>
     <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
-      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
-      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
-      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/projects/springbootproject</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s">npm install</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">${PROJECTS_ROOT}</span>
       <span class="na">group</span><span class="pi">:</span>
         <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
-        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
-  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devRun</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">false</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">mkdir</span>
     <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/start-server.sh"</span>
       <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
-      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s">mkdir /projects/testfolder</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">${PROJECTS_ROOT}</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">run</span>
+    <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s">npm start</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">${PROJECTS_ROOT}</span>
       <span class="na">group</span><span class="pi">:</span>
         <span class="na">kind</span><span class="pi">:</span> <span class="s">run</span>
         <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">buildAndMkdir</span>
+    <span class="na">composite</span><span class="pi">:</span>
+         <span class="na">label</span><span class="pi">:</span> <span class="s">Build and Mkdir</span>
+         <span class="na">commands</span><span class="pi">:</span>
+           <span class="pi">-</span> <span class="s">mkdir</span>
+           <span class="pi">-</span> <span class="s">install</span>
+         <span class="na">parallel</span><span class="pi">:</span> <span class="s">false</span>
+         <span class="na">group</span><span class="pi">:</span> 
+            <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+            <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
 </code></pre>
 <table><thead>
 <tr>
@@ -812,7 +832,7 @@
 </tbody></table>
 <h2 id='containerobject'>containerObject</h2>
 <blockquote>
-<p>Example using an <a href="https://github.com/odo-devfiles/registry/blob/master/devfiles/openLiberty/devfile.yaml">OpenLiberty</a> container</p>
+<p>Example using an <a href="https://github.com/odo-devfiles/registry/blob/master/devfiles/java-openliberty/devfile.yaml">OpenLiberty</a> container</p>
 </blockquote>
 <pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">appsodyrun</span>
@@ -868,7 +888,7 @@
 <td>sourceMapping</td>
 <td>string</td>
 <td>no</td>
-<td>Path in the container where project sources should be transferred / mounted when mountSource is set to true</td>
+<td>Path in the container where project sources should be transferred / mounted when mountSource is set to true, <code>/projects</code> if absent. This is available in the container via env <code>PROJECTS_ROOT</code></td>
 </tr>
 <tr>
 <td>endpoints[]</td>
@@ -889,7 +909,7 @@
 <td>List of environment variables to use</td>
 </tr>
 </tbody></table>
-<h2 id='endpointobject'>endpointObject</h2>
+<h3 id='endpointobject'>endpointObject</h3>
 <blockquote>
 <p>Example using an endpoint</p>
 </blockquote>
@@ -949,7 +969,7 @@
 <td>Whether or not the endpoint is defined as secure</td>
 </tr>
 </tbody></table>
-<h2 id='volumemountsobject'>volumeMountsObject</h2>
+<h3 id='volumemountsobject'>volumeMountsObject</h3>
 <blockquote>
 <p>Example using a volume with a container</p>
 </blockquote>
@@ -964,6 +984,9 @@
       <span class="na">volumeMounts</span><span class="pi">:</span>
         <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">springbootpvc</span>
           <span class="na">path</span><span class="pi">:</span> <span class="s">/data</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">springbootpvc</span>
+    <span class="na">volume</span><span class="pi">:</span>
+      <span class="na">size</span><span class="pi">:</span> <span class="s">2Gi</span>
 </code></pre>
 <table><thead>
 <tr>
@@ -977,7 +1000,7 @@
 <td>name</td>
 <td>string</td>
 <td>yes</td>
-<td>Name of the volume</td>
+<td>Name of the volume component to be used. Errors out if no volume component is present with the name</td>
 </tr>
 <tr>
 <td>path</td>
@@ -986,21 +1009,49 @@
 <td>Path in the component container where the volume should be mounted. Defaults to <code>/&lt;name&gt;</code> if blank</td>
 </tr>
 </tbody></table>
-<h1 id='command-object'>Command Object</h1>
+<h2 id='volumeobject'>volumeObject</h2>
 <blockquote>
-<p>Example using an exec command within a command object</p>
+<p>Example using a <a href="https://github.com/odo-devfiles/registry/blob/master/devfiles/java-springboot/devfile.yaml">Springboot</a> container and volume</p>
 </blockquote>
-<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">devBuild</span>
-    <span class="na">exec</span><span class="pi">:</span>
-      <span class="na">component</span><span class="pi">:</span> <span class="s">tools</span>
-      <span class="na">commandLine</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/artifacts/bin/build-container-full.sh"</span>
-      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">/projects/springbootproject</span>
-      <span class="na">group</span><span class="pi">:</span>
-        <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
-        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+<pre class="highlight yaml tab-yaml"><code><span class="na">components</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">tools</span>
+    <span class="na">container</span><span class="pi">:</span>
+      <span class="na">image</span><span class="pi">:</span> <span class="s">quay.io/eclipse/che-java11-maven:nightly</span>
+      <span class="na">memoryLimit</span><span class="pi">:</span> <span class="s">768Mi</span>
+      <span class="na">mountSources</span><span class="pi">:</span> <span class="s">true</span>
+      <span class="na">endpoints</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">8080-tcp'</span>
+        <span class="na">targetPort</span><span class="pi">:</span> <span class="s">8080</span>
+      <span class="na">volumeMounts</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">m2</span>
+          <span class="na">path</span><span class="pi">:</span> <span class="s">/home/user/.m2</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">m2</span>
+    <span class="na">volume</span><span class="pi">:</span>
+      <span class="na">size</span><span class="pi">:</span> <span class="s">2Gi</span>
 </code></pre>
-<p>Each command must use the <code>exec</code> object.</p>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>yes</td>
+<td>Name of the volume component</td>
+</tr>
+<tr>
+<td>size</td>
+<td>string</td>
+<td>no</td>
+<td>Size of the storage to be created. Defaults to <code>1Gi</code></td>
+</tr>
+</tbody></table>
+<h1 id='command-object'>Command Object</h1>
+<p>Each command must use the either the <code>exec</code> or <code>composite</code> object. However, <code>run</code> command can only be of type <code>exec</code> </p>
 
 <table><thead>
 <tr>
@@ -1012,7 +1063,12 @@
 <tr>
 <td>exec</td>
 <td><a href="#execobject">execObject</a></td>
-<td>The CLI command to be ran</td>
+<td>The exec command to be run</td>
+</tr>
+<tr>
+<td>composite</td>
+<td><a href="#compositeObject">compositeObject</a></td>
+<td>The composite command to be run</td>
 </tr>
 </tbody></table>
 <h2 id='execobject'>execObject</h2>
@@ -1081,6 +1137,85 @@
 <td><a href="#envObject">envObject</a></td>
 <td>no</td>
 <td>List of environment variables used</td>
+</tr>
+</tbody></table>
+<h2 id='compositeobject'>compositeObject</h2>
+<blockquote>
+<p>Example using composite command within a command object</p>
+</blockquote>
+<pre class="highlight yaml tab-yaml"><code><span class="na">commands</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">install</span>
+    <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s">npm install</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">${PROJECTS_ROOT}</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">false</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">mkdir</span>
+    <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s">mkdir /projects/testfolder</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">${PROJECTS_ROOT}</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">false</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">run</span>
+    <span class="na">exec</span><span class="pi">:</span>
+      <span class="na">component</span><span class="pi">:</span> <span class="s">runtime</span>
+      <span class="na">commandLine</span><span class="pi">:</span> <span class="s">npm start</span>
+      <span class="na">workingDir</span><span class="pi">:</span> <span class="s">${PROJECTS_ROOT}</span>
+      <span class="na">group</span><span class="pi">:</span>
+        <span class="na">kind</span><span class="pi">:</span> <span class="s">run</span>
+        <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+  <span class="pi">-</span> <span class="na">id</span><span class="pi">:</span> <span class="s">buildAndMkdir</span>
+    <span class="na">composite</span><span class="pi">:</span>
+         <span class="na">label</span><span class="pi">:</span> <span class="s">Build and Mkdir</span>
+         <span class="na">commands</span><span class="pi">:</span>
+           <span class="pi">-</span> <span class="s">mkdir</span>
+           <span class="pi">-</span> <span class="s">install</span>
+         <span class="na">parallel</span><span class="pi">:</span> <span class="s">false</span>
+         <span class="na">group</span><span class="pi">:</span> 
+            <span class="na">kind</span><span class="pi">:</span> <span class="s">build</span>
+            <span class="na">isDefault</span><span class="pi">:</span> <span class="s">true</span>
+</code></pre>
+<table><thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id</td>
+<td>string</td>
+<td>yes</td>
+<td>ID of the command</td>
+</tr>
+<tr>
+<td>commands</td>
+<td>[]string</td>
+<td>no</td>
+<td>Exec commands that constitute the composite command</td>
+</tr>
+<tr>
+<td>parallel</td>
+<td>boolean</td>
+<td>no</td>
+<td>Flag to indicate if commands will be executed in parallel, defaults to <code>false</code></td>
+</tr>
+<tr>
+<td>label</td>
+<td>string</td>
+<td>no</td>
+<td>Optional label to be used to describe the command</td>
+</tr>
+<tr>
+<td>group</td>
+<td><a href="#groupObject">groupObject</a></td>
+<td>no</td>
+<td>Group that the composite command is part of. Composite command cannot be of kind <code>run</code></td>
 </tr>
 </tbody></table>
 <h2 id='groupobject'>groupObject</h2>
@@ -1234,7 +1369,7 @@
 <td>projects[]</td>
 <td><a href="#projectobject">projectObject</a></td>
 <td>IN PROGRESS</td>
-<td>Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798</td>
+<td>Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798. Project source path in the container is available via ENV <code>PROJECT_SOURCE</code>. If there are multiple projects, <code>PROJECT_SOURCE</code> would point to the first project</td>
 </tr>
 <tr>
 <td>parent</td>
@@ -1261,12 +1396,6 @@
 <td></td>
 </tr>
 <tr>
-<td>component[].volume</td>
-<td><a href="#volumeobject">volumeObject</a></td>
-<td>IN PROGRESS</td>
-<td>Refer to: https://github.com/openshift/odo/issues/3407</td>
-</tr>
-<tr>
 <td>component[].plugin</td>
 <td><a href="#pluginobject">pluginObject</a></td>
 <td>IN PROGRESS</td>
@@ -1289,12 +1418,6 @@
 <td><a href="#applyobject">applyObject</a></td>
 <td>UNKNOWN</td>
 <td>In schema but not yet implemented.</td>
-</tr>
-<tr>
-<td>commands[].composite</td>
-<td><a href="#compositeobject">compositeObject</a></td>
-<td>IN PROGRESS</td>
-<td>Refer to: https://github.com/openshift/odo/issues/3338</td>
 </tr>
 <tr>
 <td>commands[].vscodeLaunch</td>

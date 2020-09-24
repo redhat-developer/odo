@@ -12,80 +12,135 @@ description: Learn how to debug an application in odo CLI and IDE
 micro_nav: true
 
 ---
-`odo` uses devfiles to build and deploy components. More information on
-devifles : [Introduction to
-devfile](https://redhat-developer.github.io/devfile/)
+Debugging your component involves port forwarding with the Kubernetes
+pod. Before you start, it is required that you have a `kind: debug` step
+located within your `devfile.yaml`.
 
-In order to use `odo debug` your devfile is required to have a
-`debugrun` step. Example of a nodejs devfile with a debugrun step:
+1.  See below for an example `devfile.yaml` that containers a `debugrun`
+    step under the `commands` key:
 
-``` yaml
-schemaVersion: 2.0.0
-metadata:
-  name: nodejs
-  version: 1.0.0
-starterProjects:
-  - name: nodejs-starter
-    git:
-      remotes:
-        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
-components:
-  - name: runtime
-    container:
-      image: registry.access.redhat.com/ubi8/nodejs-12:1-45
-      memoryLimit: 1024Mi
-      mountSources: true
-      sourceMapping: /project
-      endpoints:
-        - name: http-3000
-          targetPort: 3000
-commands:
-  - id: install
-    exec:
-      component: runtime
-      commandLine: npm install
-      workingDir: /project
-      group:
-        kind: build
-        isDefault: true
-  - id: run
-    exec:
-      component: runtime
-      commandLine: npm start
-      workingDir: /project
-      group:
-        kind: run
-        isDefault: true
-  - id: debug
-    exec:
-      component: runtime
-      commandLine: npm run debug
-      workingDir: /project
-      group:
-        kind: debug
-        isDefault: true
-```
+<!-- end list -->
 
-  - Now we need to create the component using `odo create nodejs`
+    ...
+    commands:
+      - id: install
+        exec:
+          component: runtime
+          commandLine: npm install
+          workingDir: /project
+          group:
+            kind: build
+            isDefault: true
+      - id: run
+        exec:
+          component: runtime
+          commandLine: npm start
+          workingDir: /project
+          group:
+            kind: run
+            isDefault: true
+      - id: debug
+        exec:
+          component: runtime
+          commandLine: npm run debug
+          workingDir: /project
+          group:
+            kind: debug
+            isDefault: true
 
-  - Next we enable remote debugging for the component using `odo push
-    --debug`. We can also use a custom step as the debugrun step using
-    `odo push --debug --debug-command="custom-step"`
+# Debugging your devfile component via CLI
 
-  - Next we port forward a local port for debugging using `odo debug
-    port-forward`. The default local port used for debugging is 5858. If
-    5858 is occupied, odo will automatically pick up a local port. We
-    can also specify the local port using, `odo debug port-forward
-    --local-port 5858`
+We will use the official
+[nodejs](https://github.com/odo-devfiles/registry/tree/master/devfiles/nodejs)
+example in our debugging session which includes the necessary `debugrun`
+step within `devfile.yaml`.
 
-  - Next we need to attach the debugger to the local port. Here’s a
-    guide to do it for VS Code : [Remote
-    Debugging](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging)
+1.  Download the example application:
+    
+    ``` sh
+    $ odo create nodejs --starter
+    Validation
+     ✓  Checking devfile existence [11498ns]
+     ✓  Checking devfile compatibility [15714ns]
+     ✓  Creating a devfile component from registry: DefaultDevfileRegistry [17565ns]
+     ✓  Validating devfile component [113876ns]
+    
+    Starter Project
+     ✓  Downloading starter project nodejs-starter from https://github.com/odo-devfiles/nodejs-ex.git [428ms]
+    
+    Please use `odo push` command to create the component with source deployed
+    ```
 
-# Check if a debugging session is running
+2.  Push with the `--debug` flag which is required for all debugging
+    deployments:
+    
+    ``` sh
+    $ odo push --debug
+    
+    Validation
+     ✓  Validating the devfile [29916ns]
+    
+    Creating Kubernetes resources for component nodejs
+     ✓  Waiting for component to start [38ms]
+    
+    Applying URL changes
+     ✓  URLs are synced with the cluster, no changes are required.
+    
+    Syncing to component nodejs
+     ✓  Checking file changes for pushing [1ms]
+     ✓  Syncing files to the component [778ms]
+    
+    Executing devfile commands for component nodejs
+     ✓  Executing install command "npm install" [2s]
+     ✓  Executing debug command "npm run debug" [1s]
+    
+    Pushing devfile component nodejs
+     ✓  Changes successfully pushed to component
+    ```
+    
+    > **Note**
+    > 
+    > A custom debug command may be chosen via the
+    > `--debug-command="custom-step"` flag.
 
-We can check if a debugging session is running for a component by using
-`odo debug info`
+3.  Port forward to the local port in order to access the debugging
+    interface:
+    
+    ``` sh
+    $ odo debug port-forward
+    Started port forwarding at ports - 5858:5858
+    ```
+    
+    > **Note**
+    > 
+    > A specific port may be specified using the `--local-port` flag
 
-    odo debug info
+4.  Checking that the debug session is running in a separate terminal
+    window:
+    
+    ``` sh
+    $ odo debug info
     Debug is running for the component on the local port : 5858
+    ```
+
+5.  Accessing the debugger:
+    
+    The debugger is accessible through an assortment of tools. An
+    example of setting up a debug interface would be through [VSCode’s
+    debugging
+    interface](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging).
+
+In our use case, an example of how to access the above Node.JS
+application is with this snippet:
+
+\+
+
+``` json
+{
+  "type": "node",
+  "request": "attach",
+  "name": "Attach to remote",
+  "address": "TCP/IP address of process to be debugged",
+  "port": 9229
+}
+```

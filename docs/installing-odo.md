@@ -18,20 +18,18 @@ page_nav:
         url: '/docs/understanding-odo'
 ---
 The following section describes how to install `odo` on different
-platforms via CLI as well as IDEs.
+platforms via CLI as well as
+IDEs.
 
-# Installing the odo command-line tool (v2.0.0-beta-1)
-
-v2.0.0-beta-1 of odo uses **devfile** as its default deployment
-mechanism.
+# Installing the odo CLI tool (latest)
 
 ## Installing odo on Linux
 
 ### Binary installation
 
 ``` sh
-  # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-beta-1/odo-linux-amd64 -o /usr/local/bin/odo
-  # chmod +x /usr/local/bin/odo
+  $ curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-amd64 -o /usr/local/bin/odo
+  $ chmod +x /usr/local/bin/odo
 ```
 
 ## Installing odo on macOS
@@ -39,8 +37,8 @@ mechanism.
 ### Binary installation
 
 ``` sh
-  # curl -L https://github.com/openshift/odo/releases/download/v2.0.0-beta-1/odo-darwin-amd64 -o /usr/local/bin/odo
-  # chmod +x /usr/local/bin/odo
+  $ curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64 -o /usr/local/bin/odo
+  $ chmod +x /usr/local/bin/odo
 ```
 
 ## Installing odo on Windows
@@ -48,7 +46,7 @@ mechanism.
 ### Binary installation
 
 1.  Download the latest
-    [`odo.exe`](https://github.com/openshift/odo/releases/download/v2.0.0-beta-1/odo-windows-amd64.exe)
+    [`odo.exe`](https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe)
     file.
 
 2.  Add the location of your `odo.exe` to your `GOPATH/bin` directory.

@@ -130,17 +130,65 @@ your application on OpenShift.
 
 # Adding storage to the application components
 
-Persistent storage keeps data available between restarts of odo. You can
-add storage to your components with the `odo storage` command.
+Persistent storage keeps data available between restarts of odo. Use the
+`odo storage` command to add persistent data to your application.
+Examples of data that must persist include database files, dependencies,
+and build artifacts, such as a `.m2` Maven directory.
 
-  - Add storage to your
-    components:
+1.  Add the storage to your
+    component:
     
     ``` terminal
-    $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi
+    $ odo storage create <storage_name> --path=<path_to_the_directory> --size=<size>
     ```
 
-Your component now has 1 GB storage.
+2.  Push the storage to the cluser:
+    
+    ``` terminal
+    $ odo push
+    ```
+
+3.  Verify that the storage is now attached to your component by listing
+    all storage in the component:
+    
+    ``` terminal
+    $ odo storage list
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    The component 'nodejs' has the following storage attached:
+    NAME           SIZE     PATH      STATE
+    mystorage      1Gi      /data     Pushed
+    ```
+
+4.  Delete the storage from your component:
+    
+    ``` terminal
+    $ odo storage delete <storage_name>
+    ```
+
+5.  List all storage to verify that the storage state is `Locally
+    Deleted`:
+    
+    ``` terminal
+    $ odo storage list
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    The component 'nodejs' has the following storage attached:
+    NAME           SIZE     PATH      STATE
+    mystorage      1Gi      /data     Locally Deleted
+    ```
+
+6.  Push the changes to the cluster:
+    
+    ``` terminal
+    $ odo push
+    ```
 
 # Adding a custom builder to specify a build image
 
