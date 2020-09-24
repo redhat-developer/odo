@@ -46,10 +46,10 @@ commands:
 | Key             | Type                                                    | Required | Description                                                             |
 |-----------------|---------------------------------------------------------|----------|-------------------------------------------------------------------------|
 | schemaVersion   | string                                                  | yes      | Schema version of devfile                                               |
-| metadata        | [metadataObject](#metadataobject)                       | no       | Metadata information that describes the project                         |
+| metadata        | [metadataObject](#metadata-object)                       | no       | Metadata information that describes the project                         |
 | starterProjects | array of [starterProjectObject](#starterproject-object) | no       | List of starter projects that can be used to bootstrap new projects     |
 | components      | array of [componentObject](#component-object)           | no       | List of components to be used within your development environment       |
-| commands        | array of [commandObject](#commandobject)                | no       | List of commands to be executed                                         |                                             
+| commands        | array of [commandObject](#command-object)                | no       | List of commands to be executed                                         |                                             
 
 ## schemaVersion
 
@@ -117,6 +117,12 @@ components:
           value: TEST2
         - name: myprop2
           value: myval2
+      volumeMounts:
+        - name: myvol
+          path: /home/user/myvolpath
+  - name: myvol
+    volume:
+      size: 3Gi
 ```
 
 | Key             | Type                                 | Description                   |
@@ -126,27 +132,41 @@ components:
 
 ## commands
 
-> Example using the exec command
+> Example using the exec and composite command
 
 ```yaml
 commands:
-  - id: devBuild
+  - id: install
     exec:
-      id: devBuild
-      commandLine: "/artifacts/bin/build-container-full.sh"
-      component: tools
-      workingDir: /projects/springbootproject
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-        isDefault: true
-  - id: devRun
+        isDefault: false
+  - id: mkdir
     exec:
-      commandLine: "/artifacts/bin/start-server.sh"
       component: runtime
-      workingDir: /
+      commandLine: mkdir /projects/testfolder
+      workingDir: ${PROJECTS_ROOT}
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
+  - id: buildAndMkdir
+    composite:
+         label: Build and Mkdir
+         commands:
+           - mkdir
+           - install
+         parallel: false
+         group: 
+            kind: build
+            isDefault: true
 ```
 
 | Key           | Type                             | Description                                               |
@@ -352,7 +372,7 @@ Each component must use the `container` object.
 
 ## containerObject
 
-> Example using an [OpenLiberty](https://github.com/odo-devfiles/registry/blob/master/devfiles/openLiberty/devfile.yaml) container
+> Example using an [OpenLiberty](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-openliberty/devfile.yaml) container
 
 ```yaml
 components:
@@ -387,7 +407,7 @@ components:
 
 
 
-## endpointObject
+### endpointObject
 
 > Example using an endpoint
 
@@ -414,7 +434,7 @@ components:
 | secure     | boolean | no       | Whether or not the endpoint is defined as secure                                                                                               |
 
 
-## volumeMountsObject
+### volumeMountsObject
 
 > Example using a volume with a container
 
@@ -430,35 +450,52 @@ components:
       volumeMounts:
         - name: springbootpvc
           path: /data
+  - name: springbootpvc
+    volume:
+      size: 2Gi
 ```
 
 | Key  | Type   | Required | Description                                                                                        |
 |------|--------|----------|----------------------------------------------------------------------------------------------------|
-| name | string | yes      | Name of the volume                                                                                 |
+| name | string | yes      | Name of the volume component to be used. Errors out if no volume component is present with the name|
 | path | string | no       | Path in the component container where the volume should be mounted. Defaults to `/<name>` if blank |
+
+## volumeObject
+
+> Example using a [Springboot](https://github.com/odo-devfiles/registry/blob/master/devfiles/java-springboot/devfile.yaml) container and volume
+
+```yaml
+components:
+  - name: tools
+    container:
+      image: quay.io/eclipse/che-java11-maven:nightly
+      memoryLimit: 768Mi
+      mountSources: true
+      endpoints:
+      - name: '8080-tcp'
+        targetPort: 8080
+      volumeMounts:
+        - name: m2
+          path: /home/user/.m2
+  - name: m2
+    volume:
+      size: 2Gi
+```
+
+| Key  | Type   | Required | Description                                                                                        |
+|------|--------|----------|----------------------------------------------------------------------------------------------------|
+| name | string | yes      | Name of the volume component                                                                       |
+| size | string | no       | Size of the storage to be created. Defaults to `1Gi`                                               |
 
 
 # Command Object
 
-> Example using an exec command within a command object
+Each command must use the either the `exec` or `composite` object. However, `run` command can only be of type `exec` 
 
-```yaml
-commands:
-  - id: devBuild
-    exec:
-      component: tools
-      commandLine: "/artifacts/bin/build-container-full.sh"
-      workingDir: /projects/springbootproject
-      group:
-        kind: build
-        isDefault: true
-```
-
-Each command must use the `exec` object.
-
-| Key  | Type                      | Description               |
-|------|---------------------------|---------------------------|
-| exec | [execObject](#execobject) | The CLI command to be ran |
+| Key       | Type                                | Description                     |
+|-----------|-------------------------------------|---------------------------------|
+| exec      | [execObject](#execobject)           | The exec command to be run      |
+| composite | [compositeObject](#compositeObject) | The composite command to be run |
 
 ## execObject
 
@@ -488,6 +525,56 @@ commands:
 | workingDir  | string                      | no       | Working directory where the command should be executed |
 | group       | [groupObject](#groupObject) | no       | Group that the command is part of                      |
 | env         | [envObject](#envObject)     | no       | List of environment variables used                     |
+
+## compositeObject
+
+> Example using composite command within a command object
+
+```yaml
+commands:
+  - id: install
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: false
+  - id: mkdir
+    exec:
+      component: runtime
+      commandLine: mkdir /projects/testfolder
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: false
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+        isDefault: true
+  - id: buildAndMkdir
+    composite:
+         label: Build and Mkdir
+         commands:
+           - mkdir
+           - install
+         parallel: false
+         group: 
+            kind: build
+            isDefault: true
+```
+
+| Key         | Type                        | Required | Description                                                                          |
+|-------------|-----------------------------|----------|--------------------------------------------------------------------------------------|
+| id          | string                      | yes      | ID of the command                                                                    |
+| commands    | []string                    | no       | Exec commands that constitute the composite command                                  |
+| parallel    | boolean                     | no       | Flag to indicate if commands will be executed in parallel, defaults to `false`         |
+| label       | string                      | no       | Optional label to be used to describe the command                                    |
+| group       | [groupObject](#groupObject) | no       | Group that the composite command is part of. Composite command cannot be of kind `run` |
 
 ## groupObject
 
@@ -615,12 +702,10 @@ Please refer to the below table for a list of features which are *not yet* imple
 | events                             | [eventObject](#event-object)                   | IN PROGRESS | Refer to postStop issue: https://github.com/openshift/odo/issues/3577                                    |
 | component[].kubernetes             | [kubernetesObject](#kubernetesobject)          | IN PROGRESS |                                                                                                 |
 | component[].openshift              | [openshiftObject](#openshiftobject)            | IN PROGRESS |                                                                                                 |
-| component[].volume                 | [volumeObject](#volumeobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
 | component[].plugin                 | [pluginObject](#pluginobject)                  | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3407                                          |
 | component[].container.endpoints    | [endpointObject](#endpointobject)              | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3544                                          |
 | component[].container.dedicatedPod | [containerObject](#containerobject)            | UNKNOWN     | In schema but not yet implemented.                                                              |
 | commands[].apply                   | [applyObject](#applyobject)                    | UNKNOWN     | In schema but not yet implemented.                                                              |
-| commands[].composite               | [compositeObject](#compositeobject)            | IN PROGRESS | Refer to: https://github.com/openshift/odo/issues/3338                                          |
 | commands[].vscodeLaunch            | [vscodeLaunchObject](#vscodeLaunchobject)      | N/A         | Not applicable to odo.                                                                          |
 | commands[].vscodeTask              | [vscodeTaskObject](#vscodeTaskobject)          | N/A         | Not applicable to odo.                                                                          |
 
