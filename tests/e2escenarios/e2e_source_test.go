@@ -32,7 +32,7 @@ var _ = Describe("odo source e2e tests", func() {
 
 	Context("odo component creation from source", func() {
 		JustBeforeEach(func() {
-			if runtime.GOARCH == "s390x" {
+			if runtime.GOARCH == "s390x" || runtime.GOARCH == "ppc64le" {
 				Skip("Skipping test because there is no supported builder image.")
 			}
 		})
@@ -86,6 +86,9 @@ var _ = Describe("odo source e2e tests", func() {
 	Context("odo component creation", func() {
 
 		It("Should be able to deploy a python source application", func() {
+			if runtime.GOARCH == "ppc64le" {
+				Skip("Skipping test on Power because python is not fully supported by odo, and it is not guaranteed to work.")
+			}
 			helper.CopyExample(filepath.Join("source", "python"), context)
 			helper.CmdShouldPass("odo", "create", "--s2i", "python", "python-app", "--project",
 				project, "--context", context)

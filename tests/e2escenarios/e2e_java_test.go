@@ -41,7 +41,7 @@ var _ = Describe("odo java e2e tests", func() {
 	// Test wildfly
 	Context("odo wildfly component creation ", func() {
 		JustBeforeEach(func() {
-			if runtime.GOARCH == "s390x" {
+			if runtime.GOARCH == "s390x" || runtime.GOARCH == "ppc64le" {
 				Skip("Skipping test because there is no supported wildfly builder image.")
 			}
 		})
