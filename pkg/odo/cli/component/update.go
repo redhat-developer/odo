@@ -158,7 +158,7 @@ func (uo *UpdateOptions) Validate() (err error) {
 	}
 
 	if len(uo.Context.Application) == 0 {
-		return fmt.Errorf("tannot update as no application is set as active")
+		return fmt.Errorf("cannot update as no application is set as active")
 	}
 
 	return
