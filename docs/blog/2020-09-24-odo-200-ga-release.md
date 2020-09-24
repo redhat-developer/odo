@@ -95,7 +95,7 @@ The `odo debug` command is no longer in technical preview.
 
 [Learn how to debug your component via the CLI or VSCode](https://odo.dev/docs/debugging-using-devfile/).
 
-## Installing odo
+# Installing odo
 
 ## Installing odo on Linux
 
