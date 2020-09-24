@@ -3,7 +3,7 @@ doks:
     baseurl:
     color_theme: blue # Available themes: blue (default), green, purple, red and yellow
     header:
-        description: Fast iterative OpenShift and Kubernetes development
+        description: Fast iterative Kubernetes and OpenShift development
         logo:
             text: odo
             image:
