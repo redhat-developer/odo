@@ -41,6 +41,16 @@ func (e *InvalidVolumeSizeError) Error() string {
 	return fmt.Sprintf("size %s for volume component %s is invalid: %v. Example - 2Gi, 1024Mi", e.size, e.componentName, e.validationError)
 }
 
+// ReservedEnvError returns an error if the user attempts to customize a reserved ENV in a container
+type ReservedEnvError struct {
+	componentName string
+	envName       string
+}
+
+func (e *ReservedEnvError) Error() string {
+	return fmt.Sprintf("env variable %s is reserved and cannot be customized in component %s", e.envName, e.componentName)
+}
+
 // MissingVolumeMountError returns an error if the container volume mount does not reference a valid volume component
 type MissingVolumeMountError struct {
 	volumeName string

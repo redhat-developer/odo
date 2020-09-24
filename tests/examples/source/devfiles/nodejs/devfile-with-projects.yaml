@@ -27,7 +27,7 @@ commands:
     exec:
       component: runtime
       commandLine: npm install
-      workingDir: ${PROJECTS_ROOT}/webapp
+      workingDir: ${PROJECT_SOURCE}
       group:
         kind: build
         isDefault: true
@@ -35,7 +35,7 @@ commands:
     exec:
       component: runtime
       commandLine: npm start
-      workingDir: ${PROJECTS_ROOT}/webapp
+      workingDir: ${PROJECT_SOURCE}
       group:
         kind: run
         isDefault: true

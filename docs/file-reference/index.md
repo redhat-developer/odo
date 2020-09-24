@@ -380,7 +380,7 @@ components:
 | image          | string                                  | yes      | Image version                                                                                               |
 | memoryLimit    | string                                  | no       | Memory limit to be used with your container                                                                 |
 | mountSources   | boolean                                 | no       | Mount the source or not                                                                                     |
-| sourceMapping  | string                                  | no       | Path in the container where project sources should be transferred / mounted when mountSource is set to true |
+| sourceMapping  | string                                  | no       | Path in the container where project sources should be transferred / mounted when mountSource is set to true, `/projects` if absent. This is available in the container via env `PROJECTS_ROOT` |
 | endpoints[]    | [endpointObject](#endpointobject)       | no       | List of endpoints to use                                                                                    |
 | volumeMounts[] | [volumeMountsObject](#volumemountsobject) | no       | List of volumes to mount                                                                                    |
 | env[]          | [envObject](#envobject)                 | no       | List of environment variables to use                                                                        |
@@ -610,7 +610,7 @@ Please refer to the below table for a list of features which are *not yet* imple
 | Key                                | Key Description                                | Status      | Description                                                                                     |
 |------------------------------------|------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------|
 | starterProjects[].clonePath        | [starterProjectObject](#starterproject-object) | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/3729                                     |
-| projects[]                         | [projectObject](#projectobject)                        | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798 |
+| projects[]                         | [projectObject](#projectobject)                        | IN PROGRESS | Entire object not yet implemented. Refer to issue: https://github.com/openshift/odo/issues/3798. Project source path in the container is available via ENV `PROJECT_SOURCE`. If there are multiple projects, `PROJECT_SOURCE` would point to the first project |
 | parent                             | [parentObject](#parent-object)                 | IN PROGRESS | Refer to issue: https://github.com/openshift/odo/issues/2936                                    |
 | events                             | [eventObject](#event-object)                   | IN PROGRESS | Refer to postStop issue: https://github.com/openshift/odo/issues/3577                                    |
 | component[].kubernetes             | [kubernetesObject](#kubernetesobject)          | IN PROGRESS |                                                                                                 |
