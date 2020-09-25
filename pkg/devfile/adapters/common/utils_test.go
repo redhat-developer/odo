@@ -205,6 +205,32 @@ func TestGetVolumes(t *testing.T) {
 			},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{},
 		},
+		{
+			name: "Case 5: Valid devfile with container referencing no volume mount path",
+			component: []versionsCommon.DevfileComponent{
+				testingutil.GetFakeVolumeComponent("myvolume1", size),
+				{
+					Name: "mycontainer",
+					Container: &versionsCommon.Container{
+						Image: "image",
+						VolumeMounts: []versionsCommon.VolumeMount{
+							{
+								Name: "myvolume1",
+							},
+						},
+					},
+				},
+			},
+			wantContainerNameToVolumes: map[string][]DevfileVolume{
+				"mycontainer": {
+					{
+						Name:          "myvolume1",
+						Size:          "4Gi",
+						ContainerPath: "/myvolume1",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
