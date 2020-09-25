@@ -11,7 +11,6 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -176,25 +175,6 @@ func (po *PushOptions) Validate() (err error) {
 	// If Devfile is present we do not need to validate the below S2I checks
 	// TODO: Perhaps one day move Devfile validation to here instead?
 	if util.CheckPathExists(po.DevfilePath) {
-		spinner := log.Spinner("Validating devfile component")
-		defer spinner.End(false)
-		err = util.ValidateK8sResourceName("component name", po.EnvSpecificInfo.GetName())
-		if err != nil {
-			return err
-		}
-		err = validate.ValidateContainerName(po.Devfile.Data)
-		if err != nil {
-			return err
-		}
-		// Only validate namespace if pushtarget isn't docker
-		if !pushtarget.IsPushTargetDocker() {
-			err := util.ValidateK8sResourceName("component namespace", po.EnvSpecificInfo.GetNamespace())
-			if err != nil {
-				return err
-			}
-		}
-
-		spinner.End(true)
 		return nil
 	}
 
