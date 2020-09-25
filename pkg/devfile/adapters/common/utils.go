@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"k8s.io/klog"
@@ -175,9 +176,15 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 				}
 			}
 
+			mountPath := filepath.Join(string(os.PathSeparator), volumeMount.Name)
+
+			if len(volumeMount.Path) > 0 {
+				mountPath = volumeMount.Path
+			}
+
 			vol := DevfileVolume{
 				Name:          volumeMount.Name,
-				ContainerPath: volumeMount.Path,
+				ContainerPath: mountPath,
 				Size:          size,
 			}
 			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)
