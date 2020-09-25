@@ -10,6 +10,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	RegistryUser = "default"
+)
+
 // IsSecure checks if the registry is secure
 func IsSecure(registryName string) bool {
 	cfg, err := preference.New()
