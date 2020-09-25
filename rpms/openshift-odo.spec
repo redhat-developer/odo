@@ -1,6 +1,8 @@
 #this is a template spec and actual spec will be generated
 #debuginfo not supported with Go
 %global debug_package %{nil}
+%global _enable_debug_package 0
+%global __os_install_post /usr/lib/rpm/brp-compress %{nil}
 %global package_name odo
 %global product_name odo
 %global golang_version ${GOLANG_VERSION}

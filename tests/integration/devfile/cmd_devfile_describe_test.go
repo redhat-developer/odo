@@ -1,10 +1,11 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/pkg/component"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/openshift/odo/pkg/component"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -89,7 +90,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", "describe", "-o", "json", "--context", context))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + namespace + `","creationTimestamp": null},"spec":{"app": "testing", "env": [{"name": "PROJECTS_ROOT", "value": "/project"}, {"name": "DEBUG_PORT","value": "5858"}],"type":"nodejs","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"host": "url-1.example.com", "path": "/",
+			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + namespace + `","creationTimestamp": null},"spec":{"app": "testing", "env": [{"name": "PROJECTS_ROOT", "value": "/project"},{"name": "PROJECT_SOURCE", "value": "/project"}, {"name": "DEBUG_PORT","value": "5858"}],"type":"nodejs","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"host": "url-1.example.com", "path": "/",
             "kind": "ingress", "port": 3000, "secure": false}, "status": {"state": "` + string(component.StateTypePushed) + `"}}, {"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-2", "creationTimestamp": null}, "spec": {"host": "url-2.example.com", "port": 4000, "path": "/", "secure": false, "kind": "ingress"}, "status": {"state": "` + string(component.StateTypePushed) + `"}}]},"storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"containerName": "runtime","size": "1Gi", "path": "/data1"}}]},"ports": ["5858"]},"status": {"state": "` + string(component.StateTypePushed) + `"}}`)
 			Expect(err).Should(BeNil())
 			Expect(cmpDescribeJSON).Should(MatchJSON(expected))

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
@@ -78,12 +79,12 @@ func (o *ViewOptions) Validate() (err error) {
 // DevfileRun is ran when the context detects a devfile locally
 func (o *ViewOptions) DevfileRun() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	repr := o.devfileObj.ToRepresentation()
+	repr := component.ToDevfileRepresentation(o.devfileObj)
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(o.devfileObj.WrapFromJSONOutput(repr))
+		machineoutput.OutputSuccess(component.WrapFromJSONOutput(repr))
 		return
 	}
-	representation, err := yaml.Marshal(o.devfileObj.ToRepresentation())
+	representation, err := yaml.Marshal(repr)
 	if err != nil {
 		return err
 	}

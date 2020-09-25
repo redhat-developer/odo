@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -76,6 +77,7 @@ type DevfileMetadata struct {
 	devfilePath        devfilePath
 	starter            string
 	token              string
+	starterToken       string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -579,6 +581,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
 
 			hasComponent := false
+			devfileExistSpinner := log.Spinner("Checking devfile existence")
+			defer devfileExistSpinner.End(false)
 
 			for _, devfileComponent := range catalogDevfileList.Items {
 				if co.devfileMetadata.componentType == devfileComponent.Name {
@@ -603,14 +607,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			}
 
-			existSpinner := log.Spinner("Checking devfile existence")
 			if hasComponent {
-				existSpinner.End(true)
+				devfileExistSpinner.End(true)
 			} else {
-				existSpinner.End(false)
+				devfileExistSpinner.End(false)
 			}
 
-			supportSpinner := log.Spinner("Checking devfile compatibility")
 			if co.devfileMetadata.devfileSupport {
 				registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
 
@@ -620,11 +622,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return err
 				}
 
-				supportSpinner.End(true)
 				registrySpinner.End(true)
 				return nil
 			}
-			supportSpinner.End(false)
 
 			// Currently only devfile component supports --registry flag, so if user specifies --registry when creating devfile component,
 			// we should error out instead of running s2i componet code and throw warning message
@@ -872,8 +872,8 @@ func (co *CreateOptions) Validate() (err error) {
 }
 
 // Downloads first starter project from list of starter projects in devfile
-// Currenty type git with a non github url is not supported
-func downloadStarterProject(devObj parser.DevfileObj, projectPassed string, interactive bool) error {
+// Currently type git with a non github url is not supported
+func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projectPassed string, interactive bool) error {
 	if projectPassed == "" && !interactive {
 		return nil
 	}
@@ -920,6 +920,14 @@ func downloadStarterProject(devObj parser.DevfileObj, projectPassed string, inte
 		return err
 	}
 
+	if co.devfileMetadata.starterToken == "" && registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+		token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+		if err != nil {
+			return errors.Wrap(err, "unable to get secure registry credential from keyring")
+		}
+		co.devfileMetadata.starterToken = token
+	}
+
 	log.Info("\nStarter Project")
 
 	if starterProject.Git != nil || starterProject.Github != nil {
@@ -943,14 +951,23 @@ func downloadStarterProject(devObj parser.DevfileObj, projectPassed string, inte
 		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
 		defer downloadSpinner.End(false)
 
-		_, err = git.PlainClone(path, false, &git.CloneOptions{
+		cloneOptions := &git.CloneOptions{
 			URL:           remoteUrl,
 			RemoteName:    remoteName,
 			ReferenceName: plumbing.ReferenceName(revision),
 			SingleBranch:  true,
 			// we don't need history for starter projects
 			Depth: 1,
-		})
+		}
+
+		if co.devfileMetadata.starterToken != "" {
+			cloneOptions.Auth = &http.BasicAuth{
+				Username: registryUtil.RegistryUser,
+				Password: co.devfileMetadata.starterToken,
+			}
+		}
+
+		_, err = git.PlainClone(path, false, cloneOptions)
 		if err != nil {
 			return err
 		}
@@ -968,7 +985,7 @@ func downloadStarterProject(devObj parser.DevfileObj, projectPassed string, inte
 		logUrl := starterProject.Zip.Location
 		sparseDir := starterProject.Zip.SparseCheckoutDir
 		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, logUrl)
-		err := checkoutProject(sparseDir, url, path)
+		err := co.checkoutProject(sparseDir, url, path)
 		if err != nil {
 			downloadSpinner.End(false)
 			return err
@@ -1042,7 +1059,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 			}
 
 			if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-				token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+				token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 				if err != nil {
 					return errors.Wrap(err, "unable to get secure registry credential from keyring")
 				}
@@ -1068,7 +1085,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 		return err
 	}
 
-	err = downloadStarterProject(devObj, co.devfileMetadata.starter, co.interactive)
+	err = co.downloadStarterProject(devObj, co.devfileMetadata.starter, co.interactive)
 	if err != nil {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
@@ -1158,16 +1175,15 @@ func (co *CreateOptions) Run() (err error) {
 	return
 }
 
-func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
-
+func (co *CreateOptions) checkoutProject(sparseCheckoutDir, zipURL, path string) error {
 	if sparseCheckoutDir != "" {
-		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir)
+		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir, co.devfileMetadata.starterToken)
 		if err != nil {
 			return errors.Wrap(err, "failed to download and extract project zip folder")
 		}
 	} else {
 		// extract project to current working directory
-		err := util.GetAndExtractZip(zipURL, path, "/")
+		err := util.GetAndExtractZip(zipURL, path, "/", co.devfileMetadata.starterToken)
 		if err != nil {
 			return errors.Wrap(err, "failed to download and extract project zip folder")
 		}
@@ -1256,6 +1272,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specified devfile")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
+	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starterToken, "starter-token", "", "Token to be used when downloading starter project")
 	componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Enforce S2I type components")
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

@@ -19,4 +19,5 @@ type CliRunner interface {
 	GetPVCSize(compName, storageName, namespace string) string
 	GetAllPVCNames(namespace string) []string
 	GetPodInitContainers(compName, namespace string) []string
+	GetContainerEnv(podName, containerName, namespace string) string
 }

@@ -54,6 +54,10 @@ type DevfileMetadata struct {
 
 	// Version Optional semver-compatible version
 	Version string `json:"version,omitempty" yaml:"version,omitempty"`
+
+	AlphaBuildDockerfile string `json:"alpha.build-dockerfile,omitempty" yaml:"alpha.build-dockerfile,omitempty"`
+
+	AlphaDeploymentManifest string `json:"alpha.deployment-manifest,omitempty" yaml:"alpha.deployment-manifest,omitempty"`
 }
 
 // DevfileCommand command specified in devfile

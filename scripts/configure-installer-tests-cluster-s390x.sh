@@ -85,14 +85,16 @@ for i in `echo $USERS`; do
 done
 
 #Clear up the imagestreams out of date
-oc delete is/nodejs -n openshift
-oc delete is/java -n openshift
 oc delete istag/nodejs:10 -n openshift
 oc delete istag/nodejs:12 -n openshift
 oc delete istag/nodejs:latest -n openshift
 oc delete istag/java:11 -n openshift
 oc delete istag/java:8 -n openshift
 oc delete istag/java:latest -n openshift
+oc delete istag/ruby:latest -n openshift
+oc delete is/nodejs -n openshift
+oc delete is/java -n openshift
+oc delete is/ruby -n openshift
 
 #Missing required images in OpenShift and Adding it manually to cluster
 oc import-image nodejs --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
@@ -112,7 +114,7 @@ oc annotate istag/wildfly:latest --namespace=openshift tags=builder --overwrite
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nginx/imagestreams/nginx-rhel.json
 sleep 5
 oc annotate istag/nginx:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/dotnet/imagestreams/dotnet-centos7.json
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/dotnet/imagestreams/dotnet-centos.json
 sleep 5
 oc annotate istag/dotnet:latest --namespace=openshift tags=builder --overwrite
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/php/imagestreams/php-rhel.json
