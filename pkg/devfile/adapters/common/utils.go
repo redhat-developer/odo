@@ -176,8 +176,8 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 				}
 			}
 
+			// if there is no volume mount path, default to volume mount name as per devfile schema
 			mountPath := filepath.Join(string(os.PathSeparator), volumeMount.Name)
-
 			if len(volumeMount.Path) > 0 {
 				mountPath = volumeMount.Path
 			}
