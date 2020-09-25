@@ -165,7 +165,7 @@ func (d *Devfile200) AddCommands(commands ...common.DevfileCommand) error {
 func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
 	id := strings.ToLower(command.GetID())
 	for i := range d.Commands {
-		if d.Commands[i].GetID() == id {
+		if d.Commands[i].SetIDToLower() == id {
 			d.Commands[i] = command
 		}
 	}

@@ -65,22 +65,46 @@ func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) 
 func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) error {
 	for _, patchCommand := range overridePatch {
 		found := false
+
 		for _, originalCommand := range d.Data.GetCommands() {
+
 			if strings.ToLower(patchCommand.Id) == originalCommand.Id {
 				found = true
-				var updatedExec common.Exec
 
-				merged, err := handleMerge(originalCommand.Exec, patchCommand.Exec, common.Exec{})
-				if err != nil {
-					return err
+				var devfileCommand common.DevfileCommand
+
+				if patchCommand.Exec != nil && originalCommand.Exec != nil {
+					var updatedExec common.Exec
+
+					merged, err := handleMerge(originalCommand.Exec, patchCommand.Exec, common.Exec{})
+					if err != nil {
+						return err
+					}
+
+					err = json.Unmarshal(merged, &updatedExec)
+					if err != nil {
+						return errors.Wrap(err, "failed to unmarshal override commands")
+					}
+					devfileCommand = common.DevfileCommand{Id: patchCommand.Id, Exec: &updatedExec}
+				} else if patchCommand.Composite != nil && originalCommand.Composite != nil {
+					var updatedComposite common.Composite
+
+					merged, err := handleMerge(originalCommand.Composite, patchCommand.Composite, common.Composite{})
+					if err != nil {
+						return err
+					}
+
+					err = json.Unmarshal(merged, &updatedComposite)
+					if err != nil {
+						return errors.Wrap(err, "failed to unmarshal override commands")
+					}
+					devfileCommand = common.DevfileCommand{Id: patchCommand.Id, Composite: &updatedComposite}
+				} else {
+					// If the original command and patch command are different types, then we can't patch, so throow an error
+					return fmt.Errorf("cannot overide command %q with a different type of command", originalCommand.Id)
 				}
 
-				err = json.Unmarshal(merged, &updatedExec)
-				if err != nil {
-					return errors.Wrap(err, "failed to unmarshal override commands")
-				}
-
-				d.Data.UpdateCommand(common.DevfileCommand{Id: patchCommand.Id, Exec: &updatedExec})
+				d.Data.UpdateCommand(devfileCommand)
 			}
 		}
 		if !found {

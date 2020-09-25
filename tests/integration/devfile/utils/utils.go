@@ -222,6 +222,22 @@ func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string, freeP
 	helper.CmdShouldPass("odo", args...)
 }
 
+func ExecPushWithCompositeOverride(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent-composite.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	output := helper.CmdShouldPass("odo", args...)
+	helper.MatchAllInOutput(output, []string{"Executing createfile command", "touch /projects/testfile"})
+}
+
 func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string, freePort int) {
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
