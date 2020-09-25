@@ -68,7 +68,7 @@ In above output, `etcdoperator.v0.9.4` is the Operator while `EtcdCluster`,
 `EtcdBackup` and `EtcdRestore` are the CRDs provided by this Operator.
 
 
-=== Creating an Operator backed service
+== Creating an Operator backed service
 
 In this example, we will be deploying `EtcdCluster` service from link:https://operatorhub.io/operator/etcd[etcd Operator] to an OpenShift / Kubernetes cluster. This service is provided by the Operator `etcdoperator`. Please ensure that this Operator is installed on your OpenShift / Kubernetes cluster before trying to create `EtcdCluster` service from it. If it's not installed, please install it by logging into your OpenShift / Kubernetes cluster as `kube:admin` user.
 
@@ -88,7 +88,7 @@ $ odo service list
 
 It is important to note that `EtcdBackup` and `EtcdRestore` cannot be deploymeed the same way as we deployed `EtcdCluster` as they require configuring other parameters in their YAML definition.
 
-=== Deploying Operator backed service to a cluster via YAML
+== Deploying Operator backed service to a cluster via YAML
 
 
 In this example, we will be deploying our link:https://operatorhub.io/operator/etcd[installed etcd Operator] to an OpenShift / Kubernetes cluster.
@@ -134,7 +134,7 @@ $ odo service create --from-file etcd.yaml
 $ odo service list
 ----
 
-=== Linking an odo component with an Operator backed service
+== Linking an odo component with an Operator backed service
 
 Linking a component to a service means, in simplest terms, to make a service usable from the component.
 
@@ -165,7 +165,7 @@ $ odo push
 For the link between a component and Operator Hub backed service to take effect, make sure you do `odo push`. The link won't be effective otherwise.
 ====
 
-=== Unlinking an odo component from an Operator backed service
+== Unlinking an odo component from an Operator backed service
 
 Unlinking unsets the environment variables that were set by linking. This would cause your application to cease being able to communicate with the service linked using `odo link`.
 
@@ -188,7 +188,7 @@ $ odo push
 For unlinking to take effect, make sure you do `odo push`. It won't be effective otherwise.
 ====
 
-=== Deleting an Operator backed service
+== Deleting an Operator backed service
 
 To delete an Operator backed service, provide full name of the service that you see in the output of `odo service list`. For example:
 
