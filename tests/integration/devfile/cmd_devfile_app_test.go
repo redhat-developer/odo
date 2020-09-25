@@ -37,13 +37,6 @@ var _ = Describe("odo devfile app command tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
-	Context("when running help for app command", func() {
-		It("should display the help", func() {
-			appHelp := helper.CmdShouldPass("odo", "app", "-h")
-			Expect(appHelp).To(ContainSubstring("Performs application operations related to your project."))
-		})
-	})
-
 	Context("listing apps", func() {
 		It("it should list, describe and delete the apps", func() {
 			runner(namespace, false)
@@ -67,6 +60,12 @@ func runner(namespace string, s2i bool) {
 	context0 := helper.CreateNewContext()
 	context00 := helper.CreateNewContext()
 	context1 := helper.CreateNewContext()
+
+	defer func() {
+		helper.DeleteDir(context0)
+		helper.DeleteDir(context00)
+		helper.DeleteDir(context1)
+	}()
 
 	app0 := helper.RandString(4)
 	app1 := helper.RandString(4)
