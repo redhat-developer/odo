@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"path/filepath"
 
 	odoUtil "github.com/openshift/odo/pkg/odo/util"
 
@@ -37,7 +38,11 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewDevfileContext(cmd)
+	if util.CheckPathExists(filepath.Join(".odo", "config.yaml")) {
+		o.Context = genericclioptions.NewContext(cmd)
+	} else {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+	}
 	o.appName = o.Application
 	if len(args) == 1 {
 		// If app name passed, consider it for deletion

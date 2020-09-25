@@ -83,8 +83,8 @@ var _ = Describe("odo app command tests", func() {
 			// list should pass as the project exists
 			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appListOutput).To(ContainSubstring(appName))
-			helper.CmdShouldFail("odo", "app", "describe")
-			helper.CmdShouldFail("odo", "app", "delete", "-f")
+			helper.CmdShouldFail("odo", "app", "describe", "--project", project)
+			helper.CmdShouldFail("odo", "app", "delete", "-f", "--project", project)
 		})
 	})
 

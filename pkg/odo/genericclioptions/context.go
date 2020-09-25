@@ -41,8 +41,8 @@ func NewContext(command *cobra.Command, toggles ...bool) *Context {
 }
 
 // NewDevfileContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewDevfileContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
-	return newDevfileContext(command)
+func NewDevfileContext(command *cobra.Command) *Context {
+	return newDevfileContext(command, false)
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
@@ -156,9 +156,13 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 	// Get details from the env file
 	componentContext := FlagValueIfSet(command, ContextFlagName)
 
-	// Grab the absolute path of the eenv file
+	// Grab the absolute path of the env file
 	if componentContext != "" {
 		fAbs, err := pkgUtil.GetAbsPath(componentContext)
+		util.LogErrorAndExit(err, "")
+		componentContext = fAbs
+	} else {
+		fAbs, err := pkgUtil.GetAbsPath(".")
 		util.LogErrorAndExit(err, "")
 		componentContext = fAbs
 	}
@@ -273,6 +277,8 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
+	o.Client.GetKubeClient().Namespace = namespace
+	o.KClient.Namespace = namespace
 	o.Client.Namespace = namespace
 	o.Project = namespace
 	if o.KClient != nil {
@@ -410,7 +416,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 }
 
 // newDevfileContext creates a new context based on command flags for devfile components
-func newDevfileContext(command *cobra.Command) *Context {
+func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -430,7 +436,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.resolveApp(true, envInfo)
+	internalCxt.resolveApp(createAppIfNeeded, envInfo)
 
 	// If the push target is NOT Docker we will set the client to Kubernetes.
 	if !pushtarget.IsPushTargetDocker() {
