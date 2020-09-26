@@ -14,6 +14,15 @@ The following section describes how to install `odo` on different platforms via 
   $ chmod +x /usr/local/bin/odo
 ----
 
+== Installing odo on Linux on IBM Z
+
+=== Binary installation
+
+----
+  $ curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-s390x -o /usr/local/bin/odo
+  $ chmod +x /usr/local/bin/odo
+----
+
 == Installing odo on macOS
 
 === Binary installation
