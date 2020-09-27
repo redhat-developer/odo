@@ -1,55 +1,38 @@
 package devfile
 
 import (
-	"os"
-	"path/filepath"
-	"time"
-
 	"github.com/openshift/odo/tests/helper"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("odo devfile log command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-	// Using program commmand according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
+	var cmpName string
+	var commonVar helper.CommonVar
 
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		namespace = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
+		commonVar = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
-		helper.Chdir(context)
+		helper.Chdir(commonVar.Context)
 	})
 
-	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Verify odo log for devfile works", func() {
 
 		It("should log run command output and fail for debug command", func() {
 
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName, "--context", context)
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			output := helper.CmdShouldPass("odo", "log", "--context", context)
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName, "--context", commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			output := helper.CmdShouldPass("odo", "log", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
 
 			// It should fail for debug command as no debug command in devfile
@@ -65,17 +48,17 @@ var _ = Describe("odo devfile log command tests", func() {
 		})
 
 		It("should error out if component does not exist", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName, "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", commonVar.Context)
 			helper.CmdShouldFail("odo", "log")
 		})
 
 		It("should log debug command output", func() {
 
-			projectDir := filepath.Join(context, "projectDir")
+			projectDir := filepath.Join(commonVar.Context, "projectDir")
 
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDir)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName, "--context", projectDir)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", projectDir)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDir, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDir)
 

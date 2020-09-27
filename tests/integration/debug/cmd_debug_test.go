@@ -1,14 +1,14 @@
 package debug
 
 import (
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/tests/helper"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,42 +18,27 @@ import (
 // we execute these tests serially
 var _ = Describe("odo debug command serial tests", func() {
 
-	var context string
+	var commonVar helper.CommonVar
 
-	var namespace string
-
-	//  current directory and project (before eny test is run) so it can restored  after all testing is done
-	var originalDir string
-
-	// Setup up state for each test spec
-	// create new project (not set as active) and new context directory for each test spec
-	// This is before every spec (It)
-	BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		context = helper.CreateNewContext()
-		namespace = helper.CreateRandProject()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		originalDir = helper.Getwd()
+	// This is run before every Spec (It)
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
-	AfterEach(func() {
-		helper.Chdir(originalDir)
-		helper.DeleteProject(namespace)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
 	})
 
 	It("should auto-select a local debug port when the given local port is occupied", func() {
-		helper.CopyExample(filepath.Join("source", "nodejs"), context)
-		helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", "nodejs-cmp-"+namespace, "--project", namespace, "--context", context)
-		helper.CmdShouldPass("odo", "push", "--context", context)
+		helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+		helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", "nodejs-cmp-"+commonVar.Project, "--project", commonVar.Project, "--context", commonVar.Context)
+		helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 		stopChannel := make(chan bool)
 		go func() {
-			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--context", context)
+			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--context", commonVar.Context)
 		}()
 
 		stopListenerChan := make(chan bool)
@@ -72,7 +57,7 @@ var _ = Describe("odo debug command serial tests", func() {
 		}
 
 		freePort := ""
-		helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context}, 1, false, func(output string) bool {
+		helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", commonVar.Context}, 1, false, func(output string) bool {
 			if strings.Contains(output, "Debug is running") {
 				splits := strings.SplitN(output, ":", 2)
 				Expect(len(splits)).To(Equal(2))
