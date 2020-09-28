@@ -5,11 +5,11 @@ success = False
 url = os.environ.get('CLOUDAMQP_URL', 'amqps://fjuitskq:WJ9hHhwhVXsc6N7J7lLQrEVFeIiDdRxY@shrimp.rmq.cloudamqp.com/fjuitskq')
 params = pika.URLParameters(url)
 params.socket_timeout = 5
-#jss = os.getenv('JOB_SPEC')
-#js = json.loads(jss)
-#prn = js['refs']['pulls'][0]['number']
-#pr_no="{}".format(prn)
-pr_no = '2521'
+jss = os.getenv('JOB_SPEC')
+js = json.loads(jss)
+prn = js['refs']['pulls'][0]['number']
+pr_no="{}".format(prn)
+#pr_no = '2521'
 rcv_queue = "prow_recieve_{}".format(pr_no)
 
 connectionsend = pika.BlockingConnection(params) # Connect to CloudAMQP
