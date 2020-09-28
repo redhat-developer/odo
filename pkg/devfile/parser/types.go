@@ -105,6 +105,8 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) (err
 	return nil
 }
 
+// overrideCompositeCommand overrides the given parent compoosite commmand
+// patchCommand contains the patches to be applied to the parent's command
 func overrideCompositeCommand(patchCommand common.DevfileCommand, originalCommand common.DevfileCommand) (common.DevfileCommand, error) {
 	var updatedComposite common.Composite
 
