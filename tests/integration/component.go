@@ -497,7 +497,6 @@ func componentTests(args ...string) {
 			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...)
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(commonVar.Context)
-			fmt.Println(files)
 			Expect(files).NotTo(ContainElement(".odo"))
 		})
 
@@ -582,8 +581,6 @@ func componentTests(args ...string) {
 			helper.ValidateLocalCmpExist(commonVar.Context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
 
-			// list command should fail as no app flag is given
-			helper.CmdShouldFail("odo", append(args, "list", "--project", commonVar.Project)...)
 			// commands should fail as the component name is missing
 			helper.CmdShouldFail("odo", append(args, "describe", "--app", appName, "--project", commonVar.Project)...)
 			helper.CmdShouldFail("odo", append(args, "delete", "-f", "--app", appName, "--project", commonVar.Project)...)
@@ -801,9 +798,7 @@ func componentTests(args ...string) {
 			// verify the url
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", commonVar.Context)
 
-			// temporary test fix, the url name of the url list output is expected to contain urlName instead
-			// issue to track: https://github.com/openshift/odo/issues/3910
-			helper.MatchAllInOutput(stdout, []string{"port-8080", "Pushed", "false", "route"})
+			helper.MatchAllInOutput(stdout, []string{urlName, "Pushed", "false", "route"})
 			//verify storage
 			stdout = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(stdout, []string{storageName, "Pushed"})

@@ -1,33 +1,38 @@
 package integration
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"path/filepath"
 	"strings"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("odo service command tests", func() {
-	var app, serviceName, context1, context2 string
-	var oc helper.OcRunner
+	var app, serviceName string
+	/*
+		Uncomment when we uncomment the test specs
+		var context1, context2 string
+		var oc helper.OcRunner
+	*/
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		oc = helper.NewOcRunner("oc")
+		//oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
-		context1 = helper.CreateNewContext()
-		context2 = helper.CreateNewContext()
+		// context1 = helper.CreateNewContext()
+		// context2 = helper.CreateNewContext()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
-		helper.DeleteDir(context1)
-		helper.DeleteDir(context2)
+		// helper.DeleteDir(context1)
+		// helper.DeleteDir(context2)
 	})
 
 	Context("when running help for service command", func() {

@@ -2,15 +2,16 @@ package devfile
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/tests/integration/devfile/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -215,7 +216,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("does not map to a container component"))
+			Expect(output).To(ContainSubstring("does not exist in the devfile"))
 		})
 
 		It("should throw a validation error for composite command indirectly referencing itself", func() {

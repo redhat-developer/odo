@@ -43,7 +43,6 @@ var _ = Describe("odo storage command tests", func() {
 		})
 	})
 
-
 	Context("when using storage command with default flag values", func() {
 		It("should add a storage, list and delete it", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)

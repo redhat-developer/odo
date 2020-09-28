@@ -23,7 +23,6 @@ var _ = Describe("odo watch command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-
 	Context("when running help for watch command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "watch", "-h")
