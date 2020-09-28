@@ -62,7 +62,7 @@ func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) 
 
 // OverrideCommands overrides the commands of the parent devfile
 // overridePatch contains the patches to be applied to the parent's commands
-func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) error {
+func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) (err error) {
 	for _, patchCommand := range overridePatch {
 		found := false
 
@@ -72,7 +72,6 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 				found = true
 
 				var devfileCommand common.DevfileCommand
-
 				if patchCommand.Exec != nil && originalCommand.Exec != nil {
 					var updatedExec common.Exec
 
@@ -87,18 +86,10 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 					}
 					devfileCommand = common.DevfileCommand{Id: patchCommand.Id, Exec: &updatedExec}
 				} else if patchCommand.Composite != nil && originalCommand.Composite != nil {
-					var updatedComposite common.Composite
-
-					merged, err := handleMerge(originalCommand.Composite, patchCommand.Composite, common.Composite{})
+					devfileCommand, err = overrideCompositeCommand(patchCommand, originalCommand)
 					if err != nil {
 						return err
 					}
-
-					err = json.Unmarshal(merged, &updatedComposite)
-					if err != nil {
-						return errors.Wrap(err, "failed to unmarshal override commands")
-					}
-					devfileCommand = common.DevfileCommand{Id: patchCommand.Id, Composite: &updatedComposite}
 				} else {
 					// If the original command and patch command are different types, then we can't patch, so throow an error
 					return fmt.Errorf("cannot overide command %q with a different type of command", originalCommand.Id)
@@ -112,6 +103,21 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 		}
 	}
 	return nil
+}
+
+func overrideCompositeCommand(patchCommand common.DevfileCommand, originalCommand common.DevfileCommand) (common.DevfileCommand, error) {
+	var updatedComposite common.Composite
+
+	merged, err := handleMerge(originalCommand.Composite, patchCommand.Composite, common.Composite{})
+	if err != nil {
+		return common.DevfileCommand{}, err
+	}
+
+	err = json.Unmarshal(merged, &updatedComposite)
+	if err != nil {
+		return common.DevfileCommand{}, errors.Wrap(err, "failed to unmarshal override commands")
+	}
+	return common.DevfileCommand{Id: patchCommand.Id, Composite: &updatedComposite}, nil
 }
 
 // OverrideProjects overrides the projects of the parent devfile

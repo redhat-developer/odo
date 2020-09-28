@@ -315,7 +315,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			},
 		},
 		{
-			name: "case 6: throw error if trying to overide command with different type",
+			name: "case 7: throw error if trying to overide command with different type",
 			devFileObj: DevfileObj{
 				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
 				Data: &v200.Devfile200{
