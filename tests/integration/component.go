@@ -187,15 +187,24 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")...)
 			helper.ValidateLocalCmpExist(commonVar.Context, "Type,nodejs", "Name,cmp-git", "Application,testing")
 			kubeconfigOrig := os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", "/no/such/path")
-			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", commonVar.Context, "--v", "9")...)
-			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "Unknown"})
-			// KUBECONFIG defaults to ~/.kube/config so it can be empty in some cases.
-			if kubeconfigOrig != "" {
-				os.Setenv("KUBECONFIG", kubeconfigOrig)
-			} else {
-				os.Unsetenv("KUBECONFIG")
+
+			unset := func() {
+				// KUBECONFIG defaults to ~/.kube/config so it can be empty in some cases.
+				if kubeconfigOrig != "" {
+					os.Setenv("KUBECONFIG", kubeconfigOrig)
+				} else {
+					os.Unsetenv("KUBECONFIG")
+				}
 			}
+
+			os.Setenv("KUBECONFIG", "/no/such/path")
+
+			defer unset()
+			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", commonVar.Context, "--v", "9")...)
+
+			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "Unknown"})
+			unset()
+
 			fmt.Printf("kubeconfig before delete %v", os.Getenv("KUBECONFIG"))
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
 		})

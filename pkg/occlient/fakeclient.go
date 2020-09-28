@@ -66,7 +66,9 @@ func FakeNew() (*Client, *FakeClientset) {
 		client.SetDiscoveryInterface(fakeDiscoveryWithRoute)
 		client.SetDiscoveryInterface(fakeDiscoveryWithDeploymentConfig)
 	} else {
-		client.SetDiscoveryInterface(fakeDiscoveryWithDeploymentConfig)
+		client.SetDiscoveryInterface(&fakeDiscovery{
+			resourceMap: map[string]*resourceMapEntry{},
+		})
 	}
 
 	return client, fkclientset

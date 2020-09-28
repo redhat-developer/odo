@@ -10,7 +10,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/occlient"
 	pkgutil "github.com/openshift/odo/pkg/util"
 
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -123,12 +122,8 @@ func (o *URLListOptions) Run() (err error) {
 			}
 		} else {
 			componentName := o.EnvSpecificInfo.GetName()
-			oclient, err := occlient.New()
-			if err != nil {
-				return err
-			}
-			oclient.Namespace = o.KClient.Namespace
-			routeSupported, err := oclient.IsRouteSupported()
+
+			routeSupported, err := o.Context.Client.IsRouteSupported()
 			if err != nil {
 				return err
 			}
@@ -138,7 +133,7 @@ func (o *URLListOptions) Run() (err error) {
 			}
 
 			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
-			urls, err := url.ListIngressAndRoute(oclient, o.EnvSpecificInfo, containerComponents, componentName, routeSupported)
+			urls, err := url.ListIngressAndRoute(o.Context.Client, o.EnvSpecificInfo, containerComponents, componentName, routeSupported)
 			if err != nil {
 				return err
 			}

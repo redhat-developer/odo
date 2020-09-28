@@ -278,7 +278,6 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 		}
 	}
 	o.Client.GetKubeClient().Namespace = namespace
-	o.KClient.Namespace = namespace
 	o.Client.Namespace = namespace
 	o.Project = namespace
 	if o.KClient != nil {

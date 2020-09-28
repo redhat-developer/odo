@@ -63,7 +63,6 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if util.CheckPathExists(lo.devfilePath) {
 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
-		lo.Client = genericclioptions.Client(cmd)
 		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 		if err != nil {
 			return err

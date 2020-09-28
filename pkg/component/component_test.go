@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"io/ioutil"
+	v1 "k8s.io/api/apps/v1"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -268,20 +269,37 @@ func TestList(t *testing.T) {
 		getFakeDC("test", "test", "otherApp", "python"),
 	}}
 
-	const caseName = "Case 5: List component when openshift cluster not reachable"
+	deploymentList := v1.DeploymentList{Items: []v1.Deployment{
+		*testingutil.CreateFakeDeployment("comp0"),
+		*testingutil.CreateFakeDeployment("comp1"),
+	}}
+
+	deploymentList.Items[0].Labels[componentlabels.ComponentTypeLabel] = "nodejs"
+	deploymentList.Items[0].Annotations = map[string]string{
+		ComponentSourceTypeAnnotation: "local",
+	}
+	deploymentList.Items[1].Labels[componentlabels.ComponentTypeLabel] = "wildfly"
+	deploymentList.Items[1].Annotations = map[string]string{
+		ComponentSourceTypeAnnotation: "local",
+	}
+
+	const caseName = "Case 4: List component when openshift cluster not reachable"
 	tests := []struct {
-		name                    string
-		dcList                  appsv1.DeploymentConfigList
-		projectExists           bool
-		wantErr                 bool
-		existingLocalConfigInfo *LocalConfigInfo
-		output                  ComponentList
+		name                      string
+		dcList                    appsv1.DeploymentConfigList
+		deploymentConfigSupported bool
+		deploymentList            v1.DeploymentList
+		projectExists             bool
+		wantErr                   bool
+		existingLocalConfigInfo   *LocalConfigInfo
+		output                    ComponentList
 	}{
 		{
-			name:          "Case 1: Components are returned",
-			dcList:        dcList,
-			wantErr:       false,
-			projectExists: true,
+			name:                      "Case 1: Components are returned",
+			dcList:                    dcList,
+			deploymentConfigSupported: true,
+			wantErr:                   false,
+			projectExists:             true,
 			output: ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
@@ -295,23 +313,18 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
-			name:          "Case 2: projects doesn't exist",
-			wantErr:       false,
-			projectExists: false,
-			output:        GetMachineReadableFormatForList([]Component{}),
-		},
-		{
-			name:          "Case 3: no component and no config exists",
+			name:          "Case 2: no component and no config exists",
 			wantErr:       false,
 			projectExists: true,
 			output:        GetMachineReadableFormatForList([]Component{}),
 		},
 		{
-			name:                    "Case 4: Components are returned from the config plus and cluster",
-			dcList:                  dcList,
-			wantErr:                 false,
-			projectExists:           true,
-			existingLocalConfigInfo: &existingSampleLocalConfig,
+			name:                      "Case 3: Components are returned from the config plus and cluster",
+			dcList:                    dcList,
+			deploymentConfigSupported: true,
+			wantErr:                   false,
+			projectExists:             true,
+			existingLocalConfigInfo:   &existingSampleLocalConfig,
 			output: ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
@@ -332,23 +345,66 @@ func TestList(t *testing.T) {
 			existingLocalConfigInfo: &existingSampleLocalConfig,
 			output:                  GetMachineReadableFormatForList([]Component{componentConfig2}),
 		},
+		{
+			name:                      "Case 5: Components are returned from deployments on a kubernetes cluster",
+			dcList:                    dcList,
+			deploymentList:            deploymentList,
+			wantErr:                   false,
+			projectExists:             true,
+			deploymentConfigSupported: false,
+			output: ComponentList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.dev/v1alpha1",
+				},
+				ListMeta: metav1.ListMeta{},
+				Items: []Component{
+					getFakeComponent("comp0", "test", "app", "nodejs", StateTypePushed),
+					getFakeComponent("comp1", "test", "app", "wildfly", StateTypePushed),
+				},
+			},
+		},
+		{
+			name:                      "Case 6: Components are returned from both",
+			dcList:                    dcList,
+			deploymentList:            deploymentList,
+			wantErr:                   false,
+			projectExists:             true,
+			deploymentConfigSupported: true,
+			output: ComponentList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.dev/v1alpha1",
+				},
+				ListMeta: metav1.ListMeta{},
+				Items: []Component{
+					getFakeComponent("comp0", "test", "app", "nodejs", StateTypePushed),
+					getFakeComponent("comp1", "test", "app", "wildfly", StateTypePushed),
+					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
+					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if !tt.deploymentConfigSupported {
+				os.Setenv("KUBERNETES", "true")
+				defer os.Unsetenv("KUBERNETES")
+			}
+
 			client, fakeClientSet := occlient.FakeNew()
 			client.Namespace = "test"
-
-			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				if !tt.projectExists {
-					return true, nil, nil
-				}
-				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
-			})
 
 			//fake the dcs
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &tt.dcList, nil
+			})
+
+			//fake the deployments
+			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.deploymentList, nil
 			})
 
 			// Prepend reactor returns the last matched reactor added
@@ -376,8 +432,18 @@ func TestList(t *testing.T) {
 					// simulate unavailable cluster
 					return true, nil, errors.NewUnauthorized("user unauthorized")
 				}
-				// the only other time this is called is when attempting to retrieve the state of the local component that is not pushed yet (case 4)
-				return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deployments"}, "comp")
+				getAction, ok := action.(ktesting.GetAction)
+				if !ok {
+					return false, nil, fmt.Errorf("expected a GetAction, got %v", action)
+				}
+				switch getAction.GetName() {
+				case "comp0":
+					return true, &tt.deploymentList.Items[0], nil
+				case "comp1":
+					return true, &tt.deploymentList.Items[1], nil
+				default:
+					return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deploymentconfigs"}, "")
+				}
 			})
 
 			results, err := List(client, "app", tt.existingLocalConfigInfo)

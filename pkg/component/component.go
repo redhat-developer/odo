@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	v1 "k8s.io/api/apps/v1"
 	"os"
 	"path/filepath"
 	"sort"
@@ -856,26 +857,43 @@ func GetComponentNames(client *occlient.Client, applicationName string) ([]strin
 
 // List lists components in active application
 func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
-	if client == nil {
-		return ComponentList{}, nil
-	}
-
-	deploymentConfigSupported := false
-	var err error
-	deploymentConfigSupported, err = client.IsDeploymentConfigSupported()
-	if err != nil {
-		return ComponentList{}, err
-	}
 
 	var applicationSelector string
 	if applicationName != "" {
 		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	}
 
+	deploymentConfigSupported := false
+	var err error
+	var deploymentList []v1.Deployment
+
 	var components []Component
 	componentNamesMap := make(map[string]bool)
 
-	if deploymentConfigSupported {
+	if client != nil {
+		deploymentConfigSupported, err = client.IsDeploymentConfigSupported()
+		if err != nil {
+			return ComponentList{}, err
+		}
+
+		// retrieve all the deployments that are associated with this application
+		deploymentList, err = client.GetKubeClient().GetDeploymentFromSelector(applicationSelector)
+		if err != nil {
+			return ComponentList{}, errors.Wrapf(err, "unable to list components")
+		}
+	}
+
+	// extract the labels we care about from each component
+	for _, elem := range deploymentList {
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+		if err != nil {
+			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+		}
+		components = append(components, component)
+		componentNamesMap[component.Name] = true
+	}
+
+	if deploymentConfigSupported && client != nil {
 		// retrieve all the deployment configs that are associated with this application
 		dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
 		if err != nil {
@@ -893,22 +911,6 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		}
 	}
 
-	// retrieve all the deployment configs that are associated with this application
-	deploymentList, err := client.GetKubeClient().GetDeploymentFromSelector(applicationSelector)
-	if err != nil {
-		return ComponentList{}, errors.Wrapf(err, "unable to list components")
-	}
-
-	// extract the labels we care about from each component
-	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
-		if err != nil {
-			return ComponentList{}, errors.Wrap(err, "Unable to get component")
-		}
-		components = append(components, component)
-		componentNamesMap[component.Name] = true
-	}
-
 	if localConfigInfo != nil {
 		component, err := GetComponentFromConfig(localConfigInfo)
 
@@ -916,10 +918,16 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 			return GetMachineReadableFormatForList(components), err
 		}
 
-		_, ok := componentNamesMap[component.Name]
-		if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
-			component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
+		if client != nil {
+			_, ok := componentNamesMap[component.Name]
+			if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+				component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
+				components = append(components, component)
+			}
+		} else {
+			component.Status.State = StateTypeUnknown
 			components = append(components, component)
+
 		}
 
 	}
