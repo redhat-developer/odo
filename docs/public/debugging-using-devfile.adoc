@@ -2,7 +2,7 @@
 
 Debugging your component involves port forwarding with the Kubernetes pod. Before you start, it is required that you have a `kind: debug` step located within your `devfile.yaml`.
 
-. See below for an example `devfile.yaml` that containers a `debugrun` step under the `commands` key:
+. See below for an example `devfile.yaml` that contains a `debug` step under the `commands` key:
 [source,yaml]
 ----
 ...
@@ -35,7 +35,7 @@ commands:
 
 == Debugging your devfile component via CLI
 
-We will use the official link:https://github.com/odo-devfiles/registry/tree/master/devfiles/nodejs[nodejs] example in our debugging session which includes the necessary `debugrun` step within `devfile.yaml`. 
+We will use the official link:https://github.com/odo-devfiles/registry/tree/master/devfiles/nodejs[nodejs] example in our debugging session which includes the necessary `debug` step within `devfile.yaml`.
 
 . Download the example application:
 +
@@ -106,7 +106,7 @@ Debug is running for the component on the local port : 5858
 The debugger is accessible through an assortment of tools. An example of setting up a debug interface would be through link:https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging[VSCode's debugging interface].
 
 In our use case, an example of how to access the above Node.JS application is with this snippet:
-+
+
 [source,json]
 ----
 {
@@ -114,6 +114,6 @@ In our use case, an example of how to access the above Node.JS application is wi
   "request": "attach",
   "name": "Attach to remote",
   "address": "TCP/IP address of process to be debugged",
-  "port": 9229
+  "port": 5858
 }
 ----
