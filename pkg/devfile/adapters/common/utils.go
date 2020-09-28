@@ -62,6 +62,9 @@ const (
 	// BinBash The path to sh executable
 	BinBash = "/bin/sh"
 
+	// FwdSlash is the path separator in linux containers
+	FwdSlash = "/"
+
 	// DefaultVolumeSize Default volume size for volumes defined in a devfile
 	DefaultVolumeSize = "1Gi"
 
@@ -177,14 +180,13 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 			}
 
 			// if there is no volume mount path, default to volume mount name as per devfile schema
-			mountPath := filepath.Join(string(os.PathSeparator), volumeMount.Name)
-			if len(volumeMount.Path) > 0 {
-				mountPath = volumeMount.Path
+			if len(volumeMount.Path) <= 0 {
+				volumeMount.Path = filepath.Join(FwdSlash, volumeMount.Name)
 			}
 
 			vol := DevfileVolume{
 				Name:          volumeMount.Name,
-				ContainerPath: mountPath,
+				ContainerPath: volumeMount.Path,
 				Size:          size,
 			}
 			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)
