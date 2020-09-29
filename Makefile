@@ -235,7 +235,7 @@ test-cmd-devfile-exec:
 test-cmd-docker-devfile-exec:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile exec command tests" tests/integration/devfile/docker
 
-# Run odo statis devfile command tests
+# Run odo status devfile command tests
 .PHONY: test-cmd-devfile-status
 test-cmd-devfile-status:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile status command tests" tests/integration/devfile/
