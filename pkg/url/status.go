@@ -110,7 +110,7 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envI
 
 	}
 
-	urls, err := ListIngressAndRoute(oclient, client, envInfo, containerComponents, componentName, routesSupported)
+	urls, err := ListIngressAndRoute(oclient, envInfo, containerComponents, componentName, routesSupported)
 
 	if err != nil {
 		return nil, err
@@ -128,10 +128,10 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envI
 
 		if u.Spec.Kind != envinfo.ROUTE {
 			protocol = GetProtocol(routev1.Route{}, ConvertIngressURLToIngress(u, componentName))
-			properURL = GetURLString(protocol, "", u.Spec.Host, true)
+			properURL = GetURLString(protocol, "", u.Spec.Host, false)
 		} else {
 			protocol = u.Spec.Protocol
-			properURL = GetURLString(protocol, u.Spec.Host, "", true)
+			properURL = GetURLString(protocol, u.Spec.Host, "", false)
 		}
 
 		statusURLVal := statusURL{

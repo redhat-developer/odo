@@ -164,6 +164,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			fkoclient, fakeoclientSet := occlient.FakeNew()
 			fkoclient.Namespace = "default"
 			fkoclient.SetDiscoveryInterface(fakeDiscoveryWithProject)
+			fkoclient.SetKubeClient(fkclient)
 
 			// Return the test's route list when requested
 			fakeoclientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -185,25 +186,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Name: "testcontainer1",
-							Container: &versionsCommon.Container{
-								Image:     "quay.io/nodejs-12",
-								Endpoints: []versionsCommon.Endpoint{
-									// {
-									// 	Name:       "port-3030",
-									// 	TargetPort: 3000,
-									// },
-									// {
-									// 	Name:       "my-url-name",
-									// 	TargetPort: 8080,
-									// 	Secure:     false,
-									// },
-								},
-							},
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
@@ -219,7 +202,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(tt.expectedStatusURL, statusUrls[0]) {
-				t.Fatalf("Mismatching status URL: %v %v", tt.expectedStatusURL, statusUrls[0])
+				t.Fatalf("Mismatching status URL - expected: %v,  actual: %v", tt.expectedStatusURL, statusUrls[0])
 			}
 
 		})
