@@ -5,10 +5,15 @@ import (
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/parser"
+	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -43,6 +48,7 @@ var fakeDiscoveryWithProject = &fakeDiscovery{
 }
 
 func TestGetURLsForKubernetes(t *testing.T) {
+	fs := filesystem.NewFakeFs()
 
 	componentName := "my-component"
 
@@ -176,10 +182,40 @@ func TestGetURLsForKubernetes(t *testing.T) {
 				}
 			}
 
-			statusUrls, err := getURLsForKubernetes(fkoclient, fkclient, esi, false)
+			devObj := parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Name: "testcontainer1",
+							Container: &versionsCommon.Container{
+								Image:     "quay.io/nodejs-12",
+								Endpoints: []versionsCommon.Endpoint{
+									// {
+									// 	Name:       "port-3030",
+									// 	TargetPort: 3000,
+									// },
+									// {
+									// 	Name:       "my-url-name",
+									// 	TargetPort: 8080,
+									// 	Secure:     false,
+									// },
+								},
+							},
+						},
+					},
+				},
+			}
+			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
+
+			statusUrls, err := getURLsForKubernetes(fkoclient, fkclient, esi, false, containerComponents)
 
 			if err != nil {
 				t.Fatalf("Error occurred: %v", err)
+			}
+
+			if len(statusUrls) == 0 {
+				t.Fatalf("statusURLs has unexpected size 0, must be 1")
 			}
 
 			if !reflect.DeepEqual(tt.expectedStatusURL, statusUrls[0]) {

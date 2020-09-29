@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -21,6 +22,8 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
+
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -47,6 +50,8 @@ type StatusOptions struct {
 	devfilePath    string
 	namespace      string
 	devfileHandler common.ComponentAdapter
+
+	devObj parser.DevfileObj
 
 	logFollow       bool
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
@@ -82,6 +87,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
+		so.devObj = devObj
 
 		var platformContext interface{}
 		if !pushtarget.IsPushTargetDocker() {
@@ -142,7 +148,8 @@ func (so *StatusOptions) Run() (err error) {
 			oclient.Namespace = so.KClient.Namespace
 		}
 
-		url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, so.EnvSpecificInfo, loggingClient)
+		containerComponents := adaptersCommon.GetDevfileContainerComponents(so.devObj.Data)
+		url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, so.EnvSpecificInfo, loggingClient, containerComponents)
 	}
 
 	// You can call Run() any time you like, but you can never leave.

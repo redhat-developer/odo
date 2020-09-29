@@ -163,8 +163,10 @@ func TestGetDeploymentStatus(t *testing.T) {
 			comp := testingutil.GetFakeContainerComponent(testComponentName)
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   []versionsCommon.DevfileComponent{comp},
-					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []versionsCommon.DevfileComponent{comp},
+					Commands: []versionsCommon.DevfileCommand{
+						getExecCommand("run", versionsCommon.RunCommandGroupType),
+					},
 				},
 			}
 
@@ -197,7 +199,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			componentAdapter := New(adapterCtx, *fkclient)
 			fkclient.Namespace = componentAdapter.Client.Namespace
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, map[int32]versionsCommon.Endpoint{})
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, map[int32]versionsCommon.ExposureType{})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

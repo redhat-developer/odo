@@ -8,6 +8,7 @@ import (
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
@@ -24,7 +25,7 @@ const (
 )
 
 // StartURLHttpRequestStatusWatchForK8S begins testing URLs for responses, outputting the result to console
-func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, loggingClient machineoutput.MachineEventLoggingClient) {
+func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, loggingClient machineoutput.MachineEventLoggingClient, containerComponents []common.DevfileComponent) {
 
 	// This is a non-blocking function so that other status watchers may start as needed
 	go func() {
@@ -33,7 +34,7 @@ func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kcl
 
 		for {
 			var err error
-			urlList, err = getURLsForKubernetes(occlient, client, envInfo, true)
+			urlList, err = getURLsForKubernetes(occlient, client, envInfo, true, containerComponents)
 
 			if err == nil {
 				// Success!
@@ -93,7 +94,7 @@ func startURLTester(urlsToTest [][]statusURL, loggingClient machineoutput.Machin
 	}
 }
 
-func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, ignoreUnpushed bool) ([]statusURL, error) {
+func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, ignoreUnpushed bool, containerComponents []common.DevfileComponent) ([]statusURL, error) {
 	componentName := envInfo.GetName()
 
 	routesSupported := false
@@ -109,7 +110,8 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envI
 
 	}
 
-	urls, err := ListIngressAndRoute(oclient, client, envInfo, componentName, routesSupported)
+	urls, err := ListIngressAndRoute(oclient, client, envInfo, containerComponents, componentName, routesSupported)
+
 	if err != nil {
 		return nil, err
 	}
