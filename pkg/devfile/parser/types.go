@@ -91,7 +91,7 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) (err
 						return err
 					}
 				} else {
-					// If the original command and patch command are different types, then we can't patch, so throow an error
+					// If the original command and patch command are different types, then we can't patch, so throw an error
 					return fmt.Errorf("cannot overide command %q with a different type of command", originalCommand.Id)
 				}
 
@@ -105,7 +105,7 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) (err
 	return nil
 }
 
-// overrideCompositeCommand overrides the given parent compoosite commmand
+// overrideCompositeCommand overrides the given parent composite commmand
 // patchCommand contains the patches to be applied to the parent's command
 func overrideCompositeCommand(patchCommand common.DevfileCommand, originalCommand common.DevfileCommand) (common.DevfileCommand, error) {
 	var updatedComposite common.Composite
