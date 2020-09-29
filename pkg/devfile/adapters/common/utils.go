@@ -2,7 +2,6 @@ package common
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 
 	"k8s.io/klog"
@@ -181,7 +180,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 
 			// if there is no volume mount path, default to volume mount name as per devfile schema
 			if len(volumeMount.Path) <= 0 {
-				volumeMount.Path = filepath.Join(FwdSlash, volumeMount.Name)
+				volumeMount.Path = FwdSlash + volumeMount.Name
 			}
 
 			vol := DevfileVolume{
