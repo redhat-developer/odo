@@ -233,27 +233,29 @@ func getType(component provider) (string, error) {
 // GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
 func GetPushedComponents(c *occlient.Client, applicationName string) (map[string]PushedComponent, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+
 	dcList, err := c.GetDeploymentConfigsFromSelector(applicationSelector)
 	if err != nil {
-		if isIgnorableError(err) {
-			dList, err := c.GetKubeClient().ListDeployments(applicationSelector)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to list components")
-			}
-			res := make(map[string]PushedComponent, len(dList.Items))
-			for _, d := range dList.Items {
-				comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c)
-				res[comp.GetName()] = comp
-			}
-			return res, nil
+		if !isIgnorableError(err) {
+			return nil, err
 		}
-		return nil, err
 	}
 	res := make(map[string]PushedComponent, len(dcList))
 	for _, dc := range dcList {
 		comp := newPushedComponent(applicationName, &s2iComponent{dc: dc}, c)
 		res[comp.GetName()] = comp
 	}
+
+	deploymentList, err := c.GetKubeClient().ListDeployments(applicationSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list components")
+	}
+
+	for _, d := range deploymentList.Items {
+		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c)
+		res[comp.GetName()] = comp
+	}
+
 	return res, nil
 }
 
