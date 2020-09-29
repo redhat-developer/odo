@@ -8,7 +8,6 @@ import (
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -90,12 +89,11 @@ type Adapter struct {
 	Client kclient.Client
 	*common.GenericAdapter
 
-	devfileBuildCmd    string
-	devfileRunCmd      string
-	devfileDebugCmd    string
-	devfileDebugPort   int
-	pod                *corev1.Pod
-	machineEventLogger machineoutput.MachineEventLoggingClient
+	devfileBuildCmd  string
+	devfileRunCmd    string
+	devfileDebugCmd  string
+	devfileDebugPort int
+	pod              *corev1.Pod
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
