@@ -305,53 +305,13 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
-	var uniqueStorages []common.Storage
-	volumeNameToPVCName := make(map[string]string)
-	processedVolumes := make(map[string]bool)
-
-	// Get a list of all the unique volume names and generate their PVC names
-	// we do not use the volume components which are unique here because
-	// not all volume components maybe referenced by a container component.
-	// We only want to create PVCs which are going to be used by a container
-	for _, volumes := range containerNameToVolumes {
-		for _, vol := range volumes {
-			if _, ok := processedVolumes[vol.Name]; !ok {
-				processedVolumes[vol.Name] = true
-
-				// Generate the PVC Names
-				klog.V(2).Infof("Generating PVC name for %v", vol.Name)
-				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
-				if err != nil {
-					return err
-				}
-
-				// Check if we have an existing PVC with the labels, overwrite the generated name with the existing name if present
-				existingPVCName, err := storage.GetExistingPVC(&a.Client, vol.Name, componentName)
-				if err != nil {
-					return err
-				}
-				if len(existingPVCName) > 0 {
-					klog.V(2).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
-					generatedPVCName = existingPVCName
-				}
-
-				pvc := common.Storage{
-					Name:   generatedPVCName,
-					Volume: vol,
-				}
-				uniqueStorages = append(uniqueStorages, pvc)
-				volumeNameToPVCName[vol.Name] = generatedPVCName
-			}
-		}
-	}
-
-	err = storage.DeleteOldPVCs(&a.Client, componentName, processedVolumes)
+	uniqueStorages, err := processVolumes(containerNameToVolumes, &a.Client, componentName)
 	if err != nil {
 		return err
 	}
 
 	// Add PVC and Volume Mounts to the podTemplateSpec
-	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
+	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, uniqueStorages, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
@@ -360,31 +320,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		"component": componentName,
 	})
 
-	var containerPorts []corev1.ContainerPort
-
-	for _, c := range deploymentSpec.Template.Spec.Containers {
-		// No need to check
-		if reflect.DeepEqual(a.Devfile.Ctx.GetApiVersion(), "1.0.0") {
-			containerPorts = append(containerPorts, c.Ports...)
-		} else {
-			for _, port := range c.Ports {
-				portExist := false
-				for _, entry := range containerPorts {
-					if entry.ContainerPort == port.ContainerPort {
-						portExist = true
-						break
-					}
-				}
-				// if Exposure == none, should not create a service for that port
-				if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
-					containerPorts = append(containerPorts, port)
-				}
-			}
-		}
-	}
+	containerPorts := processPorts(deploymentSpec.Template.Spec.Containers, portExposureMap)
 
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 
 	if componentExists {
@@ -425,6 +363,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			}
 		}
 	} else {
+		klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
@@ -468,6 +407,72 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 	}
 
 	return "", "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+}
+
+func processVolumes(containerNameToVolumes map[string][]common.DevfileVolume, client *kclient.Client, componentName string) ([]common.DevfileVolume, error) {
+
+	var uniqueStorages []common.DevfileVolume
+	processedVolumes := make(map[string]bool)
+
+	// Get a list of all the unique volume names and generate their PVC names
+	// we do not use the volume components which are unique here because
+	// not all volume components maybe referenced by a container component.
+	// We only want to create PVCs which are going to be used by a container
+	for _, volumes := range containerNameToVolumes {
+		for _, vol := range volumes {
+			if _, ok := processedVolumes[vol.Name]; !ok {
+				processedVolumes[vol.Name] = true
+
+				// Generate the PVC Names
+				klog.V(2).Infof("Generating PVC name for %v", vol.Name)
+				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
+				if err != nil {
+					return nil, err
+				}
+
+				// Check if we have an existing PVC with the labels, overwrite the generated name with the existing name if present
+				existingPVCName, err := storage.GetExistingPVC(client, vol.Name, componentName)
+				if err != nil {
+					return nil, err
+				}
+				if len(existingPVCName) > 0 {
+					klog.V(2).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
+					generatedPVCName = existingPVCName
+				}
+
+				vol.GeneratedName = generatedPVCName
+
+				uniqueStorages = append(uniqueStorages, vol)
+			}
+		}
+	}
+
+	err := storage.DeleteOldPVCs(client, componentName, processedVolumes)
+
+	return nil, err
+}
+
+func processPorts(containers []corev1.Container, portExposureMap map[int32]versionsCommon.ExposureType) []corev1.ContainerPort {
+
+	var containerPorts []corev1.ContainerPort
+
+	for _, c := range containers {
+
+		for _, port := range c.Ports {
+			portExist := false
+			for _, entry := range containerPorts {
+				if entry.ContainerPort == port.ContainerPort {
+					portExist = true
+					break
+				}
+			}
+			// if Exposure == none, should not create a service for that port
+			if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
+				containerPorts = append(containerPorts, port)
+			}
+		}
+	}
+	return containerPorts
 }
 
 // Delete deletes the component

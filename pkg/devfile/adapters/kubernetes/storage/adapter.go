@@ -20,7 +20,7 @@ type Adapter struct {
 }
 
 // Create creates the component pvc storage if it does not exist
-func (a *Adapter) Create(storages []common.Storage) (err error) {
+func (a *Adapter) Create(storages []common.DevfileVolume) (err error) {
 
 	// createComponentStorage creates PVC from the unique Devfile volumes if it does not exist
 	err = CreateComponentStorage(&a.Client, storages, a.ComponentName)

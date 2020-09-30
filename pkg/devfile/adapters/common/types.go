@@ -16,15 +16,13 @@ type AdapterContext struct {
 
 // DevfileVolume is a struct for Devfile volume that is common to all the adapters
 type DevfileVolume struct {
-	Name          string
-	ContainerPath string
+	//GeneratedName is generated pvc name in case of kubernetess
+	GeneratedName string
+	// Name is volume name defined in devfile
+	Name string
+	//Size of volume as defined in devfile
 	Size          string
-}
-
-// Storage is a struct that is common to all the adapters
-type Storage struct {
-	Name   string
-	Volume DevfileVolume
+	ContainerPath string
 }
 
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component

@@ -35,7 +35,7 @@ type Adapter struct {
 	*common.GenericAdapter
 
 	containerNameToVolumes    map[string][]common.DevfileVolume
-	uniqueStorage             []common.Storage
+	uniqueStorage             []common.DevfileVolume
 	volumeNameToDockerVolName map[string]string
 	devfileBuildCmd           string
 	devfileRunCmd             string

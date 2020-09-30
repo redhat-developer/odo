@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/storage/labels"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -17,12 +18,12 @@ import (
 const pvcNameMaxLen = 45
 
 // CreateComponentStorage creates PVCs with the given list of storages if it does not exist, else it uses the existing PVC
-func CreateComponentStorage(Client *kclient.Client, storages []common.Storage, componentName string) (err error) {
+func CreateComponentStorage(Client *kclient.Client, storages []common.DevfileVolume, componentName string) (err error) {
 
 	for _, storage := range storages {
-		volumeName := storage.Volume.Name
-		volumeSize := storage.Volume.Size
-		pvcName := storage.Name
+		volumeName := storage.Name
+		volumeSize := storage.Size
+		pvcName := storage.GeneratedName
 
 		existingPVCName, err := GetExistingPVC(Client, volumeName, componentName)
 		if err != nil {

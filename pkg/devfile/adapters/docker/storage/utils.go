@@ -15,11 +15,11 @@ import (
 const volNameMaxLength = 45
 
 // CreateComponentStorage creates a Docker volume with the given list of storages if it does not exist, else it uses the existing volume
-func CreateComponentStorage(Client *lclient.Client, storages []common.Storage, componentName string) (err error) {
+func CreateComponentStorage(Client *lclient.Client, storages []common.DevfileVolume, componentName string) (err error) {
 
 	for _, storage := range storages {
-		volumeName := storage.Volume.Name
-		dockerVolName := storage.Name
+		volumeName := storage.Name
+		dockerVolName := storage.GeneratedName
 
 		existingDockerVolName, err := GetExistingVolume(Client, volumeName, componentName)
 		if err != nil {
@@ -101,8 +101,8 @@ func GetExistingVolume(Client *lclient.Client, volumeName, componentName string)
 
 // ProcessVolumes takes in a list of component volumes and for each unique volume in the devfile, creates a Docker volume name for it
 // It returns a list of unique volumes, a mapping of devfile volume names to docker volume names, and an error if applicable
-func ProcessVolumes(client *lclient.Client, componentName string, containerNameToVolumes map[string][]common.DevfileVolume) ([]common.Storage, map[string]string, error) {
-	var uniqueStorages []common.Storage
+func ProcessVolumes(client *lclient.Client, componentName string, containerNameToVolumes map[string][]common.DevfileVolume) ([]common.DevfileVolume, map[string]string, error) {
+	var uniqueStorages []common.DevfileVolume
 	volumeNameToDockerVolName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
 
@@ -132,11 +132,9 @@ func ProcessVolumes(client *lclient.Client, componentName string, containerNameT
 					generatedDockerVolName = existingVolName
 				}
 
-				dockerVol := common.Storage{
-					Name:   generatedDockerVolName,
-					Volume: vol,
-				}
-				uniqueStorages = append(uniqueStorages, dockerVol)
+				vol.GeneratedName = generatedDockerVolName
+
+				uniqueStorages = append(uniqueStorages, vol)
 				volumeNameToDockerVolName[vol.Name] = generatedDockerVolName
 			}
 		}
