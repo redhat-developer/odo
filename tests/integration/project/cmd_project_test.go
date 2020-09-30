@@ -2,35 +2,24 @@ package project
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"strings"
 )
 
 var _ = Describe("odo project command tests", func() {
-	var project string
-	var context string
+	var commonVar helper.CommonVar
 
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		project = helper.CreateRandProject()
+		commonVar = helper.CommonBeforeEach()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Machine readable output tests", func() {
@@ -44,7 +33,7 @@ var _ = Describe("odo project command tests", func() {
 			projectGetJSON := helper.CmdShouldPass("odo", "project", "get", "-o", "json")
 			getOutputJSON, err := helper.Unindented(projectGetJSON)
 			Expect(err).Should(BeNil())
-			expectedJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+			expectedJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + commonVar.Project + `","namespace":"` + commonVar.Project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
 			Expect(err).Should(BeNil())
 			Expect(getOutputJSON).Should(MatchJSON(expectedJSON))
 		})
@@ -61,7 +50,7 @@ var _ = Describe("odo project command tests", func() {
 	Context("when running get command with -q flag", func() {
 		It("should display only the project name", func() {
 			projectName := helper.CmdShouldPass("odo", "project", "get", "-q")
-			Expect(projectName).Should(Equal(project))
+			Expect(projectName).Should(Equal(commonVar.Project))
 		})
 	})
 
@@ -116,12 +105,12 @@ var _ = Describe("odo project command tests", func() {
 		It("should successfully execute list along with machine readable output", func() {
 
 			helper.WaitForCmdOut("odo", []string{"project", "list"}, 1, true, func(output string) bool {
-				return strings.Contains(output, project)
+				return strings.Contains(output, commonVar.Project)
 			})
 
 			// project deletion doesn't happen immediately and older projects still might exist
 			// so we test subset of the string
-			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + commonVar.Project + `","namespace":"` + commonVar.Project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
 			Expect(err).Should(BeNil())
 
 			helper.WaitForCmdOut("odo", []string{"project", "list", "-o", "json"}, 1, true, func(output string) bool {

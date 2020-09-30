@@ -32,13 +32,6 @@ func (oc OcRunner) Run(cmd string) *gexec.Session {
 	return session
 }
 
-// SwitchProject switch to the project
-func (oc OcRunner) SwitchProject(projectName string) {
-	fmt.Fprintf(GinkgoWriter, "Switching to project : %s\n", projectName)
-	session := CmdShouldPass(oc.path, "project", projectName)
-	Expect(session).To(ContainSubstring(projectName))
-}
-
 // GetCurrentProject get currently active project in oc
 // returns empty string if there no active project, or no access to the project
 func (oc OcRunner) GetCurrentProject() string {
