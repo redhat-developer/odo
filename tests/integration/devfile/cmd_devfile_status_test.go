@@ -287,6 +287,8 @@ var _ = Describe("odo devfile status command tests", func() {
 
 	Context("Verify URL status is correctly reported", func() {
 
+		openshift := os.Getenv("KUBERNETES") != "true"
+
 		// Test all 4 combos of secure/insecure and ingress/route (where supported)
 		combos := [][]bool{}
 		for x := 0; x < 2; x++ {
@@ -317,10 +319,8 @@ var _ = Describe("odo devfile status command tests", func() {
 			// Generate a parameterized test for each combination
 			It("Verify that odo component status detects the URL status: "+name, func() {
 
-				if !ingress {
-					if os.Getenv("KUBERNETES") == "true" {
-						Skip("Route-based URLs is an OpenShift only scenario")
-					}
+				if !ingress && !openshift {
+					Skip("Route-based URLs is an OpenShift only scenario")
 				}
 
 				urlHost := helper.RandString(12) + ".com"
@@ -357,12 +357,12 @@ var _ = Describe("odo devfile status command tests", func() {
 				urlReachableEntry := utils.GetMostRecentEventOfType(machineoutput.TypeURLReachable, entries, true).(*machineoutput.URLReachable)
 
 				expectedKind := "ingress"
-				if !ingress {
+				if !ingress || openshift {
 					expectedKind = "route"
 				}
 
 				Expect(urlReachableEntry.Kind).To(Equal(expectedKind))
-				Expect(urlReachableEntry.Reachable).To(Equal(!ingress)) // The ingress URL is using a random hostname, so should not be resolveable
+				Expect(urlReachableEntry.Reachable).To(Equal(!ingress || openshift)) // On non-openshift, the ingress URL is using a random hostname, so should not be resolveable
 				Expect(urlReachableEntry.Port).To(Equal(3000))
 				// Expect(urlReachableEntry.Secure).To(Equal(secure))
 
