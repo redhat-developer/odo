@@ -18,7 +18,7 @@ make bin
 mkdir -p $GOPATH/bin
 make goget-ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
-export CUSTOM_HOMEDIR=$ARTIFACT_DIR 
+export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
 # Copy kubeconfig to temporary kubeconfig file
 # Read and Write permission to temporary kubeconfig file
@@ -59,11 +59,11 @@ else
     make test-e2e-all || error=true
 
     # Fail the build if there is any error while test execution
-    if [ $error ]; then 
+    if [ $error ]; then
         exit -1
     fi
 fi
 
-cp -r reports $ARTIFACT_DIR 
+cp -r reports $ARTIFACT_DIR
 
 odo logout
