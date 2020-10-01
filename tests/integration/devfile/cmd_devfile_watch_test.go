@@ -2,12 +2,12 @@ package devfile
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/pkg/watch"
@@ -125,7 +125,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// 2) Create a new file A
-			fileAPath, fileAText := createSimpleFile(commonVar.Context)
+			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 
 			// 3) Odo watch that project
 			session := helper.CmdRunner("odo", "watch", "--context", commonVar.Context)
@@ -163,6 +163,42 @@ var _ = Describe("odo devfile watch command tests", func() {
 			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
 		})
 
+	})
+
+	Context("when executing odo watch after odo push with debug flag", func() {
+		It("should be able to start a debug session after push with debug flag using odo watch and revert back after normal push", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// push with debug flag
+			output = helper.CmdShouldPass("odo", "push", "--debug", "--project", commonVar.Project)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			watchFlag := ""
+			// check if the normal debugRun command was executed
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing devbuild command", "Executing debugrun command"},
+			}
+			// odo watch and validate if we can port forward successfully
+			utils.OdoWatchWithDebug(odoV2Watch, commonVar.Context, watchFlag)
+
+			// revert to normal odo push
+			output = helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// check if the normal run command was executed
+			odoV2Watch = utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
+			}
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
+		})
 	})
 
 	Context("when executing odo watch after odo push with ignores flag", func() {
@@ -207,7 +243,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
 
 			// 3) Create a new file A
-			fileAPath, _ := createSimpleFile(commonVar.Context)
+			fileAPath, _ := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 
 			// 4) Wait for the new file to exist in the index
 			Eventually(func() bool {
@@ -289,13 +325,3 @@ var _ = Describe("odo devfile watch command tests", func() {
 	})
 
 })
-
-func createSimpleFile(context string) (string, string) {
-
-	textFilePath := filepath.Join(context, "my-file-"+helper.RandString(10)+".txt")
-	textOne := []byte(helper.RandString(10))
-	err := ioutil.WriteFile(textFilePath, textOne, 0644)
-	Expect(err).NotTo(HaveOccurred())
-
-	return textFilePath, string(textOne)
-}
