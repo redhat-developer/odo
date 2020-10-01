@@ -303,7 +303,7 @@ func CreateSimpleFile(context, filePrefix, fileExtension string) (string, string
 
 	FilePath := filepath.Join(context, filePrefix+RandString(10)+fileExtension)
 	content := []byte(RandString(10))
-	err := ioutil.WriteFile(FilePath, content, 0644)
+	err := ioutil.WriteFile(FilePath, content, 0600)
 	Expect(err).NotTo(HaveOccurred())
 
 	return FilePath, string(content)
