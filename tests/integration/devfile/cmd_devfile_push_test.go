@@ -524,7 +524,8 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 
-			helper.CmdShouldPass("odo", "push", "--debug", "--project", commonVar.Project)
+			stdOut := helper.CmdShouldPass("odo", "push", "--debug", "--project", commonVar.Project)
+			Expect(stdOut).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			logs := helper.CmdShouldPass("odo", "log")
 

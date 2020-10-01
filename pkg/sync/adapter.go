@@ -146,8 +146,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
 		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !isForcePush {
-			// no file was modified/added/deleted/renamed, thus return without synching files
-			log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 			return false, nil
 		}
 	}
