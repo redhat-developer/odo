@@ -103,7 +103,7 @@ func (ciprw *CIPRWorker) sendBuildInfo() error {
 		"",
 		getPRQueue(ciprw.pr),
 		true,
-		true,
+		false,
 		amqp.Publishing{
 			Headers:         amqp.Table{},
 			ContentType:     "text/json",

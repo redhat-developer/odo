@@ -61,7 +61,7 @@ func (ciprr *CIPRRequestor) requestPRBuild() error {
 		"",
 		SEND_Q,
 		true,
-		true,
+		false,
 		amqp.Publishing{
 			Headers:         amqp.Table{},
 			ContentType:     "application/json",
