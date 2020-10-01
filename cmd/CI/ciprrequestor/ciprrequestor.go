@@ -55,7 +55,7 @@ func main() {
 		} else if !success {
 			log.Fatal("run failed, check logs above")
 		}
-	case <-time.After(1*time.Hour + 20*time.Minute):
+	case <-time.After(10 * time.Minute):
 		log.Println("shutting down")
 		if err := w.ShutDown(); err != nil {
 			log.Fatalf("error during shutdown: %s", err)
