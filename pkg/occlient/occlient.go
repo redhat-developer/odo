@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/kclient"
 	"io"
 	"net"
 	"path/filepath"
@@ -16,12 +15,12 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -973,6 +972,7 @@ func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPa
 	}
 	type DockerImageMetaDataRaw struct {
 		ContainerConfig ContainerConfig `json:"ContainerConfig"`
+		Config          ContainerConfig `json:"Config"`
 	}
 
 	var dimdr DockerImageMetaDataRaw
@@ -986,24 +986,35 @@ func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPa
 		return S2IPaths{}, errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 
+	labels := make(map[string]string)
+
+	// Put labels from both ContainerConfig and Config into one map
+	// if there is the same label in both, the Config has priority
+	for k, v := range dimdr.ContainerConfig.Labels {
+		labels[k] = v
+	}
+	for k, v := range dimdr.Config.Labels {
+		labels[k] = v
+	}
+
 	// If by any chance, labels attribute is nil(although ideally not the case for builder images), return
-	if dimdr.ContainerConfig.Labels == nil {
+	if len(labels) == 0 {
 		klog.V(3).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
 		return S2IPaths{}, nil
 	}
 
 	// Extract the label containing S2I scripts URL
-	s2iScriptsURL := dimdr.ContainerConfig.Labels[S2IScriptsURLLabel]
-	s2iSrcOrBinPath := dimdr.ContainerConfig.Labels[S2ISrcOrBinLabel]
-	s2iBuilderImgName := dimdr.ContainerConfig.Labels[S2IBuilderImageName]
+	s2iScriptsURL := labels[S2IScriptsURLLabel]
+	s2iSrcOrBinPath := labels[S2ISrcOrBinLabel]
+	s2iBuilderImgName := labels[S2IBuilderImageName]
 
 	if s2iSrcOrBinPath == "" {
 		// In cases like nodejs builder image, where there is no concept of binary and sources are directly run, use destination as source
-		// s2iSrcOrBinPath = getS2ILabelValue(dimdr.ContainerConfig.Labels, S2IDeploymentsDir)
+		// s2iSrcOrBinPath = getS2ILabelValue(dimdr.Config.Labels, S2IDeploymentsDir)
 		s2iSrcOrBinPath = DefaultS2ISrcOrBinPath
 	}
 
-	s2iDestinationDir := getS2ILabelValue(dimdr.ContainerConfig.Labels, S2IDeploymentsDir)
+	s2iDestinationDir := getS2ILabelValue(labels, S2IDeploymentsDir)
 	// The URL is a combination of protocol and the path to script details of which can be found @
 	// https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#s2i-scripts
 	// Extract them out into protocol and path separately to minimise the task in
@@ -1030,7 +1041,7 @@ func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPa
 		ScriptsPath:         s2iScriptsPath,
 		SrcOrBinPath:        s2iSrcOrBinPath,
 		DeploymentDir:       s2iDestinationDir,
-		WorkingDir:          dimdr.ContainerConfig.WorkingDir,
+		WorkingDir:          dimdr.Config.WorkingDir,
 		SrcBackupPath:       DefaultS2ISrcBackupDir,
 		BuilderImgName:      s2iBuilderImgName,
 	}, nil
