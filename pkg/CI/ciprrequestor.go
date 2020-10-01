@@ -72,6 +72,9 @@ func (ciprr *CIPRRequestor) requestPRBuild() error {
 			Priority:        0,
 		},
 	)
+	if err != nil {
+		return fmt.Errorf("failed to publish build message %w", err)
+	}
 	return nil
 }
 

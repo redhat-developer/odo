@@ -78,22 +78,13 @@ func NewStatusMessage(build string) *StatusMessage {
 }
 
 func (m *Message) IsLog() bool {
-	if m.Kind == Log {
-		return true
-	}
-	return false
+	return m.Kind == Log
 }
 
 func (m *Message) IsStatus() bool {
-	if m.Kind == Status {
-		return true
-	}
-	return false
+	return m.Kind == Status
 }
 
 func (m *Message) IsBuild() bool {
-	if m.Kind == Build {
-		return true
-	}
-	return false
+	return m.Kind == Build
 }

@@ -143,6 +143,9 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 			Priority:        0,
 		},
 	)
+	if err != nil {
+		return false, fmt.Errorf("failed to publish logs message %w", err)
+	}
 	return sucess, nil
 }
 
