@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/kclient"
 	"io"
 	"net"
 	"path/filepath"
@@ -16,12 +15,11 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -56,13 +54,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
-
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog"
 )
 
 var (
@@ -1901,7 +1899,7 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 				for _, status := range e.Status.ContainerStatuses {
 					// using this just for debugging message, so ignoring error on purpose
 					jsonStatus, _ := json.Marshal(status)
-					klog.V(3).Infof("Container Status: %#v", jsonStatus)
+					klog.V(3).Infof("Container Status: %s", string(jsonStatus))
 				}
 				switch e.Status.Phase {
 				case desiredPhase:
