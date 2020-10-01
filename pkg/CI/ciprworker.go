@@ -59,11 +59,12 @@ func (ciprw *CIPRWorker) init() error {
 //cleanupOldBuilds ensures there are no conflicting builds for this PR still alive
 func (ciprw *CIPRWorker) cleanUpOldBuilds() error {
 	var err error
-	jenkins := gojenkins.CreateJenkins(nil, ciprw.jenkins_url, ciprw.jenkins_user, ciprw.jenkins_password)
-	_, err = jenkins.Init()
+	jenkins, err := gojenkins.CreateJenkins(nil, ciprw.jenkins_url, ciprw.jenkins_user, ciprw.jenkins_password).Init()
 	if err != nil {
 		return fmt.Errorf("unable to initialize jenkins %w", err)
 	}
+
+	//j, err := jenkins.GetJob()
 	buildids, err := jenkins.GetAllBuildIds(ciprw.jenkins_job)
 	if err != nil {
 		return fmt.Errorf("failed to fetch build ids %w", err)
@@ -215,8 +216,6 @@ func (ciprw *CIPRWorker) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize worker %w", err)
 	}
-	defer ciprw.rcvqchan.Close()
-	defer ciprw.conn.Close()
 	//Check jenkins for existing builds and clean them up
 	log.Println("[x] finding and cleaning up old builds")
 	err = ciprw.cleanUpOldBuilds()
@@ -242,5 +241,7 @@ func (ciprw *CIPRWorker) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to send status message %w", err)
 	}
+	defer ciprw.rcvqchan.Close()
+	defer ciprw.conn.Close()
 	return nil
 }
