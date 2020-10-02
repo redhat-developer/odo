@@ -24,8 +24,8 @@ func main() {
 	//var err error
 	amqpURI := getEnv("AMQP_URI", "", false)
 	jenkins_url := getEnv("JENKINS_URL", "", true)
-	jenkins_user := getEnv("JENKINS_USER", "", true)
-	jenkins_password := getEnv("JENKINS_PASSWORD", "", true)
+	jenkins_user := getEnv("JENKINS_USERNAME", "", true)
+	jenkins_password := getEnv("JENKINS_USER_PASSWORD", "", true)
 	jenkins_job := getEnv("JOB_NAME", "", true)
 	bn := getEnv("BUILD_NUMBER", "", true)
 	build_number, err := strconv.Atoi(bn)
