@@ -188,8 +188,12 @@ func (ciprr *CIPRRequestor) ShutDown() error {
 	}
 
 	// will close the deliveries channel
+	if _, err := ciprr.rcvqchan.QueueDelete(getPRQueue(ciprr.pr), true, true, false); err != nil {
+		return fmt.Errorf("failed to delete rcv queue %w", err)
+	}
+
 	if err := ciprr.rcvqchan.Cancel("", true); err != nil {
-		return fmt.Errorf("Consumer cancel failed: %s", err)
+		return fmt.Errorf("consumer cancel failed: %s", err)
 	}
 
 	if err := ciprr.conn.Close(); err != nil {

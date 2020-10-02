@@ -41,4 +41,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to run worker: %s", err)
 	}
+	err = w.ShutDown()
+	if err != nil {
+		log.Fatalf("failed to shutdown, %s", err)
+	}
 }

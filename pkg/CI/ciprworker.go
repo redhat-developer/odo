@@ -48,7 +48,7 @@ func (ciprw *CIPRWorker) init() error {
 		return fmt.Errorf("unable to get channel: %w", err)
 	}
 	rcvqn := getPRQueue(ciprw.pr)
-	_, err = rcvchan.QueueDeclare(rcvqn, false, true, false, false, nil)
+	_, err = rcvchan.QueueDeclare(rcvqn, false, false, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create q %w", err)
 	}
@@ -247,7 +247,11 @@ func (ciprw *CIPRWorker) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to send status message %w", err)
 	}
-	defer ciprw.rcvqchan.Close()
-	defer ciprw.conn.Close()
+	return nil
+}
+
+func (ciprw *CIPRWorker) ShutDown() error {
+	ciprw.rcvqchan.Close()
+	ciprw.conn.Close()
 	return nil
 }
