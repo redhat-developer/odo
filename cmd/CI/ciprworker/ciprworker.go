@@ -22,10 +22,10 @@ func getEnv(key string, defaultVal string, failifnotfound bool) string {
 func main() {
 	//extract nessasary information
 	//var err error
-	amqpURI := getEnv("AMQP_URI", "", false)
+	amqpURI := getEnv("AMQP_URI", "", true)
 	jenkins_url := getEnv("JENKINS_URL", "", true)
-	jenkins_user := getEnv("JENKINS_USERNAME", "", true)
-	jenkins_password := getEnv("JENKINS_USER_PASSWORD", "", true)
+	jenkins_user := getEnv("JENKINS_ROBOT_USER", "", true)
+	jenkins_password := getEnv("JENKINS_ROBOT_PASSWORD", "", true)
 	jenkins_job := getEnv("JOB_NAME", "", true)
 	bn := getEnv("BUILD_NUMBER", "", true)
 	build_number, err := strconv.Atoi(bn)
