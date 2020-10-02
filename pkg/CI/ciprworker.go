@@ -14,7 +14,7 @@ type CIPRWorker struct {
 	conn             *amqp.Connection
 	rcvqchan         *amqp.Channel
 	pr               string
-	jenkins_build    string
+	jenkins_build    int
 	jenkins_job      string
 	jenkins_url      string
 	jenkins_user     string
@@ -22,7 +22,7 @@ type CIPRWorker struct {
 }
 
 //NewCIPRWorker returns new ci pr worker
-func NewCIPRWorker(amqpURI, jenkins_url, jenkins_user, jenkins_password, jenkins_job, pr, jenkins_build string) (*CIPRWorker, error) {
+func NewCIPRWorker(amqpURI, jenkins_url, jenkins_user, jenkins_password, jenkins_job, pr string, jenkins_build int) (*CIPRWorker, error) {
 	ciprw := &CIPRWorker{
 		amqpURI:          amqpURI,
 		conn:             nil,
@@ -74,21 +74,23 @@ func (ciprw *CIPRWorker) cleanUpOldBuilds() error {
 		return fmt.Errorf("failed to fetch build ids %w", err)
 	}
 	for _, bid := range buildids {
-		build, err := job.GetBuild(bid.Number)
-		if err != nil {
-			return fmt.Errorf("failed to get build info %w", err)
-		}
-		buildenvinfo, err := build.GetInjectedEnvVars()
-		if err != nil {
-			return fmt.Errorf("unable to get build envinfo %w", err)
-		}
-		for k, v := range buildenvinfo {
-			if k == "PR_NO" && v == ciprw.pr {
-				_, err = build.Stop()
-				if err != nil {
-					return fmt.Errorf("unable to stop build %w", err)
+		if bid.Number != int64(ciprw.jenkins_build) {
+			build, err := job.GetBuild(bid.Number)
+			if err != nil {
+				return fmt.Errorf("failed to get build info %w", err)
+			}
+			buildenvinfo, err := build.GetInjectedEnvVars()
+			if err != nil {
+				return fmt.Errorf("unable to get build envinfo %w", err)
+			}
+			for k, v := range buildenvinfo {
+				if k == "PR_NO" && v == ciprw.pr {
+					_, err = build.Stop()
+					if err != nil {
+						return fmt.Errorf("unable to stop build %w", err)
+					}
+					break
 				}
-				break
 			}
 		}
 	}

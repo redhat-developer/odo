@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/openshift/odo/pkg/CI"
 )
@@ -26,7 +27,11 @@ func main() {
 	jenkins_user := getEnv("JENKINS_USER", "", true)
 	jenkins_password := getEnv("JENKINS_PASSWORD", "", true)
 	jenkins_job := getEnv("JOB_NAME", "", true)
-	build_number := getEnv("BUILD_NUMBER", "", false)
+	bn := getEnv("BUILD_NUMBER", "", true)
+	build_number, err := strconv.Atoi(bn)
+	if err != nil {
+		log.Fatal("BUILD_NUMBER must be an integer (duh!!)")
+	}
 	pr := getEnv("PR_NO", "", true)
 	w, err := CI.NewCIPRWorker(amqpURI, jenkins_url, jenkins_user, jenkins_password, jenkins_job, pr, build_number)
 	if err != nil {

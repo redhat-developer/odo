@@ -14,7 +14,7 @@ type CIPRRequestor struct {
 	sendqchan       *amqp.Channel
 	rcvqchan        *amqp.Channel
 	pr              string
-	jenkins_build   string
+	jenkins_build   int
 	jenkins_project string
 	jenkins_token   string
 	done            chan error
@@ -27,6 +27,7 @@ func NewCIPRRequestor(amqpURI, jenkins_project, jenkins_token, pr string) (*CIPR
 		pr:              pr,
 		jenkins_project: jenkins_project,
 		jenkins_token:   jenkins_token,
+		jenkins_build:   -1,
 		done:            make(chan error),
 		success:         make(chan bool),
 	}
@@ -88,9 +89,9 @@ func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, su
 			done <- fmt.Errorf("failed to unmarshal message as Message %w", err)
 			return
 		}
-		if ciprr.jenkins_build == "" {
+		if ciprr.jenkins_build == -1 {
 			if m.IsBuild() {
-				bm := NewBuildMessage("")
+				bm := NewBuildMessage(-1)
 				err = json.Unmarshal(d.Body, bm)
 				if err != nil {
 					done <- fmt.Errorf("failed to unmarshal message as BuildMessage %w", err)
@@ -100,7 +101,7 @@ func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, su
 			}
 		} else if m.Build == ciprr.jenkins_build {
 			if m.IsStatus() {
-				sm := NewStatusMessage("")
+				sm := NewStatusMessage(-1)
 				err = json.Unmarshal(d.Body, sm)
 				if err != nil {
 					done <- fmt.Errorf("failed to unmarshal message as StatusMessage %w", err)
@@ -114,7 +115,7 @@ func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, su
 				success <- sm.Success
 				break
 			} else if m.IsLog() {
-				lm := NewLogsMessage("")
+				lm := NewLogsMessage(-1)
 				err = json.Unmarshal(d.Body, lm)
 				if err != nil {
 					done <- fmt.Errorf("failed to unmarshal message as LogMessage %w", err)

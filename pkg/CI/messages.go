@@ -8,7 +8,7 @@ const (
 
 type Message struct {
 	Kind  string `json:"Kind"`
-	Build string `json:"Build"`
+	Build int    `json:"Build"`
 }
 
 type LogsMessage struct {
@@ -50,7 +50,7 @@ func NewPRRequestMessage(project, prno, token string) *PRRequestMessage {
 	return prm
 }
 
-func NewBuildMessage(build string) *BuildMessage {
+func NewBuildMessage(build int) *BuildMessage {
 	return &BuildMessage{
 		Message: &Message{
 			Kind:  Build,
@@ -59,7 +59,7 @@ func NewBuildMessage(build string) *BuildMessage {
 	}
 }
 
-func NewLogsMessage(build string) *LogsMessage {
+func NewLogsMessage(build int) *LogsMessage {
 	return &LogsMessage{
 		Message: &Message{
 			Kind:  Log,
@@ -68,7 +68,7 @@ func NewLogsMessage(build string) *LogsMessage {
 	}
 }
 
-func NewStatusMessage(build string) *StatusMessage {
+func NewStatusMessage(build int) *StatusMessage {
 	return &StatusMessage{
 		Message: &Message{
 			Kind:  Status,
