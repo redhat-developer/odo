@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/bndr/gojenkins"
 	"github.com/streadway/amqp"
@@ -48,7 +49,7 @@ func (ciprw *CIPRWorker) init() error {
 		return fmt.Errorf("unable to get channel: %w", err)
 	}
 	rcvqn := getPRQueue(ciprw.pr)
-	_, err = rcvchan.QueueDeclare(rcvqn, false, false, false, false, nil)
+	_, err = rcvchan.QueueDeclare(rcvqn, false, true, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create q %w", err)
 	}
@@ -109,7 +110,7 @@ func (ciprw *CIPRWorker) sendBuildInfo() error {
 	err = ciprw.rcvqchan.Publish(
 		"",
 		getPRQueue(ciprw.pr),
-		true,
+		false,
 		false,
 		amqp.Publishing{
 			Headers:         amqp.Table{},
@@ -153,6 +154,7 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to publish logs message %w", err)
 	}
+	time.Sleep(30 * time.Millisecond)
 	return sucess, nil
 }
 
