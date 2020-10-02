@@ -59,18 +59,22 @@ func (ciprw *CIPRWorker) init() error {
 //cleanupOldBuilds ensures there are no conflicting builds for this PR still alive
 func (ciprw *CIPRWorker) cleanUpOldBuilds() error {
 	var err error
+	fmt.Println("logging into jenkins ", ciprw.jenkins_url, " as user ", ciprw.jenkins_user, " with credentials ", ciprw.jenkins_password)
 	jenkins, err := gojenkins.CreateJenkins(nil, ciprw.jenkins_url, ciprw.jenkins_user, ciprw.jenkins_password).Init()
 	if err != nil {
 		return fmt.Errorf("unable to initialize jenkins %w", err)
 	}
 
-	//j, err := jenkins.GetJob()
-	buildids, err := jenkins.GetAllBuildIds(ciprw.jenkins_job)
+	job, err := jenkins.GetJob(ciprw.jenkins_job)
+	if err != nil {
+		return fmt.Errorf("failed to fetch job %s %s", ciprw.jenkins_job, err)
+	}
+	buildids, err := job.GetAllBuildIds()
 	if err != nil {
 		return fmt.Errorf("failed to fetch build ids %w", err)
 	}
 	for _, bid := range buildids {
-		build, err := jenkins.GetBuild(ciprw.jenkins_job, bid.Number)
+		build, err := job.GetBuild(bid.Number)
 		if err != nil {
 			return fmt.Errorf("failed to get build info %w", err)
 		}
