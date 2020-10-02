@@ -107,6 +107,10 @@ func (ciprw *CIPRWorker) sendBuildInfo() error {
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal build message %w", err)
 	}
+	// err = ciprw.init()
+	// if err != nil {
+	// 	return fmt.Errorf("failed to initialize connection")
+	// }
 	err = ciprw.rcvqchan.Publish(
 		"",
 		getPRQueue(ciprw.pr),
@@ -124,7 +128,9 @@ func (ciprw *CIPRWorker) sendBuildInfo() error {
 	if err != nil {
 		return fmt.Errorf("failed to publish build message %w", err)
 	}
+	time.Sleep(10 * time.Millisecond)
 	return nil
+	// return ciprw.ShutDown()
 }
 
 func (ciprw *CIPRWorker) runTests() (bool, error) {
@@ -137,6 +143,10 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to unmarshal logs %w", err)
 	}
+	// err = ciprw.init()
+	// if err != nil {
+	// 	return false, fmt.Errorf("failed to initialize connection")
+	// }
 	err = ciprw.rcvqchan.Publish(
 		"",
 		getPRQueue(ciprw.pr),
@@ -154,7 +164,8 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to publish logs message %w", err)
 	}
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
+	// return sucess, ciprw.ShutDown()
 	return sucess, nil
 }
 
@@ -219,16 +230,16 @@ func (ciprw *CIPRWorker) sendStatusMessage(success bool) error {
 func (ciprw *CIPRWorker) Run() error {
 	//initialize. This is done in run so cleanup can be handled correctly
 	var err error
-	log.Println("[x] initializing worker")
-	err = ciprw.init()
-	if err != nil {
-		return fmt.Errorf("failed to initialize worker %w", err)
-	}
 	//Check jenkins for existing builds and clean them up
 	log.Println("[x] finding and cleaning up old builds")
 	err = ciprw.cleanUpOldBuilds()
 	if err != nil {
 		return fmt.Errorf("failed to cleanup old builds %w", err)
+	}
+	log.Println("[x] initializing")
+	err = ciprw.init()
+	if err != nil {
+		return fmt.Errorf("failed to initialize")
 	}
 	//Send current build information to requestor. This assumes requestor is dropping every message
 	//until it gets this message

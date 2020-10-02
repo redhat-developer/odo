@@ -45,6 +45,6 @@ func main() {
 	time.Sleep(10 * time.Minute)
 	err = w.ShutDown()
 	if err != nil {
-		log.Fatalf("failed to shutdown, %s", err)
+		log.Fatalf("failed to shutdown %s", err)
 	}
 }
