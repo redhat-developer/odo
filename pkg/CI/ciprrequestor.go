@@ -139,7 +139,7 @@ func (ciprr *CIPRRequestor) processReplies() error {
 	if err != nil {
 		return fmt.Errorf("unable to open rcv channel %w", err)
 	}
-	_, err = ciprr.rcvqchan.QueueDeclare(getPRQueue(ciprr.pr), false, true, false, false, nil)
+	_, err = ciprr.rcvqchan.QueueDeclare(getPRQueue(ciprr.pr), false, false, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("unable to declare rcv q %w", err)
 	}
