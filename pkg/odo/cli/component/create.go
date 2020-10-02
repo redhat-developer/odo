@@ -346,42 +346,45 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// this populates the LocalConfigInfo as well
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
+	err = co.checkConflictingFlags()
+	if err != nil {
+		return
+	}
+
+	var catalogList catalog.ComponentTypeList
+	if co.forceS2i {
+		client := co.Client
+		catalogList, err = catalog.ListComponents(client)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Configure the context
+	if co.componentContext != "" {
+		DevfilePath = filepath.Join(co.componentContext, devFile)
+		log.Infof("Devfile path: %s", co.DevfilePath)
+		EnvFilePath = filepath.Join(co.componentContext, envFile)
+		ConfigFilePath = filepath.Join(co.componentContext, configFile)
+		co.PushOptions.componentContext = co.componentContext
+	}
+	co.DevfilePath = DevfilePath
+
+	if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
+		return errors.New("this directory already contains a component")
+	}
+
+	if util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+		return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
+	}
+
+	co.appName = genericclioptions.ResolveAppFlag(cmd)
+
+	isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
+	var catalogDevfileList catalog.DevfileComponentTypeList
+
 	// If not using --s2i
 	if !co.forceS2i {
-
-		err = co.checkConflictingFlags()
-		if err != nil {
-			return
-		}
-
-		// Configure the context
-		if co.componentContext != "" {
-			DevfilePath = filepath.Join(co.componentContext, devFile)
-			log.Infof("Devfile path: %s", co.DevfilePath)
-			EnvFilePath = filepath.Join(co.componentContext, envFile)
-			ConfigFilePath = filepath.Join(co.componentContext, configFile)
-			co.PushOptions.componentContext = co.componentContext
-		}
-		co.DevfilePath = DevfilePath
-
-		if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
-			return errors.New("this directory already contains a component")
-		}
-
-		if util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
-			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
-		}
-
-		co.appName = genericclioptions.ResolveAppFlag(cmd)
-
-		var catalogList catalog.ComponentTypeList
-		if co.forceS2i {
-			client := co.Client
-			catalogList, err = catalog.ListComponents(client)
-			if err != nil {
-				return err
-			}
-		}
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
@@ -432,10 +435,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		var componentType string
 		var componentName string
 		var componentNamespace string
-		var catalogDevfileList catalog.DevfileComponentTypeList
-		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
 
-		if co.interactive && !co.forceS2i {
+		if co.interactive {
 			// Interactive mode
 
 			// Get available devfile components for checking devfile compatibility
@@ -472,10 +473,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 				// Use existing devfile directly
-
-				if co.forceS2i {
-					return errors.Errorf("existing devfile component detected. Please remove the devfile component before creating an s2i component")
-				}
 
 				if len(args) > 1 {
 					return errors.Errorf("accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
@@ -518,7 +515,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 				if len(catalogDevfileList.DevfileRegistries) == 0 {
 					isDevfileRegistryPresent = false
-					log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
+					log.Warning("Registry list is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 				}
 			}
 
@@ -543,7 +540,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 			// Categorize the sections
-			log.Info("Validation")
+			log.Info("Validation for Devfile component")
 
 			var devfileAbsolutePath string
 			if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
@@ -568,70 +565,77 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			if err != nil {
 				return err
 			}
-
 			return nil
 		}
+	}
 
-		if isDevfileRegistryPresent && !co.forceS2i {
-			// Categorize the sections
-			log.Info("Validation")
+	if isDevfileRegistryPresent {
+		// Categorize the sections
 
-			// Since we need to support both devfile and s2i, so we have to check if the component type is
-			// supported by devfile, if it is supported we return and will download the corresponding devfile later,
-			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
+		// Since we need to support both devfile and s2i, so we have to check if the component type is
+		// supported by devfile, if it is supported we return and will download the corresponding devfile later,
+		// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
 
-			hasComponent := false
-			devfileExistSpinner := log.Spinner("Checking devfile existence")
+		hasComponent := false
+		var devfileExistSpinner *log.Status
+		if !co.forceS2i {
+			log.Info("Validation for Devfile component")
+			devfileExistSpinner = log.Spinner("Checking devfile existence")
 			defer devfileExistSpinner.End(false)
+		}
 
-			for _, devfileComponent := range catalogDevfileList.Items {
-				if co.devfileMetadata.componentType == devfileComponent.Name {
-					hasComponent = true
-					co.devfileMetadata.devfileSupport = true
-					co.devfileMetadata.devfileLink = devfileComponent.Link
-					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+		for _, devfileComponent := range catalogDevfileList.Items {
+			if co.devfileMetadata.componentType == devfileComponent.Name {
+				hasComponent = true
+				co.devfileMetadata.devfileSupport = true
+				co.devfileMetadata.devfileLink = devfileComponent.Link
+				co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+				break
+			}
+		}
+
+		if co.forceS2i && hasComponent {
+			s2iOverride := false
+			for _, item := range catalogList.Items {
+				if item.Name == co.devfileMetadata.componentType {
+					s2iOverride = true
 					break
 				}
 			}
-
-			if co.forceS2i && hasComponent {
-				s2iOverride := false
-				for _, item := range catalogList.Items {
-					if item.Name == co.devfileMetadata.componentType {
-						s2iOverride = true
-						break
-					}
-				}
-				if !s2iOverride {
-					return errors.New("cannot select this devfile component type with --s2i flag")
-				}
+			if !s2iOverride {
+				return errors.New("cannot select a devfile type component with --s2i flag")
 			}
+		}
 
+		if !co.forceS2i {
 			if hasComponent {
 				devfileExistSpinner.End(true)
 			} else {
 				devfileExistSpinner.End(false)
 			}
+		}
 
-			if co.devfileMetadata.devfileSupport {
-				registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
+		if co.devfileMetadata.devfileSupport && !co.forceS2i {
+			registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
 
-				// Initialize envinfo
-				err = co.InitEnvInfoFromContext()
-				if err != nil {
-					return err
-				}
-
-				registrySpinner.End(true)
-				return nil
+			// Initialize envinfo
+			err = co.InitEnvInfoFromContext()
+			if err != nil {
+				registrySpinner.End(false)
+				return err
 			}
 
-			// Currently only devfile component supports --registry flag, so if user specifies --registry when creating devfile component,
-			// we should error out instead of running s2i componet code and throw warning message
-			if co.devfileMetadata.devfileRegistry.Name != "" {
-				return errors.Errorf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
-			}
+			registrySpinner.End(true)
+			return nil
+		}
 
+		// Currently only devfile component supports --registry flag, so if user specifies --registry when creating devfile component,
+		// we should error out instead of running s2i componet code and throw warning message
+		if co.devfileMetadata.devfileRegistry.Name != "" {
+			return errors.Errorf("devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
+		}
+
+		if !co.forceS2i {
 			log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 		}
 	}
@@ -664,9 +668,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if co.interactive {
 		client := co.Client
 
-		catalogList, err := catalog.ListComponents(client)
-		if err != nil {
-			return err
+		if len(catalogList.Items) == 0 {
+			catalogList, err = catalog.ListComponents(client)
+			if err != nil {
+				return err
+			}
 		}
 
 		componentTypeCandidates := catalogutil.FilterHiddenComponents(catalogList.Items)
@@ -850,7 +856,7 @@ func (co *CreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	log.Info("Validation")
+	log.Info("Validation for S2I component")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
