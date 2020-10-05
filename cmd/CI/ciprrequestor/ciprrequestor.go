@@ -45,15 +45,20 @@ func main() {
 	case done = <-w.Done():
 		if done == nil {
 			success = <-w.Success()
-		}
-		log.Println("shutting down")
-		if err := w.ShutDown(); err != nil {
-			log.Fatalf("error during shutdown: %s", err)
-		}
-		if done != nil {
-			log.Fatalf("failed due to err %s", err)
-		} else if !success {
-			log.Fatal("run failed, check logs above ^")
+			log.Printf("Tests success: %t, see logs above ^", success)
+			if err := w.ShutDown(); err != nil {
+				log.Fatalf("error during shutdown: %s", err)
+			}
+			if !success {
+				log.Fatal("Failure")
+			}
+		} else {
+			log.Printf("failed due to err %s", done)
+			log.Println("shutting down")
+			if err := w.ShutDown(); err != nil {
+				log.Fatalf("error during shutdown: %s", err)
+			}
+			log.Fatal("Failure")
 		}
 	case <-time.After(10 * time.Minute):
 		log.Println("shutting down")

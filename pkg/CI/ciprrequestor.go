@@ -201,9 +201,6 @@ func (ciprr *CIPRRequestor) ShutDown() error {
 	if _, err := ciprr.rcvqchan.QueuePurge(getPRQueue(ciprr.pr), true); err != nil {
 		return fmt.Errorf("failed to purge rcv queue %w", err)
 	}
-	if _, err := ciprr.rcvqchan.QueueDelete(getPRQueue(ciprr.pr), true, true, false); err != nil {
-		return fmt.Errorf("failed to delete rcv queue %w", err)
-	}
 	if err := ciprr.sendconn.Close(); err != nil {
 		return fmt.Errorf("AMQP connection close error: %s", err)
 	}
