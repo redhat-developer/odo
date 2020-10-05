@@ -42,7 +42,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to run worker: %s", err)
 	}
-	time.Sleep(10 * time.Minute)
+	time.Sleep(5 * time.Minute)
 	err = w.ShutDown()
 	if err != nil {
 		log.Fatalf("failed to shutdown %s", err)

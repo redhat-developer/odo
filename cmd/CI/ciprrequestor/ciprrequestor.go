@@ -60,7 +60,7 @@ func main() {
 			}
 			log.Fatal("Failure")
 		}
-	case <-time.After(1*time.Hour + 10*time.Minute):
+	case <-time.After(12 * time.Minute):
 		log.Println("shutting down")
 		if err := w.ShutDown(); err != nil {
 			log.Fatalf("error during shutdown: %s", err)

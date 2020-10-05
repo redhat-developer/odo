@@ -136,7 +136,7 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 	var err error
 	success := true
 	done := make(chan error)
-	cmd := exec.Command("sh", "scripts/run_all_tests.sh")
+	cmd := exec.Command("ls", "-l")
 
 	r, _ := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
@@ -144,6 +144,7 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 	go func() {
 		for scanner.Scan() {
 			line := scanner.Text()
+			fmt.Println(line)
 			lm := NewLogsMessage(ciprw.jenkins_build)
 			lm.Logs = line
 			lmm, err1 := json.Marshal(lm)
