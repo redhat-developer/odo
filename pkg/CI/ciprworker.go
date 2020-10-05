@@ -1,9 +1,11 @@
 package CI
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/bndr/gojenkins"
@@ -132,34 +134,54 @@ func (ciprw *CIPRWorker) sendBuildInfo() error {
 
 func (ciprw *CIPRWorker) runTests() (bool, error) {
 	var err error
-	sucess := false
-	log.Println("this is where tests will run")
-	lm := NewLogsMessage(ciprw.jenkins_build)
-	lm.Logs = "Tests will happen here"
-	lmm, err := json.Marshal(lm)
+	success := true
+	done := make(chan error)
+	cmd := exec.Command("sh", "scripts/run_all_tests.sh")
+
+	r, _ := cmd.StdoutPipe()
+	cmd.Stderr = cmd.Stdout
+	scanner := bufio.NewScanner(r)
+	go func() {
+		for scanner.Scan() {
+			line := scanner.Text()
+			lm := NewLogsMessage(ciprw.jenkins_build)
+			lm.Logs = line
+			lmm, err1 := json.Marshal(lm)
+			if err1 != nil {
+				done <- fmt.Errorf("unable to marshal log msg %w", err)
+			}
+			err1 = ciprw.rcvqchan.Publish(
+				"",
+				getPRQueue(ciprw.pr),
+				false,
+				false,
+				amqp.Publishing{
+					Headers:         amqp.Table{},
+					ContentType:     "text/json",
+					ContentEncoding: "",
+					Body:            lmm,
+					DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
+					Priority:        0,
+				},
+			)
+			if err1 != nil {
+				done <- fmt.Errorf("unable to send log message %w", err)
+			}
+		}
+		done <- nil
+	}()
+	err = cmd.Start()
 	if err != nil {
-		return false, fmt.Errorf("failed to unmarshal logs %w", err)
+		return false, fmt.Errorf("failed to run command %w", err)
 	}
-	err = ciprw.rcvqchan.Publish(
-		"",
-		getPRQueue(ciprw.pr),
-		false,
-		false,
-		amqp.Publishing{
-			Headers:         amqp.Table{},
-			ContentType:     "text/json",
-			ContentEncoding: "",
-			Body:            []byte(lmm),
-			DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
-			Priority:        0,
-		},
-	)
+	err = <-done
 	if err != nil {
-		return false, fmt.Errorf("failed to publish logs message %w", err)
+		return false, err
 	}
-	time.Sleep(10 * time.Millisecond)
-	// return sucess, ciprw.ShutDown()
-	return sucess, nil
+	if cmd.ProcessState.ExitCode() != 0 {
+		success = false
+	}
+	return success, nil
 }
 
 //runTests runs the tests
