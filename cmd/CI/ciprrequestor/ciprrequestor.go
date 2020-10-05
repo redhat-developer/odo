@@ -39,18 +39,13 @@ func main() {
 	}
 
 	log.Println("running ...")
-	var success bool
 	var done error
 	select {
 	case done = <-w.Done():
 		if done == nil {
-			success = <-w.Success()
-			log.Printf("Tests success: %t, see logs above ^", success)
+			log.Println("Tests succeeeded, see logs above ^")
 			if err := w.ShutDown(); err != nil {
 				log.Fatalf("error during shutdown: %s", err)
-			}
-			if !success {
-				log.Fatal("Failure")
 			}
 		} else {
 			log.Printf("failed due to err %s", done)
@@ -58,7 +53,7 @@ func main() {
 			if err := w.ShutDown(); err != nil {
 				log.Fatalf("error during shutdown: %s", err)
 			}
-			log.Fatal("Failure")
+			log.Fatal("Fail!!!")
 		}
 	case <-time.After(12 * time.Minute):
 		log.Println("shutting down")

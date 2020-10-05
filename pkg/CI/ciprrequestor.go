@@ -19,7 +19,6 @@ type CIPRRequestor struct {
 	jenkins_project string
 	jenkins_token   string
 	done            chan error
-	success         chan bool
 }
 
 func NewCIPRRequestor(amqpURI, jenkins_project, jenkins_token, pr string) (*CIPRRequestor, error) {
@@ -30,7 +29,6 @@ func NewCIPRRequestor(amqpURI, jenkins_project, jenkins_token, pr string) (*CIPR
 		jenkins_token:   jenkins_token,
 		jenkins_build:   -1,
 		done:            make(chan error),
-		success:         make(chan bool),
 	}
 	return ciprr, nil
 }
@@ -84,7 +82,7 @@ func (ciprr *CIPRRequestor) requestPRBuild() error {
 	return nil
 }
 
-func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, success chan bool, done chan error) {
+func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, done chan error) {
 	var err error
 	for d := range deliveries {
 		//parse kind of message
@@ -117,7 +115,9 @@ func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, su
 					done <- fmt.Errorf("failed to ack message %w", err)
 					return
 				}
-				success <- sm.Success
+				if !sm.Success {
+					done <- fmt.Errorf("test execution failed, see logs above ^")
+				}
 				ciprr.done <- nil
 				break
 			} else if m.IsLog() {
@@ -155,7 +155,7 @@ func (ciprr *CIPRRequestor) processReplies() error {
 	if err != nil {
 		return fmt.Errorf("unable to consume from rcv q %w", err)
 	}
-	go ciprr.handleDeliveries(deliveries, ciprr.success, ciprr.done)
+	go ciprr.handleDeliveries(deliveries, ciprr.done)
 	return nil
 }
 
@@ -182,10 +182,6 @@ func (ciprr *CIPRRequestor) Run() error {
 
 func (ciprr *CIPRRequestor) Done() chan error {
 	return ciprr.done
-}
-
-func (ciprr *CIPRRequestor) Success() chan bool {
-	return ciprr.success
 }
 
 func (ciprr *CIPRRequestor) ShutDown() error {
