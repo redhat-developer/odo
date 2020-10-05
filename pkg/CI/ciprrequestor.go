@@ -118,6 +118,7 @@ func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, su
 					return
 				}
 				success <- sm.Success
+				ciprr.done <- nil
 				break
 			} else if m.IsLog() {
 				lm := NewLogsMessage(-1)

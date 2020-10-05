@@ -21,7 +21,7 @@ func getEnv(key string, defaultVal string, failifnotfound bool) string {
 
 func main() {
 	var err error
-	amqpURI := getEnv("AMQP_URI", "", false)
+	amqpURI := getEnv("AMQP_URI", "", true)
 	jenkins_job := getEnv("JOB_NAME", "", true)
 	job_spec := getEnv("JOB_SPEC", "", true)
 	job_token := getEnv("JOB_TOKEN", "", true)
@@ -51,9 +51,9 @@ func main() {
 			log.Fatalf("error during shutdown: %s", err)
 		}
 		if done != nil {
-			log.Fatalf("failed due to err %ss", err)
+			log.Fatalf("failed due to err %s", err)
 		} else if !success {
-			log.Fatal("run failed, check logs above")
+			log.Fatal("run failed, check logs above ^")
 		}
 	case <-time.After(10 * time.Minute):
 		log.Println("shutting down")
