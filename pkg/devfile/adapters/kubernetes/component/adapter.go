@@ -217,6 +217,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
+	} else {
+		// no file was modified/added/deleted/renamed, thus return without syncing files
+		log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 	}
 
 	return nil
