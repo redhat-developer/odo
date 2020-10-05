@@ -26,7 +26,6 @@ import (
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -56,6 +55,7 @@ type StatusOptions struct {
 	logFollow       bool
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 	*genericclioptions.Context
+	isDevfile bool
 }
 
 // NewStatusOptions returns new instance of StatusOptions
@@ -67,8 +67,10 @@ func NewStatusOptions() *StatusOptions {
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	so.devfilePath = filepath.Join(so.componentContext, DevfilePath)
 
-	// if experimental mode is enabled and devfile is present
-	if util.CheckPathExists(so.devfilePath) {
+	so.isDevfile = util.CheckPathExists(so.devfilePath)
+
+	// If devfile is present
+	if so.isDevfile {
 		envinfo, err := envinfo.NewEnvSpecificInfo(so.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
@@ -123,8 +125,8 @@ func (so *StatusOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (so *StatusOptions) Run() (err error) {
 
-	if !experimental.IsExperimentalModeEnabled() {
-		return errors.New("the status command is only supported in experimental mode")
+	if !so.isDevfile {
+		return errors.New("the status command is only supported for devfiles")
 	}
 
 	if !log.IsJSON() {
@@ -163,11 +165,7 @@ func (so *StatusOptions) Run() (err error) {
 func NewCmdStatus(name, fullName string) *cobra.Command {
 	o := NewStatusOptions()
 
-	annotations := map[string]string{"command": "component"}
-
-	if experimental.IsExperimentalModeEnabled() {
-		annotations["machineoutput"] = "json"
-	}
+	annotations := map[string]string{"command": "component", "machineoutput": "json"}
 
 	var statusCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component_name]", name),
