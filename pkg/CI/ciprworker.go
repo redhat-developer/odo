@@ -44,12 +44,12 @@ func (ciprw *CIPRWorker) init() error {
 	if err != nil {
 		return fmt.Errorf("unable to connect to queue: %w", err)
 	}
-	rcvchan, err := ciprw.conn.Channel()
+	ciprw.rcvqchan, err = ciprw.conn.Channel()
 	if err != nil {
 		return fmt.Errorf("unable to get channel: %w", err)
 	}
 	rcvqn := getPRQueue(ciprw.pr)
-	_, err = rcvchan.QueueDeclare(rcvqn, false, true, false, false, nil)
+	_, err = ciprw.rcvqchan.QueueDeclare(rcvqn, false, true, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create q %w", err)
 	}
