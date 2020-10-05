@@ -934,3 +934,88 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 		})
 	}
 }
+
+func TestDevfileObj_OverrideEvents(t *testing.T) {
+	type args struct {
+		overridePatch common.DevfileEvents
+	}
+	tests := []struct {
+		name           string
+		devFileObj     DevfileObj
+		args           args
+		wantDevFileObj DevfileObj
+		wantErr        bool
+	}{
+		{
+			name: "case 1: override the events",
+			devFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Events: common.DevfileEvents{
+						PostStart: []string{"post-start-0", "post-start-1"},
+						PostStop:  []string{"post-stop-0", "post-stop-1"},
+						PreStart:  []string{"pre-start-0", "pre-start-1"},
+						PreStop:   []string{"pre-stop-0", "pre-stop-1"},
+					},
+				},
+			},
+			args: args{
+				overridePatch: common.DevfileEvents{
+					PostStart: []string{"override-post-start-0", "override-post-start-1"},
+					PostStop:  []string{"override-post-stop-0", "override-post-stop-1"},
+					PreStart:  []string{"override-pre-start-0", "override-pre-start-1"},
+					PreStop:   []string{"override-pre-stop-0", "override-pre-stop-1"},
+				},
+			},
+			wantDevFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Events: common.DevfileEvents{
+						PostStart: []string{"override-post-start-0", "override-post-start-1"},
+						PostStop:  []string{"override-post-stop-0", "override-post-stop-1"},
+						PreStart:  []string{"override-pre-start-0", "override-pre-start-1"},
+						PreStop:   []string{"override-pre-stop-0", "override-pre-stop-1"},
+					},
+				},
+			},
+		},
+		{
+			name: "case 2: override some of the events",
+			devFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Events: common.DevfileEvents{
+						PostStart: []string{"post-start-0", "post-start-1"},
+						PostStop:  []string{"post-stop-0", "post-stop-1"},
+					},
+				},
+			},
+			args: args{
+				overridePatch: common.DevfileEvents{
+					PostStart: []string{"override-post-start-0", "override-post-start-1"},
+				},
+			},
+			wantDevFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Events: common.DevfileEvents{
+						PostStart: []string{"override-post-start-0", "override-post-start-1"},
+						PostStop:  []string{"post-stop-0", "post-stop-1"},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.devFileObj.OverrideEvents(tt.args.overridePatch); (err != nil) != tt.wantErr {
+				t.Errorf("OverrideEvents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(tt.wantDevFileObj, tt.devFileObj) {
+				t.Errorf("expected devfile and got devfile are different: %v", pretty.Compare(tt.wantDevFileObj, tt.devFileObj))
+			}
+		})
+	}
+}

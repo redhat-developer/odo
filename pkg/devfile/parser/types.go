@@ -120,6 +120,28 @@ func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) erro
 	return nil
 }
 
+// OverrideEvents overrides the events of the parent devfile
+// overridePatch contains the patches to be applied to the parent's events
+func (d DevfileObj) OverrideEvents(overridePatch common.DevfileEvents) error {
+	var updatedEvents common.DevfileEvents
+
+	merged, err := handleMerge(d.Data.GetEvents(), overridePatch, common.DevfileEvents{})
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(merged, &updatedEvents)
+	if err != nil {
+		return err
+	}
+
+	d.Data.UpdateEvents(updatedEvents.PostStart,
+		updatedEvents.PostStop,
+		updatedEvents.PreStart,
+		updatedEvents.PreStop)
+	return nil
+}
+
 // OverrideStarterProjects overrides the starter projects of the parent devfile
 // overridePatch contains the patches to be applied to the parent's starter projects
 func (d DevfileObj) OverrideStarterProjects(overridePatch []common.DevfileStarterProject) error {
