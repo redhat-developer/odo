@@ -134,14 +134,12 @@ func (ciprw *CIPRWorker) sendBuildInfo() error {
 
 func (ciprw *CIPRWorker) runTests() (bool, error) {
 	var err error
-	success := true
 	done := make(chan error)
-	cmd := exec.Command("ls", "-l")
-
+	cmd := exec.Command("sh", "scripts/run_all_tests.sh")
 	r, _ := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 	scanner := bufio.NewScanner(r)
-	go func() {
+	go func(done chan error) {
 		for scanner.Scan() {
 			line := scanner.Text()
 			fmt.Println(line)
@@ -170,7 +168,7 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 			}
 		}
 		done <- nil
-	}()
+	}(done)
 	err = cmd.Start()
 	if err != nil {
 		return false, fmt.Errorf("failed to run command %w", err)
@@ -180,39 +178,10 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 		return false, err
 	}
 	if cmd.ProcessState.ExitCode() != 0 {
-		success = false
+		return false, nil
 	}
-	return success, nil
+	return true, nil
 }
-
-//runTests runs the tests
-// func (ciprw *CIPRWorker) runTests(cmdlist []*exec.Cmd) (bool, error) {
-// 	var err error
-// 	success := true
-// 	done := make(chan struct{})
-// 	for _, cmd := range cmdlist {
-// 		r, _ := cmd.StdoutPipe()
-// 		cmd.Stderr = cmd.Stdout
-// 		scanner := bufio.NewScanner(r)
-// 		go func() {
-// 			for scanner.Scan() {
-// 				line := scanner.Text()
-// 				fmt.Println(line)
-// 			}
-// 			done <- struct{}{}
-// 		}()
-// 		err = cmd.Start()
-// 		if err != nil {
-// 			return false, fmt.Errorf("failed to run command %w", err)
-// 		}send status message
-// 		<-done
-// 		if cmd.ProcessState.ExitCode() != 0 {
-// 			success = false
-// 			break
-// 		}
-// 	}
-// 	return success, nil
-// }
 
 //sendStatusMessage sends the status of the build
 func (ciprw *CIPRWorker) sendStatusMessage(success bool) error {
@@ -270,8 +239,9 @@ func (ciprw *CIPRWorker) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to run tests %w", err)
 	}
-	//Send status message
-	success = false
+	if success {
+		success = false
+	}
 	log.Println("[x] sending status")
 	err = ciprw.sendStatusMessage(success)
 	if err != nil {
