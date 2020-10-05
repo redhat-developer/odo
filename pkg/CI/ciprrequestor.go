@@ -141,7 +141,6 @@ func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, su
 func (ciprr *CIPRRequestor) processReplies() error {
 	var err error
 	ciprr.rcvqchan, err = ciprr.rcvconn.Channel()
-
 	if err != nil {
 		return fmt.Errorf("unable to open rcv channel %w", err)
 	}

@@ -257,7 +257,7 @@ func (ciprw *CIPRWorker) Run() error {
 }
 
 func (ciprw *CIPRWorker) ShutDown() error {
-	ciprw.rcvqchan.Close()
-	ciprw.conn.Close()
+	defer ciprw.rcvqchan.Close()
+	defer ciprw.conn.Close()
 	return nil
 }
