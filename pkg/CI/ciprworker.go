@@ -270,6 +270,7 @@ func (ciprw *CIPRWorker) Run() error {
 		return fmt.Errorf("failed to run tests %w", err)
 	}
 	//Send status message
+	success = false
 	log.Println("[x] sending status")
 	err = ciprw.sendStatusMessage(success)
 	if err != nil {
