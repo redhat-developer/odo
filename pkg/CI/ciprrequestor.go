@@ -10,7 +10,8 @@ import (
 
 type CIPRRequestor struct {
 	amqpURI         string
-	conn            *amqp.Connection
+	sendconn        *amqp.Connection
+	rcvconn         *amqp.Connection
 	sendqchan       *amqp.Channel
 	rcvqchan        *amqp.Channel
 	pr              string
@@ -36,16 +37,20 @@ func NewCIPRRequestor(amqpURI, jenkins_project, jenkins_token, pr string) (*CIPR
 
 func (ciprr *CIPRRequestor) init() error {
 	var err error
-	ciprr.conn, err = amqp.Dial(ciprr.amqpURI)
+	ciprr.sendconn, err = amqp.Dial(ciprr.amqpURI)
 	if err != nil {
-		return fmt.Errorf("unable to dail amqp server %w", err)
+		return fmt.Errorf("unable to dail amqp server send %w", err)
+	}
+	ciprr.rcvconn, err = amqp.Dial(ciprr.amqpURI)
+	if err != nil {
+		return fmt.Errorf("unable to dail amqp server rcv %w", err)
 	}
 	return nil
 }
 
 func (ciprr *CIPRRequestor) requestPRBuild() error {
 	var err error
-	ciprr.sendqchan, err = ciprr.conn.Channel()
+	ciprr.sendqchan, err = ciprr.sendconn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to open send channel %w", err)
 	}
@@ -61,7 +66,7 @@ func (ciprr *CIPRRequestor) requestPRBuild() error {
 	err = ciprr.sendqchan.Publish(
 		"",
 		SEND_Q,
-		true,
+		false,
 		false,
 		amqp.Publishing{
 			Headers:         amqp.Table{},
@@ -135,7 +140,8 @@ func (ciprr *CIPRRequestor) handleDeliveries(deliveries <-chan amqp.Delivery, su
 
 func (ciprr *CIPRRequestor) processReplies() error {
 	var err error
-	ciprr.rcvqchan, err = ciprr.conn.Channel()
+	ciprr.rcvqchan, err = ciprr.rcvconn.Channel()
+
 	if err != nil {
 		return fmt.Errorf("unable to open rcv channel %w", err)
 	}
@@ -157,7 +163,8 @@ func (ciprr *CIPRRequestor) Run() error {
 	var err error
 	err = ciprr.init()
 	go func() {
-		fmt.Printf("closing: %s", <-ciprr.conn.NotifyClose(make(chan *amqp.Error)))
+		fmt.Printf("closing: %s", <-ciprr.sendconn.NotifyClose(make(chan *amqp.Error)))
+		fmt.Printf("closing: %s", <-ciprr.rcvconn.NotifyClose(make(chan *amqp.Error)))
 	}()
 	if err != nil {
 		return fmt.Errorf("failed to initialize %w", err)
@@ -197,8 +204,10 @@ func (ciprr *CIPRRequestor) ShutDown() error {
 	if _, err := ciprr.rcvqchan.QueueDelete(getPRQueue(ciprr.pr), true, true, false); err != nil {
 		return fmt.Errorf("failed to delete rcv queue %w", err)
 	}
-
-	if err := ciprr.conn.Close(); err != nil {
+	if err := ciprr.sendconn.Close(); err != nil {
+		return fmt.Errorf("AMQP connection close error: %s", err)
+	}
+	if err := ciprr.rcvconn.Close(); err != nil {
 		return fmt.Errorf("AMQP connection close error: %s", err)
 	}
 

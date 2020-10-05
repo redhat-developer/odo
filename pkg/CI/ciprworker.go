@@ -107,14 +107,11 @@ func (ciprw *CIPRWorker) sendBuildInfo() error {
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal build message %w", err)
 	}
-	// err = ciprw.init()
-	// if err != nil {
-	// 	return fmt.Errorf("failed to initialize connection")
-	// }
+	log.Printf("Publishing build Message %s\n", bmm)
 	err = ciprw.rcvqchan.Publish(
 		"",
 		getPRQueue(ciprw.pr),
-		false,
+		true,
 		false,
 		amqp.Publishing{
 			Headers:         amqp.Table{},
@@ -143,14 +140,10 @@ func (ciprw *CIPRWorker) runTests() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to unmarshal logs %w", err)
 	}
-	// err = ciprw.init()
-	// if err != nil {
-	// 	return false, fmt.Errorf("failed to initialize connection")
-	// }
 	err = ciprw.rcvqchan.Publish(
 		"",
 		getPRQueue(ciprw.pr),
-		true,
+		false,
 		false,
 		amqp.Publishing{
 			Headers:         amqp.Table{},
