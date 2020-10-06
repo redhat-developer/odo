@@ -5,15 +5,8 @@ keywords:
 comments: false
 
 # Hero section
-title: Page title
-description: Page description
-
-# Author box
-author:
-    title: About Author
-    title_url: '#'
-    external_url: true
-    description: Author description
+title: Title here
+description: Description here
 
 # Micro navigation
 micro_nav: true
@@ -22,10 +15,8 @@ micro_nav: true
 page_nav:
     prev:
         content: Previous page
-        url: '#'
+        url: '/docs/previous-page'
     next:
         content: Next page
-        url: '#'
+        url: '/docs/next-page'
 ---
-
-Write your markdown here ...
