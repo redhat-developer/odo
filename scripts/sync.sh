@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-# Install pandoc and asciidoctor
-
 #############
 # VARIABLES #
 #############
@@ -21,7 +19,6 @@ odo_repo="github.com/openshift/odo"
 
 file_reference_doc="/docs/file-reference/index.md"
 blog_posts="/docs/blog"
-
 
 #########################
 # PLEASE READ           #
@@ -47,10 +44,32 @@ shout() {
 
 convert_to_markdown() {
     noext="${1%.adoc}"
-    asciidoctor -a "${attributes}" -b docbook $1 -o $noext.xml
-    pandoc -f docbook -t gfm $noext.xml -o $noext.md
     file="$(basename -- $noext)"
-    iconv -t utf-8 $noext.xml | pandoc -f docbook -t gfm | iconv -f utf-8 > $output_dir/$file.md
+    dir_used=$2
+
+    # Because every version of asciidoctor is different... we run it in a container.
+    docker run --rm -e PUID=1000 -e GUID=1000 --rm \
+      -v $tmp_openshift_docs_dir:$tmp_openshift_docs_dir \
+      -v $tmp_public_docs_dir:$tmp_public_docs_dir \
+      -v "$dir_used:$dir_used" \
+      -v "$output_dir:$output_dir" \
+      cdrage/odo-doc-convert \
+      asciidoctor -a "${attributes}" -b docbook $1 -o $noext.xml
+
+		# Same with Pandoc.
+    docker run --rm -e PUID=1000 -e GUID=1000 --rm \
+      -v $tmp_openshift_docs_dir:$tmp_openshift_docs_dir \
+      -v $tmp_public_docs_dir:$tmp_public_docs_dir \
+      -v "$dir_used:$dir_used" \
+      -v "$output_dir:$output_dir" \
+      cdrage/odo-doc-convert \
+      pandoc -f docbook -t gfm --wrap=none $noext.xml -o $output_dir/$file.md
+
+		# Use to convert unicode characters (if the documentation has some)
+		# Fortunately, don't need to run this.
+
+		#iconv -t utf-8 $noext.xml | pandoc -f docbook -t gfm | iconv -f utf-8 > $output_dir/$file.md
+
     echo "Converted $1 to markdown"
 }
 
@@ -82,7 +101,7 @@ dir=$tmp_openshift_docs_dir$odo_doc_directory
 
 # Convert all the documentation to markdown from the OpenShift upstream repository
 for f in $dir/*.adoc; do
-  convert_to_markdown $f
+  convert_to_markdown $f $dir
 done
 
 ########################
@@ -99,7 +118,7 @@ public_doc_dir=$tmp_public_docs_dir$odo_public_doc_dir
 
 # Convert all the documentation to markdown from the OpenShift upstream repository
 for f in $public_doc_dir/*.adoc; do
-  convert_to_markdown $f
+  convert_to_markdown $f $dir
 done
 
 ######################################
