@@ -46,18 +46,22 @@ const (
 	UDP   ProtocolType = "udp"
 )
 
-// DevfileMetadata metadata for devfile
+// DevfileMetadata contains odo specific metadata for devfile
 type DevfileMetadata struct {
+	*GenericMetadata
 
+	AlphaBuildDockerfile string `json:"alpha.build-dockerfile,omitempty" yaml:"alpha.build-dockerfile,omitempty"`
+
+	AlphaDeploymentManifest string `json:"alpha.deployment-manifest,omitempty" yaml:"alpha.deployment-manifest,omitempty"`
+}
+
+// GenericMetadata is the generic metadata for devfile
+type GenericMetadata struct {
 	// Name Optional devfile name
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	// Version Optional semver-compatible version
 	Version string `json:"version,omitempty" yaml:"version,omitempty"`
-
-	AlphaBuildDockerfile string `json:"alpha.build-dockerfile,omitempty" yaml:"alpha.build-dockerfile,omitempty"`
-
-	AlphaDeploymentManifest string `json:"alpha.deployment-manifest,omitempty" yaml:"alpha.deployment-manifest,omitempty"`
 }
 
 // DevfileCommand command specified in devfile
