@@ -12,12 +12,9 @@ description: Learn how to debug an application in odo CLI and IDE
 micro_nav: true
 
 ---
-Debugging your component involves port forwarding with the Kubernetes
-pod. Before you start, it is required that you have a `kind: debug` step
-located within your `devfile.yaml`.
+Debugging your component involves port forwarding with the Kubernetes pod. Before you start, it is required that you have a `kind: debug` step located within your `devfile.yaml`.
 
-1.  See below for an example `devfile.yaml` that containers a `debugrun`
-    step under the `commands` key:
+1.  See below for an example `devfile.yaml` that contains a `debug` step under the `commands` key:
 
 <!-- end list -->
 
@@ -50,10 +47,7 @@ located within your `devfile.yaml`.
 
 # Debugging your devfile component via CLI
 
-We will use the official
-[nodejs](https://github.com/odo-devfiles/registry/tree/master/devfiles/nodejs)
-example in our debugging session which includes the necessary `debugrun`
-step within `devfile.yaml`.
+We will use the official [nodejs](https://github.com/odo-devfiles/registry/tree/master/devfiles/nodejs) example in our debugging session which includes the necessary `debug` step within `devfile.yaml`.
 
 1.  Download the example application:
     
@@ -71,8 +65,7 @@ step within `devfile.yaml`.
     Please use `odo push` command to create the component with source deployed
     ```
 
-2.  Push with the `--debug` flag which is required for all debugging
-    deployments:
+2.  Push with the `--debug` flag which is required for all debugging deployments:
     
     ``` sh
     $ odo push --debug
@@ -100,11 +93,9 @@ step within `devfile.yaml`.
     
     > **Note**
     > 
-    > A custom debug command may be chosen via the
-    > `--debug-command="custom-step"` flag.
+    > A custom debug command may be chosen via the `--debug-command="custom-step"` flag.
 
-3.  Port forward to the local port in order to access the debugging
-    interface:
+3.  Port forward to the local port in order to access the debugging interface:
     
     ``` sh
     $ odo debug port-forward
@@ -115,8 +106,7 @@ step within `devfile.yaml`.
     > 
     > A specific port may be specified using the `--local-port` flag
 
-4.  Checking that the debug session is running in a separate terminal
-    window:
+4.  Checking that the debug session is running in a separate terminal window:
     
     ``` sh
     $ odo debug info
@@ -125,15 +115,9 @@ step within `devfile.yaml`.
 
 5.  Accessing the debugger:
     
-    The debugger is accessible through an assortment of tools. An
-    example of setting up a debug interface would be through [VSCode’s
-    debugging
-    interface](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging).
+    The debugger is accessible through an assortment of tools. An example of setting up a debug interface would be through [VSCode’s debugging interface](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging).
 
-In our use case, an example of how to access the above Node.JS
-application is with this snippet:
-
-\+
+In our use case, an example of how to access the above Node.JS application is with this snippet:
 
 ``` json
 {
@@ -141,6 +125,6 @@ application is with this snippet:
   "request": "attach",
   "name": "Attach to remote",
   "address": "TCP/IP address of process to be debugged",
-  "port": 9229
+  "port": 5858
 }
 ```

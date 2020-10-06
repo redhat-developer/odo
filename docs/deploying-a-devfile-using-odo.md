@@ -24,42 +24,29 @@ page_nav:
 
 What is a devfile?
 
-A [devfile](https://redhat-developer.github.io/devfile/) is a portable
-file that describes your development environment. It allows reproducing
-a *portable* developmental environment without the need of
-reconfiguration.
+A [devfile](https://redhat-developer.github.io/devfile/) is a portable file that describes your development environment. It allows reproducing a *portable* developmental environment without the need of reconfiguration.
 
 With a devfile you can describe:
 
-  - Development components such as container definition for build and
-    application runtimes
+  - Development components such as container definition for build and application runtimes
 
   - A list of pre-defined commands that can be run
 
   - Projects to initially clone
 
-odo takes this devfile and transforms it into a workspace of multiple
-containers running on Kubernetes or OpenShift.
+odo takes this devfile and transforms it into a workspace of multiple containers running on Kubernetes or OpenShift.
 
-Devfiles are YAML files with a defined
-[schema](https://devfile.github.io/devfile/_attachments/api-reference.html).
+Devfiles are YAML files with a defined [schema](https://devfile.github.io/devfile/_attachments/api-reference.html).
 
 # odo and devfile
 
-odo can now create components from devfiles as recorded in registries.
-odo automatically consults the [default
-registry](https://github.com/odo-devfiles/registry) but users can also
-add their own registries. Devfiles contribute new component types that
-users can pull to begin development immediately.
+odo can now create components from devfiles as recorded in registries. odo automatically consults the [default registry](https://github.com/odo-devfiles/registry) but users can also add their own registries. Devfiles contribute new component types that users can pull to begin development immediately.
 
 An example deployment scenario:
 
-1.  `odo create` will consult the recorded devfile registries to offer
-    the user a selection of available component types and pull down the
-    associated `devfile.yaml` file
+1.  `odo create` will consult the recorded devfile registries to offer the user a selection of available component types and pull down the associated `devfile.yaml` file
 
-2.  `odo push` parses and then deploys the component in the following
-    order:
+2.  `odo push` parses and then deploys the component in the following order:
     
     1.  Parses and validates the YAML file
     
@@ -73,8 +60,7 @@ An example deployment scenario:
 
 **Prerequisites for an OpenShift Cluster**
 
-  - Create a project to keep your source code, tests, and libraries
-    organized in a separate single unit.
+  - Create a project to keep your source code, tests, and libraries organized in a separate single unit.
     
     1.  Log in to an OpenShift cluster:
         
@@ -92,19 +78,13 @@ An example deployment scenario:
 
 ## Prerequisites for a Kubernetes Cluster
 
-  - Before proceeding, you must know your ingress domain name or ingress
-    IP to specify `--host` for `odo url create`.
+  - Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
     
-    Ingress IP is usually the external IP of ingress controller service,
-    for Minikube or CRC clusters running in a virtual machine you can
-    get it by `minikube ip` or `crc ip`. Checkout this
-    [document](https://kubernetes.io/docs/concepts/services-networking/ingress/)
-    to know more about ingress.
+    Ingress IP is usually the external IP of ingress controller service, for Minikube or CRC clusters running in a virtual machine you can get it by `minikube ip` or `crc ip`. Checkout this [document](https://kubernetes.io/docs/concepts/services-networking/ingress/) to know more about ingress.
 
 # Listing all available devfile components
 
-  - Before deploying your first component, have a look at what is
-    available:
+  - Before deploying your first component, have a look at what is available:
     
     ``` sh
       $ odo catalog list components
@@ -131,15 +111,11 @@ An example deployment scenario:
       wildfly     openshift     10.0,10.1,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,8.1,9.0,latest     NO
     ```
 
-In our example, we will be using `java-springboot` to deploy a sample
-[Springboot](https://spring.io/projects/spring-boot)
-component.
+In our example, we will be using `java-springboot` to deploy a sample [Springboot](https://spring.io/projects/spring-boot) component.
 
 # Deploying a Java Spring Boot® component to an OpenShift / Kubernetes cluster
 
-In this example we will be deploying an [example Spring Boot®
-component](https://github.com/odo-devfiles/springboot-ex) that uses
-[Maven](https://maven.apache.org/install.html) and Java 8 JDK.
+In this example we will be deploying an [example Spring Boot® component](https://github.com/odo-devfiles/springboot-ex) that uses [Maven](https://maven.apache.org/install.html) and Java 8 JDK.
 
 1.  Download the example Spring Boot® component.
     
@@ -147,8 +123,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      $ git clone https://github.com/odo-devfiles/springboot-ex
     ```
     
-    Alternatively, you can pass in `--starter` to `odo create` to have
-    odo download a project specified in the devfile.
+    Alternatively, you can pass in `--starter` to `odo create` to have odo download a project specified in the devfile.
 
 2.  Change the current directory to the component directory:
     
@@ -156,8 +131,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      $ cd <directory-name>
     ```
 
-3.  Create a component configuration using the `java-springboot`
-    component-type named `myspring`:
+3.  Create a component configuration using the `java-springboot` component-type named `myspring`:
     
     ``` sh
        $ odo create java-springboot myspring
@@ -171,8 +145,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
         Please use odo push command to create the component with source deployed
     ```
 
-4.  List the contents of the directory to see the devfile and sample
-    Java application source code:
+4.  List the contents of the directory to see the devfile and sample Java application source code:
     
     ``` sh
       $ ls
@@ -190,8 +163,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
     
     > **Note**
     > 
-    > If deploying on Kubernetes, you need to pass ingress domain name
-    > via `--host` flag.
+    > If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 6.  Push the component to the cluster:
     
@@ -245,9 +217,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
 
 # Deploying a Node.js® component to an OpenShift / Kubernetes cluster
 
-In this example we will be deploying an [example Node.js®
-component](https://github.com/odo-devfiles/nodejs-ex) that uses
-[NPM](https://www.npmjs.com/).
+In this example we will be deploying an [example Node.js® component](https://github.com/odo-devfiles/nodejs-ex) that uses [NPM](https://www.npmjs.com/).
 
 1.  Download the example Node.js® component
     
@@ -261,16 +231,14 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
      $ cd <directory-name>
     ```
 
-3.  List the contents of the directory to confirm that the application
-    is indeed a Node.js® application:
+3.  List the contents of the directory to confirm that the application is indeed a Node.js® application:
     
     ``` sh
      $ ls
      LICENSE  package.json  package-lock.json  README.md  server.js  test
     ```
 
-4.  Create a component configuration using the `nodejs` component-type
-    named `mynodejs`:
+4.  Create a component configuration using the `nodejs` component-type named `mynodejs`:
     
     ``` sh
      $ odo create nodejs mynodejs
@@ -295,8 +263,7 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
     
     > **Note**
     > 
-    > If deploying on Kubernetes, you need to pass ingress domain name
-    > via `--host` flag.
+    > If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 6.  Push the component to the cluster:
     
@@ -350,12 +317,9 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
 
 # Deploying a Quarkus Application to an OpenShift / Kubernetes cluster
 
-In this example we will be deploying a [Quarkus
-component](https://github.com/odo-devfiles/quarkus-ex) that uses GraalVM
-and JDK1.8+.
+In this example we will be deploying a [Quarkus component](https://github.com/odo-devfiles/quarkus-ex) that uses GraalVM and JDK1.8+.
 
-1.  Download the example Quarkus
-    component
+1.  Download the example Quarkus component
     
     ``` sh
      $ git clone https://github.com/odo-devfiles/quarkus-ex && cd quarkus-ex
@@ -386,8 +350,7 @@ and JDK1.8+.
     
     > **Note**
     > 
-    > If deploying on Kubernetes, you need to pass ingress domain name
-    > via `--host` flag.
+    > If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 4.  Push the component to the cluster:
     
@@ -424,11 +387,9 @@ and JDK1.8+.
      myquarkus-8080     http://myquarkus-8080.example.com     8080     false
     ```
 
-You can now continue developing your application. Just run `odo push`
-and refresh your browser to view the latest changes.
+You can now continue developing your application. Just run `odo push` and refresh your browser to view the latest changes.
 
-You can also run `odo watch` to watch changes in the source code. Just
-refreshing the browser will render the source code changes.
+You can also run `odo watch` to watch changes in the source code. Just refreshing the browser will render the source code changes.
 
 Run `odo delete` to delete the application from cluster.
 

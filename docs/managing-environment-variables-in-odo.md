@@ -11,10 +11,7 @@ description: Manipulate both config and preferences files to your liking
 # Micro navigation
 micro_nav: true
 ---
-`odo` stores component-specific configurations and environment variables
-in the `config` file. You can use the `odo config` command to set,
-unset, and list environment variables for components without the need to
-modify the `config` file.
+`odo` stores component-specific configurations and environment variables in the `config` file. You can use the `odo config` command to set, unset, and list environment variables for components without the need to modify the `config` file.
 
 # Setting and unsetting environment variables
 

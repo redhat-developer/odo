@@ -11,27 +11,21 @@ description: Deploy a multicomponent application
 # Micro navigation
 micro_nav: true
 ---
-`odo` allows you to create a multicomponent application, modify it, and
-link its components in an easy and automated way.
+`odo` allows you to create a multicomponent application, modify it, and link its components in an easy and automated way.
 
-This example describes how to deploy a multicomponent application - a
-shooter game. The application consists of a front-end Node.js component
-and a back-end Java component.
+This example describes how to deploy a multicomponent application - a shooter game. The application consists of a front-end Node.js component and a back-end Java component.
 
 # Prerequisites
 
   - `odo` is installed.
 
-  - You have a running cluster. Developers can use [CodeReady Containers
-    (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/)
-    to deploy a local cluster quickly.
+  - You have a running cluster. Developers can use [CodeReady Containers (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/) to deploy a local cluster quickly.
 
   - Maven is installed.
 
 # Creating a project
 
-Create a project to keep your source code, tests, and libraries
-organized in a separate single unit.
+Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 
 1.  Log in to an OpenShift cluster:
     
@@ -54,8 +48,7 @@ organized in a separate single unit.
 
 # Deploying the back-end component
 
-To create a Java component, import the Java builder image, download the
-Java application and push the source code to your cluster with `odo`.
+To create a Java component, import the Java builder image, download the Java application and push the source code to your cluster with `odo`.
 
 1.  Import `openjdk18` into the cluster:
     
@@ -108,8 +101,7 @@ Java application and push the source code to your cluster with `odo`.
     $ mkdir my_components && cd my_components
     ```
 
-5.  Download the example back-end
-    application:
+5.  Download the example back-end application:
     
     ``` terminal
     $ git clone https://github.com/openshift-evangelists/Wild-West-Backend backend
@@ -152,8 +144,7 @@ Java application and push the source code to your cluster with `odo`.
     [INFO] --------------------------------------
     ```
 
-9.  Create a component configuration of Java component-type named
-    `backend`:
+9.  Create a component configuration of Java component-type named `backend`:
     
     ``` terminal
     $ odo create openjdk18 backend --binary target/wildwest-1.0.jar
@@ -166,12 +157,9 @@ Java application and push the source code to your cluster with `odo`.
      Please use `odo push` command to create the component with source deployed
     ```
     
-    Now the configuration file `config.yaml` is in the local directory
-    of the back-end component that contains information about the
-    component for deployment.
+    Now the configuration file `config.yaml` is in the local directory of the back-end component that contains information about the component for deployment.
 
-10. Check the configuration settings of the back-end component in the
-    `config.yaml` file using:
+10. Check the configuration settings of the back-end component in the `config.yaml` file using:
     
     ``` terminal
     $ odo config view
@@ -222,9 +210,7 @@ Java application and push the source code to your cluster with `odo`.
      ✓  Building component [3s]
     ```
     
-    Using `odo push`, OpenShift creates a container to host the back-end
-    component, deploys the container into a Pod running on the OpenShift
-    cluster, and starts the `backend` component.
+    Using `odo push`, OpenShift creates a container to host the back-end component, deploys the container into a Pod running on the OpenShift cluster, and starts the `backend` component.
 
 12. Validate:
     
@@ -234,8 +220,7 @@ Java application and push the source code to your cluster with `odo`.
         $ odo log -f
         ```
         
-        **Example
-        output.**
+        **Example output.**
         
         ``` terminal
         2019-09-30 20:14:19.738  INFO 444 --- [           main] c.o.wildwest.WildWestApplication         : Starting WildWestApplication v1.0 onbackend-app-1-9tnhc with PID 444 (/deployments/wildwest-1.0.jar started by jboss in /deployments)
@@ -247,8 +232,7 @@ Java application and push the source code to your cluster with `odo`.
         $ odo list
         ```
         
-        **Example
-        output.**
+        **Example output.**
         
         ``` terminal
         APP     NAME        TYPE          SOURCE                             STATE
@@ -257,8 +241,7 @@ Java application and push the source code to your cluster with `odo`.
 
 # Deploying the front-end component
 
-To create and deploy a front-end component, download the Node.js
-application and push the source code to your cluster with `odo`.
+To create and deploy a front-end component, download the Node.js application and push the source code to your cluster with `odo`.
 
 1.  Download the example front-end application:
     
@@ -272,8 +255,7 @@ application and push the source code to your cluster with `odo`.
     $ cd frontend
     ```
 
-3.  List the contents of the directory to see that the front end is a
-    Node.js application.
+3.  List the contents of the directory to see that the front end is a Node.js application.
     
     ``` terminal
     $ ls
@@ -288,11 +270,9 @@ application and push the source code to your cluster with `odo`.
     
     > **Note**
     > 
-    > The front-end component is written in an interpreted language
-    > (Node.js); it does not need to be built.
+    > The front-end component is written in an interpreted language (Node.js); it does not need to be built.
 
-4.  Create a component configuration of Node.js component-type named
-    `frontend`:
+4.  Create a component configuration of Node.js component-type named `frontend`:
     
     ``` terminal
     $ odo create nodejs frontend
@@ -331,9 +311,7 @@ application and push the source code to your cluster with `odo`.
 
 # Linking both components
 
-Components running on the cluster need to be connected in order to
-interact. OpenShift provides linking mechanisms to publish communication
-bindings from a program to its clients.
+Components running on the cluster need to be connected in order to interact. OpenShift provides linking mechanisms to publish communication bindings from a program to its clients.
 
 1.  List all the components that are running on the cluster:
     
@@ -356,8 +334,7 @@ bindings from a program to its clients.
     $ odo link backend --port 8080
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
      ✓  Component backend has been successfully linked from the component frontend
@@ -367,8 +344,7 @@ bindings from a program to its clients.
     - COMPONENT_BACKEND_PORT
     ```
     
-    The configuration information of the back-end component is added to
-    the front-end component and the front-end component restarts.
+    The configuration information of the back-end component is added to the front-end component and the front-end component restarts.
 
 # Exposing components to the public
 
@@ -420,13 +396,9 @@ bindings from a program to its clients.
 
 > **Note**
 > 
-> If an application requires permissions to the active Service Account
-> to access the OpenShift namespace and delete active pods, the
-> following error may occur when looking at `odo log` from the back-end
-> component:
+> If an application requires permissions to the active Service Account to access the OpenShift namespace and delete active pods, the following error may occur when looking at `odo log` from the back-end component:
 > 
-> `Message: Forbidden!Configured service account doesn’t have access.
-> Service account may have been revoked`
+> `Message: Forbidden!Configured service account doesn’t have access. Service account may have been revoked`
 > 
 > To resolve this error, add permissions for the Service Account role:
 > 
@@ -454,15 +426,13 @@ bindings from a program to its clients.
     $ odo watch
     ```
 
-3.  Edit the `index.html` file to change the displayed name for the
-    game.
+3.  Edit the `index.html` file to change the displayed name for the game.
     
     > **Note**
     > 
     > A slight delay is possible before odo recognizes the change.
     
-    odo pushes the changes to the front-end component and prints its
-    status to the terminal:
+    odo pushes the changes to the front-end component and prints its status to the terminal:
     
     ``` terminal
     File /root/frontend/index.html changed
@@ -473,15 +443,13 @@ bindings from a program to its clients.
      ✓  Building component
     ```
 
-4.  Refresh the application page in the web browser. The new name is now
-    displayed.
+4.  Refresh the application page in the web browser. The new name is now displayed.
 
 # Deleting an application
 
 > **Important**
 > 
-> Deleting an application will delete all components associated with the
-> application.
+> Deleting an application will delete all components associated with the application.
 
 1.  List the applications in the current project:
     
@@ -497,8 +465,7 @@ bindings from a program to its clients.
         app
     ```
 
-2.  List the components associated with the applications. These
-    components will be deleted with the application:
+2.  List the components associated with the applications. These components will be deleted with the application:
     
     ``` terminal
     $ odo component list
@@ -517,12 +484,10 @@ bindings from a program to its clients.
     $ odo app delete <application_name>
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
         ? Are you sure you want to delete the application: <application_name> from project: <project_name>
     ```
 
-4.  Confirm the deletion with `Y`. You can suppress the confirmation
-    prompt using the `-f` flag.
+4.  Confirm the deletion with `Y`. You can suppress the confirmation prompt using the `-f` flag.
