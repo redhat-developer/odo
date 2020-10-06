@@ -59,6 +59,16 @@ func (dc DevfileCommand) GetExecWorkingDir() string {
 	return ""
 }
 
+// IsExec checks if the command is an exec command
+func (dc DevfileCommand) IsExec() bool {
+	isExec := false
+	if dc.Exec != nil {
+		isExec = true
+	}
+
+	return isExec
+}
+
 // IsComposite checks if the command is a composite command
 func (dc DevfileCommand) IsComposite() bool {
 	isComposite := false

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	genericValidation "github.com/openshift/odo/pkg/devfile/validate/generic"
 	"k8s.io/klog"
 )
 
@@ -12,30 +13,43 @@ import (
 func validateEvents(events common.DevfileEvents, commands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
 
 	eventErrors := ""
+	var preStartGenericErr, postStartGenericErr, preStopGenericErr, postStopGenericErr error
 
 	switch {
 	case len(events.PreStart) > 0:
 		klog.V(2).Info("Validating preStart events")
-		if preStartErr := isEventValid(events.PreStart, "preStart", commands, components); preStartErr != nil {
+		if preStartGenericErr = genericValidation.IsEventValid(events.PreStart, "preStart", commands, components); preStartGenericErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", preStartGenericErr.Error())
+		}
+		if preStartErr := isEventValid(events.PreStart, "preStart", commands, components); preStartGenericErr == nil && preStartErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", preStartErr.Error())
 		}
 		fallthrough
 	case len(events.PostStart) > 0:
 		klog.V(2).Info("Validating postStart events")
-		if postStartErr := isEventValid(events.PostStart, "postStart", commands, components); postStartErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", postStartErr.Error())
+		if postStartGenericErr = genericValidation.IsEventValid(events.PostStart, "postStart", commands, components); postStartGenericErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", postStartGenericErr.Error())
+		}
+		if postStartErr := isEventValid(events.PostStart, "postStart", commands, components); postStartGenericErr == nil && postStartErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", postStartGenericErr.Error())
 		}
 		fallthrough
 	case len(events.PreStop) > 0:
 		klog.V(2).Info("Validating preStop events")
-		if preStopErr := isEventValid(events.PreStop, "preStop", commands, components); preStopErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", preStopErr.Error())
+		if preStopGenericErr = genericValidation.IsEventValid(events.PreStop, "preStop", commands, components); preStopGenericErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", preStopGenericErr.Error())
+		}
+		if preStopErr := genericValidation.IsEventValid(events.PreStop, "preStop", commands, components); preStopGenericErr == nil && preStopErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", preStopGenericErr.Error())
 		}
 		fallthrough
 	case len(events.PostStop) > 0:
 		klog.V(2).Info("Validating postStop events")
-		if postStopErr := isEventValid(events.PostStop, "postStop", commands, components); postStopErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", postStopErr.Error())
+		if postStopGenericErr = genericValidation.IsEventValid(events.PostStop, "postStop", commands, components); postStopGenericErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", postStopGenericErr.Error())
+		}
+		if postStopErr := genericValidation.IsEventValid(events.PostStop, "postStop", commands, components); postStopGenericErr == nil && postStopErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", postStopGenericErr.Error())
 		}
 	}
 
@@ -47,21 +61,15 @@ func validateEvents(events common.DevfileEvents, commands map[string]common.Devf
 	return nil
 }
 
-// isEventValid checks if events belonging to a specific event type are valid:
-// 1. Event should map to a valid devfile command
-// 2. Event commands should be valid
+// isEventValid checks if events belonging to a specific event type are valid ie; either exec or composite command
 func isEventValid(eventNames []string, eventType string, commands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
 	eventErrorMsg := make(map[string][]string)
 	eventErrors := ""
 
 	for _, eventName := range eventNames {
-		isEventPresent := false
 		for _, command := range commands {
-			// Check if event matches a valid devfile command
 			if command.GetID() == strings.ToLower(eventName) {
-				isEventPresent = true
-
-				// Check if the devfile command is valid
+				// Check if the devfile command is a valid odo devfile command
 				err := validateCommand(command, commands, components)
 				if err != nil {
 					klog.V(2).Infof("command %s is not valid: %s", command.GetID(), err.Error())
@@ -69,11 +77,6 @@ func isEventValid(eventNames []string, eventType string, commands map[string]com
 				}
 				break
 			}
-		}
-
-		if !isEventPresent {
-			klog.V(2).Infof("%s type event %s does not map to a valid devfile command", eventType, eventName)
-			eventErrorMsg[strings.ToLower(eventName)] = append(eventErrorMsg[strings.ToLower(eventName)], fmt.Sprintf("event %s does not map to a valid devfile command", eventName))
 		}
 	}
 
