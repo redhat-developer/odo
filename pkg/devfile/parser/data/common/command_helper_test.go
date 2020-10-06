@@ -231,12 +231,13 @@ func TestGetExecWorkingDir(t *testing.T) {
 
 }
 
-func TestIsComposite(t *testing.T) {
+func TestIsCompositeAndIsExec(t *testing.T) {
 
 	tests := []struct {
-		name    string
-		command DevfileCommand
-		want    bool
+		name          string
+		command       DevfileCommand
+		wantComposite bool
+		wantExec      bool
 	}{
 		{
 			name: "Case 1: Exec command",
@@ -244,7 +245,8 @@ func TestIsComposite(t *testing.T) {
 				Id:   "exec1",
 				Exec: &Exec{},
 			},
-			want: false,
+			wantComposite: false,
+			wantExec:      true,
 		},
 		{
 			name: "Case 2: composite command",
@@ -252,19 +254,29 @@ func TestIsComposite(t *testing.T) {
 				Id:        "comp1",
 				Composite: &Composite{},
 			},
-			want: true,
+			wantComposite: true,
+			wantExec:      false,
 		},
 		{
-			name:    "Case 3: Empty command",
-			command: DevfileCommand{},
-			want:    false,
+			name:          "Case 3: Empty command",
+			command:       DevfileCommand{},
+			wantComposite: false,
+			wantExec:      false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			// Test IsComposite
 			isCompositeCmd := tt.command.IsComposite()
-			if isCompositeCmd != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, isCompositeCmd)
+			if isCompositeCmd != tt.wantComposite {
+				t.Errorf("expected %v, actual %v", tt.wantComposite, isCompositeCmd)
+			}
+
+			// Test IsExec
+			isExecCmd := tt.command.IsExec()
+			if isExecCmd != tt.wantExec {
+				t.Errorf("expected %v, actual %v", tt.wantExec, isExecCmd)
 			}
 		})
 	}

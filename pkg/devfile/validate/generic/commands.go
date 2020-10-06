@@ -6,7 +6,9 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
-// ValidateCommands validates all the devfile commands. If there are commands with duplicate IDs, an error is returned
+// ValidateCommands validates the devfile commands:
+// 1. if there are commands with duplicate IDs, an error is returned
+// 2. checks if its either a valid exec or composite command
 func ValidateCommands(commands []common.DevfileCommand, commandsMap map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 	processedCommands := make(map[string]string, len(commands))
 
@@ -79,7 +81,7 @@ func ValidateExecCommand(command common.DevfileCommand, components []common.Devf
 	return
 }
 
-// ValidateCompositeCommand checks that the specified composite command is valid. The command,
+// ValidateCompositeCommand checks that the specified composite command is valid. The command:
 // 1. should not reference itself via s subcommand
 // 2. should not indirectly reference itself via a subcommand which is a composite command
 // 3. should reference a valid devfile command

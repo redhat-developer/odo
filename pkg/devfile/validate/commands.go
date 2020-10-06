@@ -5,7 +5,10 @@ import (
 	genericValidation "github.com/openshift/odo/pkg/devfile/validate/generic"
 )
 
-// validateCommands validates all the devfile commands. If there are commands with duplicate IDs, an error is returned
+// validateCommands validates the devfile commands:
+// 1. checks if its either an exec or composite command
+// 2. checks if the composite is a non run kind command
+// 3. checks if the command is a valid exec or composite command
 func validateCommands(commands []common.DevfileCommand, commandsMap map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
 	for _, command := range commands {

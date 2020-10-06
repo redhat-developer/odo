@@ -5,7 +5,10 @@ import (
 	genericValidation "github.com/openshift/odo/pkg/devfile/validate/generic"
 )
 
-// validateComponents validates all the devfile components
+// validateComponents validates the devfile components:
+// 1. there should be at least one component
+// 2. there should be at least one container component
+// 3. the components should be a valid devfile component
 func validateComponents(components []common.DevfileComponent) error {
 
 	// components cannot be empty

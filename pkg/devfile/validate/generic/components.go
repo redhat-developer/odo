@@ -9,7 +9,7 @@ import (
 )
 
 // ValidateComponents validates that the components
-// 1. makes sure the container components reference a valid volume component
+// 1. makes sure the container components reference a valid volume component if it uses volume mounts
 // 2. makes sure the volume components are unique
 func ValidateComponents(components []common.DevfileComponent) error {
 
