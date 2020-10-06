@@ -21,6 +21,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -835,13 +836,13 @@ func (co *CreateOptions) Validate() (err error) {
 		if err != nil {
 			return err
 		}
-
 		// Only validate namespace if pushtarget isn't docker
 		if !pushtarget.IsPushTargetDocker() {
 			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
 			if err != nil {
 				return err
 			}
+
 		}
 
 		spinner.End(true)
@@ -1078,6 +1079,10 @@ func (co *CreateOptions) devfileRun() (err error) {
 	devObj, err := devfile.ParseFromDataAndValidate(devfileData)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse devfile")
+	}
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return err
 	}
 
 	err = co.downloadStarterProject(devObj, co.devfileMetadata.starter, co.interactive)
