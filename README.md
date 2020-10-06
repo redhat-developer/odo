@@ -39,7 +39,7 @@ Each file within `/chosen-docs` are only TEMPLATE files. These are required in o
 1. Check the `/chosen-docs` directory for which file needs updating.
 2. Find out where the file is located.
   - If the file is located in the `/upstream` folder, update it here: [github.com/openshift/odo/tree/master/docs/public](https://github.com/openshift/odo/tree/master/docs/public)
-  - If the file is located in the `/openshift-docs` folder, update it here: [github.com/openshift/openshift-docs/tree/master/cli_reference/openshift_developer_cli](https://github.com/openshift/openshift-docs/tree/master/cli_reference/openshift_developer_cli)
+  - If the file is located in the `/openshift-docs` folder, update it here: [github.com/openshift/openshift-docs/tree/master/cli_reference/developer_cli_odo](https://github.com/openshift/openshift-docs/tree/master/cli_reference/developer_cli_odo)
 3. Push a PR to wherever the original document is (either `odo` or `openshift-docs` repo)
 4. Once you have updated the files, run the `./script/sync.sh` file
 5. Commit and push a PR to the `gh-pages` branch (this branch)
