@@ -11,8 +11,7 @@ description: This example describes how to deploy and connect a database to a fr
 # Micro navigation
 micro_nav: true
 ---
-This example describes how to deploy and connect a database to a
-front-end application.
+This example describes how to deploy and connect a database to a front-end application.
 
 # Prerequisites
 
@@ -20,9 +19,7 @@ front-end application.
 
   - `oc` client is installed.
 
-  - You have a running cluster. Developers can use [CodeReady Containers
-    (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/)
-    to deploy a local cluster quickly.
+  - You have a running cluster. Developers can use [CodeReady Containers (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/) to deploy a local cluster quickly.
 
   - The Service Catalog is installed and enabled on your cluster.
     
@@ -32,8 +29,7 @@ front-end application.
 
 # Creating a project
 
-Create a project to keep your source code, tests, and libraries
-organized in a separate single unit.
+Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 
 1.  Log in to an OpenShift cluster:
     
@@ -56,8 +52,7 @@ organized in a separate single unit.
 
 # Deploying the front-end component
 
-To create and deploy a front-end component, download the Node.js
-application and push the source code to your cluster with `odo`.
+To create and deploy a front-end component, download the Node.js application and push the source code to your cluster with `odo`.
 
 1.  Download the example front-end application:
     
@@ -71,8 +66,7 @@ application and push the source code to your cluster with `odo`.
     $ cd frontend
     ```
 
-3.  List the contents of the directory to see that the front end is a
-    Node.js application.
+3.  List the contents of the directory to see that the front end is a Node.js application.
     
     ``` terminal
     $ ls
@@ -87,11 +81,9 @@ application and push the source code to your cluster with `odo`.
     
     > **Note**
     > 
-    > The front-end component is written in an interpreted language
-    > (Node.js); it does not need to be built.
+    > The front-end component is written in an interpreted language (Node.js); it does not need to be built.
 
-4.  Create a component configuration of Node.js component-type named
-    `frontend`:
+4.  Create a component configuration of Node.js component-type named `frontend`:
     
     ``` terminal
     $ odo create nodejs frontend
@@ -145,8 +137,7 @@ application and push the source code to your cluster with `odo`.
 
 # Deploying a database in interactive mode
 
-odo provides a command-line interactive mode which simplifies
-deployment.
+odo provides a command-line interactive mode which simplifies deployment.
 
   - Run the interactive mode and answer the prompts:
     
@@ -176,8 +167,7 @@ deployment.
 
 > **Note**
 > 
-> Your password or username will be passed to the front-end application
-> as environment variables.
+> Your password or username will be passed to the front-end application as environment variables.
 
 # Deploying a database manually
 
@@ -202,15 +192,13 @@ deployment.
     rails-pgsql-persistent       default
     ```
 
-2.  Choose the `mongodb-persistent` type of service and see the required
-    parameters:
+2.  Choose the `mongodb-persistent` type of service and see the required parameters:
     
     ``` terminal
     $ odo catalog describe service mongodb-persistent
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
       ***********************        | *****************************************************
@@ -237,9 +225,7 @@ deployment.
                                      | MONGODB_USER
     ```
 
-3.  Pass the required parameters as flags and wait for the deployment of
-    the
-    database:
+3.  Pass the required parameters as flags and wait for the deployment of the database:
     
     ``` terminal
     $ odo service create mongodb-persistent --plan default --wait -p DATABASE_SERVICE_NAME=mongodb -p MEMORY_LIMIT=512Mi -p MONGODB_DATABASE=sampledb -p VOLUME_CAPACITY=1Gi
@@ -253,8 +239,7 @@ deployment.
     $ odo link mongodb-persistent
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
      ✓  Service mongodb-persistent has been successfully linked from the component nodejs-nodejs-ex-mhbb
@@ -267,8 +252,7 @@ deployment.
     - admin_password
     ```
 
-2.  See the environment variables of the application and the database in
-    the Pod:
+2.  See the environment variables of the application and the database in the Pod:
     
     1.  Get the Pod name:
         
@@ -276,8 +260,7 @@ deployment.
         $ oc get pods
         ```
         
-        **Example
-        output.**
+        **Example output.**
         
         ``` terminal
         NAME                                READY     STATUS    RESTARTS   AGE
@@ -307,8 +290,7 @@ deployment.
         admin_password=NCn41tqmx7RIqmfv
         ```
 
-3.  Open the URL in the browser and notice the database configuration in
-    the bottom right:
+3.  Open the URL in the browser and notice the database configuration in the bottom right:
     
     ``` terminal
     $ odo url list
@@ -329,8 +311,7 @@ deployment.
 
 > **Important**
 > 
-> Deleting an application will delete all components associated with the
-> application.
+> Deleting an application will delete all components associated with the application.
 
 1.  List the applications in the current project:
     
@@ -346,8 +327,7 @@ deployment.
         app
     ```
 
-2.  List the components associated with the applications. These
-    components will be deleted with the application:
+2.  List the components associated with the applications. These components will be deleted with the application:
     
     ``` terminal
     $ odo component list
@@ -366,12 +346,10 @@ deployment.
     $ odo app delete <application_name>
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
         ? Are you sure you want to delete the application: <application_name> from project: <project_name>
     ```
 
-4.  Confirm the deletion with `Y`. You can suppress the confirmation
-    prompt using the `-f` flag.
+4.  Confirm the deletion with `Y`. You can suppress the confirmation prompt using the `-f` flag.

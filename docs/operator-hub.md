@@ -16,32 +16,21 @@ micro_nav: true
 
 What is an Operator?
 
-An Operator is essentially a [custom
-controller](https://www.openshift.com/learn/topics/operators). It is a
-method of packaging, deploying and managing a Kubernetes-native
-application.
+An Operator is essentially a [custom controller](https://www.openshift.com/learn/topics/operators). It is a method of packaging, deploying and managing a Kubernetes-native application.
 
-With Operators, odo allows you to create a service as defined by a
-Custom Resource Definition (CRD).
+With Operators, odo allows you to create a service as defined by a Custom Resource Definition (CRD).
 
-odo utilizes Operators in order to provide a seamless method for custom
-controller service installation. These Operators could be installed
-using [Operator Hub](https://operatorhub.io/) or you could install a
-custom Operator developed within your organization.
+odo utilizes Operators in order to provide a seamless method for custom controller service installation. These Operators could be installed using [Operator Hub](https://operatorhub.io/) or you could install a custom Operator developed within your organization.
 
 # Deploying your first Operator
 
 ## Prerequisites
 
-  - You must have cluster permissions to install an Operator on either
-    [OpenShift](https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html)
-    or
-    [Kubernetes](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md).
+  - You must have cluster permissions to install an Operator on either [OpenShift](https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html) or [Kubernetes](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md).
 
 # Creating a project
 
-Create a project to keep your source code, tests, and libraries
-organized in a separate single unit.
+Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 
 1.  Log in to your cluster:
     
@@ -59,30 +48,19 @@ organized in a separate single unit.
 
 # Installing an Operator
 
-In our examples, we install [etcd](https://etcd.io/), a distributed
-key-value store from [Operator
-Hub](https://operatorhub.io/operator/etcd).
+In our examples, we install [etcd](https://etcd.io/), a distributed key-value store from [Operator Hub](https://operatorhub.io/operator/etcd).
 
 > **Important**
 > 
-> Each Operator we install refers to the built-in
-> `metadata.annotations.alm-examples` annotation in order to correctly
-> deploy. If the Operator does not contain the correct metadata, you
-> will not be able to correctly deploy. For more information, see the
-> the [upstream CRD
-> documentation](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/building-your-csv.md#crd-templates).
+> Each Operator we install refers to the built-in `metadata.annotations.alm-examples` annotation in order to correctly deploy. If the Operator does not contain the correct metadata, you will not be able to correctly deploy. For more information, see the the [upstream CRD documentation](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/building-your-csv.md#crd-templates).
 
 ## Kubernetes installation
 
-For Kubernetes installation, you must install the Operator Lifecycle
-Manager and etcd from the [etcd installation guide on Operator
-Hub](https://operatorhub.io/operator/etcd).
+For Kubernetes installation, you must install the Operator Lifecycle Manager and etcd from the [etcd installation guide on Operator Hub](https://operatorhub.io/operator/etcd).
 
 ## OpenShift installation
 
-For OpenShift installation, the etcd Operator can be installed through
-the [administrative
-console](https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html).
+For OpenShift installation, the etcd Operator can be installed through the [administrative console](https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html).
 
 ## Listing all available Operators
 
@@ -95,22 +73,13 @@ NAME                          CRDs
 etcdoperator.v0.9.4           EtcdCluster, EtcdBackup, EtcdRestore
 ```
 
-In above output, `etcdoperator.v0.9.4` is the Operator while
-`EtcdCluster`, `EtcdBackup` and `EtcdRestore` are the CRDs provided by
-this Operator.
+In above output, `etcdoperator.v0.9.4` is the Operator while `EtcdCluster`, `EtcdBackup` and `EtcdRestore` are the CRDs provided by this Operator.
 
-## Creating an Operator backed service
+# Creating an Operator backed service
 
-In this example, we will be deploying `EtcdCluster` service from [etcd
-Operator](https://operatorhub.io/operator/etcd) to an OpenShift /
-Kubernetes cluster. This service is provided by the Operator
-`etcdoperator`. Please ensure that this Operator is installed on your
-OpenShift / Kubernetes cluster before trying to create `EtcdCluster`
-service from it. If it’s not installed, please install it by logging
-into your OpenShift / Kubernetes cluster as `kube:admin` user.
+In this example, we will be deploying `EtcdCluster` service from [etcd Operator](https://operatorhub.io/operator/etcd) to an OpenShift / Kubernetes cluster. This service is provided by the Operator `etcdoperator`. Please ensure that this Operator is installed on your OpenShift / Kubernetes cluster before trying to create `EtcdCluster` service from it. If it’s not installed, please install it by logging into your OpenShift / Kubernetes cluster as `kube:admin` user.
 
-1.  Create an `EtcdCluster` service from the `etcdoperator.v0.9.4`
-    Operator:
+1.  Create an `EtcdCluster` service from the `etcdoperator.v0.9.4` Operator:
     
     ``` sh
     $ odo service create etcdoperator.v0.9.4/EtcdCluster
@@ -122,28 +91,19 @@ into your OpenShift / Kubernetes cluster as `kube:admin` user.
     $ odo service list
     ```
 
-It is important to note that `EtcdBackup` and `EtcdRestore` cannot be
-deploymeed the same way as we deployed `EtcdCluster` as they require
-configuring other parameters in their YAML definition.
+It is important to note that `EtcdBackup` and `EtcdRestore` cannot be deploymeed the same way as we deployed `EtcdCluster` as they require configuring other parameters in their YAML definition.
 
-## Deploying Operator backed service to a cluster via YAML
+# Deploying Operator backed service to a cluster via YAML
 
-In this example, we will be deploying our [installed etcd
-Operator](https://operatorhub.io/operator/etcd) to an OpenShift /
-Kubernetes cluster.
+In this example, we will be deploying our [installed etcd Operator](https://operatorhub.io/operator/etcd) to an OpenShift / Kubernetes cluster.
 
-However, we will be using the YAML definition where we modify the
-`metadata.name` and `spec.size`.
+However, we will be using the YAML definition where we modify the `metadata.name` and `spec.size`.
 
 > **Important**
 > 
-> Deploying via YAML is a **temporary** feature as we add support for
-> [passing parameters on the command
-> line](https://github.com/openshift/odo/issues/2785) and [interactive
-> mode](https://github.com/openshift/odo/issues/2799).
+> Deploying via YAML is a **temporary** feature as we add support for [passing parameters on the command line](https://github.com/openshift/odo/issues/2785) and [interactive mode](https://github.com/openshift/odo/issues/2799).
 
-1.  Retrieve the YAML output of the
-    operator:
+1.  Retrieve the YAML output of the operator:
     
     ``` shell
     $ odo service create etcdoperator.v0.9.4/EtcdCluster --dry-run > etcd.yaml
@@ -173,23 +133,15 @@ However, we will be using the YAML definition where we modify the
     $ odo service list
     ```
 
-## Linking an odo component with an Operator backed service
+# Linking an odo component with an Operator backed service
 
-Linking a component to a service means, in simplest terms, to make a
-service usable from the component.
+Linking a component to a service means, in simplest terms, to make a service usable from the component.
 
-For example, once you link an EtcdCluster service with your nodejs
-application, you can use (or, interact with) the EtcdCluster from within
-your node app. The way odo facilitates linking is by making sure that
-specific environment variables from the pod in which the service is
-running are configured in the pod of the component as well.
+For example, once you link an EtcdCluster service with your nodejs application, you can use (or, interact with) the EtcdCluster from within your node app. The way odo facilitates linking is by making sure that specific environment variables from the pod in which the service is running are configured in the pod of the component as well.
 
-After having created a service using either of the two approaches
-discussed above, we can now connect an odo component with the service
-thus created.
+After having created a service using either of the two approaches discussed above, we can now connect an odo component with the service thus created.
 
-1.  Make sure you are executing the command for a component that’s
-    pushed (`odo push`) to the cluster.
+1.  Make sure you are executing the command for a component that’s pushed (`odo push`) to the cluster.
 
 2.  Link the component with the service:
     
@@ -208,18 +160,13 @@ thus created.
 
 > **Important**
 > 
-> For the link between a component and Operator Hub backed service to
-> take effect, make sure you do `odo push`. The link won’t be effective
-> otherwise.
+> For the link between a component and Operator Hub backed service to take effect, make sure you do `odo push`. The link won’t be effective otherwise.
 
-## Unlinking an odo component from an Operator backed service
+# Unlinking an odo component from an Operator backed service
 
-Unlinking unsets the environment variables that were set by linking.
-This would cause your application to cease being able to communicate
-with the service linked using `odo link`.
+Unlinking unsets the environment variables that were set by linking. This would cause your application to cease being able to communicate with the service linked using `odo link`.
 
-1.  Make sure you are executing the command for a component that’s
-    pushed (`odo push`) to the cluster.
+1.  Make sure you are executing the command for a component that’s pushed (`odo push`) to the cluster.
 
 2.  Unlink the component from the service it is connected to:
     
@@ -234,13 +181,11 @@ with the service linked using `odo link`.
 
 > **Important**
 > 
-> For unlinking to take effect, make sure you do `odo push`. It won’t be
-> effective otherwise.
+> For unlinking to take effect, make sure you do `odo push`. It won’t be effective otherwise.
 
-## Deleting an Operator backed service
+# Deleting an Operator backed service
 
-To delete an Operator backed service, provide full name of the service
-that you see in the output of `odo service list`. For example:
+To delete an Operator backed service, provide full name of the service that you see in the output of `odo service list`. For example:
 
 ``` shell
 $ odo service list
@@ -250,8 +195,7 @@ EtcdCluster/example     2s
 $ odo service delete EtcdCluster/example
 ```
 
-To forcefully delete a service without being prompted for confirmation,
-use the `-f` flag like below:
+To forcefully delete a service without being prompted for confirmation, use the `-f` flag like below:
 
 ``` shell
 $ odo service delete EtcdCluster/example -f

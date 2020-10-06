@@ -13,11 +13,9 @@ micro_nav: true
 ---
 # Migrating from S2I (Source-to-Image) components to Devfile components
 
-[Devfiles](https://devfile.github.io/) are new way of deploying
-component with odo.
+[Devfiles](https://devfile.github.io/) are new way of deploying component with odo.
 
-Existing users using S2I based components can migrate to a devfile
-component by following the below steps:
+Existing users using S2I based components can migrate to a devfile component by following the below steps:
 
 1.  Change to the component directory you want to migrate:
     
@@ -35,8 +33,7 @@ component by following the below steps:
     app     myapp     myproject      nodejs     local          Pushed
     ```
 
-3.  Convert the S2I component to a devfile component by running the
-    following command:
+3.  Convert the S2I component to a devfile component by running the following command:
     
     ``` sh
      $ odo utils convert-to-devfile
@@ -70,8 +67,7 @@ component by following the below steps:
       ✓  Changes successfully pushed to component
     ```
 
-5.  Check the component status, there should be two components running
-    both S2I and devfile:
+5.  Check the component status, there should be two components running both S2I and devfile:
     
     ``` sh
      $ odo list

@@ -17,14 +17,11 @@ With `odo`, you can create and deploy applications on clusters.
 
   - `odo` is installed.
 
-  - You have a running cluster. You can use [CodeReady Containers
-    (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/)
-    to deploy a local cluster quickly.
+  - You have a running cluster. You can use [CodeReady Containers (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/) to deploy a local cluster quickly.
 
 # Creating a project
 
-Create a project to keep your source code, tests, and libraries
-organized in a separate single unit.
+Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 
 1.  Log in to an OpenShift cluster:
     
@@ -47,8 +44,7 @@ organized in a separate single unit.
 
 # Creating a Node.js application with odo
 
-To create a Node.js component, download the Node.js application and push
-the source code to your cluster with `odo`.
+To create a Node.js component, download the Node.js application and push the source code to your cluster with `odo`.
 
 1.  Create a directory for your components:
     
@@ -76,8 +72,7 @@ the source code to your cluster with `odo`.
     
     > **Note**
     > 
-    > By default, the latest image is used. You can also explicitly
-    > specify an image version by using `odo create openshift/nodejs:8`.
+    > By default, the latest image is used. You can also explicitly specify an image version by using `odo create openshift/nodejs:8`.
 
 5.  Push the initial source code to the component:
     
@@ -87,8 +82,7 @@ the source code to your cluster with `odo`.
     
     Your component is now deployed to OpenShift.
 
-6.  Create a URL and add an entry in the local configuration file as
-    follows:
+6.  Create a URL and add an entry in the local configuration file as follows:
     
     ``` terminal
     $ odo url create --port 8080
@@ -114,11 +108,9 @@ the source code to your cluster with `odo`.
 
 # Modifying your application code
 
-You can modify your application code and have the changes applied to
-your application on OpenShift.
+You can modify your application code and have the changes applied to your application on OpenShift.
 
-1.  Edit one of the layout files within the Node.js directory with your
-    preferred text editor.
+1.  Edit one of the layout files within the Node.js directory with your preferred text editor.
 
 2.  Update your component:
     
@@ -130,13 +122,9 @@ your application on OpenShift.
 
 # Adding storage to the application components
 
-Persistent storage keeps data available between restarts of odo. Use the
-`odo storage` command to add persistent data to your application.
-Examples of data that must persist include database files, dependencies,
-and build artifacts, such as a `.m2` Maven directory.
+Persistent storage keeps data available between restarts of odo. Use the `odo storage` command to add persistent data to your application. Examples of data that must persist include database files, dependencies, and build artifacts, such as a `.m2` Maven directory.
 
-1.  Add the storage to your
-    component:
+1.  Add the storage to your component:
     
     ``` terminal
     $ odo storage create <storage_name> --path=<path_to_the_directory> --size=<size>
@@ -148,8 +136,7 @@ and build artifacts, such as a `.m2` Maven directory.
     $ odo push
     ```
 
-3.  Verify that the storage is now attached to your component by listing
-    all storage in the component:
+3.  Verify that the storage is now attached to your component by listing all storage in the component:
     
     ``` terminal
     $ odo storage list
@@ -169,8 +156,7 @@ and build artifacts, such as a `.m2` Maven directory.
     $ odo storage delete <storage_name>
     ```
 
-5.  List all storage to verify that the storage state is `Locally
-    Deleted`:
+5.  List all storage to verify that the storage state is `Locally Deleted`:
     
     ``` terminal
     $ odo storage list
@@ -192,11 +178,9 @@ and build artifacts, such as a `.m2` Maven directory.
 
 # Adding a custom builder to specify a build image
 
-With OpenShift, you can add a custom image to bridge the gap between the
-creation of custom images.
+With OpenShift, you can add a custom image to bridge the gap between the creation of custom images.
 
-The following example demonstrates the successful import and use of the
-`redhat-openjdk-18` image:
+The following example demonstrates the successful import and use of the `redhat-openjdk-18` image:
 
   - The OpenShift CLI (oc) is installed.
 
@@ -225,9 +209,7 @@ The following example demonstrates the successful import and use of the
 
 # Connecting your application to multiple services using OpenShift Service Catalog
 
-The OpenShift service catalog is an implementation of the Open Service
-Broker API (OSB API) for Kubernetes. You can use it to connect
-applications deployed in OpenShift to a variety of services.
+The OpenShift service catalog is an implementation of the Open Service Broker API (OSB API) for Kubernetes. You can use it to connect applications deployed in OpenShift to a variety of services.
 
   - You have a running OpenShift cluster.
 
@@ -251,8 +233,7 @@ applications deployed in OpenShift to a variety of services.
 
 > **Important**
 > 
-> Deleting an application will delete all components associated with the
-> application.
+> Deleting an application will delete all components associated with the application.
 
 1.  List the applications in the current project:
     
@@ -268,8 +249,7 @@ applications deployed in OpenShift to a variety of services.
         app
     ```
 
-2.  List the components associated with the applications. These
-    components will be deleted with the application:
+2.  List the components associated with the applications. These components will be deleted with the application:
     
     ``` terminal
     $ odo component list
@@ -288,12 +268,10 @@ applications deployed in OpenShift to a variety of services.
     $ odo app delete <application_name>
     ```
     
-    **Example
-    output.**
+    **Example output.**
     
     ``` terminal
         ? Are you sure you want to delete the application: <application_name> from project: <project_name>
     ```
 
-4.  Confirm the deletion with `Y`. You can suppress the confirmation
-    prompt using the `-f` flag.
+4.  Confirm the deletion with `Y`. You can suppress the confirmation prompt using the `-f` flag.
