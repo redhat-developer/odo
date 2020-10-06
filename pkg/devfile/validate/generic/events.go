@@ -9,7 +9,7 @@ import (
 )
 
 // IsEventValid checks if events belonging to a specific event type are valid ie; event should map to a valid devfile command
-func IsEventValid(eventNames []string, eventType string, commands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
+func IsEventValid(eventNames []string, eventType string, commands map[string]common.DevfileCommand) error {
 	eventErrorMsg := make(map[string][]string)
 	eventErrors := ""
 

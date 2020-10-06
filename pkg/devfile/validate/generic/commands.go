@@ -6,11 +6,63 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
-// ValidateExecCommand validates the given exec command must map to a valid container component
+// ValidateCommands validates all the devfile commands. If there are commands with duplicate IDs, an error is returned
+func ValidateCommands(commands []common.DevfileCommand, commandsMap map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
+	processedCommands := make(map[string]string, len(commands))
+
+	for _, command := range commands {
+		// Check if the command is in the list of already processed commands
+		// If there's a hit, it means more than one command share the same ID and we should error out
+		commandID := command.SetIDToLower()
+		if _, exists := processedCommands[commandID]; exists {
+			return &DuplicateCommandError{commandId: commandID}
+		}
+		processedCommands[commandID] = commandID
+
+		err = validateCommand(command, commandsMap, components)
+		if err != nil {
+			return err
+		}
+	}
+
+	return
+}
+
+// validateCommand validates a given devfile command
+func validateCommand(command common.DevfileCommand, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
+
+	// If the command is a composite command, need to validate that it is valid
+	if command.IsComposite() {
+		parentCommands := make(map[string]string)
+		return ValidateCompositeCommand(&command, parentCommands, devfileCommands, components)
+	}
+
+	err = ValidateExecCommand(command, components)
+
+	return err
+}
+
+// ValidateExecCommand validates the given exec command, the command should:
+// 1. have a component
+// 2. have a command line
+// 3. map to a valid container component
 func ValidateExecCommand(command common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
 	if !command.IsExec() {
 		return &InvalidCommandError{commandId: command.GetID(), commandType: "exec"}
+	}
+
+	// TODO - Remove component and command line check when devfile spec is finalized for 2.0.0
+	// since these are required fields in a devfile.yaml
+
+	// component must be specified
+	if command.GetExecComponent() == "" {
+		return &ExecCommandMissingComponentError{commandId: command.GetID()}
+	}
+
+	// must specify a command
+	if command.GetExecCommandLine() == "" {
+		return &ExecCommandMissingCommandLineError{commandId: command.GetID()}
 	}
 
 	// must map to a container component
@@ -27,7 +79,11 @@ func ValidateExecCommand(command common.DevfileCommand, components []common.Devf
 	return
 }
 
-// ValidateCompositeCommand checks that the specified composite command is valid
+// ValidateCompositeCommand checks that the specified composite command is valid. The command,
+// 1. should not reference itself via s subcommand
+// 2. should not indirectly reference itself via a subcommand which is a composite command
+// 3. should reference a valid devfile command
+// 4. should have a valid exec sub command
 func ValidateCompositeCommand(command *common.DevfileCommand, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
 
 	// Store the command ID in a map of parent commands

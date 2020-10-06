@@ -18,7 +18,7 @@ func validateEvents(events common.DevfileEvents, commands map[string]common.Devf
 	switch {
 	case len(events.PreStart) > 0:
 		klog.V(2).Info("Validating preStart events")
-		if preStartGenericErr = genericValidation.IsEventValid(events.PreStart, "preStart", commands, components); preStartGenericErr != nil {
+		if preStartGenericErr = genericValidation.IsEventValid(events.PreStart, "preStart", commands); preStartGenericErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", preStartGenericErr.Error())
 		}
 		if preStartErr := isEventValid(events.PreStart, "preStart", commands, components); preStartGenericErr == nil && preStartErr != nil {
@@ -27,29 +27,29 @@ func validateEvents(events common.DevfileEvents, commands map[string]common.Devf
 		fallthrough
 	case len(events.PostStart) > 0:
 		klog.V(2).Info("Validating postStart events")
-		if postStartGenericErr = genericValidation.IsEventValid(events.PostStart, "postStart", commands, components); postStartGenericErr != nil {
+		if postStartGenericErr = genericValidation.IsEventValid(events.PostStart, "postStart", commands); postStartGenericErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", postStartGenericErr.Error())
 		}
 		if postStartErr := isEventValid(events.PostStart, "postStart", commands, components); postStartGenericErr == nil && postStartErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", postStartGenericErr.Error())
+			eventErrors += fmt.Sprintf("\n%s", postStartErr.Error())
 		}
 		fallthrough
 	case len(events.PreStop) > 0:
 		klog.V(2).Info("Validating preStop events")
-		if preStopGenericErr = genericValidation.IsEventValid(events.PreStop, "preStop", commands, components); preStopGenericErr != nil {
+		if preStopGenericErr = genericValidation.IsEventValid(events.PreStop, "preStop", commands); preStopGenericErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", preStopGenericErr.Error())
 		}
-		if preStopErr := genericValidation.IsEventValid(events.PreStop, "preStop", commands, components); preStopGenericErr == nil && preStopErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", preStopGenericErr.Error())
+		if preStopErr := isEventValid(events.PreStop, "preStop", commands, components); preStopGenericErr == nil && preStopErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", preStopErr.Error())
 		}
 		fallthrough
 	case len(events.PostStop) > 0:
 		klog.V(2).Info("Validating postStop events")
-		if postStopGenericErr = genericValidation.IsEventValid(events.PostStop, "postStop", commands, components); postStopGenericErr != nil {
+		if postStopGenericErr = genericValidation.IsEventValid(events.PostStop, "postStop", commands); postStopGenericErr != nil {
 			eventErrors += fmt.Sprintf("\n%s", postStopGenericErr.Error())
 		}
-		if postStopErr := genericValidation.IsEventValid(events.PostStop, "postStop", commands, components); postStopGenericErr == nil && postStopErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", postStopGenericErr.Error())
+		if postStopErr := isEventValid(events.PostStop, "postStop", commands, components); postStopGenericErr == nil && postStopErr != nil {
+			eventErrors += fmt.Sprintf("\n%s", postStopErr.Error())
 		}
 	}
 

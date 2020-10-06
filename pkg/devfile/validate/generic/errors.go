@@ -12,6 +12,33 @@ func (e *InvalidEventError) Error() string {
 	return fmt.Sprintf("%s type events is invalid: %s", e.eventType, e.errorMsg)
 }
 
+// DuplicateCommandError returns an error if the command is duplicate
+type DuplicateCommandError struct {
+	commandId string
+}
+
+func (e *DuplicateCommandError) Error() string {
+	return fmt.Sprintf("devfile has duplicate command IDs %q", e.commandId)
+}
+
+// ExecCommandMissingComponentError returns an error if the exec command does not have a component
+type ExecCommandMissingComponentError struct {
+	commandId string
+}
+
+func (e *ExecCommandMissingComponentError) Error() string {
+	return fmt.Sprintf("exec command %q must reference a component", e.commandId)
+}
+
+// ExecCommandMissingCommandLineError returns an error if the exec command does not have a command line
+type ExecCommandMissingCommandLineError struct {
+	commandId string
+}
+
+func (e *ExecCommandMissingCommandLineError) Error() string {
+	return fmt.Sprintf("exec command %q must have a command", e.commandId)
+}
+
 // InvalidCommandError returns an error if the command is an invalid type
 type InvalidCommandError struct {
 	commandId   string

@@ -8,6 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// ValidateComponents validates that the components
+// 1. makes sure the container components reference a valid volume component
+// 2. makes sure the volume components are unique
 func ValidateComponents(components []common.DevfileComponent) error {
 
 	processedVolumes := make(map[string]bool)

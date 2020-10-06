@@ -130,7 +130,7 @@ func TestValidateCommands(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Case 7: Invalid Composite Command",
+			name: "Case 7: Invalid Composite Command, references a missing devfile command",
 			exec: []common.DevfileCommand{
 				{
 					Id: "somecommand1",
@@ -221,6 +221,89 @@ func TestValidateCommands(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Case 10: Invalid composite commands, directly references itself",
+			exec: []common.DevfileCommand{
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+				{
+					Id: "somecommand2",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			comp: []common.DevfileCommand{
+				{
+					Id: "compcommand1",
+					Composite: &common.Composite{
+						Commands: []string{"compcommand1"},
+						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 11: Invalid composite commands, indirectly references itself",
+			exec: []common.DevfileCommand{
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			comp: []common.DevfileCommand{
+				{
+					Id: "compcommand1",
+					Composite: &common.Composite{
+						Commands: []string{"compcommand2"},
+						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					},
+				},
+				{
+					Id: "compcommand2",
+					Composite: &common.Composite{
+						Commands: []string{"compcommand1"},
+						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 12: Invalid composite commands, references an invalid exec command",
+			exec: []common.DevfileCommand{
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			comp: []common.DevfileCommand{
+				{
+					Id: "compcommand1",
+					Composite: &common.Composite{
+						Commands: []string{"somecommand1"},
+						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		devfileData := testingutil.TestDevfileData{
@@ -301,91 +384,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Case 2: Invalid composite command, references non-existent command",
-			compositeCommands: []common.DevfileCommand{
-				{
-					Id: id[3],
-					Composite: &common.Composite{
-						Commands: []string{id[0], "fakecommand", id[2]},
-						Group:    &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			execCommands: []common.DevfileCommand{
-				{
-					Id: id[0],
-					Exec: &common.Exec{
-						CommandLine: command[0],
-						Component:   component,
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[0],
-					},
-				},
-				{
-					Id: id[1],
-					Exec: &common.Exec{
-						CommandLine: command[1],
-						Component:   component,
-						Group:       &common.Group{Kind: buildGroup},
-						WorkingDir:  workDir[1],
-					},
-				},
-				{
-					Id: id[2],
-					Exec: &common.Exec{
-						CommandLine: command[2],
-						Component:   component,
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[2],
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case 3: Invalid composite command, references itself",
-			compositeCommands: []common.DevfileCommand{
-				{
-					Id: id[3],
-					Composite: &common.Composite{
-						Commands: []string{id[0], id[3], id[2]},
-						Group:    &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			execCommands: []common.DevfileCommand{
-				{
-					Id: id[0],
-					Exec: &common.Exec{
-						CommandLine: command[0],
-						Component:   component,
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[0],
-					},
-				},
-				{
-					Id: id[1],
-					Exec: &common.Exec{
-						CommandLine: command[1],
-						Component:   component,
-						Group:       &common.Group{Kind: buildGroup},
-						WorkingDir:  workDir[1],
-					},
-				},
-				{
-					Id: id[2],
-					Exec: &common.Exec{
-						CommandLine: command[2],
-						Component:   component,
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[2],
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case 4: Invalid composite run command",
+			name: "Case 2: Invalid composite run command",
 			compositeCommands: []common.DevfileCommand{
 				{
 					Id: id[3],
@@ -421,88 +420,6 @@ func TestValidateCompositeCommand(t *testing.T) {
 						Component:   component,
 						Group:       &common.Group{Kind: runGroup},
 						WorkingDir:  workDir[2],
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case 5: Invalid composite command, indirectly references itself",
-			compositeCommands: []common.DevfileCommand{
-				{
-					Id: id[3],
-					Composite: &common.Composite{
-						Commands: []string{id[4], id[3], id[2]},
-						Group:    &common.Group{Kind: buildGroup},
-					},
-				},
-				{
-					Id: id[4],
-					Composite: &common.Composite{
-						Commands: []string{id[0], id[3], id[2]},
-						Group:    &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			execCommands: []common.DevfileCommand{
-				{
-					Id: id[0],
-					Exec: &common.Exec{
-						CommandLine: command[0],
-						Component:   component,
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[0],
-					},
-				},
-				{
-					Id: id[1],
-					Exec: &common.Exec{
-						CommandLine: command[1],
-						Component:   component,
-						Group:       &common.Group{Kind: buildGroup},
-						WorkingDir:  workDir[1],
-					},
-				},
-				{
-					Id: id[2],
-					Exec: &common.Exec{
-						CommandLine: command[2],
-						Component:   component,
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[2],
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case 6: Invalid composite command, points to invalid exec command",
-			compositeCommands: []common.DevfileCommand{
-				{
-					Id: id[3],
-					Composite: &common.Composite{
-						Commands: []string{id[0], id[1]},
-						Group:    &common.Group{Kind: buildGroup},
-					},
-				},
-			},
-			execCommands: []common.DevfileCommand{
-				{
-					Id: id[0],
-					Exec: &common.Exec{
-						CommandLine: command[0],
-						Component:   component,
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[0],
-					},
-				},
-				{
-					Id: id[1],
-					Exec: &common.Exec{
-						CommandLine: command[1],
-						Component:   "some-fake-component",
-						Group:       &common.Group{Kind: runGroup},
-						WorkingDir:  workDir[1],
 					},
 				},
 			},

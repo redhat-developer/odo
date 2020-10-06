@@ -1,4 +1,4 @@
-package validate
+package generic
 
 import (
 	"fmt"
@@ -8,52 +8,14 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	genericValidation "github.com/openshift/odo/pkg/devfile/validate/generic"
 )
 
 func TestValidateComponents(t *testing.T) {
-
-	t.Run("No components present", func(t *testing.T) {
-
-		// Empty components
-		components := []common.DevfileComponent{}
-
-		got := validateComponents(components)
-		want := &NoComponentsError{}
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
-		}
-	})
-
-	t.Run("Container type of component present", func(t *testing.T) {
-
-		components := []common.DevfileComponent{
-			{
-				Name: "container",
-				Container: &common.Container{
-					Image: "image",
-				},
-			},
-		}
-
-		got := validateComponents(components)
-
-		if got != nil {
-			t.Errorf("TestValidateComponents error - Not expecting an error: '%v'", got)
-		}
-	})
 
 	t.Run("Duplicate volume components present", func(t *testing.T) {
 
 		components := []common.DevfileComponent{
 			{
-				Name: "container",
-				Container: &common.Container{
-					Image: "image",
-				},
-			},
-			{
 				Name: "myvol",
 				Volume: &common.Volume{
 					Size: "1Gi",
@@ -67,8 +29,8 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := validateComponents(components)
-		want := &genericValidation.DuplicateVolumeComponentsError{}
+		got := ValidateComponents(components)
+		want := &DuplicateVolumeComponentsError{}
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
@@ -107,7 +69,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := validateComponents(components)
+		got := ValidateComponents(components)
 
 		if got != nil {
 			t.Errorf("TestValidateComponents error - got: '%v'", got)
@@ -133,7 +95,7 @@ func TestValidateComponents(t *testing.T) {
 				},
 			}
 
-			got := validateComponents(components)
+			got := ValidateComponents(components)
 			want := fmt.Sprintf("env variable %s is reserved and cannot be customized in component container", env)
 
 			if got != nil && !strings.Contains(got.Error(), want) {
@@ -164,7 +126,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := validateComponents(components)
+		got := ValidateComponents(components)
 		want := "size randomgarbage for volume component myvol is invalid"
 
 		if got != nil && !strings.Contains(got.Error(), want) {
@@ -196,7 +158,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := validateComponents(components)
+		got := ValidateComponents(components)
 		want := "unable to find volume mount"
 
 		if !strings.Contains(got.Error(), want) {

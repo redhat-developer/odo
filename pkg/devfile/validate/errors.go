@@ -41,24 +41,6 @@ func (e *UnsupportedOdoCommandError) Error() string {
 	return fmt.Sprintf("command %q must be of type \"exec\" or \"composite\"", e.commandId)
 }
 
-// ExecCommandMissingComponentError returns an error if the exec command does not have a component
-type ExecCommandMissingComponentError struct {
-	commandId string
-}
-
-func (e *ExecCommandMissingComponentError) Error() string {
-	return fmt.Sprintf("exec command %q must reference a component", e.commandId)
-}
-
-// ExecCommandMissingCommandLineError returns an error if the exec command does not have a command line
-type ExecCommandMissingCommandLineError struct {
-	commandId string
-}
-
-func (e *ExecCommandMissingCommandLineError) Error() string {
-	return fmt.Sprintf("exec command %q must have a command", e.commandId)
-}
-
 // ExecCommandInvalidContainerError returns an error if the exec command references an invalid container component
 type ExecCommandInvalidContainerError struct {
 	commandId string
@@ -73,5 +55,5 @@ type CompositeRunKindError struct {
 }
 
 func (e *CompositeRunKindError) Error() string {
-	return "composite commands of run Kind are not supported currently"
+	return "composite commands of run kind are not supported currently"
 }
