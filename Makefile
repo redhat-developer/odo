@@ -402,7 +402,7 @@ upload-packages:
 # Update vendoring
 .PHONY: vendor-update
 vendor-update:
-	glide update --strip-vendor
+	go mod vendor
 
 .PHONY: openshiftci-presubmit-unittests
 openshiftci-presubmit-unittests:
