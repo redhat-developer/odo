@@ -390,13 +390,13 @@ spec:
 			helper.CmdShouldPass("odo", "create", componentName)
 
 			stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster")
-			Expect(stdOut).To(ContainSubstring("Invalid service name"))
+			Expect(stdOut).To(ContainSubstring("invalid service name"))
 
 			stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/")
-			Expect(stdOut).To(ContainSubstring("Invalid service name"))
+			Expect(stdOut).To(ContainSubstring("invalid service name"))
 
 			stdOut = helper.CmdShouldFail("odo", "link", "/example")
-			Expect(stdOut).To(ContainSubstring("Invalid service name"))
+			Expect(stdOut).To(ContainSubstring("invalid service name"))
 		})
 
 		It("should fail if the provided service doesn't exist in the namespace", func() {
