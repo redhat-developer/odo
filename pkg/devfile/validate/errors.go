@@ -22,16 +22,6 @@ func (e *NoContainerComponentError) Error() string {
 	return fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", common.ContainerComponentType)
 }
 
-// InvalidEventError returns an error if the devfile event type has invalid events
-type InvalidEventError struct {
-	eventType string
-	errorMsg  string
-}
-
-func (e *InvalidEventError) Error() string {
-	return fmt.Sprintf("%s type events is invalid: %s", e.eventType, e.errorMsg)
-}
-
 // UnsupportedOdoCommandError returns an error if the command is neither exec nor composite
 type UnsupportedOdoCommandError struct {
 	commandId string

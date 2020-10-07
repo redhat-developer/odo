@@ -5,24 +5,28 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/util"
-	"k8s.io/klog"
-
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/validate/generic"
+	"github.com/openshift/odo/pkg/util"
+
+	"k8s.io/klog"
 )
 
 // ValidateDevfileData validates whether sections of devfile are odo compatible
 func ValidateDevfileData(data interface{}) error {
 	var components []common.DevfileComponent
 	var commandsMap map[string]common.DevfileCommand
-	var events common.DevfileEvents
+
+	// Validate the generic devfile data before validating odo specific logic
+	if err := generic.ValidateDevfileData(data); err != nil {
+		return err
+	}
 
 	switch d := data.(type) {
 	case *v200.Devfile200:
 		components = d.GetComponents()
 		commandsMap = d.GetCommands()
-		events = d.GetEvents()
 
 		// Validate all the devfile components before validating commands
 		if err := validateComponents(components); err != nil {
@@ -30,12 +34,7 @@ func ValidateDevfileData(data interface{}) error {
 		}
 
 		// Validate all the devfile commands before validating events
-		if err := validateCommands(d.Commands, commandsMap, components); err != nil {
-			return err
-		}
-
-		// Validate all the events
-		if err := validateEvents(events, commandsMap, components); err != nil {
+		if err := validateCommands(commandsMap); err != nil {
 			return err
 		}
 	default:

@@ -8,16 +8,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-// ValidateComponents validates that the components
+// validateComponents validates that the components
 // 1. makes sure the container components reference a valid volume component if it uses volume mounts
 // 2. makes sure the volume components are unique
-func ValidateComponents(components []common.DevfileComponent) error {
+func validateComponents(components []common.DevfileComponent) error {
 
 	processedVolumes := make(map[string]bool)
 	processedVolumeMounts := make(map[string]bool)
 
 	for _, component := range components {
-		if component.IsContainer() {
+		if component.Container != nil {
 			// Process all the volume mounts in container components to validate them later
 			for _, volumeMount := range component.Container.VolumeMounts {
 				if _, ok := processedVolumeMounts[volumeMount.Name]; !ok {
@@ -35,7 +35,7 @@ func ValidateComponents(components []common.DevfileComponent) error {
 			}
 		}
 
-		if component.IsVolume() {
+		if component.Volume != nil {
 			if _, ok := processedVolumes[component.Name]; !ok {
 				processedVolumes[component.Name] = true
 				if len(component.Volume.Size) > 0 {

@@ -16,8 +16,6 @@ func TestValidateCommands(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-	// invalidComponent := "garbagealias"
-	// emptyString := ""
 
 	tests := []struct {
 		name    string
@@ -40,64 +38,6 @@ func TestValidateCommands(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name: "Case 2: Invalid Exec Command with empty command",
-		// 	exec: []common.DevfileCommand{
-		// 		{
-		// 			Id: "somecommand",
-		// 			Exec: &common.Exec{
-		// 				CommandLine: emptyString,
-		// 				Component:   component,
-		// 				WorkingDir:  workDir,
-		// 				Group:       &common.Group{Kind: runGroup},
-		// 			},
-		// 		},
-		// 	},
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Case 3: Invalid Exec Command with missing component",
-		// 	exec: []common.DevfileCommand{
-		// 		{
-		// 			Id: "somecommand",
-		// 			Exec: &common.Exec{
-		// 				CommandLine: command,
-		// 				WorkingDir:  workDir,
-		// 				Group:       &common.Group{Kind: runGroup},
-		// 			},
-		// 		},
-		// 	},
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Case 4: Valid Exec Command with invalid component",
-		// 	exec: []common.DevfileCommand{
-		// 		{
-		// 			Id: "somecommand",
-		// 			Exec: &common.Exec{
-		// 				CommandLine: command,
-		// 				Component:   invalidComponent,
-		// 				WorkingDir:  workDir,
-		// 				Group:       &common.Group{Kind: runGroup},
-		// 			},
-		// 		},
-		// 	},
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Case 5: valid Exec Command with Group nil",
-		// 	exec: []common.DevfileCommand{
-		// 		{
-		// 			Id: "somecommand",
-		// 			Exec: &common.Exec{
-		// 				CommandLine: command,
-		// 				Component:   component,
-		// 				WorkingDir:  workDir,
-		// 			},
-		// 		},
-		// 	},
-		// 	wantErr: false,
-		// },
 		{
 			name: "Case 6: Valid Composite Command",
 			exec: []common.DevfileCommand{
@@ -129,37 +69,6 @@ func TestValidateCommands(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name: "Case 7: Invalid Composite Command",
-		// 	exec: []common.DevfileCommand{
-		// 		{
-		// 			Id: "somecommand1",
-		// 			Exec: &common.Exec{
-		// 				CommandLine: command,
-		// 				Component:   component,
-		// 				WorkingDir:  workDir,
-		// 			},
-		// 		},
-		// 		{
-		// 			Id: "somecommand2",
-		// 			Exec: &common.Exec{
-		// 				CommandLine: command,
-		// 				Component:   component,
-		// 				WorkingDir:  workDir,
-		// 			},
-		// 		},
-		// 	},
-		// 	comp: []common.DevfileCommand{
-		// 		{
-		// 			Id: "composite1",
-		// 			Composite: &common.Composite{
-		// 				Commands: []string{"fakecommand"},
-		// 				Group:    &common.Group{Kind: buildGroup, IsDefault: true},
-		// 			},
-		// 		},
-		// 	},
-		// 	wantErr: true,
-		// },
 		{
 			name: "Case 8: Duplicate commands",
 			exec: []common.DevfileCommand{
@@ -235,7 +144,7 @@ func TestValidateCommands(t *testing.T) {
 		components := devObj.Data.GetComponents()
 
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateCommands(devfileData.Commands, commands, components)
+			err := validateCommands(devfileData.Commands, commands, components)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return
@@ -251,7 +160,6 @@ func TestValidateExecCommand(t *testing.T) {
 	component := "alias1"
 	workDir := "/"
 	invalidComponent := "garbagealias"
-	emptyString := ""
 
 	tests := []struct {
 		name    string
@@ -277,7 +185,7 @@ func TestValidateExecCommand(t *testing.T) {
 			exec: common.DevfileCommand{
 				Id: "somecommand",
 				Exec: &common.Exec{
-					CommandLine: emptyString,
+					CommandLine: "",
 					Component:   component,
 					WorkingDir:  workDir,
 					Group:       &common.Group{Kind: runGroup},
@@ -334,7 +242,7 @@ func TestValidateExecCommand(t *testing.T) {
 		components := devObj.Data.GetComponents()
 
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateExecCommand(tt.exec, components)
+			err := validateExecCommand(tt.exec, components)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return
@@ -581,7 +489,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 			cmd := tt.compositeCommands[0]
 			parentCommands := make(map[string]string)
 
-			err := ValidateCompositeCommand(&cmd, parentCommands, commands, components)
+			err := validateCompositeCommand(&cmd, parentCommands, commands, components)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return

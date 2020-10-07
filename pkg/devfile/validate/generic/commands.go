@@ -6,10 +6,10 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
-// ValidateCommands validates the devfile commands:
+// validateCommands validates the devfile commands:
 // 1. if there are commands with duplicate IDs, an error is returned
 // 2. checks if its either a valid exec or composite command
-func ValidateCommands(commands []common.DevfileCommand, commandsMap map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
+func validateCommands(commands []common.DevfileCommand, commandsMap map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 	processedCommands := make(map[string]string, len(commands))
 
 	for _, command := range commands {
@@ -34,23 +34,21 @@ func ValidateCommands(commands []common.DevfileCommand, commandsMap map[string]c
 func validateCommand(command common.DevfileCommand, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
 	// If the command is a composite command, need to validate that it is valid
-	if command.IsComposite() {
+	if command.Composite != nil {
 		parentCommands := make(map[string]string)
-		return ValidateCompositeCommand(&command, parentCommands, devfileCommands, components)
+		return validateCompositeCommand(&command, parentCommands, devfileCommands, components)
 	}
 
-	err = ValidateExecCommand(command, components)
-
-	return err
+	return validateExecCommand(command, components)
 }
 
-// ValidateExecCommand validates the given exec command, the command should:
+// validateExecCommand validates the given exec command, the command should:
 // 1. have a component
 // 2. have a command line
 // 3. map to a valid container component
-func ValidateExecCommand(command common.DevfileCommand, components []common.DevfileComponent) (err error) {
+func validateExecCommand(command common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
-	if !command.IsExec() {
+	if command.Exec == nil {
 		return &InvalidCommandError{commandId: command.GetID(), commandType: "exec"}
 	}
 
@@ -70,7 +68,7 @@ func ValidateExecCommand(command common.DevfileCommand, components []common.Devf
 	// must map to a container component
 	isComponentValid := false
 	for _, component := range components {
-		if component.IsContainer() && command.Exec.Component == component.Name {
+		if component.Container != nil && command.Exec.Component == component.Name {
 			isComponentValid = true
 		}
 	}
@@ -81,17 +79,17 @@ func ValidateExecCommand(command common.DevfileCommand, components []common.Devf
 	return
 }
 
-// ValidateCompositeCommand checks that the specified composite command is valid. The command:
+// validateCompositeCommand checks that the specified composite command is valid. The command:
 // 1. should not reference itself via s subcommand
 // 2. should not indirectly reference itself via a subcommand which is a composite command
 // 3. should reference a valid devfile command
 // 4. should have a valid exec sub command
-func ValidateCompositeCommand(command *common.DevfileCommand, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
+func validateCompositeCommand(command *common.DevfileCommand, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand, components []common.DevfileComponent) error {
 
 	// Store the command ID in a map of parent commands
 	parentCommands[command.Id] = command.Id
 
-	if !command.IsComposite() {
+	if command.Composite == nil {
 		return &InvalidCommandError{commandId: command.GetID(), commandType: "composite"}
 	}
 
@@ -114,13 +112,13 @@ func ValidateCompositeCommand(command *common.DevfileCommand, parentCommands map
 
 		if subCommand.Composite != nil {
 			// Recursively validate the composite subcommand
-			err := ValidateCompositeCommand(&subCommand, parentCommands, devfileCommands, components)
+			err := validateCompositeCommand(&subCommand, parentCommands, devfileCommands, components)
 			if err != nil {
 				// Don't wrap the error message here to make the error message more readable to the user
 				return err
 			}
 		} else {
-			err := ValidateExecCommand(subCommand, components)
+			err := validateExecCommand(subCommand, components)
 			if err != nil {
 				return &CompositeInvalidSubCommandError{commandId: command.Id, subCommandId: subCommand.GetID(), errorMsg: err.Error()}
 			}

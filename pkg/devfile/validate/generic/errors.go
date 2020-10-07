@@ -9,7 +9,7 @@ type InvalidEventError struct {
 }
 
 func (e *InvalidEventError) Error() string {
-	return fmt.Sprintf("%s type events is invalid: %s", e.eventType, e.errorMsg)
+	return fmt.Sprintf("%s type events are invalid: %s", e.eventType, e.errorMsg)
 }
 
 // DuplicateCommandError returns an error if the command is duplicate

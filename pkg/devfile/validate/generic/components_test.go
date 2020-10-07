@@ -1,9 +1,7 @@
 package generic
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -29,7 +27,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
+		got := validateComponents(components)
 		want := &DuplicateVolumeComponentsError{}
 
 		if !reflect.DeepEqual(got, want) {
@@ -69,7 +67,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
+		got := validateComponents(components)
 
 		if got != nil {
 			t.Errorf("TestValidateComponents error - got: '%v'", got)
@@ -95,11 +93,11 @@ func TestValidateComponents(t *testing.T) {
 				},
 			}
 
-			got := ValidateComponents(components)
-			want := fmt.Sprintf("env variable %s is reserved and cannot be customized in component container", env)
-
-			if got != nil && !strings.Contains(got.Error(), want) {
-				t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
+			got := validateComponents(components)
+			if _, ok := got.(*ReservedEnvError); got != nil && !ok {
+				t.Errorf("TestValidateComponents reserved env error - got: '%v' but wanted a different err type", got)
+			} else if got == nil {
+				t.Errorf("TestValidateComponents reserved env error - expected an err but got nil")
 			}
 		}
 	})
@@ -126,11 +124,11 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
-		want := "size randomgarbage for volume component myvol is invalid"
-
-		if got != nil && !strings.Contains(got.Error(), want) {
-			t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
+		got := validateComponents(components)
+		if _, ok := got.(*InvalidVolumeSizeError); got != nil && !ok {
+			t.Errorf("TestValidateComponents vol size error - got: '%v' but wanted a different err type", got)
+		} else if got == nil {
+			t.Errorf("TestValidateComponents vol size error - expected an err but got nil")
 		}
 	})
 
@@ -158,11 +156,11 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
-		want := "unable to find volume mount"
-
-		if !strings.Contains(got.Error(), want) {
-			t.Errorf("TestValidateComponents error - got: '%v', want substr: '%v'", got.Error(), want)
+		got := validateComponents(components)
+		if _, ok := got.(*MissingVolumeMountError); got != nil && !ok {
+			t.Errorf("TestValidateComponents vol mount error - got: '%v' but wanted a different err type", got)
+		} else if got == nil {
+			t.Errorf("TestValidateComponents vol mount error - expected an err but got nil")
 		}
 	})
 }

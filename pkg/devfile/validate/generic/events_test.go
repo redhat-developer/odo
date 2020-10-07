@@ -104,7 +104,7 @@ func TestIsEventValid(t *testing.T) {
 
 			commands := devObj.Data.GetCommands()
 
-			err := IsEventValid(tt.eventNames, tt.eventType, commands)
+			err := isEventValid(tt.eventNames, tt.eventType, commands)
 			if err != nil && !tt.wantErr {
 				t.Errorf("TestIsEventValid error: %v", err)
 			} else if err != nil && tt.wantErr {
