@@ -127,7 +127,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 		URL: indexLink,
 	}
 	if registryUtil.IsSecure(registry.Name) {
-		token, err := keyring.Get(util.CredentialPrefix+registry.Name, "default")
+		token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 		if err != nil {
 			return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
 		}

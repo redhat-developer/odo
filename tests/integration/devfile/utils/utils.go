@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"index/suffixarray"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -395,11 +396,10 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 			_, err = os.Create(filepath.Join(context, "a.txt"))
 			Expect(err).To(BeNil())
 
-			helper.DeleteDir(filepath.Join(context, "abcd"))
-
 			if isDevfileTest {
 				helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
 			} else {
+				helper.DeleteDir(filepath.Join(context, "abcd"))
 				if odoV1Watch.SrcType == "openjdk" {
 					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
 				} else {
@@ -434,10 +434,24 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 				}
 
 				if stringsMatched {
-					// Verify directory deleted from component pod
-					err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
-					Expect(err).To(BeNil())
-					return true
+
+					// first push is successful
+					// now delete a folder and check if the deletion is propagated properly
+					// and the file is removed from the cluster
+					index := suffixarray.New([]byte(output))
+					offsets := index.Lookup([]byte(filepath.Join(context, "abcd")+" changed"), -1)
+
+					// the first occurrence of '<target-dir> changed' means the creation of it was pushed to the cluster
+					// and the first push was successful
+					if len(offsets) == 1 {
+						helper.DeleteDir(filepath.Join(context, "abcd"))
+					} else if len(offsets) > 1 {
+						// the occurrence of 'target-directory' more than once indicates that the deletion was propagated too
+						// Verify directory deleted from component pod
+						err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+						Expect(err).To(BeNil())
+						return true
+					}
 				}
 			} else {
 				curlURL := helper.CmdShouldPass("curl", odoV1Watch.RouteURL)
@@ -717,4 +731,28 @@ func VerifyCatalogListComponent(output string, cmpName []string) error {
 		helper.MatchAllInOutput(output, cmpName)
 	}
 	return nil
+}
+
+// VerifyContainerSyncEnv verifies the sync env in the container
+func VerifyContainerSyncEnv(podName, containerName, namespace, projectSourceValue, projectsRootValue string, cliRunner helper.CliRunner) {
+	envProjectsRoot, envProjectSource := "PROJECTS_ROOT", "PROJECT_SOURCE"
+	projectSourceMatched, projectsRootMatched := false, false
+
+	envNamesAndValues := cliRunner.GetContainerEnv(podName, "runtime", namespace)
+	envNamesAndValuesArr := strings.Fields(envNamesAndValues)
+
+	for _, envNamesAndValues := range envNamesAndValuesArr {
+		envNameAndValueArr := strings.Split(envNamesAndValues, ":")
+
+		if envNameAndValueArr[0] == envProjectSource && strings.Contains(envNameAndValueArr[1], projectSourceValue) {
+			projectSourceMatched = true
+		}
+
+		if envNameAndValueArr[0] == envProjectsRoot && strings.Contains(envNameAndValueArr[1], projectsRootValue) {
+			projectsRootMatched = true
+		}
+	}
+
+	Expect(projectSourceMatched).To(Equal(true))
+	Expect(projectsRootMatched).To(Equal(true))
 }

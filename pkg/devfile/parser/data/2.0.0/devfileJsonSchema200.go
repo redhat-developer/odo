@@ -3854,6 +3854,14 @@ const JsonSchema200 = `{
         "name": {
           "type": "string",
           "description": "Optional devfile name"
+        },
+        "alpha.build-dockerfile": {
+          "type": "string",
+          "description": "Optional build dockerfile link"
+        },
+        "alpha.deployment-manifest": {
+          "type": "string",
+          "description": "Optional deployment manifest link"
         }
       }
     },

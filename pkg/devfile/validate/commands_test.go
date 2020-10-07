@@ -160,20 +160,82 @@ func TestValidateCommands(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Case 8: Duplicate commands",
+			exec: []common.DevfileCommand{
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+				{
+					Id: "somecommand2",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 9: Duplicate commands, different types",
+			exec: []common.DevfileCommand{
+				{
+					Id: "somecommand1",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+				{
+					Id: "somecommand2",
+					Exec: &common.Exec{
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			comp: []common.DevfileCommand{
+				{
+					Id: "somecommand1",
+					Composite: &common.Composite{
+						Commands: []string{"fakecommand"},
+						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
+		devfileData := testingutil.TestDevfileData{
+			Commands:   append(tt.comp, tt.exec...),
+			Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+		}
 		devObj := devfileParser.DevfileObj{
-			Data: &testingutil.TestDevfileData{
-				Commands:   append(tt.comp, tt.exec...),
-				Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
-			},
+			Data: &devfileData,
 		}
 
 		commands := devObj.Data.GetCommands()
 		components := devObj.Data.GetComponents()
 
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateCommands(commands, components)
+			err := validateCommands(devfileData.Commands, commands, components)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return

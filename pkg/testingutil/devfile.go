@@ -50,7 +50,7 @@ func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponen
 // GetProjects is a mock function to get the components that have an alias from a devfile
 func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 	projectName := [...]string{"test-project", "anotherproject"}
-	clonePath := [...]string{"/test-project", "/anotherproject"}
+	clonePath := [...]string{"test-project/", "anotherproject/"}
 	sourceLocation := [...]string{"https://github.com/someproject/test-project.git", "https://github.com/another/project.git"}
 
 	project1 := versionsCommon.DevfileProject{

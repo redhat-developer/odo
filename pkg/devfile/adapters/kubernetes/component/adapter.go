@@ -8,6 +8,7 @@ import (
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +23,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -122,6 +124,20 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
+	err = util.ValidateK8sResourceName("component name", a.ComponentName)
+	if err != nil {
+		return err
+	}
+	err = validate.ValidateContainerName(a.Devfile.Data)
+	if err != nil {
+		return err
+	}
+
+	err = util.ValidateK8sResourceName("component namespace", parameters.EnvSpecificInfo.GetNamespace())
+	if err != nil {
+		return err
+	}
+
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		s.End(false)
@@ -217,6 +233,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
+	} else {
+		// no file was modified/added/deleted/renamed, thus return without syncing files
+		log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 	}
 
 	return nil

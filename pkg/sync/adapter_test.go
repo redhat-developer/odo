@@ -513,7 +513,7 @@ func TestGetSyncFolder(t *testing.T) {
 					},
 				},
 			},
-			want:    sourceVolumePath,
+			want:    filepath.ToSlash(filepath.Join(sourceVolumePath, projectNames[0])),
 			wantErr: false,
 		},
 		{
@@ -578,14 +578,16 @@ func TestGetSyncFolder(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		syncFolder, err := getSyncFolder(sourceVolumePath, tt.projects)
+		t.Run(tt.name, func(t *testing.T) {
+			syncFolder, err := GetSyncFolder(sourceVolumePath, tt.projects)
 
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, actual %v", tt.wantErr, err)
-		}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, actual %v", tt.wantErr, err)
+			}
 
-		if syncFolder != tt.want {
-			t.Errorf("expected %s, actual %s", tt.want, syncFolder)
-		}
+			if syncFolder != tt.want {
+				t.Errorf("expected %s, actual %s", tt.want, syncFolder)
+			}
+		})
 	}
 }

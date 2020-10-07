@@ -838,7 +838,7 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
 // takes an absolute path prefixed with file:// and extracts it to a destination.
 // pathToUnzip specifies the path within the zip folder to extract
-func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) error {
+func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string) error {
 	if zipURL == "" {
 		return errors.Errorf("Empty zip url: %s", zipURL)
 	}
@@ -857,7 +857,8 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 
 		params := DownloadParams{
 			Request: HTTPRequestParams{
-				URL: zipURL,
+				URL:   zipURL,
+				Token: starterToken,
 			},
 			Filepath: pathToZip,
 		}

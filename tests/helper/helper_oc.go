@@ -32,13 +32,6 @@ func (oc OcRunner) Run(cmd string) *gexec.Session {
 	return session
 }
 
-// SwitchProject switch to the project
-func (oc OcRunner) SwitchProject(projectName string) {
-	fmt.Fprintf(GinkgoWriter, "Switching to project : %s\n", projectName)
-	session := CmdShouldPass(oc.path, "project", projectName)
-	Expect(session).To(ContainSubstring(projectName))
-}
-
 // GetCurrentProject get currently active project in oc
 // returns empty string if there no active project, or no access to the project
 func (oc OcRunner) GetCurrentProject() string {
@@ -446,6 +439,16 @@ func (oc OcRunner) GetVolumeMountNamesandPathsFromContainer(deployName string, c
 			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
 
 	return strings.TrimSpace(volumeName)
+}
+
+// GetContainerEnv returns the container env in the format name:value\n
+func (oc OcRunner) GetContainerEnv(podName, containerName, namespace string) string {
+	containerEnv := CmdShouldPass(oc.path, "get", "po", podName, "--namespace", namespace,
+		"-o", "go-template="+
+			"{{range .spec.containers}}{{if eq .name \""+containerName+
+			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+
+	return strings.TrimSpace(containerEnv)
 }
 
 // GetVolumeMountName returns the name of the volume

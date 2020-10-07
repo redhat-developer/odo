@@ -64,8 +64,11 @@ const (
 	// DefaultVolumeSize Default volume size for volumes defined in a devfile
 	DefaultVolumeSize = "1Gi"
 
-	// EnvProjectsRoot is the env defined for /projects where component mountSources=true
+	// EnvProjectsRoot is the env defined for project mount in a component container when component's mountSources=true
 	EnvProjectsRoot = "PROJECTS_ROOT"
+
+	// EnvProjectsSrc is the env defined for path to the project source in a component container
+	EnvProjectsSrc = "PROJECT_SOURCE"
 
 	// EnvOdoCommandRunWorkingDir is the env defined in the runtime component container which holds the work dir for the run command
 	EnvOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"

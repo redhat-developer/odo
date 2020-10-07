@@ -84,12 +84,6 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	}
 
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
-
-		// oclient, err := occlient.New()
-		// if err != nil {
-		// 	return err
-		// }
-
 		sboSupport, err := o.Client.IsSBRSupported()
 		if err != nil {
 			return err
@@ -152,7 +146,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
-		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Proceesing to only use components", suppliedName)
+		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Processing to only use components", suppliedName)
 		svcExists = false
 	}
 
