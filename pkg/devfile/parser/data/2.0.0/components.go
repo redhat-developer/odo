@@ -20,10 +20,8 @@ func (d *Devfile200) GetMetadata() common.DevfileMetadata {
 // SetMetadata sets the metadata for devfile
 func (d *Devfile200) SetMetadata(name, version string) {
 	d.Metadata = common.DevfileMetadata{
-		GenericMetadata: &common.GenericMetadata{
-			Name:    name,
-			Version: version,
-		},
+		Name:    name,
+		Version: version,
 	}
 }
 
