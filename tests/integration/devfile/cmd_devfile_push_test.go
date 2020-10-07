@@ -1037,9 +1037,9 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should handle a devfile with a parent and override a composite command", func() {
-			utils.ExecPushWithCompositeOverride(context, cmpName, namespace)
-			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-			listDir := cliRunner.ExecListDir(podName, namespace, "/projects")
+			utils.ExecPushWithCompositeOverride(commonVar.Context, cmpName, commonVar.Project)
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+			listDir := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 			Expect(listDir).To(ContainSubstring("testfile"))
 		})
 
