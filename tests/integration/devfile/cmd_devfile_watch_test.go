@@ -167,16 +167,12 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch after odo push with debug flag", func() {
 		It("should be able to start a debug session after push with debug flag using odo watch and revert back after normal push", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
-
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+			helper.CmdShouldPass("odo", "create", cmpName, "--project", commonVar.Project)
 
 			// push with debug flag
-			output = helper.CmdShouldPass("odo", "push", "--debug", "--project", commonVar.Project)
+			output := helper.CmdShouldPass("odo", "push", "--debug", "--project", commonVar.Project)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			watchFlag := ""
