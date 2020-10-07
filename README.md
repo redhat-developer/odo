@@ -48,7 +48,7 @@ Each file within `/chosen-docs` are only TEMPLATE files. These are required in o
 
 1. Add the document either on the [master branch docs folder](https://github.com/openshift/odo/tree/master/docs/file-reference) or the [openshift-docs repo](https://github.com/openshift/odo/tree/master/docs/file-reference).
 2. Copy the `default.md` template to either the:
-  - `/chosen-docs/openshift-docs` location if the original adoc is located at https://github.com/openshift/odo/tree/master/docs/file-reference
+  - `/chosen-docs/openshift-docs` location if the original adoc is located at https://github.com/openshift/openshift-docs/tree/master/cli_reference/developer_cli_odo
   - or `/chosen-docs/upstream` if the adoc is located at https://github.com/openshift/odo/tree/master/docs/file-reference
 3. Make sure that the `default.md` template file you've copied over has the EXACT same filename as the `adoc` minus the `.adoc` extension. Example: `understanding-odo.adoc` would be `understanding-odo.md` in the `/chosen-docs` folder
 4. Update the `index.md` file with a "card" of the new document that you have added, or else it will *not* appear on the site.
