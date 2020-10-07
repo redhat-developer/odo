@@ -205,7 +205,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("composite commands of run Kind are not supported currently"))
+			Expect(output).To(ContainSubstring("not supported currently"))
 		})
 
 		It("should throw a validation error for composite command referencing non-existent commands", func() {
