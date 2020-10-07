@@ -239,6 +239,114 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "case 6: override a composite command",
+			devFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Commands: []common.DevfileCommand{
+						{
+							Id: "exec1",
+							Exec: &common.Exec{
+								CommandLine: commandLineBuild,
+							},
+						},
+						{
+							Id: "exec2",
+							Exec: &common.Exec{
+								CommandLine: commandLineBuild,
+							},
+						},
+						{
+							Id: "exec3",
+							Exec: &common.Exec{
+								CommandLine: commandLineBuild,
+							},
+						},
+						{
+							Id: "mycomposite",
+							Composite: &common.Composite{
+								Commands: []string{"exec1", "exec2"},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				overridePatch: []common.DevfileCommand{
+					{
+						Id: "mycomposite",
+						Composite: &common.Composite{
+							Commands: []string{"exec1", "exec3"},
+						},
+					},
+				},
+			},
+			wantDevFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Commands: []common.DevfileCommand{
+						{
+							Id: "exec1",
+							Exec: &common.Exec{
+								CommandLine: commandLineBuild,
+							},
+						},
+						{
+							Id: "exec2",
+							Exec: &common.Exec{
+								CommandLine: commandLineBuild,
+							},
+						},
+						{
+							Id: "exec3",
+							Exec: &common.Exec{
+								CommandLine: commandLineBuild,
+							},
+						},
+						{
+							Id: "mycomposite",
+							Composite: &common.Composite{
+								Commands: []string{"exec1", "exec3"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "case 7: throw error if trying to overide command with different type",
+			devFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Commands: []common.DevfileCommand{
+						{
+							Id: "devbuild",
+							Exec: &common.Exec{
+								Env: []common.Env{
+									testingutil.GetFakeEnv("env-0", "value-0"),
+								},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				overridePatch: []common.DevfileCommand{
+					{
+						Id:        "devbuild",
+						Composite: &common.Composite{},
+					},
+				},
+			},
+			wantDevFileObj: DevfileObj{
+				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
+				Data: &v200.Devfile200{
+					Commands: []common.DevfileCommand{},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

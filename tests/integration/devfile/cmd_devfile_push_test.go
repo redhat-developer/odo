@@ -1036,6 +1036,13 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(listDir).To(ContainSubstring("blah.js"))
 		})
 
+		It("should handle a devfile with a parent and override a composite command", func() {
+			utils.ExecPushWithCompositeOverride(commonVar.Context, cmpName, commonVar.Project)
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+			listDir := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+			Expect(listDir).To(ContainSubstring("testfile"))
+		})
+
 		It("should handle a parent and override/append it's envs", func() {
 			utils.ExecPushWithParentOverride(commonVar.Context, cmpName, commonVar.Project, freePort)
 
