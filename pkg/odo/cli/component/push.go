@@ -142,7 +142,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			po.namespace = po.KClient.Namespace
 			// log warning in case of default namespace
 			if po.namespace == "default" {
-				log.Warning("odo may not work as expected in default namespace, please run odo component in non default namespace")
+				log.Warning("odo may not work as expected in default project, please run odo component in non default project. You can use `odo project create` to create a new project")
 			}
 		}
 
