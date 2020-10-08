@@ -29,7 +29,7 @@ author:
 
 #### Changes to the default deployment method
 
-[Devfile](ihttps://devfile.github.io/devfile/index.html) is a file format that is used as odo's new deployment engine. Starting from `2.0.0` onwards, Source-to-Image (S2I) is no longer the default deployment method. S2I is still supported and can now be accessed with the `--s2i` flag from the command-line.
+[Devfile](https://devfile.github.io/devfile/index.html) is a file format that is used as odo's new deployment engine. Starting from `2.0.0` onwards, Source-to-Image (S2I) is no longer the default deployment method. S2I is still supported and can now be accessed with the `--s2i` flag from the command-line.
 
 Learn how to deploy your first devfile using devfiles from our [Devfile tutorial](https://odo.dev/docs/deploying-a-devfile-using-odo/).
 
