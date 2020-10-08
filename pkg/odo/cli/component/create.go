@@ -462,7 +462,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 						return err
 					}
 				} else if !pushtarget.IsPushTargetDocker() {
-					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+					componentNamespace = ui.EnterDevfileComponentProject(defaultComponentNamespace)
 				}
 			}
 
@@ -533,6 +533,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			} else {
 				componentNamespace = defaultComponentNamespace
 			}
+		}
+
+		if componentNamespace == "default" {
+			log.Warning("odo may not work as expected in default project, please run odo component in non default project. You can use `odo project create` to create a new project")
 		}
 
 		// Set devfileMetadata struct

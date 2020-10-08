@@ -140,10 +140,6 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 		if !pushtarget.IsPushTargetDocker() {
 			po.namespace = po.KClient.Namespace
-			// log warning in case of default namespace
-			if po.namespace == "default" {
-				log.Warning("odo may not work as expected in default project, please run odo component in non default project. You can use `odo project create` to create a new project")
-			}
 		}
 
 		return nil

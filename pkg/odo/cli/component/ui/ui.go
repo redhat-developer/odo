@@ -77,11 +77,11 @@ func EnterDevfileComponentName(defaultComponentName string) string {
 	return componentName
 }
 
-// EnterDevfileComponentNamespace lets the user to specify the component namespace in the prompt
-func EnterDevfileComponentNamespace(defaultComponentNamespace string) string {
+// EnterDevfileComponentProject lets the user to specify the component project in the prompt
+func EnterDevfileComponentProject(defaultComponentNamespace string) string {
 	var name string
 	prompt := &survey.Input{
-		Message: "What namespace do you want the devfile component to be created in",
+		Message: "What project do you want the devfile component to be created in",
 		Default: defaultComponentNamespace,
 	}
 	err := survey.AskOne(prompt, &name, validation.NameValidator)
