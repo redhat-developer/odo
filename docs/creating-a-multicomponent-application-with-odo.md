@@ -322,7 +322,7 @@ Components running on the cluster need to be connected in order to interact. Ope
     **Example output.**
     
     ``` terminal
-    Openshift Components:
+    OpenShift Components:
     APP     NAME         PROJECT     TYPE          SOURCETYPE     STATE
     app     backend      testpro     openjdk18     binary         Pushed
     app     frontend     testpro     nodejs        local          Pushed
