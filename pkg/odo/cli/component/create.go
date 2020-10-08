@@ -540,7 +540,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 			// Categorize the sections
-			log.Info("Validation for Devfile component")
+			log.Info("Validation")
 
 			var devfileAbsolutePath string
 			if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
@@ -579,7 +579,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		hasComponent := false
 		var devfileExistSpinner *log.Status
 		if !co.forceS2i {
-			log.Info("Validation for Devfile component")
+			log.Info("Validation")
 			devfileExistSpinner = log.Spinner("Checking devfile existence")
 			defer devfileExistSpinner.End(false)
 		}
@@ -856,7 +856,7 @@ func (co *CreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	log.Info("Validation for S2I component")
+	log.Info("Validation")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
