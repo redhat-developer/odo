@@ -51,56 +51,59 @@ grid_navigation:
       excerpt: Learn how to deploy an application using odo and Devfile
       cta: Read more
       url: 'docs/deploying-a-devfile-using-odo'
-      openshift: true
-      kubernetes: true
 
     - title: Devfile file reference
       excerpt: An overview of the Devfile yaml file format, learn how to customize your devfile.yaml file
       cta: Read more
       url: 'file-reference/'
-      openshift: true
-      kubernetes: true
 
     - title: Debugging applications in odo
       excerpt: Learn how to debug an application in odo CLI and IDE
       cta: Read more
       url: 'docs/debugging-using-devfile'
-      openshift: true
-      kubernetes: true
+
+    - title: Introduction to Operators
+      excerpt: Deploying an Operator from Operator Hub using odo.
+      cta: Read more
+      url: 'docs/operator-hub'
 
     - title: Migrating S2I (Source-to-Image) components to Devfile components
       excerpt: Use odo's built-in tool to convert your S2I deployment to devfile
       cta: Read more
       url: 'docs/s2i-to-devfile'
-      openshift: true
-      kubernetes: true
 
-    - title: Managing environment variables
-      excerpt: Manipulate both config and preference files to your liking
+    - title: Setting up a secure Devfile registry
+      excerpt: Learn how to setup a secure private registry that only you or your team can access
       cta: Read more
-      url: 'docs/managing-environment-variables-in-odo'
-      openshift: true
-      kubernetes: true
+      url: 'docs/secure-registry'
 
-    - title: Configuring the odo CLI
-      excerpt: Configure your terminal for autocompletion
+    - title: Using persistent storage
+      excerpt: Setup a storage volume for persistent data
       cta: Read more
-      url: 'docs/configuring-the-odo-cli'
+      url: 'docs/using-storage'
+
+    - title: Using Devfile lifecycle events within odo
+      excerpt: Use Devfile lifecycle events to control each aspect of your component deployment
+      cta: Read more
+      url: 'docs/using-devfile-lifecycle-events'
 
     - title: Architecture of odo
       excerpt: A general overview of the odo architecture
       cta: Read more
       url: 'docs/odo-architecture'
 
+    - title: Managing environment variables
+      excerpt: Manipulate both config and preference files to your liking
+      cta: Read more
+      url: 'docs/managing-environment-variables-in-odo'
+
+    - title: Configuring the odo CLI
+      excerpt: Configure your terminal for autocompletion
+      cta: Read more
+      url: 'docs/configuring-the-odo-cli'
+
     - title: odo CLI reference
       excerpt: An overview of all the CLI commands related to odo
       cta: Read more
       url: 'docs/odo-cli-reference'
-
-    - title: Introduction to Operators
-      excerpt: Deploying an Operator from Operator Hub using odo.
-      cta: Read more
-      url: 'docs/operator-hub'
-      openshift: true
-      kubernetes: true
 ---

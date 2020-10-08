@@ -15,7 +15,7 @@ This section describes `odo` architecture and how `odo` manages resources on a c
 
 # Developer setup
 
-With odo you can create and deploy application on OpenShift clusters from a terminal. Code editor plug-ins use odo which allows users to interact with OpenShift clusters from their IDE terminals. Examples of plug-ins that use odo: VS Code Openshift Connector, Openshift Connector for Intellij, Codewind for Eclipse Che.
+With odo you can create and deploy application on OpenShift clusters from a terminal. Code editor plug-ins use odo which allows users to interact with OpenShift clusters from their IDE terminals. Examples of plug-ins that use odo: VS Code OpenShift Connector, OpenShift Connector for Intellij, Codewind for Eclipse Che.
 
 odo works on Windows, macOS, and Linux operating systems and from any terminal. odo provides autocompletion for bash and zsh command line shells.
 
@@ -23,7 +23,7 @@ odo supports Node.js and Java components.
 
 # OpenShift source-to-image
 
-Openshift Source-to-Image (S2I) is an open-source project which helps in building artifacts from source code and injecting these into container images. S2I produces ready-to-run images by building source code without the need of a Dockerfile. odo uses S2I builder image for executing developer source code inside a container.
+OpenShift Source-to-Image (S2I) is an open-source project which helps in building artifacts from source code and injecting these into container images. S2I produces ready-to-run images by building source code without the need of a Dockerfile. odo uses S2I builder image for executing developer source code inside a container.
 
 # OpenShift cluster objects
 
@@ -61,7 +61,7 @@ The `copy-supervisord` Init container copies necessary files onto an `emptyDir` 
 
   - Directories:
     
-      - `language-scripts`: Openshift S2I allows custom `assemble` and `run` scripts. A few language specific custom scripts are present in the `language-scripts` directory. The custom scripts provide additional configuration to make odo debug work.
+      - `language-scripts`: OpenShift S2I allows custom `assemble` and `run` scripts. A few language specific custom scripts are present in the `language-scripts` directory. The custom scripts provide additional configuration to make odo debug work.
 
 The `emtpyDir Volume` is mounted at the `/opt/odo` mount point for both the Init container and the application container.
 
