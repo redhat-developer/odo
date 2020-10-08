@@ -1,11 +1,12 @@
 package devfile
 
 import (
+	"path/filepath"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
-	"path/filepath"
-	"strings"
 )
 
 var _ = Describe("odo devfile storage command tests", func() {
@@ -158,17 +159,17 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			stdOut := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
+			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
 
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "Pushed", "CONTAINER", "runtime", "runtime2"})
+			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "Pushed", "CONTAINER", "runtime", "runtime2"})
 
 			helper.CmdShouldPass("odo", "storage", "delete", "firstvol", "-f", "--context", commonVar.Context)
 
 			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "Pushed", "Locally Deleted", "CONTAINER", "runtime", "runtime2"})
+			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "Pushed", "Locally Deleted", "CONTAINER", "runtime", "runtime2"})
 		})
 
 		It("should list output in json format", func() {
