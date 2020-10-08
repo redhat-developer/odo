@@ -45,6 +45,9 @@ set -x
 GOFLAGS='-mod=vendor' make test
 
 # Prep for int
+echo "Building"
+make bin
+cp -avrf ./odo $GOBIN/
 echo "getting ginkgo"
 GOBIN="$GOBIN" make goget-ginkgo
 
