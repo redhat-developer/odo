@@ -19,8 +19,25 @@ PATH=$PATH:$GOBIN
 
 #-----------------------------------------------------------------------------
 
-shout "Testing against 4x cluster"
+# Run unit tests
+GOFLAGS='-mod=vendor' make test
 
+# Prep for int
+shout "Building"
+make bin
+cp -avrf ./odo $GOBIN/
+shout "getting ginkgo"
+GOBIN="$GOBIN" make goget-ginkgo
+
+set +e
+ls -a $GOBIN
+ginkgo version
+run_all=$?
+set -e
+
+# Integration tests
+shout "Testing against 4x cluster"
+shout "Getting oc binary"
 if [[ $BASE_OS == "linux"  ]]; then
     set +x
 	curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.tar -o ./oc.tar
@@ -41,24 +58,9 @@ set +x
 oc login -u developer -p password@123 --insecure-skip-tls-verify  ${OCP4X_API_URL}
 set -x
 
-# Run unit tests
-GOFLAGS='-mod=vendor' make test
-
-# Prep for int
-echo "Building"
-make bin
-cp -avrf ./odo $GOBIN/
-echo "getting ginkgo"
-GOBIN="$GOBIN" make goget-ginkgo
-
-set +e
-ls -a $GOBIN
-ginkgo version
-run_all=$?
-set -e
-# Integration tests
 if [[ $run_all -eq 0 ]]; then
+    shout "Running integration/e2e tests"
     make test-e2e-all
 else
-    echo "Ginkgo does not exist, skipping integration/e2e"
+    shout "Ginkgo does not exist, skipping integration/e2e"
 fi
