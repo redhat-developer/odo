@@ -98,7 +98,7 @@ type LocalConfigProvider interface {
 
 // EnvInfo holds all the env specific information relevant to a specific Component.
 type EnvInfo struct {
-	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
+	ComponentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
 // proxyEnvInfo holds all the parameter that envinfo does but exposes all
@@ -114,7 +114,7 @@ type EnvSpecificInfo struct {
 	Filename          string `yaml:"FileName,omitempty"`
 	fs                filesystem.Filesystem
 	EnvInfo           `yaml:",omitempty"`
-	envinfoFileExists bool
+	EnvinfoFileExists bool
 }
 
 func (esi EnvSpecificInfo) GetDevfilePath() string {
@@ -171,13 +171,13 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 		EnvInfo:           NewEnvInfo(),
 		devfilePath:       devfilePath,
 		Filename:          envInfoFile,
-		envinfoFileExists: true,
+		EnvinfoFileExists: true,
 		fs:                fs,
 	}
 
 	// If the env.yaml file does not exist then we simply return and set e.envinfoFileExists as false
 	if _, err = e.fs.Stat(envInfoFile); os.IsNotExist(err) {
-		e.envinfoFileExists = false
+		e.EnvinfoFileExists = false
 		return &e, nil
 	}
 
@@ -197,7 +197,7 @@ func getFromFile(envinfo *EnvInfo, filename string) error {
 	if err != nil {
 		return err
 	}
-	envinfo.componentSettings = proxyei.ComponentSettings
+	envinfo.ComponentSettings = proxyei.ComponentSettings
 	return nil
 }
 
@@ -218,32 +218,32 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		switch parameter {
 		case "name":
 			val := value.(string)
-			esi.componentSettings.Name = val
+			esi.ComponentSettings.Name = val
 		case "project":
 			val := value.(string)
-			esi.componentSettings.Project = val
+			esi.ComponentSettings.Project = val
 		case "debugport":
 			val, err := strconv.Atoi(value.(string))
 			if err != nil {
 				return errors.Wrap(err, "failed to set debug port")
 			}
-			esi.componentSettings.DebugPort = &val
+			esi.ComponentSettings.DebugPort = &val
 		case "url":
 			urlValue := value.(EnvInfoURL)
-			if esi.componentSettings.URL != nil {
-				*esi.componentSettings.URL = append(*esi.componentSettings.URL, urlValue)
+			if esi.ComponentSettings.URL != nil {
+				*esi.ComponentSettings.URL = append(*esi.ComponentSettings.URL, urlValue)
 			} else {
-				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
+				esi.ComponentSettings.URL = &[]EnvInfoURL{urlValue}
 			}
 		case "push":
 			pushCommandValue := value.(EnvInfoPushCommand)
-			esi.componentSettings.PushCommand = &pushCommandValue
+			esi.ComponentSettings.PushCommand = &pushCommandValue
 		case "link":
 			linkValue := value.(EnvInfoLink)
-			if esi.componentSettings.Link != nil {
-				*esi.componentSettings.Link = append(*esi.componentSettings.Link, linkValue)
+			if esi.ComponentSettings.Link != nil {
+				*esi.ComponentSettings.Link = append(*esi.ComponentSettings.Link, linkValue)
 			} else {
-				esi.componentSettings.Link = &[]EnvInfoLink{linkValue}
+				esi.ComponentSettings.Link = &[]EnvInfoLink{linkValue}
 			}
 		}
 
@@ -288,12 +288,12 @@ func (esi *EnvSpecificInfo) DeleteEnvInfoFile() error {
 // IsSet uses reflection to get the parameter from the envinfo struct, currently
 // it only searches the componentSettings
 func (esi *EnvSpecificInfo) IsSet(parameter string) bool {
-	return util.IsSet(esi.componentSettings, parameter)
+	return util.IsSet(esi.ComponentSettings, parameter)
 }
 
 // Exists returns whether the envinfo file exists or not
 func (esi *EnvSpecificInfo) Exists() bool {
-	return esi.envinfoFileExists
+	return esi.EnvinfoFileExists
 }
 
 var (
@@ -316,7 +316,7 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 
 		switch parameter {
 		default:
-			if err := util.DeleteConfiguration(&esi.componentSettings, parameter); err != nil {
+			if err := util.DeleteConfiguration(&esi.ComponentSettings, parameter); err != nil {
 				return err
 			}
 		}
@@ -328,14 +328,14 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 
 // DeleteURL is used to delete environment specific info for url from envinfo
 func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
-	if esi.componentSettings.URL == nil {
+	if esi.ComponentSettings.URL == nil {
 		return nil
 	}
-	for i, url := range *esi.componentSettings.URL {
+	for i, url := range *esi.ComponentSettings.URL {
 		if url.Name == parameter {
-			s := *esi.componentSettings.URL
+			s := *esi.ComponentSettings.URL
 			s = append(s[:i], s[i+1:]...)
-			esi.componentSettings.URL = &s
+			esi.ComponentSettings.URL = &s
 		}
 	}
 	return esi.writeToFile()
@@ -344,7 +344,7 @@ func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
 func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
 	index := -1
 
-	for i, link := range *esi.componentSettings.Link {
+	for i, link := range *esi.ComponentSettings.Link {
 		if link.Name == parameter {
 			index = i
 			break
@@ -352,9 +352,9 @@ func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
 	}
 
 	if index != -1 {
-		s := *esi.componentSettings.Link
+		s := *esi.ComponentSettings.Link
 		s = append(s[:index], s[index+1:]...)
-		esi.componentSettings.Link = &s
+		esi.ComponentSettings.Link = &s
 		return esi.writeToFile()
 	} else {
 		return nil
@@ -363,73 +363,73 @@ func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
 
 // GetComponentSettings returns the componentSettings from envinfo
 func (esi *EnvSpecificInfo) GetComponentSettings() ComponentSettings {
-	return esi.componentSettings
+	return esi.ComponentSettings
 }
 
 // SetComponentSettings sets the componentSettings from to the envinfo and writes to the file
 func (esi *EnvSpecificInfo) SetComponentSettings(cs ComponentSettings) error {
-	esi.componentSettings = cs
+	esi.ComponentSettings = cs
 	return esi.writeToFile()
 }
 
 func (esi *EnvSpecificInfo) writeToFile() error {
 	proxyei := newProxyEnvInfo()
-	proxyei.ComponentSettings = esi.componentSettings
+	proxyei.ComponentSettings = esi.ComponentSettings
 
 	return util.WriteToFile(&proxyei, esi.Filename)
 }
 
 // GetURL returns the EnvInfoURL, returns default if nil
 func (ei *EnvInfo) GetURL() []EnvInfoURL {
-	if ei.componentSettings.URL == nil {
+	if ei.ComponentSettings.URL == nil {
 		return []EnvInfoURL{}
 	}
-	return *ei.componentSettings.URL
+	return *ei.ComponentSettings.URL
 }
 
 // GetPushCommand returns the EnvInfoPushCommand, returns default if nil
 func (ei *EnvInfo) GetPushCommand() EnvInfoPushCommand {
-	if ei.componentSettings.PushCommand == nil {
+	if ei.ComponentSettings.PushCommand == nil {
 		return EnvInfoPushCommand{}
 	}
-	return *ei.componentSettings.PushCommand
+	return *ei.ComponentSettings.PushCommand
 }
 
 // GetName returns the component name
 func (ei *EnvInfo) GetName() string {
-	return ei.componentSettings.Name
+	return ei.ComponentSettings.Name
 }
 
 // GetDebugPort returns the DebugPort, returns default if nil
 func (ei *EnvInfo) GetDebugPort() int {
-	if ei.componentSettings.DebugPort == nil {
+	if ei.ComponentSettings.DebugPort == nil {
 		return DefaultDebugPort
 	}
-	return *ei.componentSettings.DebugPort
+	return *ei.ComponentSettings.DebugPort
 }
 
 // GetRunMode returns the RunMode, returns default if nil
 func (ei *EnvInfo) GetRunMode() RUNMode {
-	if ei.componentSettings.RunMode == nil {
+	if ei.ComponentSettings.RunMode == nil {
 		return DefaultRunMode
 	}
-	return *ei.componentSettings.RunMode
+	return *ei.ComponentSettings.RunMode
 }
 
 // SetRunMode sets the RunMode in the env file
 func (esi *EnvSpecificInfo) SetRunMode(runMode RUNMode) error {
-	esi.componentSettings.RunMode = &runMode
+	esi.ComponentSettings.RunMode = &runMode
 	return esi.writeToFile()
 }
 
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
-	return ei.componentSettings.Project
+	return ei.ComponentSettings.Project
 }
 
 // GetApplication returns the application name
 func (ei *EnvInfo) GetApplication() string {
-	return ei.componentSettings.AppName
+	return ei.ComponentSettings.AppName
 }
 
 // MatchComponent matches a component information provided by a devfile component with the local env info
@@ -439,10 +439,10 @@ func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
 
 // GetLink returns the EnvInfoLink, returns default if nil
 func (ei *EnvInfo) GetLink() []EnvInfoLink {
-	if ei.componentSettings.Link == nil {
+	if ei.ComponentSettings.Link == nil {
 		return []EnvInfoLink{}
 	}
-	return *ei.componentSettings.Link
+	return *ei.ComponentSettings.Link
 }
 
 const (
