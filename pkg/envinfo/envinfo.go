@@ -286,7 +286,7 @@ func (esi *EnvSpecificInfo) DeleteEnvInfoFile() error {
 }
 
 // IsSet uses reflection to get the parameter from the envinfo struct, currently
-// it only searches the componentSettings
+// it only searches the ComponentSettings
 func (esi *EnvSpecificInfo) IsSet(parameter string) bool {
 	return util.IsSet(esi.ComponentSettings, parameter)
 }
@@ -361,12 +361,12 @@ func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
 	}
 }
 
-// GetComponentSettings returns the componentSettings from envinfo
+// GetComponentSettings returns the ComponentSettings from envinfo
 func (esi *EnvSpecificInfo) GetComponentSettings() ComponentSettings {
 	return esi.ComponentSettings
 }
 
-// SetComponentSettings sets the componentSettings from to the envinfo and writes to the file
+// SetComponentSettings sets the ComponentSettings from to the envinfo and writes to the file
 func (esi *EnvSpecificInfo) SetComponentSettings(cs ComponentSettings) error {
 	esi.ComponentSettings = cs
 	return esi.writeToFile()
