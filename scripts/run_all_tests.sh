@@ -40,16 +40,14 @@ if [[ $run_all -eq 0 ]]; then
     shout "Testing against 4x cluster"
     shout "Getting oc binary"
     if [[ $BASE_OS == "linux"  ]]; then
-        #set +x
-	set -x
+        set +x
     	curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.tar -o ./oc.tar
-        #set -x
+        set -x
     	tar -C $GOBIN -xvf ./oc.tar && rm -rf ./oc.tar
     else
-        #set +x
-	set -x
+        set +x
         curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
-        #set -x
+        set -x
         gunzip -c ./oc.zip > $GOBIN/oc && rm -rf ./oc.zip && chmod +x $GOBIN/oc
         if [[ $BASE_OS == "windows" ]]; then
             mv -f $GOBIN/oc $GOBIN/oc.exe
