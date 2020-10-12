@@ -15,7 +15,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe
-	github.com/golang/mock v1.4.3
+	github.com/golang/mock v1.4.4
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect

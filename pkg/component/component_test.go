@@ -13,6 +13,7 @@ import (
 
 	"github.com/openshift/odo/pkg/util"
 
+	"github.com/golang/mock/gomock"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
@@ -32,154 +33,36 @@ import (
 	. "github.com/openshift/odo/pkg/config"
 )
 
-// func TestGomockGetComponentFrom(t *testing.T) {
-// 	tests := []struct {
-// 		name          string
-// 		isEnvInfo     bool
-// 		componentName string
-// 		componentType string
-// 		env           []envinfo.EnvInfoURL
-// 		cmpSetting    envinfo.ComponentSettings
-// 		defaultPort   int
-// 		want          Component
-// 	}{
-// 		{
-// 			name:          "Case 1: Get component when env info file exists with nil debug port",
-// 			isEnvInfo:     true,
-// 			componentType: "nodejs",
-// 			env: []envinfo.EnvInfoURL{
-// 				{
-// 					Name: "abcde",
-// 					Port: 5858,
-// 				},
-// 			},
-// 			cmpSetting: envinfo.ComponentSettings{
-// 				Name:      "frontend",
-// 				Project:   "test",
-// 				URL:       &[]envinfo.EnvInfoURL{},
-// 				AppName:   "testing",
-// 				DebugPort: nil,
-// 			},
-// 			defaultPort: 5859,
-// 			want: Component{
-// 				TypeMeta: metav1.TypeMeta{
-// 					Kind:       "Component",
-// 					APIVersion: "odo.dev/v1alpha1",
-// 				},
-// 				ObjectMeta: metav1.ObjectMeta{
-// 					Name: "frontend",
-// 				},
-// 				Spec: ComponentSpec{
-// 					Type: "nodejs",
-// 				},
-// 				Status: ComponentStatus{},
-// 			},
-// 		},
-// 	}
-
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
-
-// 			envInfoSpc := envinfo.EnvSpecificInfo{
-// 				EnvinfoFileExists: tt.isEnvInfo,
-// 			}
-
-// 			mockLocalConfigProvider := envinfo.NewMockLocalConfigProvider(ctrl)
-
-// 			envFileExists := (reflect.ValueOf(mockLocalConfigProvider.EXPECT().Exists().Return(envInfoSpc.EnvinfoFileExists))).Interface().(bool)
-// 			// envFileExists := (reflect.ValueOf(mockLocalConfigProvider.EXPECT().Exists().DoAndReturn(
-// 			// 	func() bool {
-// 			// 		return envInfoSpc.EnvinfoFileExists
-// 			// 	})
-// 			// )).Interface().(bool)
-
-// 			if envFileExists {
-// 				var debugPort int
-// 				var urls []envinfo.EnvInfoURL
-
-// 				envInfo := envinfo.EnvInfo{
-// 					ComponentSettings: tt.cmpSetting,
-// 				}
-
-// 				mockLocalConfigProvider.EXPECT().GetName().Return(envInfo.ComponentSettings.Name)
-// 				cmpN := (reflect.ValueOf(mockLocalConfigProvider.EXPECT().GetName().Return(envInfo.ComponentSettings.Name))).Interface().(string)
-// 				comp := getMachineReadableFormat(cmpN, tt.componentType)
-
-// 				comp.Namespace = (reflect.ValueOf(mockLocalConfigProvider.EXPECT().GetNamespace().Return(envInfo.ComponentSettings.Project))).Interface().(string)
-// 				app := (reflect.ValueOf(mockLocalConfigProvider.EXPECT().GetApplication().Return(envInfo.ComponentSettings.AppName))).Interface().(string)
-
-// 				if envInfo.ComponentSettings.DebugPort == nil {
-// 					debugPort = (reflect.ValueOf(mockLocalConfigProvider.EXPECT().GetDebugPort().Return(tt.defaultPort))).Interface().(int)
-
-// 				} else {
-// 					debugPort = (reflect.ValueOf(mockLocalConfigProvider.EXPECT().GetDebugPort().Return(*envInfo.ComponentSettings.DebugPort))).Interface().(int)
-// 				}
-
-// 				comp.Spec = ComponentSpec{
-// 					App:   app,
-// 					Type:  tt.componentType,
-// 					Ports: []string{fmt.Sprintf("%d", debugPort)},
-// 				}
-
-// 				if envInfo.ComponentSettings.URL == nil {
-// 					urls = (reflect.ValueOf(mockLocalConfigProvider.EXPECT().GetURL().Return(tt.env))).Interface().([]envinfo.EnvInfoURL)
-// 				} else {
-// 					urls = (reflect.ValueOf(mockLocalConfigProvider.EXPECT().GetURL().Return(*envInfo.ComponentSettings.URL))).Interface().([]envinfo.EnvInfoURL)
-// 				}
-
-// 				if len(urls) > 0 {
-// 					for _, url := range urls {
-// 						comp.Spec.URL = append(comp.Spec.URL, url.Name)
-// 					}
-// 				}
-
-// 				fmt.Println("hi final component is", comp)
-// 				tt.want = comp
-
-// 			}
-
-// 			got := getComponentFrom(mockLocalConfigProvider, tt.componentType)
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("getComponentFrom() = %v, want %v", got, tt.want)
-// 			}
-
-// 		})
-// 	}
-// }
-
-func TestTestifyGetComponentFrom(t *testing.T) {
-	debport := 2439
+func TestGomockGetComponentFrom(t *testing.T) {
+	type cmpSetting struct {
+		componentName   string
+		project         string
+		applicationName string
+		debugPort       int
+	}
 	tests := []struct {
 		name          string
 		isEnvInfo     bool
-		componentName string
 		componentType string
-		env           []envinfo.EnvInfoURL
-		cmpSetting    envinfo.ComponentSettings
-		defaultPort   int
+		envURL        []envinfo.EnvInfoURL
+		cmpSetting    cmpSetting
 		want          Component
 	}{
 		{
-			name:          "Case 1: Get component when env info file exists with nil debug port",
+			name:          "Case 1: Get component when env info file exists",
 			isEnvInfo:     true,
 			componentType: "nodejs",
-			env: []envinfo.EnvInfoURL{
+			envURL: []envinfo.EnvInfoURL{
 				{
-					Name: "abcde",
-					Port: 5858,
+					Name: "url1",
 				},
 			},
-			cmpSetting: envinfo.ComponentSettings{
-				Name:      "frontend",
-				Project:   "test",
-				URL:       &[]envinfo.EnvInfoURL{},
-				AppName:   "testing",
-				DebugPort: nil,
+			cmpSetting: cmpSetting{
+				componentName:   "frontend",
+				project:         "project1",
+				applicationName: "testing",
+				debugPort:       1234,
 			},
-			defaultPort: 5859,
 			want: Component{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Component",
@@ -196,103 +79,169 @@ func TestTestifyGetComponentFrom(t *testing.T) {
 		},
 
 		{
-			name:          "Case 2: Get component when env info file exists with debug port and url value",
-			isEnvInfo:     true,
-			componentType: "nodejs",
-			env: []envinfo.EnvInfoURL{
-				{
-					Name: "abcde",
-					Port: 5858,
-				},
-			},
-			cmpSetting: envinfo.ComponentSettings{
-				Name:    "frontend",
-				Project: "test",
-				URL: &[]envinfo.EnvInfoURL{
-					{
-						Name: "abc",
-						Port: 5856,
-					},
-				},
-				AppName:   "testing",
-				DebugPort: &debport,
-			},
-			defaultPort: 5859,
-			want: Component{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Component",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "frontend",
-				},
-				Spec: ComponentSpec{
-					Type: "nodejs",
-				},
-				Status: ComponentStatus{},
-			},
-		},
-
-		{
-			name:          "Case 3: Get component when env info file does not exists",
+			name:          "Case 2: Get component when env info file does not exists",
 			isEnvInfo:     false,
 			componentType: "nodejs",
-			want:          Component{},
+			envURL: []envinfo.EnvInfoURL{
+				{
+					Name: "url2",
+				},
+			},
+			cmpSetting: cmpSetting{
+				componentName:   "backend",
+				project:         "project2",
+				applicationName: "app1",
+				debugPort:       5896,
+			},
+			want: Component{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			envInfoSpc := envinfo.EnvSpecificInfo{
-				EnvinfoFileExists: tt.isEnvInfo,
-			}
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			mockLocalConfig := &mocks.LocalConfigProvider{}
+			mockLocalConfigProvider := envinfo.NewMockLocalConfigProvider(ctrl)
 
-			envFileExists := (reflect.ValueOf((mockLocalConfig.On("Exists").Return(envInfoSpc.EnvinfoFileExists)).ReturnArguments[0])).Interface().(bool)
+			mockLocalConfigProvider.EXPECT().Exists().Return(tt.isEnvInfo)
 
-			if envFileExists {
-				var debugPort int
-				var urls []envinfo.EnvInfoURL
+			if tt.isEnvInfo {
+				mockLocalConfigProvider.EXPECT().GetName().Return(tt.cmpSetting.componentName)
 
-				envInfo := envinfo.EnvInfo{
-					ComponentSettings: tt.cmpSetting,
-				}
+				component := getMachineReadableFormat(tt.cmpSetting.componentName, tt.componentType)
 
-				cmpN := (reflect.ValueOf((mockLocalConfig.On("GetName").Return(envInfo.ComponentSettings.Name)).ReturnArguments[0])).Interface().(string)
-				comp := getMachineReadableFormat(cmpN, tt.componentType)
+				mockLocalConfigProvider.EXPECT().GetNamespace().Return(tt.cmpSetting.project)
 
-				comp.Namespace = (reflect.ValueOf((mockLocalConfig.On("GetNamespace").Return(envInfo.ComponentSettings.Project)).ReturnArguments[0])).Interface().(string)
-				app := (reflect.ValueOf((mockLocalConfig.On("GetApplication").Return(envInfo.ComponentSettings.AppName)).ReturnArguments[0])).Interface().(string)
+				component.Namespace = tt.cmpSetting.project
+				mockLocalConfigProvider.EXPECT().GetApplication().Return(tt.cmpSetting.applicationName)
+				mockLocalConfigProvider.EXPECT().GetDebugPort().Return(tt.cmpSetting.debugPort)
 
-				if envInfo.ComponentSettings.DebugPort == nil {
-					debugPort = (reflect.ValueOf((mockLocalConfig.On("GetDebugPort").Return(tt.defaultPort)).ReturnArguments[0])).Interface().(int)
-
-				} else {
-					debugPort = (reflect.ValueOf((mockLocalConfig.On("GetDebugPort").Return(*envInfo.ComponentSettings.DebugPort)).ReturnArguments[0])).Interface().(int)
-				}
-
-				comp.Spec = ComponentSpec{
-					App:   app,
+				component.Spec = ComponentSpec{
+					App:   tt.cmpSetting.applicationName,
 					Type:  tt.componentType,
-					Ports: []string{fmt.Sprintf("%d", debugPort)},
+					Ports: []string{fmt.Sprintf("%d", tt.cmpSetting.debugPort)},
 				}
 
-				if envInfo.ComponentSettings.URL == nil {
-					urls = (reflect.ValueOf((mockLocalConfig.On("GetURL").Return(tt.env)).ReturnArguments[0])).Interface().([]envinfo.EnvInfoURL)
-				} else {
-					urls = (reflect.ValueOf((mockLocalConfig.On("GetURL").Return(*envInfo.ComponentSettings.URL)).ReturnArguments[0])).Interface().([]envinfo.EnvInfoURL)
-				}
+				mockLocalConfigProvider.EXPECT().GetURL().Return(tt.envURL)
 
-				if len(urls) > 0 {
-					for _, url := range urls {
-						comp.Spec.URL = append(comp.Spec.URL, url.Name)
+				if len(tt.envURL) > 0 {
+					for _, url := range tt.envURL {
+						component.Spec.URL = append(component.Spec.URL, url.Name)
 					}
 				}
 
-				fmt.Println("hi final component is", comp)
-				tt.want = comp
+				tt.want = component
+
+			}
+
+			got := getComponentFrom(mockLocalConfigProvider, tt.componentType)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getComponentFrom() = %v, want %v", got, tt.want)
+			}
+
+		})
+	}
+}
+
+func TestTestifyGetComponentFrom(t *testing.T) {
+	type cmpSetting struct {
+		componentName   string
+		project         string
+		applicationName string
+		debugPort       int
+	}
+	tests := []struct {
+		name          string
+		isEnvInfo     bool
+		componentType string
+		envURL        []envinfo.EnvInfoURL
+		cmpSetting    cmpSetting
+		want          Component
+	}{
+		{
+			name:          "Case 1: Get component when env info file exists",
+			isEnvInfo:     true,
+			componentType: "nodejs",
+			envURL: []envinfo.EnvInfoURL{
+				{
+					Name: "url1",
+				},
+			},
+			cmpSetting: cmpSetting{
+				componentName:   "frontend",
+				project:         "project1",
+				applicationName: "testing",
+				debugPort:       1234,
+			},
+			want: Component{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Component",
+					APIVersion: "odo.dev/v1alpha1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "frontend",
+				},
+				Spec: ComponentSpec{
+					Type: "nodejs",
+				},
+				Status: ComponentStatus{},
+			},
+		},
+
+		{
+			name:          "Case 2: Get component when env info file does not exists",
+			isEnvInfo:     false,
+			componentType: "nodejs",
+			envURL: []envinfo.EnvInfoURL{
+				{
+					Name: "url2",
+				},
+			},
+			cmpSetting: cmpSetting{
+				componentName:   "backend",
+				project:         "project2",
+				applicationName: "app1",
+				debugPort:       5896,
+			},
+			want: Component{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			mockLocalConfig := &mocks.LocalConfigProvider{}
+
+			mockLocalConfig.On("Exists").Return(tt.isEnvInfo)
+
+			if tt.isEnvInfo {
+				mockLocalConfig.On("GetName").Return(tt.cmpSetting.componentName)
+
+				component := getMachineReadableFormat(tt.cmpSetting.componentName, tt.componentType)
+
+				mockLocalConfig.On("GetNamespace").Return(tt.cmpSetting.project)
+
+				component.Namespace = tt.cmpSetting.project
+				mockLocalConfig.On("GetApplication").Return(tt.cmpSetting.applicationName)
+				mockLocalConfig.On("GetDebugPort").Return(tt.cmpSetting.debugPort)
+
+				component.Spec = ComponentSpec{
+					App:   tt.cmpSetting.applicationName,
+					Type:  tt.componentType,
+					Ports: []string{fmt.Sprintf("%d", tt.cmpSetting.debugPort)},
+				}
+
+				mockLocalConfig.On("GetURL").Return(tt.envURL)
+
+				if len(tt.envURL) > 0 {
+					for _, url := range tt.envURL {
+						component.Spec.URL = append(component.Spec.URL, url.Name)
+					}
+				}
+
+				tt.want = component
 
 			}
 

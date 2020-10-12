@@ -36,7 +36,7 @@ func TestSetEnvInfo(t *testing.T) {
 			parameter: URL,
 			value:     testURL,
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{},
+				componentSettings: ComponentSettings{},
 			},
 			checkConfigSetting: []string{"URL"},
 			expectError:        false,
@@ -46,7 +46,7 @@ func TestSetEnvInfo(t *testing.T) {
 			parameter: invalidParam,
 			value:     testURL,
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{},
+				componentSettings: ComponentSettings{},
 			},
 			checkConfigSetting: []string{"URL"},
 			expectError:        true,
@@ -56,7 +56,7 @@ func TestSetEnvInfo(t *testing.T) {
 			parameter: Push,
 			value:     testPush,
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{},
+				componentSettings: ComponentSettings{},
 			},
 			checkConfigSetting: []string{"PushCommand"},
 			expectError:        false,
@@ -111,7 +111,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 			name:      fmt.Sprintf("Case 1: unset %s", URL),
 			parameter: URL,
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					URL: &[]EnvInfoURL{testURL},
 				},
 			},
@@ -121,7 +121,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 			name:      fmt.Sprintf("Case 2: unset %s", invalidParam),
 			parameter: invalidParam,
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					URL: &[]EnvInfoURL{testURL},
 				},
 			},
@@ -172,7 +172,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 1: delete %s from multiple URLs", testURL1.Name),
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					URL: &[]EnvInfoURL{testURL1, testURL2},
 				},
 			},
@@ -183,7 +183,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 2: delete %s fro URL array with single element", testURL1.Name),
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					URL: &[]EnvInfoURL{testURL1},
 				},
 			},
@@ -238,7 +238,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 1: Init, Build & Run commands present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{
 						Init:  "myinit",
 						Build: "mybuild",
@@ -255,7 +255,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 2: Build & Run commands present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{
 						Build: "mybuild",
 						Run:   "myrun",
@@ -270,7 +270,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 3: Build & Init commands present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{
 						Build: "mybuild",
 						Init:  "myinit",
@@ -285,7 +285,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 4: Init & Run commands present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{
 						Init: "myinit",
 						Run:  "myrun",
@@ -300,7 +300,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 5: Build command present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{
 						Build: "mybuild",
 					},
@@ -313,7 +313,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 6: Run command present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{
 						Run: "myrun",
 					},
@@ -326,7 +326,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 7: Init command present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{
 						Init: "myinit",
 					},
@@ -339,7 +339,7 @@ func TestGetPushCommand(t *testing.T) {
 		{
 			name: "Case 8: No commands present",
 			existingEnvInfo: EnvInfo{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{},
 				},
 			},
