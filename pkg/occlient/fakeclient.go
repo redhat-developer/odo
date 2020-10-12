@@ -27,6 +27,7 @@ type FakeClientset struct {
 	RouteClientset          *fakeRouteClientset.Clientset
 	ProjClientset           *fakeProjClientset.Clientset
 	ServiceCatalogClientSet *fakeServiceCatalogClientSet.Clientset
+	DiscoveryClientSet      *fake.FakeDiscovery
 }
 
 // FakeNew creates new fake client for testing
@@ -63,8 +64,11 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	if os.Getenv("KUBERNETES") != "true" {
 		client.SetDiscoveryInterface(fakeDiscoveryWithRoute)
+		client.SetDiscoveryInterface(fakeDiscoveryWithDeploymentConfig)
 	} else {
-		client.SetDiscoveryInterface(&fake.FakeDiscovery{})
+		client.SetDiscoveryInterface(&fakeDiscovery{
+			resourceMap: map[string]*resourceMapEntry{},
+		})
 	}
 
 	return client, fkclientset
@@ -92,6 +96,22 @@ var fakeDiscoveryWithRoute = &fakeDiscovery{
 					SingularName: "route",
 					Namespaced:   true,
 					Kind:         "route",
+				}},
+			},
+		},
+	},
+}
+
+var fakeDiscoveryWithDeploymentConfig = &fakeDiscovery{
+	resourceMap: map[string]*resourceMapEntry{
+		"apps.openshift.io/v1": {
+			list: &metav1.APIResourceList{
+				GroupVersion: "apps.openshift.io/v1",
+				APIResources: []metav1.APIResource{{
+					Name:         "deploymentconfigs",
+					SingularName: "deploymentconfigs",
+					Namespaced:   true,
+					Kind:         "deploymentconfigs",
 				}},
 			},
 		},

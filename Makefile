@@ -240,6 +240,11 @@ test-cmd-docker-devfile-exec:
 test-cmd-devfile-watch:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile watch command tests" tests/integration/devfile/
 
+# Run odo devfile app command tests
+.PHONY: test-cmd-devfile-app
+test-cmd-devfile-app:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile app command tests" tests/integration/devfile/
+
 # Run odo devfile delete command tests
 .PHONY: test-cmd-devfile-delete
 test-cmd-devfile-delete:

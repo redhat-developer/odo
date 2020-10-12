@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -33,13 +34,27 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 		return appNames, nil
 	}
 
-	// Get all DeploymentConfigs with the "app" label
-	deploymentConfigAppNames, err := client.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+	deploymentSupported, err := client.IsDeploymentConfigSupported()
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list applications from deployment config")
+		return nil, err
 	}
 
-	appNames = append(appNames, deploymentConfigAppNames...)
+	// Get all DeploymentConfigs with the "app" label
+	deploymentAppNames, err := client.GetKubeClient().GetDeploymentLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list applications from deployments")
+	}
+
+	appNames = append(appNames, deploymentAppNames...)
+
+	if deploymentSupported {
+		// Get all DeploymentConfigs with the "app" label
+		deploymentConfigAppNames, err := client.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to list applications from deployment config")
+		}
+		appNames = append(appNames, deploymentConfigAppNames...)
+	}
 
 	// Get all ServiceInstances with the "app" label
 	// Okay, so there is an edge-case here.. if Service Catalog is *not* enabled in the cluster, we shouldn't error out..
@@ -48,7 +63,7 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	if err != nil {
 		klog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
 	} else {
-		appNames = append(deploymentConfigAppNames, serviceInstanceAppNames...)
+		appNames = append(appNames, serviceInstanceAppNames...)
 	}
 
 	// Filter out any names, as there could be multiple components but within the same application
@@ -56,9 +71,10 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 }
 
 // Exists checks whether the given app exist or not
-func Exists(app string, client *occlient.Client) (bool, error) {
+func Exists(app string, client *occlient.Client, kClient *kclient.Client) (bool, error) {
 
 	appList, err := List(client)
+
 	if err != nil {
 		return false, err
 	}
@@ -90,8 +106,21 @@ func Delete(client *occlient.Client, name string) error {
 			}
 		}
 	}
+
+	supported, err := client.IsDeploymentConfigSupported()
+	if err != nil {
+		return err
+	}
+	if supported {
+		// delete application from cluster
+		err = client.Delete(labels, false)
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete application %s", name)
+		}
+	}
+
 	// delete application from cluster
-	err = client.Delete(labels, false)
+	err = client.GetKubeClient().Delete(labels, false)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}

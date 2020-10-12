@@ -13,18 +13,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func GetIngressListWithMultiple(componentName string) *extensionsv1.IngressList {
+func GetIngressListWithMultiple(componentName, appName string) *extensionsv1.IngressList {
 	return &extensionsv1.IngressList{
 		Items: []extensionsv1.Ingress{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "example-0",
 					Labels: map[string]string{
-						applabels.ApplicationLabel:     "",
+						applabels.ApplicationLabel:     appName,
 						componentlabels.ComponentLabel: componentName,
 						applabels.OdoManagedBy:         "odo",
 						applabels.OdoVersion:           version.VERSION,
 						labels.URLLabel:                "example-0",
+						applabels.App:                  appName,
 					},
 				},
 				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{IngressDomain: "example-0.com", ServiceName: "example-0", PortNumber: intstr.FromInt(8080)}),
@@ -33,11 +34,12 @@ func GetIngressListWithMultiple(componentName string) *extensionsv1.IngressList 
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "example-1",
 					Labels: map[string]string{
-						applabels.ApplicationLabel:     "",
+						applabels.ApplicationLabel:     "app",
 						componentlabels.ComponentLabel: componentName,
 						applabels.OdoManagedBy:         "odo",
 						applabels.OdoVersion:           version.VERSION,
 						labels.URLLabel:                "example-1",
+						applabels.App:                  "app",
 					},
 				},
 				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{IngressDomain: "example-1.com", ServiceName: "example-1", PortNumber: intstr.FromInt(9090)}),
@@ -46,17 +48,17 @@ func GetIngressListWithMultiple(componentName string) *extensionsv1.IngressList 
 	}
 }
 
-func GetSingleIngress(urlName, componentName string) *extensionsv1.Ingress {
+func GetSingleIngress(urlName, componentName, appName string) *extensionsv1.Ingress {
 	return &extensionsv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:     "",
+				applabels.ApplicationLabel:     appName,
 				componentlabels.ComponentLabel: componentName,
 				applabels.OdoManagedBy:         "odo",
 				applabels.OdoVersion:           version.VERSION,
 				labels.URLLabel:                urlName,
-				applabels.App:                  "",
+				applabels.App:                  appName,
 			},
 		},
 		Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{IngressDomain: fmt.Sprintf("%s.com", urlName), ServiceName: urlName, PortNumber: intstr.FromInt(8080)}),

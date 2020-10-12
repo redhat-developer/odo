@@ -8,6 +8,7 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -32,11 +33,13 @@ type PushedComponent interface {
 	GetApplication() string
 	GetType() (string, error)
 	GetSource() (string, string, error)
+	GetStorage() ([]storage.Storage, error)
 }
 
 type defaultPushedComponent struct {
 	application string
 	urls        []url.URL
+	storage     []storage.Storage
 	provider    provider
 	client      *occlient.Client
 }
@@ -84,12 +87,31 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 		if err != nil && !isIgnorableError(err) {
 			return []url.URL{}, err
 		}
-		urls := make([]url.URL, 0, len(routes.Items)+len(ingresses.Items))
-		urls = append(urls, routes.Items...)
-		urls = append(urls, ingresses.Items...)
-		d.urls = urls
+		d.urls = append(routes.Items, ingresses.Items...)
 	}
 	return d.urls, nil
+}
+
+func (d defaultPushedComponent) GetStorage() ([]storage.Storage, error) {
+	if d.storage == nil {
+		var storageItems []storage.Storage
+		if _, ok := d.provider.(*s2iComponent); ok {
+			storageList, err := storage.ListMounted(d.client, d.GetName(), d.GetApplication())
+			if err != nil {
+				return nil, err
+			}
+			storageItems = append(storageItems, storageList.Items...)
+		}
+		if _, ok := d.provider.(*devfileComponent); ok {
+			storageList, err := storage.DevfileListMounted(d.client.GetKubeClient(), d.GetName())
+			if err != nil {
+				return nil, err
+			}
+			storageItems = append(storageItems, storageList.Items...)
+		}
+		d.storage = storageItems
+	}
+	return d.storage, nil
 }
 
 func (d defaultPushedComponent) GetApplication() string {
@@ -211,27 +233,29 @@ func getType(component provider) (string, error) {
 // GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
 func GetPushedComponents(c *occlient.Client, applicationName string) (map[string]PushedComponent, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+
 	dcList, err := c.GetDeploymentConfigsFromSelector(applicationSelector)
 	if err != nil {
-		if isIgnorableError(err) {
-			dList, err := c.GetKubeClient().ListDeployments(applicationSelector)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to list components")
-			}
-			res := make(map[string]PushedComponent, len(dList.Items))
-			for _, d := range dList.Items {
-				comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c)
-				res[comp.GetName()] = comp
-			}
-			return res, nil
+		if !isIgnorableError(err) {
+			return nil, err
 		}
-		return nil, err
 	}
 	res := make(map[string]PushedComponent, len(dcList))
 	for _, dc := range dcList {
 		comp := newPushedComponent(applicationName, &s2iComponent{dc: dc}, c)
 		res[comp.GetName()] = comp
 	}
+
+	deploymentList, err := c.GetKubeClient().ListDeployments(applicationSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list components")
+	}
+
+	for _, d := range deploymentList.Items {
+		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c)
+		res[comp.GetName()] = comp
+	}
+
 	return res, nil
 }
 

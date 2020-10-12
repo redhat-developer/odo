@@ -260,6 +260,12 @@ func Suffocate(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "\t", "")
 }
 
+// IsJson returns true if a string is in json format
+func IsJSON(s string) bool {
+	var js map[string]interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
+}
+
 type CommonVar struct {
 	// Project is new clean project/namespace for each test
 	Project string

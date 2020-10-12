@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	v1 "k8s.io/api/apps/v1"
 	"os"
 	"path/filepath"
 	"sort"
@@ -612,6 +613,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		applicationName = componentConfig.GetApplication()
 	} else {
 		componentName = envSpecificInfo.GetName()
+		applicationName = envSpecificInfo.GetApplication()
 	}
 
 	isRouteSupported := false
@@ -861,33 +863,52 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	}
 
+	deploymentConfigSupported := false
+	var err error
+	var deploymentList []v1.Deployment
+
 	var components []Component
 	componentNamesMap := make(map[string]bool)
 
 	if client != nil {
-		project, err := client.GetProject(client.Namespace)
+		deploymentConfigSupported, err = client.IsDeploymentConfigSupported()
 		if err != nil {
 			return ComponentList{}, err
 		}
 
-		if project != nil {
-			// retrieve all the deployment configs that are associated with this application
-			dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
-			if err != nil {
-				return ComponentList{}, errors.Wrapf(err, "unable to list components")
-			}
+		// retrieve all the deployments that are associated with this application
+		deploymentList, err = client.GetKubeClient().GetDeploymentFromSelector(applicationSelector)
+		if err != nil {
+			return ComponentList{}, errors.Wrapf(err, "unable to list components")
+		}
+	}
 
-			// extract the labels we care about from each component
-			for _, elem := range dcList {
-				component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
-				if err != nil {
-					return ComponentList{}, errors.Wrap(err, "Unable to get component")
-				}
-				components = append(components, component)
-				componentNamesMap[component.Name] = true
-			}
+	// extract the labels we care about from each component
+	for _, elem := range deploymentList {
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+		if err != nil {
+			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+		}
+		components = append(components, component)
+		componentNamesMap[component.Name] = true
+	}
+
+	if deploymentConfigSupported && client != nil {
+		// retrieve all the deployment configs that are associated with this application
+		dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+		if err != nil {
+			return ComponentList{}, errors.Wrapf(err, "unable to list components")
 		}
 
+		// extract the labels we care about from each component
+		for _, elem := range dcList {
+			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+			if err != nil {
+				return ComponentList{}, errors.Wrap(err, "Unable to get component")
+			}
+			components = append(components, component)
+			componentNamesMap[component.Name] = true
+		}
 	}
 
 	if localConfigInfo != nil {
@@ -1437,6 +1458,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		if err != nil {
 			return Component{}, err
 		}
+		component.Spec.URLSpec = urls
 		urlsNb := len(urls)
 		if urlsNb > 0 {
 			res := make([]string, 0, urlsNb)
@@ -1449,15 +1471,17 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 
 	// Storage
 	if getStorage {
-		appStore, err := storage.List(client, componentName, applicationName)
+		appStore, err := fromCluster.GetStorage()
 		if err != nil {
 			return Component{}, errors.Wrap(err, "unable to get storage list")
 		}
-		var storage []string
-		for _, store := range appStore.Items {
-			storage = append(storage, store.Name)
+
+		component.Spec.StorageSpec = appStore
+		var storageList []string
+		for _, store := range appStore {
+			storageList = append(storageList, store.Name)
 		}
-		component.Spec.Storage = storage
+		component.Spec.Storage = storageList
 	}
 
 	// Environment Variables

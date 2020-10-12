@@ -30,7 +30,7 @@ var _ = Describe("odo app command tests", func() {
 	Context("when running help for app command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "app", "-h")
-			Expect(appHelp).To(ContainSubstring("Performs application operations related to your OpenShift project."))
+			Expect(appHelp).To(ContainSubstring("Performs application operations related to your project."))
 		})
 	})
 
@@ -58,19 +58,19 @@ var _ = Describe("odo app command tests", func() {
 			// changing directory to the context directory
 			helper.Chdir(commonVar.Context)
 
-			appListOutput := helper.CmdShouldPass("odo", "app", "list")
+			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appListOutput).To(ContainSubstring(appName))
-			actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json")
+			actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json", "--project", commonVar.Project)
 
 			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"s2iComponents":[{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","sourceType":"local","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}],"devfileComponents":[]}`, commonVar.Project)
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
-			helper.CmdShouldPass("odo", "app", "describe")
+			helper.CmdShouldPass("odo", "app", "describe", "--project", commonVar.Project)
 			desiredDesAppJSON := fmt.Sprintf(`{"kind":"Application","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components": ["nodejs"]}}`, commonVar.Project)
-			actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", "app", "-o", "json")
+			actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", "app", "-o", "json", "--project", commonVar.Project)
 			Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
 
-			helper.CmdShouldPass("odo", "app", "delete", "-f")
+			helper.CmdShouldPass("odo", "app", "delete", "-f", "--project", commonVar.Project)
 		})
 	})
 
@@ -83,8 +83,8 @@ var _ = Describe("odo app command tests", func() {
 			// list should pass as the project exists
 			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appListOutput).To(ContainSubstring(appName))
-			helper.CmdShouldFail("odo", "app", "describe")
-			helper.CmdShouldFail("odo", "app", "delete", "-f")
+			helper.CmdShouldFail("odo", "app", "describe", "--project", commonVar.Project)
+			helper.CmdShouldFail("odo", "app", "delete", "-f", "--project", commonVar.Project)
 		})
 	})
 

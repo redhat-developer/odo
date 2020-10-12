@@ -1234,7 +1234,7 @@ func TestDevfileListMounted(t *testing.T) {
 				return true, tt.returnedPods, nil
 			})
 
-			got, err := devfileListMounted(fakeClient, tt.args.componentName)
+			got, err := DevfileListMounted(fakeClient, tt.args.componentName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("devfileListMounted() error = %v, wantErr %v", err, tt.wantErr)
 				return
