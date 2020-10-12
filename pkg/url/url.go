@@ -696,6 +696,9 @@ func GetURLString(protocol, URL string, ingressDomain string, isS2I bool) string
 	if !isS2I && URL == "" {
 		return protocol + "://" + ingressDomain
 	}
+	if protocol == "" && URL == "" && ingressDomain == "" {
+		return ""
+	}
 	return protocol + "://" + URL
 }
 
