@@ -3,7 +3,7 @@ package kclient
 import (
 	"encoding/json"
 	"fmt"
-	sort "sort"
+	"sort"
 	"time"
 
 	"github.com/openshift/odo/pkg/log"
