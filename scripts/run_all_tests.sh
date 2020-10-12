@@ -40,14 +40,14 @@ if [[ $run_all -eq 0 ]]; then
     shout "Testing against 4x cluster"
     shout "Getting oc binary"
     if [[ $BASE_OS == "linux"  ]]; then
-        set +x
+        #set +x
     	curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.tar -o ./oc.tar
-        set -x
+        #set -x
     	tar -C $GOBIN -xvf ./oc.tar && rm -rf ./oc.tar
     else
-        set +x
+        #set +x
         curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
-        set -x
+        #set -x
         gunzip -c ./oc.zip > $GOBIN/oc && rm -rf ./oc.zip && chmod +x $GOBIN/oc
         if [[ $BASE_OS == "windows" ]]; then
             mv -f $GOBIN/oc $GOBIN/oc.exe
@@ -55,9 +55,9 @@ if [[ $run_all -eq 0 ]]; then
     fi
 
     shout "Logging into 4x cluster as developer (logs hidden)"
-    set +x
+    #set +x
     oc login -u developer -p password@123 --insecure-skip-tls-verify  ${OCP4X_API_URL}
-    set -x
+    #set -x
     
     shout "Running integration/e2e tests"
     make test-e2e-all
