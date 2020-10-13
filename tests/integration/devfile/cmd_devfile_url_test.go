@@ -2,10 +2,11 @@ package devfile
 
 import (
 	"fmt"
-	"github.com/openshift/odo/tests/helper"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -115,6 +116,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--host", host, "--ingress")
 			stdout := helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "3000", "Not Pushed"})
+			helper.DontMatchAllInOutput(stdout, []string{"://"})
 		})
 
 		It("should create a secure URL", func() {
