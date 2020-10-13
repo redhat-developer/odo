@@ -1,11 +1,12 @@
 package devfile
 
 import (
+	"path/filepath"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
-	"path/filepath"
-	"strings"
 )
 
 var _ = Describe("odo devfile storage command tests", func() {
@@ -33,11 +34,11 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageNames := []string{helper.RandString(5), helper.RandString(5)}
-			pathNames := []string{"/data", "/data-1"}
+			pathNames := []string{"/data", "/" + storageNames[1]}
 			sizes := []string{"5Gi", "1Gi"}
 
 			helper.CmdShouldPass("odo", "storage", "create", storageNames[0], "--path", pathNames[0], "--size", sizes[0], "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "storage", "create", storageNames[1], "--path", pathNames[1], "--size", sizes[1], "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "storage", "create", storageNames[1], "--size", sizes[1], "--context", commonVar.Context) // check storage create without the path name
 
 			args = []string{"push", "--context", commonVar.Context}
 			helper.CmdShouldPass("odo", args...)
@@ -158,17 +159,17 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			stdOut := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
+			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
 
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "Pushed", "CONTAINER", "runtime", "runtime2"})
+			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Pushed", "CONTAINER", "runtime", "runtime2"})
 
 			helper.CmdShouldPass("odo", "storage", "delete", "firstvol", "-f", "--context", commonVar.Context)
 
 			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "Pushed", "Locally Deleted", "CONTAINER", "runtime", "runtime2"})
+			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Pushed", "Locally Deleted", "CONTAINER", "runtime", "runtime2"})
 		})
 
 		It("should list output in json format", func() {

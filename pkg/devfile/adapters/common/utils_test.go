@@ -205,6 +205,32 @@ func TestGetVolumes(t *testing.T) {
 			},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{},
 		},
+		{
+			name: "Case 5: Valid devfile with container referencing no volume mount path",
+			component: []versionsCommon.DevfileComponent{
+				testingutil.GetFakeVolumeComponent("myvolume1", size),
+				{
+					Name: "mycontainer",
+					Container: &versionsCommon.Container{
+						Image: "image",
+						VolumeMounts: []versionsCommon.VolumeMount{
+							{
+								Name: "myvolume1",
+							},
+						},
+					},
+				},
+			},
+			wantContainerNameToVolumes: map[string][]DevfileVolume{
+				"mycontainer": {
+					{
+						Name:          "myvolume1",
+						Size:          "4Gi",
+						ContainerPath: "/myvolume1",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -331,6 +357,41 @@ func TestGetBootstrapperImage(t *testing.T) {
 
 			if image != tt.wantImage {
 				t.Errorf("TestGetBootstrapperImage error: bootstrap image mismatch, expected: %v got: %v", tt.wantImage, image)
+			}
+		})
+	}
+
+}
+
+func TestGetVolumeMountPath(t *testing.T) {
+
+	tests := []struct {
+		name        string
+		volumeMount common.VolumeMount
+		wantPath    string
+	}{
+		{
+			name: "Case 1: Mount Path is present",
+			volumeMount: common.VolumeMount{
+				Name: "name1",
+				Path: "/path1",
+			},
+			wantPath: "/path1",
+		},
+		{
+			name: "Case 2: Mount Path is absent",
+			volumeMount: common.VolumeMount{
+				Name: "name1",
+			},
+			wantPath: "/name1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := GetVolumeMountPath(tt.volumeMount)
+
+			if path != tt.wantPath {
+				t.Errorf("TestGetVolumeMountPath error: mount path mismatch, expected: %v got: %v", tt.wantPath, path)
 			}
 		})
 	}

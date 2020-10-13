@@ -2,8 +2,9 @@ package storage
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"reflect"
+
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
@@ -623,7 +624,9 @@ func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 // GetLocalDevfileStorage lists the storage from the devfile
 func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 	volumeSizeMap := make(map[string]string)
-	for _, component := range devfileData.GetComponents() {
+	components := devfileData.GetComponents()
+
+	for _, component := range components {
 		if component.Volume == nil {
 			continue
 		}
@@ -633,7 +636,6 @@ func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 		volumeSizeMap[component.Name] = component.Volume.Size
 	}
 
-	components := devfileData.GetComponents()
 	var storage []Storage
 	for _, component := range components {
 		if component.Container == nil {
@@ -642,7 +644,7 @@ func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 		for _, volumeMount := range component.Container.VolumeMounts {
 			size, ok := volumeSizeMap[volumeMount.Name]
 			if ok {
-				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, volumeMount.Path, component.Name))
+				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, common.GetVolumeMountPath(volumeMount), component.Name))
 			}
 		}
 	}

@@ -1,12 +1,13 @@
 package storage
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
-	"reflect"
-	"testing"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
@@ -1034,7 +1035,32 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 			},
 		},
 		{
-			name: "case 3: return empty when no volumes is mounted",
+			name: "case 3: list all the volumes in the devfile with the default mount path when no path is mentioned",
+			args: args{
+				devfileData: &testingutil.TestDevfileData{
+					Components: []common.DevfileComponent{
+						{
+							Name: "container-0",
+							Container: &common.Container{
+								VolumeMounts: []common.VolumeMount{
+									{
+										Name: "volume-0",
+									},
+								},
+							},
+						},
+						testingutil.GetFakeVolumeComponent("volume-0", ""),
+					},
+				},
+			},
+			want: StorageList{
+				Items: []Storage{
+					generateStorage(GetMachineReadableFormat("volume-0", "1Gi", "/volume-0"), "", "container-0"),
+				},
+			},
+		},
+		{
+			name: "case 4: return empty when no volumes is mounted",
 			args: args{
 				devfileData: &testingutil.TestDevfileData{
 					Components: []common.DevfileComponent{
@@ -1524,6 +1550,45 @@ func TestDevfileList(t *testing.T) {
 			returnedPVCs: &corev1.PersistentVolumeClaimList{},
 			want:         StorageList{},
 			wantErr:      true,
+		},
+		{
+			name: "case 8: volume component with no size and container volume mount with no path",
+			args: args{
+				componentName: "nodejs",
+				devfileData: &testingutil.TestDevfileData{
+					Components: []common.DevfileComponent{
+						{
+							Name: "container-0",
+							Container: &common.Container{
+								VolumeMounts: []common.VolumeMount{
+									{
+										Name: "volume-0",
+									},
+								},
+							},
+						},
+						testingutil.GetFakeVolumeComponent("volume-0", ""),
+					},
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-0-vol", MountPath: "/volume-0"},
+						}),
+					}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-0", "1Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+				},
+			},
+			want: GetMachineReadableFormatForList([]Storage{
+				generateStorage(GetMachineReadableFormat("volume-0", "1Gi", "/volume-0"), StateTypePushed, "container-0"),
+			}),
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

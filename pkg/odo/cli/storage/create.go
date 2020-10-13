@@ -2,6 +2,8 @@ package storage
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/openshift/odo/pkg/devfile"
 	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -14,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"path/filepath"
 )
 
 const createRecommendedCommandName = "create"
@@ -49,19 +50,16 @@ func NewStorageCreateOptions() *StorageCreateOptions {
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.devfilePath = filepath.Join(o.componentContext, o.devfilePath)
 	o.isDevfile = util.CheckPathExists(o.devfilePath)
+
 	if o.isDevfile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
-
 		o.componentName = o.EnvSpecificInfo.GetName()
-		if o.storageSize == "" {
-			o.storageSize = adapterCommon.DefaultVolumeSize
-		}
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
 		o.componentName = o.LocalConfigInfo.GetName()
 
-		if o.storageSize == "" {
-			return fmt.Errorf("\"size\" flag is required for s2i components")
+		if o.storageSize == "" || o.storagePath == "" {
+			return fmt.Errorf("\"size\" and \"path\" flags are required for s2i components")
 		}
 	}
 
@@ -70,7 +68,20 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	} else {
 		o.storageName = fmt.Sprintf("%s-%s", o.componentName, util.GenerateRandomString(4))
 	}
+
+	o.applyDevfileStorageDefault()
+
 	return
+}
+
+func (o *StorageCreateOptions) applyDevfileStorageDefault() {
+	if o.storageSize == "" {
+		o.storageSize = adapterCommon.DefaultVolumeSize
+	}
+	if o.storagePath == "" {
+		// acc to the devfile schema, if the mount path is absent; it will be mounted at the dir with the mount name
+		o.storagePath = "/" + o.storageName
+	}
 }
 
 // Validate validates the StorageCreateOptions based on completed values
@@ -148,8 +159,6 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 
 	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
-
-	_ = storageCreateCmd.MarkFlagRequired("path")
 
 	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)

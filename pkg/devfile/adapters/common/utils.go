@@ -156,6 +156,16 @@ func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGr
 	return commands
 }
 
+// GetVolumeMountPath gets the volume mount's path
+func GetVolumeMountPath(volumeMount common.VolumeMount) string {
+	// if there is no volume mount path, default to volume mount name as per devfile schema
+	if volumeMount.Path == "" {
+		volumeMount.Path = "/" + volumeMount.Name
+	}
+
+	return volumeMount.Path
+}
+
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
 	containerComponents := GetDevfileContainerComponents(devfileObj.Data)
@@ -177,7 +187,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 
 			vol := DevfileVolume{
 				Name:          volumeMount.Name,
-				ContainerPath: volumeMount.Path,
+				ContainerPath: GetVolumeMountPath(volumeMount),
 				Size:          size,
 			}
 			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)

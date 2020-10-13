@@ -578,7 +578,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"runtime2",
 				commonVar.Project,
-				[]string{"cat", "/data/myfile.log"},
+				[]string{"cat", "/myvol/myfile.log"},
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err

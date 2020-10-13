@@ -28,7 +28,6 @@ components:
       mountSources: false
       volumeMounts:
         - name: myvol
-          path: /data
         - name: myvol2
           path: /data2
   - name: myvol
@@ -49,7 +48,7 @@ commands:
     exec:
       component: runtime2
       commandLine: "cat myfile.log"
-      workingDir: /data
+      workingDir: /myvol
       group:
         kind: run
         isDefault: true

@@ -21,6 +21,7 @@ components:
       volumeMounts:
         - name: firstvol
           path: /data
+        - name: secondvol
   - name: runtime2
     container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
