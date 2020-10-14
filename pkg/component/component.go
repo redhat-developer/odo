@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	v1 "k8s.io/api/apps/v1"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	v1 "k8s.io/api/apps/v1"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"

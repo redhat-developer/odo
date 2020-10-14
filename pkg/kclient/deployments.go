@@ -54,6 +54,27 @@ func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error
 	})
 }
 
+// GetDeploymentFromSelector returns an array of Deployment resources which
+// match the given selector
+func (c *Client) GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error) {
+	var deploymentList *appsv1.DeploymentList
+	var err error
+
+	if selector != "" {
+		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+			LabelSelector: selector,
+		})
+	} else {
+		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
+		})
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list Deployments")
+	}
+	return deploymentList.Items, nil
+}
+
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
 func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
 	klog.V(3).Infof("Waiting for %s deployment rollout", deploymentName)
