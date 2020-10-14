@@ -112,11 +112,8 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			// we check the default url
-			stdout := helper.CmdShouldPass("odo", "url", "list")
-			helper.DontMatchAllInOutput(stdout, []string{"://"})
 			helper.CmdShouldPass("odo", "url", "create", url1, "--host", host, "--ingress")
-			stdout = helper.CmdShouldPass("odo", "url", "list")
+			stdout := helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "3000", "Not Pushed"})
 		})
 
