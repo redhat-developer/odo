@@ -23,7 +23,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -125,10 +124,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
 	err = util.ValidateK8sResourceName("component name", a.ComponentName)
-	if err != nil {
-		return err
-	}
-	err = validate.ValidateContainerName(a.Devfile.Data)
 	if err != nil {
 		return err
 	}

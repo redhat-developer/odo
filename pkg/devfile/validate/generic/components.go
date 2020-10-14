@@ -6,6 +6,7 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -18,6 +19,12 @@ func validateComponents(components []common.DevfileComponent) error {
 	processedVolumeMounts := make(map[string]bool)
 
 	for _, component := range components {
+
+		err := util.ValidateK8sResourceName("devfile component name", component.Name)
+		if err != nil {
+			return err
+		}
+
 		if component.Container != nil {
 			// Process all the volume mounts in container components to validate them later
 			for _, volumeMount := range component.Container.VolumeMounts {
