@@ -869,7 +869,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 				Data: &v200.Devfile200{
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/data",
+							SubDir: "/data",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -884,7 +884,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileStarterProject{
 					{
-						ClonePath: "/source",
+						SubDir: "/source",
 						Github: &common.Github{
 							GitLikeProjectSource: common.GitLikeProjectSource{
 								Remotes:      map[string]string{"origin": "url"},
@@ -901,7 +901,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 				Data: &v200.Devfile200{
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/source",
+							SubDir: "/source",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -921,7 +921,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 				Data: &v200.Devfile200{
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/data",
+							SubDir: "/data",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -945,7 +945,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileStarterProject{
 					{
-						ClonePath: "/source",
+						SubDir: "/source",
 						Github: &common.Github{
 							GitLikeProjectSource: common.GitLikeProjectSource{
 								Remotes:      map[string]string{"origin": "url"},
@@ -961,7 +961,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 				Data: &v200.Devfile200{
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/source",
+							SubDir: "/source",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -991,7 +991,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 				Data: &v200.Devfile200{
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/data",
+							SubDir: "/data",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -1007,7 +1007,7 @@ func TestDevfileObj_OverrideStarterProjects(t *testing.T) {
 			args: args{
 				overridePatch: []common.DevfileStarterProject{
 					{
-						ClonePath: "/source",
+						SubDir: "/source",
 						Github: &common.Github{
 							GitLikeProjectSource: common.GitLikeProjectSource{
 								Remotes:      map[string]string{"origin": "url"},

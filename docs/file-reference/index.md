@@ -82,10 +82,10 @@ metadata:
 starterProjects:
   - name: quarkus-quickstart
     description: minimal CRUD app with quarkus
+    subDir: /getting-started/ # optional checkout dir
     git:
       location: https://github.com/quarkusio/quarkus-quickstarts
       branch: master
-      sparseCheckoutDir: /getting-started/ # optional checkout dir
       startPoint: 1.7.0.Final # tag or commit to start at
 ```
 
@@ -245,10 +245,10 @@ metadata:
 starterProjects:
   - name: quarkus-quickstart
     description: minimal CRUD app with quarkus
+    subDir: /getting-started/ # optional checkout dir
     git:
       location: https://github.com/quarkusio/quarkus-quickstarts
       branch: master
-      sparseCheckoutDir: /getting-started/ # optional checkout dir
       startPoint: 1.7.0.Final # tag or commit to start at
 ```   
 
@@ -259,10 +259,10 @@ starterProjects:
 starterProjects:
   - name: nodejs-web-app
     description: nodejs app
+    subDir: /app/ # optional checkout dir
     github:
       location: https://github.com/odo-devfiles/nodejs-ex.git
       branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
       startPoint: 1.0.0 # tag or commit to start at
 ```
 
@@ -272,9 +272,9 @@ starterProjects:
 starterProjects:
   - name: nodejs-web-app
     description: nodejs web app
+    subDir: /app/ # optional checkout dir
     zip:
       location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
-      sparseCheckoutDir: /app/ # optional checkout dir
 ```
 
 Each starter project may contain three different objects, `git`, `github` or `zip`.
@@ -298,10 +298,10 @@ Each starter project may contain three different objects, `git`, `github` or `zi
 ```yaml
 starterProjects:
   - name: nodejs-web-app
+    subDir: /app/ # optional checkout dir
     git:
       location: https://github.com/odo-devfiles/nodejs-ex.git
       branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
       startPoint: 1.0.0 # tag or commit to start at
 ```
 
@@ -319,10 +319,10 @@ starterProjects:
 ```yaml
 starterProjects:
   - name: nodejs-web-app
+    subDir: /app/ # optional checkout dir
     github:
       location: https://github.com/odo-devfiles/nodejs-ex.git
       branch: master
-      sparseCheckoutDir: /app/ # optional checkout dir
       startPoint: 1.0.0 # tag or commit to start at
 ```
 
@@ -340,9 +340,9 @@ starterProjects:
 ```yaml
 starterProjects:
   - name: nodejs-web-app
+    subDir: /app/ # optional checkout dir
     zip:
       location: https://github.com/odo-devfiles/nodejs-ex/archive/0.0.1.zip
-      sparseCheckoutDir: /app/ # optional checkout dir
 ```
 
 | Key              | Type   | Description                        |

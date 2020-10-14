@@ -7,11 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
-	"k8s.io/klog"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -37,9 +32,13 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/util"
-
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -912,18 +911,6 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 		return errors.Wrapf(err, "Could not get the current working directory.")
 	}
 
-	if starterProject.ClonePath != "" {
-		clonePath := filepath.FromSlash(starterProject.ClonePath)
-
-		path = filepath.Join(path, clonePath)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			err = os.MkdirAll(path, os.FileMode(0755))
-			if err != nil {
-				return errors.Wrapf(err, "failed creating folder with path: %s", path)
-			}
-		}
-	}
-
 	// We will check to see if the project has a valid directory
 	err = util.IsValidProjectDir(path, DevfilePath)
 	if err != nil {
@@ -977,6 +964,14 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 			}
 		}
 
+		originalPath := ""
+		if starterProject.SubDir != "" {
+			originalPath = path
+			path, err = ioutil.TempDir("", "")
+			if err != nil {
+				return err
+			}
+		}
 		_, err = git.PlainClone(path, false, cloneOptions)
 		if err != nil {
 			return err
@@ -988,12 +983,19 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 			// we don't need to return (fail) if this happens
 			log.Warning("Unable to delete .git from cloned starter project")
 		}
-		downloadSpinner.End(true)
 
+		if starterProject.SubDir != "" {
+			err = util.GitSubDir(path, originalPath,
+				starterProject.SubDir, filesystem.DefaultFs{})
+			if err != nil {
+				return err
+			}
+		}
+		downloadSpinner.End(true)
 	} else if starterProject.Zip != nil {
 		url := starterProject.Zip.Location
 		logUrl := starterProject.Zip.Location
-		sparseDir := starterProject.Zip.SparseCheckoutDir
+		sparseDir := starterProject.SubDir
 		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, logUrl)
 		err := co.checkoutProject(sparseDir, url, path)
 		if err != nil {
@@ -1185,9 +1187,9 @@ func (co *CreateOptions) Run() (err error) {
 	return
 }
 
-func (co *CreateOptions) checkoutProject(sparseCheckoutDir, zipURL, path string) error {
-	if sparseCheckoutDir != "" {
-		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir, co.devfileMetadata.starterToken)
+func (co *CreateOptions) checkoutProject(subDir, zipURL, path string) error {
+	if subDir != "" {
+		err := util.GetAndExtractZip(zipURL, path, subDir, co.devfileMetadata.starterToken)
 		if err != nil {
 			return errors.Wrap(err, "failed to download and extract project zip folder")
 		}

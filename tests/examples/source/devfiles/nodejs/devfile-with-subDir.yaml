@@ -2,12 +2,11 @@ apiVersion: 1.0.0
 metadata:
   name: nodejs
 starterProjects:
-  -
-    name: nodejs-starter
+  - name: nodejs-starter
+    subDir: /app/
     git:
       remotes:
         origin: "https://github.com/che-samples/web-nodejs-sample.git"
-      sparseCheckoutDir: /app/
 components:
   - type: dockerimage
     image: registry.access.redhat.com/ubi8/nodejs-12:1-36

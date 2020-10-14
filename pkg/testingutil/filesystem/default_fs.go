@@ -126,6 +126,11 @@ func (DefaultFs) Walk(root string, walkFn filepath.WalkFunc) error {
 	return filepath.Walk(root, walkFn)
 }
 
+// Chmod via os.Chmod
+func (f DefaultFs) Chmod(name string, mode os.FileMode) error {
+	return os.Chmod(name, mode)
+}
+
 // defaultFile implements File using same-named functions from "os"
 type defaultFile struct {
 	file *os.File
@@ -158,4 +163,12 @@ func (file *defaultFile) Close() error {
 
 func (file *defaultFile) Readdir(n int) ([]os.FileInfo, error) {
 	return file.file.Readdir(n)
+}
+
+func (file *defaultFile) Read(b []byte) (n int, err error) {
+	return file.file.Read(b)
+}
+
+func (file *defaultFile) Chmod(name string, mode os.FileMode) error {
+	return file.file.Chmod(mode)
 }
