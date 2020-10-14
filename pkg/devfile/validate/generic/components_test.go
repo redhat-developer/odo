@@ -1,7 +1,6 @@
 package generic
 
 import (
-	"reflect"
 	"testing"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -28,10 +27,11 @@ func TestValidateComponents(t *testing.T) {
 		}
 
 		got := validateComponents(components)
-		want := &DuplicateVolumeComponentsError{}
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
+		if _, ok := got.(*InvalidVolumeError); got != nil && !ok {
+			t.Errorf("TestValidateComponents duplicate vol component error - got: '%v' but wanted a different err type", got)
+		} else if got == nil {
+			t.Errorf("TestValidateComponents reserved env error - expected an err but got nil")
 		}
 	})
 
@@ -125,7 +125,7 @@ func TestValidateComponents(t *testing.T) {
 		}
 
 		got := validateComponents(components)
-		if _, ok := got.(*InvalidVolumeSizeError); got != nil && !ok {
+		if _, ok := got.(*InvalidVolumeError); got != nil && !ok {
 			t.Errorf("TestValidateComponents vol size error - got: '%v' but wanted a different err type", got)
 		} else if got == nil {
 			t.Errorf("TestValidateComponents vol size error - expected an err but got nil")

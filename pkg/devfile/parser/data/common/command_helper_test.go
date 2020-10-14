@@ -5,50 +5,6 @@ import (
 	"testing"
 )
 
-func TestGetID(t *testing.T) {
-
-	tests := []struct {
-		name    string
-		command DevfileCommand
-		want    string
-	}{
-		{
-			name: "Case 1: Exec command ID",
-			command: DevfileCommand{
-				Id: "exec1",
-				Exec: &Exec{
-					Component: "nodejs",
-				},
-			},
-			want: "exec1",
-		},
-		{
-			name: "Case 2: Composite command ID",
-			command: DevfileCommand{
-				Id: "composite1",
-				Composite: &Composite{
-					Parallel: false,
-				},
-			},
-			want: "composite1",
-		},
-		{
-			name:    "Case 3: Empty command",
-			command: DevfileCommand{},
-			want:    "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			commandID := tt.command.GetID()
-			if commandID != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, commandID)
-			}
-		})
-	}
-
-}
-
 func TestGetGroup(t *testing.T) {
 
 	tests := []struct {

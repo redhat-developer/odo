@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"fmt"
 	"strings"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -44,11 +45,11 @@ func validateComponents(components []common.DevfileComponent) error {
 					// express storage in Kubernetes. For reference, you may check doc
 					// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 					if _, err := resource.ParseQuantity(component.Volume.Size); err != nil {
-						return &InvalidVolumeSizeError{size: component.Volume.Size, componentName: component.Name, validationError: err}
+						return &InvalidVolumeError{name: component.Name, reason: fmt.Sprintf("size %s for volume component is invalid, %v. Example - 2Gi, 1024Mi", component.Volume.Size, err)}
 					}
 				}
 			} else {
-				return &DuplicateVolumeComponentsError{}
+				return &InvalidVolumeError{name: component.Name, reason: "duplicate volume components present with the same name"}
 			}
 		}
 	}

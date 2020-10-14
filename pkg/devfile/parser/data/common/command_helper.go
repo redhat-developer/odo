@@ -2,15 +2,6 @@ package common
 
 import "strings"
 
-// GetID returns the ID of the command
-func (dc DevfileCommand) GetID() string {
-	if dc.Composite != nil || dc.Exec != nil {
-		return dc.Id
-	}
-
-	return ""
-}
-
 // SetIDToLower converts the command's id to lower case for more efficient processing and returns the new id
 func (dc *DevfileCommand) SetIDToLower() string {
 	var newId string

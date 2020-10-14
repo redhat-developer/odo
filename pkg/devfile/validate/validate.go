@@ -14,6 +14,7 @@ import (
 )
 
 // ValidateDevfileData validates whether sections of devfile are odo compatible
+// after invoking the generic devfile validation
 func ValidateDevfileData(data interface{}) error {
 	var components []common.DevfileComponent
 	var commandsMap map[string]common.DevfileCommand

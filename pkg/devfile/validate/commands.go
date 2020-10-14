@@ -26,7 +26,7 @@ func validateCommand(command common.DevfileCommand) (err error) {
 
 	// devfile command type for odo must be exec or composite
 	if command.Exec == nil && command.Composite == nil {
-		return &UnsupportedOdoCommandError{commandId: command.GetID()}
+		return &UnsupportedOdoCommandError{commandId: command.Id}
 	}
 
 	// If the command is a composite command, need to validate that it is valid

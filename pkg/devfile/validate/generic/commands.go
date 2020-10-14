@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -17,7 +18,7 @@ func validateCommands(commands []common.DevfileCommand, commandsMap map[string]c
 		// If there's a hit, it means more than one command share the same ID and we should error out
 		commandID := command.SetIDToLower()
 		if _, exists := processedCommands[commandID]; exists {
-			return &DuplicateCommandError{commandId: commandID}
+			return &InvalidCommandError{commandId: command.Id, reason: "duplicate commands present with the same id"}
 		}
 		processedCommands[commandID] = commandID
 
@@ -49,7 +50,7 @@ func validateCommand(command common.DevfileCommand, devfileCommands map[string]c
 func validateExecCommand(command common.DevfileCommand, components []common.DevfileComponent) (err error) {
 
 	if command.Exec == nil {
-		return &InvalidCommandError{commandId: command.GetID(), commandType: "exec"}
+		return &InvalidCommandError{commandId: command.Id, reason: "should be of type exec"}
 	}
 
 	// TODO - Remove component and command line check when devfile spec is finalized for 2.0.0
@@ -57,12 +58,12 @@ func validateExecCommand(command common.DevfileCommand, components []common.Devf
 
 	// component must be specified
 	if command.GetExecComponent() == "" {
-		return &ExecCommandMissingComponentError{commandId: command.GetID()}
+		return &InvalidCommandError{commandId: command.Id, reason: "command must reference a component"}
 	}
 
 	// must specify a command
 	if command.GetExecCommandLine() == "" {
-		return &ExecCommandMissingCommandLineError{commandId: command.GetID()}
+		return &InvalidCommandError{commandId: command.Id, reason: "command must have a commandLine"}
 	}
 
 	// must map to a container component
@@ -73,7 +74,7 @@ func validateExecCommand(command common.DevfileCommand, components []common.Devf
 		}
 	}
 	if !isComponentValid {
-		return &ExecCommandInvalidContainerError{commandId: command.GetID()}
+		return &InvalidCommandError{commandId: command.Id, reason: "command does not map to a container component"}
 	}
 
 	return
@@ -90,24 +91,24 @@ func validateCompositeCommand(command *common.DevfileCommand, parentCommands map
 	parentCommands[command.Id] = command.Id
 
 	if command.Composite == nil {
-		return &InvalidCommandError{commandId: command.GetID(), commandType: "composite"}
+		return &InvalidCommandError{commandId: command.Id, reason: "should be of type composite"}
 	}
 
 	// Loop over the commands and validate that each command points to a command that's in the devfile
 	for _, cmd := range command.Composite.Commands {
 		if strings.ToLower(cmd) == command.Id {
-			return &CompositeDirectReferenceError{commandId: command.Id}
+			return &InvalidCommandError{commandId: command.Id, reason: "composite command cannot reference itself"}
 		}
 
 		// Don't allow commands to indirectly reference themselves, so check if the command equals any of the parent commands in the command tree
 		_, ok := parentCommands[strings.ToLower(cmd)]
 		if ok {
-			return &CompositeIndirectReferenceError{commandId: command.Id}
+			return &InvalidCommandError{commandId: command.Id, reason: "composite command cannot indirectly reference itself"}
 		}
 
 		subCommand, ok := devfileCommands[strings.ToLower(cmd)]
 		if !ok {
-			return &CompositeMissingSubCommandError{commandId: command.Id, subCommand: cmd}
+			return &InvalidCommandError{commandId: command.Id, reason: fmt.Sprintf("the command %q mentioned in the composite command does not exist in the devfile", cmd)}
 		}
 
 		if subCommand.Composite != nil {
@@ -120,7 +121,7 @@ func validateCompositeCommand(command *common.DevfileCommand, parentCommands map
 		} else {
 			err := validateExecCommand(subCommand, components)
 			if err != nil {
-				return &CompositeInvalidSubCommandError{commandId: command.Id, subCommandId: subCommand.GetID(), errorMsg: err.Error()}
+				return err
 			}
 		}
 	}

@@ -538,9 +538,9 @@ func TestGetCommands(t *testing.T) {
 				t.Errorf("TestGetCommands error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}
 			for _, command := range tt.expectedCommands {
-				_, ok := commandsMap[command.GetID()]
+				_, ok := commandsMap[command.Id]
 				if !ok {
-					t.Errorf("TestGetCommands error: command %v not found in map", command.GetID())
+					t.Errorf("TestGetCommands error: command %v not found in map", command.Id)
 				}
 			}
 		})

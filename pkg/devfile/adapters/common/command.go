@@ -105,7 +105,7 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 	commands := data.GetCommands()
 
 	for _, command := range commands {
-		if command.GetID() == commandName {
+		if command.Id == commandName {
 
 			// Update Group only custom commands (specified by odo flags)
 			command = updateCommandGroupIfReqd(groupType, command)
@@ -202,14 +202,14 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileBuildCmd, d
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
 		commandMap[common.BuildCommandGroupType] = buildCommand
-		klog.V(2).Infof("Build command: %v", buildCommand.GetID())
+		klog.V(2).Infof("Build command: %v", buildCommand.Id)
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
 	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
 		isRunCommandValid = true
 		commandMap[common.RunCommandGroupType] = runCommand
-		klog.V(2).Infof("Run command: %v", runCommand.GetID())
+		klog.V(2).Infof("Run command: %v", runCommand.Id)
 	}
 
 	// If either command had a problem, return an empty list of commands and an error
@@ -268,7 +268,7 @@ func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd str
 	testCommand, testCmdErr := GetTestCommand(data, devfileTestCmd)
 	if testCmdErr == nil && !reflect.DeepEqual(emptyCommand, testCommand) {
 		isTestCommandValid = true
-		klog.V(2).Infof("Test command: %v", testCommand.GetID())
+		klog.V(2).Infof("Test command: %v", testCommand.Id)
 	}
 
 	if !isTestCommandValid && testCmdErr != nil {

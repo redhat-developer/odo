@@ -235,15 +235,15 @@ func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventNam
 
 	if command, ok := commandsMap[eventName]; ok {
 		if command.Composite != nil {
-			klog.V(4).Infof("%s is a composite command", command.GetID())
+			klog.V(4).Infof("%s is a composite command", command.Id)
 			for _, compositeSubCmd := range command.Composite.Commands {
 				klog.V(4).Infof("checking if sub-command %s is either an exec or a composite command ", compositeSubCmd)
 				subCommands := GetCommandsFromEvent(commandsMap, strings.ToLower(compositeSubCmd))
 				commands = append(commands, subCommands...)
 			}
 		} else {
-			klog.V(4).Infof("%s is an exec command", command.GetID())
-			commands = append(commands, command.GetID())
+			klog.V(4).Infof("%s is an exec command", command.Id)
+			commands = append(commands, command.Id)
 		}
 	}
 
