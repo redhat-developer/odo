@@ -238,7 +238,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("references an invalid command"))
+			Expect(output).To(ContainSubstring("command does not map to a container component"))
 		})
 
 		It("checks that odo push works outside of the context directory", func() {
@@ -460,7 +460,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.ReplaceString("devfile.yaml", "runtime #wrongruntime", "wrongruntime")
 
 			output := helper.CmdShouldFail("odo", "push", "--project", commonVar.Project)
-			helper.MatchAllInOutput(output, []string{"the command \"wrongpoststart\" does not map to a container component"})
+			helper.MatchAllInOutput(output, []string{"does not map to a container component"})
 		})
 
 		It("should err out on an event composite command mentioning an invalid child command", func() {
@@ -730,7 +730,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.ReplaceString("devfile.yaml", "secondvol", "firstvol")
 
 			output := helper.CmdShouldFail("odo", "push", "--project", commonVar.Project)
-			Expect(output).To(ContainSubstring("duplicate volume components present in devfile"))
+			Expect(output).To(ContainSubstring("duplicate volume components present"))
 		})
 
 		It("should error out when a wrong volume size is used", func() {
