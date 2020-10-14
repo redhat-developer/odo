@@ -12,6 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
@@ -324,6 +325,7 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 			LabelSelector: selector,
 		})
 	} else {
+
 		dcList, err = c.appsClient.Deployments(c.Namespace).List(metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
 		})

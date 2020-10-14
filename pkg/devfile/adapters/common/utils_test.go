@@ -206,13 +206,13 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 5: Valid devfile with container referencing no volume mount path",
-			component: []versionsCommon.DevfileComponent{
+			component: []common.DevfileComponent{
 				testingutil.GetFakeVolumeComponent("myvolume1", size),
 				{
 					Name: "mycontainer",
-					Container: &versionsCommon.Container{
+					Container: &common.Container{
 						Image: "image",
-						VolumeMounts: []versionsCommon.VolumeMount{
+						VolumeMounts: []common.VolumeMount{
 							{
 								Name: "myvolume1",
 							},
