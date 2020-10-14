@@ -76,7 +76,7 @@ func TestValidateComponents(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Case 4: Invalid container using reserved env",
+			name: "Case 4: Invalid container using reserved env PROJECT_SOURCE",
 			components: []common.DevfileComponent{
 				{
 					Name: "container",
@@ -93,7 +93,24 @@ func TestValidateComponents(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case 5: Invalid volume component size",
+			name: "Case 5: Invalid container using reserved env PROJECTS_ROOT",
+			components: []common.DevfileComponent{
+				{
+					Name: "container",
+					Container: &common.Container{
+						Env: []common.Env{
+							{
+								Name:  adaptersCommon.EnvProjectsRoot,
+								Value: "/some/path/",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 6: Invalid volume component size",
 			components: []common.DevfileComponent{
 				{
 					Name: "myvol",
@@ -116,7 +133,7 @@ func TestValidateComponents(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case 6: Invalid volume mount",
+			name: "Case 7: Invalid volume mount",
 			components: []common.DevfileComponent{
 				{
 					Name: "myvol",
@@ -141,7 +158,7 @@ func TestValidateComponents(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case 7: Special character in container name",
+			name: "Case 8: Special character in container name",
 			components: []common.DevfileComponent{
 				{
 					Name: "run@time",
@@ -150,7 +167,7 @@ func TestValidateComponents(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case 8: Numeric container name",
+			name: "Case 9: Numeric container name",
 			components: []common.DevfileComponent{
 				{
 					Name: "12345",
@@ -159,7 +176,7 @@ func TestValidateComponents(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case 9: Container name with capitalised character",
+			name: "Case 10: Container name with capitalised character",
 			components: []common.DevfileComponent{
 				{
 					Name: "runTime",
