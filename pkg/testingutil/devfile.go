@@ -125,7 +125,7 @@ func (d *TestDevfileData) AddCommands(commands ...common.DevfileCommand) error {
 	commandsMap := d.GetCommands()
 
 	for _, command := range commands {
-		id := command.GetID()
+		id := command.Id
 		if _, ok := commandsMap[id]; !ok {
 			d.Commands = append(d.Commands, command)
 		} else {

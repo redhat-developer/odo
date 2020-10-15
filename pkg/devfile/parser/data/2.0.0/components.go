@@ -151,7 +151,7 @@ func (d *Devfile200) AddCommands(commands ...common.DevfileCommand) error {
 	commandsMap := d.GetCommands()
 
 	for _, command := range commands {
-		id := command.GetID()
+		id := command.Id
 		if _, ok := commandsMap[id]; !ok {
 			d.Commands = append(d.Commands, command)
 		} else {
@@ -163,7 +163,7 @@ func (d *Devfile200) AddCommands(commands ...common.DevfileCommand) error {
 
 // UpdateCommand updates the command with the given id
 func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
-	id := strings.ToLower(command.GetID())
+	id := strings.ToLower(command.Id)
 	for i := range d.Commands {
 		if d.Commands[i].SetIDToLower() == id {
 			d.Commands[i] = command

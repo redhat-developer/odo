@@ -5,50 +5,6 @@ import (
 	"testing"
 )
 
-func TestGetID(t *testing.T) {
-
-	tests := []struct {
-		name    string
-		command DevfileCommand
-		want    string
-	}{
-		{
-			name: "Case 1: Exec command ID",
-			command: DevfileCommand{
-				Id: "exec1",
-				Exec: &Exec{
-					Component: "nodejs",
-				},
-			},
-			want: "exec1",
-		},
-		{
-			name: "Case 2: Composite command ID",
-			command: DevfileCommand{
-				Id: "composite1",
-				Composite: &Composite{
-					Parallel: false,
-				},
-			},
-			want: "composite1",
-		},
-		{
-			name:    "Case 3: Empty command",
-			command: DevfileCommand{},
-			want:    "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			commandID := tt.command.GetID()
-			if commandID != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, commandID)
-			}
-		})
-	}
-
-}
-
 func TestGetGroup(t *testing.T) {
 
 	tests := []struct {
@@ -225,46 +181,6 @@ func TestGetExecWorkingDir(t *testing.T) {
 			workingDir := tt.command.GetExecWorkingDir()
 			if workingDir != tt.want {
 				t.Errorf("expected %v, actual %v", tt.want, workingDir)
-			}
-		})
-	}
-
-}
-
-func TestIsComposite(t *testing.T) {
-
-	tests := []struct {
-		name    string
-		command DevfileCommand
-		want    bool
-	}{
-		{
-			name: "Case 1: Exec command",
-			command: DevfileCommand{
-				Id:   "exec1",
-				Exec: &Exec{},
-			},
-			want: false,
-		},
-		{
-			name: "Case 2: composite command",
-			command: DevfileCommand{
-				Id:        "comp1",
-				Composite: &Composite{},
-			},
-			want: true,
-		},
-		{
-			name:    "Case 3: Empty command",
-			command: DevfileCommand{},
-			want:    false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			isCompositeCmd := tt.command.IsComposite()
-			if isCompositeCmd != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, isCompositeCmd)
 			}
 		})
 	}

@@ -123,7 +123,7 @@ func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileCompon
 	var components []common.DevfileComponent
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
-		if comp.IsContainer() {
+		if comp.Container != nil {
 			components = append(components, comp)
 		}
 	}
@@ -135,7 +135,7 @@ func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.Devfile
 	volumeNameToVolumeComponent := make(map[string]common.DevfileComponent)
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
-		if comp.IsVolume() {
+		if comp.Volume != nil {
 			volumeNameToVolumeComponent[comp.Name] = comp
 		}
 	}
@@ -244,16 +244,16 @@ func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventNam
 	var commands []string
 
 	if command, ok := commandsMap[eventName]; ok {
-		if command.IsComposite() {
-			klog.V(4).Infof("%s is a composite command", command.GetID())
+		if command.Composite != nil {
+			klog.V(4).Infof("%s is a composite command", command.Id)
 			for _, compositeSubCmd := range command.Composite.Commands {
 				klog.V(4).Infof("checking if sub-command %s is either an exec or a composite command ", compositeSubCmd)
 				subCommands := GetCommandsFromEvent(commandsMap, strings.ToLower(compositeSubCmd))
 				commands = append(commands, subCommands...)
 			}
 		} else {
-			klog.V(4).Infof("%s is an exec command", command.GetID())
-			commands = append(commands, command.GetID())
+			klog.V(4).Infof("%s is an exec command", command.Id)
+			commands = append(commands, command.Id)
 		}
 	}
 

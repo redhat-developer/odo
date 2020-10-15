@@ -61,17 +61,16 @@ func newOverriddenSimpleCommand(command common.DevfileCommand, executor commandE
 		return nil, err
 	}
 
-	id := command.GetID()
 	originalCmd := command.Exec.CommandLine
 	return &simpleCommand{
 		info:        info,
 		adapter:     executor,
 		cmd:         cmd,
-		id:          id,
+		id:          command.Id,
 		component:   command.Exec.Component,
 		originalCmd: originalCmd,
 		group:       convertGroupKindToString(command.Exec),
-		msg:         fmt.Sprintf("Executing %s command %q", id, originalCmd),
+		msg:         fmt.Sprintf("Executing %s command %q", command.Id, originalCmd),
 	}, nil
 }
 
