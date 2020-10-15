@@ -536,7 +536,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		if componentNamespace == "default" {
-			log.Warning("odo may not work as expected in default project, please run odo component in non default project. You can use `odo project create` to create a new project")
+			log.Warning("odo may not work as expected in a default project, please run the odo component in a non-default project. To create a new project, use `odo project create`.")
 		}
 
 		// Set devfileMetadata struct
