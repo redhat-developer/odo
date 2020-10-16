@@ -96,7 +96,7 @@ In our example, we will be using `java-springboot` to deploy a sample https://sp
 
 In this example we will be deploying an https://github.com/odo-devfiles/springboot-ex[example Spring Boot® component] that uses https://maven.apache.org/install.html[Maven] and Java 8 JDK.
 
-. Download the example Spring Boot® component. 
+. Download the example Spring Boot® component.
 +
 [source,sh]
 ----
@@ -397,4 +397,102 @@ Run `odo delete` to delete the application from cluster.
    ? Are you sure you want to delete the devfile component: java-springboot? Yes
     ✓  Deleting devfile component java-springboot [139ms]
     ✓  Successfully deleted component
+----
+
+== Deploying an Open Liberty Application to an OpenShift / Kubernetes cluster
+
+In this example we will be deploying a https://github.com/OpenLiberty/application-stack-intro[Open Liberty component] that uses Open Liberty and OpenJ9.
+
+. Download the example Open Liberty component
++
+[source,sh]
+----
+ $ git clone https://github.com/OpenLiberty/application-stack-intro.git && cd application-stack-intro
+----
+
+. Create an Open Liberty odo component
++
+[source,sh]
+----
+   $ odo create myopenliberty
+
+   Validation
+    ✓  Creating a devfile component from devfile path: .../application-stack-intro/devfile.yaml [253220ns]
+    ✓  Validating devfile component [263521ns]
+
+   Please use `odo push` command to create the component with source deployed
+
+----
+
+. Create a URL in order to access the deployed component:
++
+[source,sh]
+----
+ $ odo url create --host example.com
+  ✓  URL myopenliberty-9080 created for component: myopenliberty
+
+ To apply the URL configuration changes, please use odo push
+----
++
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
+
+. Push the component to the cluster:
++
+[source,sh]
+----
+  $ odo push
+
+Validation
+ ✓  Validating the devfile [72932ns]
+
+Creating Kubernetes resources for component myopenliberty
+ ✓  Waiting for component to start [23s]
+
+Syncing to component myopenliberty
+ ✓  Checking files for pushing [4ms]
+ ✓  Syncing files to the component [4s]
+
+Executing devfile commands for component myopenliberty
+ ✓  Executing build command "if [ -e /projects/.disable-bld-cmd ]; then echo \"found the disable file\" && echo \"devBuild command will not run\" && exit 0; else echo \"will run the devBuild command\" && mkdir -p /projects/target/liberty && if [ ! -d /projects/target/liberty/wlp ]; then echo \"...moving liberty\"; mv /opt/ol/wlp /projects/target/liberty; touch ./.liberty-mv; elif [[ -d /projects/target/liberty/wlp && ! -e /projects/.liberty-mv ]]; then echo \"STACK WARNING - LIBERTY RUNTIME WAS LOADED FROM HOST\"; fi && mvn -Dliberty.runtime.version=20.0.0.10 package && touch ./.disable-bld-cmd; fi" [9s]
+ ✓  Executing run command "mvn -Dliberty.runtime.version=20.0.0.10 -Ddebug=false -DhotTests=true -DcompileWait=3 liberty:dev", if not running [2s]
+
+Pushing devfile component myopenliberty
+ ✓  Changes successfully pushed to component
+
+----
+
+. View your deployed application in a browser using the generated url
++
+[source,sh]
+----
+ $ odo url list
+  Found the following URLs for component myopenliberty
+  NAME                STATE      URL                                       PORT     SECURE
+  myopenliberty-9     Pushed     http://myopenliberty-9.example.com        9080     false
+----
+
+
+. Have odo watch for changes in the source code
++
+[source,sh]
+----
+ $ odo watch
+----
+
+You can now continue developing your application. Just refreshing the browser will render the source code changes.
+
+. To delete your deployed application:
++
+[source,sh]
+----
+   $ odo delete
+   Are you sure you want to delete the devfile component: myopenliberty? Yes
+
+   Gathering information for component myopenliberty
+    ✓  Checking status for component [99ms]
+
+   Deleting component myopenliberty
+    ✓  Deleting Kubernetes resources for component [107ms]
+    ✓  Successfully deleted component
+
 ----
