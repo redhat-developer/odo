@@ -95,6 +95,25 @@ Alternatively, if you would like to preview changes and see what it will look li
  $ google-chrome-stable build/index.html
 ```
 
+# Bundling the site for releases
+
+In the event of a release, you may have to bundle the site in a `tar.gz` file:
+
+```sh
+# Build the site
+$ jekyll build
+
+# Copy over the instructions on how to view the site
+$ cp site-readme.txt _site/README.txt
+
+# Change into the static html directory and tarball the site
+$ cd _site && tar -zcvf site.tar.gz *
+```
+
+After following the above instructions, you will have a `site.tar.gz` with a README.txt located in the root directory.
+
+You can now include this `site.tar.gz` in releases.
+
 # Previewing changes to the site / viewing `gh-pages` locally
 
 The site is built using [jekyll](https://jekyllrb.com/) which is the default static site builder on GitHub.
