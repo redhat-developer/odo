@@ -692,7 +692,10 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 }
 
 // GetURLString returns a string representation of given url
-func GetURLString(protocol, URL string, ingressDomain string, isS2I bool) string {
+func GetURLString(protocol, URL, ingressDomain string, isS2I bool) string {
+	if protocol == "" && URL == "" && ingressDomain == "" {
+		return ""
+	}
 	if !isS2I && URL == "" {
 		return protocol + "://" + ingressDomain
 	}
