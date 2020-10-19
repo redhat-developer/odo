@@ -36,6 +36,7 @@ github_changelog_generator \
 --future-release $2 \
 --base /tmp/base \
 --output /tmp/changelog \
+--exclude-tags "lifecycle/rotten" \
 --header-label "# Release of $2" \
 --enhancement-label "**Code Refactoring:**" \
 --enhancement-labels "kind/cleanup,kind/api-change,kind/code-refactoring" \
