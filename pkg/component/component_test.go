@@ -3,13 +3,14 @@ package component
 import (
 	"fmt"
 	"io/ioutil"
-	v1 "k8s.io/api/apps/v1"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
 	"testing"
+
+	v1 "k8s.io/api/apps/v1"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -18,7 +19,6 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/envinfo/mocks"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -33,7 +33,7 @@ import (
 	. "github.com/openshift/odo/pkg/config"
 )
 
-func TestGomockGetComponentFrom(t *testing.T) {
+func TestGetComponentFrom(t *testing.T) {
 	type cmpSetting struct {
 		componentName   string
 		project         string
@@ -140,117 +140,6 @@ func TestGomockGetComponentFrom(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getComponentFrom() = %v, want %v", got, tt.want)
 			}
-
-		})
-	}
-}
-
-func TestTestifyGetComponentFrom(t *testing.T) {
-	type cmpSetting struct {
-		componentName   string
-		project         string
-		applicationName string
-		debugPort       int
-	}
-	tests := []struct {
-		name          string
-		isEnvInfo     bool
-		componentType string
-		envURL        []envinfo.EnvInfoURL
-		cmpSetting    cmpSetting
-		want          Component
-	}{
-		{
-			name:          "Case 1: Get component when env info file exists",
-			isEnvInfo:     true,
-			componentType: "nodejs",
-			envURL: []envinfo.EnvInfoURL{
-				{
-					Name: "url1",
-				},
-			},
-			cmpSetting: cmpSetting{
-				componentName:   "frontend",
-				project:         "project1",
-				applicationName: "testing",
-				debugPort:       1234,
-			},
-			want: Component{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Component",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "frontend",
-				},
-				Spec: ComponentSpec{
-					Type: "nodejs",
-				},
-				Status: ComponentStatus{},
-			},
-		},
-
-		{
-			name:          "Case 2: Get component when env info file does not exists",
-			isEnvInfo:     false,
-			componentType: "nodejs",
-			envURL: []envinfo.EnvInfoURL{
-				{
-					Name: "url2",
-				},
-			},
-			cmpSetting: cmpSetting{
-				componentName:   "backend",
-				project:         "project2",
-				applicationName: "app1",
-				debugPort:       5896,
-			},
-			want: Component{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			mockLocalConfig := &mocks.LocalConfigProvider{}
-
-			mockLocalConfig.On("Exists").Return(tt.isEnvInfo)
-
-			if tt.isEnvInfo {
-				mockLocalConfig.On("GetName").Return(tt.cmpSetting.componentName)
-
-				component := getMachineReadableFormat(tt.cmpSetting.componentName, tt.componentType)
-
-				mockLocalConfig.On("GetNamespace").Return(tt.cmpSetting.project)
-
-				component.Namespace = tt.cmpSetting.project
-				mockLocalConfig.On("GetApplication").Return(tt.cmpSetting.applicationName)
-				mockLocalConfig.On("GetDebugPort").Return(tt.cmpSetting.debugPort)
-
-				component.Spec = ComponentSpec{
-					App:   tt.cmpSetting.applicationName,
-					Type:  tt.componentType,
-					Ports: []string{fmt.Sprintf("%d", tt.cmpSetting.debugPort)},
-				}
-
-				mockLocalConfig.On("GetURL").Return(tt.envURL)
-
-				if len(tt.envURL) > 0 {
-					for _, url := range tt.envURL {
-						component.Spec.URL = append(component.Spec.URL, url.Name)
-					}
-				}
-
-				tt.want = component
-
-			}
-
-			got := getComponentFrom(mockLocalConfig, tt.componentType)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getComponentFrom() = %v, want %v", got, tt.want)
-			}
-
-			mockLocalConfig.AssertExpectations(t)
 
 		})
 	}
