@@ -2788,7 +2788,7 @@ func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, err
 // GetDeploymentConfigFromName returns the Deployment Config resource given
 // the Deployment Config name
 func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
-	klog.V(3).Infof("Getting DeploymentConfig: %s", name)
+	klog.V(3).Infof("Getting DeploymentConfig: %s from Namespace: %s", name, c.Namespace)
 	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err

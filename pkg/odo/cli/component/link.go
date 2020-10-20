@@ -171,9 +171,9 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(linkCmd)
+	projectCmd.AddProjectFlag(linkCmd, nil)
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(linkCmd)
+	appCmd.AddApplicationFlag(linkCmd, nil)
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
 

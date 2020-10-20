@@ -37,14 +37,14 @@ func NewCmdService(name, fullName string) *cobra.Command {
 	serviceCmd.AddCommand(serviceCreateCmd, serviceDeleteCmd, serviceListCmd)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(serviceCreateCmd)
-	projectCmd.AddProjectFlag(serviceDeleteCmd)
-	projectCmd.AddProjectFlag(serviceListCmd)
+	projectCmd.AddProjectFlag(serviceCreateCmd, nil)
+	projectCmd.AddProjectFlag(serviceDeleteCmd, nil)
+	projectCmd.AddProjectFlag(serviceListCmd, nil)
 
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(serviceCreateCmd)
-	appCmd.AddApplicationFlag(serviceDeleteCmd)
-	appCmd.AddApplicationFlag(serviceListCmd)
+	appCmd.AddApplicationFlag(serviceCreateCmd, nil)
+	appCmd.AddApplicationFlag(serviceDeleteCmd, nil)
+	appCmd.AddApplicationFlag(serviceListCmd, nil)
 
 	return serviceCmd
 }

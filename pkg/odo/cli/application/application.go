@@ -48,8 +48,13 @@ func NewCmdApplication(name, fullName string) *cobra.Command {
 
 // AddApplicationFlag adds a `app` flag to the given cobra command
 // Also adds a completion handler to the flag
-func AddApplicationFlag(cmd *cobra.Command) {
-	cmd.Flags().String(genericclioptions.ApplicationFlagName, "", "Application, defaults to active application")
+func AddApplicationFlag(cmd *cobra.Command, setValueTo *string) {
+	helpMessage := "Application, defaults to active application"
+	if setValueTo != nil {
+		cmd.Flags().StringVar(setValueTo, genericclioptions.ApplicationFlagName, "", helpMessage)
+	} else {
+		cmd.Flags().String(genericclioptions.ApplicationFlagName, "", helpMessage)
+	}
 	completion.RegisterCommandFlagHandler(cmd, "app", completion.AppCompletionHandler)
 }
 

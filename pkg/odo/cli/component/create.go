@@ -1284,9 +1284,9 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	// Adding `--now` flag
 	genericclioptions.AddNowFlag(componentCreateCmd, &co.now)
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(componentCreateCmd)
+	projectCmd.AddProjectFlag(componentCreateCmd, nil)
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(componentCreateCmd)
+	appCmd.AddApplicationFlag(componentCreateCmd, nil)
 
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "context", completion.FileCompletionHandler)

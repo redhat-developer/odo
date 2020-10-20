@@ -111,6 +111,6 @@ func NewCmdList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	project.AddProjectFlag(command)
+	project.AddProjectFlag(command, nil)
 	return command
 }

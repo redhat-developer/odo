@@ -108,10 +108,10 @@ func NewCmdExec(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(execCmd, &o.componentContext)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(execCmd)
+	projectCmd.AddProjectFlag(execCmd, nil)
 
 	// Adding `--app` flag
-	appCmd.AddApplicationFlag(execCmd)
+	appCmd.AddApplicationFlag(execCmd, nil)
 
 	return execCmd
 }

@@ -127,6 +127,6 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 
 	completion.RegisterCommandHandler(command, completion.AppCompletionHandler)
 
-	project.AddProjectFlag(command)
+	project.AddProjectFlag(command, nil)
 	return command
 }

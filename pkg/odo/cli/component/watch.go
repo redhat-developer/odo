@@ -278,10 +278,10 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)
 
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(watchCmd)
+	appCmd.AddApplicationFlag(watchCmd, nil)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(watchCmd)
+	projectCmd.AddProjectFlag(watchCmd, nil)
 
 	return watchCmd
 }

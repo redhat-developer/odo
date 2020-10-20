@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/util"
@@ -48,6 +49,8 @@ type DeleteOptions struct {
 	devfilePath     string
 	namespace       string
 	show            bool
+	project         string
+	app             string
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
@@ -78,8 +81,66 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
 	ConfigFilePath = filepath.Join(do.componentContext, configFile)
 
-	// if experimental mode is enabled and devfile is present
-	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
+	// If a project is explicitely specified, we use that regardless what we get from the devfile.
+	if do.project != "" {
+		do.namespace = do.project
+	}
+
+	// ====================
+	// = Devfile specific =
+	// ====================
+
+	// If a name has been *specifically* passed in and there is NO Devfile.
+	if len(args) == 1 && !do.componentDeleteS2iFlag && !util.CheckPathExists(do.devfilePath) {
+
+		// Create the "env specific info" context
+		// We will be filling this with 3 things: Name, Project and AppName in order to
+		// successfully delete the component.
+		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
+		if err != nil {
+			return err
+		}
+
+		// Set the name
+		err = do.EnvSpecificInfo.SetConfiguration("Name", args[0])
+		if err != nil {
+			return err
+		}
+
+		// Retrieve & set the namespace / project
+		// by getting the current namespace being used via kubeconfig
+		if do.project == "" {
+			client, err := kclient.New()
+			if err != nil {
+				return err
+			}
+			do.namespace = client.Namespace
+			err = do.EnvSpecificInfo.SetConfiguration("Project", do.namespace)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Find & set the app name
+		// TODO don't use "app".. find the actual app the component uses first lol
+		if do.app == "" {
+			klog.V(4).Info("App search called")
+			err = do.EnvSpecificInfo.SetConfiguration("AppName", "app")
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	} else if len(args) == 1 && !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
+		// If a name has been *specifically* passed in and there IS a Devfile
+		// 1. Check to see if the name passed in matches the same name as the devfile.yaml in the directory (if there is one) and then continue as normal.
+		// 2. If not, it will instead search the default namespace, iterate through each app to find it and then delete the component
+
+		// Check to see if the name passed in matches the one in the Devfile... If not, we will search for the component through all the available apps
+		return nil
+	} else if !do.componentDeleteS2iFlag {
+
 		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
 		if err != nil {
 			return err
@@ -94,8 +155,16 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		return nil
 	}
 
-	do.Context = genericclioptions.NewContext(cmd)
+	// ===================
+	// = S2I specific =
+	// ===================
+
+	// We incorrectly error out here if there is no Devfile context... we should warn?
+	// because what if the user wants to run odo delete outside the devfile directory?
 	err = do.ComponentOptions.Complete(name, cmd, args)
+	if err != nil {
+		return err
+	}
 
 	return
 }
@@ -103,11 +172,21 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
 
-	// if experimental mode is enabled and devfile is present
-	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
+	//
+	// Devfile
+	//
+
+	// If --s2i has not been passed, we skip validation alltogether, regardless if there is a Devfile or not since
+	// we use `odo delete` anywhere (outside the directory).
+	if !do.componentDeleteS2iFlag {
 		return nil
 	}
 
+	//
+	// S2I
+	//
+
+	// Below are S2I Checks
 	if do.Context.Project == "" || do.Application == "" {
 		return odoutil.ThrowContextError()
 	}
@@ -129,9 +208,9 @@ func (do *DeleteOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
-	klog.V(4).Infof("args: %#v", do)
+	klog.V(4).Infof("args: %+v", do)
 
-	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
+	if !do.componentDeleteS2iFlag {
 		return do.DevFileRun()
 	}
 
@@ -220,6 +299,9 @@ func (do *DeleteOptions) s2iRun() (err error) {
 
 // DevFileRun has the logic to perform the required actions as part of command for devfiles
 func (do *DeleteOptions) DevFileRun() (err error) {
+
+	klog.V(4).Infof("Name of the devfile component is: %s", do.EnvSpecificInfo.GetName())
+
 	// devfile delete
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
 		err = do.DevfileComponentDelete()
@@ -315,13 +397,15 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
+
 	//Adding `--context` flag
 	genericclioptions.AddContextFlag(componentDeleteCmd, &do.componentContext)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(componentDeleteCmd)
+	projectCmd.AddProjectFlag(componentDeleteCmd, &do.project)
+
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(componentDeleteCmd)
+	appCmd.AddApplicationFlag(componentDeleteCmd, &do.app)
 
 	return componentDeleteCmd
 }

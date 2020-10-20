@@ -103,9 +103,9 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 
 	unlinkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(unlinkCmd)
+	projectCmd.AddProjectFlag(unlinkCmd, nil)
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(unlinkCmd)
+	appCmd.AddApplicationFlag(unlinkCmd, nil)
 	//Adding `--component` flag
 	AddComponentFlag(unlinkCmd)
 	// Adding context flag

@@ -220,10 +220,10 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(updateCmd)
+	appCmd.AddApplicationFlag(updateCmd, nil)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(updateCmd)
+	projectCmd.AddProjectFlag(updateCmd, nil)
 
 	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)

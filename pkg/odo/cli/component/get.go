@@ -84,9 +84,9 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(componentGetCmd, &o.componentContext)
 
 	//Adding `--project` flag
-	project.AddProjectFlag(componentGetCmd)
+	project.AddProjectFlag(componentGetCmd, nil)
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(componentGetCmd)
+	appCmd.AddApplicationFlag(componentGetCmd, nil)
 
 	return componentGetCmd
 }

@@ -219,6 +219,9 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "name":
 			val := value.(string)
 			esi.componentSettings.Name = val
+		case "appname":
+			val := value.(string)
+			esi.componentSettings.AppName = val
 		case "project":
 			val := value.(string)
 			esi.componentSettings.Project = val
@@ -470,6 +473,10 @@ const (
 	Link = "LINK"
 	// LinkDescription is the description of Link
 	LinkDescription = "Link to an Operator backed service"
+	// AppName parameter
+	AppName = "AppName"
+	// AppNameDescription is the description of AppName
+	AppNameDescription = "Set this value to user-defined application name to specify the application name"
 )
 
 var (
@@ -477,6 +484,7 @@ var (
 		Name:      NameDescription,
 		Project:   ProjectDescription,
 		DebugPort: DebugPortDescription,
+		AppName:   AppNameDescription,
 		URL:       URLDescription,
 		Push:      PushDescription,
 		Link:      LinkDescription,

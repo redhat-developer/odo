@@ -2,6 +2,8 @@
 # ODO SPECIFIC
 #
 
+.odo
+
 # Ignore compiled files
 odo
 dist

@@ -99,9 +99,9 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	//Adding `--context` flag
 	genericclioptions.AddContextFlag(testCmd, &to.componentContext)
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(testCmd)
+	projectCmd.AddProjectFlag(testCmd, nil)
 	// Adding `--app` flag
-	appCmd.AddApplicationFlag(testCmd)
+	appCmd.AddApplicationFlag(testCmd, nil)
 	completion.RegisterCommandHandler(testCmd, completion.ComponentNameCompletionHandler)
 	return testCmd
 }

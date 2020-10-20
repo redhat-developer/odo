@@ -183,6 +183,10 @@ func (lo LogOptions) DevfileComponentLog() error {
 
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
+
+	// We do NOT parse the devfile / validate if there is no Devfile..
+	log.Warning("WARNING: No Devfile. BLah blah blah. PreStop will not be applicable, etc.")
+
 	// Parse devfile and validate
 	devObj, err := devfile.ParseAndValidate(do.devfilePath)
 	if err != nil {

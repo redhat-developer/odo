@@ -252,7 +252,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(pushCmd)
+	projectCmd.AddProjectFlag(pushCmd, nil)
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)

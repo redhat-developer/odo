@@ -343,9 +343,9 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	componentListCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(componentListCmd)
+	projectCmd.AddProjectFlag(componentListCmd, nil)
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(componentListCmd)
+	appCmd.AddApplicationFlag(componentListCmd, nil)
 
 	completion.RegisterCommandFlagHandler(componentListCmd, "path", completion.FileCompletionHandler)
 

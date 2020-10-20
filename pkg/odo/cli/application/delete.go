@@ -112,7 +112,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 
 	command.Flags().BoolVarP(&o.force, "force", "f", false, "Delete application without prompting")
 
-	project.AddProjectFlag(command)
+	project.AddProjectFlag(command, nil)
 	completion.RegisterCommandHandler(command, completion.AppCompletionHandler)
 	return command
 }

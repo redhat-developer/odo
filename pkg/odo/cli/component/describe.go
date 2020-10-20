@@ -98,9 +98,9 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(describeCmd, &do.componentContext)
 
 	//Adding `--project` flag
-	projectCmd.AddProjectFlag(describeCmd)
+	projectCmd.AddProjectFlag(describeCmd, nil)
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(describeCmd)
+	appCmd.AddApplicationFlag(describeCmd, nil)
 
 	return describeCmd
 }
