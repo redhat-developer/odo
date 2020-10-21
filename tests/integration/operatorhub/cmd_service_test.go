@@ -31,7 +31,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		// wait till oc can see the all operators installed by setup script in the namespace
 		ocArgs := []string{"get", "csv"}
-		operators := []string{"etcd"}
+		operators := []string{"etcd", "Service Binding Operator"}
 		for _, operator := range operators {
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, operator)
@@ -51,11 +51,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		JustAfterEach(func() {
 			cleanPreSetup()
-		})
-
-		It("should list operators installed in the namespace", func() {
-			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "etcdoperator"})
 		})
 
 		It("should list operators installed in the namespace", func() {
