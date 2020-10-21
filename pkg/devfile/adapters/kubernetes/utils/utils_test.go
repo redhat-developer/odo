@@ -1169,7 +1169,12 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 				execCommands[1].Exec.Component = longContainerName
 			}
 
-			podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
+			podTemplateSpecParams := kclient.PodTemplateSpecParams{
+				ObjectMeta: objectMeta,
+				Containers: containers,
+				// Volumes:    utils.GetOdoContainerVolumes(),
+			}
+			podTemplateSpec := kclient.GeneratePodTemplateSpec(podTemplateSpecParams)
 
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{

@@ -467,7 +467,7 @@ func TestCreate(t *testing.T) {
 						t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.returnedIngress.Labels, createdIngress.Labels))
 					}
 
-					wantedIngressParams := kclient.IngressParameter{
+					wantedIngressParams := kclient.IngressParams{
 						ServiceName:   serviceName,
 						IngressDomain: tt.args.host,
 						PortNumber:    intstr.FromInt(tt.args.portNumber),

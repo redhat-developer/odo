@@ -13,7 +13,17 @@ import (
 
 func TestCreateService(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}})
+	containerParams := ContainerParams{
+		Name:         "container1",
+		Image:        "image1",
+		IsPrivileged: true,
+		Command:      []string{"tail"},
+		Args:         []string{"-f", "/dev/null"},
+		EnvVars:      []corev1.EnvVar{},
+		ResourceReqs: corev1.ResourceRequirements{},
+		Ports:        []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}},
+	}
+	container := GenerateContainer(containerParams)
 
 	tests := []struct {
 		name          string
@@ -50,8 +60,13 @@ func TestCreateService(t *testing.T) {
 				}
 				return true, &service, nil
 			})
-
-			serviceSpec := GenerateServiceSpec(tt.componentName, container.Ports)
+			serviceSpecParams := ServiceSpecParams{
+				ContainerPorts: container.Ports,
+				SelectorLabels: map[string]string{
+					"component": tt.componentName,
+				},
+			}
+			serviceSpec := GenerateServiceSpec(serviceSpecParams)
 			createdService, err := fkclient.CreateService(objectMeta, *serviceSpec)
 
 			// Checks for unexpected error cases
@@ -75,7 +90,17 @@ func TestCreateService(t *testing.T) {
 
 func TestUpdateService(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}})
+	containerParams := ContainerParams{
+		Name:         "container1",
+		Image:        "image1",
+		IsPrivileged: true,
+		Command:      []string{"tail"},
+		Args:         []string{"-f", "/dev/null"},
+		EnvVars:      []corev1.EnvVar{},
+		ResourceReqs: corev1.ResourceRequirements{},
+		Ports:        []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}},
+	}
+	container := GenerateContainer(containerParams)
 
 	tests := []struct {
 		name          string
@@ -113,7 +138,13 @@ func TestUpdateService(t *testing.T) {
 				return true, &service, nil
 			})
 
-			serviceSpec := GenerateServiceSpec(tt.componentName, container.Ports)
+			serviceSpecParams := ServiceSpecParams{
+				ContainerPorts: container.Ports,
+				SelectorLabels: map[string]string{
+					"component": tt.componentName,
+				},
+			}
+			serviceSpec := GenerateServiceSpec(serviceSpecParams)
 			updatedService, err := fkclient.UpdateService(objectMeta, *serviceSpec)
 
 			// Checks for unexpected error cases

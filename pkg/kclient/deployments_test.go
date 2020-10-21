@@ -20,9 +20,24 @@ import (
 // createFakeDeployment creates a fake deployment with the given pod name and labels
 func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName string, labels map[string]string) (*appsv1.Deployment, error) {
 	fakeUID := types.UID("12345")
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{})
+	containerParams := ContainerParams{
+		Name:         "container1",
+		Image:        "image1",
+		IsPrivileged: false,
+		Command:      []string{"tail"},
+		Args:         []string{"-f", "/dev/null"},
+		EnvVars:      []corev1.EnvVar{},
+		ResourceReqs: corev1.ResourceRequirements{},
+		Ports:        []corev1.ContainerPort{},
+	}
+	container := GenerateContainer(containerParams)
 	objectMeta := CreateObjectMeta(podName, "default", labels, nil)
-	podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
+	podTemplateSpecParams := PodTemplateSpecParams{
+		ObjectMeta: objectMeta,
+		Containers: []corev1.Container{*container},
+		// Volumes:    utils.GetOdoContainerVolumes(),
+	}
+	podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
 
 	fkclientset.Kubernetes.PrependReactor("create", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if podName == "" {
@@ -41,7 +56,12 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		return true, &deployment, nil
 	})
 
-	deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
+	deployParams := DeploymentSpecParams{
+		PodTemplateSpec:   *podTemplateSpec,
+		PodSelectorLabels: podTemplateSpec.Labels,
+	}
+
+	deploymentSpec := GenerateDeploymentSpec(deployParams)
 	createdDeployment, err := fkclient.CreateDeployment(*deploymentSpec)
 	if err != nil {
 		return nil, err
@@ -158,7 +178,17 @@ func TestGetDeploymentByName(t *testing.T) {
 
 func TestUpdateDeployment(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{})
+	containerParams := ContainerParams{
+		Name:         "container1",
+		Image:        "image1",
+		IsPrivileged: false,
+		Command:      []string{"tail"},
+		Args:         []string{"-f", "/dev/null"},
+		EnvVars:      []corev1.EnvVar{},
+		ResourceReqs: corev1.ResourceRequirements{},
+		Ports:        []corev1.ContainerPort{},
+	}
+	container := GenerateContainer(containerParams)
 
 	labels := map[string]string{
 		"app":       "app",
@@ -189,7 +219,12 @@ func TestUpdateDeployment(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.deploymentName, "default", labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
+			podTemplateSpecParams := PodTemplateSpecParams{
+				ObjectMeta: objectMeta,
+				Containers: []corev1.Container{*container},
+				// Volumes:    utils.GetOdoContainerVolumes(),
+			}
+			podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
 
 			fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
@@ -207,7 +242,12 @@ func TestUpdateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
+			deployParams := DeploymentSpecParams{
+				PodTemplateSpec:   *podTemplateSpec,
+				PodSelectorLabels: podTemplateSpec.Labels,
+			}
+
+			deploymentSpec := GenerateDeploymentSpec(deployParams)
 			updatedDeployment, err := fkclient.UpdateDeployment(*deploymentSpec)
 
 			// Checks for unexpected error cases

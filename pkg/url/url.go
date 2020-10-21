@@ -249,7 +249,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 		}
 
-		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
+		ingressParam := kclient.IngressParams{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
 		// to avoid error due to duplicate ingress name defined in different devfile components

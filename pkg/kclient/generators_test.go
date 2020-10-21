@@ -61,8 +61,17 @@ func TestGenerateContainer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			container := GenerateContainer(tt.name, tt.image, tt.isPrivileged, tt.command, tt.args, tt.envVars, tt.resourceReqs, tt.ports)
+			containerParams := ContainerParams{
+				Name:         tt.name,
+				Image:        tt.image,
+				IsPrivileged: tt.isPrivileged,
+				Command:      tt.command,
+				Args:         tt.args,
+				EnvVars:      tt.envVars,
+				ResourceReqs: tt.resourceReqs,
+				Ports:        tt.ports,
+			}
+			container := GenerateContainer(containerParams)
 
 			if container.Name != tt.name {
 				t.Errorf("expected %s, actual %s", tt.name, container.Name)
@@ -163,8 +172,12 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 		t.Run(tt.podName, func(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
-
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
+			podTemplateSpecParams := PodTemplateSpecParams{
+				ObjectMeta: objectMeta,
+				Containers: []corev1.Container{*container},
+				// Volumes:    utils.GetOdoContainerVolumes(),
+			}
+			podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
 
 			if podTemplateSpec.Name != tt.podName {
 				t.Errorf("expected %s, actual %s", tt.podName, podTemplateSpec.Name)
@@ -174,9 +187,9 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 				t.Errorf("expected %s, actual %s", tt.namespace, podTemplateSpec.Namespace)
 			}
 
-			if !hasVolumeWithName(OdoSourceVolume, podTemplateSpec.Spec.Volumes) {
-				t.Errorf("volume with name: %s not found", OdoSourceVolume)
-			}
+			// if !hasVolumeWithName(OdoSourceVolume, podTemplateSpec.Spec.Volumes) {
+			// 	t.Errorf("volume with name: %s not found", OdoSourceVolume)
+			// }
 			if len(podTemplateSpec.Labels) != len(tt.labels) {
 				t.Errorf("expected %d, actual %d", len(tt.labels), len(podTemplateSpec.Labels))
 			} else {
@@ -236,11 +249,11 @@ func TestGenerateIngressSpec(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		parameter IngressParameter
+		parameter IngressParams
 	}{
 		{
 			name: "1",
-			parameter: IngressParameter{
+			parameter: IngressParams{
 				ServiceName:   "service1",
 				IngressDomain: "test.1.2.3.4.nip.io",
 				PortNumber: intstr.IntOrString{
@@ -302,8 +315,13 @@ func TestGenerateServiceSpec(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			serviceSpec := GenerateServiceSpec(tt.name, tt.ports)
+			serviceSpecParams := ServiceSpecParams{
+				ContainerPorts: tt.ports,
+				SelectorLabels: map[string]string{
+					"component": tt.name,
+				},
+			}
+			serviceSpec := GenerateServiceSpec(serviceSpecParams)
 
 			if len(serviceSpec.Ports) != len(tt.ports) {
 				t.Errorf("expected service ports length is %v, actual %v", len(tt.ports), len(serviceSpec.Ports))
@@ -365,11 +383,11 @@ func fakeResourceRequirements() *corev1.ResourceRequirements {
 	return &resReq
 }
 
-func hasVolumeWithName(name string, volMounts []corev1.Volume) bool {
-	for _, vm := range volMounts {
-		if vm.Name == name {
-			return true
-		}
-	}
-	return false
-}
+// func hasVolumeWithName(name string, volMounts []corev1.Volume) bool {
+// 	for _, vm := range volMounts {
+// 		if vm.Name == name {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }

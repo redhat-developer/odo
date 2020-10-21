@@ -1,7 +1,6 @@
 package kclient
 
 import (
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"k8s.io/client-go/rest"
 
 	// api resource types
@@ -33,63 +32,92 @@ const (
 	OdoSourceVolumeMount = "/projects"
 )
 
-// GenerateContainer creates a container spec that can be used when creating a pod
-func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar, resourceReqs corev1.ResourceRequirements, ports []corev1.ContainerPort) *corev1.Container {
-	container := &corev1.Container{
-		Name:            name,
-		Image:           image,
-		ImagePullPolicy: corev1.PullAlways,
-		Resources:       resourceReqs,
-		Env:             envVars,
-		Ports:           ports,
-		Command:         command,
-		Args:            args,
+// CreateObjectMeta creates a common object meta
+func CreateObjectMeta(name, namespace string, labels, annotations map[string]string) metav1.ObjectMeta {
+
+	objectMeta := metav1.ObjectMeta{
+		Name:        name,
+		Namespace:   namespace,
+		Labels:      labels,
+		Annotations: annotations,
 	}
 
-	if isPrivileged {
+	return objectMeta
+}
+
+// ContainerParams is a struct that contains the required data to create a container object
+type ContainerParams struct {
+	Name         string
+	Image        string
+	IsPrivileged bool
+	Command      []string
+	Args         []string
+	EnvVars      []corev1.EnvVar
+	ResourceReqs corev1.ResourceRequirements
+	Ports        []corev1.ContainerPort
+}
+
+// GenerateContainer creates a container spec that can be used when creating a pod
+func GenerateContainer(containerParams ContainerParams) *corev1.Container {
+	container := &corev1.Container{
+		Name:            containerParams.Name,
+		Image:           containerParams.Image,
+		ImagePullPolicy: corev1.PullAlways,
+		Resources:       containerParams.ResourceReqs,
+		Env:             containerParams.EnvVars,
+		Ports:           containerParams.Ports,
+		Command:         containerParams.Command,
+		Args:            containerParams.Args,
+	}
+
+	if containerParams.IsPrivileged {
 		container.SecurityContext = &corev1.SecurityContext{
-			Privileged: &isPrivileged,
+			Privileged: &containerParams.IsPrivileged,
 		}
 	}
 
 	return container
 }
 
+// PodTemplateSpecParams is a struct that contains the required data to create a pod template spec object
+type PodTemplateSpecParams struct {
+	ObjectMeta metav1.ObjectMeta
+	Containers []corev1.Container
+	Volumes    []corev1.Volume
+}
+
 // GeneratePodTemplateSpec creates a pod template spec that can be used to create a deployment spec
-func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.Container) *corev1.PodTemplateSpec {
+func GeneratePodTemplateSpec(podTemplateSpecParams PodTemplateSpecParams) *corev1.PodTemplateSpec {
 	podTemplateSpec := &corev1.PodTemplateSpec{
-		ObjectMeta: objectMeta,
+		ObjectMeta: podTemplateSpecParams.ObjectMeta,
 		Spec: corev1.PodSpec{
-			Containers: containers,
-			Volumes: []corev1.Volume{
-				{
-					Name: OdoSourceVolume,
-				},
-				{
-					// Create a volume that will be shared between InitContainer and the applicationContainer
-					// in order to pass over the SupervisorD binary
-					Name: common.SupervisordVolumeName,
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-			},
+			Containers: podTemplateSpecParams.Containers,
+			Volumes:    podTemplateSpecParams.Volumes,
 		},
 	}
 
 	return podTemplateSpec
 }
 
+// DeploymentSpecParams is a struct that contains the required data to create a deployment spec object
+type DeploymentSpecParams struct {
+	PodTemplateSpec   corev1.PodTemplateSpec
+	PodSelectorLabels map[string]string
+	// ReplicaSet        int32
+}
+
 // GenerateDeploymentSpec creates a deployment spec
-func GenerateDeploymentSpec(podTemplateSpec corev1.PodTemplateSpec, podSelectorLabels map[string]string) *appsv1.DeploymentSpec {
+func GenerateDeploymentSpec(deployParams DeploymentSpecParams) *appsv1.DeploymentSpec {
+	// replicaSet := int32(2)
 	deploymentSpec := &appsv1.DeploymentSpec{
 		Strategy: appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
 		},
 		Selector: &metav1.LabelSelector{
-			MatchLabels: podSelectorLabels,
+			MatchLabels: deployParams.PodSelectorLabels,
 		},
-		Template: podTemplateSpec,
+		Template: deployParams.PodTemplateSpec,
+		// Replicas: &deployParams.ReplicaSet,
 	}
 
 	return deploymentSpec
@@ -112,11 +140,17 @@ func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSp
 	return pvcSpec
 }
 
+// ServiceSpecParams is a struct that contains the required data to create a svc spec object
+type ServiceSpecParams struct {
+	SelectorLabels map[string]string
+	ContainerPorts []corev1.ContainerPort
+}
+
 // GenerateServiceSpec creates a service spec
-func GenerateServiceSpec(componentName string, containerPorts []corev1.ContainerPort) *corev1.ServiceSpec {
+func GenerateServiceSpec(serviceSpecParams ServiceSpecParams) *corev1.ServiceSpec {
 	// generate Service Spec
 	var svcPorts []corev1.ServicePort
-	for _, containerPort := range containerPorts {
+	for _, containerPort := range serviceSpecParams.ContainerPorts {
 		svcPort := corev1.ServicePort{
 
 			Name:       containerPort.Name,
@@ -126,21 +160,19 @@ func GenerateServiceSpec(componentName string, containerPorts []corev1.Container
 		svcPorts = append(svcPorts, svcPort)
 	}
 	svcSpec := &corev1.ServiceSpec{
-		Ports: svcPorts,
-		Selector: map[string]string{
-			"component": componentName,
-		},
+		Ports:    svcPorts,
+		Selector: serviceSpecParams.SelectorLabels,
 	}
 
 	return svcSpec
 }
 
-// IngressParameter struct for function createIngress
+// IngressParams struct for function createIngress
 // serviceName is the name of the service for the target reference
 // ingressDomain is the ingress domain to use for the ingress
 // portNumber is the target port of the ingress
 // TLSSecretName is the target TLS Secret name of the ingress
-type IngressParameter struct {
+type IngressParams struct {
 	ServiceName   string
 	IngressDomain string
 	PortNumber    intstr.IntOrString
@@ -149,23 +181,23 @@ type IngressParameter struct {
 }
 
 // GenerateIngressSpec creates an ingress spec
-func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpec {
+func GenerateIngressSpec(ingressParams IngressParams) *extensionsv1.IngressSpec {
 	path := "/"
-	if ingressParam.Path != "" {
-		path = ingressParam.Path
+	if ingressParams.Path != "" {
+		path = ingressParams.Path
 	}
 	ingressSpec := &extensionsv1.IngressSpec{
 		Rules: []extensionsv1.IngressRule{
 			{
-				Host: ingressParam.IngressDomain,
+				Host: ingressParams.IngressDomain,
 				IngressRuleValue: extensionsv1.IngressRuleValue{
 					HTTP: &extensionsv1.HTTPIngressRuleValue{
 						Paths: []extensionsv1.HTTPIngressPath{
 							{
 								Path: path,
 								Backend: extensionsv1.IngressBackend{
-									ServiceName: ingressParam.ServiceName,
-									ServicePort: ingressParam.PortNumber,
+									ServiceName: ingressParams.ServiceName,
+									ServicePort: ingressParams.PortNumber,
 								},
 							},
 						},
@@ -174,14 +206,14 @@ func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpe
 			},
 		},
 	}
-	secretNameLength := len(ingressParam.TLSSecretName)
+	secretNameLength := len(ingressParams.TLSSecretName)
 	if secretNameLength != 0 {
 		ingressSpec.TLS = []extensionsv1.IngressTLS{
 			{
 				Hosts: []string{
-					ingressParam.IngressDomain,
+					ingressParams.IngressDomain,
 				},
-				SecretName: ingressParam.TLSSecretName,
+				SecretName: ingressParams.TLSSecretName,
 			},
 		}
 	}

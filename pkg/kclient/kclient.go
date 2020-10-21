@@ -1,14 +1,15 @@
 package kclient
 
 import (
+	"strings"
+	"time"
+
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/klog"
-	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
@@ -93,19 +94,6 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	client.appsClient = appsClient
 
 	return client, nil
-}
-
-// CreateObjectMeta creates a common object meta
-func CreateObjectMeta(name, namespace string, labels, annotations map[string]string) metav1.ObjectMeta {
-
-	objectMeta := metav1.ObjectMeta{
-		Name:        name,
-		Namespace:   namespace,
-		Labels:      labels,
-		Annotations: annotations,
-	}
-
-	return objectMeta
 }
 
 // Delete takes labels as a input and based on it, deletes respective resource

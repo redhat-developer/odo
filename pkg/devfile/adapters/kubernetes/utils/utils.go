@@ -23,6 +23,22 @@ const (
 	containerNameMaxLen = 55
 )
 
+func GetOdoContainerVolumes() []corev1.Volume {
+	return []corev1.Volume{
+		{
+			Name: adaptersCommon.OdoSourceVolume,
+		},
+		{
+			// Create a volume that will be shared betwen InitContainer and the applicationContainer
+			// in order to pass over the SupervisorD binary
+			Name: adaptersCommon.SupervisordVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+}
+
 // ComponentExists checks whether a deployment by the given name exists
 func ComponentExists(client kclient.Client, name string) (bool, error) {
 	deployment, err := client.GetDeploymentByName(name)
@@ -75,7 +91,17 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		if err != nil {
 			return nil, err
 		}
-		container := kclient.GenerateContainer(comp.Name, comp.Container.Image, false, comp.Container.Command, comp.Container.Args, envVars, resourceReqs, ports)
+		containerParams := kclient.ContainerParams{
+			Name:         comp.Name,
+			Image:        comp.Container.Image,
+			IsPrivileged: false,
+			Command:      comp.Container.Command,
+			Args:         comp.Container.Args,
+			EnvVars:      envVars,
+			ResourceReqs: resourceReqs,
+			Ports:        ports,
+		}
+		container := kclient.GenerateContainer(containerParams)
 		for _, c := range containers {
 			for _, containerPort := range c.Ports {
 				for _, curPort := range container.Ports {

@@ -58,6 +58,9 @@ const (
 	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I and Devfile builder Image
 	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"
 
+	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
+	OdoSourceVolume = "odo-projects"
+
 	// BinBash The path to sh executable
 	BinBash = "/bin/sh"
 

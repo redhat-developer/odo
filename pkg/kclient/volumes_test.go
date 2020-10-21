@@ -151,7 +151,12 @@ func TestAddPVCToPodTemplateSpec(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
+			podTemplateSpecParams := PodTemplateSpecParams{
+				ObjectMeta: objectMeta,
+				Containers: []corev1.Container{*container},
+				// Volumes:    utils.GetOdoContainerVolumes(),
+			}
+			podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
 
 			AddPVCToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc)
 
@@ -230,7 +235,12 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{tt.container})
+			podTemplateSpecParams := PodTemplateSpecParams{
+				ObjectMeta: objectMeta,
+				Containers: []corev1.Container{tt.container},
+				// Volumes:    utils.GetOdoContainerVolumes(),
+			}
+			podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
 
 			err := AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.containerMountPathsMap)
 			if !tt.wantErr && err != nil {
@@ -451,7 +461,11 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.containers)
+			podTemplateSpecParams := PodTemplateSpecParams{
+				ObjectMeta: objectMeta,
+				Containers: tt.containers,
+			}
+			podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
 
 			err := AddPVCAndVolumeMount(podTemplateSpec, tt.volumeNameToPVCName, tt.componentAliasToVolumes)
 			if !tt.wantErr && err != nil {
@@ -460,8 +474,8 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 				return
 			}
 
-			// The total number of expected volumes is equal to the number of volumes defined in the devfile plus two (emptyDir source and supervisord volumes)
-			expectedNumVolumes := len(tt.volumeNameToPVCName) + 2
+			// The total number of expected volumes is equal to the number of volumes defined in the devfile
+			expectedNumVolumes := len(tt.volumeNameToPVCName)
 
 			// check the number of containers and volumes in the pod template spec
 			if len(podTemplateSpec.Spec.Containers) != len(tt.containers) {

@@ -295,7 +295,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
+	podTemplateSpecParams := kclient.PodTemplateSpecParams{
+		ObjectMeta: objectMeta,
+		Containers: containers,
+		Volumes:    utils.GetOdoContainerVolumes(),
+	}
+	podTemplateSpec := kclient.GeneratePodTemplateSpec(podTemplateSpecParams)
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
@@ -371,9 +376,14 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
-		"component": componentName,
-	})
+	deployParams := kclient.DeploymentSpecParams{
+		PodTemplateSpec: *podTemplateSpec,
+		PodSelectorLabels: map[string]string{
+			"component": componentName,
+		},
+	}
+
+	deploymentSpec := kclient.GenerateDeploymentSpec(deployParams)
 
 	var containerPorts []corev1.ContainerPort
 
@@ -398,7 +408,13 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		}
 	}
 
-	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
+	serviceSpecParams := kclient.ServiceSpecParams{
+		ContainerPorts: containerPorts,
+		SelectorLabels: map[string]string{
+			"component": componentName,
+		},
+	}
+	serviceSpec := kclient.GenerateServiceSpec(serviceSpecParams)
 	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 
