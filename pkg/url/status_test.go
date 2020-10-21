@@ -103,7 +103,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 				kind:   "route",
 				port:   testURL3.Port,
 				secure: false,
-				url:    "://",
+				url:    "",
 			},
 
 			routeList: &routev1.RouteList{
@@ -136,7 +136,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 
 			ingressList: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{
-					kclient_fake.GetIngressListWithMultiple(componentName).Items[0],
+					kclient_fake.GetIngressListWithMultiple(componentName, "app").Items[0],
 				},
 			},
 			expectedStatusURL: statusURL{
