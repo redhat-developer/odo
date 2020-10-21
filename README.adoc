@@ -148,11 +148,22 @@ https://asciinema.org/a/uIcSZvdbrFKKeH2sqrLsFdXym[image:https://asciinema.org/a/
 * For general help and inquiries, join our link:https://groups.google.com/forum/#!forum/odo-users[odo-users Google group].
 * For any developmental discussion, use our link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group].
 
-*Chat:* Join us on link:https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[Slack].
+*Chat:* 
 
-*Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
+All of our developer and user discussions happen in the link:https://kubernetes.slack.com/archives/C01D6L2NUAG[#odo channel on the official Kubernetes Slack].
 
-*Documentation Issues*: If you have any documentation issues related to the link:https://docs.openshift.com[docs.openshift.com] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
+If you haven't already joined the Kubernetes Slack, you can link:https://slack.k8s.io/[invite yourself here].
+
+Ask questions, inquire about odo or even discuss a new feature.
+
+*Issues:* 
+
+If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
+
+*Documentation Issues*: 
+
+- For any documentation issues on link:https://odo.dev[odo.dev] open a link:https://github.com/openshift/odo/issues/new?template=Documentation.md[GitHub issue with the documentation label].
+- If you have any documentation issues related to the link:https://docs.openshift.com[docs.openshift.com] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
 
 === Contributing
 Want to become a contributor and submit your code?
