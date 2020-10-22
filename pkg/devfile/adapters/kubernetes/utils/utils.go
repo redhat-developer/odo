@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
 	"github.com/openshift/odo/pkg/util"
 
@@ -23,6 +24,7 @@ const (
 	containerNameMaxLen = 55
 )
 
+// GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
 func GetOdoContainerVolumes() []corev1.Volume {
 	return []corev1.Volume{
 		{
@@ -389,42 +391,64 @@ func GetContainersMap(containers []corev1.Container) map[string]corev1.Container
 	return containersMap
 }
 
-// AddPreStartEventInitContainer adds an init container for every preStart devfile event
-func AddPreStartEventInitContainer(podTemplateSpec *corev1.PodTemplateSpec, commandsMap map[string]common.DevfileCommand, eventCommands []string, containersMap map[string]corev1.Container) {
+// GetPreStartInitContainers gets the init container for every preStart devfile event
+func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []corev1.Container) []corev1.Container {
 
-	for i, commandName := range eventCommands {
-		if command, ok := commandsMap[commandName]; ok {
-			component := command.GetExecComponent()
-			commandLine := command.GetExecCommandLine()
-			workingDir := command.GetExecWorkingDir()
+	// if there are preStart events, add them as init containers to the podTemplateSpec
+	preStartEvents := devfile.Data.GetEvents().PreStart
+	var initContainers []corev1.Container
+	if len(preStartEvents) > 0 {
+		var eventCommands []string
+		commandsMap := devfile.Data.GetCommands()
+		containersMap := GetContainersMap(containers)
 
-			var cmdArr []string
-			if workingDir != "" {
-				// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-				cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + workingDir + " && " + commandLine}
-			} else {
-				cmdArr = []string{adaptersCommon.ShellExecutable, "-c", commandLine}
-			}
+		for _, event := range preStartEvents {
+			eventSubCommands := adaptersCommon.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
+			eventCommands = append(eventCommands, eventSubCommands...)
+		}
 
-			// Get the container info for the given component
-			if container, ok := containersMap[component]; ok {
-				// override any container command and args with our event command cmdArr
-				container.Command = cmdArr
-				container.Args = []string{}
+		klog.V(4).Infof("PreStart event commands are: %v", strings.Join(eventCommands, ","))
 
-				// Override the init container name since there cannot be two containers with the same
-				// name in a pod. This applies to pod containers and pod init containers. The convention
-				// for init container name here is, containername-eventname-<position of command in prestart events>
-				// If there are two events referencing the same devfile component, then we will have
-				// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
-				// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
-				initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
-				initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
-				initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
-				container.Name = initContainerName
+		for i, commandName := range eventCommands {
+			if command, ok := commandsMap[commandName]; ok {
+				component := command.GetExecComponent()
+				commandLine := command.GetExecCommandLine()
+				workingDir := command.GetExecWorkingDir()
 
-				podTemplateSpec.Spec.InitContainers = append(podTemplateSpec.Spec.InitContainers, container)
+				var cmdArr []string
+				if workingDir != "" {
+					// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
+					cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + workingDir + " && " + commandLine}
+				} else {
+					cmdArr = []string{adaptersCommon.ShellExecutable, "-c", commandLine}
+				}
+
+				// Get the container info for the given component
+				if container, ok := containersMap[component]; ok {
+					// override any container command and args with our event command cmdArr
+					container.Command = cmdArr
+					container.Args = []string{}
+
+					// Override the init container name since there cannot be two containers with the same
+					// name in a pod. This applies to pod containers and pod init containers. The convention
+					// for init container name here is, containername-eventname-<position of command in prestart events>
+					// If there are two events referencing the same devfile component, then we will have
+					// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
+					// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
+					initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
+					initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
+					initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
+					container.Name = initContainerName
+
+					initContainers = append(initContainers, container)
+				}
 			}
 		}
+
+		if len(eventCommands) > 0 {
+			log.Successf("PreStart commands have been added to the component: %s", strings.Join(eventCommands, ","))
+		}
 	}
+
+	return initContainers
 }

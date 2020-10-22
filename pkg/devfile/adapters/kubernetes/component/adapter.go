@@ -295,33 +295,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
-	podTemplateSpecParams := kclient.PodTemplateSpecParams{
-		ObjectMeta: objectMeta,
-		Containers: containers,
-		Volumes:    utils.GetOdoContainerVolumes(),
-	}
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(podTemplateSpecParams)
-
-	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
-
-	// if there are preStart events, add them as init containers to the podTemplateSpec
-	preStartEvents := a.Devfile.Data.GetEvents().PreStart
-	if len(preStartEvents) > 0 {
-		var eventCommands []string
-		commandsMap := a.Devfile.Data.GetCommands()
-		containersMap := utils.GetContainersMap(containers)
-
-		for _, event := range preStartEvents {
-			eventSubCommands := common.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
-			eventCommands = append(eventCommands, eventSubCommands...)
-		}
-
-		klog.V(4).Infof("PreStart event commands are: %v", strings.Join(eventCommands, ","))
-		utils.AddPreStartEventInitContainer(podTemplateSpec, commandsMap, eventCommands, containersMap)
-		if len(eventCommands) > 0 {
-			log.Successf("PreStart commands have been added to the component: %s", strings.Join(eventCommands, ","))
-		}
-	}
+	supervisordInitContainer := kclient.AddBootstrapSupervisordInitContainer()
+	initContainers := utils.GetPreStartInitContainers(a.Devfile, containers)
+	initContainers = append(initContainers, supervisordInitContainer)
 
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
@@ -370,11 +346,21 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	// Add PVC and Volume Mounts to the podTemplateSpec
-	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
+	// Get PVC volumes and Volume Mounts
+	containers, pvcVolumes, err := kclient.GetPVCVolAndVolMount(containers, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
+
+	odoMandatoryVolumes := utils.GetOdoContainerVolumes()
+
+	podTemplateSpecParams := kclient.PodTemplateSpecParams{
+		ObjectMeta:     objectMeta,
+		InitContainers: initContainers,
+		Containers:     containers,
+		Volumes:        append(pvcVolumes, odoMandatoryVolumes...),
+	}
+	podTemplateSpec := kclient.GeneratePodTemplateSpec(podTemplateSpecParams)
 
 	deployParams := kclient.DeploymentSpecParams{
 		PodTemplateSpec: *podTemplateSpec,
@@ -382,7 +368,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			"component": componentName,
 		},
 	}
-
 	deploymentSpec := kclient.GenerateDeploymentSpec(deployParams)
 
 	var containerPorts []corev1.ContainerPort

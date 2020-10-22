@@ -81,9 +81,10 @@ func GenerateContainer(containerParams ContainerParams) *corev1.Container {
 
 // PodTemplateSpecParams is a struct that contains the required data to create a pod template spec object
 type PodTemplateSpecParams struct {
-	ObjectMeta metav1.ObjectMeta
-	Containers []corev1.Container
-	Volumes    []corev1.Volume
+	ObjectMeta     metav1.ObjectMeta
+	InitContainers []corev1.Container
+	Containers     []corev1.Container
+	Volumes        []corev1.Volume
 }
 
 // GeneratePodTemplateSpec creates a pod template spec that can be used to create a deployment spec
@@ -91,8 +92,9 @@ func GeneratePodTemplateSpec(podTemplateSpecParams PodTemplateSpecParams) *corev
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: podTemplateSpecParams.ObjectMeta,
 		Spec: corev1.PodSpec{
-			Containers: podTemplateSpecParams.Containers,
-			Volumes:    podTemplateSpecParams.Volumes,
+			InitContainers: podTemplateSpecParams.InitContainers,
+			Containers:     podTemplateSpecParams.Containers,
+			Volumes:        podTemplateSpecParams.Volumes,
 		},
 	}
 

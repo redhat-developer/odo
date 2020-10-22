@@ -3,7 +3,6 @@ package utils
 import (
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -12,7 +11,6 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
@@ -1068,155 +1066,155 @@ func TestGetContainersMap(t *testing.T) {
 
 }
 
-func TestAddPreStartEventInitContainer(t *testing.T) {
+// func TestAddPreStartEventInitContainer(t *testing.T) {
 
-	containers := []corev1.Container{
-		testingutil.CreateFakeContainer("container1"),
-		testingutil.CreateFakeContainer("container2"),
-	}
+// 	containers := []corev1.Container{
+// 		testingutil.CreateFakeContainer("container1"),
+// 		testingutil.CreateFakeContainer("container2"),
+// 	}
 
-	execCommands := []versionsCommon.DevfileCommand{
-		{
-			Id: "exec1",
-			Exec: &versionsCommon.Exec{
-				CommandLine: "execcommand1",
-				WorkingDir:  "execworkdir1",
-				Component:   "container1",
-			},
-		},
-		{
-			Id: "exec2",
-			Exec: &versionsCommon.Exec{
-				CommandLine: "execcommand2",
-				WorkingDir:  "",
-				Component:   "container1",
-			},
-		},
-		{
-			Id: "exec3",
-			Exec: &versionsCommon.Exec{
-				CommandLine: "execcommand3",
-				WorkingDir:  "execworkdir3",
-				Component:   "container2",
-			},
-		},
-	}
+// 	execCommands := []versionsCommon.DevfileCommand{
+// 		{
+// 			Id: "exec1",
+// 			Exec: &versionsCommon.Exec{
+// 				CommandLine: "execcommand1",
+// 				WorkingDir:  "execworkdir1",
+// 				Component:   "container1",
+// 			},
+// 		},
+// 		{
+// 			Id: "exec2",
+// 			Exec: &versionsCommon.Exec{
+// 				CommandLine: "execcommand2",
+// 				WorkingDir:  "",
+// 				Component:   "container1",
+// 			},
+// 		},
+// 		{
+// 			Id: "exec3",
+// 			Exec: &versionsCommon.Exec{
+// 				CommandLine: "execcommand3",
+// 				WorkingDir:  "execworkdir3",
+// 				Component:   "container2",
+// 			},
+// 		},
+// 	}
 
-	compCommands := []versionsCommon.DevfileCommand{
-		{
-			Id: "comp1",
-			Composite: &versionsCommon.Composite{
-				Commands: []string{
-					"exec1",
-					"exec3",
-				},
-			},
-		},
-	}
+// 	compCommands := []versionsCommon.DevfileCommand{
+// 		{
+// 			Id: "comp1",
+// 			Composite: &versionsCommon.Composite{
+// 				Commands: []string{
+// 					"exec1",
+// 					"exec3",
+// 				},
+// 			},
+// 		},
+// 	}
 
-	componentName := "testcomponent"
-	namespace := "testnamespace"
-	labels := map[string]string{"component": componentName}
+// 	componentName := "testcomponent"
+// 	namespace := "testnamespace"
+// 	labels := map[string]string{"component": componentName}
 
-	objectMeta := kclient.CreateObjectMeta(componentName, namespace, labels, nil)
+// 	objectMeta := kclient.CreateObjectMeta(componentName, namespace, labels, nil)
 
-	longContainerName := "thisisaverylongcontainerandkuberneteshasalimitforanamesize-exec2"
-	trimmedLongContainerName := util.TruncateString(longContainerName, containerNameMaxLen)
+// 	longContainerName := "thisisaverylongcontainerandkuberneteshasalimitforanamesize-exec2"
+// 	trimmedLongContainerName := util.TruncateString(longContainerName, containerNameMaxLen)
 
-	tests := []struct {
-		name              string
-		eventCommands     []string
-		wantInitContainer map[string]corev1.Container
-		longName          bool
-	}{
-		{
-			name: "Case 1: Composite and Exec events",
-			eventCommands: []string{
-				"exec1",
-				"exec3",
-				"exec2",
-			},
-			wantInitContainer: map[string]corev1.Container{
-				"container1-exec1": {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "cd execworkdir1 && execcommand1"},
-				},
-				"container1-exec2": {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "execcommand2"},
-				},
-				"container2-exec3": {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "cd execworkdir3 && execcommand3"},
-				},
-			},
-		},
-		{
-			name: "Case 2: Long Container Name",
-			eventCommands: []string{
-				"exec2",
-			},
-			wantInitContainer: map[string]corev1.Container{
-				trimmedLongContainerName: {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "execcommand2"},
-				},
-			},
-			longName: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+// 	tests := []struct {
+// 		name              string
+// 		eventCommands     []string
+// 		wantInitContainer map[string]corev1.Container
+// 		longName          bool
+// 	}{
+// 		{
+// 			name: "Case 1: Composite and Exec events",
+// 			eventCommands: []string{
+// 				"exec1",
+// 				"exec3",
+// 				"exec2",
+// 			},
+// 			wantInitContainer: map[string]corev1.Container{
+// 				"container1-exec1": {
+// 					Command: []string{adaptersCommon.ShellExecutable, "-c", "cd execworkdir1 && execcommand1"},
+// 				},
+// 				"container1-exec2": {
+// 					Command: []string{adaptersCommon.ShellExecutable, "-c", "execcommand2"},
+// 				},
+// 				"container2-exec3": {
+// 					Command: []string{adaptersCommon.ShellExecutable, "-c", "cd execworkdir3 && execcommand3"},
+// 				},
+// 			},
+// 		},
+// 		{
+// 			name: "Case 2: Long Container Name",
+// 			eventCommands: []string{
+// 				"exec2",
+// 			},
+// 			wantInitContainer: map[string]corev1.Container{
+// 				trimmedLongContainerName: {
+// 					Command: []string{adaptersCommon.ShellExecutable, "-c", "execcommand2"},
+// 				},
+// 			},
+// 			longName: true,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
 
-			if tt.longName {
-				containers[0].Name = longContainerName
-				execCommands[1].Exec.Component = longContainerName
-			}
+// 			if tt.longName {
+// 				containers[0].Name = longContainerName
+// 				execCommands[1].Exec.Component = longContainerName
+// 			}
 
-			podTemplateSpecParams := kclient.PodTemplateSpecParams{
-				ObjectMeta: objectMeta,
-				Containers: containers,
-				// Volumes:    utils.GetOdoContainerVolumes(),
-			}
-			podTemplateSpec := kclient.GeneratePodTemplateSpec(podTemplateSpecParams)
+// 			podTemplateSpecParams := kclient.PodTemplateSpecParams{
+// 				ObjectMeta: objectMeta,
+// 				Containers: containers,
+// 				// Volumes:    utils.GetOdoContainerVolumes(),
+// 			}
+// 			podTemplateSpec := kclient.GeneratePodTemplateSpec(podTemplateSpecParams)
 
-			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Commands: append(execCommands, compCommands...),
-				},
-			}
+// 			devObj := devfileParser.DevfileObj{
+// 				Data: &testingutil.TestDevfileData{
+// 					Commands: append(execCommands, compCommands...),
+// 				},
+// 			}
 
-			commandsMap := devObj.Data.GetCommands()
-			containersMap := GetContainersMap(containers)
+// 			commandsMap := devObj.Data.GetCommands()
+// 			containersMap := GetContainersMap(containers)
 
-			AddPreStartEventInitContainer(podTemplateSpec, commandsMap, tt.eventCommands, containersMap)
+// 			AddPreStartEventInitContainer(podTemplateSpec, commandsMap, tt.eventCommands, containersMap)
 
-			if len(tt.wantInitContainer) != len(podTemplateSpec.Spec.InitContainers) {
-				t.Errorf("TestAddPreStartEventInitContainer error: init container length mismatch, wanted %v got %v", len(tt.wantInitContainer), len(podTemplateSpec.Spec.InitContainers))
-			}
+// 			if len(tt.wantInitContainer) != len(podTemplateSpec.Spec.InitContainers) {
+// 				t.Errorf("TestAddPreStartEventInitContainer error: init container length mismatch, wanted %v got %v", len(tt.wantInitContainer), len(podTemplateSpec.Spec.InitContainers))
+// 			}
 
-			for _, initContainer := range podTemplateSpec.Spec.InitContainers {
-				nameMatched := false
-				commandMatched := false
-				for containerName, container := range tt.wantInitContainer {
-					if strings.Contains(initContainer.Name, containerName) {
-						nameMatched = true
-					}
+// 			for _, initContainer := range podTemplateSpec.Spec.InitContainers {
+// 				nameMatched := false
+// 				commandMatched := false
+// 				for containerName, container := range tt.wantInitContainer {
+// 					if strings.Contains(initContainer.Name, containerName) {
+// 						nameMatched = true
+// 					}
 
-					if reflect.DeepEqual(initContainer.Command, container.Command) {
-						commandMatched = true
-					}
+// 					if reflect.DeepEqual(initContainer.Command, container.Command) {
+// 						commandMatched = true
+// 					}
 
-					if !reflect.DeepEqual(initContainer.Args, []string{}) {
-						t.Errorf("TestAddPreStartEventInitContainer error: init container args not empty, got %v", initContainer.Args)
-					}
-				}
+// 					if !reflect.DeepEqual(initContainer.Args, []string{}) {
+// 						t.Errorf("TestAddPreStartEventInitContainer error: init container args not empty, got %v", initContainer.Args)
+// 					}
+// 				}
 
-				if !nameMatched {
-					t.Errorf("TestAddPreStartEventInitContainer error: init container name mismatch, container name not present in %v", initContainer.Name)
-				}
+// 				if !nameMatched {
+// 					t.Errorf("TestAddPreStartEventInitContainer error: init container name mismatch, container name not present in %v", initContainer.Name)
+// 				}
 
-				if !commandMatched {
-					t.Errorf("TestAddPreStartEventInitContainer error: init container command mismatch, command not found in %v", initContainer.Command)
-				}
-			}
-		})
-	}
+// 				if !commandMatched {
+// 					t.Errorf("TestAddPreStartEventInitContainer error: init container command mismatch, command not found in %v", initContainer.Command)
+// 				}
+// 			}
+// 		})
+// 	}
 
-}
+// }
