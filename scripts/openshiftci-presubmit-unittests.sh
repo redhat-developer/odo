@@ -20,4 +20,7 @@ make cross
 cp -r dist $ARTIFACT_DIR
 
 # RPM Tests
+## Temp switch to 1.13
+export GOLANG_VERSION="1.13"
+export GOLANG_VERSION_NODOT="113"
 scripts/rpm-x86_64-test.sh
