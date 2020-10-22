@@ -23,7 +23,7 @@ An example deployment scenario:
 . `odo create` will consult the recorded devfile registries to offer the user a selection of available component types and pull down the associated `devfile.yaml` file
 . `odo push` parses and then deploys the component in the following order:
  .. Parses and validates the YAML file
- .. Deploys the development environment to your OpenShift cluster
+ .. Deploys the development environment to your Kubernetes or OpenShift cluster
  .. Synchronizes your source code to the containers
  .. Executes any prerequisite commands
 
@@ -31,9 +31,20 @@ An example deployment scenario:
 
 [discrete]
 
+==== Prerequisites for a Kubernetes Cluster
+
+* Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
++
+Ingress IP is usually the external IP of ingress controller service. For example, for Minikube running in a virtual machine you can get it by
+`minikube ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
+
 ==== Prerequisites for an OpenShift Cluster
 
 * Create a project to keep your source code, tests, and libraries organized in a separate single unit.
+* You must also know your ingress domain name or ingress IP to specify `--host` for `odo url create`. This can be found using `crc ip`.
++
+Ingress IP is usually the external IP of ingress controller service. For example, for link:https://developers.redhat.com/products/codeready-containers/overview[CodeReady Containers] running in a virtual machine you can get it by
+`crc ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
 
 . Log in to an OpenShift cluster:
 +
@@ -50,15 +61,6 @@ An example deployment scenario:
    ✓  Project 'myproject' is ready for use
    ✓  New project created and now using project : myproject
 ----
-
-
-==== Prerequisites for a Kubernetes Cluster
-
-* Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
-+
-Ingress IP is usually the external IP of ingress controller service, for Minikube or CRC clusters running in a virtual machine you can get it by
-`minikube ip` or `crc ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
-
 
 == Listing all available devfile components
 
@@ -92,7 +94,7 @@ Ingress IP is usually the external IP of ingress controller service, for Minikub
 
 In our example, we will be using `java-springboot` to deploy a sample https://spring.io/projects/spring-boot[Springboot] component.
 
-== Deploying a Java Spring Boot® component to an OpenShift / Kubernetes cluster
+== Deploying a Java Spring Boot® component to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying an https://github.com/odo-devfiles/springboot-ex[example Spring Boot® component] that uses https://maven.apache.org/install.html[Maven] and Java 8 JDK.
 
@@ -200,7 +202,7 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
    ✓  Successfully deleted component
 ----
 
-== Deploying a Node.js® component to an OpenShift / Kubernetes cluster
+== Deploying a Node.js® component to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying an https://github.com/odo-devfiles/nodejs-ex[example Node.js® component] that uses https://www.npmjs.com/[NPM].
 
@@ -307,7 +309,7 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
     ✓  Successfully deleted component
 ----
 
-== Deploying a Quarkus Application to an OpenShift / Kubernetes cluster
+== Deploying a Quarkus Application to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying a https://github.com/odo-devfiles/quarkus-ex[Quarkus component] that uses GraalVM and JDK1.8+.
 
