@@ -589,3 +589,8 @@ func (oc OcRunner) GetAllPVCNames(namespace string) []string {
 	}
 	return strings.Split(output, " ")
 }
+
+// DeletePod deletes a specified pod in the namespace
+func (oc OcRunner) DeletePod(podName string, namespace string) {
+	CmdShouldPass(oc.path, "delete", "pod", "--namespace", namespace, podName)
+}

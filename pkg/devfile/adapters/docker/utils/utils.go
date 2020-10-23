@@ -53,7 +53,7 @@ func ComponentExists(client lclient.Client, data data.DevfileData, name string) 
 
 // GetComponentContainers returns a list of the running component containers
 func GetComponentContainers(client lclient.Client, componentName string) (containers []types.Container, err error) {
-	containerList, err := client.GetContainerList()
+	containerList, err := client.GetContainerList(false)
 	if err != nil {
 		return nil, err
 	}

@@ -180,3 +180,8 @@ func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
 	}
 	return strings.Split(output, " ")
 }
+
+// DeletePod deletes a specified pod in the namespace
+func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
+	CmdShouldPass(kubectl.path, "delete", "pod", "--namespace", namespace, podName)
+}

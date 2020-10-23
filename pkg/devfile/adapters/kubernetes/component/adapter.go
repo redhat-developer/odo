@@ -32,6 +32,7 @@ import (
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
+
 	adapter := Adapter{Client: client}
 	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
 	adapter.GenericAdapter.InitWith(adapter)

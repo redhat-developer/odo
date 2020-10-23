@@ -86,3 +86,13 @@ func (k Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.Co
 func (k Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
 	return k.componentAdapter.SupervisorComponentInfo(command)
 }
+
+// StartContainerStatusWatch outputs Kubernetes pod/container status changes to the console, as used by the status command
+func (k Adapter) StartContainerStatusWatch() {
+	k.componentAdapter.StartContainerStatusWatch()
+}
+
+// StartSupervisordCtlStatusWatch outputs supervisord program status changes to the console, as used by the status command
+func (k Adapter) StartSupervisordCtlStatusWatch() {
+	k.componentAdapter.StartSupervisordCtlStatusWatch()
+}

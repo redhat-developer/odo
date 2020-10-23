@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/storage"
@@ -54,6 +55,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	watchCmd := NewCmdWatch(WatchRecommendedCommandName, odoutil.GetFullName(fullName, WatchRecommendedCommandName))
 	testCmd := NewCmdTest(TestRecommendedCommandName, odoutil.GetFullName(fullName, TestRecommendedCommandName))
 	execCmd := NewCmdExec(ExecRecommendedCommandName, odoutil.GetFullName(fullName, ExecRecommendedCommandName))
+	statusCmd := NewCmdStatus(StatusRecommendedCommandName, odoutil.GetFullName(fullName, StatusRecommendedCommandName))
 
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
@@ -70,7 +72,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
 	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd, execCmd)
-	componentCmd.AddCommand(testCmd)
+	componentCmd.AddCommand(testCmd, statusCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "main"}

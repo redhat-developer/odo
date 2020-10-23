@@ -176,9 +176,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
 	cobra.AddTemplateFunc("ModifyAdditionalFlags", odoutil.ModifyAdditionalFlags)
 
-	// Add all subcommands to base commands
-	rootCmd.AddCommand(
-		application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
+	rootCmdList := append([]*cobra.Command{}, application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
 		catalog.NewCmdCatalog(catalog.RecommendedCommandName, util.GetFullName(fullName, catalog.RecommendedCommandName)),
 		component.NewCmdComponent(component.RecommendedCommandName, util.GetFullName(fullName, component.RecommendedCommandName)),
 		component.NewCmdCreate(component.CreateRecommendedCommandName, util.GetFullName(fullName, component.CreateRecommendedCommandName)),
@@ -191,6 +189,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		component.NewCmdPush(component.PushRecommendedCommandName, util.GetFullName(fullName, component.PushRecommendedCommandName)),
 		component.NewCmdUpdate(component.UpdateRecommendedCommandName, util.GetFullName(fullName, component.UpdateRecommendedCommandName)),
 		component.NewCmdWatch(component.WatchRecommendedCommandName, util.GetFullName(fullName, component.WatchRecommendedCommandName)),
+		component.NewCmdStatus(component.StatusRecommendedCommandName, util.GetFullName(fullName, component.StatusRecommendedCommandName)),
 		component.NewCmdExec(component.ExecRecommendedCommandName, util.GetFullName(fullName, component.ExecRecommendedCommandName)),
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
@@ -207,6 +206,9 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 	)
+
+	// Add all subcommands to base commands
+	rootCmd.AddCommand(rootCmdList...)
 
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 

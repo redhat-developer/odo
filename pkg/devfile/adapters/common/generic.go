@@ -49,6 +49,10 @@ func (a GenericAdapter) Logger() machineoutput.MachineEventLoggingClient {
 	return a.logger
 }
 
+func (a *GenericAdapter) SetLogger(loggingClient machineoutput.MachineEventLoggingClient) {
+	a.logger = loggingClient
+}
+
 func (a GenericAdapter) ComponentInfo(command common.DevfileCommand) (ComponentInfo, error) {
 	return a.componentInfo(command)
 }
