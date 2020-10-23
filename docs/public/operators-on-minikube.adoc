@@ -23,7 +23,7 @@ To install an Operator, we need to make sure that the namespace in which we're i
 
 [NOTE]
 ====
-You can't install any Operator in the `operators` namespace and expect it to be available across all namespaces. The Operator you're trying to installing needs to be designed to be available in this way as well. Certain Operators only support installation in a single namespace.
+You can't always install an Operator in the `operators` namespace and expect it to be available across all namespaces. The Operator you're trying to installing needs to be designed to be available in this way as well. Certain Operators only support installation in a single namespace.
 
 Discussing this topic is out of scope of this guide so we have stated it as a note.
 ====
@@ -81,7 +81,7 @@ etcdoperator.v0.9.4-clusterwide     EtcdCluster, EtcdBackup, EtcdRestore
 
 ==== Troubleshooting
 
-If you don't see etcd Operator using above command or by doing `kubectl get csv`, make sure that pod belonging to the CatalogSource named operatorhubio-catalog is running:
+If you don't see etcd Operator using above command or by doing `kubectl get csv -n operators`, make sure that pod belonging to the `CatalogSource` named `operatorhubio-catalog` is running:
 [source,sh]
 ----
 $ kubectl get po -n olm | grep operatorhubio-catalog
@@ -94,7 +94,7 @@ If the state of this pod is `CrashLoopBackOff`, delete it so that Kubernetes wil
 $ kubectl delete po -n olm <name-of-operatorhubio-catalog-pod>
 ----
 
-Once the pod for this `CatalogSource` is up, wait a few seconds and see if you can find the etcd Operator when you do `odo catalog list services`.
+Once the pod for this `CatalogSource` is up, wait a few seconds before trying to find the etcd Operator when you do `odo catalog list services`.
 
 === Installing the Service Binding Operator
 
@@ -104,13 +104,13 @@ Service Binding Operator is not yet available via the OLM. The team is link:http
 
 At the moment, to make Service Binding Operator work on Kubernetes, we need to keep a couple of things in mind:
 
-. It needs to be installed from its GitHub repository
-. It must be installed in individual namespace unlike the cluster wide installation we saw for etcd Operator in previous section
+. It needs to be installed by cloning its GitHub repository
+. It must be installed in an individual namespace unlike the cluster wide installation we saw for etcd Operator in previous section
 
 
 Let's setup the Service Binding Operator now.
 
-. First, let's clone its repository on the host system where we're running minikube and checkout the specific tag that is currently supported by `odo link` command`:
+. First, let's clone its repository on the host system where we're running minikube and checkout the specific tag that is currently supported by `odo link` command:
 +
 [source,sh]
 ----
@@ -121,7 +121,7 @@ $ git checkout tags/v0.1.1-364 -b v0.1.1-364
 $ cd deploy
 ----
 
-. Next, install its CRD (link:https://docs.openshift.com/container-platform/latest/operators/understanding/crds/crd-extending-api-with-crds.html[Custom Resource Definition]):
+. Next, install its CRD (link:https://docs.openshift.com/container-platform/latest/operators/understanding/crds/crd-extending-api-with-crds.html[Custom Resource Definition]) and create link:https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[ServiceAccount], https://kubernetes.io/docs/reference/access-authn-authz/rbac/#role-and-clusterrole[Role] and link:https://kubernetes.io/docs/reference/access-authn-authz/rbac/#rolebinding-and-clusterrolebinding[RoleBinding] it requires:
 +
 [source,sh]
 ----
@@ -146,15 +146,15 @@ rules:
   verbs:
   - "*"
 - apiGroups:
-    - apiextensions.k8s.io
+  - apiextensions.k8s.io
   resources:
-    - customresourcedefinitions
-    - customresourcedefinitions/status
+  - customresourcedefinitions
+  - customresourcedefinitions/status
   verbs:
-    - get
-    - list
-    - patch
-    - watch
+  - get
+  - list
+  - patch
+  - watch
 EOF
 
 $ kubectl create -f - << EOF
