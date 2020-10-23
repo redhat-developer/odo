@@ -340,33 +340,6 @@ func TestGenerateServiceSpec(t *testing.T) {
 	}
 }
 
-func TestGenerateSelfSignedCertificate(t *testing.T) {
-
-	tests := []struct {
-		name string
-		host string
-	}{
-		{
-			name: "test1",
-			host: "1.2.3.4.nip.io",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			cert, err := GenerateSelfSignedCertificate(tt.host)
-			if err != nil {
-				t.Errorf("Unexpected error %v", err)
-			}
-			if cert.CertPem == nil || cert.KeyPem == nil || len(cert.CertPem) == 0 || len(cert.KeyPem) == 0 {
-				t.Errorf("Invalid certificate created")
-			}
-
-		})
-	}
-}
-
 func fakeResourceRequirements() *corev1.ResourceRequirements {
 	var resReq corev1.ResourceRequirements
 
