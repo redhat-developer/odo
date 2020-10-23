@@ -1,7 +1,6 @@
-package kclient
+package generator
 
 import (
-	"k8s.io/client-go/rest"
 
 	// api resource types
 
@@ -11,6 +10,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -22,14 +22,25 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 )
 
 const (
-	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
-	OdoSourceVolume = "odo-projects"
+	// DevfileSourceVolume is the constant containing the name of the emptyDir volume containing the project source
+	DevfileSourceVolume = "devfile-projects"
 
-	// OdoSourceVolumeMount is the directory to mount the volume in the container
-	OdoSourceVolumeMount = "/projects"
+	// DevfileSourceVolumeMount is the directory to mount the volume in the container
+	DevfileSourceVolumeMount = "/projects"
+
+	// EnvProjectsRoot is the env defined for project mount in a component container when component's mountSources=true
+	EnvProjectsRoot = "PROJECTS_ROOT"
+
+	// EnvProjectsSrc is the env defined for path to the project source in a component container
+	EnvProjectsSrc = "PROJECT_SOURCE"
+
+	deploymentKind       = "Deployment"
+	deploymentAPIVersion = "apps/v1"
 )
 
 // CreateObjectMeta creates a common object meta
@@ -77,6 +88,84 @@ func GenerateContainer(containerParams ContainerParams) *corev1.Container {
 	}
 
 	return container
+}
+
+// GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
+func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, error) {
+	var containers []corev1.Container
+	for _, comp := range devfileObj.Data.GetComponents() {
+		if comp.Container != nil {
+			envVars := convertEnvs(comp.Container.Env)
+			resourceReqs := getResourceReqs(comp)
+			ports, err := convertPorts(comp.Container.Endpoints)
+			if err != nil {
+				return nil, err
+			}
+			containerParams := ContainerParams{
+				Name:         comp.Name,
+				Image:        comp.Container.Image,
+				IsPrivileged: false,
+				Command:      comp.Container.Command,
+				Args:         comp.Container.Args,
+				EnvVars:      envVars,
+				ResourceReqs: resourceReqs,
+				Ports:        ports,
+			}
+			container := GenerateContainer(containerParams)
+			for _, c := range containers {
+				for _, containerPort := range c.Ports {
+					for _, curPort := range container.Ports {
+						if curPort.Name == containerPort.Name {
+							// the name has to be unique across containers since it is considered as the URL name
+							return nil, fmt.Errorf("devfile contains multiple endpoint entries with same name: %v", containerPort.Name)
+						}
+						if curPort.ContainerPort == containerPort.ContainerPort {
+							// the same TargetPort present in different containers
+							// because containers in a single pod shares the network namespace
+							return nil, fmt.Errorf("devfile contains multiple containers with same TargetPort: %v", containerPort.ContainerPort)
+						}
+					}
+				}
+			}
+
+			// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
+			// Sync to `Container.SourceMapping` if set
+			if comp.Container.MountSources {
+				var syncRootFolder string
+				if comp.Container.SourceMapping != "" {
+					syncRootFolder = comp.Container.SourceMapping
+				} else {
+					syncRootFolder = DevfileSourceVolumeMount
+				}
+
+				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+					Name:      DevfileSourceVolume,
+					MountPath: syncRootFolder,
+				})
+
+				// Note: PROJECTS_ROOT & PROJECT_SOURCE are validated at the devfile parser level
+				// Add PROJECTS_ROOT to the container
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  EnvProjectsRoot,
+						Value: syncRootFolder,
+					})
+
+				// Add PROJECT_SOURCE to the container
+				syncFolder, err := GetSyncFolder(syncRootFolder, devfileObj.Data.GetProjects())
+				if err != nil {
+					return nil, err
+				}
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  EnvProjectsSrc,
+						Value: syncFolder,
+					})
+			}
+			containers = append(containers, *container)
+		}
+	}
+	return containers, nil
 }
 
 // PodTemplateSpecParams is a struct that contains the required data to create a pod template spec object
@@ -280,21 +369,11 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {
 
 	ownerReference := metav1.OwnerReference{
-		APIVersion: DeploymentAPIVersion,
-		Kind:       DeploymentKind,
+		APIVersion: deploymentAPIVersion,
+		Kind:       deploymentKind,
 		Name:       deployment.Name,
 		UID:        deployment.UID,
 	}
 
 	return ownerReference
-}
-
-// GeneratePortForwardReq builds a port forward request
-func (c *Client) GeneratePortForwardReq(podName string) *rest.Request {
-	return c.KubeClient.CoreV1().RESTClient().
-		Post().
-		Resource("pods").
-		Namespace(c.Namespace).
-		Name(podName).
-		SubResource("portforward")
 }

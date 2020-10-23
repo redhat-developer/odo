@@ -3,6 +3,7 @@ package kclient
 import (
 	"testing"
 
+	"github.com/openshift/odo/pkg/kclient/generator"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,7 +62,7 @@ func TestCreateTLSSecret(t *testing.T) {
 				}
 				return true, &secret, nil
 			})
-			selfsignedcert, err := GenerateSelfSignedCertificate(tt.host)
+			selfsignedcert, err := generator.GenerateSelfSignedCertificate(tt.host)
 			if err != nil {
 				t.Errorf("fkclient.GenerateSelfSignedCertificate unexpected error %v", err)
 			}

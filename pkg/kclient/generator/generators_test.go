@@ -1,4 +1,4 @@
-package kclient
+package generator
 
 import (
 	"testing"

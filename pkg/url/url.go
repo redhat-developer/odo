@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 
 	types "github.com/docker/docker/api/types"
@@ -207,7 +208,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		if err != nil {
 			return "", err
 		}
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GenerateOwnerReference(deployment)
 		if parameters.secureURL {
 			if len(parameters.secretName) != 0 {
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, metav1.GetOptions{})
@@ -220,7 +221,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
 				// create tls secret if it does not exist
 				if kerrors.IsNotFound(err) {
-					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(parameters.host)
+					selfsignedcert, err := generator.GenerateSelfSignedCertificate(parameters.host)
 					if err != nil {
 						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+parameters.host)
 					}
@@ -249,9 +250,9 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 		}
 
-		ingressParam := kclient.IngressParams{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
-		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
-		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
+		ingressParam := generator.IngressParams{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
+		ingressSpec := generator.GenerateIngressSpec(ingressParam)
+		objectMeta := generator.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
 		// to avoid error due to duplicate ingress name defined in different devfile components
 		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -296,7 +297,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 			if err != nil {
 				return "", err
 			}
-			ownerReference = kclient.GenerateOwnerReference(deployment)
+			ownerReference = generator.GenerateOwnerReference(deployment)
 		}
 
 		// Pass in the namespace name, link to the service (componentName) and labels to create a route

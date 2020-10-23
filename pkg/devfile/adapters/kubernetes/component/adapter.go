@@ -8,6 +8,7 @@ import (
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -274,7 +275,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	labels["component"] = componentName
 	labels[componentlabels.ComponentTypeLabel] = componentType
 
-	containers, err := utils.GetContainers(a.Devfile)
+	containers, err := generator.GetContainers(a.Devfile)
 	if err != nil {
 		return err
 	}
@@ -294,7 +295,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
+	objectMeta := generator.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	supervisordInitContainer := kclient.AddBootstrapSupervisordInitContainer()
 	initContainers := utils.GetPreStartInitContainers(a.Devfile, containers)
 	initContainers = append(initContainers, supervisordInitContainer)
@@ -354,21 +355,21 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	odoMandatoryVolumes := utils.GetOdoContainerVolumes()
 
-	podTemplateSpecParams := kclient.PodTemplateSpecParams{
+	podTemplateSpecParams := generator.PodTemplateSpecParams{
 		ObjectMeta:     objectMeta,
 		InitContainers: initContainers,
 		Containers:     containers,
 		Volumes:        append(pvcVolumes, odoMandatoryVolumes...),
 	}
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(podTemplateSpecParams)
+	podTemplateSpec := generator.GeneratePodTemplateSpec(podTemplateSpecParams)
 
-	deployParams := kclient.DeploymentSpecParams{
+	deployParams := generator.DeploymentSpecParams{
 		PodTemplateSpec: *podTemplateSpec,
 		PodSelectorLabels: map[string]string{
 			"component": componentName,
 		},
 	}
-	deploymentSpec := kclient.GenerateDeploymentSpec(deployParams)
+	deploymentSpec := generator.GenerateDeploymentSpec(deployParams)
 
 	var containerPorts []corev1.ContainerPort
 
@@ -393,13 +394,13 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		}
 	}
 
-	serviceSpecParams := kclient.ServiceSpecParams{
+	serviceSpecParams := generator.ServiceSpecParams{
 		ContainerPorts: containerPorts,
 		SelectorLabels: map[string]string{
 			"component": componentName,
 		},
 	}
-	serviceSpec := kclient.GenerateServiceSpec(serviceSpecParams)
+	serviceSpec := generator.GenerateServiceSpec(serviceSpecParams)
 	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 
@@ -413,7 +414,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GenerateOwnerReference(deployment)
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
@@ -446,7 +447,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			return err
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		if len(serviceSpec.Ports) > 0 {
@@ -477,7 +478,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, string, error) {
 	for _, c := range containers {
 		for _, vol := range c.VolumeMounts {
-			if vol.Name == kclient.OdoSourceVolume {
+			if vol.Name == generator.DevfileSourceVolume {
 				return c.Name, vol.MountPath, nil
 			}
 		}

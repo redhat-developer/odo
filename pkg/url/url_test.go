@@ -18,6 +18,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/fake"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -467,7 +468,7 @@ func TestCreate(t *testing.T) {
 						t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.returnedIngress.Labels, createdIngress.Labels))
 					}
 
-					wantedIngressParams := kclient.IngressParams{
+					wantedIngressParams := generator.IngressParams{
 						ServiceName:   serviceName,
 						IngressDomain: tt.args.host,
 						PortNumber:    intstr.FromInt(tt.args.portNumber),

@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/storage/labels"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -55,8 +56,8 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
 	}
 
-	objectMeta := kclient.CreateObjectMeta(pvcName, Client.Namespace, labels, nil)
-	pvcSpec := kclient.GeneratePVCSpec(quantity)
+	objectMeta := generator.CreateObjectMeta(pvcName, Client.Namespace, labels, nil)
+	pvcSpec := generator.GeneratePVCSpec(quantity)
 
 	// Get the deployment
 	deployment, err := Client.GetDeploymentByName(componentName)
@@ -65,7 +66,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 	}
 
 	// Generate owner reference for the deployment and update objectMeta
-	ownerReference := kclient.GenerateOwnerReference(deployment)
+	ownerReference := generator.GenerateOwnerReference(deployment)
 	objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 
 	// Create PVC

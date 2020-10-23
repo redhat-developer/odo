@@ -5,14 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openshift/odo/pkg/odo/util/validation"
-
 	"github.com/openshift/odo/pkg/devfile"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -20,6 +18,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
@@ -155,7 +154,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 		componentName := o.EnvSpecificInfo.GetName()
 
 		var portList []string
-		containers, err := adapterutils.GetContainers(devObj)
+		containers, err := generator.GetContainers(devObj)
 		if err != nil {
 			return err
 		}

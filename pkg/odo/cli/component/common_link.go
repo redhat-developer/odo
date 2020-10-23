@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -120,7 +120,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		}
 
 		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GenerateOwnerReference(deployment)
 		o.sbr.SetOwnerReferences(append(o.sbr.GetOwnerReferences(), ownerReference))
 		if err != nil {
 			return err

@@ -11,59 +11,59 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
-func TestGetDevfileContainerComponents(t *testing.T) {
+// func TestGetDevfileContainerComponents(t *testing.T) {
 
-	tests := []struct {
-		name                 string
-		component            []versionsCommon.DevfileComponent
-		alias                []string
-		expectedMatchesCount int
-	}{
-		{
-			name:                 "Case 1: Invalid devfile",
-			component:            []versionsCommon.DevfileComponent{},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
-			expectedMatchesCount: 0,
-		},
+// 	tests := []struct {
+// 		name                 string
+// 		component            []versionsCommon.DevfileComponent
+// 		alias                []string
+// 		expectedMatchesCount int
+// 	}{
+// 		{
+// 			name:                 "Case 1: Invalid devfile",
+// 			component:            []versionsCommon.DevfileComponent{},
+// 			expectedMatchesCount: 0,
+// 		},
+// 		{
+// 			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
+// 			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
+// 			expectedMatchesCount: 0,
+// 		},
+// 		{
+// 			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
+// 			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
+// 			expectedMatchesCount: 0,
+// 		},
 
-		{
-			name:                 "Case 4 : Valid devfile with correct component type (Container)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
-			expectedMatchesCount: 2,
-		},
+// 		{
+// 			name:                 "Case 4 : Valid devfile with correct component type (Container)",
+// 			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
+// 			expectedMatchesCount: 2,
+// 		},
 
-		{
-			name:                 "Case 5: Valid devfile with correct component type (Container) without name",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("")},
-			expectedMatchesCount: 1,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.component,
-				},
-			}
+// 		{
+// 			name:                 "Case 5: Valid devfile with correct component type (Container) without name",
+// 			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("")},
+// 			expectedMatchesCount: 1,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			devObj := devfileParser.DevfileObj{
+// 				Data: &testingutil.TestDevfileData{
+// 					Components: tt.component,
+// 				},
+// 			}
 
-			devfileComponents := GetDevfileContainerComponents(devObj.Data)
+// 			devfileComponents := GetDevfileContainerComponents(devObj.Data)
 
-			if len(devfileComponents) != tt.expectedMatchesCount {
-				t.Errorf("TestGetDevfileContainerComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
-			}
-		})
-	}
+// 			if len(devfileComponents) != tt.expectedMatchesCount {
+// 				t.Errorf("TestGetDevfileContainerComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
+// 			}
+// 		})
+// 	}
 
-}
+// }
 
 func TestGetDevfileVolumeComponents(t *testing.T) {
 

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -162,14 +163,14 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					Name: "test",
 					VolumeMounts: []corev1.VolumeMount{
 						{
-							Name:      kclient.OdoSourceVolume,
-							MountPath: kclient.OdoSourceVolumeMount,
+							Name:      generator.DevfileSourceVolume,
+							MountPath: generator.DevfileSourceVolumeMount,
 						},
 					},
 				},
 			},
 			want:           "test",
-			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantSourcePath: generator.DevfileSourceVolumeMount,
 			wantErr:        false,
 		},
 		{
@@ -182,14 +183,14 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 							Name: "test",
 						},
 						{
-							Name:      kclient.OdoSourceVolume,
-							MountPath: kclient.OdoSourceVolumeMount,
+							Name:      generator.DevfileSourceVolume,
+							MountPath: generator.DevfileSourceVolumeMount,
 						},
 					},
 				},
 			},
 			want:           "test",
-			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantSourcePath: generator.DevfileSourceVolumeMount,
 			wantErr:        false,
 		},
 		{
@@ -224,14 +225,14 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 							Name: "test",
 						},
 						{
-							Name:      kclient.OdoSourceVolume,
-							MountPath: kclient.OdoSourceVolumeMount,
+							Name:      generator.DevfileSourceVolume,
+							MountPath: generator.DevfileSourceVolumeMount,
 						},
 					},
 				},
 			},
 			want:           "container-two",
-			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantSourcePath: generator.DevfileSourceVolumeMount,
 			wantErr:        false,
 		},
 		{
@@ -247,7 +248,7 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 							Name: "test",
 						},
 						{
-							Name:      kclient.OdoSourceVolume,
+							Name:      generator.DevfileSourceVolume,
 							MountPath: "/some/path",
 						},
 					},

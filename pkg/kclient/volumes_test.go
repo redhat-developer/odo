@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 )
 
@@ -71,9 +72,9 @@ func TestCreatePVC(t *testing.T) {
 			} else if err != nil && tt.size == "garbage" {
 				return
 			}
-			pvcSpec := GeneratePVCSpec(quantity)
+			pvcSpec := generator.GeneratePVCSpec(quantity)
 
-			objectMeta := CreateObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
+			objectMeta := generator.CreateObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
 
 			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.pvcName == "" {

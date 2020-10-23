@@ -168,3 +168,13 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 		}
 	}
 }
+
+// GeneratePortForwardReq builds a port forward request
+func (c *Client) GeneratePortForwardReq(podName string) *rest.Request {
+	return c.KubeClient.CoreV1().RESTClient().
+		Post().
+		Resource("pods").
+		Namespace(c.Namespace).
+		Name(podName).
+		SubResource("portforward")
+}
