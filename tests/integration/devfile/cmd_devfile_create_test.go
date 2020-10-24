@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
@@ -202,6 +203,61 @@ var _ = Describe("odo devfile create command tests", func() {
 		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		helper.Chdir(commonVar.OriginalWorkingDirectory)
 		helper.DeleteDir(context2)
+	})
+
+	Context("When executing odo create with --s2i flag", func() {
+		JustBeforeEach(func() {
+			newContext := path.Join(commonVar.Context, "newContext")
+			devfilePath = filepath.Join(newContext, devfile)
+			helper.MakeDir(newContext)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
+		})
+
+		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
+			componentName := helper.RandString(6)
+
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+
+			wantOutput := []string{"java-openliberty"}
+
+			var data map[string]interface{}
+
+			err := json.Unmarshal([]byte(output), &data)
+
+			if err != nil {
+				Expect(err).Should(BeNil())
+			}
+			outputBytes, err := json.Marshal(data["s2iItems"])
+			if err == nil {
+				output = string(outputBytes)
+			}
+
+			helper.DontMatchAllInOutput(output, wantOutput)
+
+			outputBytes, err = json.Marshal(data["devfileItems"])
+			if err == nil {
+				output = string(outputBytes)
+			}
+
+			helper.MatchAllInOutput(output, wantOutput)
+
+			helper.CmdShouldFail("odo", "create", "java-openliberty", componentName, "--s2i")
+		})
+
+		It("should fail to create the devfile component with valid file system path", func() {
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "--s2i", "--devfile", devfilePath)
+			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the devfile via --devfile flag"})
+		})
+
+		It("should fail to create the component specified with valid project and download the source", func() {
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter=nodejs-starter", "--s2i")
+			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the starter via --starter flag"})
+		})
+
+		It("should fail to create the devfile component with --registry specified", func() {
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry", "--s2i")
+			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the registry via --registry flag"})
+		})
 	})
 
 	// Currently these tests need interactive mode in order to set the name of the component.

@@ -313,6 +313,17 @@ func componentTests(args ...string) {
 			helper.ValidateLocalCmpExist(relativeContext, "Type,java:8", "Name,sb-jar-test")
 		})
 
+		It("should fail the create command as --git flag, which is specific to s2i component creation, is used without --s2i flag", func() {
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")
+			Expect(output).Should(ContainSubstring("flag --git, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components"))
+		})
+
+		It("should fail the create command as --binary flag, which is specific to s2i component creation, is used without --s2i flag", func() {
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
+
+			output := helper.CmdShouldFail("odo", "create", "java:8", "sb-jar-test", "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", commonVar.Context)
+			Expect(output).Should(ContainSubstring("flag --binary, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components"))
+		})
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
@@ -722,7 +733,7 @@ func componentTests(args ...string) {
 
 		It("should delete the component and the owned resources", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
 			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
 
 			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
