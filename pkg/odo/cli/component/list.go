@@ -238,8 +238,6 @@ func (lo *ListOptions) Run() (err error) {
 		}
 	}
 
-	// non-experimental workflow
-
 	var components []component.Component
 	// we now check if DC is supported
 	if lo.hasDCSupport {
@@ -275,6 +273,7 @@ func (lo *ListOptions) Run() (err error) {
 			if err != nil {
 				return errors.Wrapf(err, "failed to fetch component list")
 			}
+			fmt.Print("%+v", components)
 		}
 	}
 

@@ -83,15 +83,6 @@ func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []s
 
 // Validate validates the ListServicesOptions based on completed values
 func (o *ListServicesOptions) Validate() (err error) {
-	if o.csvSupport {
-		if len(o.services.Items) == 0 && len(o.csvs.Items) == 0 {
-			return fmt.Errorf("no deployable services/operators found")
-		}
-	} else {
-		if len(o.services.Items) == 0 {
-			return fmt.Errorf("no deployable services found")
-		}
-	}
 	return
 }
 
@@ -107,6 +98,16 @@ func (o *ListServicesOptions) Run() (err error) {
 		}
 		if len(o.services.Items) > 0 {
 			util.DisplayServices(o.services)
+		}
+
+		if o.csvSupport {
+			if len(o.services.Items) == 0 && len(o.csvs.Items) == 0 {
+				log.Info("no deployable services/operators found")
+			}
+		} else {
+			if len(o.services.Items) == 0 {
+				log.Info("no deployable services found")
+			}
 		}
 	}
 	return
