@@ -273,7 +273,6 @@ func (lo *ListOptions) Run() (err error) {
 			if err != nil {
 				return errors.Wrapf(err, "failed to fetch component list")
 			}
-			fmt.Print("%+v", components)
 		}
 	}
 
