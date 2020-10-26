@@ -58,29 +58,63 @@ func getResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
 	return reqs
 }
 
-// GetSyncFolder gets the sync folder path for source code.
-// sourceVolumePath: mount path of the empty dir volume the odo uses to sync source code
+// addSyncRootFolder adds the sync root folder to the container env and volume mounts
+func addSyncRootFolder(container *corev1.Container, sourceMapping string) string {
+	var syncRootFolder string
+	if sourceMapping != "" {
+		syncRootFolder = sourceMapping
+	} else {
+		syncRootFolder = DevfileSourceVolumeMount
+	}
+
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+		Name:      DevfileSourceVolume,
+		MountPath: syncRootFolder,
+	})
+
+	// Note: PROJECTS_ROOT & PROJECT_SOURCE are validated at the devfile parser level
+	// Add PROJECTS_ROOT to the container
+	container.Env = append(container.Env,
+		corev1.EnvVar{
+			Name:  EnvProjectsRoot,
+			Value: syncRootFolder,
+		})
+
+	return syncRootFolder
+}
+
+// addSyncFolder adds the sync folder path for the container
+// sourceVolumePath: mount path of the empty dir volume to sync source code
 // projects: list of projects from devfile
-func GetSyncFolder(sourceVolumePath string, projects []common.DevfileProject) (string, error) {
+func addSyncFolder(container *corev1.Container, sourceVolumePath string, projects []common.DevfileProject) error {
+	var syncFolder string
+
 	// if there are no projects in the devfile, source would be synced to $PROJECTS_ROOT
 	if len(projects) == 0 {
-		return sourceVolumePath, nil
+		syncFolder = sourceVolumePath
+	} else {
+		// if there is one or more projects in the devfile, get the first project and check its clonepath
+		project := projects[0]
+		// If clonepath does not exist source would be synced to $PROJECTS_ROOT/projectName
+		syncFolder = filepath.ToSlash(filepath.Join(sourceVolumePath, project.Name))
+
+		if project.ClonePath != "" {
+			if strings.HasPrefix(project.ClonePath, "/") {
+				return fmt.Errorf("the clonePath %s in the devfile project %s must be a relative path", project.ClonePath, project.Name)
+			}
+			if strings.Contains(project.ClonePath, "..") {
+				return fmt.Errorf("the clonePath %s in the devfile project %s cannot escape the value defined by $PROJECTS_ROOT. Please avoid using \"..\" in clonePath", project.ClonePath, project.Name)
+			}
+			// If clonepath exist source would be synced to $PROJECTS_ROOT/clonePath
+			syncFolder = filepath.ToSlash(filepath.Join(sourceVolumePath, project.ClonePath))
+		}
 	}
 
-	// if there is one or more projects in the devfile, get the first project and check its clonepath
-	project := projects[0]
+	container.Env = append(container.Env,
+		corev1.EnvVar{
+			Name:  EnvProjectsSrc,
+			Value: syncFolder,
+		})
 
-	if project.ClonePath != "" {
-		if strings.HasPrefix(project.ClonePath, "/") {
-			return "", fmt.Errorf("the clonePath %s in the devfile project %s must be a relative path", project.ClonePath, project.Name)
-		}
-		if strings.Contains(project.ClonePath, "..") {
-			return "", fmt.Errorf("the clonePath %s in the devfile project %s cannot escape the value defined by $PROJECTS_ROOT. Please avoid using \"..\" in clonePath", project.ClonePath, project.Name)
-		}
-		// If clonepath exist source would be synced to $PROJECTS_ROOT/clonePath
-		return filepath.ToSlash(filepath.Join(sourceVolumePath, project.ClonePath)), nil
-	}
-	// If clonepath does not exist source would be synced to $PROJECTS_ROOT/projectName
-	return filepath.ToSlash(filepath.Join(sourceVolumePath, project.Name)), nil
-
+	return nil
 }

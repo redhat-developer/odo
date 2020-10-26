@@ -305,7 +305,7 @@ func TestPushLocal(t *testing.T) {
 			isForcePush: false,
 			compInfo: common.ComponentInfo{
 				ContainerName: "abcd",
-				SourceMount:   "/some/path",
+				SyncFolder:    "/some/path",
 			},
 			wantErr: false,
 		},

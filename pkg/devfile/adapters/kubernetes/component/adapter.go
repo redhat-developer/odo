@@ -189,7 +189,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, sourceMount, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
@@ -200,7 +200,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
-		SourceMount:   sourceMount,
+		SyncFolder:    syncFolder,
 	}
 	syncParams := common.SyncParameters{
 		PushParams:      parameters,
@@ -477,9 +477,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 // container to sync to, so return an error
 func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, string, error) {
 	for _, c := range containers {
-		for _, vol := range c.VolumeMounts {
-			if vol.Name == generator.DevfileSourceVolume {
-				return c.Name, vol.MountPath, nil
+		for _, env := range c.Env {
+			if env.Name == generator.EnvProjectsSrc {
+				return c.Name, env.Value, nil
 			}
 		}
 	}

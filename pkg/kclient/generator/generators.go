@@ -120,38 +120,14 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 			}
 
 			// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
-			// Sync to `Container.SourceMapping` if set
+			// Sync to `Container.SourceMapping` and/or devfile projects if set
 			if comp.Container.MountSources {
-				var syncRootFolder string
-				if comp.Container.SourceMapping != "" {
-					syncRootFolder = comp.Container.SourceMapping
-				} else {
-					syncRootFolder = DevfileSourceVolumeMount
-				}
+				syncRootFolder := addSyncRootFolder(container, comp.Container.SourceMapping)
 
-				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      DevfileSourceVolume,
-					MountPath: syncRootFolder,
-				})
-
-				// Note: PROJECTS_ROOT & PROJECT_SOURCE are validated at the devfile parser level
-				// Add PROJECTS_ROOT to the container
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  EnvProjectsRoot,
-						Value: syncRootFolder,
-					})
-
-				// Add PROJECT_SOURCE to the container
-				syncFolder, err := GetSyncFolder(syncRootFolder, devfileObj.Data.GetProjects())
+				err := addSyncFolder(container, syncRootFolder, devfileObj.Data.GetProjects())
 				if err != nil {
 					return nil, err
 				}
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  EnvProjectsSrc,
-						Value: syncFolder,
-					})
 			}
 			containers = append(containers, *container)
 		}

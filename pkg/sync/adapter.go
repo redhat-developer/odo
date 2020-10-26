@@ -189,10 +189,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	syncFolder, err := generator.GetSyncFolder(compInfo.SourceMount, a.Devfile.Data.GetProjects())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get sync folder")
-	}
+	syncFolder := compInfo.SyncFolder
 
 	if syncFolder != generator.DevfileSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
