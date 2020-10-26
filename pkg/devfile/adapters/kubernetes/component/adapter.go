@@ -160,9 +160,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		parameters.RunModeChanged = true
 	}
 	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
-	portExposureMap := generator.GetPortExposure(containerComponents)
 
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, portExposureMap)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -266,7 +265,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, portExposureMap map[int32]versionsCommon.ExposureType) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -371,36 +370,13 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 	deploymentSpec := generator.GenerateDeploymentSpec(deployParams)
 
-	var containerPorts []corev1.ContainerPort
-
-	for _, c := range deploymentSpec.Template.Spec.Containers {
-		// No need to check
-		if reflect.DeepEqual(a.Devfile.Ctx.GetApiVersion(), "1.0.0") {
-			containerPorts = append(containerPorts, c.Ports...)
-		} else {
-			for _, port := range c.Ports {
-				portExist := false
-				for _, entry := range containerPorts {
-					if entry.ContainerPort == port.ContainerPort {
-						portExist = true
-						break
-					}
-				}
-				// if Exposure == none, should not create a service for that port
-				if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
-					containerPorts = append(containerPorts, port)
-				}
-			}
-		}
+	selectorLabels := map[string]string{
+		"component": componentName,
 	}
-
-	serviceSpecParams := generator.ServiceSpecParams{
-		ContainerPorts: containerPorts,
-		SelectorLabels: map[string]string{
-			"component": componentName,
-		},
+	serviceSpec, err := generator.GetService(a.Devfile, selectorLabels)
+	if err != nil {
+		return err
 	}
-	serviceSpec := generator.GenerateServiceSpec(serviceSpecParams)
 	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 
