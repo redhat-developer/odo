@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 const (
@@ -223,6 +224,39 @@ func GenerateServiceSpec(serviceSpecParams ServiceSpecParams) *corev1.ServiceSpe
 	}
 
 	return svcSpec
+}
+
+// GetService iterates through the components in the devfile and returns a ServiceSpec
+func GetService(devfileObj devfileParser.DevfileObj, selectorLabels map[string]string) (*corev1.ServiceSpec, error) {
+
+	var containerPorts []corev1.ContainerPort
+	containerComponents := GetDevfileContainerComponents(devfileObj.Data)
+	portExposureMap := GetPortExposure(containerComponents)
+	containers, err := GetContainers(devfileObj)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range containers {
+		for _, port := range c.Ports {
+			portExist := false
+			for _, entry := range containerPorts {
+				if entry.ContainerPort == port.ContainerPort {
+					portExist = true
+					break
+				}
+			}
+			// if Exposure == none, should not create a service for that port
+			if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
+				containerPorts = append(containerPorts, port)
+			}
+		}
+	}
+	serviceSpecParams := ServiceSpecParams{
+		ContainerPorts: containerPorts,
+		SelectorLabels: selectorLabels,
+	}
+
+	return GenerateServiceSpec(serviceSpecParams), nil
 }
 
 // IngressParams struct for function createIngress

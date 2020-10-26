@@ -17,7 +17,6 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/devfile/parser"
@@ -1093,7 +1092,7 @@ func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint parsercommon.Endpoi
 // RemoveEndpointInDevfile deletes the specific endpoint information from devfile
 func RemoveEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
 	found := false
-	for _, component := range adaptersCommon.GetDevfileContainerComponents(devObj.Data) {
+	for _, component := range generator.GetDevfileContainerComponents(devObj.Data) {
 		for index, enpoint := range component.Container.Endpoints {
 			if enpoint.Name == urlName {
 				component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)

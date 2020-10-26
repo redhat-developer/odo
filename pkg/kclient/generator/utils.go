@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/util"
 
@@ -117,4 +118,39 @@ func addSyncFolder(container *corev1.Container, sourceVolumePath string, project
 		})
 
 	return nil
+}
+
+// GetPortExposure iterate through all endpoints and returns the highest exposure level of all TargetPort.
+// exposure level: public > internal > none
+func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]common.ExposureType {
+	portExposureMap := make(map[int32]common.ExposureType)
+	for _, comp := range containerComponents {
+		for _, endpoint := range comp.Container.Endpoints {
+			// if exposure=public, no need to check for existence
+			if endpoint.Exposure == common.Public || endpoint.Exposure == "" {
+				portExposureMap[endpoint.TargetPort] = common.Public
+			} else if exposure, exist := portExposureMap[endpoint.TargetPort]; exist {
+				// if a container has multiple identical ports with different exposure levels, save the highest level in the map
+				if endpoint.Exposure == common.Internal && exposure == common.None {
+					portExposureMap[endpoint.TargetPort] = common.Internal
+				}
+			} else {
+				portExposureMap[endpoint.TargetPort] = endpoint.Exposure
+			}
+		}
+
+	}
+	return portExposureMap
+}
+
+// GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components
+func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileComponent {
+	var components []common.DevfileComponent
+	// Only components with aliases are considered because without an alias commands cannot reference them
+	for _, comp := range data.GetAliasedComponents() {
+		if comp.Container != nil {
+			components = append(components, comp)
+		}
+	}
+	return components
 }

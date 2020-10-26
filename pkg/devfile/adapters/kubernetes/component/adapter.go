@@ -159,8 +159,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if currentMode != previousMode {
 		parameters.RunModeChanged = true
 	}
-	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
-	portExposureMap := utils.GetPortExposure(containerComponents)
+	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
+	portExposureMap := generator.GetPortExposure(containerComponents)
 
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, portExposureMap)
 	if err != nil {

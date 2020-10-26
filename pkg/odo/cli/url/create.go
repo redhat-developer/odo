@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -204,7 +203,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			o.urlType = envinfo.DOCKER
 		} else {
 			foundContainer := false
-			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
+			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)
 			// map TargetPort with containerName
 			containerPortMap := make(map[int]string)
 			for _, component := range containerComponents {

@@ -7,7 +7,6 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/generator"
@@ -48,29 +47,6 @@ func ComponentExists(client kclient.Client, name string) (bool, error) {
 		return false, nil
 	}
 	return deployment != nil, err
-}
-
-// GetPortExposure iterate through all endpoints and returns the highest exposure level of all TargetPort.
-// exposure level: public > internal > none
-func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]common.ExposureType {
-	portExposureMap := make(map[int32]common.ExposureType)
-	for _, comp := range containerComponents {
-		for _, endpoint := range comp.Container.Endpoints {
-			// if exposure=public, no need to check for existence
-			if endpoint.Exposure == common.Public || endpoint.Exposure == "" {
-				portExposureMap[endpoint.TargetPort] = common.Public
-			} else if exposure, exist := portExposureMap[endpoint.TargetPort]; exist {
-				// if a container has multiple identical ports with different exposure levels, save the highest level in the map
-				if endpoint.Exposure == common.Internal && exposure == common.None {
-					portExposureMap[endpoint.TargetPort] = common.Internal
-				}
-			} else {
-				portExposureMap[endpoint.TargetPort] = endpoint.Exposure
-			}
-		}
-
-	}
-	return portExposureMap
 }
 
 // isEnvPresent checks if the env variable is present in an array of env variables

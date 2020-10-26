@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/kclient/generator"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -160,7 +160,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	var configProvider envinfo.LocalConfigProvider = localConfigInfo
 	if envInfo != nil {
 		configProvider = envInfo
-		components = adaptersCommon.GetDevfileContainerComponents(devfile.Data)
+		components = generator.GetDevfileContainerComponents(devfile.Data)
 	}
 	urls, err = urlpkg.ListIngressAndRoute(client, configProvider, components, componentName, routeSupported)
 	if err != nil {
