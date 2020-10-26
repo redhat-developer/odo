@@ -31,12 +31,7 @@ func convertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 	for _, endpoint := range endpoints {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
 		name = util.TruncateString(name, 15)
-		for _, c := range containerPorts {
-			if c.Name == endpoint.Name {
-				// the name has to be unique within a single container since it is considered as the URL name
-				return nil, fmt.Errorf("devfile contains multiple endpoint entries with same name: %v", endpoint.Name)
-			}
-		}
+
 		containerPorts = append(containerPorts, corev1.ContainerPort{
 			Name:          name,
 			ContainerPort: endpoint.TargetPort,
