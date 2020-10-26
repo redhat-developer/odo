@@ -388,32 +388,43 @@ func TestTruncateString(t *testing.T) {
 		testName  string
 		str       string
 		strLength int
+		appendStr string
 		want      string
 	}{
 		{
 			testName:  "Case: Truncate string to greater length",
 			str:       "qw",
 			strLength: 4,
+			appendStr: "",
 			want:      "qw",
 		},
 		{
 			testName:  "Case: Truncate string to lesser length",
 			str:       "rtyu",
 			strLength: 3,
+			appendStr: "",
 			want:      "rty",
 		},
 		{
 			testName:  "Case: Truncate string to -1 length",
 			str:       "Odo",
 			strLength: -1,
+			appendStr: "",
 			want:      "Odo",
+		},
+		{
+			testName:  "Case: Trunicate string with 3 dots appended",
+			str:       "rtyu",
+			strLength: 3,
+			appendStr: "...",
+			want:      "rty...",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			receivedStr := TruncateString(tt.str, tt.strLength)
+			receivedStr := TruncateString(tt.str, tt.strLength, tt.appendStr)
 			if tt.want != receivedStr {
 				t.Errorf("Truncated string %s is not same as %s", receivedStr, tt.want)
 			}

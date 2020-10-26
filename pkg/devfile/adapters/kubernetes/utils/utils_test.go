@@ -1121,7 +1121,7 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 	objectMeta := kclient.CreateObjectMeta(componentName, namespace, labels, nil)
 
 	longContainerName := "thisisaverylongcontainerandkuberneteshasalimitforanamesize-exec2"
-	trimmedLongContainerName := util.TruncateString(longContainerName, containerNameMaxLen)
+	trimmedLongContainerName := util.TruncateString(longContainerName, containerNameMaxLen, "")
 
 	tests := []struct {
 		name              string
