@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -2599,32 +2600,19 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 // path is the path of the endpoint URL
 // secureURL indicates if the route is a secure one or not
 func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
-	routePath := "/"
-	if path != "" {
-		routePath = path
-	}
-	route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
-		Spec: routev1.RouteSpec{
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: serviceName,
-			},
-			Port: &routev1.RoutePort{
-				TargetPort: portNumber,
-			},
-			Path: routePath,
-		},
+
+	objectMeta := generator.CreateObjectMeta(name, c.Namespace, labels, nil)
+	routeParams := generator.RouteParams{
+		ServiceName: serviceName,
+		PortNumber:  portNumber,
+		Secure:      secureURL,
+		Path:        path,
 	}
 
-	if secureURL {
-		route.Spec.TLS = &routev1.TLSConfig{
-			Termination:                   routev1.TLSTerminationEdge,
-			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
-		}
+	routeSpec := generator.GenerateRouteSpec(routeParams)
+	route := &routev1.Route{
+		ObjectMeta: objectMeta,
+		Spec:       *routeSpec,
 	}
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))

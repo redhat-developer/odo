@@ -122,6 +122,7 @@ func addSyncFolder(container *corev1.Container, sourceVolumePath string, project
 
 // GetPortExposure iterate through all endpoints and returns the highest exposure level of all TargetPort.
 // exposure level: public > internal > none
+// This function should be under parser pkg
 func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]common.ExposureType {
 	portExposureMap := make(map[int32]common.ExposureType)
 	for _, comp := range containerComponents {
@@ -144,6 +145,7 @@ func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]co
 }
 
 // GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components
+// This function should be under parser pkg
 func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileComponent {
 	var components []common.DevfileComponent
 	// Only components with aliases are considered because without an alias commands cannot reference them

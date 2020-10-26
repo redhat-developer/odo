@@ -6,6 +6,7 @@ import (
 
 	"fmt"
 
+	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
@@ -247,6 +248,7 @@ func GetService(devfileObj devfileParser.DevfileObj, selectorLabels map[string]s
 			}
 			// if Exposure == none, should not create a service for that port
 			if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
+				port.Name = fmt.Sprintf("port-%v", port.ContainerPort)
 				containerPorts = append(containerPorts, port)
 			}
 		}
@@ -259,10 +261,11 @@ func GetService(devfileObj devfileParser.DevfileObj, selectorLabels map[string]s
 	return GenerateServiceSpec(serviceSpecParams), nil
 }
 
-// IngressParams struct for function createIngress
+// IngressParams struct for function GenerateIngressSpec
 // serviceName is the name of the service for the target reference
 // ingressDomain is the ingress domain to use for the ingress
 // portNumber is the target port of the ingress
+// Path is the path of the ingress
 // TLSSecretName is the target TLS Secret name of the ingress
 type IngressParams struct {
 	ServiceName   string
@@ -311,6 +314,44 @@ func GenerateIngressSpec(ingressParams IngressParams) *extensionsv1.IngressSpec 
 	}
 
 	return ingressSpec
+}
+
+// RouteParams struct for function GenerateRouteSpec
+// serviceName is the name of the service for the target reference
+// portNumber is the target port of the ingress
+// Path is the path of the route
+type RouteParams struct {
+	ServiceName string
+	PortNumber  intstr.IntOrString
+	Path        string
+	Secure      bool
+}
+
+// GenerateRouteSpec creates a route spec
+func GenerateRouteSpec(routeParams RouteParams) *routev1.RouteSpec {
+	routePath := "/"
+	if routeParams.Path != "" {
+		routePath = routeParams.Path
+	}
+	routeSpec := &routev1.RouteSpec{
+		To: routev1.RouteTargetReference{
+			Kind: "Service",
+			Name: routeParams.ServiceName,
+		},
+		Port: &routev1.RoutePort{
+			TargetPort: routeParams.PortNumber,
+		},
+		Path: routePath,
+	}
+
+	if routeParams.Secure {
+		routeSpec.TLS = &routev1.TLSConfig{
+			Termination:                   routev1.TLSTerminationEdge,
+			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+		}
+	}
+
+	return routeSpec
 }
 
 // GenerateOwnerReference genertes an ownerReference  from the deployment which can then be set as
