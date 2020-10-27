@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -423,4 +424,190 @@ func TestGetPortExposure(t *testing.T) {
 		})
 	}
 
+}
+
+func TestAddSyncRootFolder(t *testing.T) {
+
+	tests := []struct {
+		name               string
+		sourceMapping      string
+		wantSyncRootFolder string
+	}{
+		{
+			name:               "Case 1: Valid Source Mapping",
+			sourceMapping:      "/mypath",
+			wantSyncRootFolder: "/mypath",
+		},
+		{
+			name:               "Case 2: No Source Mapping",
+			sourceMapping:      "",
+			wantSyncRootFolder: DevfileSourceVolumeMount,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			container := testingutil.CreateFakeContainer("container1")
+
+			syncRootFolder := addSyncRootFolder(&container, tt.sourceMapping)
+
+			if syncRootFolder != tt.wantSyncRootFolder {
+				t.Errorf("TestAddSyncRootFolder sync root folder error - expected %v got %v", tt.wantSyncRootFolder, syncRootFolder)
+			}
+
+			for _, env := range container.Env {
+				if env.Name == EnvProjectsRoot && env.Value != tt.wantSyncRootFolder {
+					t.Errorf("PROJECT_ROOT error expected %s, actual %s", tt.wantSyncRootFolder, env.Value)
+				}
+			}
+
+			for _, volMount := range container.VolumeMounts {
+				if volMount.Name == DevfileSourceVolume && volMount.MountPath != tt.wantSyncRootFolder {
+					t.Errorf("devfile-projects vol mount error expected %s, actual %s", tt.wantSyncRootFolder, volMount.MountPath)
+				}
+			}
+		})
+	}
+}
+
+func TestAddSyncFolder(t *testing.T) {
+	projectNames := []string{"some-name", "another-name"}
+	projectRepos := []string{"https://github.com/some/repo.git", "https://github.com/another/repo.git"}
+	projectClonePath := "src/github.com/golang/example/"
+	invalidClonePaths := []string{"/var", "../var", "pkg/../../var"}
+	sourceVolumePath := "/projects/app"
+
+	tests := []struct {
+		name     string
+		projects []common.DevfileProject
+		want     string
+		wantErr  bool
+	}{
+		{
+			name:     "Case 1: No projects",
+			projects: []common.DevfileProject{},
+			want:     sourceVolumePath,
+			wantErr:  false,
+		},
+		{
+			name: "Case 2: One project",
+			projects: []common.DevfileProject{
+				{
+					Name: projectNames[0],
+					Git: &common.Git{
+						GitLikeProjectSource: common.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
+					},
+				},
+			},
+			want:    filepath.ToSlash(filepath.Join(sourceVolumePath, projectNames[0])),
+			wantErr: false,
+		},
+		{
+			name: "Case 3: Multiple projects",
+			projects: []common.DevfileProject{
+				{
+					Name: projectNames[0],
+					Git: &common.Git{
+						GitLikeProjectSource: common.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
+					},
+				},
+				{
+					Name: projectNames[1],
+					Github: &common.Github{
+						GitLikeProjectSource: common.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[1]},
+						},
+					},
+				},
+				{
+					Name: projectNames[1],
+					Zip: &common.Zip{
+						Location: projectRepos[1],
+					},
+				},
+			},
+			want:    filepath.ToSlash(filepath.Join(sourceVolumePath, projectNames[0])),
+			wantErr: false,
+		},
+		{
+			name: "Case 4: Clone path set",
+			projects: []common.DevfileProject{
+				{
+					ClonePath: projectClonePath,
+					Name:      projectNames[0],
+					Zip: &common.Zip{
+						Location: projectRepos[0],
+					},
+				},
+			},
+			want:    filepath.ToSlash(filepath.Join(sourceVolumePath, projectClonePath)),
+			wantErr: false,
+		},
+		{
+			name: "Case 5: Invalid clone path, set with absolute path",
+			projects: []common.DevfileProject{
+				{
+					ClonePath: invalidClonePaths[0],
+					Name:      projectNames[0],
+					Github: &common.Github{
+						GitLikeProjectSource: common.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
+					},
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Case 6: Invalid clone path, starts with ..",
+			projects: []common.DevfileProject{
+				{
+					ClonePath: invalidClonePaths[1],
+					Name:      projectNames[0],
+					Git: &common.Git{
+						GitLikeProjectSource: common.GitLikeProjectSource{
+							Remotes: map[string]string{"origin": projectRepos[0]},
+						},
+					},
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Case 7: Invalid clone path, contains ..",
+			projects: []common.DevfileProject{
+				{
+					ClonePath: invalidClonePaths[2],
+					Name:      projectNames[0],
+					Zip: &common.Zip{
+						Location: projectRepos[0],
+					},
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			container := testingutil.CreateFakeContainer("container1")
+
+			err := addSyncFolder(&container, sourceVolumePath, tt.projects)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, actual %v", tt.wantErr, err)
+			}
+
+			for _, env := range container.Env {
+				if env.Name == EnvProjectsSrc && env.Value != tt.want {
+					t.Errorf("expected %s, actual %s", tt.want, env.Value)
+				}
+			}
+		})
+	}
 }
