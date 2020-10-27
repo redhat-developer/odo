@@ -148,12 +148,10 @@ func GeneratePodTemplateSpec(podTemplateSpecParams PodTemplateSpecParams) *corev
 type DeploymentSpecParams struct {
 	PodTemplateSpec   corev1.PodTemplateSpec
 	PodSelectorLabels map[string]string
-	// ReplicaSet        int32
 }
 
 // GenerateDeploymentSpec creates a deployment spec
 func GenerateDeploymentSpec(deployParams DeploymentSpecParams) *appsv1.DeploymentSpec {
-	// replicaSet := int32(2)
 	deploymentSpec := &appsv1.DeploymentSpec{
 		Strategy: appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
@@ -162,7 +160,6 @@ func GenerateDeploymentSpec(deployParams DeploymentSpecParams) *appsv1.Deploymen
 			MatchLabels: deployParams.PodSelectorLabels,
 		},
 		Template: deployParams.PodTemplateSpec,
-		// Replicas: &deployParams.ReplicaSet,
 	}
 
 	return deploymentSpec

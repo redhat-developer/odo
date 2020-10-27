@@ -1,18 +1,147 @@
 package generator
 
 import (
+	"reflect"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
-
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var fakeResources corev1.ResourceRequirements
 
 func init() {
 	fakeResources = *fakeResourceRequirements()
+}
+
+func TestGetContainers(t *testing.T) {
+
+	containerNames := []string{"testcontainer1", "testcontainer2"}
+	containerImages := []string{"image1", "image2"}
+
+	tests := []struct {
+		name                  string
+		containerComponents   []common.DevfileComponent
+		wantContainerName     string
+		wantContainerImage    string
+		wantContainerEnv      []corev1.EnvVar
+		wantContainerVolMount []corev1.VolumeMount
+		wantErr               bool
+	}{
+		{
+			name: "Case 1: Container with default project root",
+			containerComponents: []common.DevfileComponent{
+				{
+					Name: containerNames[0],
+					Container: &common.Container{
+						Image:        containerImages[0],
+						MountSources: true,
+					},
+				},
+			},
+			wantContainerName:  containerNames[0],
+			wantContainerImage: containerImages[0],
+			wantContainerEnv: []corev1.EnvVar{
+
+				{
+					Name:  "PROJECTS_ROOT",
+					Value: "/projects",
+				},
+				{
+					Name:  "PROJECT_SOURCE",
+					Value: "/projects/test-project",
+				},
+			},
+			wantContainerVolMount: []corev1.VolumeMount{
+				{
+					Name:      "devfile-projects",
+					MountPath: "/projects",
+				},
+			},
+		},
+		{
+			name: "Case 2: Container with source mapping",
+			containerComponents: []common.DevfileComponent{
+				{
+					Name: containerNames[0],
+					Container: &common.Container{
+						Image:         containerImages[0],
+						MountSources:  true,
+						SourceMapping: "/myroot",
+					},
+				},
+			},
+			wantContainerName:  containerNames[0],
+			wantContainerImage: containerImages[0],
+			wantContainerEnv: []corev1.EnvVar{
+
+				{
+					Name:  "PROJECTS_ROOT",
+					Value: "/myroot",
+				},
+				{
+					Name:  "PROJECT_SOURCE",
+					Value: "/myroot/test-project",
+				},
+			},
+			wantContainerVolMount: []corev1.VolumeMount{
+				{
+					Name:      "devfile-projects",
+					MountPath: "/myroot",
+				},
+			},
+		},
+		{
+			name: "Case 3: Container with no mount source",
+			containerComponents: []common.DevfileComponent{
+				{
+					Name: containerNames[0],
+					Container: &common.Container{
+						Image: containerImages[0],
+					},
+				},
+			},
+			wantContainerName:  containerNames[0],
+			wantContainerImage: containerImages[0],
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: &testingutil.TestDevfileData{
+					Components: tt.containerComponents,
+				},
+			}
+
+			containers, err := GetContainers(devObj)
+			if err != nil && !tt.wantErr {
+				t.Errorf("TestGetContainers unexpected error: %v", err)
+			} else if err == nil && tt.wantErr {
+				t.Errorf("TestGetContainers unexpected test failure: want err but got no err")
+			} else {
+				for _, container := range containers {
+					if container.Name != tt.wantContainerName {
+						t.Errorf("TestGetContainers error: Name mismatch - got: %s, wanted: %s", container.Name, tt.wantContainerName)
+					}
+					if container.Image != tt.wantContainerImage {
+						t.Errorf("TestGetContainers error: Image mismatch - got: %s, wanted: %s", container.Image, tt.wantContainerImage)
+					}
+					if len(container.Env) > 0 && !reflect.DeepEqual(container.Env, tt.wantContainerEnv) {
+						t.Errorf("TestGetContainers error: Env mismatch - got: %+v, wanted: %+v", container.Env, tt.wantContainerEnv)
+					}
+					if len(container.VolumeMounts) > 0 && !reflect.DeepEqual(container.VolumeMounts, tt.wantContainerVolMount) {
+						t.Errorf("TestGetContainers error: Vol Mount mismatch - got: %+v, wanted: %+v", container.VolumeMounts, tt.wantContainerVolMount)
+					}
+				}
+			}
+		})
+	}
+
 }
 
 func TestGenerateContainer(t *testing.T) {
@@ -141,14 +270,22 @@ func TestGenerateContainer(t *testing.T) {
 
 func TestGeneratePodTemplateSpec(t *testing.T) {
 
-	container := &corev1.Container{
-		Name:            "container1",
-		Image:           "image1",
-		ImagePullPolicy: corev1.PullAlways,
+	container := []corev1.Container{
+		{
+			Name:            "container1",
+			Image:           "image1",
+			ImagePullPolicy: corev1.PullAlways,
 
-		Command: []string{"tail"},
-		Args:    []string{"-f", "/dev/null"},
-		Env:     []corev1.EnvVar{},
+			Command: []string{"tail"},
+			Args:    []string{"-f", "/dev/null"},
+			Env:     []corev1.EnvVar{},
+		},
+	}
+
+	volume := []corev1.Volume{
+		{
+			Name: "vol1",
+		},
 	}
 
 	tests := []struct {
@@ -173,33 +310,31 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 			podTemplateSpecParams := PodTemplateSpecParams{
-				ObjectMeta: objectMeta,
-				Containers: []corev1.Container{*container},
-				// Volumes:    utils.GetOdoContainerVolumes(),
+				ObjectMeta:     objectMeta,
+				Containers:     container,
+				Volumes:        volume,
+				InitContainers: container,
 			}
 			podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
 
 			if podTemplateSpec.Name != tt.podName {
 				t.Errorf("expected %s, actual %s", tt.podName, podTemplateSpec.Name)
 			}
-
 			if podTemplateSpec.Namespace != tt.namespace {
 				t.Errorf("expected %s, actual %s", tt.namespace, podTemplateSpec.Namespace)
 			}
-
-			// if !hasVolumeWithName(OdoSourceVolume, podTemplateSpec.Spec.Volumes) {
-			// 	t.Errorf("volume with name: %s not found", OdoSourceVolume)
-			// }
-			if len(podTemplateSpec.Labels) != len(tt.labels) {
-				t.Errorf("expected %d, actual %d", len(tt.labels), len(podTemplateSpec.Labels))
-			} else {
-				for i := range podTemplateSpec.Labels {
-					if podTemplateSpec.Labels[i] != tt.labels[i] {
-						t.Errorf("expected %s, actual %s", tt.labels[i], podTemplateSpec.Labels[i])
-					}
-				}
+			if !hasVolumeWithName("vol1", podTemplateSpec.Spec.Volumes) {
+				t.Errorf("volume with name: %s not found", "vol1")
 			}
-
+			if !reflect.DeepEqual(podTemplateSpec.Labels, tt.labels) {
+				t.Errorf("expected %+v, actual %+v", tt.labels, podTemplateSpec.Labels)
+			}
+			if !reflect.DeepEqual(podTemplateSpec.Spec.Containers, container) {
+				t.Errorf("expected %+v, actual %+v", container, podTemplateSpec.Spec.Containers)
+			}
+			if !reflect.DeepEqual(podTemplateSpec.Spec.InitContainers, container) {
+				t.Errorf("expected %+v, actual %+v", container, podTemplateSpec.Spec.InitContainers)
+			}
 		})
 	}
 }
@@ -356,11 +491,11 @@ func fakeResourceRequirements() *corev1.ResourceRequirements {
 	return &resReq
 }
 
-// func hasVolumeWithName(name string, volMounts []corev1.Volume) bool {
-// 	for _, vm := range volMounts {
-// 		if vm.Name == name {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
+func hasVolumeWithName(name string, volMounts []corev1.Volume) bool {
+	for _, vm := range volMounts {
+		if vm.Name == name {
+			return true
+		}
+	}
+	return false
+}
