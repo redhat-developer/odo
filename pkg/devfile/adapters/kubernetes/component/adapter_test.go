@@ -39,44 +39,39 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		componentType   versionsCommon.DevfileComponentType
-		envInfo         envinfo.EnvSpecificInfo
-		portExposureMap map[int32]versionsCommon.ExposureType
-		running         bool
-		wantErr         bool
+		name          string
+		componentType versionsCommon.DevfileComponentType
+		envInfo       envinfo.EnvSpecificInfo
+		running       bool
+		wantErr       bool
 	}{
 		{
-			name:            "Case 1: Invalid devfile",
-			componentType:   "",
-			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
-			running:         false,
-			wantErr:         true,
+			name:          "Case 1: Invalid devfile",
+			componentType: "",
+			envInfo:       envinfo.EnvSpecificInfo{},
+			running:       false,
+			wantErr:       true,
 		},
 		{
-			name:            "Case 2: Valid devfile",
-			componentType:   versionsCommon.ContainerComponentType,
-			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
-			running:         false,
-			wantErr:         false,
+			name:          "Case 2: Valid devfile",
+			componentType: versionsCommon.ContainerComponentType,
+			envInfo:       envinfo.EnvSpecificInfo{},
+			running:       false,
+			wantErr:       false,
 		},
 		{
-			name:            "Case 3: Invalid devfile, already running component",
-			componentType:   "",
-			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
-			running:         true,
-			wantErr:         true,
+			name:          "Case 3: Invalid devfile, already running component",
+			componentType: "",
+			envInfo:       envinfo.EnvSpecificInfo{},
+			running:       true,
+			wantErr:       true,
 		},
 		{
-			name:            "Case 4: Valid devfile, already running component",
-			componentType:   versionsCommon.ContainerComponentType,
-			envInfo:         envinfo.EnvSpecificInfo{},
-			portExposureMap: map[int32]versionsCommon.ExposureType{},
-			running:         true,
-			wantErr:         false,
+			name:          "Case 4: Valid devfile, already running component",
+			componentType: versionsCommon.ContainerComponentType,
+			envInfo:       envinfo.EnvSpecificInfo{},
+			running:       true,
+			wantErr:       false,
 		},
 	}
 	for _, tt := range tests {
@@ -110,7 +105,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, tt.portExposureMap)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -282,7 +277,6 @@ func TestDoesComponentExist(t *testing.T) {
 		componentName    string
 		getComponentName string
 		envInfo          envinfo.EnvSpecificInfo
-		portExposureMap  map[int32]versionsCommon.ExposureType
 		want             bool
 		wantErr          bool
 	}{
@@ -291,7 +285,6 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			portExposureMap:  map[int32]versionsCommon.ExposureType{},
 			want:             true,
 			wantErr:          false,
 		},
@@ -300,7 +293,6 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "fake-component",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			portExposureMap:  map[int32]versionsCommon.ExposureType{},
 			want:             false,
 			wantErr:          false,
 		},
@@ -309,7 +301,6 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			portExposureMap:  map[int32]versionsCommon.ExposureType{},
 			want:             false,
 			wantErr:          true,
 		},
@@ -337,7 +328,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, tt.portExposureMap)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if err != nil {
