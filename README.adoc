@@ -42,7 +42,7 @@ Service::
 A service is software that your component links to or depends on.
 Examples of services: MariaDB, MySQL.
 Devfile::
-A portable file responsible for your entire reproductible development environment.
+A portable file responsible for your entire reproducible development environment.
 
 [id="odo-supported-devfiles"]
 === Official Devfiles
