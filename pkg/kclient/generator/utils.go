@@ -26,7 +26,7 @@ func convertEnvs(vars []common.Env) []corev1.EnvVar {
 }
 
 // convertPorts converts endpoint variables from the devfile structure to kubernetes ContainerPort
-func convertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
+func convertPorts(endpoints []common.Endpoint) []corev1.ContainerPort {
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
@@ -37,7 +37,7 @@ func convertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 			ContainerPort: endpoint.TargetPort,
 		})
 	}
-	return containerPorts, nil
+	return containerPorts
 }
 
 // getResourceReqs creates a kubernetes ResourceRequirements object based on resource requirements set in the devfile

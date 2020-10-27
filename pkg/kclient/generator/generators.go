@@ -90,10 +90,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		if comp.Container != nil {
 			envVars := convertEnvs(comp.Container.Env)
 			resourceReqs := getResourceReqs(comp)
-			ports, err := convertPorts(comp.Container.Endpoints)
-			if err != nil {
-				return nil, err
-			}
+			ports := convertPorts(comp.Container.Endpoints)
 			containerParams := ContainerParams{
 				Name:         comp.Name,
 				Image:        comp.Container.Image,

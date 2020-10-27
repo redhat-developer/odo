@@ -119,24 +119,29 @@ func TestGetContainers(t *testing.T) {
 			}
 
 			containers, err := GetContainers(devObj)
-			if err != nil && !tt.wantErr {
-				t.Errorf("TestGetContainers unexpected error: %v", err)
-			} else if err == nil && tt.wantErr {
-				t.Errorf("TestGetContainers unexpected test failure: want err but got no err")
-			} else {
-				for _, container := range containers {
-					if container.Name != tt.wantContainerName {
-						t.Errorf("TestGetContainers error: Name mismatch - got: %s, wanted: %s", container.Name, tt.wantContainerName)
-					}
-					if container.Image != tt.wantContainerImage {
-						t.Errorf("TestGetContainers error: Image mismatch - got: %s, wanted: %s", container.Image, tt.wantContainerImage)
-					}
-					if len(container.Env) > 0 && !reflect.DeepEqual(container.Env, tt.wantContainerEnv) {
-						t.Errorf("TestGetContainers error: Env mismatch - got: %+v, wanted: %+v", container.Env, tt.wantContainerEnv)
-					}
-					if len(container.VolumeMounts) > 0 && !reflect.DeepEqual(container.VolumeMounts, tt.wantContainerVolMount) {
-						t.Errorf("TestGetContainers error: Vol Mount mismatch - got: %+v, wanted: %+v", container.VolumeMounts, tt.wantContainerVolMount)
-					}
+			// Unexpected error
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TestGetContainers() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			// Expected error and got an err
+			if tt.wantErr && err != nil {
+				return
+			}
+
+			for _, container := range containers {
+				if container.Name != tt.wantContainerName {
+					t.Errorf("TestGetContainers error: Name mismatch - got: %s, wanted: %s", container.Name, tt.wantContainerName)
+				}
+				if container.Image != tt.wantContainerImage {
+					t.Errorf("TestGetContainers error: Image mismatch - got: %s, wanted: %s", container.Image, tt.wantContainerImage)
+				}
+				if len(container.Env) > 0 && !reflect.DeepEqual(container.Env, tt.wantContainerEnv) {
+					t.Errorf("TestGetContainers error: Env mismatch - got: %+v, wanted: %+v", container.Env, tt.wantContainerEnv)
+				}
+				if len(container.VolumeMounts) > 0 && !reflect.DeepEqual(container.VolumeMounts, tt.wantContainerVolMount) {
+					t.Errorf("TestGetContainers error: Vol Mount mismatch - got: %+v, wanted: %+v", container.VolumeMounts, tt.wantContainerVolMount)
 				}
 			}
 		})
@@ -424,6 +429,61 @@ func TestGenerateIngressSpec(t *testing.T) {
 	}
 }
 
+func TestGenerateRouteSpec(t *testing.T) {
+
+	tests := []struct {
+		name      string
+		parameter RouteParams
+	}{
+		{
+			name: "Case 1: insecure route",
+			parameter: RouteParams{
+				ServiceName: "service1",
+				PortNumber: intstr.IntOrString{
+					IntVal: 8080,
+				},
+				Secure: false,
+				Path:   "/test",
+			},
+		},
+		{
+			name: "Case 2: secure route",
+			parameter: RouteParams{
+				ServiceName: "service1",
+				PortNumber: intstr.IntOrString{
+					IntVal: 8080,
+				},
+				Secure: true,
+				Path:   "/test",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			routeSpec := GenerateRouteSpec(tt.parameter)
+
+			if routeSpec.Port.TargetPort != tt.parameter.PortNumber {
+				t.Errorf("expected %v, actual %v", tt.parameter.PortNumber, routeSpec.Port.TargetPort)
+			}
+
+			if routeSpec.To.Name != tt.parameter.ServiceName {
+				t.Errorf("expected %s, actual %s", tt.parameter.ServiceName, routeSpec.To.Name)
+			}
+
+			if routeSpec.Path != tt.parameter.Path {
+				t.Errorf("expected %s, actual %s", tt.parameter.Path, routeSpec.Path)
+			}
+
+			if (routeSpec.TLS != nil) != tt.parameter.Secure {
+				t.Errorf("the route TLS does not match secure level %v", tt.parameter.Secure)
+			}
+
+		})
+	}
+}
+
 func TestGenerateServiceSpec(t *testing.T) {
 	port1 := corev1.ContainerPort{
 		Name:          "port-9090",
@@ -473,6 +533,125 @@ func TestGenerateServiceSpec(t *testing.T) {
 
 		})
 	}
+}
+
+func TestGetService(t *testing.T) {
+
+	endpointNames := []string{"port-8080-1", "port-8080-2", "port-9090"}
+
+	tests := []struct {
+		name                string
+		containerComponents []common.DevfileComponent
+		labels              map[string]string
+		wantPorts           []corev1.ServicePort
+		wantErr             bool
+	}{
+		{
+			name: "Case 1: multiple endpoints share the same port",
+			containerComponents: []common.DevfileComponent{
+				{
+					Name: "testcontainer1",
+					Container: &common.Container{
+						Endpoints: []common.Endpoint{
+							{
+								Name:       endpointNames[0],
+								TargetPort: 8080,
+							},
+							{
+								Name:       endpointNames[1],
+								TargetPort: 8080,
+							},
+						},
+					},
+				},
+			},
+			labels: map[string]string{},
+			wantPorts: []corev1.ServicePort{
+				{
+					Name:       "port-8080",
+					Port:       8080,
+					TargetPort: intstr.FromInt(8080),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case 2: multiple endpoints have different ports",
+			containerComponents: []common.DevfileComponent{
+				{
+					Name: "testcontainer1",
+					Container: &common.Container{
+						Endpoints: []common.Endpoint{
+							{
+								Name:       endpointNames[0],
+								TargetPort: 8080,
+							},
+							{
+								Name:       endpointNames[2],
+								TargetPort: 9090,
+							},
+						},
+					},
+				},
+			},
+			labels: map[string]string{
+				"component": "testcomponent",
+			},
+			wantPorts: []corev1.ServicePort{
+				{
+					Name:       "port-8080",
+					Port:       8080,
+					TargetPort: intstr.FromInt(8080),
+				},
+				{
+					Name:       "port-9090",
+					Port:       9090,
+					TargetPort: intstr.FromInt(9090),
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: &testingutil.TestDevfileData{
+					Components: tt.containerComponents,
+				},
+			}
+
+			serviceSpec, err := GetService(devObj, tt.labels)
+
+			// Unexpected error
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TestGetService() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			// Expected error and got an err
+			if tt.wantErr && err != nil {
+				return
+			}
+
+			if !reflect.DeepEqual(serviceSpec.Selector, tt.labels) {
+				t.Errorf("expected service selector is %v, actual %v", tt.labels, serviceSpec.Selector)
+			}
+			if len(serviceSpec.Ports) != len(tt.wantPorts) {
+				t.Errorf("expected service ports length is %v, actual %v", len(tt.wantPorts), len(serviceSpec.Ports))
+			} else {
+				for i := range serviceSpec.Ports {
+					if serviceSpec.Ports[i].Name != tt.wantPorts[i].Name {
+						t.Errorf("expected name %s, actual name %s", tt.wantPorts[i].Name, serviceSpec.Ports[i].Name)
+					}
+					if serviceSpec.Ports[i].Port != tt.wantPorts[i].Port {
+						t.Errorf("expected port number is %v, actual %v", tt.wantPorts[i].Port, serviceSpec.Ports[i].Port)
+					}
+				}
+			}
+		})
+	}
+
 }
 
 func fakeResourceRequirements() *corev1.ResourceRequirements {
