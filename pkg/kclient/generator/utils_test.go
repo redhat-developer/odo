@@ -7,7 +7,194 @@ import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
+
+func TestConvertEnvs(t *testing.T) {
+	envVarsNames := []string{"test", "sample-var", "myvar"}
+	envVarsValues := []string{"value1", "value2", "value3"}
+	tests := []struct {
+		name    string
+		envVars []common.Env
+		want    []corev1.EnvVar
+	}{
+		{
+			name: "Case 1: One env var",
+			envVars: []common.Env{
+				{
+					Name:  envVarsNames[0],
+					Value: envVarsValues[0],
+				},
+			},
+			want: []corev1.EnvVar{
+				{
+					Name:  envVarsNames[0],
+					Value: envVarsValues[0],
+				},
+			},
+		},
+		{
+			name: "Case 2: Multiple env vars",
+			envVars: []common.Env{
+				{
+					Name:  envVarsNames[0],
+					Value: envVarsValues[0],
+				},
+				{
+					Name:  envVarsNames[1],
+					Value: envVarsValues[1],
+				},
+				{
+					Name:  envVarsNames[2],
+					Value: envVarsValues[2],
+				},
+			},
+			want: []corev1.EnvVar{
+				{
+					Name:  envVarsNames[0],
+					Value: envVarsValues[0],
+				},
+				{
+					Name:  envVarsNames[1],
+					Value: envVarsValues[1],
+				},
+				{
+					Name:  envVarsNames[2],
+					Value: envVarsValues[2],
+				},
+			},
+		},
+		{
+			name:    "Case 3: No env vars",
+			envVars: []common.Env{},
+			want:    []corev1.EnvVar{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envVars := convertEnvs(tt.envVars)
+			if !reflect.DeepEqual(tt.want, envVars) {
+				t.Errorf("expected %v, wanted %v", envVars, tt.want)
+			}
+		})
+	}
+}
+
+func TestConvertPorts(t *testing.T) {
+	endpointsNames := []string{"endpoint1", "endpoint2"}
+	endpointsPorts := []int32{8080, 9090}
+	tests := []struct {
+		name      string
+		endpoints []common.Endpoint
+		want      []corev1.ContainerPort
+	}{
+		{
+			name: "Case 1: One Endpoint",
+			endpoints: []common.Endpoint{
+				{
+					Name:       endpointsNames[0],
+					TargetPort: endpointsPorts[0],
+				},
+			},
+			want: []corev1.ContainerPort{
+				{
+					Name:          endpointsNames[0],
+					ContainerPort: endpointsPorts[0],
+				},
+			},
+		},
+		{
+			name: "Case 2: Multiple env vars",
+			endpoints: []common.Endpoint{
+				{
+					Name:       endpointsNames[0],
+					TargetPort: endpointsPorts[0],
+				},
+				{
+					Name:       endpointsNames[1],
+					TargetPort: endpointsPorts[1],
+				},
+			},
+			want: []corev1.ContainerPort{
+				{
+					Name:          endpointsNames[0],
+					ContainerPort: endpointsPorts[0],
+				},
+				{
+					Name:          endpointsNames[1],
+					ContainerPort: endpointsPorts[1],
+				},
+			},
+		},
+		{
+			name:      "Case 3: No endpoints",
+			endpoints: []common.Endpoint{},
+			want:      []corev1.ContainerPort{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ports := convertPorts(tt.endpoints)
+			if !reflect.DeepEqual(tt.want, ports) {
+				t.Errorf("expected %v, wanted %v", ports, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetResourceReqs(t *testing.T) {
+	limit := "1024Mi"
+	quantity, err := resource.ParseQuantity(limit)
+	if err != nil {
+		t.Errorf("expected %v", err)
+	}
+	tests := []struct {
+		name      string
+		component common.DevfileComponent
+		want      corev1.ResourceRequirements
+	}{
+		{
+			name: "Case 1: One Endpoint",
+			component: common.DevfileComponent{
+				Name: "testcomponent",
+				Container: &common.Container{
+					MemoryLimit: "1024Mi",
+				},
+			},
+			want: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: quantity,
+				},
+			},
+		},
+		{
+			name:      "Case 2: Empty DevfileComponent",
+			component: common.DevfileComponent{},
+			want:      corev1.ResourceRequirements{},
+		},
+		{
+			name: "Case 3: Valid container, but empty memoryLimit",
+			component: common.DevfileComponent{
+				Name: "testcomponent",
+				Container: &common.Container{
+					Image: "testimage",
+				}},
+			want: corev1.ResourceRequirements{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := getResourceReqs(tt.component)
+			if !reflect.DeepEqual(tt.want, req) {
+				t.Errorf("expected %v, wanted %v", req, tt.want)
+			}
+		})
+	}
+}
 
 func TestGetDevfileContainerComponents(t *testing.T) {
 
