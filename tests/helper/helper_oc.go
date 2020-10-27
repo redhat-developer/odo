@@ -200,7 +200,7 @@ func (oc OcRunner) VerifyCmpName(cmpName string, namespace string) {
 	Expect(session).To(ContainSubstring(cmpName))
 }
 
-// GetDcName execute oc command and returns dc name of a delopyed
+// GetDcName execute oc command and returns dc name of a deployed
 // component by passing component name as a argument
 func (oc OcRunner) GetDcName(compName string, namespace string) string {
 	session := CmdShouldPass(oc.path, "get", "dc", "--namespace", namespace)
@@ -279,7 +279,7 @@ func (oc OcRunner) SourceLocationBC(componentName string, appName string, projec
 	return sourceLocation
 }
 
-// checkForImageStream checks if there is a ImageStram with name and tag in openshift namespace
+// checkForImageStream checks if there is a ImageStream with name and tag in openshift namespace
 func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	// first check if there is ImageStream with given name
 	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
@@ -319,7 +319,7 @@ func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project str
 
 // ImportJavaIS import the openjdk image which is used for jars
 func (oc OcRunner) ImportJavaIS(project string) {
-	// if ImageStram already exists, no need to do anything
+	// if ImageStream already exists, no need to do anything
 	if oc.checkForImageStream("java", "8") {
 		return
 	}
@@ -334,7 +334,7 @@ func (oc OcRunner) ImportJavaIS(project string) {
 
 // ImportDotnet20IS import the dotnet image
 func (oc OcRunner) ImportDotnet20IS(project string) {
-	// if ImageStram already exists, no need to do anything
+	// if ImageStream already exists, no need to do anything
 	if oc.checkForImageStream("dotnet", "2.0") {
 		return
 	}
@@ -365,7 +365,7 @@ func (oc OcRunner) EnvVarTest(resourceName string, sourceType string, envString 
 	Expect(envVars).To(Equal(envString))
 }
 
-// GetRunningPodNameOfComp executes oc command and returns the running pod name of a delopyed
+// GetRunningPodNameOfComp executes oc command and returns the running pod name of a deployed
 // component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) string {
 	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
@@ -374,7 +374,7 @@ func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) st
 	return strings.TrimSpace(podName)
 }
 
-// GetRunningPodNameByComponent executes oc command and returns the running pod name of a delopyed
+// GetRunningPodNameByComponent executes oc command and returns the running pod name of a deployed
 // devfile component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)

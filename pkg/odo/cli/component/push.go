@@ -137,7 +137,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		po.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// If the push target has been set to Docker, we will have to change the current namespace.
-		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
 		if !pushtarget.IsPushTargetDocker() {
 			po.namespace = po.KClient.Namespace
 		}

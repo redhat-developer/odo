@@ -342,7 +342,7 @@ func componentTests(args ...string) {
 				// component doesn't exist yet so attempt to only push source should fail
 				helper.CmdShouldFail("odo", append(args, "push", "--source")...)
 
-				// Push only config and see that the component is created but wothout any source copied
+				// Push only config and see that the component is created but without any source copied
 				helper.CmdShouldPass("odo", append(args, "push", "--config")...)
 				oc.VerifyCmpExists(cmpName, appName, commonVar.Project)
 
@@ -368,7 +368,7 @@ func componentTests(args ...string) {
 
 				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project)...)
 				helper.ValidateLocalCmpExist(commonVar.Context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName)
-				// Push only config and see that the component is created but wothout any source copied
+				// Push only config and see that the component is created but without any source copied
 				helper.CmdShouldPass("odo", append(args, "push")...)
 				oc.VerifyCmpExists(cmpName, appName, commonVar.Project)
 				remoteCmdExecPass := oc.CheckCmdOpInRemoteCmpPod(
@@ -398,7 +398,7 @@ func componentTests(args ...string) {
 				// component doesn't exist yet so attempt to only push source should fail
 				helper.CmdShouldFail("odo", append(args, "push", "--source", "--context", commonVar.Context)...)
 
-				// Push only config and see that the component is created but wothout any source copied
+				// Push only config and see that the component is created but without any source copied
 				helper.CmdShouldPass("odo", append(args, "push", "--config", "--context", commonVar.Context)...)
 				oc.VerifyCmpExists(cmpName, appName, commonVar.Project)
 

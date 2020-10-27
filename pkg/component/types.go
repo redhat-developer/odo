@@ -66,7 +66,7 @@ type DevfileComponentSpec struct {
 	SourceType string `json:"sourceType,omitempty"`
 }
 
-// State reperesents component state
+// State represents the component state
 type State string
 
 const (

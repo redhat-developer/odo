@@ -124,7 +124,7 @@ func parseParent(d DevfileObj) error {
 
 	klog.V(2).Infof("adding data of devfile with URI: %v", parent.Uri)
 
-	// since the parent's data has been overriden
+	// since the parent's data has been overridden
 	// add the items back to the current devfile
 	// error indicates that the item has been defined again in the current devfile
 	commandsMap := parentData.Data.GetCommands()

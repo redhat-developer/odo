@@ -66,7 +66,7 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.C
 					Name: OdoSourceVolume,
 				},
 				{
-					// Create a volume that will be shared betwen InitContainer and the applicationContainer
+					// Create a volume that will be shared between InitContainer and the applicationContainer
 					// in order to pass over the SupervisorD binary
 					Name: common.SupervisordVolumeName,
 					VolumeSource: corev1.VolumeSource{
@@ -240,7 +240,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 	return SelfSignedCertificate{CertPem: certPemByteArr, KeyPem: keyPemByteArr}, nil
 }
 
-// GenerateOwnerReference genertes an ownerReference  from the deployment which can then be set as
+// GenerateOwnerReference generates an ownerReference  from the deployment which can then be set as
 // owner for various Kubernetes objects and ensure that when the owner object is deleted from the
 // cluster, all other objects are automatically removed by Kubernetes garbage collector
 func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {

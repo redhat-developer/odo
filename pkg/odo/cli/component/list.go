@@ -259,7 +259,7 @@ func (lo *ListOptions) Run() (err error) {
 				components = append(components, comps.Items...)
 			}
 
-			// interating over list of application and get list of all components
+			// iterating over list of application and get list of all components
 			for _, app := range apps {
 				comps, err := component.List(lo.Client, app, lo.LocalConfigInfo)
 				if err != nil {

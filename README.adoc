@@ -42,7 +42,7 @@ Service::
 A service is software that your component links to or depends on.
 Examples of services: MariaDB, MySQL.
 Devfile::
-A portable file responsible for your entire reproducable development environment.
+A portable file responsible for your entire reproductible development environment.
 
 [id="odo-supported-devfiles"]
 === Official Devfiles
@@ -90,7 +90,7 @@ Devfiles describe your development environment link. link:https://odo.dev/docs/d
 
 [NOTE]
 ====
-The list of available Devfiles is sourced from the official link:https://github.com/odo-devfiles/registry[odo registry] as well as any other registies added via `odo registry add`.
+The list of available Devfiles is sourced from the official link:https://github.com/odo-devfiles/registry[odo registry] as well as any other registries added via `odo registry add`.
 ====
 
 To list the available Devfiles:
@@ -111,7 +111,7 @@ nodejs               Stack with NodeJS 12                   DefaultDevfileRegist
 
 
 * link:https://odo.dev/docs/installing-odo/[Installing odo]
-* link:https://odo.dev/docs/understanding-odo/[Undestanding odo]
+* link:https://odo.dev/docs/understanding-odo/[Understanding odo]
 * link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile using odo]
 * link:https://odo.dev/file-reference/[Devfile file reference]
 * link:https://odo.dev/docs/debugging-applications-in-odo/[Debugging applications in odo]

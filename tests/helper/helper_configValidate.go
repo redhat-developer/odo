@@ -75,7 +75,7 @@ func Search(cmpField []string, val string) bool {
 }
 
 // newInterfaceValue takes interface and keyValue of args
-// It returns new initilized value
+// It returns new initialized value
 func newInterfaceValue(cmpSetting *config, keyValue ...string) reflect.Value {
 	indexNum, _ := strconv.Atoi(keyValue[1])
 	if keyValue[0] == "URL" {

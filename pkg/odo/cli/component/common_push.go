@@ -104,7 +104,7 @@ func (cpo *CommonPushOptions) ValidateComponentCreate() error {
 
 func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
 	if !cpo.pushConfig {
-		// Not the case of component creation or updation(with new config)
+		// Not the case of component creation or update (with new config)
 		// So nothing to do here and hence return from here
 		return nil
 	}

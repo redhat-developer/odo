@@ -63,7 +63,7 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 
 	// 2. Handle the error messages here. This is copied over from:
 	// https://github.com/openshift/origin/blob/master/pkg/oc/cli/login/login.go#L60
-	// as unauthorization errors are handled MANUALLY by oc.
+	// as unauthorized errors are handled MANUALLY by oc.
 	if err := a.GatherInfo(); err != nil {
 		if kapierrors.IsUnauthorized(err) {
 			fmt.Println("Login failed (401 Unauthorized)")
@@ -121,8 +121,8 @@ func copyAndFilter(w io.Writer, r io.Reader) ([]byte, error) {
 }
 
 // filteredInformation takes a list of strings ([]byte), replaces them and spits it back out
-// This is used since we utilize `oc login` withi odo and require certain strings to be filtered / changed
-// to their odo equivilant
+// This is used since we utilize `oc login` with odo and require certain strings to be filtered / changed
+// to their odo equivalent
 func filteredInformation(s []byte) []byte {
 
 	// List of strings to correctly filter

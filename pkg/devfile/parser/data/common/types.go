@@ -307,7 +307,7 @@ type Plugin struct {
 	// Reference to a Kubernetes CRD of type DevWorkspaceTemplate
 	Kubernetes *Kubernetes `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
 
-	// Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)
+	// Optional name that allows referencing the component in commands, or inside a parent If omitted it will be inferred from the location (uri or registryEntry)
 	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
 	RegistryUrl string `json:"registryUrl,omitempty" yaml:"registryUrl,omitempty"`
 

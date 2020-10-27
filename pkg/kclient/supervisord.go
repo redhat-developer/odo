@@ -7,7 +7,7 @@ import (
 )
 
 // AddBootstrapSupervisordInitContainer creates an init container that will copy over
-// supervisord to the application image during the start-up procress.
+// supervisord to the application image during the start-up process.
 func AddBootstrapSupervisordInitContainer(podTemplateSpec *corev1.PodTemplateSpec) {
 
 	podTemplateSpec.Spec.InitContainers = append(podTemplateSpec.Spec.InitContainers,

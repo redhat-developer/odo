@@ -91,7 +91,7 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	}
 
 	logCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow logs")
-	logCmd.Flags().BoolVar(&o.debug, "debug", false, "Show logs for debug commmand")
+	logCmd.Flags().BoolVar(&o.debug, "debug", false, "Show logs for debug command")
 
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)

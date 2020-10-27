@@ -581,7 +581,7 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
-//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each enpoint entry
+//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each endpoint entry
 //  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
@@ -688,7 +688,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// If there are files identified as deleted, propagate them to the component pod
 	if len(delFiles) > 0 {
-		klog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
+		klog.V(4).Infof("propagating deletion of files %s to pod", strings.Join(delFiles, " "))
 		/*
 			Delete files observed by watch to have been deleted from each of s2i directories like:
 				deployment dir: In interpreted runtimes like python, source is copied over to deployment dir so delete needs to happen here as well

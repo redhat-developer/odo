@@ -105,7 +105,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 		var platformContext interface{}
 		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
 			wo.namespace = wo.KClient.Namespace
 			platformContext = kubernetes.KubernetesContext{
 				Namespace: wo.namespace,

@@ -128,7 +128,7 @@ func (s *Status) Start(status string, debug bool) {
 	}
 }
 
-// truncateSuffixIfNeeded returns a represention of the 'suffix' parameter that fits within the terminal
+// truncateSuffixIfNeeded returns a representation of the 'suffix' parameter that fits within the terminal
 // (including the extra space occupied by the padding parameter).
 func truncateSuffixIfNeeded(suffix string, w io.Writer, padding int) string {
 

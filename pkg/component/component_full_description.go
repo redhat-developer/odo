@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ComponentFullDescriptionSpec repersents complete desciption of the component
+// ComponentFullDescriptionSpec represents the complete description of the component
 type ComponentFullDescriptionSpec struct {
 	App        string              `json:"app,omitempty"`
 	Type       string              `json:"type,omitempty"`
@@ -91,7 +91,7 @@ func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client
 	return nil
 }
 
-// fillEmptyFields fills any fields that are empty in componentfulldescription
+// fillEmptyFields fills any fields that are empty in the ComponentFullDescription
 func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, componentName string, applicationName string, projectName string) {
 	//fix missing names in case it in not in description
 	if len(cfd.Name) <= 0 {
@@ -175,7 +175,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	return cfd, nil
 }
 
-// Print prints the complete information of component onto stdout (Note: longterm this function should not need to access any parameters, but just print the information in struct)
+// Print prints the complete information of component onto stdout (Note: long term this function should not need to access any parameters, but just print the information in struct)
 func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 	// TODO: remove the need to client here print should just deal with printing
 	log.Describef("Component Name: ", cfd.GetName())

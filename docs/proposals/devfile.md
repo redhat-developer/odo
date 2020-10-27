@@ -53,7 +53,7 @@ Work with folks from Che side to extend Devfile format with additional informati
 
 * Implement commands that will modify Devfile.yaml. Users shouldn’t need to touch Devfile.yaml, everything should be handled by odo commands \
 For example:
-  * odo url create- instead of modifing .odo/config.yaml it will add all necessary information into the Devfile.yaml
+  * odo url create- instead of modifying .odo/config.yaml it will add all necessary information into the Devfile.yaml
   * odo url delete - will delete url information from Devfile.yaml
 
 ### Convert old style odo component definitions  to Devfile

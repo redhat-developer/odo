@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 )
 
-// EnvVar represents an enviroment variable
+// EnvVar represents an environment variable
 type EnvVar struct {
 	Name  string `yaml:"Name"`
 	Value string `yaml:"Value"`

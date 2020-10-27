@@ -21,7 +21,7 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, svcSpec corev
 	return service, err
 }
 
-// UpdateService updates a service based on the given servcie spec
+// UpdateService updates a service based on the given service spec
 func (c *Client) UpdateService(commonObjectMeta metav1.ObjectMeta, svcSpec corev1.ServiceSpec) (*corev1.Service, error) {
 	svc := corev1.Service{
 		ObjectMeta: commonObjectMeta,
