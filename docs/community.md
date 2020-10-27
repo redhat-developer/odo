@@ -22,11 +22,11 @@ micro_nav: true
 
 # Slack
 
-Join us on Slack via our [invite link](https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I)
+All of our developer and user discussions happen in the [\#odo channel on the official Kubernetes Slack](https://kubernetes.slack.com/archives/C01D6L2NUAG).
 
-  - [odo Dev Channel](https://openshiftdo.slack.com/messages/odo-dev) - Discuss odo development
+If you haven’t already joined the Kubernetes Slack, you can [invite yourself here](https://slack.k8s.io/).
 
-  - [odo Users Channel](https://openshiftdo.slack.com/messages/odo-users) - Ask questions and discuss your use cases with odo
+Ask questions, inquire about odo or even discuss a new feature.
 
 # Email list
 
