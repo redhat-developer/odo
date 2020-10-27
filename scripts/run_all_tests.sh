@@ -17,12 +17,12 @@ KUBECONFIG="`pwd`/config"
 shout "Getting oc binary"
 if [[ $BASE_OS == "linux"  ]]; then
     set +x
-    curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.tar -o ./oc.tar
+    curl -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.tar -o ./oc.tar
     set -x
     tar -C $GOBIN -xvf ./oc.tar && rm -rf ./oc.tar
 else
     set +x
-    curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
+    curl -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
     set -x
     if [[ $BASE_OS == "windows" ]]; then
         GOBIN="$(cygpath -pw $GOBIN)"
