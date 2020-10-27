@@ -125,147 +125,98 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			name: "Case: One container, no volumes",
+			name: "Case: One container, Project Source Env",
 			containers: []corev1.Container{
 				{
 					Name: "test",
-				},
-			},
-			want:           "",
-			wantSourcePath: "",
-			wantErr:        true,
-		},
-		{
-			name: "Case: One container, no source volume",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
+					Env: []corev1.EnvVar{
 						{
-							Name: "test",
+							Name:  "RANDOMENV",
+							Value: "/mypath2",
 						},
-					},
-				},
-			},
-			want:           "",
-			wantSourcePath: "",
-			wantErr:        true,
-		},
-		{
-			name: "Case: One container, source volume",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
 						{
-							Name:      generator.DevfileSourceVolume,
-							MountPath: generator.DevfileSourceVolumeMount,
+							Name:  generator.EnvProjectsSrc,
+							Value: "/mypath",
 						},
 					},
 				},
 			},
 			want:           "test",
-			wantSourcePath: generator.DevfileSourceVolumeMount,
+			wantSourcePath: "/mypath",
 			wantErr:        false,
 		},
 		{
-			name: "Case: One container, multiple volumes",
+			name: "Case: Multiple containers, multiple Project Source Env",
 			containers: []corev1.Container{
 				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
+					Name: "test1",
+					Env: []corev1.EnvVar{
 						{
-							Name: "test",
+							Name:  "RANDOMENV",
+							Value: "/mypath1",
 						},
 						{
-							Name:      generator.DevfileSourceVolume,
-							MountPath: generator.DevfileSourceVolumeMount,
+							Name:  generator.EnvProjectsSrc,
+							Value: "/mypath1",
+						},
+					},
+				},
+				{
+					Name: "test2",
+					Env: []corev1.EnvVar{
+						{
+							Name:  "RANDOMENV",
+							Value: "/mypath2",
+						},
+						{
+							Name:  generator.EnvProjectsSrc,
+							Value: "/mypath2",
 						},
 					},
 				},
 			},
-			want:           "test",
-			wantSourcePath: generator.DevfileSourceVolumeMount,
+			want:           "test1",
+			wantSourcePath: "/mypath1",
 			wantErr:        false,
 		},
 		{
-			name: "Case: Multiple containers, no source volumes",
+			name: "Case: Multiple containers, no Project Source Env",
 			containers: []corev1.Container{
 				{
-					Name: "test",
+					Name: "test1",
+					Env: []corev1.EnvVar{
+						{
+							Name:  "RANDOMENV",
+							Value: "/mypath1",
+						},
+					},
 				},
 				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
+					Name: "test2",
+					Env: []corev1.EnvVar{
 						{
-							Name: "test",
+							Name:  "RANDOMENV",
+							Value: "/mypath2",
 						},
 					},
 				},
 			},
-			want:           "",
-			wantSourcePath: "",
-			wantErr:        true,
-		},
-		{
-			name: "Case: Multiple containers, multiple volumes",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-				},
-				{
-					Name: "container-two",
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name: "test",
-						},
-						{
-							Name:      generator.DevfileSourceVolume,
-							MountPath: generator.DevfileSourceVolumeMount,
-						},
-					},
-				},
-			},
-			want:           "container-two",
-			wantSourcePath: generator.DevfileSourceVolumeMount,
-			wantErr:        false,
-		},
-		{
-			name: "Case: Multiple volumes, different source volume path",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-				},
-				{
-					Name: "container-two",
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name: "test",
-						},
-						{
-							Name:      generator.DevfileSourceVolume,
-							MountPath: "/some/path",
-						},
-					},
-				},
-			},
-			want:           "container-two",
-			wantSourcePath: "/some/path",
-			wantErr:        false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
-		container, sourcePath, err := getFirstContainerWithSourceVolume(tt.containers)
-		if container != tt.want {
-			t.Errorf("expected %s, actual %s", tt.want, container)
-		}
-
-		if sourcePath != tt.wantSourcePath {
-			t.Errorf("expected %s, actual %s", tt.wantSourcePath, sourcePath)
-		}
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, actual %v", tt.wantErr, err)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			container, syncFolder, err := getFirstContainerWithSourceVolume(tt.containers)
+			if container != tt.want {
+				t.Errorf("expected %s, actual %s", tt.want, container)
+			}
+			if syncFolder != tt.wantSourcePath {
+				t.Errorf("expected %s, actual %s", tt.wantSourcePath, syncFolder)
+			}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, actual %v", tt.wantErr, err)
+			}
+		})
 	}
 }
 
