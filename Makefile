@@ -235,20 +235,10 @@ test-cmd-devfile-exec:
 test-cmd-docker-devfile-exec:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile exec command tests" tests/integration/devfile/docker
 
-# Run odo status devfile command tests
-.PHONY: test-cmd-devfile-status
-test-cmd-devfile-status:
-	ginkgo $(GINKGO_FLAGS) -focus="odo devfile status command tests" tests/integration/devfile/
-
 # Run odo devfile watch command tests
 .PHONY: test-cmd-devfile-watch
 test-cmd-devfile-watch:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile watch command tests" tests/integration/devfile/
-
-# Run odo devfile app command tests
-.PHONY: test-cmd-devfile-app
-test-cmd-devfile-app:
-	ginkgo $(GINKGO_FLAGS) -focus="odo devfile app command tests" tests/integration/devfile/
 
 # Run odo devfile delete command tests
 .PHONY: test-cmd-devfile-delete
@@ -327,11 +317,6 @@ test-cmd-devfile-config:
 # test-cmd-docker-devfile-delete:
 # 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
 
-# Run odo status docker devfile command tests
-#.PHONY: test-cmd-docker-devfile-status
-#test-cmd-docker-devfile-status:
-#	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile status command tests" tests/integration/devfile/docker/
-
 # # Run odo catalog devfile command tests
 # .PHONY: test-cmd-docker-devfile-catalog
 # test-cmd-docker-devfile-catalog:
@@ -396,6 +381,12 @@ test-e2e-source:
 .PHONY: test-e2e-images
 test-e2e-images:
 	ginkgo $(GINKGO_FLAGS) -focus="odo supported images e2e tests" tests/e2escenarios/
+
+# Run devfile e2e tests: odo devfile support tests
+.PHONY: test-e2e-devfile
+test-e2e-devfile:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile support tests" tests/e2escenarios/
+
 
 # Run all e2e test scenarios
 .PHONY: test-e2e-all
