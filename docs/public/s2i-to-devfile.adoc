@@ -17,7 +17,7 @@ Existing users using S2I based components can migrate to a devfile component by 
 ----
  $ odo list
 
-Openshift Components: 
+S2I Components: 
 APP     NAME      PROJECT        TYPE       SOURCETYPE     STATE
 app     myapp     myproject      nodejs     local          Pushed
 
@@ -71,7 +71,7 @@ app     myapp     myproject      nodejs     local          Pushed
  APP     NAME      PROJECT        TYPE      STATE
  app     myapp     myproject      myapp     Pushed
 
- Openshift Components: 
+ S2I Components: 
  APP     NAME      PROJECT        TYPE       SOURCETYPE     STATE
  app     myapp     myproject      nodejs     local          Pushed
 ----

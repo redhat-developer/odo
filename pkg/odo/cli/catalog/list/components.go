@@ -139,7 +139,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 			if len(o.catalogDevfileList.Items) != 0 {
 				fmt.Fprintln(w)
 			}
-			fmt.Fprintln(w, "Odo OpenShift Components:")
+			fmt.Fprintln(w, "Odo S2I Components:")
 			fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS", "\t", "SUPPORTED")
 
 			if len(supCatalogList) != 0 {

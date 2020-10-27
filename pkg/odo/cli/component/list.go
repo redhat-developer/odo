@@ -297,12 +297,9 @@ func (lo *ListOptions) Run() (err error) {
 		}
 
 		if len(components) != 0 {
-			if lo.hasDevfileComponents {
-				fmt.Println()
-			}
 			lo.hasS2IComponents = true
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "Openshift Components: ")
+			fmt.Fprintln(w, "S2I Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
 			for _, comp := range components {
 				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
