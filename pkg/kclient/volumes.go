@@ -48,14 +48,9 @@ func GetPVCVol(volumeName, pvcName string) corev1.Volume {
 	}
 }
 
-// AddVolumeMountToContainers adds the Volume Mounts in containerNameToMountPaths to the podTemplateSpec containers for a given pvc and volumeName
+// AddVolumeMountToContainers adds the Volume Mounts in containerNameToMountPaths to the containers for a given pvc and volumeName
 // containerNameToMountPaths is a map of a container name to an array of its Mount Paths
 func AddVolumeMountToContainers(containers []corev1.Container, volumeName string, containerNameToMountPaths map[string][]string) []corev1.Container {
-
-	// // Validating podTemplateSpec.Spec.Containers[] is present before dereferencing
-	// if len(podTemplateSpec.Spec.Containers) == 0 {
-	// 	return fmt.Errorf("podTemplateSpec %s doesn't have any Containers defined", podTemplateSpec.ObjectMeta.Name)
-	// }
 
 	for containerName, mountPaths := range containerNameToMountPaths {
 		for i, container := range containers {
