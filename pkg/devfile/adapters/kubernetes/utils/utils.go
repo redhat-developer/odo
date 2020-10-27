@@ -191,20 +191,6 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 
 }
 
-// // GetResourceReqs creates a kubernetes ResourceRequirements object based on resource requirements set in the devfile
-// func GetResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
-// 	reqs := corev1.ResourceRequirements{}
-// 	limits := make(corev1.ResourceList)
-// 	if comp.Container.MemoryLimit != "" {
-// 		memoryLimit, err := resource.ParseQuantity(comp.Container.MemoryLimit)
-// 		if err == nil {
-// 			limits[corev1.ResourceMemory] = memoryLimit
-// 		}
-// 		reqs.Limits = limits
-// 	}
-// 	return reqs
-// }
-
 // overrideContainerArgs overrides the container's entrypoint with supervisord
 func overrideContainerArgs(container *corev1.Container) {
 	klog.V(2).Infof("Updating container %v entrypoint with supervisord", container.Name)
