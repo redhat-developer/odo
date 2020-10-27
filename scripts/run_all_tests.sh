@@ -12,10 +12,7 @@ shout "Setting up"
 
 mkdir bin
 GOBIN="`pwd`/bin"
-if [[ $BASE_OS == "windows" ]]; then
-    GOBIN="$(cygpath -pw $GOBIN)"
-fi
-PATH=$PATH:$GOBIN
+KUBECONFIG="`pwd`/config"
 
 shout "Getting oc binary"
 if [[ $BASE_OS == "linux"  ]]; then
@@ -27,14 +24,19 @@ else
     set +x
     curl -k ${OC4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
     set -x
-    tar -C $GOBIN -xvf ./oc.zip && rm -rf ./oc.zip && chmod +x $GOBIN/oc
     if [[ $BASE_OS == "windows" ]]; then
-        mv -f $GOBIN/oc $GOBIN/oc.exe
+        GOBIN="$(cygpath -pw $GOBIN)"
+        CURRDIR="$(cygpath -pw $WORKDIR)"
+        powershell -Command "Expand-Archive -Path $CURRDIR\oc.zip  -DestinationPath $GOBIN"
+        chmod +x $GOBIN/*
     fi
     if [[ $BASE_OS == "mac" ]]; then
+        unzip ./oc.zip -d $GOBIN && rm -rf ./oc.zip && chmod +x $GOBIN/oc
         PATH="$PATH:/usr/local/bin:/usr/local/go/bin"
     fi
 fi
+
+PATH=$PATH:$GOBIN
 
 #-----------------------------------------------------------------------------
 
