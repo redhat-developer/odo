@@ -8,8 +8,8 @@ In theory, you just run `./scripts/sync.sh`  and BAM. Docs are updated. But we'l
 
 First of all, we have three sources of documentation that we're pulling from:
 
-  - Upstream: OpenShift productized documentation from https://docs.openshift.com
-  - Downstream: Odo public documentation from the docs folder https://github.com/openshift/odo/tree/master/docs
+  - Downstream: OpenShift productized documentation from https://docs.openshift.com
+  - Upstream: Odo public documentation from the docs folder https://github.com/openshift/odo/tree/master/docs
 
 Within these sources, we gather the following from our `master` branch:
 

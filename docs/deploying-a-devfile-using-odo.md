@@ -50,7 +50,7 @@ An example deployment scenario:
     
     1.  Parses and validates the YAML file
     
-    2.  Deploys the development environment to your OpenShift cluster
+    2.  Deploys the development environment to your Kubernetes or OpenShift cluster
     
     3.  Synchronizes your source code to the containers
     
@@ -58,9 +58,19 @@ An example deployment scenario:
 
 # Deploying your first devfile
 
-**Prerequisites for an OpenShift Cluster**
+**Prerequisites for a Kubernetes Cluster**
+
+  - Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
+    
+    Ingress IP is usually the external IP of ingress controller service. For example, for Minikube running in a virtual machine you can get it by `minikube ip`. Checkout this [document](https://kubernetes.io/docs/concepts/services-networking/ingress/) to know more about ingress.
+
+## Prerequisites for an OpenShift Cluster
 
   - Create a project to keep your source code, tests, and libraries organized in a separate single unit.
+
+  - You must also know your ingress domain name or ingress IP to specify `--host` for `odo url create`. This can be found using `crc ip`.
+    
+    Ingress IP is usually the external IP of ingress controller service. For example, for [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview) running in a virtual machine you can get it by `crc ip`. Checkout this [document](https://kubernetes.io/docs/concepts/services-networking/ingress/) to know more about ingress.
     
     1.  Log in to an OpenShift cluster:
         
@@ -76,12 +86,6 @@ An example deployment scenario:
            ✓  New project created and now using project : myproject
         ```
 
-## Prerequisites for a Kubernetes Cluster
-
-  - Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
-    
-    Ingress IP is usually the external IP of ingress controller service, for Minikube or CRC clusters running in a virtual machine you can get it by `minikube ip` or `crc ip`. Checkout this [document](https://kubernetes.io/docs/concepts/services-networking/ingress/) to know more about ingress.
-
 # Listing all available devfile components
 
   - Before deploying your first component, have a look at what is available:
@@ -96,7 +100,7 @@ An example deployment scenario:
       java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
       nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
     
-      Odo OpenShift Components:
+      Odo S2I Components:
       NAME        PROJECT       TAGS                                                                           SUPPORTED
       java        openshift     11,8,latest                                                                    YES
       dotnet      openshift     2.1,3.1,latest                                                                 NO
@@ -113,7 +117,7 @@ An example deployment scenario:
 
 In our example, we will be using `java-springboot` to deploy a sample [Springboot](https://spring.io/projects/spring-boot) component.
 
-# Deploying a Java Spring Boot® component to an OpenShift / Kubernetes cluster
+# Deploying a Java Spring Boot® component to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying an [example Spring Boot® component](https://github.com/odo-devfiles/springboot-ex) that uses [Maven](https://maven.apache.org/install.html) and Java 8 JDK.
 
@@ -215,7 +219,7 @@ In this example we will be deploying an [example Spring Boot® component](https:
        ✓  Successfully deleted component
     ```
 
-# Deploying a Node.js® component to an OpenShift / Kubernetes cluster
+# Deploying a Node.js® component to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying an [example Node.js® component](https://github.com/odo-devfiles/nodejs-ex) that uses [NPM](https://www.npmjs.com/).
 
@@ -315,7 +319,7 @@ In this example we will be deploying an [example Node.js® component](https://gi
         ✓  Successfully deleted component
     ```
 
-# Deploying a Quarkus Application to an OpenShift / Kubernetes cluster
+# Deploying a Quarkus Application to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying a [Quarkus component](https://github.com/odo-devfiles/quarkus-ex) that uses GraalVM and JDK1.8+.
 
