@@ -226,12 +226,6 @@ func TestGetDevfileContainerComponents(t *testing.T) {
 			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
 			expectedMatchesCount: 2,
 		},
-
-		{
-			name:                 "Case 5: Valid devfile with correct component type (Container) without name",
-			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("")},
-			expectedMatchesCount: 1,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
