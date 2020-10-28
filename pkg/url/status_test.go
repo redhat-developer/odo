@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -18,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kclient_fake "github.com/openshift/odo/pkg/kclient/fake"
+	"github.com/openshift/odo/pkg/kclient/generator"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery/fake"
@@ -189,7 +189,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
-			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
+			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)
 
 			statusUrls, err := getURLsForKubernetes(fkoclient, fkclient, esi, false, containerComponents)
 
