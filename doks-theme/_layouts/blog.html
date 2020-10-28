@@ -19,7 +19,7 @@
                 {% endif %}
             {% for post in site.posts limit:3 %}    
             <li>    
-              <span class="date">{{ post.date | date: '%y %b %d' }}</span> - <a href="{{ post.url }}">{{ post.title }}</a>    
+              <span class="date">{{ post.date | date: '%b %d %Y ' }}</span> - <a href="{{ post.url }}">{{ post.title }}</a>    
             </li>    
             {% endfor %}    
                 {% if page.page_nav.prev.content or page.page_nav.next.content %}
