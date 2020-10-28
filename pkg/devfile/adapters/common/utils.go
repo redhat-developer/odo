@@ -119,18 +119,6 @@ func GetBootstrapperImage() string {
 	return defaultBootstrapperImage
 }
 
-// GetDevfileVolumeComponents iterates through the components in the devfile and returns a map of devfile volume components
-func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.DevfileComponent {
-	volumeNameToVolumeComponent := make(map[string]common.DevfileComponent)
-	// Only components with aliases are considered because without an alias commands cannot reference them
-	for _, comp := range data.GetComponents() {
-		if comp.Volume != nil {
-			volumeNameToVolumeComponent[comp.Name] = comp
-		}
-	}
-	return volumeNameToVolumeComponent
-}
-
 // getCommandsByGroup gets commands by the group kind
 func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
 	var commands []common.DevfileCommand
@@ -158,7 +146,7 @@ func GetVolumeMountPath(volumeMount common.VolumeMount) string {
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
 	containerComponents := generator.GetDevfileContainerComponents(devfileObj.Data)
-	volumeNameToVolumeComponent := GetDevfileVolumeComponents(devfileObj.Data)
+	volumeNameToVolumeComponent := generator.GetDevfileVolumeComponents(devfileObj.Data)
 
 	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
 	containerNameToVolumes := make(map[string][]DevfileVolume)

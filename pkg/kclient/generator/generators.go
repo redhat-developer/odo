@@ -86,35 +86,33 @@ func GenerateContainer(containerParams ContainerParams) *corev1.Container {
 // GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
 func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, error) {
 	var containers []corev1.Container
-	for _, comp := range devfileObj.Data.GetComponents() {
-		if comp.Container != nil {
-			envVars := convertEnvs(comp.Container.Env)
-			resourceReqs := getResourceReqs(comp)
-			ports := convertPorts(comp.Container.Endpoints)
-			containerParams := ContainerParams{
-				Name:         comp.Name,
-				Image:        comp.Container.Image,
-				IsPrivileged: false,
-				Command:      comp.Container.Command,
-				Args:         comp.Container.Args,
-				EnvVars:      envVars,
-				ResourceReqs: resourceReqs,
-				Ports:        ports,
-			}
-			container := GenerateContainer(containerParams)
-
-			// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
-			// Sync to `Container.SourceMapping` and/or devfile projects if set
-			if comp.Container.MountSources {
-				syncRootFolder := addSyncRootFolder(container, comp.Container.SourceMapping)
-
-				err := addSyncFolder(container, syncRootFolder, devfileObj.Data.GetProjects())
-				if err != nil {
-					return nil, err
-				}
-			}
-			containers = append(containers, *container)
+	for _, comp := range GetDevfileContainerComponents(devfileObj.Data) {
+		envVars := convertEnvs(comp.Container.Env)
+		resourceReqs := getResourceReqs(comp)
+		ports := convertPorts(comp.Container.Endpoints)
+		containerParams := ContainerParams{
+			Name:         comp.Name,
+			Image:        comp.Container.Image,
+			IsPrivileged: false,
+			Command:      comp.Container.Command,
+			Args:         comp.Container.Args,
+			EnvVars:      envVars,
+			ResourceReqs: resourceReqs,
+			Ports:        ports,
 		}
+		container := GenerateContainer(containerParams)
+
+		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
+		// Sync to `Container.SourceMapping` and/or devfile projects if set
+		if comp.Container.MountSources {
+			syncRootFolder := addSyncRootFolder(container, comp.Container.SourceMapping)
+
+			err := addSyncFolder(container, syncRootFolder, devfileObj.Data.GetProjects())
+			if err != nil {
+				return nil, err
+			}
+		}
+		containers = append(containers, *container)
 	}
 	return containers, nil
 }

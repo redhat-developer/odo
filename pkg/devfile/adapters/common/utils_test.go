@@ -11,60 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
-func TestGetDevfileVolumeComponents(t *testing.T) {
-
-	tests := []struct {
-		name                 string
-		component            []versionsCommon.DevfileComponent
-		alias                []string
-		expectedMatchesCount int
-	}{
-		{
-			name:                 "Case 1: Invalid devfile",
-			component:            []versionsCommon.DevfileComponent{},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
-			expectedMatchesCount: 0,
-		},
-
-		{
-			name:                 "Case 4 : Valid devfile with wrong component type (Container)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
-			expectedMatchesCount: 0,
-		},
-
-		{
-			name:                 "Case 5: Valid devfile with correct component type (Volume)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
-			expectedMatchesCount: 1,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.component,
-				},
-			}
-
-			devfileComponents := GetDevfileVolumeComponents(devObj.Data)
-
-			if len(devfileComponents) != tt.expectedMatchesCount {
-				t.Errorf("TestGetDevfileVolumeComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
-			}
-		})
-	}
-
-}
-
 func TestGetVolumes(t *testing.T) {
 
 	size := "4Gi"
