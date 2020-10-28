@@ -79,7 +79,6 @@ var _ = Describe("odo supported images e2e tests", func() {
 		helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")
 		cmpLst := helper.CmdShouldPass("odo", "list", "--context", context)
 		Expect(cmpLst).To(ContainSubstring("Not Pushed"))
-		helper.DeleteProject(project)
 	}
 
 	Context("odo supported images deployment on amd64", func() {
