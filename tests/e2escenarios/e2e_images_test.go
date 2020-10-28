@@ -130,21 +130,21 @@ var _ = Describe("odo supported images e2e tests", func() {
 		})
 
 		It("Should be able to verify the openjdk-11-rhel8 image", func() {
-			redhat_openjdk_project := os.Getenv("REDHAT_OPENJDK_PROJECT")
-			if redhat_openjdk_project == "" {
-				redhat_openjdk_project = "openjdk-11-rhel8"
+			redhatOpenjdkProject := os.Getenv("REDHAT_OPENJDK_PROJECT")
+			if redhatOpenjdkProject == "" {
+				redhatOpenjdkProject = "openjdk-11-rhel8"
 			}
-			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "java:8", redhat_openjdk_project)
-			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "openjdk", "java:8", redhat_openjdk_project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "java:8", redhatOpenjdkProject)
+			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "openjdk", "java:8", redhatOpenjdkProject, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12-rhel7 image", func() {
-			redhat_nodejs_project := os.Getenv("REDHAT_NODEJS_PROJECT")
-			if redhat_nodejs_project == "" {
-				redhat_nodejs_project = "nodejs-12-rhel7"
+			redhatNodejsProject := os.Getenv("REDHAT_NODEJS_PROJECT")
+			if redhatNodejsProject == "" {
+				redhatNodejsProject = "nodejs-12-rhel7"
 			}
-			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs:latest", redhat_nodejs_project)
-			verifySupportedImage(filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs", "nodejs:latest", redhat_nodejs_project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs:latest", redhatNodejsProject)
+			verifySupportedImage(filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs", "nodejs:latest", redhatNodejsProject, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12 image", func() {
