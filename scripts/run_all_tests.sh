@@ -61,8 +61,8 @@ oc login -u kubeadmin -p ${OCP4X_KUBEADMIN_PASSWORD} --insecure-skip-tls-verify 
 set -x
 
 shout "Doing some presetup"
-REDHAT_OPENJDK_PROJECT=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 10 | head -n 1)
-REDHAT_NODEJS_PROJECT=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 10 | head -n 1)
+REDHAT_OPENJDK_PROJECT=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
+REDHAT_NODEJS_PROJECT=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
 # Create the namespace for e2e image test apply pull secret to the namespace
 for i in `echo "$REDHAT_OPENJDK_PROJECT $REDHAT_NODEJS_PROJECT"`; do
     # create the namespace
