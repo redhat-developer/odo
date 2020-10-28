@@ -139,7 +139,7 @@ func NamespaceOpenShiftObject(componentName string, applicationName string) (str
 
 	// Return the hyphenated namespaced name
 	originalName := fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName)
-	truncatedName := TruncateString(originalName, maxAllowedNamespacedStringLength, "")
+	truncatedName := TruncateString(originalName, maxAllowedNamespacedStringLength)
 	if originalName != truncatedName {
 		klog.V(4).Infof("The combination of application %s and component %s was too long so the final name was truncated to %s",
 			applicationName, componentName, truncatedName)
@@ -232,12 +232,18 @@ func ConvertKeyValueStringToMap(params []string) map[string]string {
 
 // TruncateString truncates passed string to given length
 // Note: if -1 is passed, the original string is returned
-func TruncateString(str string, maxLen int, appendStr string) string {
+// if appendIfTrunicated is given, then it will be appended to trunicated
+// string
+func TruncateString(str string, maxLen int, appendIfTrunicated ...string) string {
 	if maxLen == -1 {
 		return str
 	}
 	if len(str) > maxLen {
-		return fmt.Sprintf("%s%s", str[:maxLen], appendStr)
+		truncatedString := str[:maxLen]
+		for _, item := range appendIfTrunicated {
+			truncatedString = fmt.Sprintf("%s%s", truncatedString, item)
+		}
+		return truncatedString
 	}
 	return str
 }
@@ -283,7 +289,7 @@ func GetAbsPath(path string) (string, error) {
 //				suffix: 4 char random string
 //      2. error: if requested number of retries also failed to generate unique name
 func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries int) (string, error) {
-	prefix = TruncateString(GetDNS1123Name(strings.ToLower(prefix)), prefixMaxLen, "")
+	prefix = TruncateString(GetDNS1123Name(strings.ToLower(prefix)), prefixMaxLen)
 	name := fmt.Sprintf("%s-%s", prefix, GenerateRandomString(4))
 
 	//Create a map of existing names for efficient iteration to find if the newly generated name is same as any of the already existing ones

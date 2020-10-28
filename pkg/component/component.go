@@ -107,7 +107,7 @@ func GetDefaultComponentName(componentPath string, componentPathType config.SrcT
 		if err != nil {
 			return "", errors.Wrap(err, "unable to generate random component name")
 		}
-		prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen, "")
+		prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
 	} else {
 		// Set the required prefix into componentName
 		prefix = *cfg.OdoSettings.NamePrefix

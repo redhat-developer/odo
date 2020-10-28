@@ -63,7 +63,7 @@ func GenerateVolName(volName, componentName string) (string, error) {
 	}
 
 	dockerVolName := fmt.Sprintf("%v-%v", volName, componentName)
-	dockerVolName = util.TruncateString(dockerVolName, volNameMaxLength, "")
+	dockerVolName = util.TruncateString(dockerVolName, volNameMaxLength)
 	randomChars := util.GenerateRandomString(4)
 	dockerVolName, err := util.NamespaceOpenShiftObject(dockerVolName, randomChars)
 	if err != nil {

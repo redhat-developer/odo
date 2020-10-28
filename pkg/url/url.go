@@ -1108,6 +1108,6 @@ func RemoveEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
 // getValidURLName returns valid URL resource name for Kubernetes based cluster
 func getValidURLName(name string) string {
 	trimmedName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(name)))
-	trimmedName = util.TruncateString(trimmedName, 15, "")
+	trimmedName = util.TruncateString(trimmedName, 15)
 	return trimmedName
 }

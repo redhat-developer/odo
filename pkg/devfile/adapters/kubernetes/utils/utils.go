@@ -50,7 +50,7 @@ func ConvertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
-		name = util.TruncateString(name, 15, "")
+		name = util.TruncateString(name, 15)
 		for _, c := range containerPorts {
 			if c.Name == endpoint.Name {
 				// the name has to be unique within a single container since it is considered as the URL name
@@ -393,7 +393,7 @@ func AddPreStartEventInitContainer(podTemplateSpec *corev1.PodTemplateSpec, comm
 				// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
 				// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
 				initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
-				initContainerName = util.TruncateString(initContainerName, containerNameMaxLen, "")
+				initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
 				initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
 				container.Name = initContainerName
 

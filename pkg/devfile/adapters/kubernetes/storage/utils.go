@@ -81,7 +81,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 func GeneratePVCNameFromDevfileVol(volName, componentName string) (string, error) {
 
 	pvcName := fmt.Sprintf("%s-%s", volName, componentName)
-	pvcName = util.TruncateString(pvcName, pvcNameMaxLen, "")
+	pvcName = util.TruncateString(pvcName, pvcNameMaxLen)
 	randomChars := util.GenerateRandomString(4)
 	pvcName, err := util.NamespaceOpenShiftObject(pvcName, randomChars)
 	if err != nil {
