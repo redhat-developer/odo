@@ -79,6 +79,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 		helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")
 		cmpLst := helper.CmdShouldPass("odo", "list", "--context", context)
 		Expect(cmpLst).To(ContainSubstring("Not Pushed"))
+		helper.DeleteProject(project)
 	}
 
 	Context("odo supported images deployment on amd64", func() {
@@ -130,13 +131,21 @@ var _ = Describe("odo supported images e2e tests", func() {
 		})
 
 		It("Should be able to verify the openjdk-11-rhel8 image", func() {
-			oc.ImportImageFromRegistry("registry.redhat.io", "openjdk/openjdk-11-rhel8:latest", "java:8", "openjdk-11-rhel8")
-			verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", "openjdk-11-rhel8", appName, commonVar.Context)
+			redhat_openjdk_project := os.Getenv("REDHAT_OPENJDK_PROJECT")
+			if redhat_openjdk_project == "" {
+				redhat_openjdk_project = "openjdk-11-rhel8"
+			}
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "java:8", redhat_openjdk_project)
+			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "openjdk", "java:8", "openjdk-11-rhel8", appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12-rhel7 image", func() {
-			oc.ImportImageFromRegistry("registry.redhat.io", "rhscl/nodejs-12-rhel7:latest", "nodejs:latest", "nodejs-12-rhel7")
-			verifySupportedImage("rhscl/nodejs-12-rhel7:latest", "nodejs", "nodejs:latest", "nodejs-12-rhel7", appName, commonVar.Context)
+			redhat_nodejs_project := os.Getenv("REDHAT_NODEJS_PROJECT")
+			if redhat_nodejs_project == "" {
+				redhat_nodejs_project = "nodejs-12-rhel7"
+			}
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs:latest", redhat_nodejs_project)
+			verifySupportedImage(filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs", "nodejs:latest", "nodejs-12-rhel7", appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12 image", func() {
