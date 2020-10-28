@@ -83,8 +83,23 @@ done
 
 shout "Logging into 4x cluster as developer (logs hidden)"
 set +x
-oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify  ${OCP4X_API_URL}
+oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
 set -x
     
 shout "Running integration/e2e tests"
 make test-e2e-all
+
+
+shout "cleanup"
+shout "Logging into 4x cluster for cleanup (logs hidden)"
+set +x
+oc login -u kubeadmin -p ${OCP4X_KUBEADMIN_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
+set -x
+
+shout "Cleaning up some leftover projects"
+
+for i in $(oc projects -q); do
+    if [[ $i == "${SCRIPT_IDENTITY}"* ]]; then
+        oc delete project $i
+    fi
+done
