@@ -58,7 +58,7 @@ An example deployment scenario:
 
 # Deploying your first devfile
 
-**Prerequisites for a Kubernetes Cluster**
+## Prerequisites for a Kubernetes Cluster
 
   - Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
     
