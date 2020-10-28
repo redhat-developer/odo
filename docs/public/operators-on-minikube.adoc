@@ -1,4 +1,4 @@
-== Installing Operators on minkube
+== Installing Operators on minikube
 
 This guide assumes that you are using link:https://minikube.sigs.k8s.io/docs/[minikube] v1.11.0 or newer.
 
@@ -106,7 +106,7 @@ At the moment, to make Service Binding Operator work on Kubernetes, we need to k
 
 . It needs to be installed by cloning its GitHub repository
 . It must be installed in an individual namespace unlike the cluster wide installation we saw for etcd Operator in previous section
-
+. In this guide, we're installing the Service Binding Operator in `default` namespace. You can install it in the namespace you prefer to use it in
 
 Let's setup the Service Binding Operator now.
 
