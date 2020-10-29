@@ -64,7 +64,7 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 	return checkOp(stdOut, nil)
 }
 
-// GetRunningPodNameByComponent executes kubectl command and returns the running pod name of a delopyed
+// GetRunningPodNameByComponent executes kubectl command and returns the running pod name of a deployed
 // devfile component by passing component name as a argument
 func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)

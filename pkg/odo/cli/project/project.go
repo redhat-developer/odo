@@ -68,7 +68,7 @@ func AddProjectFlag(cmd *cobra.Command) {
 
 // TODO: The following function should work with devfile components, and use good abstraction that will make it possible to share
 // code with 'odo describe' and 'odo list'
-// printDeleteProjectInfo prints objects affected by project deletionria
+// printDeleteProjectInfo prints objects affected by project deletion
 // func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 // 	localConfig, err := config.New()
 // 	if err != nil {

@@ -8,11 +8,11 @@ It is understood that the features in experimental mode (hidden by default) are 
 #### Enabling Experimental mode:
 Experimental mode can be enabled by:
 
-- Setting an enviroment variable
+- Setting an environment variable
 - Setting odo preference
 
 ##### Setting environment variable `ODO_EXPERIMENTAL`:
-Experimental mode can be enabled by setting the enviroment variable `ODO_EXPERIMENTAL=true`
+Experimental mode can be enabled by setting the environment variable `ODO_EXPERIMENTAL=true`
 ```sh
 export ODO_EXPERIMENTAL=true
 ```

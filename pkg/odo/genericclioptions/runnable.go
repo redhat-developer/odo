@@ -80,7 +80,7 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 	// Check that if -o json has been passed, that the command actually USES json.. if not, error out.
 	if hasFlagChanged && outputFlag.Value.String() == "json" && machineOutput == "" {
 
-		// By default we "disable" logging, so undisable it so that the below error can be shown.
+		// By default we "disable" logging, so activate it so that the below error can be shown.
 		_ = flag.Set("o", "")
 
 		// Output the error

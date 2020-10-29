@@ -120,7 +120,7 @@ type KubernetesPodStatusEntry struct {
 	InitContainers []corev1.ContainerStatus `json:"initContainers"`
 	// This embeds the K8s ContainerStatus API into the log output; further experimentation is required by
 	// consuming tools to determine which fields from this struct are useful/reliable, at which point this should
-	// be replaceble with a pared-down version containing only those fields. My early analysis is that the
+	// be replaceable with a pared-down version containing only those fields. My early analysis is that the
 	// vast majority are useful.
 }
 

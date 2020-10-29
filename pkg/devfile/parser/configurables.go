@@ -34,7 +34,7 @@ var (
 // SetConfiguration allows setting all the parameters that are configurable in a devfile
 func (d DevfileObj) SetConfiguration(parameter string, value interface{}) error {
 
-	// we are ignoring this error becase a developer is usually aware of the type of value that is
+	// we are ignoring this error because a developer is usually aware of the type of value that is
 	// being passed. So consider this a shortcut, if you know its a string value use this strValue
 	// else parse it inside the switch case.
 	strValue, _ := value.(string)

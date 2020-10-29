@@ -219,7 +219,7 @@ func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, pr
 		select {
 		case <-timeoutCh:
 			fmt.Fprintln(GinkgoWriter, errBuf.String())
-			return false, errors.New("Timeout waiting for the conditon")
+			return false, errors.New("Timeout waiting for the condition")
 		case <-matchOutputCh:
 			return true, nil
 		case <-errorCh:
@@ -271,7 +271,7 @@ type CommonVar struct {
 	Project string
 	// Context is a new temporary directory
 	Context string
-	// CliRunner is program commmand (oc or kubectl runner) according to cluster
+	// CliRunner is program command (oc or kubectl runner) according to cluster
 	CliRunner CliRunner
 	// original values to get restored after the test is done
 	OriginalWorkingDirectory string

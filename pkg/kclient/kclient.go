@@ -168,10 +168,10 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 				return errors.New("Unable to watch deployments")
 			}
 			if event.Type == watch.Deleted {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted")
 				return nil
 			} else if event.Type == watch.Error {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted ")
 				return errors.New("Unable to watch deployments")
 			}
 		case <-time.After(waitForComponentDeletionTimeout):

@@ -112,7 +112,7 @@ The new proposed `odo component status -o json` command will:
 **Note**: This command will NOT, by design, respond to route/application changes that occur during or after it is first invoked. It is up to consuming tools to ensure that the `odo component status` command is stopped/restarted as needed. 
   - For example, if the user tells the IDE to delete their application with the IDE UI, the IDE will call `odo delete (component)`; at the same time, the IDE should also abort any existing `odo component status` commands that are running (as these are no longer guaranteed to return a valid status now that the application itself no longer exists). `odo component status` will not automatically abort when the application is deleted (because it has no reliable way to detect this in all cases).
   - Another example: if the IDE adds a new URL via `odo url create [...]`, any existing `odo component status` commands that are running should be aborted, as these commands would still only be checking the URLs that existed when the command was first invoked (eg there is intentionally no cross-process notification mechanism for created/updated/deleted URLs implemented as part of this command.)
-  - See discussion of this design descision in 'Other solutions considered' below
+  - See discussion of this design decision in 'Other solutions considered' below
 
 This is an example an `odo component status -o json` command invocation look like:
 ```

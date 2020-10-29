@@ -634,7 +634,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		// Currently only devfile component supports --registry flag, so if user specifies --registry when creating devfile component,
-		// we should error out instead of running s2i componet code and throw warning message
+		// we should error out instead of running s2i component code and throw warning message
 		if co.devfileMetadata.devfileRegistry.Name != "" {
 			return errors.Errorf("devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 		}
@@ -1057,7 +1057,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 	} else {
 		if util.CheckPathExists(DevfilePath) {
 			// if local devfile already exists read that
-			// odo create command was exected in a directory already containing devfile
+			// odo create command was expected in a directory already containing devfile
 			devfileData, err = ioutil.ReadFile(DevfilePath)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read devfile from %s", DevfilePath)
@@ -1101,7 +1101,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 	}
 
 	// save devfile
-	// use original devfileData to persist original formating of the devfile file
+	// use original devfileData to persist original formatting of the devfile file
 	err = ioutil.WriteFile(DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)

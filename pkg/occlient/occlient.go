@@ -2136,10 +2136,10 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 				return errors.New("Unable to watch deployment config")
 			}
 			if event.Type == watch.Deleted {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted")
 				return nil
 			} else if event.Type == watch.Error {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted ")
 				return errors.New("Unable to watch deployment config")
 			}
 		case <-time.After(waitForComponentDeletionTimeout):
@@ -3179,7 +3179,7 @@ func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
 // PropagateDeletes deletes the watch detected deleted files from remote component pod from each of the paths in passed s2iPaths
 // Parameters:
 //	targetPodName: Name of component pod
-//	delSrcRelPaths: Paths to be deleted on the remote pod relative to component source base path ex: Compoent src: /abc/src, file deleted: abc/src/foo.lang => relative path: foo.lang
+//	delSrcRelPaths: Paths to be deleted on the remote pod relative to component source base path ex: Component src: /abc/src, file deleted: abc/src/foo.lang => relative path: foo.lang
 //	s2iPaths: Slice of all s2i paths -- deployment dir, destination dir, working dir, etc..
 func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string, s2iPaths []string) error {
 	reader, writer := io.Pipe()
@@ -3298,17 +3298,17 @@ func (c *Client) IsImageStreamSupported() (bool, error) {
 	return c.isResourceSupported("image.openshift.io", "v1", "imagestreams")
 }
 
-// IsSBRSupported chekcs if resource of type service binding request present on the cluster
+// IsSBRSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsSBRSupported() (bool, error) {
 	return c.isResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
 }
 
-// IsCSVSupported chekcs if resource of type service binding request present on the cluster
+// IsCSVSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsCSVSupported() (bool, error) {
 	return c.isResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
 }
 
-// GenerateOwnerReference genertes an ownerReference which can then be set as
+// GenerateOwnerReference generates an ownerReference which can then be set as
 // owner for various OpenShift objects and ensure that when the owner object is
 // deleted from the cluster, all other objects are automatically removed by
 // OpenShift garbage collector

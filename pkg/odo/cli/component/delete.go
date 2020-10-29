@@ -87,7 +87,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		do.Context = genericclioptions.NewDevfileContext(cmd)
 		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
 			do.namespace = do.KClient.Namespace
 		}
 

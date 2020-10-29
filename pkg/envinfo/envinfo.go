@@ -96,7 +96,7 @@ type LocalConfigProvider interface {
 	Exists() bool
 }
 
-// EnvInfo holds all the env specific information relavent to a specific Component.
+// EnvInfo holds all the env specific information relevant to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
@@ -160,7 +160,7 @@ func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 
 // newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
-	// Get the path of the environemt file
+	// Get the path of the environment file
 	envInfoFile, devfilePath, err := getEnvInfoFile(envDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the path of the environment file")
@@ -432,7 +432,7 @@ func (ei *EnvInfo) GetApplication() string {
 	return ei.componentSettings.AppName
 }
 
-// MatchComponent matches a component information provided by a devfile compoment with the local env info
+// MatchComponent matches a component information provided by a devfile component with the local env info
 func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
 	return name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace()
 }

@@ -43,7 +43,7 @@ func (d *DevfileCtx) ValidateDevfileSchema() error {
 		return fmt.Errorf(errMsg)
 	}
 
-	// Sucessful
+	// Success
 	klog.V(2).Info("validated devfile schema")
 	return nil
 }

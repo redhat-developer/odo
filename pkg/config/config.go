@@ -559,7 +559,7 @@ const (
 	ProjectDescription = "Project is the name of the project the component is part of"
 	// ApplicationDescription is the description of app component setting
 	ApplicationDescription = "Application is the name of application the component needs to be part of"
-	// PortsDescription is the desctription of the ports component setting
+	// PortsDescription is the description of the ports component setting
 	PortsDescription = "Ports to be opened in the component"
 	// RefDescription is the description of ref setting
 	RefDescription = "Git ref to use for creating component from git source"

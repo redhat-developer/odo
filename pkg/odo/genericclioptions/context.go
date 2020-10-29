@@ -51,7 +51,7 @@ func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
 	return newContext(command, true, false)
 }
 
-// NewConfigContext is a special kind of context which only contains local configuration, other information is not retrived
+// NewConfigContext is a special kind of context which only contains local configuration, other information is not retrieved
 //  from the cluster. This is useful for commands which don't want to connect to cluster.
 func NewConfigContext(command *cobra.Command) *Context {
 
@@ -72,7 +72,7 @@ func NewConfigContext(command *cobra.Command) *Context {
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
-// couldn't care less if there was a configuriation. We only need to check the parameters.
+// couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
 	return newContext(command, false, true)
 }
@@ -105,7 +105,7 @@ func kClient(command *cobra.Command) *kclient.Client {
 }
 
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
-// errFormatforCommand must contain one %s
+// errFormatForCommand must contain one %s
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
@@ -145,7 +145,7 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	return nil
 }
 
-// GetValidEnvInfo is juat a wrapper for getValidEnvInfo
+// GetValidEnvInfo is just a wrapper for getValidEnvInfo
 func GetValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 	return getValidEnvInfo(command)
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// New instantiantes a component adapter
+// New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client SyncClient) Adapter {
 	return Adapter{
 		Client:         client,
@@ -91,7 +91,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	if !indexRegeneratedByWatch {
 		// Calculate the files to sync
 		// Tries to sync the deltas unless it is a forced push
-		// if it is a forced push (isForcePush) reset the index to do a full snync
+		// if it is a forced push (isForcePush) reset the index to do a full sync
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
@@ -263,7 +263,7 @@ func GetSyncFolder(sourceVolumePath string, projects []parserCommon.DevfileProje
 
 }
 
-// updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
+// updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParameters.WatchFiles to update
 // the existing index file; the index file is required to exist when this function is called.
 func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 	indexFilePath, err := util.ResolveIndexFilePath(pushParameters.Path)

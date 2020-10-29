@@ -227,7 +227,7 @@ func (to *TestOptions) RunTestCommand() error {
 }
 
 func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
-	// warnIfURLSInvalid checks if env.yaml contains a valide URL for the current pushtarget
+	// warnIfURLSInvalid checks if env.yaml contains a valid URL for the current pushtarget
 	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
 	dockerURLExists := false
 	kubeURLExists := false
