@@ -1,10 +1,8 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
-- amitkrout
 - mohammedzee1000
 
 reviewers:
-- amitkrout
 - mohammedzee1000
 - prietyc123
