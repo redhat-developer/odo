@@ -388,32 +388,74 @@ func TestTruncateString(t *testing.T) {
 		testName  string
 		str       string
 		strLength int
+		appendStr bool
+		appendArr []string
 		want      string
 	}{
 		{
 			testName:  "Case: Truncate string to greater length",
 			str:       "qw",
 			strLength: 4,
+			appendStr: false,
 			want:      "qw",
 		},
 		{
 			testName:  "Case: Truncate string to lesser length",
 			str:       "rtyu",
 			strLength: 3,
+			appendStr: false,
 			want:      "rty",
 		},
 		{
 			testName:  "Case: Truncate string to -1 length",
 			str:       "Odo",
 			strLength: -1,
+			appendStr: false,
 			want:      "Odo",
+		},
+		{
+			testName:  "Case: Trunicate string with 3 dots appended",
+			str:       "rtyu",
+			strLength: 3,
+			appendStr: true,
+			appendArr: []string{"..."},
+			want:      "rty...",
+		},
+		{
+			testName:  "Case: Appends multiple if multiple args are provided",
+			str:       "rtyu",
+			strLength: 3,
+			appendStr: true,
+			appendArr: []string{".", ".", "."},
+			want:      "rty...",
+		},
+		{
+			testName:  "Case: Does not append if length is lesser than max length",
+			str:       "qw",
+			strLength: 4,
+			appendStr: true,
+			appendArr: []string{"..."},
+			want:      "qw",
+		},
+		{
+			testName:  "Case: Does not append if maxlength is -1",
+			str:       "rtyu",
+			strLength: -1,
+			appendStr: true,
+			appendArr: []string{"..."},
+			want:      "rtyu",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			receivedStr := TruncateString(tt.str, tt.strLength)
+			var receivedStr string
+			if tt.appendStr {
+				receivedStr = TruncateString(tt.str, tt.strLength, tt.appendArr...)
+			} else {
+				receivedStr = TruncateString(tt.str, tt.strLength)
+			}
 			if tt.want != receivedStr {
 				t.Errorf("Truncated string %s is not same as %s", receivedStr, tt.want)
 			}

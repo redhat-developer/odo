@@ -232,12 +232,18 @@ func ConvertKeyValueStringToMap(params []string) map[string]string {
 
 // TruncateString truncates passed string to given length
 // Note: if -1 is passed, the original string is returned
-func TruncateString(str string, maxLen int) string {
+// if appendIfTrunicated is given, then it will be appended to trunicated
+// string
+func TruncateString(str string, maxLen int, appendIfTrunicated ...string) string {
 	if maxLen == -1 {
 		return str
 	}
 	if len(str) > maxLen {
-		return str[:maxLen]
+		truncatedString := str[:maxLen]
+		for _, item := range appendIfTrunicated {
+			truncatedString = fmt.Sprintf("%s%s", truncatedString, item)
+		}
+		return truncatedString
 	}
 	return str
 }

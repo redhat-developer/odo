@@ -201,9 +201,9 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType, supported string) {
 	for _, devfileComponent := range catalogDevfileList {
 		if supported != "" {
-			fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name, "\t", supported)
+			fmt.Fprintln(w, devfileComponent.Name, "\t", util.TruncateString(devfileComponent.Description, 60, "..."), "\t", devfileComponent.Registry.Name, "\t", supported)
 		} else {
-			fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name)
+			fmt.Fprintln(w, devfileComponent.Name, "\t", util.TruncateString(devfileComponent.Description, 60, "..."), "\t", devfileComponent.Registry.Name)
 		}
 	}
 }
