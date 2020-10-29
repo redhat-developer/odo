@@ -238,8 +238,6 @@ func (lo *ListOptions) Run() (err error) {
 		}
 	}
 
-	// non-experimental workflow
-
 	var components []component.Component
 	// we now check if DC is supported
 	if lo.hasDCSupport {
