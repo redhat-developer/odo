@@ -69,8 +69,8 @@ for i in $(oc projects -q); do
     fi
 done
 
-REDHAT_OPENJDK_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
-REDHAT_NODEJS_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
+export REDHAT_OPENJDK_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
+export REDHAT_NODEJS_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 # Create the namespace for e2e image test apply pull secret to the namespace
 for i in `echo "$REDHAT_OPENJDK_PROJECT $REDHAT_NODEJS_PROJECT"`; do
     # create the namespace
@@ -98,8 +98,10 @@ set -x
 
 shout "Cleaning up some leftover projects"
 
+set +x
 for i in $(oc projects -q); do
     if [[ $i == "${SCRIPT_IDENTITY}"* ]]; then
         oc delete project $i
     fi
 done
+set -x
