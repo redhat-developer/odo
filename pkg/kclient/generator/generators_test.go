@@ -205,7 +205,7 @@ func TestGenerateContainer(t *testing.T) {
 				ResourceReqs: tt.resourceReqs,
 				Ports:        tt.ports,
 			}
-			container := GenerateContainer(containerParams)
+			container := generateContainer(containerParams)
 
 			if container.Name != tt.name {
 				t.Errorf("expected %s, actual %s", tt.name, container.Name)
@@ -516,7 +516,7 @@ func TestGenerateServiceSpec(t *testing.T) {
 					"component": tt.name,
 				},
 			}
-			serviceSpec := GenerateServiceSpec(serviceSpecParams)
+			serviceSpec := generateServiceSpec(serviceSpecParams)
 
 			if len(serviceSpec.Ports) != len(tt.ports) {
 				t.Errorf("expected service ports length is %v, actual %v", len(tt.ports), len(serviceSpec.Ports))

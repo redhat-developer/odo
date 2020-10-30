@@ -61,8 +61,8 @@ type ContainerParams struct {
 	Ports        []corev1.ContainerPort
 }
 
-// GenerateContainer creates a container spec that can be used when creating a pod
-func GenerateContainer(containerParams ContainerParams) *corev1.Container {
+// generateContainer creates a container spec that can be used when creating a pod
+func generateContainer(containerParams ContainerParams) *corev1.Container {
 	container := &corev1.Container{
 		Name:            containerParams.Name,
 		Image:           containerParams.Image,
@@ -100,7 +100,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 			ResourceReqs: resourceReqs,
 			Ports:        ports,
 		}
-		container := GenerateContainer(containerParams)
+		container := generateContainer(containerParams)
 
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
 		// Sync to `Container.SourceMapping` and/or devfile projects if set
@@ -183,8 +183,8 @@ type ServiceSpecParams struct {
 	ContainerPorts []corev1.ContainerPort
 }
 
-// GenerateServiceSpec creates a service spec
-func GenerateServiceSpec(serviceSpecParams ServiceSpecParams) *corev1.ServiceSpec {
+// generateServiceSpec creates a service spec
+func generateServiceSpec(serviceSpecParams ServiceSpecParams) *corev1.ServiceSpec {
 	// generate Service Spec
 	var svcPorts []corev1.ServicePort
 	for _, containerPort := range serviceSpecParams.ContainerPorts {
@@ -235,7 +235,7 @@ func GetService(devfileObj devfileParser.DevfileObj, selectorLabels map[string]s
 		SelectorLabels: selectorLabels,
 	}
 
-	return GenerateServiceSpec(serviceSpecParams), nil
+	return generateServiceSpec(serviceSpecParams), nil
 }
 
 // IngressParams struct for function GenerateIngressSpec

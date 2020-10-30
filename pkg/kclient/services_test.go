@@ -3,7 +3,10 @@ package kclient
 import (
 	"testing"
 
+	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient/generator"
+	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,17 +17,13 @@ import (
 
 func TestCreateService(t *testing.T) {
 
-	containerParams := generator.ContainerParams{
-		Name:         "container1",
-		Image:        "image1",
-		IsPrivileged: true,
-		Command:      []string{"tail"},
-		Args:         []string{"-f", "/dev/null"},
-		EnvVars:      []corev1.EnvVar{},
-		ResourceReqs: corev1.ResourceRequirements{},
-		Ports:        []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}},
+	devObj := parser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []common.DevfileComponent{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
 	}
-	container := generator.GenerateContainer(containerParams)
 
 	tests := []struct {
 		name          string
@@ -50,6 +49,10 @@ func TestCreateService(t *testing.T) {
 
 			objectMeta := generator.CreateObjectMeta(tt.componentName, "default", nil, nil)
 
+			labels := map[string]string{
+				"component": tt.componentName,
+			}
+
 			fkclientset.Kubernetes.PrependReactor("create", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.componentName == "" {
 					return true, nil, errors.Errorf("component name is empty")
@@ -61,13 +64,12 @@ func TestCreateService(t *testing.T) {
 				}
 				return true, &service, nil
 			})
-			serviceSpecParams := generator.ServiceSpecParams{
-				ContainerPorts: container.Ports,
-				SelectorLabels: map[string]string{
-					"component": tt.componentName,
-				},
+
+			serviceSpec, err := generator.GetService(devObj, labels)
+			if err != nil {
+				t.Errorf("generator.GetService unexpected error %v", err)
 			}
-			serviceSpec := generator.GenerateServiceSpec(serviceSpecParams)
+
 			createdService, err := fkclient.CreateService(objectMeta, *serviceSpec)
 
 			// Checks for unexpected error cases
@@ -91,17 +93,13 @@ func TestCreateService(t *testing.T) {
 
 func TestUpdateService(t *testing.T) {
 
-	containerParams := generator.ContainerParams{
-		Name:         "container1",
-		Image:        "image1",
-		IsPrivileged: true,
-		Command:      []string{"tail"},
-		Args:         []string{"-f", "/dev/null"},
-		EnvVars:      []corev1.EnvVar{},
-		ResourceReqs: corev1.ResourceRequirements{},
-		Ports:        []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}},
+	devObj := parser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []common.DevfileComponent{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
 	}
-	container := generator.GenerateContainer(containerParams)
 
 	tests := []struct {
 		name          string
@@ -127,6 +125,10 @@ func TestUpdateService(t *testing.T) {
 
 			objectMeta := generator.CreateObjectMeta(tt.componentName, "default", nil, nil)
 
+			labels := map[string]string{
+				"component": tt.componentName,
+			}
+
 			fkclientset.Kubernetes.PrependReactor("update", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.componentName == "" {
 					return true, nil, errors.Errorf("component name is empty")
@@ -139,13 +141,11 @@ func TestUpdateService(t *testing.T) {
 				return true, &service, nil
 			})
 
-			serviceSpecParams := generator.ServiceSpecParams{
-				ContainerPorts: container.Ports,
-				SelectorLabels: map[string]string{
-					"component": tt.componentName,
-				},
+			serviceSpec, err := generator.GetService(devObj, labels)
+			if err != nil {
+				t.Errorf("generator.GetService unexpected error %v", err)
 			}
-			serviceSpec := generator.GenerateServiceSpec(serviceSpecParams)
+
 			updatedService, err := fkclient.UpdateService(objectMeta, *serviceSpec)
 
 			// Checks for unexpected error cases

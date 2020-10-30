@@ -3,6 +3,8 @@ package kclient
 import (
 	"testing"
 
+	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -10,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -21,22 +22,24 @@ import (
 // createFakeDeployment creates a fake deployment with the given pod name and labels
 func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName string, labels map[string]string) (*appsv1.Deployment, error) {
 	fakeUID := types.UID("12345")
-	containerParams := generator.ContainerParams{
-		Name:         "container1",
-		Image:        "image1",
-		IsPrivileged: false,
-		Command:      []string{"tail"},
-		Args:         []string{"-f", "/dev/null"},
-		EnvVars:      []corev1.EnvVar{},
-		ResourceReqs: corev1.ResourceRequirements{},
-		Ports:        []corev1.ContainerPort{},
+
+	devObj := parser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []common.DevfileComponent{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
 	}
-	container := generator.GenerateContainer(containerParams)
+
+	containers, err := generator.GetContainers(devObj)
+	if err != nil {
+		return nil, err
+	}
+
 	objectMeta := generator.CreateObjectMeta(podName, "default", labels, nil)
 	podTemplateSpecParams := generator.PodTemplateSpecParams{
 		ObjectMeta: objectMeta,
-		Containers: []corev1.Container{*container},
-		// Volumes:    utils.GetOdoContainerVolumes(),
+		Containers: containers,
 	}
 	podTemplateSpec := generator.GeneratePodTemplateSpec(podTemplateSpecParams)
 
@@ -179,21 +182,22 @@ func TestGetDeploymentByName(t *testing.T) {
 
 func TestUpdateDeployment(t *testing.T) {
 
-	containerParams := generator.ContainerParams{
-		Name:         "container1",
-		Image:        "image1",
-		IsPrivileged: false,
-		Command:      []string{"tail"},
-		Args:         []string{"-f", "/dev/null"},
-		EnvVars:      []corev1.EnvVar{},
-		ResourceReqs: corev1.ResourceRequirements{},
-		Ports:        []corev1.ContainerPort{},
-	}
-	container := generator.GenerateContainer(containerParams)
-
 	labels := map[string]string{
 		"app":       "app",
 		"component": "frontend",
+	}
+
+	devObj := parser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []common.DevfileComponent{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
+	}
+
+	containers, err := generator.GetContainers(devObj)
+	if err != nil {
+		t.Errorf("generator.GetContainers unexpected error %v", err)
 	}
 
 	tests := []struct {
@@ -222,8 +226,7 @@ func TestUpdateDeployment(t *testing.T) {
 
 			podTemplateSpecParams := generator.PodTemplateSpecParams{
 				ObjectMeta: objectMeta,
-				Containers: []corev1.Container{*container},
-				// Volumes:    utils.GetOdoContainerVolumes(),
+				Containers: containers,
 			}
 			podTemplateSpec := generator.GeneratePodTemplateSpec(podTemplateSpecParams)
 
