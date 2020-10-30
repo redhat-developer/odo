@@ -870,8 +870,7 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 
 	// extract the labels we care about from each component
 	for _, elem := range deploymentList {
-		fmt.Println("HERE2")
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], selector, client.Namespace)
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.Namespace)
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}

@@ -209,7 +209,6 @@ func (lo *ListOptions) Run() (err error) {
 	currentComponentState := component.StateTypeNotPushed
 
 	if lo.KClient != nil {
-		fmt.Println("HERE")
 		devfileComponents, err = component.ListDevfileComponents(lo.Client, selector)
 		if err != nil {
 			return err

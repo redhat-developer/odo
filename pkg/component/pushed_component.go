@@ -76,7 +76,6 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 	if d.urls == nil {
 		name := d.GetName()
 		var routes url.URLList
-		fmt.Println("HERE5")
 		if routeAvailable, err := d.client.IsRouteSupported(); routeAvailable && err == nil {
 			routes, err = url.ListPushed(d.client, name, d.GetApplication())
 			if err != nil && !isIgnorableError(err) {
@@ -89,7 +88,6 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 		}
 		d.urls = append(routes.Items, ingresses.Items...)
 	}
-	fmt.Println("HERE6")
 	return d.urls, nil
 }
 
@@ -270,9 +268,7 @@ func newPushedComponent(applicationName string, p provider, c *occlient.Client) 
 
 // GetPushedComponent returns an abstraction over the cluster representation of the component
 func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
-	fmt.Println("HERE3")
 	d, err := c.GetKubeClient().GetDeploymentByName(componentName)
-	fmt.Println("HERE4")
 	if err != nil {
 		if isIgnorableError(err) {
 			// if it's not found, check if there's a deploymentconfig

@@ -324,14 +324,13 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 	if componentName != "" {
 		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
 	}
+
 	klog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routes, err := client.ListRoutes(labelSelector)
-	fmt.Println("HERE6 " + err.Error())
 
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
-	fmt.Println("HERE7")
 
 	var urls []URL
 	for _, r := range routes {
