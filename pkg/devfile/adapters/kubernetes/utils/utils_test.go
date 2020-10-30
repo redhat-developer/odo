@@ -659,50 +659,6 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	}
 }
 
-func TestGetContainersMap(t *testing.T) {
-
-	tests := []struct {
-		name             string
-		containers       []corev1.Container
-		wantContainerKey []string
-	}{
-		{
-			name: "Case 1: single entry",
-			containers: []corev1.Container{
-				testingutil.CreateFakeContainer("container1"),
-			},
-			wantContainerKey: []string{
-				"container1",
-			},
-		},
-		{
-			name: "Case 2: multiple entries",
-			containers: []corev1.Container{
-				testingutil.CreateFakeContainer("container1"),
-				testingutil.CreateFakeContainer("container2"),
-			},
-			wantContainerKey: []string{
-				"container1",
-				"container2",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			containerMap := GetContainersMap(tt.containers)
-
-			for _, containerName := range tt.wantContainerKey {
-				if _, ok := containerMap[containerName]; !ok {
-					t.Errorf("TestGetContainersMap error - could not find key %s in %v", containerName, containerMap)
-				}
-			}
-
-		})
-	}
-
-}
-
 func TestGetPreStartInitContainers(t *testing.T) {
 
 	containers := []corev1.Container{

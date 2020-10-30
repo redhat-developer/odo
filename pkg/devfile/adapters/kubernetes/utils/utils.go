@@ -234,16 +234,6 @@ func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
 	return envFrom
 }
 
-// GetContainersMap gets the map of container name to containers
-func GetContainersMap(containers []corev1.Container) map[string]corev1.Container {
-	containersMap := make(map[string]corev1.Container)
-
-	for _, container := range containers {
-		containersMap[container.Name] = container
-	}
-	return containersMap
-}
-
 // GetPreStartInitContainers gets the init container for every preStart devfile event
 func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []corev1.Container) []corev1.Container {
 
@@ -253,7 +243,6 @@ func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []co
 	if len(preStartEvents) > 0 {
 		var eventCommands []string
 		commandsMap := devfile.Data.GetCommands()
-		containersMap := GetContainersMap(containers)
 
 		for _, event := range preStartEvents {
 			eventSubCommands := adaptersCommon.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
@@ -277,23 +266,25 @@ func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []co
 				}
 
 				// Get the container info for the given component
-				if container, ok := containersMap[component]; ok {
-					// override any container command and args with our event command cmdArr
-					container.Command = cmdArr
-					container.Args = []string{}
+				for _, container := range containers {
+					if container.Name == component {
+						// override any container command and args with our event command cmdArr
+						container.Command = cmdArr
+						container.Args = []string{}
 
-					// Override the init container name since there cannot be two containers with the same
-					// name in a pod. This applies to pod containers and pod init containers. The convention
-					// for init container name here is, containername-eventname-<position of command in prestart events>
-					// If there are two events referencing the same devfile component, then we will have
-					// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
-					// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
-					initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
-					initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
-					initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
-					container.Name = initContainerName
+						// Override the init container name since there cannot be two containers with the same
+						// name in a pod. This applies to pod containers and pod init containers. The convention
+						// for init container name here is, containername-eventname-<position of command in prestart events>
+						// If there are two events referencing the same devfile component, then we will have
+						// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
+						// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
+						initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
+						initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
+						initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
+						container.Name = initContainerName
 
-					initContainers = append(initContainers, container)
+						initContainers = append(initContainers, container)
+					}
 				}
 			}
 		}
