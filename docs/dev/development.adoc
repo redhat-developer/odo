@@ -183,7 +183,7 @@ in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Create a PR and update the file `build/VERSION` with the  latest version number.
 . Create a blog post! Follow the https://github.com/openshift/odo/tree/master/docs/blog[template.md] file and push it to the website (a tutorial is located on the https://github.com/openshift/odo/tree/gh-pages[gh-pages] branch of odo
 . After the blog post, ideally the CHANGELOG in the release should be the same as the blog post. This is an example of a good release changelog: https://github.com/openshift/odo/releases/tag/v2.0.0
-. Add the the built site (including the blog post) to the release with `site.tar.gz` https://github.com/openshift/odo/tree/gh-pages#bundling-the-site-for-releases[using the bundling the site for releases guide].
+. Add the built site (including the blog post) to the release with `site.tar.gz` using the  https://github.com/openshift/odo/tree/gh-pages#bundling-the-site-for-releases[bundling the site for releases] guide.
 
 == Writing machine readable output code
 
