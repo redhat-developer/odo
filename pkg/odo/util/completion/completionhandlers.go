@@ -2,6 +2,8 @@ package completion
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
@@ -13,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 // ServiceCompletionHandler provides service name completion for the current project and application
