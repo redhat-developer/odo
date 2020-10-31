@@ -104,7 +104,7 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-service
-        - travis_wait make test-cmd-link-unlink
+        - travis_wait make test-cmd-link-unlink-311-cluster
         - odo logout
 
     - <<: *base-test
