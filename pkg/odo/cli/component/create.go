@@ -363,7 +363,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// Configure the context
 	if co.componentContext != "" {
 		DevfilePath = filepath.Join(co.componentContext, devFile)
-		log.Infof("Devfile path: %s", co.DevfilePath)
 		EnvFilePath = filepath.Join(co.componentContext, envFile)
 		ConfigFilePath = filepath.Join(co.componentContext, configFile)
 		co.PushOptions.componentContext = co.componentContext
