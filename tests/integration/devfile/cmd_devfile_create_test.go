@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -206,11 +207,15 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with --s2i flag", func() {
+		var newContext string
 		JustBeforeEach(func() {
-			newContext := path.Join(commonVar.Context, "newContext")
+			newContext = path.Join(commonVar.Context, "newContext")
 			devfilePath = filepath.Join(newContext, devfile)
 			helper.MakeDir(newContext)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
+		})
+		AfterEach(func() {
+			helper.DeleteDir(newContext)
 		})
 
 		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
@@ -257,6 +262,18 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail to create the devfile component with --registry specified", func() {
 			output := helper.CmdShouldFail("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry", "--s2i")
 			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the registry via --registry flag"})
+		})
+
+		It("checks that odo describe works for s2i component from a devfile directory", func() {
+			helper.Chdir(newContext)
+			cmpName2 := helper.RandString(6)
+			output := helper.CmdShouldPass("odo", "create", "--starter", "nodejs")
+			context2 := helper.CreateNewContext()
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", context2, cmpName2)
+			output = helper.CmdShouldPass("odo", "describe", "--context", context2)
+			Expect(output).To(ContainSubstring(fmt.Sprint("Component Name: ", cmpName2)))
+			helper.Chdir(commonVar.OriginalWorkingDirectory)
+			helper.DeleteDir(context2)
 		})
 	})
 
