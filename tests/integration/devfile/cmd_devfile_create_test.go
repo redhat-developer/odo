@@ -267,10 +267,10 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("checks that odo describe works for s2i component from a devfile directory", func() {
 			helper.Chdir(newContext)
 			cmpName2 := helper.RandString(6)
-			output := helper.CmdShouldPass("odo", "create", "--starter", "nodejs")
+			helper.CmdShouldPass("odo", "create", "--starter", "nodejs")
 			context2 := helper.CreateNewContext()
 			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", context2, cmpName2)
-			output = helper.CmdShouldPass("odo", "describe", "--context", context2)
+			output := helper.CmdShouldPass("odo", "describe", "--context", context2)
 			Expect(output).To(ContainSubstring(fmt.Sprint("Component Name: ", cmpName2)))
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
 			helper.DeleteDir(context2)
