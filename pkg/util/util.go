@@ -1249,8 +1249,13 @@ func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
 
 }
 
-// CopyFileWithFs copies a single file from src to dst
-func CopyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
+// CopyFileWithFs copies a single file from src to dst using the default filesystem
+func CopyFileWithFs(src, dst string) error {
+	return copyFileWithFs(src, dst, filesystem.DefaultFs{})
+}
+
+// copyFileWithFs copies a single file from src to dst
+func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 	var err error
 	var srcinfo os.FileInfo
 
@@ -1285,8 +1290,13 @@ func CopyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 	return fs.Chmod(dst, srcinfo.Mode())
 }
 
-// CopyDirWithFS copies a whole directory recursively
-func CopyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
+// CopyDirWithFS copies a whole directory recursively with the default filesystem
+func CopyDirWithFS(src string, dst string) error {
+	return copyDirWithFS(src, dst, filesystem.DefaultFs{})
+}
+
+// copyDirWithFS copies a whole directory recursively
+func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 	var err error
 	var fds []os.FileInfo
 	var srcinfo os.FileInfo
@@ -1307,11 +1317,11 @@ func CopyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 		dstfp := path.Join(dst, fd.Name())
 
 		if fd.IsDir() {
-			if err = CopyDirWithFS(srcfp, dstfp, fs); err != nil {
+			if err = copyDirWithFS(srcfp, dstfp, fs); err != nil {
 				return err
 			}
 		} else {
-			if err = CopyFileWithFs(srcfp, dstfp, fs); err != nil {
+			if err = copyFileWithFs(srcfp, dstfp, fs); err != nil {
 				return err
 			}
 		}
@@ -1336,8 +1346,15 @@ func StartSignalWatcher(handle func()) {
 }
 
 // CleanDir cleans the original folder during events like interrupted copy etc
+// it uses the default filesystem
 // it leaves the given files behind for later use
-func CleanDir(originalPath string, leaveBehindFiles map[string]bool, fs filesystem.Filesystem) error {
+func CleanDir(originalPath string, leaveBehindFiles map[string]bool) error {
+	return cleanDir(originalPath, leaveBehindFiles, filesystem.DefaultFs{})
+}
+
+// cleanDir cleans the original folder during events like interrupted copy etc
+// it leaves the given files behind for later use
+func cleanDir(originalPath string, leaveBehindFiles map[string]bool, fs filesystem.Filesystem) error {
 	// Open the directory.
 	outputDirRead, err := fs.Open(originalPath)
 	if err != nil {
@@ -1363,10 +1380,15 @@ func CleanDir(originalPath string, leaveBehindFiles map[string]bool, fs filesyst
 	return err
 }
 
-// GitSubDir handles subDir for git components
-func GitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem) error {
+// GitSubDir handles subDir for git components using the default filesystem
+func GitSubDir(srcPath, destinationPath, subDir string) error {
+	return gitSubDir(srcPath, destinationPath, subDir, filesystem.DefaultFs{})
+}
+
+// gitSubDir handles subDir for git components
+func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem) error {
 	go StartSignalWatcher(func() {
-		err := CleanDir(destinationPath, map[string]bool{
+		err := cleanDir(destinationPath, map[string]bool{
 			"devfile.yaml": true,
 		}, fs)
 		if err != nil {
@@ -1400,9 +1422,9 @@ func GitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem
 		oldPath := filepath.Join(srcPath, subDir, fileName)
 
 		if outputFileHere.IsDir() {
-			err = CopyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
+			err = copyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
 		} else {
-			err = CopyFileWithFs(oldPath, filepath.Join(destinationPath, fileName), fs)
+			err = copyFileWithFs(oldPath, filepath.Join(destinationPath, fileName), fs)
 		}
 
 		if err != nil {

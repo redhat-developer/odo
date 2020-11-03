@@ -32,7 +32,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -986,7 +985,7 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 
 		if starterProject.SubDir != "" {
 			err = util.GitSubDir(path, originalPath,
-				starterProject.SubDir, filesystem.DefaultFs{})
+				starterProject.SubDir)
 			if err != nil {
 				return err
 			}

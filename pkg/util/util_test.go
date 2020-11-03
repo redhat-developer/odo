@@ -2172,7 +2172,7 @@ func TestCopyFileWithFS(t *testing.T) {
 				t.Errorf("error while setting up test: %v", err)
 			}
 
-			err = CopyFileWithFs(tt.args.src, tt.args.dst, tt.args.fs)
+			err = copyFileWithFs(tt.args.src, tt.args.dst, tt.args.fs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MoveFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -2281,7 +2281,7 @@ func TestCopyDirWithFS(t *testing.T) {
 				t.Errorf("error while setting up test: %v", err)
 			}
 
-			err = CopyDirWithFS(tt.args.src, tt.args.dst, tt.args.fs)
+			err = copyDirWithFS(tt.args.src, tt.args.dst, tt.args.fs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MoveDir() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -2431,7 +2431,7 @@ func TestCleanDir(t *testing.T) {
 				t.Errorf("error while setting up test: %v", err)
 			}
 
-			err = CleanDir(tt.args.originalPath, tt.args.leaveBehindFiles, tt.args.fs)
+			err = cleanDir(tt.args.originalPath, tt.args.leaveBehindFiles, tt.args.fs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CleanDir() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -2565,7 +2565,7 @@ func TestGitSubDir(t *testing.T) {
 				t.Errorf("error while setting up test: %v", err)
 			}
 
-			err = GitSubDir(tt.args.srcPath, tt.args.destinationPath, tt.args.subDir, tt.args.fs)
+			err = gitSubDir(tt.args.srcPath, tt.args.destinationPath, tt.args.subDir, tt.args.fs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GitSubDir() error = %v, wantErr %v", err, tt.wantErr)
 			}
