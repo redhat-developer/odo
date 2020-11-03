@@ -74,6 +74,8 @@ type EnvInfoURL struct {
 	ExposedPort int `yaml:"ExposedPort,omitempty"`
 	// Kind is the kind of the URL
 	Kind URLKind `yaml:"Kind,omitempty"`
+
+	Path string `yaml:"Path,omitempty"`
 }
 
 // EnvInfoPushCommand holds the devfile push commands for the component

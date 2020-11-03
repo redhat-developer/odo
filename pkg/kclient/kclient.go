@@ -30,6 +30,8 @@ Consult your Kubernetes distribution's documentation for more details
 	waitForComponentDeletionTimeout = 120 * time.Second
 )
 
+var instance *Client
+
 // Client is a collection of fields used for client configuration and interaction
 type Client struct {
 	KubeClient       kubernetes.Interface
@@ -47,6 +49,13 @@ type Client struct {
 // New creates a new client
 func New() (*Client, error) {
 	return NewForConfig(nil)
+}
+
+func GetInstance() (*Client, error) {
+	if instance == nil {
+		return New()
+	}
+	return instance, nil
 }
 
 // NewForConfig creates a new client with the provided configuration or initializes the configuration if none is provided
