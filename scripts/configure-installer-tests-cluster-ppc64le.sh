@@ -87,10 +87,15 @@ done
 #Missing required images in OpenShift and Adding it manually to cluster
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/nodejs/imagestreams/nodejs-rhel.json
 sleep 15
+oc delete istag nodejs:latest -n openshift
+sleep 15
+oc import-image nodejs:latest --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
+sleep 15
 oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/java/imagestreams/redhat-openjdk18-openshift-rhel-ppc64le.json
+oc import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
 sleep 15
 oc annotate istag/java:8 --namespace=openshift tags=builder --overwrite
+oc import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
 sleep 15
 oc annotate istag/java:latest --namespace=openshift tags=builder --overwrite
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/ruby/imagestreams/ruby-rhel.json
