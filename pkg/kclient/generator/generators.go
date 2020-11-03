@@ -20,9 +20,6 @@ import (
 )
 
 const (
-	// DevfileSourceVolume is the constant containing the name of the emptyDir volume containing the project source
-	DevfileSourceVolume = "devfile-projects"
-
 	// DevfileSourceVolumeMount is the directory to mount the volume in the container
 	DevfileSourceVolumeMount = "/projects"
 

@@ -507,12 +507,6 @@ func TestAddSyncRootFolder(t *testing.T) {
 					t.Errorf("PROJECT_ROOT error expected %s, actual %s", tt.wantSyncRootFolder, env.Value)
 				}
 			}
-
-			for _, volMount := range container.VolumeMounts {
-				if volMount.Name == DevfileSourceVolume && volMount.MountPath != tt.wantSyncRootFolder {
-					t.Errorf("devfile-projects vol mount error expected %s, actual %s", tt.wantSyncRootFolder, volMount.MountPath)
-				}
-			}
 		})
 	}
 }

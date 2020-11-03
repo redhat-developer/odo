@@ -9,7 +9,6 @@ import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
@@ -20,13 +19,16 @@ import (
 
 const (
 	containerNameMaxLen = 55
+
+	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
+	OdoSourceVolume = "odo-projects"
 )
 
 // GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
 func GetOdoContainerVolumes() []corev1.Volume {
 	return []corev1.Volume{
 		{
-			Name: generator.DevfileSourceVolume,
+			Name: OdoSourceVolume,
 		},
 		{
 			// Create a volume that will be shared betwen InitContainer and the applicationContainer
@@ -60,6 +62,21 @@ func isEnvPresent(EnvVars []corev1.EnvVar, envVarName string) bool {
 	}
 
 	return isPresent
+}
+
+// AddOdoProjectVolume adds the odo project volume to the containers
+func AddOdoProjectVolume(containers *[]corev1.Container) {
+	for i, container := range *containers {
+		for _, env := range container.Env {
+			if env.Name == adaptersCommon.EnvProjectsRoot {
+				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+					Name:      OdoSourceVolume,
+					MountPath: env.Value,
+				})
+				(*containers)[i] = container
+			}
+		}
+	}
 }
 
 // UpdateContainersWithSupervisord updates the run components entrypoint and volume mount

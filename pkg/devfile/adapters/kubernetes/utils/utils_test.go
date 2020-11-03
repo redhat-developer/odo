@@ -84,6 +84,77 @@ func TestComponentExists(t *testing.T) {
 
 }
 
+func TestAddOdoProjectVolume(t *testing.T) {
+
+	tests := []struct {
+		name                         string
+		containers                   []corev1.Container
+		containerWithProjectVolMount []string
+		volMount                     map[string]string
+	}{
+		{
+			name: "Case: Various containers with and without PROJECTS_ROOT",
+			containers: []corev1.Container{
+				{
+					Name: "container1",
+					Env: []corev1.EnvVar{
+						{
+							Name:  adaptersCommon.EnvProjectsRoot,
+							Value: "/path1",
+						},
+					},
+				},
+				{
+					Name: "container2",
+					Env: []corev1.EnvVar{
+						{
+							Name:  adaptersCommon.EnvProjectsRoot,
+							Value: "/path2",
+						},
+					},
+				},
+				{
+					Name: "container3",
+					Env: []corev1.EnvVar{
+						{
+							Name:  "RANDOM",
+							Value: "/path3",
+						},
+					},
+				},
+			},
+			containerWithProjectVolMount: []string{"container1", "container2"},
+			volMount: map[string]string{
+				"container1": "/path1",
+				"container2": "/path2",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			AddOdoProjectVolume(&tt.containers)
+
+			for wantContainerName, wantMountPath := range tt.volMount {
+				matched := false
+				for _, container := range tt.containers {
+					if container.Name == wantContainerName {
+						for _, volMount := range container.VolumeMounts {
+							if volMount.Name == OdoSourceVolume && volMount.MountPath == wantMountPath {
+								matched = true
+							}
+						}
+					}
+				}
+
+				if !matched {
+					t.Error("TestAddOdoProjectVolume error: did not match the volume mount for odo-projects")
+				}
+			}
+		})
+	}
+}
+
 func TestUpdateContainersWithSupervisord(t *testing.T) {
 
 	command := "ls -la"

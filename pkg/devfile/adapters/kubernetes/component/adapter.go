@@ -283,6 +283,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return fmt.Errorf("No valid components found in the devfile")
 	}
 
+	// Add the project volume before generating init containers
+	utils.AddOdoProjectVolume(&containers)
+
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
 	if err != nil {
 		return err

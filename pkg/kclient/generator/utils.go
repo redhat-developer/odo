@@ -63,11 +63,6 @@ func addSyncRootFolder(container *corev1.Container, sourceMapping string) string
 		syncRootFolder = DevfileSourceVolumeMount
 	}
 
-	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-		Name:      DevfileSourceVolume,
-		MountPath: syncRootFolder,
-	})
-
 	// Note: PROJECTS_ROOT & PROJECT_SOURCE are validated at the devfile parser level
 	// Add PROJECTS_ROOT to the container
 	container.Env = append(container.Env,
