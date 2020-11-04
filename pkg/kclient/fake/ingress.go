@@ -28,7 +28,7 @@ func GetIngressListWithMultiple(componentName, appName string) *extensionsv1.Ing
 						applabels.App:                  appName,
 					},
 				},
-				Spec: *generator.GenerateIngressSpec(generator.IngressParams{IngressDomain: "example-0.com", ServiceName: "example-0", PortNumber: intstr.FromInt(8080)}),
+				Spec: *generator.GetIngressSpec(generator.IngressParams{IngressDomain: "example-0.com", ServiceName: "example-0", PortNumber: intstr.FromInt(8080)}),
 			},
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -42,7 +42,7 @@ func GetIngressListWithMultiple(componentName, appName string) *extensionsv1.Ing
 						applabels.App:                  "app",
 					},
 				},
-				Spec: *generator.GenerateIngressSpec(generator.IngressParams{IngressDomain: "example-1.com", ServiceName: "example-1", PortNumber: intstr.FromInt(9090)}),
+				Spec: *generator.GetIngressSpec(generator.IngressParams{IngressDomain: "example-1.com", ServiceName: "example-1", PortNumber: intstr.FromInt(9090)}),
 			},
 		},
 	}
@@ -61,6 +61,6 @@ func GetSingleIngress(urlName, componentName, appName string) *extensionsv1.Ingr
 				applabels.App:                  appName,
 			},
 		},
-		Spec: *generator.GenerateIngressSpec(generator.IngressParams{IngressDomain: fmt.Sprintf("%s.com", urlName), ServiceName: urlName, PortNumber: intstr.FromInt(8080)}),
+		Spec: *generator.GetIngressSpec(generator.IngressParams{IngressDomain: fmt.Sprintf("%s.com", urlName), ServiceName: urlName, PortNumber: intstr.FromInt(8080)}),
 	}
 }

@@ -1,11 +1,9 @@
 package generator
 
 import (
-
-	// api resource types
-
 	"fmt"
 
+	buildv1 "github.com/openshift/api/build/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -33,8 +31,8 @@ const (
 	deploymentAPIVersion = "apps/v1"
 )
 
-// CreateObjectMeta creates a common object meta
-func CreateObjectMeta(name, namespace string, labels, annotations map[string]string) metav1.ObjectMeta {
+// GetObjectMeta creates a common object meta
+func GetObjectMeta(name, namespace string, labels, annotations map[string]string) metav1.ObjectMeta {
 
 	objectMeta := metav1.ObjectMeta{
 		Name:        name,
@@ -58,8 +56,8 @@ type ContainerParams struct {
 	Ports        []corev1.ContainerPort
 }
 
-// generateContainer creates a container spec that can be used when creating a pod
-func generateContainer(containerParams ContainerParams) *corev1.Container {
+// getContainer creates a container spec that can be used when creating a pod
+func getContainer(containerParams ContainerParams) *corev1.Container {
 	container := &corev1.Container{
 		Name:            containerParams.Name,
 		Image:           containerParams.Image,
@@ -97,7 +95,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 			ResourceReqs: resourceReqs,
 			Ports:        ports,
 		}
-		container := generateContainer(containerParams)
+		container := getContainer(containerParams)
 
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
 		// Sync to `Container.SourceMapping` and/or devfile projects if set
@@ -122,8 +120,8 @@ type PodTemplateSpecParams struct {
 	Volumes        []corev1.Volume
 }
 
-// GeneratePodTemplateSpec creates a pod template spec that can be used to create a deployment spec
-func GeneratePodTemplateSpec(podTemplateSpecParams PodTemplateSpecParams) *corev1.PodTemplateSpec {
+// GetPodTemplateSpec creates a pod template spec that can be used to create a deployment spec
+func GetPodTemplateSpec(podTemplateSpecParams PodTemplateSpecParams) *corev1.PodTemplateSpec {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: podTemplateSpecParams.ObjectMeta,
 		Spec: corev1.PodSpec{
@@ -142,8 +140,8 @@ type DeploymentSpecParams struct {
 	PodSelectorLabels map[string]string
 }
 
-// GenerateDeploymentSpec creates a deployment spec
-func GenerateDeploymentSpec(deployParams DeploymentSpecParams) *appsv1.DeploymentSpec {
+// GetDeploymentSpec creates a deployment spec
+func GetDeploymentSpec(deployParams DeploymentSpecParams) *appsv1.DeploymentSpec {
 	deploymentSpec := &appsv1.DeploymentSpec{
 		Strategy: appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
@@ -157,8 +155,8 @@ func GenerateDeploymentSpec(deployParams DeploymentSpecParams) *appsv1.Deploymen
 	return deploymentSpec
 }
 
-// GeneratePVCSpec creates a pvc spec
-func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSpec {
+// GetPVCSpec creates a pvc spec
+func GetPVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSpec {
 
 	pvcSpec := &corev1.PersistentVolumeClaimSpec{
 		Resources: corev1.ResourceRequirements{
@@ -180,9 +178,8 @@ type ServiceSpecParams struct {
 	ContainerPorts []corev1.ContainerPort
 }
 
-// generateServiceSpec creates a service spec
-func generateServiceSpec(serviceSpecParams ServiceSpecParams) *corev1.ServiceSpec {
-	// generate Service Spec
+// getServiceSpec creates a service spec
+func getServiceSpec(serviceSpecParams ServiceSpecParams) *corev1.ServiceSpec {
 	var svcPorts []corev1.ServicePort
 	for _, containerPort := range serviceSpecParams.ContainerPorts {
 		svcPort := corev1.ServicePort{
@@ -232,7 +229,7 @@ func GetService(devfileObj devfileParser.DevfileObj, selectorLabels map[string]s
 		SelectorLabels: selectorLabels,
 	}
 
-	return generateServiceSpec(serviceSpecParams), nil
+	return getServiceSpec(serviceSpecParams), nil
 }
 
 // IngressParams struct for function GenerateIngressSpec
@@ -249,8 +246,8 @@ type IngressParams struct {
 	Path          string
 }
 
-// GenerateIngressSpec creates an ingress spec
-func GenerateIngressSpec(ingressParams IngressParams) *extensionsv1.IngressSpec {
+// GetIngressSpec creates an ingress spec
+func GetIngressSpec(ingressParams IngressParams) *extensionsv1.IngressSpec {
 	path := "/"
 	if ingressParams.Path != "" {
 		path = ingressParams.Path
@@ -301,8 +298,8 @@ type RouteParams struct {
 	Secure      bool
 }
 
-// GenerateRouteSpec creates a route spec
-func GenerateRouteSpec(routeParams RouteParams) *routev1.RouteSpec {
+// GetRouteSpec creates a route spec
+func GetRouteSpec(routeParams RouteParams) *routev1.RouteSpec {
 	routePath := "/"
 	if routeParams.Path != "" {
 		routePath = routeParams.Path
@@ -328,10 +325,10 @@ func GenerateRouteSpec(routeParams RouteParams) *routev1.RouteSpec {
 	return routeSpec
 }
 
-// GenerateOwnerReference generates an ownerReference  from the deployment which can then be set as
+// GetOwnerReference generates an ownerReference  from the deployment which can then be set as
 // owner for various Kubernetes objects and ensure that when the owner object is deleted from the
 // cluster, all other objects are automatically removed by Kubernetes garbage collector
-func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {
+func GetOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {
 
 	ownerReference := metav1.OwnerReference{
 		APIVersion: deploymentAPIVersion,
@@ -341,4 +338,51 @@ func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference
 	}
 
 	return ownerReference
+}
+
+// BuildConfigParams is a struct to create build config
+type BuildConfigParams struct {
+	CommonObjectMeta metav1.ObjectMeta
+	GitURL           string
+	GitRef           string
+	BuildStrategy    buildv1.BuildStrategy
+}
+
+// GetBuildConfig gets te build config
+func GetBuildConfig(buildConfigParams BuildConfigParams) buildv1.BuildConfig {
+
+	return buildv1.BuildConfig{
+		ObjectMeta: buildConfigParams.CommonObjectMeta,
+		Spec: buildv1.BuildConfigSpec{
+			CommonSpec: buildv1.CommonSpec{
+				Output: buildv1.BuildOutput{
+					To: &corev1.ObjectReference{
+						Kind: "ImageStreamTag",
+						Name: buildConfigParams.CommonObjectMeta.Name + ":latest",
+					},
+				},
+				Source: buildv1.BuildSource{
+					Git: &buildv1.GitBuildSource{
+						URI: buildConfigParams.GitURL,
+						Ref: buildConfigParams.GitRef,
+					},
+					Type: buildv1.BuildSourceGit,
+				},
+				Strategy: buildConfigParams.BuildStrategy,
+			},
+		},
+	}
+}
+
+// GetSourceBuildStrategy gets the source build strategy
+func GetSourceBuildStrategy(imageName, imageNamespace string) buildv1.BuildStrategy {
+	return buildv1.BuildStrategy{
+		SourceStrategy: &buildv1.SourceBuildStrategy{
+			From: corev1.ObjectReference{
+				Kind:      "ImageStreamTag",
+				Name:      imageName,
+				Namespace: imageNamespace,
+			},
+		},
+	}
 }

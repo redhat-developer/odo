@@ -207,7 +207,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		if err != nil {
 			return "", err
 		}
-		ownerReference := generator.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		if parameters.secureURL {
 			if len(parameters.secretName) != 0 {
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, metav1.GetOptions{})
@@ -256,8 +256,8 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 			TLSSecretName: parameters.secretName,
 			Path:          parameters.path,
 		}
-		ingressSpec := generator.GenerateIngressSpec(ingressParam)
-		objectMeta := generator.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
+		ingressSpec := generator.GetIngressSpec(ingressParam)
+		objectMeta := generator.GetObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
 		// to avoid error due to duplicate ingress name defined in different devfile components
 		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -302,7 +302,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 			if err != nil {
 				return "", err
 			}
-			ownerReference = generator.GenerateOwnerReference(deployment)
+			ownerReference = generator.GetOwnerReference(deployment)
 		}
 
 		// Pass in the namespace name, link to the service (componentName) and labels to create a route

@@ -74,9 +74,9 @@ func TestCreatePVC(t *testing.T) {
 			} else if err != nil && tt.size == "garbage" {
 				return
 			}
-			pvcSpec := generator.GeneratePVCSpec(quantity)
+			pvcSpec := generator.GetPVCSpec(quantity)
 
-			objectMeta := generator.CreateObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
+			objectMeta := generator.GetObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
 
 			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.pvcName == "" {

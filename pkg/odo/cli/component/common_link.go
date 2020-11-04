@@ -120,7 +120,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		}
 
 		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
-		ownerReference := generator.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		o.sbr.SetOwnerReferences(append(o.sbr.GetOwnerReferences(), ownerReference))
 		if err != nil {
 			return err

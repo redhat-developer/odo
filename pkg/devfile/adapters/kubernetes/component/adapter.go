@@ -297,7 +297,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	objectMeta := generator.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
+	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
 	initContainers := utils.GetPreStartInitContainers(a.Devfile, containers)
 	initContainers = append(initContainers, supervisordInitContainer)
@@ -363,7 +363,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		Containers:     containers,
 		Volumes:        append(pvcVolumes, odoMandatoryVolumes...),
 	}
-	podTemplateSpec := generator.GeneratePodTemplateSpec(podTemplateSpecParams)
+	podTemplateSpec := generator.GetPodTemplateSpec(podTemplateSpecParams)
 
 	deployParams := generator.DeploymentSpecParams{
 		PodTemplateSpec: *podTemplateSpec,
@@ -371,7 +371,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			"component": componentName,
 		},
 	}
-	deploymentSpec := generator.GenerateDeploymentSpec(deployParams)
+	deploymentSpec := generator.GetDeploymentSpec(deployParams)
 
 	selectorLabels := map[string]string{
 		"component": componentName,
@@ -393,7 +393,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
-		ownerReference := generator.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
@@ -426,7 +426,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			return err
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
-		ownerReference := generator.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		if len(serviceSpec.Ports) > 0 {

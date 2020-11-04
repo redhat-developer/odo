@@ -56,8 +56,8 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
 	}
 
-	objectMeta := generator.CreateObjectMeta(pvcName, Client.Namespace, labels, nil)
-	pvcSpec := generator.GeneratePVCSpec(quantity)
+	objectMeta := generator.GetObjectMeta(pvcName, Client.Namespace, labels, nil)
+	pvcSpec := generator.GetPVCSpec(quantity)
 
 	// Get the deployment
 	deployment, err := Client.GetDeploymentByName(componentName)
@@ -66,7 +66,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 	}
 
 	// Generate owner reference for the deployment and update objectMeta
-	ownerReference := generator.GenerateOwnerReference(deployment)
+	ownerReference := generator.GetOwnerReference(deployment)
 	objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 
 	// Create PVC

@@ -36,12 +36,12 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		return nil, err
 	}
 
-	objectMeta := generator.CreateObjectMeta(podName, "default", labels, nil)
+	objectMeta := generator.GetObjectMeta(podName, "default", labels, nil)
 	podTemplateSpecParams := generator.PodTemplateSpecParams{
 		ObjectMeta: objectMeta,
 		Containers: containers,
 	}
-	podTemplateSpec := generator.GeneratePodTemplateSpec(podTemplateSpecParams)
+	podTemplateSpec := generator.GetPodTemplateSpec(podTemplateSpecParams)
 
 	fkclientset.Kubernetes.PrependReactor("create", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if podName == "" {
@@ -65,7 +65,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		PodSelectorLabels: podTemplateSpec.Labels,
 	}
 
-	deploymentSpec := generator.GenerateDeploymentSpec(deployParams)
+	deploymentSpec := generator.GetDeploymentSpec(deployParams)
 	createdDeployment, err := fkclient.CreateDeployment(*deploymentSpec)
 	if err != nil {
 		return nil, err
@@ -222,13 +222,13 @@ func TestUpdateDeployment(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
-			objectMeta := generator.CreateObjectMeta(tt.deploymentName, "default", labels, nil)
+			objectMeta := generator.GetObjectMeta(tt.deploymentName, "default", labels, nil)
 
 			podTemplateSpecParams := generator.PodTemplateSpecParams{
 				ObjectMeta: objectMeta,
 				Containers: containers,
 			}
-			podTemplateSpec := generator.GeneratePodTemplateSpec(podTemplateSpecParams)
+			podTemplateSpec := generator.GetPodTemplateSpec(podTemplateSpecParams)
 
 			fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
@@ -251,7 +251,7 @@ func TestUpdateDeployment(t *testing.T) {
 				PodSelectorLabels: podTemplateSpec.Labels,
 			}
 
-			deploymentSpec := generator.GenerateDeploymentSpec(deployParams)
+			deploymentSpec := generator.GetDeploymentSpec(deployParams)
 			updatedDeployment, err := fkclient.UpdateDeployment(*deploymentSpec)
 
 			// Checks for unexpected error cases

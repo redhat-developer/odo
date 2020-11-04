@@ -2,6 +2,7 @@ package generator
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
@@ -149,7 +150,7 @@ func TestGetContainers(t *testing.T) {
 
 }
 
-func TestGenerateContainer(t *testing.T) {
+func TestGetContainer(t *testing.T) {
 
 	tests := []struct {
 		name          string
@@ -208,7 +209,7 @@ func TestGenerateContainer(t *testing.T) {
 				ResourceReqs: tt.resourceReqs,
 				Ports:        tt.ports,
 			}
-			container := generateContainer(containerParams)
+			container := getContainer(containerParams)
 
 			if container.Name != tt.containerName {
 				t.Errorf("expected %s, actual %s", tt.containerName, container.Name)
@@ -276,7 +277,7 @@ func TestGenerateContainer(t *testing.T) {
 	}
 }
 
-func TestGeneratePodTemplateSpec(t *testing.T) {
+func TestGetPodTemplateSpec(t *testing.T) {
 
 	container := []corev1.Container{
 		{
@@ -316,14 +317,14 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.podName, func(t *testing.T) {
 
-			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
+			objectMeta := GetObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 			podTemplateSpecParams := PodTemplateSpecParams{
 				ObjectMeta:     objectMeta,
 				Containers:     container,
 				Volumes:        volume,
 				InitContainers: container,
 			}
-			podTemplateSpec := GeneratePodTemplateSpec(podTemplateSpecParams)
+			podTemplateSpec := GetPodTemplateSpec(podTemplateSpecParams)
 
 			if podTemplateSpec.Name != tt.podName {
 				t.Errorf("expected %s, actual %s", tt.podName, podTemplateSpec.Name)
@@ -347,7 +348,7 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 	}
 }
 
-func TestGeneratePVCSpec(t *testing.T) {
+func TestGetPVCSpec(t *testing.T) {
 
 	tests := []struct {
 		name    string
@@ -375,7 +376,7 @@ func TestGeneratePVCSpec(t *testing.T) {
 				t.Errorf("resource.ParseQuantity unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
-			pvcSpec := GeneratePVCSpec(quantity)
+			pvcSpec := GetPVCSpec(quantity)
 			if pvcSpec.AccessModes[0] != corev1.ReadWriteOnce {
 				t.Errorf("AccessMode Error: expected %s, actual %s", corev1.ReadWriteMany, pvcSpec.AccessModes[0])
 			}
@@ -410,7 +411,7 @@ func TestGenerateIngressSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			ingressSpec := GenerateIngressSpec(tt.parameter)
+			ingressSpec := GetIngressSpec(tt.parameter)
 
 			if ingressSpec.Rules[0].Host != tt.parameter.IngressDomain {
 				t.Errorf("expected %s, actual %s", tt.parameter.IngressDomain, ingressSpec.Rules[0].Host)
@@ -432,7 +433,7 @@ func TestGenerateIngressSpec(t *testing.T) {
 	}
 }
 
-func TestGenerateRouteSpec(t *testing.T) {
+func TestGetRouteSpec(t *testing.T) {
 
 	tests := []struct {
 		name      string
@@ -465,7 +466,7 @@ func TestGenerateRouteSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			routeSpec := GenerateRouteSpec(tt.parameter)
+			routeSpec := GetRouteSpec(tt.parameter)
 
 			if routeSpec.Port.TargetPort != tt.parameter.PortNumber {
 				t.Errorf("expected %v, actual %v", tt.parameter.PortNumber, routeSpec.Port.TargetPort)
@@ -519,7 +520,7 @@ func TestGenerateServiceSpec(t *testing.T) {
 					"component": tt.name,
 				},
 			}
-			serviceSpec := generateServiceSpec(serviceSpecParams)
+			serviceSpec := getServiceSpec(serviceSpecParams)
 
 			if len(serviceSpec.Ports) != len(tt.ports) {
 				t.Errorf("expected service ports length is %v, actual %v", len(tt.ports), len(serviceSpec.Ports))
@@ -651,6 +652,51 @@ func TestGetService(t *testing.T) {
 						t.Errorf("expected port number is %v, actual %v", tt.wantPorts[i].Port, serviceSpec.Ports[i].Port)
 					}
 				}
+			}
+		})
+	}
+
+}
+
+func TestGetBuildConfig(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		GitURL         string
+		GitRef         string
+		ImageName      string
+		ImageNamespace string
+	}{
+		{
+			name:           "Case 1: Get a Source Strategy Build Config",
+			GitURL:         "url",
+			GitRef:         "ref",
+			ImageName:      "image",
+			ImageNamespace: "namespace",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			commonObjectMeta := GetObjectMeta(tt.ImageName, tt.ImageNamespace, nil, nil)
+			buildStrategy := GetSourceBuildStrategy(tt.ImageName, tt.ImageNamespace)
+			params := BuildConfigParams{
+				CommonObjectMeta: commonObjectMeta,
+				BuildStrategy:    buildStrategy,
+				GitURL:           tt.GitURL,
+				GitRef:           tt.GitRef,
+			}
+			buildConfig := GetBuildConfig(params)
+
+			if buildConfig.Name != tt.ImageName {
+				t.Error("TestGetBuildConfig error - build config name does not match")
+			}
+
+			if !strings.Contains(buildConfig.Spec.CommonSpec.Output.To.Name, tt.ImageName) {
+				t.Error("TestGetBuildConfig error - build config output name does not match")
+			}
+
+			if buildConfig.Spec.Source.Git.Ref != tt.GitRef || buildConfig.Spec.Source.Git.URI != tt.GitURL {
+				t.Error("TestGetBuildConfig error - build config git source does not match")
 			}
 		})
 	}

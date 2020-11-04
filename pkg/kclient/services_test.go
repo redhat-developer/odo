@@ -47,7 +47,7 @@ func TestCreateService(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
-			objectMeta := generator.CreateObjectMeta(tt.componentName, "default", nil, nil)
+			objectMeta := generator.GetObjectMeta(tt.componentName, "default", nil, nil)
 
 			labels := map[string]string{
 				"component": tt.componentName,
@@ -123,7 +123,7 @@ func TestUpdateService(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
-			objectMeta := generator.CreateObjectMeta(tt.componentName, "default", nil, nil)
+			objectMeta := generator.GetObjectMeta(tt.componentName, "default", nil, nil)
 
 			labels := map[string]string{
 				"component": tt.componentName,

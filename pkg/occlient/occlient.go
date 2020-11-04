@@ -2601,7 +2601,7 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 // secureURL indicates if the route is a secure one or not
 func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
 
-	objectMeta := generator.CreateObjectMeta(name, c.Namespace, labels, nil)
+	objectMeta := generator.GetObjectMeta(name, c.Namespace, labels, nil)
 	routeParams := generator.RouteParams{
 		ServiceName: serviceName,
 		PortNumber:  portNumber,
@@ -2609,7 +2609,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 		Path:        path,
 	}
 
-	routeSpec := generator.GenerateRouteSpec(routeParams)
+	routeSpec := generator.GetRouteSpec(routeParams)
 	route := &routev1.Route{
 		ObjectMeta: objectMeta,
 		Spec:       *routeSpec,
