@@ -147,6 +147,11 @@ func List(client *occlient.Client, componentName string, applicationName string)
 			continue
 		}
 
+		// We should ignore ConfigMap
+		if client.IsVolumeAnConfigMap(volumeMount.Name, dc) {
+			continue
+		}
+
 		pvcName := client.GetPVCNameFromVolumeMountName(volumeMount.Name, dc)
 		if pvcName == "" {
 			return StorageList{}, fmt.Errorf("no PVC associated with Volume Mount %v", volumeMount.Name)
