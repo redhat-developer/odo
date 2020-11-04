@@ -213,7 +213,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MakeDir(newContext)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
 		})
-		AfterEach(func() {
+		JustAfterEach(func() {
 			helper.DeleteDir(newContext)
 		})
 
