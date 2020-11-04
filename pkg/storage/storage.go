@@ -147,7 +147,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 			continue
 		}
 
-		// We should ignore ConfigMap
+		// We should ignore ConfigMap (while PR2142 and PR2601 are not fixed)
 		if client.IsVolumeAnConfigMap(volumeMount.Name, dc) {
 			continue
 		}
