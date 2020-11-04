@@ -959,18 +959,18 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	}
 	var components []Component
+	devfileList, err := ListDevfileComponents(client, applicationSelector)
+	if err != nil {
+		return ComponentList{}, nil
+	}
+	components = append(components, devfileList.Items...)
+
 	s2iList, err := ListS2IComponents(client, applicationName, localConfigInfo)
 	if err != nil {
 		return ComponentList{}, err
 	}
 	components = append(components, s2iList.Items...)
 
-	devfileList, err := ListDevfileComponents(client, applicationSelector)
-	if err != nil {
-		return ComponentList{}, nil
-	}
-
-	components = append(components, devfileList.Items...)
 	return GetMachineReadableFormatForList(components), nil
 }
 
