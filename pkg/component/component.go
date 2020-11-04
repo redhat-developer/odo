@@ -1428,7 +1428,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 // getRemoteComponentMetadata provides component metadata from the cluster
 func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, projectName string, getUrls, getStorage bool) (component Component, err error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
-	if err != nil {
+	if err != nil || fromCluster == nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
 	}
 
