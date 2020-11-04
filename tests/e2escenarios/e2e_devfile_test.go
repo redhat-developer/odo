@@ -1,7 +1,6 @@
 package e2escenarios
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -34,141 +33,54 @@ var _ = Describe("odo devfile supported tests", func() {
 		projectDirPath = commonVar.Context + projectDir
 	})
 
-	preSetup := func() {
-		helper.MakeDir(projectDirPath)
-		helper.Chdir(projectDirPath)
-	}
+	// preSetup := func() {
+	// 	helper.MakeDir(projectDirPath)
+	// 	helper.Chdir(projectDirPath)
+	// }
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	Context("odo debug on a nodeJS starterProject component", func() {
-		JustBeforeEach(func() {
-			preSetup()
-		})
+	createStarterProjAndSetDebug := func(component string) {
+		helper.CmdShouldPass("odo", "create", component, "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
+		helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
+		stopChannel := make(chan bool)
+		go func() {
+			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5858", "--context", projectDirPath)
+		}()
+
+		// Make sure that the debug information output, outputs correctly.
+		// We do *not* check the json output since the debugProcessID will be different each time.
+		helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
+			if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
+				strings.Contains(output, `"localPort": 5858`) {
+				return true
+			}
+			return false
+		})
+		stopChannel <- true
+	}
+
+	Context("odo debug support for devfile components", func() {
+		JustBeforeEach(func() {
+			helper.MakeDir(projectDirPath)
+			helper.Chdir(projectDirPath)
+		})
 		It("Verify output debug information for nodeJS debug works", func() {
-			fmt.Println("********************************************************")
-			fmt.Println("*   Test devfile debug support for nodeJS component    *")
-			fmt.Println("********************************************************")
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
-
-			stopChannel := make(chan bool)
-			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5858", "--context", projectDirPath)
-			}()
-
-			// Make sure that the debug information output, outputs correctly.
-			// We do *not* check the json output since the debugProcessID will be different each time.
-			helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
-				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
-					strings.Contains(output, `"localPort": 5858`) {
-					return true
-				}
-				return false
-			})
-
-			stopChannel <- true
+			createStarterProjAndSetDebug("nodejs")
 		})
-
-	})
-	Context("odo debug on a java-springboot starterProject component", func() {
-		JustBeforeEach(func() {
-			preSetup()
+		It("Verify output debug information for java-springboot works", func() {
+			createStarterProjAndSetDebug("java-springboot")
 		})
-
-		It("Verify output debug information for nodeJS java-springboot works", func() {
-			fmt.Println("*****************************************************************")
-			fmt.Println("*   Test devfile debug support for java-springboot component    *")
-			fmt.Println("*****************************************************************")
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
-
-			stopChannel := make(chan bool)
-			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5858", "--context", projectDirPath)
-			}()
-
-			// Make sure that the debug information output, outputs correctly.
-			// We do *not* check the json output since the debugProcessID will be different each time.
-			helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
-				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
-					strings.Contains(output, `"localPort": 5858`) {
-					return true
-				}
-				return false
-			})
-
-			stopChannel <- true
-		})
-
-	})
-
-	Context("odo debug on a java-openliberty starterProject component", func() {
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
 		It("Verify output debug information for java-openliberty debug works", func() {
-			fmt.Println("******************************************************************")
-			fmt.Println("*   Test devfile debug support for java-openliberty component    *")
-			fmt.Println("******************************************************************")
-			helper.CmdShouldPass("odo", "create", "java-openliberty", "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
-
-			stopChannel := make(chan bool)
-			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5858", "--context", projectDirPath)
-			}()
-
-			// Make sure that the debug information output, outputs correctly.
-			// We do *not* check the json output since the debugProcessID will be different each time.
-			helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
-				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
-					strings.Contains(output, `"localPort": 5858`) {
-					return true
-				}
-				return false
-			})
-
-			stopChannel <- true
+			createStarterProjAndSetDebug("java-openliberty")
 		})
-
-	})
-
-	Context("odo debug on a java-quarkus starterProject component", func() {
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
 		It("Verify output debug information for java-quarkus debug works", func() {
-			fmt.Println("**************************************************************")
-			fmt.Println("*   Test devfile debug support for java-quarkus component    *")
-			fmt.Println("**************************************************************")
-			helper.CmdShouldPass("odo", "create", "java-quarkus", "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
-
-			stopChannel := make(chan bool)
-			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5858", "--context", projectDirPath)
-			}()
-
-			// Make sure that the debug information output, outputs correctly.
-			// We do *not* check the json output since the debugProcessID will be different each time.
-			helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
-				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
-					strings.Contains(output, `"localPort": 5858`) {
-					return true
-				}
-				return false
-			})
-
-			stopChannel <- true
+			createStarterProjAndSetDebug("java-quarkus")
 		})
-
 	})
 
 })
