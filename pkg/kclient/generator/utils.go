@@ -138,7 +138,6 @@ func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]co
 // This function should be under parser pkg
 func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileComponent {
 	var components []common.DevfileComponent
-	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
 		if comp.Container != nil {
 			components = append(components, comp)
@@ -148,13 +147,13 @@ func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileCompon
 }
 
 // GetDevfileVolumeComponents iterates through the components in the devfile and returns a map of devfile volume components
-func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.DevfileComponent {
-	volumeNameToVolumeComponent := make(map[string]common.DevfileComponent)
-	// Only components with aliases are considered because without an alias commands cannot reference them
+// This function should be under parser pkg
+func GetDevfileVolumeComponents(data data.DevfileData) []common.DevfileComponent {
+	var components []common.DevfileComponent
 	for _, comp := range data.GetComponents() {
 		if comp.Volume != nil {
-			volumeNameToVolumeComponent[comp.Name] = comp
+			components = append(components, comp)
 		}
 	}
-	return volumeNameToVolumeComponent
+	return components
 }

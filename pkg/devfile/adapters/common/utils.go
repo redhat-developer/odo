@@ -146,7 +146,7 @@ func GetVolumeMountPath(volumeMount common.VolumeMount) string {
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
 	containerComponents := generator.GetDevfileContainerComponents(devfileObj.Data)
-	volumeNameToVolumeComponent := generator.GetDevfileVolumeComponents(devfileObj.Data)
+	volumeComponents := generator.GetDevfileVolumeComponents(devfileObj.Data)
 
 	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
 	containerNameToVolumes := make(map[string][]DevfileVolume)
@@ -155,9 +155,9 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 			size := DefaultVolumeSize
 
 			// check if there is a volume component name against the container component volume mount name
-			if volumeComp, ok := volumeNameToVolumeComponent[volumeMount.Name]; ok {
-				// If there is a volume size mentioned in the devfile, use it
-				if len(volumeComp.Volume.Size) > 0 {
+			for _, volumeComp := range volumeComponents {
+				if volumeComp.Name == volumeMount.Name && len(volumeComp.Volume.Size) > 0 {
+					// If there is a volume size mentioned in the devfile, use it
 					size = volumeComp.Volume.Size
 				}
 			}

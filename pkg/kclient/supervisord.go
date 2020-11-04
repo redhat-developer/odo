@@ -6,9 +6,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// AddBootstrapSupervisordInitContainer creates an init container that will copy over
+// GetBootstrapSupervisordInitContainer gets an init container that will copy over
 // supervisord to the application image during the start-up procress.
-func AddBootstrapSupervisordInitContainer() corev1.Container {
+func GetBootstrapSupervisordInitContainer() corev1.Container {
 
 	return corev1.Container{
 		Name:  common.SupervisordInitContainerName,

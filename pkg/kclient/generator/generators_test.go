@@ -152,31 +152,34 @@ func TestGetContainers(t *testing.T) {
 func TestGenerateContainer(t *testing.T) {
 
 	tests := []struct {
-		name         string
-		image        string
-		isPrivileged bool
-		command      []string
-		args         []string
-		envVars      []corev1.EnvVar
-		resourceReqs corev1.ResourceRequirements
-		ports        []corev1.ContainerPort
+		name          string
+		containerName string
+		image         string
+		isPrivileged  bool
+		command       []string
+		args          []string
+		envVars       []corev1.EnvVar
+		resourceReqs  corev1.ResourceRequirements
+		ports         []corev1.ContainerPort
 	}{
 		{
-			name:         "",
-			image:        "",
-			isPrivileged: false,
-			command:      []string{},
-			args:         []string{},
-			envVars:      []corev1.EnvVar{},
-			resourceReqs: corev1.ResourceRequirements{},
-			ports:        []corev1.ContainerPort{},
+			name:          "Case 1: Empty container params",
+			containerName: "",
+			image:         "",
+			isPrivileged:  false,
+			command:       []string{},
+			args:          []string{},
+			envVars:       []corev1.EnvVar{},
+			resourceReqs:  corev1.ResourceRequirements{},
+			ports:         []corev1.ContainerPort{},
 		},
 		{
-			name:         "container1",
-			image:        "quay.io/eclipse/che-java8-maven:nightly",
-			isPrivileged: true,
-			command:      []string{"tail"},
-			args:         []string{"-f", "/dev/null"},
+			name:          "Case 2: Valid container params",
+			containerName: "container1",
+			image:         "quay.io/eclipse/che-java8-maven:nightly",
+			isPrivileged:  true,
+			command:       []string{"tail"},
+			args:          []string{"-f", "/dev/null"},
 			envVars: []corev1.EnvVar{
 				{
 					Name:  "test",
@@ -196,7 +199,7 @@ func TestGenerateContainer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			containerParams := ContainerParams{
-				Name:         tt.name,
+				Name:         tt.containerName,
 				Image:        tt.image,
 				IsPrivileged: tt.isPrivileged,
 				Command:      tt.command,
@@ -207,8 +210,8 @@ func TestGenerateContainer(t *testing.T) {
 			}
 			container := generateContainer(containerParams)
 
-			if container.Name != tt.name {
-				t.Errorf("expected %s, actual %s", tt.name, container.Name)
+			if container.Name != tt.containerName {
+				t.Errorf("expected %s, actual %s", tt.containerName, container.Name)
 			}
 
 			if container.Image != tt.image {
@@ -352,12 +355,12 @@ func TestGeneratePVCSpec(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "1",
+			name:    "Case 1: Valid resource size",
 			size:    "1Gi",
 			wantErr: false,
 		},
 		{
-			name:    "2",
+			name:    "Case 2: Resource size missing",
 			size:    "",
 			wantErr: true,
 		},

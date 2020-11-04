@@ -298,7 +298,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	objectMeta := generator.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
-	supervisordInitContainer := kclient.AddBootstrapSupervisordInitContainer()
+	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
 	initContainers := utils.GetPreStartInitContainers(a.Devfile, containers)
 	initContainers = append(initContainers, supervisordInitContainer)
 

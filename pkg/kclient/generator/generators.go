@@ -328,7 +328,7 @@ func GenerateRouteSpec(routeParams RouteParams) *routev1.RouteSpec {
 	return routeSpec
 }
 
-// GenerateOwnerReference genertes an ownerReference  from the deployment which can then be set as
+// GenerateOwnerReference generates an ownerReference  from the deployment which can then be set as
 // owner for various Kubernetes objects and ensure that when the owner object is deleted from the
 // cluster, all other objects are automatically removed by Kubernetes garbage collector
 func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {
