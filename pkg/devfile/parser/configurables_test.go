@@ -74,8 +74,8 @@ func TestSetConfiguration(t *testing.T) {
 					},
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/projects",
-							Name:      "starter-project-2",
+							SubDir: "/projects",
+							Name:   "starter-project-2",
 						},
 					},
 				},
@@ -149,8 +149,8 @@ func TestSetConfiguration(t *testing.T) {
 					},
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/projects",
-							Name:      "starter-project-2",
+							SubDir: "/projects",
+							Name:   "starter-project-2",
 						},
 					},
 				},
@@ -280,8 +280,8 @@ func TestAddAndRemoveEnvVars(t *testing.T) {
 					},
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/projects",
-							Name:      "starter-project-2",
+							SubDir: "/projects",
+							Name:   "starter-project-2",
 						},
 					},
 				},
@@ -356,8 +356,8 @@ func testDevfileObj(fs filesystem.Filesystem) DevfileObj {
 			},
 			StarterProjects: []common.DevfileStarterProject{
 				{
-					ClonePath: "/projects",
-					Name:      "starter-project-2",
+					SubDir: "/projects",
+					Name:   "starter-project-2",
 				},
 			},
 		},

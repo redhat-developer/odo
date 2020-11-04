@@ -57,8 +57,8 @@ func Test_parseParent(t *testing.T) {
 							},
 							StarterProjects: []common.DevfileStarterProject{
 								{
-									ClonePath: "/projects",
-									Name:      "starter-project-1",
+									SubDir: "/projects",
+									Name:   "starter-project-1",
 								},
 							},
 						},
@@ -67,6 +67,7 @@ func Test_parseParent(t *testing.T) {
 							{
 								Id: "devbuild",
 								Exec: &common.Exec{
+									Component:  "runtime",
 									WorkingDir: "/projects/nodejs-starter",
 								},
 							},
@@ -90,8 +91,8 @@ func Test_parseParent(t *testing.T) {
 						},
 						StarterProjects: []common.DevfileStarterProject{
 							{
-								ClonePath: "/projects",
-								Name:      "starter-project-2",
+								SubDir: "/projects",
+								Name:   "starter-project-2",
 							},
 						},
 					},
@@ -104,6 +105,7 @@ func Test_parseParent(t *testing.T) {
 						{
 							Id: "devrun",
 							Exec: &common.Exec{
+								Component:   "nodejs",
 								WorkingDir:  "/projects",
 								CommandLine: "npm run",
 							},
@@ -134,7 +136,7 @@ func Test_parseParent(t *testing.T) {
 					},
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/data",
+							SubDir: "/data",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -152,12 +154,14 @@ func Test_parseParent(t *testing.T) {
 						{
 							Id: "devbuild",
 							Exec: &common.Exec{
+								Component:  "runtime",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
 						{
 							Id: "devrun",
 							Exec: &common.Exec{
+								Component:   "nodejs",
 								CommandLine: "npm run",
 								WorkingDir:  "/projects/nodejs-starter",
 							},
@@ -199,11 +203,11 @@ func Test_parseParent(t *testing.T) {
 					},
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/projects",
-							Name:      "starter-project-2",
+							SubDir: "/projects",
+							Name:   "starter-project-2",
 						},
 						{
-							ClonePath: "/projects",
+							SubDir: "/projects",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -217,7 +221,7 @@ func Test_parseParent(t *testing.T) {
 			},
 		},
 		{
-			name: "case 2: handle a parent'data without any local override and add the local devfile's data",
+			name: "case 2: handle a parent's data without any local override and add the local devfile's data",
 			args: args{
 				devFileObj: DevfileObj{
 					Ctx: parser.NewDevfileCtx(devfileTempPath),
@@ -226,6 +230,7 @@ func Test_parseParent(t *testing.T) {
 							{
 								Id: "devbuild",
 								Exec: &common.Exec{
+									Component:  "runtime",
 									WorkingDir: "/projects/nodejs-starter",
 								},
 							},
@@ -250,8 +255,8 @@ func Test_parseParent(t *testing.T) {
 
 						StarterProjects: []common.DevfileStarterProject{
 							{
-								ClonePath: "/projects",
-								Name:      "starter-project-1",
+								SubDir: "/projects",
+								Name:   "starter-project-1",
 							},
 						},
 					},
@@ -264,6 +269,7 @@ func Test_parseParent(t *testing.T) {
 						{
 							Id: "devrun",
 							Exec: &common.Exec{
+								Component:   "nodejs",
 								WorkingDir:  "/projects",
 								CommandLine: "npm run",
 							},
@@ -294,7 +300,7 @@ func Test_parseParent(t *testing.T) {
 					},
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/data",
+							SubDir: "/data",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},
@@ -312,12 +318,14 @@ func Test_parseParent(t *testing.T) {
 						{
 							Id: "devbuild",
 							Exec: &common.Exec{
+								Component:  "runtime",
 								WorkingDir: "/projects/nodejs-starter",
 							},
 						},
 						{
 							Id: "devrun",
 							Exec: &common.Exec{
+								Component:   "nodejs",
 								CommandLine: "npm run",
 								WorkingDir:  "/projects",
 							},
@@ -359,11 +367,11 @@ func Test_parseParent(t *testing.T) {
 					},
 					StarterProjects: []common.DevfileStarterProject{
 						{
-							ClonePath: "/projects",
-							Name:      "starter-project-1",
+							SubDir: "/projects",
+							Name:   "starter-project-1",
 						},
 						{
-							ClonePath: "/data",
+							SubDir: "/data",
 							Github: &common.Github{
 								GitLikeProjectSource: common.GitLikeProjectSource{
 									Remotes:      map[string]string{"origin": "url"},

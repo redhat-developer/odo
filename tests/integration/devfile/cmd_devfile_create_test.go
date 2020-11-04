@@ -315,6 +315,54 @@ var _ = Describe("odo devfile create command tests", func() {
 	// 	})
 	// })
 
+	Context("When executing odo create with devfile component, --starter flag and subDir has a valid value", func() {
+		It("should only extract the specified path in the subDir field", func() {
+			originalDir := commonVar.Context
+			defer helper.Chdir(originalDir)
+			contextDevfile := helper.CreateNewContext()
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-with-subDir.yaml"), filepath.Join(contextDevfile, "devfile.yaml"))
+			helper.Chdir(contextDevfile)
+			helper.CmdShouldPass("odo", "create", cmpName, "--project", commonVar.Project, "--starter")
+
+			pathsToValidate := map[string]bool{
+				filepath.Join(contextDevfile, "java", "application", "rest"):                       true,
+				filepath.Join(contextDevfile, "java", "application", "Info.java"):                  true,
+				filepath.Join(contextDevfile, "java", "application", "rest", "v1", "Example.java"): true,
+				filepath.Join(contextDevfile, "resources", "public", "index.html"):                 true,
+			}
+
+			pathsNotToBePresent := map[string]bool{
+				filepath.Join(contextDevfile, "src"):  true,
+				filepath.Join(contextDevfile, "main"): true,
+			}
+
+			found := 0
+			notToBeFound := 0
+			err := filepath.Walk(contextDevfile, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				if ok := pathsToValidate[path]; ok {
+					found++
+				}
+
+				if ok := pathsNotToBePresent[path]; ok {
+					notToBeFound++
+				}
+				return nil
+			})
+
+			Expect(err).To(BeNil())
+
+			Expect(found).To(Equal(len(pathsToValidate)))
+			Expect(notToBeFound).To(Equal(0))
+
+			helper.DeleteDir(contextDevfile)
+		})
+	})
+
 	// Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has an invalid value", func() {
 	// 	It("should fail and alert the user that the specified path in sparseContextDir does not exist", func() {
 	// 		contextDevfile := helper.CreateNewContext()

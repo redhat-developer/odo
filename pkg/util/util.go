@@ -888,7 +888,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 	}
 
 	if len(filenames) == 0 {
-		return errors.New("no files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path")
+		return errors.New("no files were unzipped, ensure that the project repo is not empty or that subDir has a valid path")
 	}
 
 	return nil
@@ -921,7 +921,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 			continue
 		}
 
-		// if sparseCheckoutDir has a pattern
+		// if subDir has a pattern
 		match, err := filepath.Match(pathToUnzip, filename)
 		if err != nil {
 			return filenames, err
@@ -1247,4 +1247,189 @@ func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
 	}
 	return
 
+}
+
+// CopyFileWithFs copies a single file from src to dst using the default filesystem
+func CopyFileWithFs(src, dst string) error {
+	return copyFileWithFs(src, dst, filesystem.DefaultFs{})
+}
+
+// copyFileWithFs copies a single file from src to dst
+func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
+	var err error
+	var srcinfo os.FileInfo
+
+	srcfd, err := fs.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := srcfd.Close()
+		if err != nil {
+			klog.V(4).Infof("err occurred while closing file: %v", err)
+		}
+	}()
+
+	dstfd, err := fs.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := dstfd.Close()
+		if err != nil {
+			klog.V(4).Infof("err occurred while closing file: %v", err)
+		}
+	}()
+
+	if _, err = io.Copy(dstfd, srcfd); err != nil {
+		return err
+	}
+	if srcinfo, err = fs.Stat(src); err != nil {
+		return err
+	}
+	return fs.Chmod(dst, srcinfo.Mode())
+}
+
+// CopyDirWithFS copies a whole directory recursively with the default filesystem
+func CopyDirWithFS(src string, dst string) error {
+	return copyDirWithFS(src, dst, filesystem.DefaultFs{})
+}
+
+// copyDirWithFS copies a whole directory recursively
+func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
+	var err error
+	var fds []os.FileInfo
+	var srcinfo os.FileInfo
+
+	if srcinfo, err = fs.Stat(src); err != nil {
+		return err
+	}
+
+	if err = fs.MkdirAll(dst, srcinfo.Mode()); err != nil {
+		return err
+	}
+
+	if fds, err = fs.ReadDir(src); err != nil {
+		return err
+	}
+	for _, fd := range fds {
+		srcfp := path.Join(src, fd.Name())
+		dstfp := path.Join(dst, fd.Name())
+
+		if fd.IsDir() {
+			if err = copyDirWithFS(srcfp, dstfp, fs); err != nil {
+				return err
+			}
+		} else {
+			if err = copyFileWithFs(srcfp, dstfp, fs); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// StartSignalWatcher watches for kill,interrupt etc signals and cleans up temp files and folders
+func StartSignalWatcher(handle func()) {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	defer signal.Stop(signals)
+
+	<-signals
+	handle()
+	// exit here to stop spinners from rotating
+	os.Exit(1)
+}
+
+// CleanDir cleans the original folder during events like interrupted copy etc
+// it uses the default filesystem
+// it leaves the given files behind for later use
+func CleanDir(originalPath string, leaveBehindFiles map[string]bool) error {
+	return cleanDir(originalPath, leaveBehindFiles, filesystem.DefaultFs{})
+}
+
+// cleanDir cleans the original folder during events like interrupted copy etc
+// it leaves the given files behind for later use
+func cleanDir(originalPath string, leaveBehindFiles map[string]bool, fs filesystem.Filesystem) error {
+	// Open the directory.
+	outputDirRead, err := fs.Open(originalPath)
+	if err != nil {
+		return err
+	}
+
+	// Call Readdir to get all files.
+	outputDirFiles, err := outputDirRead.Readdir(0)
+	if err != nil {
+		return err
+	}
+
+	// Loop over files.
+	for _, file := range outputDirFiles {
+		if value, ok := leaveBehindFiles[file.Name()]; ok && value {
+			continue
+		}
+		err = fs.RemoveAll(filepath.Join(originalPath, file.Name()))
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+// GitSubDir handles subDir for git components using the default filesystem
+func GitSubDir(srcPath, destinationPath, subDir string) error {
+	return gitSubDir(srcPath, destinationPath, subDir, filesystem.DefaultFs{})
+}
+
+// gitSubDir handles subDir for git components
+func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem) error {
+	go StartSignalWatcher(func() {
+		err := cleanDir(destinationPath, map[string]bool{
+			"devfile.yaml": true,
+		}, fs)
+		if err != nil {
+			klog.V(4).Infof("error %v occurred while calling handleInterruptedSubDir", err)
+		}
+		err = fs.RemoveAll(srcPath)
+		if err != nil {
+			klog.V(4).Infof("error %v occurred during temp folder clean up", err)
+		}
+	})
+
+	// Open the directory.
+	outputDirRead, err := fs.Open(filepath.Join(srcPath, subDir))
+	if err != nil {
+		return err
+	}
+
+	// Call Readdir to get all files.
+	outputDirFiles, err := outputDirRead.Readdir(0)
+	if err != nil {
+		return err
+	}
+
+	// Loop over files.
+	for outputIndex := range outputDirFiles {
+		outputFileHere := outputDirFiles[outputIndex]
+
+		// Get name of file.
+		fileName := outputFileHere.Name()
+
+		oldPath := filepath.Join(srcPath, subDir, fileName)
+
+		if outputFileHere.IsDir() {
+			err = copyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
+		} else {
+			err = copyFileWithFs(oldPath, filepath.Join(destinationPath, fileName), fs)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+	return fs.RemoveAll(srcPath)
 }

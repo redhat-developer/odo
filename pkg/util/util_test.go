@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -2014,6 +2015,613 @@ func TestSliceContainsString(t *testing.T) {
 			if !reflect.DeepEqual(gotVal, tt.wantVal) {
 				t.Errorf("Got %v, want %v", gotVal, tt.wantVal)
 			}
+		})
+	}
+}
+
+// FileType custom type to indicate type of file
+type FileType int
+
+const (
+	// RegularFile enum to represent regular file
+	RegularFile FileType = 0
+	// Directory enum to represent directory
+	Directory FileType = 1
+)
+
+// FileProperties to contain meta-data of a file like, file/folder name, file/folder parent dir, file type and desired file modification type
+type FileProperties struct {
+	FilePath string
+	FileType FileType
+}
+
+func folderCheck(originalFolderMode os.FileMode, newFolderInfo os.FileInfo, path string) error {
+	if originalFolderMode.String() != newFolderInfo.Mode().String() {
+		return fmt.Errorf("folder %s created with wrong permission", path)
+	}
+	return nil
+}
+
+func fileCheck(fs filesystem.Filesystem, originalFile filesystem.File, newFilePath string, newFileInfo os.FileInfo) error {
+	originalFileData, err := fs.ReadFile(originalFile.Name())
+	if err != nil {
+		return err
+	}
+
+	createdFileData, err := fs.ReadFile(newFilePath)
+	if err != nil {
+		return err
+	}
+
+	// check the written data
+	if string(createdFileData) == string(originalFileData) {
+		originalInfo, err := fs.Stat(originalFile.Name())
+		if err != nil {
+			return err
+		}
+
+		// check the file permission
+		if newFileInfo.Mode() != originalInfo.Mode() {
+			return fmt.Errorf("file %s created with wrong permission", newFilePath)
+		}
+	} else {
+		return fmt.Errorf("file %s created with wrong data", newFilePath)
+	}
+	return nil
+}
+
+func setupFileTest(fs filesystem.Filesystem, sourceName string, filePaths []FileProperties) (map[string]filesystem.File, map[string]os.FileMode, error) {
+
+	fileMap := make(map[string]filesystem.File)
+	folderMap := make(map[string]os.FileMode)
+
+	for i, path := range filePaths {
+
+		if path.FileType == RegularFile {
+			file, err := fs.Create(path.FilePath)
+			if err != nil {
+				return nil, nil, err
+			}
+			_, err = file.Write([]byte("some text" + string(rune(i))))
+			if err != nil {
+				return nil, nil, err
+			}
+
+			name, err := filepath.Rel(sourceName, file.Name())
+			if err != nil {
+				return nil, nil, err
+			}
+			fileMap[name] = file
+		} else if path.FileType == Directory {
+			permission := os.ModeDir + 0755
+			err := fs.MkdirAll(path.FilePath, permission)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			name, err := filepath.Rel(sourceName, path.FilePath)
+			if err != nil {
+				return nil, nil, err
+			}
+			folderMap[name] = permission
+		}
+	}
+
+	return fileMap, folderMap, nil
+}
+
+func TestCopyFileWithFS(t *testing.T) {
+	fileName := "blah.js"
+
+	fs := filesystem.NewFakeFs()
+
+	sourceName := filepath.Join(os.TempDir(), "source")
+	destinationDirName := filepath.Join(os.TempDir(), "destination")
+
+	filePaths := []FileProperties{
+		{
+			FilePath: sourceName,
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, fileName),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: destinationDirName,
+			FileType: Directory,
+		},
+	}
+
+	printError := func(err error) {
+		t.Errorf("some error occured while procession file/folder: %v", err)
+	}
+
+	type args struct {
+		src string
+		dst string
+		fs  filesystem.Filesystem
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: normal file exists",
+			args: args{
+				src: filepath.Join(sourceName, fileName),
+				dst: filepath.Join(destinationDirName, fileName),
+				fs:  fs,
+			},
+		},
+		{
+			name: "case 2: file doesn't exist",
+			args: args{
+				src: filepath.Join(sourceName, fileName) + "blah",
+				dst: filepath.Join(destinationDirName, fileName),
+				fs:  fs,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fileMap, _, err := setupFileTest(fs, sourceName, filePaths)
+			if err != nil {
+				t.Errorf("error while setting up test: %v", err)
+			}
+
+			err = copyFileWithFs(tt.args.src, tt.args.dst, tt.args.fs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MoveFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			files, err := fs.ReadDir(destinationDirName)
+			if err != nil {
+				t.Errorf("error occured while reading directory %s: %v", destinationDirName, err)
+			}
+
+			found := false
+			for _, file := range files {
+
+				relPath, err := filepath.Rel(destinationDirName, filepath.Join(destinationDirName, fileName))
+				if err != nil {
+					printError(err)
+					break
+				}
+
+				if originalFile, ok := fileMap[relPath]; ok {
+					err := fileCheck(fs, originalFile, filepath.Join(destinationDirName, file.Name()), file)
+					if err != nil {
+						break
+					}
+					found = true
+				} else {
+					t.Errorf("extra file %s created", file.Name())
+				}
+			}
+
+			if !found && !tt.wantErr {
+				t.Errorf("%s not created in directory %s", fileName, destinationDirName)
+			}
+
+			_ = fs.RemoveAll(tt.args.src)
+			_ = fs.RemoveAll(tt.args.dst)
+		})
+	}
+}
+
+func TestCopyDirWithFS(t *testing.T) {
+
+	fs := filesystem.NewFakeFs()
+
+	sourceName := filepath.Join(os.TempDir(), "source")
+	destinationName := filepath.Join(os.TempDir(), "destination")
+
+	filePaths := []FileProperties{
+		{
+			FilePath: sourceName,
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "blah.js"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "some-other-blah.js"),
+			FileType: RegularFile,
+		},
+	}
+
+	printError := func(err error) {
+		t.Errorf("some error occured while procession file/folder: %v", err)
+	}
+
+	type args struct {
+		src string
+		dst string
+		fs  filesystem.Filesystem
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: folder with a nested file and folder",
+			args: args{
+				src: sourceName,
+				dst: destinationName,
+				fs:  fs,
+			},
+		},
+		{
+			name: "case 2: source folder doesn't exist",
+			args: args{
+				src: sourceName + "/extra",
+				dst: destinationName,
+				fs:  fs,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fileMap, folderMap, err := setupFileTest(fs, sourceName, filePaths)
+			if err != nil {
+				t.Errorf("error while setting up test: %v", err)
+			}
+
+			err = copyDirWithFS(tt.args.src, tt.args.dst, tt.args.fs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MoveDir() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantErr && err != nil {
+				return
+			}
+
+			folderCount := 0
+			fileCount := 0
+
+			err = fs.Walk(destinationName, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				relPath, err := filepath.Rel(destinationName, path)
+				if err != nil {
+					printError(err)
+					return err
+				}
+
+				if info.IsDir() {
+
+					// check the permission on the folder
+					if originalFolderMode, ok := folderMap[relPath]; ok {
+						err := folderCheck(originalFolderMode, info, path)
+						if err != nil {
+							printError(err)
+							return err
+						}
+						folderCount++
+					} else {
+						t.Errorf("extra folder %s created", path)
+					}
+				} else {
+					if file, ok := fileMap[relPath]; ok {
+						err := fileCheck(fs, file, path, info)
+						if err != nil {
+							printError(err)
+							return err
+						}
+						fileCount++
+					} else {
+						t.Errorf("extra file %s created", path)
+					}
+				}
+				return nil
+			})
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if folderCount != 2 {
+				t.Errorf("some folder were not created")
+			}
+
+			if fileCount != 2 {
+				t.Errorf("some files were not created")
+			}
+
+			_ = fs.RemoveAll(tt.args.src)
+			_ = fs.RemoveAll(tt.args.dst)
+		})
+	}
+}
+
+func TestCleanDir(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+
+	sourceName := filepath.Join(os.TempDir(), "source")
+
+	filePaths := []FileProperties{
+		{
+			FilePath: sourceName,
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "src"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "devfile.yaml"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "preference.yaml"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "blah.js"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "some-other-blah.js"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "src", "another-blah.js"),
+			FileType: RegularFile,
+		},
+	}
+
+	type args struct {
+		originalPath     string
+		leaveBehindFiles map[string]bool
+		fs               filesystem.Filesystem
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: leave behind two files",
+			args: args{
+				originalPath: sourceName,
+				fs:           fs,
+				leaveBehindFiles: map[string]bool{
+					"devfile.yaml":    true,
+					"preference.yaml": true,
+				},
+			},
+		},
+		{
+			name: "case 2: source doesn't exist",
+			args: args{
+				originalPath: sourceName + "blah",
+				fs:           fs,
+				leaveBehindFiles: map[string]bool{
+					"devfile.yaml":    true,
+					"preference.yaml": true,
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := setupFileTest(fs, sourceName, filePaths)
+			if err != nil {
+				t.Errorf("error while setting up test: %v", err)
+			}
+
+			err = cleanDir(tt.args.originalPath, tt.args.leaveBehindFiles, tt.args.fs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CleanDir() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err != nil && tt.wantErr {
+				return
+			}
+
+			files, err := fs.ReadDir(sourceName)
+			if err != nil {
+				t.Errorf("error occured while reading directory %s: %v", sourceName, err)
+			}
+
+			found := 0
+			for _, file := range files {
+				if _, ok := tt.args.leaveBehindFiles[file.Name()]; !ok {
+					t.Errorf("file %s isn't cleaned up", file.Name())
+				} else {
+					found++
+				}
+			}
+
+			if found != 2 {
+				t.Errorf("some extra file were deleted")
+			}
+
+			_ = fs.RemoveAll(tt.args.originalPath)
+		})
+	}
+}
+
+func TestGitSubDir(t *testing.T) {
+
+	fs := filesystem.NewFakeFs()
+
+	sourceName := filepath.Join(os.TempDir(), "source")
+	destinationName := filepath.Join(os.TempDir(), "destination")
+
+	filePaths := []FileProperties{
+		{
+			FilePath: sourceName,
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "blah.js"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "some-other-blah.js"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "test"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "test", "test.java"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "src", "java"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "src", "java", "main.java"),
+			FileType: RegularFile,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "src", "resources"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "src", "resources", "layout"),
+			FileType: Directory,
+		},
+		{
+			FilePath: filepath.Join(sourceName, "main", "src", "resources", "index.html"),
+			FileType: RegularFile,
+		},
+	}
+
+	type args struct {
+		destinationPath string
+		srcPath         string
+		subDir          string
+		fs              filesystem.Filesystem
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: normal sub dir exist",
+			args: args{
+				srcPath:         sourceName,
+				destinationPath: destinationName,
+				subDir:          filepath.Join("main", "src"),
+				fs:              fs,
+			},
+		},
+		{
+			name: "case 2: sub dir doesn't exist",
+			args: args{
+				srcPath:         sourceName,
+				destinationPath: destinationName,
+				subDir:          filepath.Join("main", "blah"),
+				fs:              fs,
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 3: src doesn't exist",
+			args: args{
+				srcPath:         sourceName + "blah",
+				destinationPath: destinationName,
+				subDir:          filepath.Join("main", "src"),
+				fs:              fs,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := setupFileTest(fs, sourceName, filePaths)
+			if err != nil {
+				t.Errorf("error while setting up test: %v", err)
+			}
+
+			err = gitSubDir(tt.args.srcPath, tt.args.destinationPath, tt.args.subDir, tt.args.fs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GitSubDir() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantErr && err != nil {
+				return
+			}
+
+			pathsToValidate := map[string]bool{
+				filepath.Join(tt.args.destinationPath, "java"):                    true,
+				filepath.Join(tt.args.destinationPath, "java", "main.java"):       true,
+				filepath.Join(tt.args.destinationPath, "resources"):               true,
+				filepath.Join(tt.args.destinationPath, "resources", "layout"):     true,
+				filepath.Join(tt.args.destinationPath, "resources", "index.html"): true,
+			}
+
+			pathsNotToBePresent := map[string]bool{
+				filepath.Join(tt.args.destinationPath, "src"):  true,
+				filepath.Join(tt.args.destinationPath, "main"): true,
+			}
+
+			found := 0
+			notToBeFound := 0
+			err = fs.Walk(tt.args.destinationPath, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				if ok := pathsToValidate[path]; ok {
+					found++
+				}
+
+				if ok := pathsNotToBePresent[path]; ok {
+					notToBeFound++
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if found != 5 {
+				t.Errorf("all files were not copied")
+			}
+
+			if notToBeFound != 0 {
+				t.Errorf("extra files were created")
+			}
+
+			_, err = os.Stat(tt.args.srcPath)
+			if !os.IsNotExist(err) {
+				t.Errorf("src path was not deleted")
+			}
+
+			_ = fs.RemoveAll(tt.args.srcPath)
+			_ = fs.RemoveAll(tt.args.destinationPath)
 		})
 	}
 }
