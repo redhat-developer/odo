@@ -876,9 +876,10 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 		}
 
 		if !reflect.ValueOf(component).IsZero() {
+			component.Spec.SourceType = string(config.LOCAL)
 			components = append(components, component)
 		}
-		components = append(components, component)
+
 	}
 
 	compoList := GetMachineReadableFormatForList(components)
