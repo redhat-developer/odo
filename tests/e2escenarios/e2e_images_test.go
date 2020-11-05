@@ -39,8 +39,8 @@ var _ = Describe("odo supported images e2e tests", func() {
 		helper.CopyExample(filepath.Join("source", srcType), commonVar.Context)
 		helper.CmdShouldPass("odo", "create", "--s2i", cmpType, srcType+"-app", "--project", project, "--context", context, "--app", appName)
 
-		helper.CmdShouldPass("odo", "config", "set", "minmemory", "700Mi", "--context", context)
-		helper.CmdShouldPass("odo", "config", "set", "maxmemory", "1024Mi", "--context", context)
+		helper.CmdShouldPass("odo", "config", "set", "minmemory", "400Mi", "--context", context)
+		helper.CmdShouldPass("odo", "config", "set", "maxmemory", "700Mi", "--context", context)
 
 		// push component and validate
 		helper.CmdShouldPass("odo", "push", "--context", context)
@@ -59,7 +59,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 		if srcType == "openjdk" {
 			helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello Java UPDATED")
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			helper.HttpWaitFor(routeURL, "Hello Java UPDATED", 90, 2)
+			helper.HttpWaitFor(routeURL, "Hello Java UPDATED", 90, 1)
 		} else {
 			helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello nodejs UPDATED")
 			helper.CmdShouldPass("odo", "push", "--context", context)
