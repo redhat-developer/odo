@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 
 HTPASSWD_FILE="./htpass"
-USERPASS="password@123"
 HTPASSWD_SECRET="htpasswd-secret"
 
-# List of users to create
-USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
-OC_STABLE_LOGIN="false"
-
 createhtpasswd() {
+    # List of users to create
+    USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
+    USERPASS="password@123"
     # Remove existing htpasswd file, if any
     if [ -f $HTPASSWD_FILE ]; then
         rm -rf $HTPASSWD_FILE
@@ -54,6 +52,7 @@ EOF
 }
 
 waitforstablelogin() {
+    OC_STABLE_LOGIN="false"
     # Login as developer and check for stable server
     for i in {1..40}; do
         # Try logging in as developer
