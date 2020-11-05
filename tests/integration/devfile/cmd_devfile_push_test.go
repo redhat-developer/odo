@@ -917,7 +917,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	Context("push with listing the devfile component", func() {
 
-		FIt("checks components in a specific app and all apps", func() {
+		It("checks components in a specific app and all apps", func() {
 
 			// component created in "app" application
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, cmpName)
