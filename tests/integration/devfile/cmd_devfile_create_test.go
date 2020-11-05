@@ -206,11 +206,15 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with --s2i flag", func() {
+		var newContext string
 		JustBeforeEach(func() {
-			newContext := path.Join(commonVar.Context, "newContext")
+			newContext = path.Join(commonVar.Context, "newContext")
 			devfilePath = filepath.Join(newContext, devfile)
 			helper.MakeDir(newContext)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
+		})
+		JustAfterEach(func() {
+			helper.DeleteDir(newContext)
 		})
 
 		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
@@ -258,6 +262,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			output := helper.CmdShouldFail("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry", "--s2i")
 			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the registry via --registry flag"})
 		})
+
 	})
 
 	// Currently these tests need interactive mode in order to set the name of the component.

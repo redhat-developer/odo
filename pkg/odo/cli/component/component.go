@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -30,7 +31,9 @@ type ComponentOptions struct {
 
 // Complete completes component options
 func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if util.CheckPathExists(DevfilePath) {
+	context := genericclioptions.GetContextFlagValue(cmd)
+	devfilePath := filepath.Join(context, devFile)
+	if util.CheckPathExists(devfilePath) {
 		co.Context = genericclioptions.NewDevfileContext(cmd)
 	} else {
 		co.Context = genericclioptions.NewContext(cmd)

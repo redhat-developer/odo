@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -238,6 +239,19 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
 		})
 
+		It("checks that odo describe works for s2i component from a devfile directory", func() {
+			newContext := path.Join(commonVar.Context, "newContext")
+			helper.MakeDir(newContext)
+			helper.Chdir(newContext)
+			cmpName2 := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "--starter", "nodejs")
+			context2 := helper.CreateNewContext()
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", context2, cmpName2)
+			output := helper.CmdShouldPass("odo", "describe", "--context", context2)
+			Expect(output).To(ContainSubstring(fmt.Sprint("Component Name: ", cmpName2)))
+			helper.Chdir(commonVar.OriginalWorkingDirectory)
+			helper.DeleteDir(context2)
+		})
 		It("should describe not pushed component when it is created with json output", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing", "-o", "json")...))
