@@ -3069,7 +3069,7 @@ func (c *Client) IsVolumeAnEmptyDir(volumeMountName string, dc *appsv1.Deploymen
 	return false
 }
 
-// IsVolumeAnEmptyDir returns true if the volume is an EmptyDir, false if not
+// IsVolumeAnConfigMap returns true if the volume is an ConfigMap, false if not
 func (c *Client) IsVolumeAnConfigMap(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
 	for _, volume := range dc.Spec.Template.Spec.Volumes {
 		if volume.Name == volumeMountName {
