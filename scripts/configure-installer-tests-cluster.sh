@@ -2,7 +2,7 @@
 set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
-
+LIBDIR="$(dirname $0)/lib/configure-cluster"
 SETUP_OPERATORS="./scripts/setup-operators.sh"
 # Overrideable information
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
@@ -68,7 +68,7 @@ done
 # Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
 
-. scripts/lib/configure-cluster/auth.sh
+. $LIBDIR/auth.sh
 
 # KUBECONFIG cleanup only if CI is set
 if [ ! -f $CI ]; then
