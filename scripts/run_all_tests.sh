@@ -85,7 +85,7 @@ shout "Logging into 4x cluster as developer (logs hidden)"
 set +x
 oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
 set -x
-    
+
 shout "Running integration/e2e tests"
 make test-e2e-all
 
