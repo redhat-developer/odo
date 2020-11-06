@@ -178,7 +178,7 @@ func ParseComponentImageName(imageName string) (string, string, string, string) 
 	componentVersion := "latest"
 
 	// Check if componentType includes ":", if so, then we need to spit it into using versions
-	if strings.ContainsAny(componentImageName, ":") {
+	if strings.ContainsAny(componentType, ":") {
 		versionSplit := strings.Split(imageName, ":")
 		componentType = versionSplit[0]
 		componentName = ExtractComponentType(componentType)

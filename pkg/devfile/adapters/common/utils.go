@@ -35,7 +35,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
-	defaultBootstrapperImage = "registry.access.redhat.com/ocp-tools-4/odo-init-container-rhel8:1.1.5"
+	defaultBootstrapperImage = "registry.access.redhat.com/ocp-tools-4/odo-init-container-rhel8:1.1.6"
 
 	// SupervisordControlCommand sub command which stands for control
 	SupervisordControlCommand = "ctl"
