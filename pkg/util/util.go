@@ -1436,3 +1436,11 @@ func GetCommandStringFromEnvs(envVars []v1alpha2.EnvVar) string {
 	}
 	return setEnvVariable
 }
+
+func GetEnvWithDefault(key string, defaultval string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultval
+	}
+	return val
+}
