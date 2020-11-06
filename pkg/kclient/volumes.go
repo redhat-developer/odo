@@ -35,8 +35,8 @@ func (c *Client) DeletePVC(pvcName string) error {
 	return c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(pvcName, &metav1.DeleteOptions{})
 }
 
-// GetPVCVol gets a pvc type volume with the given volume name and pvc name
-func GetPVCVol(volumeName, pvcName string) corev1.Volume {
+// GetPVC gets a pvc type volume with the given volume name and pvc name
+func GetPVC(volumeName, pvcName string) corev1.Volume {
 
 	return corev1.Volume{
 		Name: volumeName,
@@ -71,17 +71,17 @@ func AddVolumeMountToContainers(containers []corev1.Container, volumeName string
 	return containers
 }
 
-// GetPVCVolAndVolMount adds PVC and volume mount to the pod template spec
+// GetPVCAndVolumeMount gets the PVC and updates the containers with the volume mount
 // volumeNameToPVCName is a map of volume name to the PVC created
 // containerNameToVolumes is a map of the Devfile container names to the Devfile Volumes
-func GetPVCVolAndVolMount(containers []corev1.Container, volumeNameToPVCName map[string]string, containerNameToVolumes map[string][]common.DevfileVolume) ([]corev1.Container, []corev1.Volume, error) {
+func GetPVCAndVolumeMount(containers []corev1.Container, volumeNameToPVCName map[string]string, containerNameToVolumes map[string][]common.DevfileVolume) ([]corev1.Container, []corev1.Volume, error) {
 	var pvcVols []corev1.Volume
 	for volName, pvcName := range volumeNameToPVCName {
 		generatedVolumeName, err := generateVolumeNameFromPVC(pvcName)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Unable to generate volume name from pvc name")
 		}
-		pvcVols = append(pvcVols, GetPVCVol(generatedVolumeName, pvcName))
+		pvcVols = append(pvcVols, GetPVC(generatedVolumeName, pvcName))
 
 		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
 		containerNameToMountPaths := make(map[string][]string)

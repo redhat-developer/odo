@@ -114,7 +114,7 @@ func TestCreatePVC(t *testing.T) {
 	}
 }
 
-func TestGetPVCVol(t *testing.T) {
+func TestGetPVC(t *testing.T) {
 
 	tests := []struct {
 		pvc        string
@@ -128,14 +128,14 @@ func TestGetPVCVol(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.volumeName, func(t *testing.T) {
-			volume := GetPVCVol(tt.volumeName, tt.pvc)
+			volume := GetPVC(tt.volumeName, tt.pvc)
 
 			if volume.Name != tt.volumeName {
-				t.Errorf("TestGetPVCVol error: volume name does not match; expected %s got %s", tt.volumeName, volume.Name)
+				t.Errorf("TestGetPVC error: volume name does not match; expected %s got %s", tt.volumeName, volume.Name)
 			}
 
 			if volume.PersistentVolumeClaim.ClaimName != tt.pvc {
-				t.Errorf("TestGetPVCVol error: pvc name does not match; expected %s got %s", tt.pvc, volume.PersistentVolumeClaim.ClaimName)
+				t.Errorf("TestGetPVC error: pvc name does not match; expected %s got %s", tt.pvc, volume.PersistentVolumeClaim.ClaimName)
 			}
 		})
 	}
@@ -304,7 +304,7 @@ func TestGetPVCsFromSelector(t *testing.T) {
 	}
 }
 
-func TestGetPVCVolAndVolMount(t *testing.T) {
+func TestGetPVCAndVolumeMount(t *testing.T) {
 
 	volNames := [...]string{"volume1", "volume2", "volume3"}
 	volContainerPath := [...]string{"/home/user/path1", "/home/user/path2", "/home/user/path3"}
@@ -404,13 +404,13 @@ func TestGetPVCVolAndVolMount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			containers, pvcVols, err := GetPVCVolAndVolMount(tt.containers, tt.volumeNameToPVCName, tt.componentAliasToVolumes)
+			containers, pvcVols, err := GetPVCAndVolumeMount(tt.containers, tt.volumeNameToPVCName, tt.componentAliasToVolumes)
 			if !tt.wantErr && err != nil {
-				t.Errorf("TestGetPVCVolAndVolMount.AddPVCAndVolumeMount() unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() unexpected error %v, wantErr %v", err, tt.wantErr)
 			} else if tt.wantErr && err != nil {
 				return
 			} else if tt.wantErr && err == nil {
-				t.Error("TestGetPVCVolAndVolMount.AddPVCAndVolumeMount() expected error but got nil")
+				t.Error("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() expected error but got nil")
 				return
 			}
 
@@ -419,11 +419,11 @@ func TestGetPVCVolAndVolMount(t *testing.T) {
 
 			// check the number of containers and volumes in the pod template spec
 			if len(containers) != len(tt.containers) {
-				t.Errorf("TestGetPVCVolAndVolMount error - Incorrect number of Containers found in the pod template spec, expected: %v found: %v", len(tt.containers), len(containers))
+				t.Errorf("TestGetPVCAndVolumeMount error - Incorrect number of Containers found in the pod template spec, expected: %v found: %v", len(tt.containers), len(containers))
 				return
 			}
 			if len(pvcVols) != expectedNumVolumes {
-				t.Errorf("TestGetPVCVolAndVolMount error - incorrect amount of pvc volumes in pod template spec expected %v, actual %v", expectedNumVolumes, len(pvcVols))
+				t.Errorf("TestGetPVCAndVolumeMount error - incorrect amount of pvc volumes in pod template spec expected %v, actual %v", expectedNumVolumes, len(pvcVols))
 				return
 			}
 
@@ -433,7 +433,7 @@ func TestGetPVCVolAndVolMount(t *testing.T) {
 					if container.Name == testcontainerAlias {
 						// check if container has the correct number of volume mounts
 						if len(container.VolumeMounts) != len(testContainerVolumes) {
-							t.Errorf("TestGetPVCVolAndVolMount - Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), len(container.VolumeMounts))
+							t.Errorf("TestGetPVCAndVolumeMount - Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), len(container.VolumeMounts))
 						}
 
 						// check if container has the specified volume
@@ -448,7 +448,7 @@ func TestGetPVCVolAndVolMount(t *testing.T) {
 							}
 						}
 						if volumeMatched != len(testContainerVolumes) {
-							t.Errorf("TestGetPVCVolAndVolMount - Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), volumeMatched)
+							t.Errorf("TestGetPVCAndVolumeMount - Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), volumeMatched)
 						}
 					}
 				}

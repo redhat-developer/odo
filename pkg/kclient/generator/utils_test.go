@@ -653,3 +653,181 @@ func TestAddSyncFolder(t *testing.T) {
 		})
 	}
 }
+
+func TestGetContainer(t *testing.T) {
+
+	tests := []struct {
+		name          string
+		containerName string
+		image         string
+		isPrivileged  bool
+		command       []string
+		args          []string
+		envVars       []corev1.EnvVar
+		resourceReqs  corev1.ResourceRequirements
+		ports         []corev1.ContainerPort
+	}{
+		{
+			name:          "Case 1: Empty container params",
+			containerName: "",
+			image:         "",
+			isPrivileged:  false,
+			command:       []string{},
+			args:          []string{},
+			envVars:       []corev1.EnvVar{},
+			resourceReqs:  corev1.ResourceRequirements{},
+			ports:         []corev1.ContainerPort{},
+		},
+		{
+			name:          "Case 2: Valid container params",
+			containerName: "container1",
+			image:         "quay.io/eclipse/che-java8-maven:nightly",
+			isPrivileged:  true,
+			command:       []string{"tail"},
+			args:          []string{"-f", "/dev/null"},
+			envVars: []corev1.EnvVar{
+				{
+					Name:  "test",
+					Value: "123",
+				},
+			},
+			resourceReqs: fakeResources,
+			ports: []corev1.ContainerPort{
+				{
+					Name:          "port-9090",
+					ContainerPort: 9090,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			containerParams := ContainerParams{
+				Name:         tt.containerName,
+				Image:        tt.image,
+				IsPrivileged: tt.isPrivileged,
+				Command:      tt.command,
+				Args:         tt.args,
+				EnvVars:      tt.envVars,
+				ResourceReqs: tt.resourceReqs,
+				Ports:        tt.ports,
+			}
+			container := getContainer(containerParams)
+
+			if container.Name != tt.containerName {
+				t.Errorf("expected %s, actual %s", tt.containerName, container.Name)
+			}
+
+			if container.Image != tt.image {
+				t.Errorf("expected %s, actual %s", tt.image, container.Image)
+			}
+
+			if tt.isPrivileged {
+				if *container.SecurityContext.Privileged != tt.isPrivileged {
+					t.Errorf("expected %t, actual %t", tt.isPrivileged, *container.SecurityContext.Privileged)
+				}
+			} else if tt.isPrivileged == false && container.SecurityContext != nil {
+				t.Errorf("expected security context to be nil but it was defined")
+			}
+
+			if len(container.Command) != len(tt.command) {
+				t.Errorf("expected %d, actual %d", len(tt.command), len(container.Command))
+			} else {
+				for i := range container.Command {
+					if container.Command[i] != tt.command[i] {
+						t.Errorf("expected %s, actual %s", tt.command[i], container.Command[i])
+					}
+				}
+			}
+
+			if len(container.Args) != len(tt.args) {
+				t.Errorf("expected %d, actual %d", len(tt.args), len(container.Args))
+			} else {
+				for i := range container.Args {
+					if container.Args[i] != tt.args[i] {
+						t.Errorf("expected %s, actual %s", tt.args[i], container.Args[i])
+					}
+				}
+			}
+
+			if len(container.Env) != len(tt.envVars) {
+				t.Errorf("expected %d, actual %d", len(tt.envVars), len(container.Env))
+			} else {
+				for i := range container.Env {
+					if container.Env[i].Name != tt.envVars[i].Name {
+						t.Errorf("expected name %s, actual name %s", tt.envVars[i].Name, container.Env[i].Name)
+					}
+					if container.Env[i].Value != tt.envVars[i].Value {
+						t.Errorf("expected value %s, actual value %s", tt.envVars[i].Value, container.Env[i].Value)
+					}
+				}
+			}
+
+			if len(container.Ports) != len(tt.ports) {
+				t.Errorf("expected %d, actual %d", len(tt.ports), len(container.Ports))
+			} else {
+				for i := range container.Ports {
+					if container.Ports[i].Name != tt.ports[i].Name {
+						t.Errorf("expected name %s, actual name %s", tt.ports[i].Name, container.Ports[i].Name)
+					}
+					if container.Ports[i].ContainerPort != tt.ports[i].ContainerPort {
+						t.Errorf("expected port number is %v, actual %v", tt.ports[i].ContainerPort, container.Ports[i].ContainerPort)
+					}
+				}
+			}
+
+		})
+	}
+}
+
+func TestGenerateServiceSpec(t *testing.T) {
+	port1 := corev1.ContainerPort{
+		Name:          "port-9090",
+		ContainerPort: 9090,
+	}
+	port2 := corev1.ContainerPort{
+		Name:          "port-8080",
+		ContainerPort: 8080,
+	}
+
+	tests := []struct {
+		name  string
+		ports []corev1.ContainerPort
+	}{
+		{
+			name:  "singlePort",
+			ports: []corev1.ContainerPort{port1},
+		},
+		{
+			name:  "multiplePorts",
+			ports: []corev1.ContainerPort{port1, port2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			serviceSpecParams := ServiceSpecParams{
+				ContainerPorts: tt.ports,
+				SelectorLabels: map[string]string{
+					"component": tt.name,
+				},
+			}
+			serviceSpec := getServiceSpec(serviceSpecParams)
+
+			if len(serviceSpec.Ports) != len(tt.ports) {
+				t.Errorf("expected service ports length is %v, actual %v", len(tt.ports), len(serviceSpec.Ports))
+			} else {
+				for i := range serviceSpec.Ports {
+					if serviceSpec.Ports[i].Name != tt.ports[i].Name {
+						t.Errorf("expected name %s, actual name %s", tt.ports[i].Name, serviceSpec.Ports[i].Name)
+					}
+					if serviceSpec.Ports[i].Port != tt.ports[i].ContainerPort {
+						t.Errorf("expected port number is %v, actual %v", tt.ports[i].ContainerPort, serviceSpec.Ports[i].Port)
+					}
+				}
+			}
+
+		})
+	}
+}

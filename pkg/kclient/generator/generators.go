@@ -44,40 +44,6 @@ func GetObjectMeta(name, namespace string, labels, annotations map[string]string
 	return objectMeta
 }
 
-// ContainerParams is a struct that contains the required data to create a container object
-type ContainerParams struct {
-	Name         string
-	Image        string
-	IsPrivileged bool
-	Command      []string
-	Args         []string
-	EnvVars      []corev1.EnvVar
-	ResourceReqs corev1.ResourceRequirements
-	Ports        []corev1.ContainerPort
-}
-
-// getContainer creates a container spec that can be used when creating a pod
-func getContainer(containerParams ContainerParams) *corev1.Container {
-	container := &corev1.Container{
-		Name:            containerParams.Name,
-		Image:           containerParams.Image,
-		ImagePullPolicy: corev1.PullAlways,
-		Resources:       containerParams.ResourceReqs,
-		Env:             containerParams.EnvVars,
-		Ports:           containerParams.Ports,
-		Command:         containerParams.Command,
-		Args:            containerParams.Args,
-	}
-
-	if containerParams.IsPrivileged {
-		container.SecurityContext = &corev1.SecurityContext{
-			Privileged: &containerParams.IsPrivileged,
-		}
-	}
-
-	return container
-}
-
 // GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
 func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, error) {
 	var containers []corev1.Container
@@ -170,32 +136,6 @@ func GetPVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSpec {
 	}
 
 	return pvcSpec
-}
-
-// ServiceSpecParams is a struct that contains the required data to create a svc spec object
-type ServiceSpecParams struct {
-	SelectorLabels map[string]string
-	ContainerPorts []corev1.ContainerPort
-}
-
-// getServiceSpec creates a service spec
-func getServiceSpec(serviceSpecParams ServiceSpecParams) *corev1.ServiceSpec {
-	var svcPorts []corev1.ServicePort
-	for _, containerPort := range serviceSpecParams.ContainerPorts {
-		svcPort := corev1.ServicePort{
-
-			Name:       containerPort.Name,
-			Port:       containerPort.ContainerPort,
-			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
-		}
-		svcPorts = append(svcPorts, svcPort)
-	}
-	svcSpec := &corev1.ServiceSpec{
-		Ports:    svcPorts,
-		Selector: serviceSpecParams.SelectorLabels,
-	}
-
-	return svcSpec
 }
 
 // GetService iterates through the components in the devfile and returns a ServiceSpec
