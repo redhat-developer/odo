@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/cli/ui"
-	cmdutil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -45,7 +44,7 @@ func NewServiceDeleteOptions() *ServiceDeleteOptions {
 
 // Complete completes ServiceDeleteOptions after they've been created
 func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.csvSupport, err = cmdutil.IsCSVSupported(); err != nil {
+	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
 		return err
 	} else if o.csvSupport {
 		o.Context = genericclioptions.NewDevfileContext(cmd)

@@ -12,11 +12,13 @@ import (
 	"github.com/zalando/go-keyring"
 
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -289,6 +291,32 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 		},
 		Items: clusterServiceClasses,
 	}, nil
+}
+
+// ListOperatorServices fetches a list of Operators from the cluster and
+// returns only those Operators which are successfully installed on the cluster
+func ListOperatorServices() (*olm.ClusterServiceVersionList, error) {
+	client, err := kclient.New()
+	if err != nil {
+		return nil, err
+	}
+
+	allCsvs, err := client.GetClusterServiceVersionList()
+	if err != nil {
+		return nil, err
+	}
+
+	// now let's filter only those csvs which are successfully installed
+	var csvList olm.ClusterServiceVersionList
+	csvList.TypeMeta = allCsvs.TypeMeta
+	csvList.ListMeta = allCsvs.ListMeta
+	for _, csv := range allCsvs.Items {
+		if csv.Status.Phase == "Succeeded" {
+			csvList.Items = append(csvList.Items, csv)
+		}
+	}
+
+	return &csvList, nil
 }
 
 // SearchService searches for the services

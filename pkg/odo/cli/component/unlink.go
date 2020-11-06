@@ -8,6 +8,7 @@ import (
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	svc "github.com/openshift/odo/pkg/service"
 
 	"github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -48,7 +49,7 @@ type UnlinkOptions struct {
 func NewUnlinkOptions() *UnlinkOptions {
 	options := UnlinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
-	options.commonLinkOptions.csvSupport, _ = util.IsCSVSupported()
+	options.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 	return &options
 }
 
