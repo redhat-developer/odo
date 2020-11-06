@@ -322,8 +322,13 @@ func componentTests(args ...string) {
 			relativeContext := fmt.Sprintf("..%c%s", filepath.Separator, filepath.Base(commonVar.Context))
 			fmt.Printf("relativeContext = %#v\n", relativeContext)
 
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", relativeContext)...)
+			if runtime.GOOS == "darwin" {
+				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+					commonVar.Project, "--binary", filepath.Join("/private", commonVar.Context, "sb.jar"), "--context", relativeContext)...)
+			} else {
+				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+					commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", relativeContext)...)
+			}
 			helper.ValidateLocalCmpExist(relativeContext, "Type,java:8", "Name,sb-jar-test")
 		})
 
