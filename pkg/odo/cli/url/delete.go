@@ -3,8 +3,9 @@ package url
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -85,6 +86,10 @@ func (o *URLDeleteOptions) Validate() (err error) {
 		devObj, err := devfile.ParseAndValidate(o.DevfilePath)
 		if err != nil {
 			return fmt.Errorf("failed to parse the devfile %s, with error: %s", o.DevfilePath, err)
+		}
+		err = validate.ValidateDevfileData(devObj.Data)
+		if err != nil {
+			return err
 		}
 		o.devObj = devObj
 	} else {

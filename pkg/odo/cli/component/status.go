@@ -8,11 +8,12 @@ import (
 
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
@@ -85,6 +86,10 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Parse devfile
 		devObj, err := devfile.ParseAndValidate(so.devfilePath)
+		if err != nil {
+			return err
+		}
+		err = validate.ValidateDevfileData(devObj.Data)
 		if err != nil {
 			return err
 		}

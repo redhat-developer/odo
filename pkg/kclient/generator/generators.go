@@ -13,8 +13,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 )
 
 const (
@@ -65,7 +65,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
 		// Sync to `Container.SourceMapping` and/or devfile projects if set
-		if comp.Container.MountSources {
+		if comp.Container.MountSources == nil || *comp.Container.MountSources {
 			syncRootFolder := addSyncRootFolder(container, comp.Container.SourceMapping)
 
 			err := addSyncFolder(container, syncRootFolder, devfileObj.Data.GetProjects())
@@ -158,7 +158,7 @@ func GetService(devfileObj devfileParser.DevfileObj, selectorLabels map[string]s
 				}
 			}
 			// if Exposure == none, should not create a service for that port
-			if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
+			if !portExist && portExposureMap[int(port.ContainerPort)] != devfilev1.NoneEndpointExposure {
 				port.Name = fmt.Sprintf("port-%v", port.ContainerPort)
 				containerPorts = append(containerPorts, port)
 			}

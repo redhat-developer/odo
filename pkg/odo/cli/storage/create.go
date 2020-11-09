@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/devfile"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
 	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/component"
@@ -98,11 +99,20 @@ func (o *StorageCreateOptions) devfileRun() error {
 	if err != nil {
 		return err
 	}
+	err = validate.ValidateDevfileData(devFile.Data)
+	if err != nil {
+		return err
+	}
 
-	err = devFile.Data.AddVolume(common.DevfileComponent{
+	err = devFile.Data.AddVolume(devfilev1.Component{
 		Name: o.storageName,
-		Volume: &common.Volume{
-			Size: o.storageSize,
+		ComponentUnion: devfilev1.ComponentUnion{
+			ComponentType: devfilev1.VolumeComponentType,
+			Volume: &devfilev1.VolumeComponent{
+				Volume: devfilev1.Volume{
+					Size: o.storageSize,
+				},
+			},
 		},
 	}, o.storagePath)
 

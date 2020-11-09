@@ -7,15 +7,21 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
+	"k8s.io/klog"
+
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -33,11 +39,8 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
+
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -888,7 +891,7 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 	// Retrieve starter projects
 	starterProjects := devObj.Data.GetStarterProjects()
 
-	var starterProject *common.DevfileStarterProject
+	var starterProject *devfilev1.StarterProject
 	var err error
 	if interactive {
 		starterProject = getStarterProjectInteractiveMode(starterProjects)
@@ -927,14 +930,14 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 
 	if starterProject.Git != nil || starterProject.Github != nil {
 
-		projectSource := common.GitLikeProjectSource{}
+		projectSource := devfilev1.GitLikeProjectSource{}
 		if starterProject.Git != nil {
 			projectSource = starterProject.Git.GitLikeProjectSource
 		} else {
 			projectSource = starterProject.Github.GitLikeProjectSource
 		}
 
-		remoteName, remoteUrl, revision, err := projectSource.GetDefaultSource()
+		remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(projectSource)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
 		}
@@ -1202,7 +1205,7 @@ func (co *CreateOptions) checkoutProject(subDir, zipURL, path string) error {
 }
 
 // getStarterProjectInteractiveMode gets starter project value by asking user in interactive mode.
-func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) *common.DevfileStarterProject {
+func getStarterProjectInteractiveMode(projects []devfilev1.StarterProject) *devfilev1.StarterProject {
 	projectName := ui.SelectStarterProject(projects)
 
 	// if user do not wish to download starter project or there are no projects in devfile, project name would be empty
@@ -1210,7 +1213,7 @@ func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) *
 		return nil
 	}
 
-	var project common.DevfileStarterProject
+	var project devfilev1.StarterProject
 
 	for _, value := range projects {
 		if value.Name == projectName {
@@ -1223,7 +1226,7 @@ func getStarterProjectInteractiveMode(projects []common.DevfileStarterProject) *
 }
 
 // getStarterProjectFromFlag gets starter project value from flag --starter.
-func getStarterProjectFromFlag(projects []common.DevfileStarterProject, projectPassed string) (project *common.DevfileStarterProject, err error) {
+func getStarterProjectFromFlag(projects []devfilev1.StarterProject, projectPassed string) (project *devfilev1.StarterProject, err error) {
 
 	nOfProjects := len(projects)
 

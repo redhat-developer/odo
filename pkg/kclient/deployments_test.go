@@ -3,8 +3,8 @@ package kclient
 import (
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -23,9 +23,9 @@ import (
 func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName string, labels map[string]string) (*appsv1.Deployment, error) {
 	fakeUID := types.UID("12345")
 
-	devObj := parser.DevfileObj{
+	devObj := devfileParser.DevfileObj{
 		Data: &testingutil.TestDevfileData{
-			Components: []common.DevfileComponent{
+			Components: []devfilev1.Component{
 				testingutil.GetFakeContainerComponent("container1"),
 			},
 		},
@@ -187,9 +187,9 @@ func TestUpdateDeployment(t *testing.T) {
 		"component": "frontend",
 	}
 
-	devObj := parser.DevfileObj{
+	devObj := devfileParser.DevfileObj{
 		Data: &testingutil.TestDevfileData{
-			Components: []common.DevfileComponent{
+			Components: []devfilev1.Component{
 				testingutil.GetFakeContainerComponent("container1"),
 			},
 		},

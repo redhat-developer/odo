@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/generator"
@@ -156,7 +156,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	if e != nil {
 		return cfd, e
 	}
-	var components []common.DevfileComponent
+	var components []devfilev1.Component
 	var configProvider envinfo.LocalConfigProvider = localConfigInfo
 	if envInfo != nil {
 		configProvider = envInfo

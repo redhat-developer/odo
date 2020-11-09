@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
@@ -16,8 +16,8 @@ func TestIsEventValid(t *testing.T) {
 	tests := []struct {
 		name         string
 		eventType    string
-		execCommands []common.DevfileCommand
-		compCommands []common.DevfileCommand
+		execCommands []devfilev1.Command
+		compCommands []devfilev1.Command
 		eventNames   []string
 		wantErr      bool
 		wantErrMsg   string
@@ -25,29 +25,35 @@ func TestIsEventValid(t *testing.T) {
 		{
 			name:      "Case 1: Valid events",
 			eventType: "preStart",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "command1",
-					Exec: &common.Exec{
-						CommandLine: "/some/command1",
-						Component:   containers[0],
-						WorkingDir:  "workDir",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							CommandLine: "/some/command1",
+							Component:   containers[0],
+							WorkingDir:  "workDir",
+						},
 					},
 				},
 				{
 					Id: "command2",
-					Exec: &common.Exec{
-						CommandLine: "/some/command2",
-						Component:   containers[1],
-						WorkingDir:  "workDir",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							CommandLine: "/some/command2",
+							Component:   containers[1],
+							WorkingDir:  "workDir",
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "composite1",
-					Composite: &common.Composite{
-						Commands: []string{"command1", "command2"},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							Commands: []string{"command1", "command2"},
+						},
 					},
 				},
 			},
@@ -60,29 +66,35 @@ func TestIsEventValid(t *testing.T) {
 		{
 			name:      "Case 2: Invalid events with wrong mapping to devfile command",
 			eventType: "preStart",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "command1",
-					Exec: &common.Exec{
-						CommandLine: "/some/command1",
-						Component:   containers[0],
-						WorkingDir:  "workDir",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							CommandLine: "/some/command1",
+							Component:   containers[0],
+							WorkingDir:  "workDir",
+						},
 					},
 				},
 				{
 					Id: "command2",
-					Exec: &common.Exec{
-						CommandLine: "/some/command2",
-						Component:   containers[1],
-						WorkingDir:  "workDir",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							CommandLine: "/some/command2",
+							Component:   containers[1],
+							WorkingDir:  "workDir",
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "composite1",
-					Composite: &common.Composite{
-						Commands: []string{"command1", "command2"},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							Commands: []string{"command1", "command2"},
+						},
 					},
 				},
 			},

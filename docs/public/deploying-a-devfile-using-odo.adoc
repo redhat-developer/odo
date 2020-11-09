@@ -29,14 +29,16 @@ An example deployment scenario:
 
 == Deploying your first devfile
 
-===== Prerequisites for a Kubernetes Cluster
+[discrete]
+
+==== Prerequisites for a Kubernetes Cluster
 
 * Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
 +
 Ingress IP is usually the external IP of ingress controller service. For example, for Minikube running in a virtual machine you can get it by
 `minikube ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
 
-===== Prerequisites for an OpenShift Cluster
+==== Prerequisites for an OpenShift Cluster
 
 * Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 * You must also know your ingress domain name or ingress IP to specify `--host` for `odo url create`. This can be found using `crc ip`.

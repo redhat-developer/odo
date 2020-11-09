@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -23,10 +23,11 @@ func TestGetContainers(t *testing.T) {
 
 	containerNames := []string{"testcontainer1", "testcontainer2"}
 	containerImages := []string{"image1", "image2"}
-
+	trueMountSources := true
+	falseMountSources := false
 	tests := []struct {
 		name                  string
-		containerComponents   []common.DevfileComponent
+		containerComponents   []devfilev1.Component
 		wantContainerName     string
 		wantContainerImage    string
 		wantContainerEnv      []corev1.EnvVar
@@ -35,12 +36,16 @@ func TestGetContainers(t *testing.T) {
 	}{
 		{
 			name: "Case 1: Container with default project root",
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: containerNames[0],
-					Container: &common.Container{
-						Image:        containerImages[0],
-						MountSources: true,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image:        containerImages[0],
+								MountSources: &trueMountSources,
+							},
+						},
 					},
 				},
 			},
@@ -66,13 +71,17 @@ func TestGetContainers(t *testing.T) {
 		},
 		{
 			name: "Case 2: Container with source mapping",
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: containerNames[0],
-					Container: &common.Container{
-						Image:         containerImages[0],
-						MountSources:  true,
-						SourceMapping: "/myroot",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image:         containerImages[0],
+								MountSources:  &trueMountSources,
+								SourceMapping: "/myroot",
+							},
+						},
 					},
 				},
 			},
@@ -98,11 +107,16 @@ func TestGetContainers(t *testing.T) {
 		},
 		{
 			name: "Case 3: Container with no mount source",
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: containerNames[0],
-					Container: &common.Container{
-						Image: containerImages[0],
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image:        containerImages[0],
+								MountSources: &falseMountSources,
+							},
+						},
 					},
 				},
 			},
@@ -367,25 +381,27 @@ func TestGetService(t *testing.T) {
 
 	tests := []struct {
 		name                string
-		containerComponents []common.DevfileComponent
+		containerComponents []devfilev1.Component
 		labels              map[string]string
 		wantPorts           []corev1.ServicePort
 		wantErr             bool
 	}{
 		{
 			name: "Case 1: multiple endpoints share the same port",
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Endpoints: []common.Endpoint{
-							{
-								Name:       endpointNames[0],
-								TargetPort: 8080,
-							},
-							{
-								Name:       endpointNames[1],
-								TargetPort: 8080,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       endpointNames[0],
+									TargetPort: 8080,
+								},
+								{
+									Name:       endpointNames[1],
+									TargetPort: 8080,
+								},
 							},
 						},
 					},
@@ -403,18 +419,20 @@ func TestGetService(t *testing.T) {
 		},
 		{
 			name: "Case 2: multiple endpoints have different ports",
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Endpoints: []common.Endpoint{
-							{
-								Name:       endpointNames[0],
-								TargetPort: 8080,
-							},
-							{
-								Name:       endpointNames[2],
-								TargetPort: 9090,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       endpointNames[0],
+									TargetPort: 8080,
+								},
+								{
+									Name:       endpointNames[2],
+									TargetPort: 9090,
+								},
 							},
 						},
 					},

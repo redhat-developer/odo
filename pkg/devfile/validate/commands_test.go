@@ -3,43 +3,57 @@ package validate
 import (
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 )
 
-var buildGroup = common.BuildCommandGroupType
-var runGroup = common.RunCommandGroupType
+var buildGroup = devfilev1.BuildCommandGroupKind
+var runGroup = devfilev1.RunCommandGroupKind
 
 func TestValidateCommand(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		command common.DevfileCommand
+		command devfilev1.Command
 		wantErr bool
 	}{
 		{
 			name: "Case 1: Valid Exec Command",
-			command: common.DevfileCommand{
-				Id:   "somecommand",
-				Exec: &common.Exec{},
+			command: devfilev1.Command{
+				Id: "somecommand",
+				CommandUnion: devfilev1.CommandUnion{
+					Exec: &devfilev1.ExecCommand{},
+				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Case 2: Valid Composite Command",
-			command: common.DevfileCommand{
+			command: devfilev1.Command{
 				Id: "composite1",
-				Composite: &common.Composite{
-					Group: &common.Group{Kind: buildGroup, IsDefault: true},
+				CommandUnion: devfilev1.CommandUnion{
+					Composite: &devfilev1.CompositeCommand{
+						LabeledCommand: devfilev1.LabeledCommand{
+							BaseCommand: devfilev1.BaseCommand{
+								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+							},
+						},
+					},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Case 3: Invalid Composite Command with Run Kind",
-			command: common.DevfileCommand{
+			command: devfilev1.Command{
 				Id: "composite1",
-				Composite: &common.Composite{
-					Group: &common.Group{Kind: runGroup, IsDefault: true},
+				CommandUnion: devfilev1.CommandUnion{
+					Composite: &devfilev1.CompositeCommand{
+						LabeledCommand: devfilev1.LabeledCommand{
+							BaseCommand: devfilev1.BaseCommand{
+								Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+							},
+						},
+					},
 				},
 			},
 			wantErr: true,
@@ -61,26 +75,38 @@ func TestValidateCompositeCommand(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		command common.DevfileCommand
+		command devfilev1.Command
 		wantErr bool
 	}{
 		{
 			name: "Case 1: Valid Composite Command",
-			command: common.DevfileCommand{
+			command: devfilev1.Command{
 
 				Id: "command1",
-				Composite: &common.Composite{
-					Group: &common.Group{Kind: buildGroup},
+				CommandUnion: devfilev1.CommandUnion{
+					Composite: &devfilev1.CompositeCommand{
+						LabeledCommand: devfilev1.LabeledCommand{
+							BaseCommand: devfilev1.BaseCommand{
+								Group: &devfilev1.CommandGroup{Kind: buildGroup},
+							},
+						},
+					},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Case 2: Invalid Composite Run Kind Command",
-			command: common.DevfileCommand{
+			command: devfilev1.Command{
 				Id: "command1",
-				Composite: &common.Composite{
-					Group: &common.Group{Kind: runGroup},
+				CommandUnion: devfilev1.CommandUnion{
+					Composite: &devfilev1.CompositeCommand{
+						LabeledCommand: devfilev1.LabeledCommand{
+							BaseCommand: devfilev1.BaseCommand{
+								Group: &devfilev1.CommandGroup{Kind: runGroup},
+							},
+						},
+					},
 				},
 			},
 			wantErr: true,

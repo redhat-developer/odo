@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -79,6 +80,12 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 	// Parse devfile and validate
 	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
+
+	if err != nil {
+		return err
+	}
+
+	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
 	}
@@ -149,6 +156,10 @@ func (lo LogOptions) DevfileComponentLog() error {
 	if err != nil {
 		return err
 	}
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return err
+	}
 	componentName := lo.Context.EnvSpecificInfo.GetName()
 
 	var platformContext interface{}
@@ -185,6 +196,10 @@ func (lo LogOptions) DevfileComponentLog() error {
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile and validate
 	devObj, err := devfile.ParseAndValidate(do.devfilePath)
+	if err != nil {
+		return err
+	}
+	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
 	}
@@ -255,6 +270,10 @@ func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 	// Parse devfile
 	devObj, err := devfile.ParseAndValidate(eo.devfilePath)
+	if err != nil {
+		return err
+	}
+	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
 	}

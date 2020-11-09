@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
@@ -56,7 +56,7 @@ func (a *Adapter) getContainers() ([]types.Container, error) {
 	return a.containers, nil
 }
 
-func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	containers, err := a.getContainers()
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -66,7 +66,7 @@ func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.Co
 	return compInfo, nil
 }
 
-func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	containers, err := a.getContainers()
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -360,13 +360,13 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 		return nil, errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
 	}
 
-	var command versionsCommon.DevfileCommand
+	var command devfilev1.Command
 	if debug {
 		command, err = common.GetDebugCommand(a.Devfile.Data, "")
 		if err != nil {
 			return nil, err
 		}
-		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+		if reflect.DeepEqual(devfilev1.Command{}, command) {
 			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
 		}
 

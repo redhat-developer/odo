@@ -3,7 +3,7 @@ package docker
 import (
 	"io"
 
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/machineoutput"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -70,11 +70,11 @@ func (d Adapter) Logger() machineoutput.MachineEventLoggingClient {
 	return d.componentAdapter.Logger()
 }
 
-func (d Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (d Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	return d.componentAdapter.ComponentInfo(command)
 }
 
-func (d Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (d Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	return d.componentAdapter.SupervisorComponentInfo(command)
 }
 

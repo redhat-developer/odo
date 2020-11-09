@@ -13,10 +13,10 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/kclient"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -24,11 +24,11 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
@@ -586,7 +586,7 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 //  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, containerComponents []parsercommon.DevfileComponent, isS2I bool) (err error) {
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, containerComponents []devfilev1.Component, isS2I bool) (err error) {
 
 	if client == nil {
 		var err error

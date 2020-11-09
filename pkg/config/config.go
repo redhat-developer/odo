@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/envinfo"
 	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
@@ -602,12 +603,34 @@ var (
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())
 )
 
+var (
+	supportedDevfileParameterDescriptions = map[string]string{
+		Name:   NameDescription,
+		Ports:  PortsDescription,
+		Memory: MemoryDescription,
+	}
+
+	lowerCaseDevfileParameters = util.GetLowerCaseParameters(GetDevfileSupportedParameters())
+)
+
 // FormatLocallySupportedParameters outputs supported parameters and their description
 func FormatLocallySupportedParameters() (result string) {
 	for _, v := range GetLocallySupportedParameters() {
 		result = result + " " + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
 	}
 	return "\nAvailable Parameters for s2i Components:\n" + result
+}
+
+// FormatDevfileSupportedParameters outputs supported parameters and their description
+func FormatDevfileSupportedParameters() (result string) {
+	for _, v := range GetDevfileSupportedParameters() {
+		result = result + " " + v + " - " + supportedDevfileParameterDescriptions[v] + "\n"
+	}
+	return "\nAvailable Parameters for Devfile Components:\n" + result
+}
+
+func GetDevfileSupportedParameters() []string {
+	return util.GetSortedKeys(supportedDevfileParameterDescriptions)
 }
 
 // AsLocallySupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter

@@ -3,8 +3,8 @@ package validate
 import (
 	"fmt"
 
-	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2"
 	"github.com/openshift/odo/pkg/devfile/validate/generic"
 
 	"k8s.io/klog"
@@ -13,8 +13,8 @@ import (
 // ValidateDevfileData validates whether sections of devfile are odo compatible
 // after invoking the generic devfile validation
 func ValidateDevfileData(data interface{}) error {
-	var components []common.DevfileComponent
-	var commandsMap map[string]common.DevfileCommand
+	var components []devfilev1.Component
+	var commandsMap map[string]devfilev1.Command
 
 	// Validate the generic devfile data before validating odo specific logic
 	if err := generic.ValidateDevfileData(data); err != nil {
@@ -22,7 +22,7 @@ func ValidateDevfileData(data interface{}) error {
 	}
 
 	switch d := data.(type) {
-	case *v200.Devfile200:
+	case *v2.DevfileV2:
 		components = d.GetComponents()
 		commandsMap = d.GetCommands()
 

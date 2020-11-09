@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 
+	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/occlient"
@@ -99,6 +100,10 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 		// Parse devfile and validate
 		devObj, err := devfile.ParseAndValidate(wo.devfilePath)
+		if err != nil {
+			return err
+		}
+		err = validate.ValidateDevfileData(devObj.Data)
 		if err != nil {
 			return err
 		}
@@ -312,6 +317,10 @@ func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters wat
 	devObj, err := devfile.ParseAndValidate(wo.devfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse and validate '%s'", wo.devfilePath)
+	}
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return nil, err
 	}
 
 	var platformContext interface{}

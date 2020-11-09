@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -270,9 +271,9 @@ func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []co
 
 		for i, commandName := range eventCommands {
 			if command, ok := commandsMap[commandName]; ok {
-				component := command.GetExecComponent()
-				commandLine := command.GetExecCommandLine()
-				workingDir := command.GetExecWorkingDir()
+				component := parsercommon.GetExecComponent(command)
+				commandLine := parsercommon.GetExecCommandLine(command)
+				workingDir := parsercommon.GetExecWorkingDir(command)
 
 				var cmdArr []string
 				if workingDir != "" {

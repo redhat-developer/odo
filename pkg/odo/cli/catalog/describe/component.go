@@ -5,11 +5,12 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -182,12 +183,16 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 	if err != nil {
 		return devObj, errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
 	}
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return devObj, err
+	}
 	return devObj, nil
 }
 
 // PrintDevfileStarterProjects prints all the starter projects in a devfile
 // If no starter projects exists in the devfile, it prints the whole devfile
-func (o *DescribeComponentOptions) PrintDevfileStarterProjects(w *tabwriter.Writer, projects []common.DevfileStarterProject, devObj parser.DevfileObj) error {
+func (o *DescribeComponentOptions) PrintDevfileStarterProjects(w *tabwriter.Writer, projects []devfilev1.StarterProject, devObj parser.DevfileObj) error {
 	if len(projects) > 0 {
 		fmt.Fprintln(w, "\nStarter Projects:")
 		for _, project := range projects {

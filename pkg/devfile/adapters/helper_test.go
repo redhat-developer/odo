@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 )
@@ -16,14 +16,14 @@ func TestNewPlatformAdapter(t *testing.T) {
 		adapterType   string
 		name          string
 		componentName string
-		componentType versionsCommon.DevfileComponentType
+		componentType devfilev1.ComponentType
 		wantErr       bool
 	}{
 		{
 			adapterType:   "kubernetes.Adapter",
 			name:          "get platform adapter",
 			componentName: "test",
-			componentType: versionsCommon.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			wantErr:       false,
 		},
 	}
@@ -31,7 +31,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 		t.Run("get platform adapter", func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{},
+					Components: []devfilev1.Component{},
 				},
 			}
 

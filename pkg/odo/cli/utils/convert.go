@@ -7,11 +7,11 @@ import (
 	"github.com/fatih/color"
 	imagev1 "github.com/openshift/api/image/v1"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
@@ -275,30 +275,43 @@ func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1
 func setDevfileCommandsForS2I(d data.DevfileData) {
 	klog.V(2).Info("Set devfile commands from s2i data")
 
-	buildCommand := common.DevfileCommand{
+	buildCommand := devfilev1.Command{
 		Id: buildCommandID,
-		Exec: &common.Exec{
-			Component:   containerName,
-			CommandLine: buildCommandS2i,
-			Group: &common.Group{
-				Kind:      common.BuildCommandGroupType,
-				IsDefault: true,
+		CommandUnion: devfilev1.CommandUnion{
+			CommandType: devfilev1.ExecCommandType,
+			Exec: &devfilev1.ExecCommand{
+				Component:   containerName,
+				CommandLine: buildCommandS2i,
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{
+							Kind:      devfilev1.BuildCommandGroupKind,
+							IsDefault: true,
+						},
+					},
+				},
 			},
 		},
 	}
 
-	runCommand := common.DevfileCommand{
+	runCommand := devfilev1.Command{
 		Id: runCommandID,
-		Exec: &common.Exec{
-			Component:   containerName,
-			CommandLine: runCommandS2i,
-			Group: &common.Group{
-				Kind:      common.RunCommandGroupType,
-				IsDefault: true,
+		CommandUnion: devfilev1.CommandUnion{
+			CommandType: devfilev1.ExecCommandType,
+			Exec: &devfilev1.ExecCommand{
+				Component:   containerName,
+				CommandLine: runCommandS2i,
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{
+							Kind:      devfilev1.RunCommandGroupKind,
+							IsDefault: true,
+						},
+					},
+				},
 			},
 		},
 	}
-
 	// Ignoring error as we are writing new file
 	_ = d.AddCommands(buildCommand, runCommand)
 
@@ -311,20 +324,29 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	maxMemory := localConfig.GetMaxMemory()
 	volumes := localConfig.GetStorage()
 	urls := localConfig.GetURL()
+	mountSources := true
 
-	var endpoints []common.Endpoint
-	var envs []common.Env
-	var volumeMounts []common.VolumeMount
-	var components []common.DevfileComponent
+	var endpoints []devfilev1.Endpoint
+	var envs []devfilev1.EnvVar
+	var volumeMounts []devfilev1.VolumeMount
+	var components []devfilev1.Component
 
 	// convert s2i storage to devfile volumes
 	for _, vol := range volumes {
-		volume := common.Volume{
-			Size: vol.Size,
+		volume := devfilev1.Component{
+			Name: vol.Name,
+			ComponentUnion: devfilev1.ComponentUnion{
+				ComponentType: devfilev1.VolumeComponentType,
+				Volume: &devfilev1.VolumeComponent{
+					Volume: devfilev1.Volume{
+						Size: vol.Size,
+					},
+				},
+			},
 		}
-		components = append(components, common.DevfileComponent{Name: vol.Name, Volume: &volume})
+		components = append(components, volume)
 
-		volumeMount := common.VolumeMount{
+		volumeMount := devfilev1.VolumeMount{
 			Name: vol.Name,
 			Path: vol.Path,
 		}
@@ -334,13 +356,13 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 
 	// Add s2i specific env variable in devfile
 	for _, env := range s2iEnv {
-		env := common.Env{
+		env := devfilev1.EnvVar{
 			Name:  env.Name,
 			Value: env.Value,
 		}
 		envs = append(envs, env)
 	}
-	env := common.Env{
+	env := devfilev1.EnvVar{
 		Name:  envS2iConvertedDevfile,
 		Value: "true",
 	}
@@ -349,26 +371,34 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	// convert s2i ports to devfile endpoints
 	for _, url := range urls {
 
-		endpoint := common.Endpoint{
+		endpoint := devfilev1.Endpoint{
 			Name:       url.Name,
-			TargetPort: int32(url.Port),
+			TargetPort: url.Port,
 			Secure:     url.Secure,
 		}
 
 		endpoints = append(endpoints, endpoint)
 	}
 
-	container := common.Container{
-		Image:         s2iImage,
-		MountSources:  true,
-		SourceMapping: sourceMappingS2i,
-		MemoryLimit:   maxMemory,
-		Endpoints:     endpoints,
-		Env:           envs,
-		VolumeMounts:  volumeMounts,
+	container := devfilev1.Component{
+		Name: containerName,
+		ComponentUnion: devfilev1.ComponentUnion{
+			ComponentType: devfilev1.ContainerComponentType,
+			Container: &devfilev1.ContainerComponent{
+				Container: devfilev1.Container{
+					Image:         s2iImage,
+					MountSources:  &mountSources,
+					SourceMapping: sourceMappingS2i,
+					MemoryLimit:   maxMemory,
+					Env:           envs,
+					VolumeMounts:  volumeMounts,
+				},
+				Endpoints: endpoints,
+			},
+		},
 	}
 
-	components = append(components, common.DevfileComponent{Name: containerName, Container: &container})
+	components = append(components, container)
 
 	// Ignoring error here as we are writing a new file
 	_ = d.AddComponents(components)

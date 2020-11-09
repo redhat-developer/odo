@@ -2,8 +2,11 @@ package storage
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"path/filepath"
+
+	"github.com/devfile/library/pkg/devfile"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -13,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"path/filepath"
 )
 
 const deleteRecommendedCommandName = "delete"
@@ -83,6 +85,10 @@ func (o *StorageDeleteOptions) Run() (err error) {
 	mPath := ""
 	if o.isDevfile {
 		devFile, err = devfile.ParseAndValidate(o.devfilePath)
+		if err != nil {
+			return err
+		}
+		err = validate.ValidateDevfileData(devFile.Data)
 		if err != nil {
 			return err
 		}

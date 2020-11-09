@@ -3,31 +3,39 @@ package generic
 import (
 	"testing"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 func TestValidateComponents(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		components  []common.DevfileComponent
+		components  []devfilev1.Component
 		wantErr     bool
 		wantErrType error
 	}{
 		{
 			name: "Case 1: Duplicate volume components present",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "myvol",
-					Volume: &common.Volume{
-						Size: "1Gi",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Volume: &devfilev1.VolumeComponent{
+							Volume: devfilev1.Volume{
+								Size: "1Gi",
+							},
+						},
 					},
 				},
 				{
 					Name: "myvol",
-					Volume: &common.Volume{
-						Size: "1Gi",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Volume: &devfilev1.VolumeComponent{
+							Volume: devfilev1.Volume{
+								Size: "1Gi",
+							},
+						},
 					},
 				},
 			},
@@ -35,7 +43,7 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 2: Long component name",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "myvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvolmyvol",
 				},
@@ -44,30 +52,42 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 3: Valid container and volume component",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "myvol",
-					Volume: &common.Volume{
-						Size: "1Gi",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Volume: &devfilev1.VolumeComponent{
+							Volume: devfilev1.Volume{
+								Size: "1Gi",
+							},
+						},
 					},
 				},
 				{
 					Name: "container",
-					Container: &common.Container{
-						VolumeMounts: []common.VolumeMount{
-							{
-								Name: "myvol",
-								Path: "/some/path/",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "myvol",
+										Path: "/some/path/",
+									},
+								},
 							},
 						},
 					},
 				},
 				{
 					Name: "container2",
-					Container: &common.Container{
-						VolumeMounts: []common.VolumeMount{
-							{
-								Name: "myvol",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "myvol",
+									},
+								},
 							},
 						},
 					},
@@ -77,14 +97,18 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 4: Invalid container using reserved env PROJECT_SOURCE",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "container",
-					Container: &common.Container{
-						Env: []common.Env{
-							{
-								Name:  adaptersCommon.EnvProjectsSrc,
-								Value: "/some/path/",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Env: []devfilev1.EnvVar{
+									{
+										Name:  adaptersCommon.EnvProjectsSrc,
+										Value: "/some/path/",
+									},
+								},
 							},
 						},
 					},
@@ -94,14 +118,18 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 5: Invalid container using reserved env PROJECTS_ROOT",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "container",
-					Container: &common.Container{
-						Env: []common.Env{
-							{
-								Name:  adaptersCommon.EnvProjectsRoot,
-								Value: "/some/path/",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Env: []devfilev1.EnvVar{
+									{
+										Name:  adaptersCommon.EnvProjectsRoot,
+										Value: "/some/path/",
+									},
+								},
 							},
 						},
 					},
@@ -111,20 +139,28 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 6: Invalid volume component size",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "myvol",
-					Volume: &common.Volume{
-						Size: "randomgarbage",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Volume: &devfilev1.VolumeComponent{
+							Volume: devfilev1.Volume{
+								Size: "randomgarbage",
+							},
+						},
 					},
 				},
 				{
 					Name: "container",
-					Container: &common.Container{
-						VolumeMounts: []common.VolumeMount{
-							{
-								Name: "myvol",
-								Path: "/some/path/",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "myvol",
+										Path: "/some/path/",
+									},
+								},
 							},
 						},
 					},
@@ -134,22 +170,30 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 7: Invalid volume mount",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "myvol",
-					Volume: &common.Volume{
-						Size: "2Gi",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Volume: &devfilev1.VolumeComponent{
+							Volume: devfilev1.Volume{
+								Size: "2Gi",
+							},
+						},
 					},
 				},
 				{
 					Name: "container",
-					Container: &common.Container{
-						VolumeMounts: []common.VolumeMount{
-							{
-								Name: "myinvalidvol",
-							},
-							{
-								Name: "myinvalidvol2",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "myinvalidvol",
+									},
+									{
+										Name: "myinvalidvol2",
+									},
+								},
 							},
 						},
 					},
@@ -159,7 +203,7 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 8: Special character in container name",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "run@time",
 				},
@@ -168,7 +212,7 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 9: Numeric container name",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "12345",
 				},
@@ -177,7 +221,7 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 10: Container name with capitalised character",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "runTime",
 				},
@@ -186,31 +230,37 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 11: Invalid container with same endpoint names",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "name1",
-					Container: &common.Container{
-						Image: "image1",
-
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url1",
-								TargetPort: 8080,
-								Exposure:   common.Public,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       "url1",
+									TargetPort: 8080,
+									Exposure:   devfilev1.PublicEndpointExposure,
+								},
+							},
+							Container: devfilev1.Container{
+								Image: "image1",
 							},
 						},
 					},
 				},
 				{
 					Name: "name2",
-					Container: &common.Container{
-						Image: "image2",
-
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url1",
-								TargetPort: 8081,
-								Exposure:   common.Public,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       "url1",
+									TargetPort: 8081,
+									Exposure:   devfilev1.PublicEndpointExposure,
+								},
+							},
+							Container: devfilev1.Container{
+								Image: "image2",
 							},
 						},
 					},
@@ -220,27 +270,35 @@ func TestValidateComponents(t *testing.T) {
 		},
 		{
 			name: "Case 12: Invalid container with same endpoint target ports",
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
 					Name: "name1",
-					Container: &common.Container{
-						Image: "image1",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url1",
-								TargetPort: 8080,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "image1",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       "url1",
+									TargetPort: 8080,
+								},
 							},
 						},
 					},
 				},
 				{
 					Name: "name2",
-					Container: &common.Container{
-						Image: "image2",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url2",
-								TargetPort: 8080,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "image2",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       "url2",
+									TargetPort: 8080,
+								},
 							},
 						},
 					},

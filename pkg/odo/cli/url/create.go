@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
@@ -149,6 +150,10 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 		if err != nil {
 			return fmt.Errorf("failed to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}
+		err = validate.ValidateDevfileData(devObj.Data)
+		if err != nil {
+			return err
+		}
 		o.devObj = devObj
 		componentName := o.EnvSpecificInfo.GetName()
 
@@ -287,9 +292,9 @@ func (o *URLCreateOptions) Validate() (err error) {
 		} else if o.urlType == envinfo.INGRESS {
 			errorList = append(errorList, "host must be provided in order to create URLS of Ingress Kind")
 		}
-		if len(o.protocol) > 0 && (strings.ToLower(o.protocol) != string(common.HTTP) && strings.ToLower(o.protocol) != string(common.HTTPS) && strings.ToLower(o.protocol) != string(common.WS) &&
-			strings.ToLower(o.protocol) != string(common.WSS) && strings.ToLower(o.protocol) != string(common.TCP) && strings.ToLower(o.protocol) != string(common.UDP)) {
-			errorList = append(errorList, fmt.Sprintf("endpoint protocol only supports %v|%v|%v|%v|%v|%v", common.HTTP, common.HTTPS, common.WSS, common.WS, common.TCP, common.UDP))
+		if len(o.protocol) > 0 && (strings.ToLower(o.protocol) != string(devfilev1.HTTPEndpointProtocol) && strings.ToLower(o.protocol) != string(devfilev1.HTTPSEndpointProtocol) && strings.ToLower(o.protocol) != string(devfilev1.WSEndpointProtocol) &&
+			strings.ToLower(o.protocol) != string(devfilev1.WSSEndpointProtocol) && strings.ToLower(o.protocol) != string(devfilev1.TCPEndpointProtocol) && strings.ToLower(o.protocol) != string(devfilev1.UDPEndpointProtocol)) {
+			errorList = append(errorList, fmt.Sprintf("endpoint protocol only supports %v|%v|%v|%v|%v|%v", devfilev1.HTTPEndpointProtocol, devfilev1.HTTPSEndpointProtocol, devfilev1.WSSEndpointProtocol, devfilev1.WSEndpointProtocol, devfilev1.TCPEndpointProtocol, devfilev1.UDPEndpointProtocol))
 		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
 			if o.urlName == localURL.Name {
@@ -347,13 +352,13 @@ func (o *URLCreateOptions) Run() (err error) {
 			}
 			err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, ExposedPort: o.exposedPort, Kind: o.urlType})
 		} else {
-			newEndpointEntry := common.Endpoint{
+			newEndpointEntry := devfilev1.Endpoint{
 				Name:       o.urlName,
 				Path:       o.path,
 				Secure:     o.secureURL,
-				Exposure:   common.Public,
-				TargetPort: int32(o.componentPort),
-				Protocol:   common.ProtocolType(strings.ToLower(o.protocol)),
+				Exposure:   devfilev1.PublicEndpointExposure,
+				TargetPort: o.componentPort,
+				Protocol:   devfilev1.EndpointProtocol(strings.ToLower(o.protocol)),
 			}
 
 			err = url.AddEndpointInDevfile(o.devObj, newEndpointEntry, o.container)
@@ -427,7 +432,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
 	urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "Create a secure HTTPS URL")
 	urlCreateCmd.Flags().StringVarP(&o.path, "path", "", "", "path for this URL")
-	urlCreateCmd.Flags().StringVarP(&o.protocol, "protocol", "", string(common.HTTP), "protocol for this URL")
+	urlCreateCmd.Flags().StringVarP(&o.protocol, "protocol", "", string(devfilev1.HTTPEndpointProtocol), "protocol for this URL")
 	urlCreateCmd.Flags().StringVarP(&o.container, "container", "", "", "container of the endpoint in devfile")
 	urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 

@@ -3,7 +3,7 @@ package validate
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 )
 
 // NoComponentsError returns an error if no component is found
@@ -19,7 +19,7 @@ type NoContainerComponentError struct {
 }
 
 func (e *NoContainerComponentError) Error() string {
-	return fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", common.ContainerComponentType)
+	return fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", devfilev1.ContainerComponentType)
 }
 
 // UnsupportedOdoCommandError returns an error if the command is neither exec nor composite

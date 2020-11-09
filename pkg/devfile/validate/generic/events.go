@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"k8s.io/klog"
 )
 
 // validateEvents validates all the devfile events
-func validateEvents(events common.DevfileEvents, commands map[string]common.DevfileCommand) error {
+func validateEvents(events devfilev1.Events, commands map[string]devfilev1.Command) error {
 
 	eventErrors := ""
 
@@ -48,7 +48,7 @@ func validateEvents(events common.DevfileEvents, commands map[string]common.Devf
 }
 
 // isEventValid checks if events belonging to a specific event type are valid ie; event should map to a valid devfile command
-func isEventValid(eventNames []string, eventType string, commands map[string]common.DevfileCommand) error {
+func isEventValid(eventNames []string, eventType string, commands map[string]devfilev1.Command) error {
 	var invalidEvents []string
 
 	for _, eventName := range eventNames {

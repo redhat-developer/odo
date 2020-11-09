@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -15,7 +15,7 @@ import (
 )
 
 // convertEnvs converts environment variables from the devfile structure to kubernetes structure
-func convertEnvs(vars []common.Env) []corev1.EnvVar {
+func convertEnvs(vars []devfilev1.EnvVar) []corev1.EnvVar {
 	kVars := []corev1.EnvVar{}
 	for _, env := range vars {
 		kVars = append(kVars, corev1.EnvVar{
@@ -27,7 +27,7 @@ func convertEnvs(vars []common.Env) []corev1.EnvVar {
 }
 
 // convertPorts converts endpoint variables from the devfile structure to kubernetes ContainerPort
-func convertPorts(endpoints []common.Endpoint) []corev1.ContainerPort {
+func convertPorts(endpoints []devfilev1.Endpoint) []corev1.ContainerPort {
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
@@ -35,14 +35,14 @@ func convertPorts(endpoints []common.Endpoint) []corev1.ContainerPort {
 
 		containerPorts = append(containerPorts, corev1.ContainerPort{
 			Name:          name,
-			ContainerPort: endpoint.TargetPort,
+			ContainerPort: int32(endpoint.TargetPort),
 		})
 	}
 	return containerPorts
 }
 
 // getResourceReqs creates a kubernetes ResourceRequirements object based on resource requirements set in the devfile
-func getResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
+func getResourceReqs(comp devfilev1.Component) corev1.ResourceRequirements {
 	reqs := corev1.ResourceRequirements{}
 	limits := make(corev1.ResourceList)
 	if comp.Container != nil && comp.Container.MemoryLimit != "" {
@@ -78,7 +78,7 @@ func addSyncRootFolder(container *corev1.Container, sourceMapping string) string
 // addSyncFolder adds the sync folder path for the container
 // sourceVolumePath: mount path of the empty dir volume to sync source code
 // projects: list of projects from devfile
-func addSyncFolder(container *corev1.Container, sourceVolumePath string, projects []common.DevfileProject) error {
+func addSyncFolder(container *corev1.Container, sourceVolumePath string, projects []devfilev1.Project) error {
 	var syncFolder string
 
 	// if there are no projects in the devfile, source would be synced to $PROJECTS_ROOT
@@ -114,17 +114,17 @@ func addSyncFolder(container *corev1.Container, sourceVolumePath string, project
 // GetPortExposure iterate through all endpoints and returns the highest exposure level of all TargetPort.
 // exposure level: public > internal > none
 // This function should be under parser pkg
-func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]common.ExposureType {
-	portExposureMap := make(map[int32]common.ExposureType)
+func GetPortExposure(containerComponents []devfilev1.Component) map[int]devfilev1.EndpointExposure {
+	portExposureMap := make(map[int]devfilev1.EndpointExposure)
 	for _, comp := range containerComponents {
 		for _, endpoint := range comp.Container.Endpoints {
 			// if exposure=public, no need to check for existence
-			if endpoint.Exposure == common.Public || endpoint.Exposure == "" {
-				portExposureMap[endpoint.TargetPort] = common.Public
+			if endpoint.Exposure == devfilev1.PublicEndpointExposure || endpoint.Exposure == "" {
+				portExposureMap[endpoint.TargetPort] = devfilev1.PublicEndpointExposure
 			} else if exposure, exist := portExposureMap[endpoint.TargetPort]; exist {
 				// if a container has multiple identical ports with different exposure levels, save the highest level in the map
-				if endpoint.Exposure == common.Internal && exposure == common.None {
-					portExposureMap[endpoint.TargetPort] = common.Internal
+				if endpoint.Exposure == devfilev1.InternalEndpointExposure && exposure == devfilev1.NoneEndpointExposure {
+					portExposureMap[endpoint.TargetPort] = devfilev1.InternalEndpointExposure
 				}
 			} else {
 				portExposureMap[endpoint.TargetPort] = endpoint.Exposure
@@ -137,8 +137,9 @@ func GetPortExposure(containerComponents []common.DevfileComponent) map[int32]co
 
 // GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components
 // This function should be under parser pkg
-func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileComponent {
-	var components []common.DevfileComponent
+func GetDevfileContainerComponents(data data.DevfileData) []devfilev1.Component {
+	var components []devfilev1.Component
+	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
 		if comp.Container != nil {
 			components = append(components, comp)
@@ -148,9 +149,9 @@ func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileCompon
 }
 
 // GetDevfileVolumeComponents iterates through the components in the devfile and returns a map of devfile volume components
-// This function should be under parser pkg
-func GetDevfileVolumeComponents(data data.DevfileData) []common.DevfileComponent {
-	var components []common.DevfileComponent
+func GetDevfileVolumeComponents(data data.DevfileData) []devfilev1.Component {
+	var components []devfilev1.Component
+	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
 		if comp.Volume != nil {
 			components = append(components, comp)

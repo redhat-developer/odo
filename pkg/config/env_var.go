@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/util"
 )
 
@@ -30,10 +30,10 @@ func (evl EnvVarList) ToStringSlice() []string {
 }
 
 // ToDevfileEnv converts the EnvVarList to the list of Envs supported by devfile
-func (evl EnvVarList) ToDevfileEnv() []common.Env {
-	var envList []common.Env
+func (evl EnvVarList) ToDevfileEnv() []devfilev1.EnvVar {
+	var envList []devfilev1.EnvVar
 	for _, ev := range evl {
-		envList = append(envList, common.Env{
+		envList = append(envList, devfilev1.EnvVar{
 			Name:  ev.Name,
 			Value: ev.Value,
 		})
@@ -96,7 +96,7 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 }
 
 // NewEnvVarListFromDevfileEnv creates an EnvVarList from the list of envs present in a devfile.
-func NewEnvVarListFromDevfileEnv(envList []common.Env) EnvVarList {
+func NewEnvVarListFromDevfileEnv(envList []devfilev1.EnvVar) EnvVarList {
 	var envVarList EnvVarList
 	for _, env := range envList {
 		envVarList = append(envVarList, EnvVar{

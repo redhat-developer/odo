@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 )
 
 func TestValidateComponents(t *testing.T) {
@@ -12,7 +12,7 @@ func TestValidateComponents(t *testing.T) {
 	t.Run("No components present", func(t *testing.T) {
 
 		// Empty components
-		components := []common.DevfileComponent{}
+		components := []devfilev1.Component{}
 
 		got := validateComponents(components)
 		want := &NoComponentsError{}
@@ -24,11 +24,15 @@ func TestValidateComponents(t *testing.T) {
 
 	t.Run("Container type component present", func(t *testing.T) {
 
-		components := []common.DevfileComponent{
+		components := []devfilev1.Component{
 			{
 				Name: "container",
-				Container: &common.Container{
-					Image: "image",
+				ComponentUnion: devfilev1.ComponentUnion{
+					Container: &devfilev1.ContainerComponent{
+						Container: devfilev1.Container{
+							Image: "image",
+						},
+					},
 				},
 			},
 		}

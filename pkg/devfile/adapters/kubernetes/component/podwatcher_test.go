@@ -8,7 +8,7 @@ import (
 	"time"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/testingutil"

@@ -8,8 +8,9 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 
+	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
@@ -67,11 +68,15 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		devfile, err := devfile.ParseAndValidate(lo.devfilePath)
+		devObj, err := devfile.ParseAndValidate(lo.devfilePath)
 		if err != nil {
 			return err
 		}
-		lo.componentType = devfile.Data.GetMetadata().Name
+		err = validate.ValidateDevfileData(devObj.Data)
+		if err != nil {
+			return err
+		}
+		lo.componentType = devObj.Data.GetMetadata().Name
 
 	} else {
 		// here we use the config.yaml derived context if its present, else we use information from user's kubeconfig

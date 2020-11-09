@@ -5,16 +5,16 @@ import (
 	"reflect"
 	"testing"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 )
 
-var buildGroup = common.BuildCommandGroupType
-var runGroup = common.RunCommandGroupType
-var testGroup = common.TestCommandGroupType
-var debugGroup = common.DebugCommandGroupType
+var buildGroup = devfilev1.BuildCommandGroupKind
+var runGroup = devfilev1.RunCommandGroupKind
+var testGroup = devfilev1.TestCommandGroupKind
+var debugGroup = devfilev1.DebugCommandGroupKind
 
 func TestGetCommand(t *testing.T) {
 
@@ -23,122 +23,164 @@ func TestGetCommand(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		requestedType  []common.DevfileCommandGroupType
-		execCommands   []common.DevfileCommand
-		compCommands   []common.DevfileCommand
+		requestedType  []devfilev1.CommandGroupKind
+		execCommands   []devfilev1.Command
+		compCommands   []devfilev1.Command
 		reqCommandName string
 		retCommandName string
 		wantErr        bool
 	}{
 		{
 			name: "Case 1: Valid devfile",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				getExecCommand("build", buildGroup),
 				getExecCommand("run", runGroup),
 			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup, runGroup},
+			requestedType: []devfilev1.CommandGroupKind{buildGroup, runGroup},
 			wantErr:       false,
 		},
 		{
 			name: "Case 2: Valid devfile with devrun and devbuild",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				getExecCommand("build", buildGroup),
 				getExecCommand("run", runGroup),
 			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup, runGroup},
+			requestedType: []devfilev1.CommandGroupKind{buildGroup, runGroup},
 			wantErr:       false,
 		},
 		{
 			name: "Case 3: Valid devfile with empty workdir",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
-			requestedType: []common.DevfileCommandGroupType{runGroup},
+			requestedType: []devfilev1.CommandGroupKind{runGroup},
 			wantErr:       false,
 		},
 		{
 			name: "Case 4: Mismatched command type",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
 			reqCommandName: "build command",
-			requestedType:  []common.DevfileCommandGroupType{buildGroup},
+			requestedType:  []devfilev1.CommandGroupKind{buildGroup},
 			wantErr:        true,
 		},
 		{
 			name: "Case 5: Default command is returned",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "defaultRunCommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "runCommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
 			retCommandName: "defaultruncommand",
-			requestedType:  []common.DevfileCommandGroupType{runGroup},
+			requestedType:  []devfilev1.CommandGroupKind{runGroup},
 			wantErr:        false,
 		},
 		{
 			name: "Case 6: Composite command is returned",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: buildGroup, IsDefault: false},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "run",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "myComposite",
-					Composite: &common.Composite{
-						Commands: []string{"build", "run"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
 					},
 				},
 			},
 			retCommandName: "mycomposite",
-			requestedType:  []common.DevfileCommandGroupType{buildGroup},
+			requestedType:  []devfilev1.CommandGroupKind{buildGroup},
 			wantErr:        false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
+			components := []devfilev1.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands:   append(tt.execCommands, tt.compCommands...),
@@ -171,153 +213,219 @@ func TestGetCommandFromDevfile(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		requestedType  []common.DevfileCommandGroupType
-		execCommands   []common.DevfileCommand
-		compCommands   []common.DevfileCommand
+		requestedType  []devfilev1.CommandGroupKind
+		execCommands   []devfilev1.Command
+		compCommands   []devfilev1.Command
 		retCommandName string
 		wantErr        bool
 	}{
 		{
 			name: "Case 1: Valid devfile",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				getExecCommand("", buildGroup),
 				getExecCommand("", runGroup),
 			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup, runGroup},
+			requestedType: []devfilev1.CommandGroupKind{buildGroup, runGroup},
 			wantErr:       false,
 		},
 		{
 			name: "Case 2: Valid devfile with devrun and devbuild",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				getExecCommand("", buildGroup),
 				getExecCommand("", runGroup),
 			},
-			requestedType: []common.DevfileCommandGroupType{buildGroup, runGroup},
+			requestedType: []devfilev1.CommandGroupKind{buildGroup, runGroup},
 			wantErr:       false,
 		},
 		{
 			name: "Case 3: Valid devfile with empty workdir",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
-			requestedType: []common.DevfileCommandGroupType{runGroup},
+			requestedType: []devfilev1.CommandGroupKind{runGroup},
 			wantErr:       false,
 		},
 		{
 			name: "Case 4: Default command is returned",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "defaultruncommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "runcommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
 			retCommandName: "defaultruncommand",
-			requestedType:  []common.DevfileCommandGroupType{runGroup},
+			requestedType:  []devfilev1.CommandGroupKind{runGroup},
 			wantErr:        false,
 		},
 		{
 			name: "Case 5: Valid devfile, has composite command",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build1",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "build2",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "run",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "mycomp",
-					Composite: &common.Composite{
-						Commands: []string{"build1", "run"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								},
+							},
+							Commands: []string{"build1", "run"},
+						},
 					},
 				},
 			},
 			retCommandName: "mycomp",
-			requestedType:  []common.DevfileCommandGroupType{buildGroup},
+			requestedType:  []devfilev1.CommandGroupKind{buildGroup},
 			wantErr:        false,
 		},
 		{
 			name: "Case 6: Default composite command",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: buildGroup, IsDefault: false},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "run",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "mycomp",
-					Composite: &common.Composite{
-						Commands: []string{"build", "run"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
 					},
 				},
 				{
 					Id: "mycomp2",
-					Composite: &common.Composite{
-						Commands: []string{"build", "run"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: false},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
 					},
 				},
 			},
 			retCommandName: "mycomp",
-			requestedType:  []common.DevfileCommandGroupType{buildGroup},
+			requestedType:  []devfilev1.CommandGroupKind{buildGroup},
 			wantErr:        false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
+			components := []devfilev1.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands:   append(tt.execCommands, tt.compCommands...),
@@ -351,16 +459,16 @@ func TestGetCommandFromFlag(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		requestedType  common.DevfileCommandGroupType
-		execCommands   []common.DevfileCommand
-		compCommands   []common.DevfileCommand
+		requestedType  devfilev1.CommandGroupKind
+		execCommands   []devfilev1.Command
+		compCommands   []devfilev1.Command
 		reqCommandName string
 		retCommandName string
 		wantErr        bool
 	}{
 		{
 			name: "Case 1: Valid devfile",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				getExecCommand("a", buildGroup),
 				getExecCommand("b", runGroup),
 			},
@@ -371,13 +479,19 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 2: Valid devfile with empty workdir",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
@@ -388,13 +502,19 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 3: Invalid command",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   invalidComponent,
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   invalidComponent,
+						},
 					},
 				},
 			},
@@ -404,13 +524,19 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 4: Mismatched command type",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
@@ -420,21 +546,33 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 5: Multiple default commands but should be with the flag",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "defaultruncommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "runcommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
@@ -445,21 +583,33 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 6: No default command but should be with the flag",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "defaultruncommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "runcommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
@@ -470,12 +620,14 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 7: No Command Group",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "defaultruncommand",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
@@ -486,37 +638,61 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 8: Valid devfile with composite commands",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: buildGroup, IsDefault: false},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "run",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "mycomp",
-					Composite: &common.Composite{
-						Commands: []string{"build", "run"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
 					},
 				},
 				{
 					Id: "mycomp2",
-					Composite: &common.Composite{
-						Commands: []string{"build", "run"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: false},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
 					},
 				},
 			},
@@ -527,30 +703,48 @@ func TestGetCommandFromFlag(t *testing.T) {
 		},
 		{
 			name: "Case 9: Valid devfile with invalid composite commands",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: buildGroup, IsDefault: false},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 				{
 					Id: "run",
-					Exec: &common.Exec{
-						CommandLine: commands[0],
-						Component:   components[0],
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "myComp",
-					Composite: &common.Composite{
-						Commands: []string{"fake"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								},
+							},
+							Commands: []string{"fake"},
+						},
 					},
 				},
 			},
@@ -562,9 +756,9 @@ func TestGetCommandFromFlag(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
+			components := []devfilev1.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			if tt.execCommands[0].Exec.Component == invalidComponent {
-				components = []common.DevfileComponent{testingutil.GetFakeContainerComponent("randomComponent")}
+				components = []devfilev1.Component{testingutil.GetFakeContainerComponent("randomComponent")}
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
@@ -599,35 +793,47 @@ func TestValidateCommandsForGroup(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		groupType    common.DevfileCommandGroupType
-		execCommands []common.DevfileCommand
-		compCommands []common.DevfileCommand
+		groupType    devfilev1.CommandGroupKind
+		execCommands []devfilev1.Command
+		compCommands []devfilev1.Command
 		wantErr      bool
 	}{
 		{
 			name: "Case 1: Two default run commands",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "run command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							Kind:      runGroup,
-							IsDefault: true,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										Kind:      runGroup,
+										IsDefault: true,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
 						},
 					},
 				},
 				{
 					Id: "customcommand",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							Kind:      runGroup,
-							IsDefault: true,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										Kind:      runGroup,
+										IsDefault: true,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -637,23 +843,35 @@ func TestValidateCommandsForGroup(t *testing.T) {
 		},
 		{
 			name: "Case 2: No default for more than one build commands",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 				{
 					Id: "build command 2",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -662,14 +880,20 @@ func TestValidateCommandsForGroup(t *testing.T) {
 		},
 		{
 			name: "Case 3: One command does not need default",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "test command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: testGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: testGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -678,16 +902,22 @@ func TestValidateCommandsForGroup(t *testing.T) {
 		},
 		{
 			name: "Case 4: One command can have default",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "debug command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							Kind:      debugGroup,
-							IsDefault: true,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										Kind:      debugGroup,
+										IsDefault: true,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -697,32 +927,50 @@ func TestValidateCommandsForGroup(t *testing.T) {
 		},
 		{
 			name: "Case 5: Composite commands in group",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 				{
 					Id: "build command 2",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   componentName,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   componentName,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
-			compCommands: []common.DevfileCommand{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "composite1",
-					Composite: &common.Composite{
-						Commands: []string{"build command", "build command 2"},
-						Group:    &common.Group{Kind: buildGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								},
+							},
+							Commands: []string{"build command", "build command 2"},
+						},
 					},
 				},
 			},
@@ -734,7 +982,7 @@ func TestValidateCommandsForGroup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						testingutil.GetFakeContainerComponent("alias1"),
 					},
 					Commands: append(tt.compCommands, tt.execCommands...),
@@ -757,24 +1005,30 @@ func TestGetBuildCommand(t *testing.T) {
 	workDir := "/"
 	emptyString := ""
 
-	var emptyCommand common.DevfileCommand
+	var emptyCommand devfilev1.Command
 
 	tests := []struct {
 		name         string
 		commandName  string
-		execCommands []common.DevfileCommand
+		execCommands []devfilev1.Command
 		wantErr      bool
 	}{
 		{
 			name:        "Case 1: Default Build Command",
 			commandName: emptyString,
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -783,23 +1037,35 @@ func TestGetBuildCommand(t *testing.T) {
 		{
 			name:        "Case 2: Build Command passed through the odo flag",
 			commandName: "flagcommand",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "flagcommand",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -808,14 +1074,20 @@ func TestGetBuildCommand(t *testing.T) {
 		{
 			name:        "Case 3: Missing Build Command",
 			commandName: "customcommand123",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "build command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -828,7 +1100,7 @@ func TestGetBuildCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands:   tt.execCommands,
-					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent(component)},
 				},
 			}
 
@@ -852,26 +1124,32 @@ func TestGetDebugCommand(t *testing.T) {
 	workDir := "/"
 	emptyString := ""
 
-	var emptyCommand common.DevfileCommand
+	var emptyCommand devfilev1.Command
 
 	tests := []struct {
 		name         string
 		commandName  string
-		execCommands []common.DevfileCommand
+		execCommands []devfilev1.Command
 		wantErr      bool
 	}{
 		{
 			name:        "Case: Default Debug Command",
 			commandName: emptyString,
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							IsDefault: true,
-							Kind:      common.DebugCommandGroupType,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										IsDefault: true,
+										Kind:      devfilev1.DebugCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -881,16 +1159,22 @@ func TestGetDebugCommand(t *testing.T) {
 		{
 			name:        "Case: Custom Debug Command",
 			commandName: "customdebugcommand",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "customdebugcommand",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							IsDefault: false,
-							Kind:      common.DebugCommandGroupType,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										IsDefault: false,
+										Kind:      devfilev1.DebugCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -900,15 +1184,21 @@ func TestGetDebugCommand(t *testing.T) {
 		{
 			name:        "Case: Missing Debug Command",
 			commandName: "customcommand123",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							IsDefault: true,
-							Kind:      common.BuildCommandGroupType,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										IsDefault: true,
+										Kind:      devfilev1.BuildCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -921,7 +1211,7 @@ func TestGetDebugCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent(component)},
 					Commands:   tt.execCommands,
 				},
 			}
@@ -948,26 +1238,32 @@ func TestGetTestCommand(t *testing.T) {
 	workDir := "/"
 	emptyString := ""
 
-	var emptyCommand common.DevfileCommand
+	var emptyCommand devfilev1.Command
 
 	tests := []struct {
 		name         string
 		commandName  string
-		execCommands []common.DevfileCommand
+		execCommands []devfilev1.Command
 		wantErr      bool
 	}{
 		{
 			name:        "Case: Default Test Command",
 			commandName: emptyString,
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							IsDefault: true,
-							Kind:      common.TestCommandGroupType,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										IsDefault: true,
+										Kind:      devfilev1.TestCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -977,16 +1273,22 @@ func TestGetTestCommand(t *testing.T) {
 		{
 			name:        "Case: Custom Test Command",
 			commandName: "customtestcommand",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "customtestcommand",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							IsDefault: false,
-							Kind:      common.TestCommandGroupType,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										IsDefault: false,
+										Kind:      devfilev1.TestCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -996,15 +1298,21 @@ func TestGetTestCommand(t *testing.T) {
 		{
 			name:        "Case: Missing Test Command",
 			commandName: "customcommand123",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group: &common.Group{
-							IsDefault: true,
-							Kind:      common.BuildCommandGroupType,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{
+										IsDefault: true,
+										Kind:      devfilev1.BuildCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
 						},
 					},
 				},
@@ -1017,7 +1325,7 @@ func TestGetTestCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent(component)},
 					Commands:   tt.execCommands,
 				},
 			}
@@ -1044,24 +1352,30 @@ func TestGetRunCommand(t *testing.T) {
 	workDir := "/"
 	emptyString := ""
 
-	var emptyCommand common.DevfileCommand
+	var emptyCommand devfilev1.Command
 
 	tests := []struct {
 		name         string
 		commandName  string
-		execCommands []common.DevfileCommand
+		execCommands []devfilev1.Command
 		wantErr      bool
 	}{
 		{
 			name:        "Case 1: Default Run Command",
 			commandName: emptyString,
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: runGroup, IsDefault: true},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -1070,23 +1384,35 @@ func TestGetRunCommand(t *testing.T) {
 		{
 			name:        "Case 2: Run Command passed through odo flag",
 			commandName: "flagcommand",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "flagcommand",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 				{
 					Id: "run command",
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: runGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -1095,13 +1421,19 @@ func TestGetRunCommand(t *testing.T) {
 		{
 			name:        "Case 3: Missing Run Command",
 			commandName: "",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						CommandLine: command,
-						Component:   component,
-						WorkingDir:  workDir,
-						Group:       &common.Group{Kind: buildGroup},
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
 					},
 				},
 			},
@@ -1114,7 +1446,7 @@ func TestGetRunCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands:   tt.execCommands,
-					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent(component)},
 				},
 			}
 
@@ -1137,27 +1469,39 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 	workDir := "/"
 	emptyString := ""
 
-	execCommands := []common.DevfileCommand{
+	execCommands := []devfilev1.Command{
 		{
-			Exec: &common.Exec{
-				CommandLine: command,
-				Component:   component,
-				WorkingDir:  workDir,
-				Group: &common.Group{
-					IsDefault: true,
-					Kind:      common.DebugCommandGroupType,
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{
+								IsDefault: true,
+								Kind:      devfilev1.DebugCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
 				},
 			},
 		},
 		{
 			Id: "customdebugcommand",
-			Exec: &common.Exec{
-				CommandLine: command,
-				Component:   component,
-				WorkingDir:  workDir,
-				Group: &common.Group{
-					IsDefault: false,
-					Kind:      common.DebugCommandGroupType,
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{
+								IsDefault: false,
+								Kind:      devfilev1.DebugCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
 				},
 			},
 		},
@@ -1166,25 +1510,25 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 	tests := []struct {
 		name          string
 		debugCommand  string
-		componentType common.DevfileComponentType
+		componentType devfilev1.ComponentType
 		wantErr       bool
 	}{
 		{
 			name:          "Case: Default Devfile Commands",
 			debugCommand:  emptyString,
-			componentType: common.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			wantErr:       false,
 		},
 		{
 			name:          "Case: provided debug Command",
 			debugCommand:  "customdebugcommand",
-			componentType: common.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			wantErr:       false,
 		},
 		{
 			name:          "Case: invalid debug Command",
 			debugCommand:  "invaliddebugcommand",
-			componentType: common.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			wantErr:       true,
 		},
 	}
@@ -1193,7 +1537,7 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent(component)},
 					Commands:   execCommands,
 				},
 			}
@@ -1226,49 +1570,73 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 	workDir := "/"
 	emptyString := ""
 
-	execCommands := []common.DevfileCommand{
+	execCommands := []devfilev1.Command{
 		{
 			Id: "run command",
-			Exec: &common.Exec{
-				CommandLine: command,
-				Component:   component,
-				WorkingDir:  workDir,
-				Group: &common.Group{
-					Kind:      runGroup,
-					IsDefault: true,
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{
+								Kind:      runGroup,
+								IsDefault: true,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
 				},
 			},
 		},
 
 		{
 			Id: "build command",
-			Exec: &common.Exec{
-				CommandLine: command,
-				Component:   component,
-				WorkingDir:  workDir,
-				Group:       &common.Group{Kind: buildGroup},
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{Kind: buildGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
 			},
 		},
 
 		{
 			Id: "customcommand",
-			Exec: &common.Exec{
-				CommandLine: command,
-				Component:   component,
-				WorkingDir:  workDir,
-				Group:       &common.Group{Kind: runGroup},
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{Kind: runGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
 			},
 		},
 	}
 
-	wrongCompTypeCmd := common.DevfileCommand{
+	wrongCompTypeCmd := devfilev1.Command{
 
 		Id: "wrong",
-		Exec: &common.Exec{
-			CommandLine: command,
-			Component:   "",
-			WorkingDir:  workDir,
-			Group:       &common.Group{Kind: runGroup},
+		CommandUnion: devfilev1.CommandUnion{
+			Exec: &devfilev1.ExecCommand{
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{Kind: runGroup},
+					},
+				},
+				CommandLine: command,
+				Component:   "",
+				WorkingDir:  workDir,
+			},
 		},
 	}
 
@@ -1276,7 +1644,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		name                string
 		buildCommand        string
 		runCommand          string
-		execCommands        []common.DevfileCommand
+		execCommands        []devfilev1.Command
 		numberOfCommands    int
 		missingBuildCommand bool
 		wantErr             bool
@@ -1317,13 +1685,19 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			name:         "Case 5: Missing Build Command, and Provided Run Command",
 			buildCommand: emptyString,
 			runCommand:   "customcommand",
-			execCommands: []common.DevfileCommand{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "customcommand",
-					Exec: &common.Exec{
-						Group:       &common.Group{Kind: runGroup},
-						Component:   component,
-						CommandLine: command,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							Component:   component,
+							CommandLine: command,
+						},
 					},
 				},
 			},
@@ -1337,7 +1711,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands:   tt.execCommands,
-					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent(component)},
 				},
 			}
 
@@ -1363,27 +1737,39 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 	workDir := "/"
 	emptyString := ""
 
-	execCommands := []common.DevfileCommand{
+	execCommands := []devfilev1.Command{
 		{
-			Exec: &common.Exec{
-				CommandLine: command,
-				Component:   component,
-				WorkingDir:  workDir,
-				Group: &common.Group{
-					IsDefault: true,
-					Kind:      common.TestCommandGroupType,
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{
+								IsDefault: true,
+								Kind:      devfilev1.TestCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
 				},
 			},
 		},
 		{
 			Id: "customtestcommand",
-			Exec: &common.Exec{
-				CommandLine: command,
-				Component:   component,
-				WorkingDir:  workDir,
-				Group: &common.Group{
-					IsDefault: false,
-					Kind:      common.TestCommandGroupType,
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{
+								IsDefault: false,
+								Kind:      devfilev1.TestCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
 				},
 			},
 		},
@@ -1392,25 +1778,25 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 	tests := []struct {
 		name          string
 		testCommand   string
-		componentType common.DevfileComponentType
+		componentType devfilev1.ComponentType
 		wantErr       bool
 	}{
 		{
 			name:          "Case: Default Devfile Commands",
 			testCommand:   emptyString,
-			componentType: common.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			wantErr:       false,
 		},
 		{
 			name:          "Case: provided test Command",
 			testCommand:   "customtestcommand",
-			componentType: common.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			wantErr:       false,
 		},
 		{
 			name:          "Case: invalid test Command",
 			testCommand:   "invalidtestcommand",
-			componentType: common.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			wantErr:       true,
 		},
 	}
@@ -1419,7 +1805,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent(component)},
 					Commands:   execCommands,
 				},
 			}
@@ -1445,7 +1831,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 	}
 }
 
-func getExecCommand(id string, group common.DevfileCommandGroupType) common.DevfileCommand {
+func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Command {
 	if len(id) == 0 {
 		id = fmt.Sprintf("%s-%s", "cmd", util.GenerateRandomString(10))
 	}
@@ -1453,13 +1839,19 @@ func getExecCommand(id string, group common.DevfileCommandGroupType) common.Devf
 	components := [...]string{"alias1", "alias2"}
 	workDir := [...]string{"/", "/root"}
 
-	return common.DevfileCommand{
+	return devfilev1.Command{
 		Id: id,
-		Exec: &common.Exec{
-			CommandLine: commands[0],
-			Component:   components[0],
-			WorkingDir:  workDir[0],
-			Group:       &common.Group{Kind: group},
+		CommandUnion: devfilev1.CommandUnion{
+			Exec: &devfilev1.ExecCommand{
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{Kind: group},
+					},
+				},
+				CommandLine: commands[0],
+				Component:   components[0],
+				WorkingDir:  workDir[0],
+			},
 		},
 	}
 

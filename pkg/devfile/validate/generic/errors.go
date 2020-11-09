@@ -54,14 +54,14 @@ func (e *MissingVolumeMountError) Error() string {
 // InvalidEndpointError returns an error if the component endpoint is invalid
 type InvalidEndpointError struct {
 	name string
-	port int32
+	port int
 }
 
 func (e *InvalidEndpointError) Error() string {
 	var errMsg string
 	if e.name != "" {
 		errMsg = fmt.Sprintf("devfile contains multiple endpoint entries with same name: %v", e.name)
-	} else if string(e.port) != "" {
+	} else if fmt.Sprint(e.port) != "" {
 		errMsg = fmt.Sprintf("devfile contains multiple containers with same TargetPort: %v", e.port)
 	}
 

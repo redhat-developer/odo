@@ -46,6 +46,19 @@ github.com/containerd/containerd/errdefs
 github.com/danieljoos/wincred
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/devfile/api v0.0.0-20201103130402-29b8738e196e
+github.com/devfile/api/pkg/apis/workspaces/v1alpha2
+github.com/devfile/api/pkg/devfile
+# github.com/devfile/library v0.0.0-20201109155147-358a40bad065
+github.com/devfile/library/pkg/devfile
+github.com/devfile/library/pkg/devfile/parser
+github.com/devfile/library/pkg/devfile/parser/context
+github.com/devfile/library/pkg/devfile/parser/data
+github.com/devfile/library/pkg/devfile/parser/data/v2
+github.com/devfile/library/pkg/devfile/parser/data/v2/2.0.0
+github.com/devfile/library/pkg/devfile/parser/data/v2/common
+github.com/devfile/library/pkg/testingutil/filesystem
+github.com/devfile/library/pkg/util
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
 # github.com/docker/distribution v2.7.1+incompatible
@@ -216,7 +229,7 @@ github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
 # github.com/hashicorp/errwrap v1.0.0
 github.com/hashicorp/errwrap
-# github.com/hashicorp/go-multierror v1.0.0
+# github.com/hashicorp/go-multierror v1.1.0
 github.com/hashicorp/go-multierror
 # github.com/hashicorp/golang-lru v0.5.3
 github.com/hashicorp/golang-lru
@@ -229,7 +242,7 @@ github.com/imdario/mergo
 github.com/inconshreveable/mousetrap
 # github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 github.com/jbenet/go-context/io
-# github.com/json-iterator/go v1.1.8
+# github.com/json-iterator/go v1.1.9
 github.com/json-iterator/go
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 github.com/kballard/go-shellquote
@@ -397,7 +410,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientse
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -428,18 +441,15 @@ github.com/russross/blackfriday
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# github.com/spf13/afero v1.2.2
+# github.com/spf13/afero v1.3.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/stretchr/objx v0.2.0
-github.com/stretchr/objx
 # github.com/stretchr/testify v1.6.1
 github.com/stretchr/testify/assert
-github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
 # github.com/xanzy/ssh-agent v0.2.1
 github.com/xanzy/ssh-agent
@@ -586,7 +596,7 @@ gopkg.in/warnings.v0
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 gopkg.in/yaml.v3
-# k8s.io/api v0.18.2 => k8s.io/api v0.17.1
+# k8s.io/api v0.18.6 => k8s.io/api v0.17.1
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
@@ -630,7 +640,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.18.2 => github.com/openshift/kubernetes-apimachinery v0.0.0-20191211181342-5a804e65bdc1
+# k8s.io/apimachinery v0.18.6 => github.com/openshift/kubernetes-apimachinery v0.0.0-20191211181342-5a804e65bdc1
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
