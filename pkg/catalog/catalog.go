@@ -32,6 +32,7 @@ var supportedImages = map[string]bool{
 	"redhat-openjdk-18/openjdk18-openshift:latest": true,
 	"openjdk/openjdk-11-rhel8:latest":              true,
 	"openjdk/openjdk-11-rhel7:latest":              true,
+	"ubi8/openjdk-11:latest":                       true,
 	"centos/nodejs-10-centos7:latest":              true,
 	"centos/nodejs-12-centos7:latest":              true,
 	"rhscl/nodejs-10-rhel7:latest":                 true,
