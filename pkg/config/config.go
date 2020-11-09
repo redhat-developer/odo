@@ -609,8 +609,6 @@ var (
 		Ports:  PortsDescription,
 		Memory: MemoryDescription,
 	}
-
-	lowerCaseDevfileParameters = util.GetLowerCaseParameters(GetDevfileSupportedParameters())
 )
 
 // FormatLocallySupportedParameters outputs supported parameters and their description

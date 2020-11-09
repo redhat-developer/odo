@@ -930,7 +930,7 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 
 	if starterProject.Git != nil || starterProject.Github != nil {
 
-		projectSource := devfilev1.GitLikeProjectSource{}
+		var projectSource devfilev1.GitLikeProjectSource
 		if starterProject.Git != nil {
 			projectSource = starterProject.Git.GitLikeProjectSource
 		} else {
