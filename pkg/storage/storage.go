@@ -6,8 +6,8 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 
