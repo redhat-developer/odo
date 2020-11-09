@@ -31,12 +31,9 @@ var _ = Describe("odo devfile supported tests", func() {
 		componentName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
 		projectDirPath = commonVar.Context + projectDir
+		helper.MakeDir(projectDirPath)
+		helper.Chdir(projectDirPath)
 	})
-
-	// preSetup := func() {
-	// 	helper.MakeDir(projectDirPath)
-	// 	helper.Chdir(projectDirPath)
-	// }
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
@@ -45,6 +42,7 @@ var _ = Describe("odo devfile supported tests", func() {
 
 	createStarterProjAndSetDebug := func(component string) {
 		helper.CmdShouldPass("odo", "create", component, "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
+		helper.CmdShouldPass("odo", "push", "--context", projectDirPath)
 		helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 		stopChannel := make(chan bool)
@@ -65,10 +63,6 @@ var _ = Describe("odo devfile supported tests", func() {
 	}
 
 	Context("odo debug support for devfile components", func() {
-		JustBeforeEach(func() {
-			helper.MakeDir(projectDirPath)
-			helper.Chdir(projectDirPath)
-		})
 		It("Verify output debug information for nodeJS debug works", func() {
 			createStarterProjAndSetDebug("nodejs")
 		})
