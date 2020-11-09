@@ -278,7 +278,6 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 	buildCommand := devfilev1.Command{
 		Id: buildCommandID,
 		CommandUnion: devfilev1.CommandUnion{
-			CommandType: devfilev1.ExecCommandType,
 			Exec: &devfilev1.ExecCommand{
 				Component:   containerName,
 				CommandLine: buildCommandS2i,
@@ -297,7 +296,6 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 	runCommand := devfilev1.Command{
 		Id: runCommandID,
 		CommandUnion: devfilev1.CommandUnion{
-			CommandType: devfilev1.ExecCommandType,
 			Exec: &devfilev1.ExecCommand{
 				Component:   containerName,
 				CommandLine: runCommandS2i,
@@ -336,7 +334,6 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		volume := devfilev1.Component{
 			Name: vol.Name,
 			ComponentUnion: devfilev1.ComponentUnion{
-				ComponentType: devfilev1.VolumeComponentType,
 				Volume: &devfilev1.VolumeComponent{
 					Volume: devfilev1.Volume{
 						Size: vol.Size,
@@ -383,7 +380,6 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	container := devfilev1.Component{
 		Name: containerName,
 		ComponentUnion: devfilev1.ComponentUnion{
-			ComponentType: devfilev1.ContainerComponentType,
 			Container: &devfilev1.ContainerComponent{
 				Container: devfilev1.Container{
 					Image:         s2iImage,
