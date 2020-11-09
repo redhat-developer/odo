@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 
 	types "github.com/docker/docker/api/types"
@@ -16,7 +17,6 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/devfile/parser"
@@ -207,7 +207,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		if err != nil {
 			return "", err
 		}
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		if parameters.secureURL {
 			if len(parameters.secretName) != 0 {
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, metav1.GetOptions{})
@@ -249,9 +249,15 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 		}
 
-		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName, Path: parameters.path}
-		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
-		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
+		ingressParam := generator.IngressParams{
+			ServiceName:   serviceName,
+			IngressDomain: ingressDomain,
+			PortNumber:    intstr.FromInt(parameters.portNumber),
+			TLSSecretName: parameters.secretName,
+			Path:          parameters.path,
+		}
+		ingressSpec := generator.GetIngressSpec(ingressParam)
+		objectMeta := generator.GetObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
 		// to avoid error due to duplicate ingress name defined in different devfile components
 		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -296,7 +302,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 			if err != nil {
 				return "", err
 			}
-			ownerReference = kclient.GenerateOwnerReference(deployment)
+			ownerReference = generator.GetOwnerReference(deployment)
 		}
 
 		// Pass in the namespace name, link to the service (componentName) and labels to create a route
@@ -1086,7 +1092,7 @@ func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint parsercommon.Endpoi
 // RemoveEndpointInDevfile deletes the specific endpoint information from devfile
 func RemoveEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
 	found := false
-	for _, component := range adaptersCommon.GetDevfileContainerComponents(devObj.Data) {
+	for _, component := range generator.GetDevfileContainerComponents(devObj.Data) {
 		for index, enpoint := range component.Container.Endpoints {
 			if enpoint.Name == urlName {
 				component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)

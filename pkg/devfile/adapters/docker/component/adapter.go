@@ -146,7 +146,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// podChanged is defaulted to false, since docker volume is always present even if container goes down
 	compInfo := common.ComponentInfo{
 		ContainerName: containerID,
-		SourceMount:   sourceMount,
+		SyncFolder:    sourceMount,
 	}
 	syncParams := common.SyncParameters{
 		PushParams:      parameters,

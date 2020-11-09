@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 )
 
@@ -73,9 +74,9 @@ func TestCreatePVC(t *testing.T) {
 			} else if err != nil && tt.size == "garbage" {
 				return
 			}
-			pvcSpec := GeneratePVCSpec(quantity)
+			pvcSpec := generator.GetPVCSpec(quantity)
 
-			objectMeta := CreateObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
+			objectMeta := generator.GetObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
 
 			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.pvcName == "" {
@@ -113,59 +114,29 @@ func TestCreatePVC(t *testing.T) {
 	}
 }
 
-func TestAddPVCToPodTemplateSpec(t *testing.T) {
-
-	container := &corev1.Container{
-		Name:            "container1",
-		Image:           "image1",
-		ImagePullPolicy: corev1.PullAlways,
-
-		Command: []string{"tail"},
-		Args:    []string{"-f", "/dev/null"},
-		Env:     []corev1.EnvVar{},
-	}
+func TestGetPVC(t *testing.T) {
 
 	tests := []struct {
-		podName        string
-		namespace      string
-		serviceAccount string
-		pvc            string
-		volumeName     string
-		labels         map[string]string
+		pvc        string
+		volumeName string
 	}{
 		{
-			podName:        "podSpecTest",
-			namespace:      "default",
-			serviceAccount: "default",
-			pvc:            "mypvc",
-			volumeName:     "myvolume",
-			labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
+			pvc:        "mypvc",
+			volumeName: "myvolume",
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.podName, func(t *testing.T) {
+		t.Run(tt.volumeName, func(t *testing.T) {
+			volume := GetPVC(tt.volumeName, tt.pvc)
 
-			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
-
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
-
-			AddPVCToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc)
-
-			pvcMatched := false
-			for _, volume := range podTemplateSpec.Spec.Volumes {
-				if volume.Name == tt.volumeName && volume.VolumeSource.PersistentVolumeClaim != nil && volume.VolumeSource.PersistentVolumeClaim.ClaimName == tt.pvc {
-					pvcMatched = true
-				}
+			if volume.Name != tt.volumeName {
+				t.Errorf("TestGetPVC error: volume name does not match; expected %s got %s", tt.volumeName, volume.Name)
 			}
 
-			if !pvcMatched {
-				t.Errorf("Volume does not exist with Volume Name %s and PVC claim name %s", tt.volumeName, tt.pvc)
+			if volume.PersistentVolumeClaim.ClaimName != tt.pvc {
+				t.Errorf("TestGetPVC error: pvc name does not match; expected %s got %s", tt.pvc, volume.PersistentVolumeClaim.ClaimName)
 			}
-
 		})
 	}
 }
@@ -227,20 +198,12 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.podName, func(t *testing.T) {
-
-			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
-
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{tt.container})
-
-			err := AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.containerMountPathsMap)
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestAddVolumeMountToPodTemplateSpec.AddVolumeMountToPodTemplateSpec() unexpected error %v, wantErr %v", err, tt.wantErr)
-			}
+			containers := AddVolumeMountToContainers([]corev1.Container{tt.container}, tt.volumeName, tt.containerMountPathsMap)
 
 			mountPathCount := 0
-			for _, podTempSpecContainer := range podTemplateSpec.Spec.Containers {
-				if podTempSpecContainer.Name == tt.container.Name {
-					for _, volumeMount := range podTempSpecContainer.VolumeMounts {
+			for _, container := range containers {
+				if container.Name == tt.container.Name {
+					for _, volumeMount := range container.VolumeMounts {
 						if volumeMount.Name == tt.volumeName {
 							for _, mountPath := range tt.containerMountPathsMap[tt.container.Name] {
 								if volumeMount.MountPath == mountPath {
@@ -341,7 +304,7 @@ func TestGetPVCsFromSelector(t *testing.T) {
 	}
 }
 
-func TestAddPVCAndVolumeMount(t *testing.T) {
+func TestGetPVCAndVolumeMount(t *testing.T) {
 
 	volNames := [...]string{"volume1", "volume2", "volume3"}
 	volContainerPath := [...]string{"/home/user/path1", "/home/user/path2", "/home/user/path3"}
@@ -366,22 +329,10 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 			},
 			containers: []corev1.Container{
 				{
-					Name:            "container1",
-					Image:           "image1",
-					ImagePullPolicy: corev1.PullAlways,
-
-					Command: []string{"tail"},
-					Args:    []string{"-f", "/dev/null"},
-					Env:     []corev1.EnvVar{},
+					Name: "container1",
 				},
 				{
-					Name:            "container2",
-					Image:           "image2",
-					ImagePullPolicy: corev1.PullAlways,
-
-					Command: []string{"tail"},
-					Args:    []string{"-f", "/dev/null"},
-					Env:     []corev1.EnvVar{},
+					Name: "container2",
 				},
 			},
 			volumeNameToPVCName: map[string]string{
@@ -425,9 +376,13 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 				"app":       "app",
 				"component": "frontend",
 			},
-			containers: []corev1.Container{},
+			containers: []corev1.Container{
+				{
+					Name: "container2",
+				},
+			},
 			volumeNameToPVCName: map[string]string{
-				"volume2": "volume2-pvc",
+				"volume2": "",
 				"volume3": "volume3-pvc",
 			},
 			componentAliasToVolumes: map[string][]common.DevfileVolume{
@@ -449,37 +404,36 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
-
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.containers)
-
-			err := AddPVCAndVolumeMount(podTemplateSpec, tt.volumeNameToPVCName, tt.componentAliasToVolumes)
+			containers, pvcVols, err := GetPVCAndVolumeMount(tt.containers, tt.volumeNameToPVCName, tt.componentAliasToVolumes)
 			if !tt.wantErr && err != nil {
-				t.Errorf("TestAddPVCAndVolumeMount.AddPVCAndVolumeMount() unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() unexpected error %v, wantErr %v", err, tt.wantErr)
 			} else if tt.wantErr && err != nil {
 				return
-			}
-
-			// The total number of expected volumes is equal to the number of volumes defined in the devfile plus two (emptyDir source and supervisord volumes)
-			expectedNumVolumes := len(tt.volumeNameToPVCName) + 2
-
-			// check the number of containers and volumes in the pod template spec
-			if len(podTemplateSpec.Spec.Containers) != len(tt.containers) {
-				t.Errorf("Incorrect number of Containers found in the pod template spec, expected: %v found: %v", len(tt.containers), len(podTemplateSpec.Spec.Containers))
+			} else if tt.wantErr && err == nil {
+				t.Error("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() expected error but got nil")
 				return
 			}
-			if len(podTemplateSpec.Spec.Volumes) != expectedNumVolumes {
-				t.Errorf("TestAddPVCAndVolumeMount incorrect amount of pvc volumes in pod template spec expected %v, actual %v", expectedNumVolumes, len(podTemplateSpec.Spec.Volumes))
+
+			// The total number of expected volumes is equal to the number of volumes defined in the devfile
+			expectedNumVolumes := len(tt.volumeNameToPVCName)
+
+			// check the number of containers and volumes in the pod template spec
+			if len(containers) != len(tt.containers) {
+				t.Errorf("TestGetPVCAndVolumeMount error - Incorrect number of Containers found in the pod template spec, expected: %v found: %v", len(tt.containers), len(containers))
+				return
+			}
+			if len(pvcVols) != expectedNumVolumes {
+				t.Errorf("TestGetPVCAndVolumeMount error - incorrect amount of pvc volumes in pod template spec expected %v, actual %v", expectedNumVolumes, len(pvcVols))
 				return
 			}
 
 			// check the volume mounts of the pod template spec containers
-			for _, container := range podTemplateSpec.Spec.Containers {
+			for _, container := range containers {
 				for testcontainerAlias, testContainerVolumes := range tt.componentAliasToVolumes {
 					if container.Name == testcontainerAlias {
 						// check if container has the correct number of volume mounts
 						if len(container.VolumeMounts) != len(testContainerVolumes) {
-							t.Errorf("Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), len(container.VolumeMounts))
+							t.Errorf("TestGetPVCAndVolumeMount - Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), len(container.VolumeMounts))
 						}
 
 						// check if container has the specified volume
@@ -494,7 +448,7 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 							}
 						}
 						if volumeMatched != len(testContainerVolumes) {
-							t.Errorf("Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), volumeMatched)
+							t.Errorf("TestGetPVCAndVolumeMount - Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), volumeMatched)
 						}
 					}
 				}

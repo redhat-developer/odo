@@ -84,6 +84,77 @@ func TestComponentExists(t *testing.T) {
 
 }
 
+func TestAddOdoProjectVolume(t *testing.T) {
+
+	tests := []struct {
+		name                         string
+		containers                   []corev1.Container
+		containerWithProjectVolMount []string
+		volMount                     map[string]string
+	}{
+		{
+			name: "Case: Various containers with and without PROJECTS_ROOT",
+			containers: []corev1.Container{
+				{
+					Name: "container1",
+					Env: []corev1.EnvVar{
+						{
+							Name:  adaptersCommon.EnvProjectsRoot,
+							Value: "/path1",
+						},
+					},
+				},
+				{
+					Name: "container2",
+					Env: []corev1.EnvVar{
+						{
+							Name:  adaptersCommon.EnvProjectsRoot,
+							Value: "/path2",
+						},
+					},
+				},
+				{
+					Name: "container3",
+					Env: []corev1.EnvVar{
+						{
+							Name:  "RANDOM",
+							Value: "/path3",
+						},
+					},
+				},
+			},
+			containerWithProjectVolMount: []string{"container1", "container2"},
+			volMount: map[string]string{
+				"container1": "/path1",
+				"container2": "/path2",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			AddOdoProjectVolume(&tt.containers)
+
+			for wantContainerName, wantMountPath := range tt.volMount {
+				matched := false
+				for _, container := range tt.containers {
+					if container.Name == wantContainerName {
+						for _, volMount := range container.VolumeMounts {
+							if volMount.Name == OdoSourceVolume && volMount.MountPath == wantMountPath {
+								matched = true
+							}
+						}
+					}
+				}
+
+				if !matched {
+					t.Error("TestAddOdoProjectVolume error: did not match the volume mount for odo-projects")
+				}
+			}
+		})
+	}
+}
+
 func TestUpdateContainersWithSupervisord(t *testing.T) {
 
 	command := "ls -la"
@@ -659,416 +730,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	}
 }
 
-func TestGetContainers(t *testing.T) {
-
-	containerNames := []string{"testcontainer1", "testcontainer2"}
-	containerImages := []string{"image1", "image2"}
-
-	tests := []struct {
-		name                  string
-		containerComponents   []common.DevfileComponent
-		wantContainerName     string
-		wantContainerImage    string
-		wantContainerEnv      []corev1.EnvVar
-		wantContainerVolMount []corev1.VolumeMount
-		wantErr               bool
-	}{
-		{
-			name: "Case 1: Container with default project root",
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: containerNames[0],
-					Container: &common.Container{
-						Image:        containerImages[0],
-						MountSources: true,
-					},
-				},
-			},
-			wantContainerName:  containerNames[0],
-			wantContainerImage: containerImages[0],
-			wantContainerEnv: []corev1.EnvVar{
-
-				{
-					Name:  "PROJECTS_ROOT",
-					Value: "/projects",
-				},
-				{
-					Name:  "PROJECT_SOURCE",
-					Value: "/projects/test-project",
-				},
-			},
-			wantContainerVolMount: []corev1.VolumeMount{
-				{
-					Name:      "odo-projects",
-					MountPath: "/projects",
-				},
-			},
-		},
-		{
-			name: "Case 2: Container with source mapping",
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: containerNames[0],
-					Container: &common.Container{
-						Image:         containerImages[0],
-						MountSources:  true,
-						SourceMapping: "/myroot",
-					},
-				},
-			},
-			wantContainerName:  containerNames[0],
-			wantContainerImage: containerImages[0],
-			wantContainerEnv: []corev1.EnvVar{
-
-				{
-					Name:  "PROJECTS_ROOT",
-					Value: "/myroot",
-				},
-				{
-					Name:  "PROJECT_SOURCE",
-					Value: "/myroot/test-project",
-				},
-			},
-			wantContainerVolMount: []corev1.VolumeMount{
-				{
-					Name:      "odo-projects",
-					MountPath: "/myroot",
-				},
-			},
-		},
-		{
-			name: "Case 3: Container with no mount source",
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: containerNames[0],
-					Container: &common.Container{
-						Image: containerImages[0],
-					},
-				},
-			},
-			wantContainerName:  containerNames[0],
-			wantContainerImage: containerImages[0],
-		},
-		{
-			name: "Case 4: Invalid container with same endpoint names",
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: containerNames[0],
-					Container: &common.Container{
-						Image:        containerImages[0],
-						MountSources: true,
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url1",
-								TargetPort: 8080,
-								Exposure:   common.Public,
-							},
-						},
-					},
-				},
-				{
-					Name: containerNames[1],
-					Container: &common.Container{
-						Image:        containerImages[1],
-						MountSources: true,
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url1",
-								TargetPort: 8081,
-								Exposure:   common.Public,
-							},
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case 5: Invalid container with same endpoint target ports",
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: containerNames[0],
-					Container: &common.Container{
-						Image: containerImages[0],
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url1",
-								TargetPort: 8080,
-							},
-						},
-					},
-				},
-				{
-					Name: containerNames[1],
-					Container: &common.Container{
-						Image: containerImages[1],
-						Endpoints: []common.Endpoint{
-							{
-								Name:       "url2",
-								TargetPort: 8080,
-							},
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.containerComponents,
-				},
-			}
-
-			containers, err := GetContainers(devObj)
-			if err != nil && !tt.wantErr {
-				t.Errorf("TestGetContainers unexpected error: %v", err)
-			} else if err == nil && tt.wantErr {
-				t.Errorf("TestGetContainers unexpected test failure: want err but got no err")
-			} else {
-				for _, container := range containers {
-					if container.Name != tt.wantContainerName {
-						t.Errorf("TestGetContainers error: Name mismatch - got: %s, wanted: %s", container.Name, tt.wantContainerName)
-					}
-					if container.Image != tt.wantContainerImage {
-						t.Errorf("TestGetContainers error: Image mismatch - got: %s, wanted: %s", container.Image, tt.wantContainerImage)
-					}
-					if len(container.Env) > 0 && !reflect.DeepEqual(container.Env, tt.wantContainerEnv) {
-						t.Errorf("TestGetContainers error: Env mismatch - got: %+v, wanted: %+v", container.Env, tt.wantContainerEnv)
-					}
-					if len(container.VolumeMounts) > 0 && !reflect.DeepEqual(container.VolumeMounts, tt.wantContainerVolMount) {
-						t.Errorf("TestGetContainers error: Vol Mount mismatch - got: %+v, wanted: %+v", container.VolumeMounts, tt.wantContainerVolMount)
-					}
-				}
-			}
-		})
-	}
-
-}
-
-func TestGetPortExposure(t *testing.T) {
-	urlName := "testurl"
-	urlName2 := "testurl2"
-	tests := []struct {
-		name                string
-		containerComponents []common.DevfileComponent
-		wantMap             map[int32]common.ExposureType
-		wantErr             bool
-	}{
-		{
-			name: "Case 1: devfile has single container with single endpoint",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
-			},
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Public,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name:    "Case 2: devfile no endpoints",
-			wantMap: map[int32]common.ExposureType{},
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-					},
-				},
-			},
-		},
-		{
-			name: "Case 3: devfile has multiple endpoints with same port, 1 public and 1 internal, should assign public",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
-			},
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Public,
-							},
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Internal,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Case 4: devfile has multiple endpoints with same port, 1 public and 1 none, should assign public",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
-			},
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Public,
-							},
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.None,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Case 5: devfile has multiple endpoints with same port, 1 internal and 1 none, should assign internal",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Internal,
-			},
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Internal,
-							},
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.None,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Case 6: devfile has multiple endpoints with different port",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
-				9090: common.Internal,
-				3000: common.None,
-			},
-			containerComponents: []common.DevfileComponent{
-				{
-					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-							},
-							{
-								Name:       urlName,
-								TargetPort: 3000,
-								Exposure:   common.None,
-							},
-						},
-					},
-				},
-				{
-					Name: "testcontainer2",
-					Container: &common.Container{
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName2,
-								TargetPort: 9090,
-								Secure:     true,
-								Path:       "/testpath",
-								Exposure:   common.Internal,
-								Protocol:   common.HTTPS,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mapCreated := GetPortExposure(tt.containerComponents)
-			if !reflect.DeepEqual(mapCreated, tt.wantMap) {
-				t.Errorf("Expected: %v, got %v", tt.wantMap, mapCreated)
-			}
-
-		})
-	}
-
-}
-
-func TestGetContainersMap(t *testing.T) {
-
-	tests := []struct {
-		name             string
-		containers       []corev1.Container
-		wantContainerKey []string
-	}{
-		{
-			name: "Case 1: single entry",
-			containers: []corev1.Container{
-				testingutil.CreateFakeContainer("container1"),
-			},
-			wantContainerKey: []string{
-				"container1",
-			},
-		},
-		{
-			name: "Case 2: multiple entries",
-			containers: []corev1.Container{
-				testingutil.CreateFakeContainer("container1"),
-				testingutil.CreateFakeContainer("container2"),
-			},
-			wantContainerKey: []string{
-				"container1",
-				"container2",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			containerMap := GetContainersMap(tt.containers)
-
-			for _, containerName := range tt.wantContainerKey {
-				if _, ok := containerMap[containerName]; !ok {
-					t.Errorf("TestGetContainersMap error - could not find key %s in %v", containerName, containerMap)
-				}
-			}
-
-		})
-	}
-
-}
-
-func TestAddPreStartEventInitContainer(t *testing.T) {
+func TestGetPreStartInitContainers(t *testing.T) {
 
 	containers := []corev1.Container{
 		testingutil.CreateFakeContainer("container1"),
@@ -1113,12 +775,6 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 			},
 		},
 	}
-
-	componentName := "testcomponent"
-	namespace := "testnamespace"
-	labels := map[string]string{"component": componentName}
-
-	objectMeta := kclient.CreateObjectMeta(componentName, namespace, labels, nil)
 
 	longContainerName := "thisisaverylongcontainerandkuberneteshasalimitforanamesize-exec2"
 	trimmedLongContainerName := util.TruncateString(longContainerName, containerNameMaxLen)
@@ -1169,24 +825,22 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 				execCommands[1].Exec.Component = longContainerName
 			}
 
-			podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
-
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
 					Commands: append(execCommands, compCommands...),
+					Events: common.DevfileEvents{
+						PreStart: tt.eventCommands,
+					},
 				},
 			}
 
-			commandsMap := devObj.Data.GetCommands()
-			containersMap := GetContainersMap(containers)
+			initContainers := GetPreStartInitContainers(devObj, containers)
 
-			AddPreStartEventInitContainer(podTemplateSpec, commandsMap, tt.eventCommands, containersMap)
-
-			if len(tt.wantInitContainer) != len(podTemplateSpec.Spec.InitContainers) {
-				t.Errorf("TestAddPreStartEventInitContainer error: init container length mismatch, wanted %v got %v", len(tt.wantInitContainer), len(podTemplateSpec.Spec.InitContainers))
+			if len(tt.wantInitContainer) != len(initContainers) {
+				t.Errorf("TestGetPreStartInitContainers error: init container length mismatch, wanted %v got %v", len(tt.wantInitContainer), len(initContainers))
 			}
 
-			for _, initContainer := range podTemplateSpec.Spec.InitContainers {
+			for _, initContainer := range initContainers {
 				nameMatched := false
 				commandMatched := false
 				for containerName, container := range tt.wantInitContainer {
@@ -1199,16 +853,16 @@ func TestAddPreStartEventInitContainer(t *testing.T) {
 					}
 
 					if !reflect.DeepEqual(initContainer.Args, []string{}) {
-						t.Errorf("TestAddPreStartEventInitContainer error: init container args not empty, got %v", initContainer.Args)
+						t.Errorf("TestGetPreStartInitContainers error: init container args not empty, got %v", initContainer.Args)
 					}
 				}
 
 				if !nameMatched {
-					t.Errorf("TestAddPreStartEventInitContainer error: init container name mismatch, container name not present in %v", initContainer.Name)
+					t.Errorf("TestGetPreStartInitContainers error: init container name mismatch, container name not present in %v", initContainer.Name)
 				}
 
 				if !commandMatched {
-					t.Errorf("TestAddPreStartEventInitContainer error: init container command mismatch, command not found in %v", initContainer.Command)
+					t.Errorf("TestGetPreStartInitContainers error: init container command mismatch, command not found in %v", initContainer.Command)
 				}
 			}
 		})

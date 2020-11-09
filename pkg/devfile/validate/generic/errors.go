@@ -50,3 +50,20 @@ type MissingVolumeMountError struct {
 func (e *MissingVolumeMountError) Error() string {
 	return fmt.Sprintf("unable to find volume mount %s in devfile volume components", e.volumeName)
 }
+
+// InvalidEndpointError returns an error if the component endpoint is invalid
+type InvalidEndpointError struct {
+	name string
+	port int32
+}
+
+func (e *InvalidEndpointError) Error() string {
+	var errMsg string
+	if e.name != "" {
+		errMsg = fmt.Sprintf("devfile contains multiple endpoint entries with same name: %v", e.name)
+	} else if string(e.port) != "" {
+		errMsg = fmt.Sprintf("devfile contains multiple containers with same TargetPort: %v", e.port)
+	}
+
+	return errMsg
+}

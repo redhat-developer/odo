@@ -10,6 +10,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	pkgutil "github.com/openshift/odo/pkg/util"
 
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -18,7 +19,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/config"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -132,7 +132,7 @@ func (o *URLListOptions) Run() (err error) {
 				return errors.Wrap(err, "fail to parse the devfile")
 			}
 
-			containerComponents := adaptersCommon.GetDevfileContainerComponents(devObj.Data)
+			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)
 			urls, err := url.ListIngressAndRoute(o.Context.Client, o.EnvSpecificInfo, containerComponents, componentName, routeSupported)
 			if err != nil {
 				return err

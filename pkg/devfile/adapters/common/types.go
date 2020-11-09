@@ -57,7 +57,7 @@ type SyncParameters struct {
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
-	SourceMount   string
+	SyncFolder    string
 }
 
 func (ci ComponentInfo) IsEmpty() bool {

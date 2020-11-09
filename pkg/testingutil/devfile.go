@@ -173,6 +173,12 @@ func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
 				Path: volumePath,
 			}},
 			MountSources: true,
+			Endpoints: []common.Endpoint{
+				{
+					Name:       "port1",
+					TargetPort: 9090,
+				},
+			},
 		}}
 
 }

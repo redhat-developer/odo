@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
-	"os"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -16,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 )
@@ -29,7 +31,7 @@ func (a Adapter) createComponent() (err error) {
 
 	log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 
-	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
 	if len(containerComponents) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
@@ -72,7 +74,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
 	err = stoAdapter.Create(a.uniqueStorage)
 
-	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
 	if len(containerComponents) == 0 {
 		return componentExists, fmt.Errorf("no valid components found in the devfile")
 	}

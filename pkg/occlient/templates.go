@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/kclient/generator"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
@@ -318,37 +319,14 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 // generateBuildConfig creates a BuildConfig for Git URL's being passed into Odo
 func generateBuildConfig(commonObjectMeta metav1.ObjectMeta, gitURL, gitRef, imageName, imageNamespace string) buildv1.BuildConfig {
 
-	buildSource := buildv1.BuildSource{
-		Git: &buildv1.GitBuildSource{
-			URI: gitURL,
-			Ref: gitRef,
-		},
-		Type: buildv1.BuildSourceGit,
+	params := generator.BuildConfigParams{
+		CommonObjectMeta: commonObjectMeta,
+		GitURL:           gitURL,
+		GitRef:           gitRef,
+		BuildStrategy:    generator.GetSourceBuildStrategy(imageName, imageNamespace),
 	}
 
-	return buildv1.BuildConfig{
-		ObjectMeta: commonObjectMeta,
-		Spec: buildv1.BuildConfigSpec{
-			CommonSpec: buildv1.CommonSpec{
-				Output: buildv1.BuildOutput{
-					To: &corev1.ObjectReference{
-						Kind: "ImageStreamTag",
-						Name: commonObjectMeta.Name + ":latest",
-					},
-				},
-				Source: buildSource,
-				Strategy: buildv1.BuildStrategy{
-					SourceStrategy: &buildv1.SourceBuildStrategy{
-						From: corev1.ObjectReference{
-							Kind:      "ImageStreamTag",
-							Name:      imageName,
-							Namespace: imageNamespace,
-						},
-					},
-				},
-			},
-		},
-	}
+	return generator.GetBuildConfig(params)
 }
 
 //

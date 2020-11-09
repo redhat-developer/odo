@@ -17,6 +17,8 @@ func validateComponents(components []common.DevfileComponent) error {
 
 	processedVolumes := make(map[string]bool)
 	processedVolumeMounts := make(map[string]bool)
+	processedEndPointName := make(map[string]bool)
+	processedEndPointPort := make(map[int32]bool)
 
 	for _, component := range components {
 
@@ -40,6 +42,28 @@ func validateComponents(components []common.DevfileComponent) error {
 				} else if env.Name == adaptersCommon.EnvProjectsRoot {
 					return &ReservedEnvError{envName: adaptersCommon.EnvProjectsRoot, componentName: component.Name}
 				}
+			}
+
+			// Check if all the endpoint names are unique across components
+			// and check if endpoint port are unique across component containers ie;
+			// two component containers cannot have the same target port but two endpoints
+			// in a single component container can have the same target port
+
+			processedContainerEndPointPort := make(map[int32]bool)
+
+			for _, endPoint := range component.Container.Endpoints {
+				if _, ok := processedEndPointName[endPoint.Name]; ok {
+					return &InvalidEndpointError{name: endPoint.Name}
+				}
+				processedEndPointName[endPoint.Name] = true
+				processedContainerEndPointPort[endPoint.TargetPort] = true
+			}
+
+			for targetPort := range processedContainerEndPointPort {
+				if _, ok := processedEndPointPort[targetPort]; ok {
+					return &InvalidEndpointError{port: targetPort}
+				}
+				processedEndPointPort[targetPort] = true
 			}
 		}
 

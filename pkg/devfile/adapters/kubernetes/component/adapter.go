@@ -8,6 +8,7 @@ import (
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -158,10 +159,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if currentMode != previousMode {
 		parameters.RunModeChanged = true
 	}
-	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
-	portExposureMap := utils.GetPortExposure(containerComponents)
+	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
 
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, portExposureMap)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -188,7 +188,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, sourceMount, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
@@ -199,7 +199,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
-		SourceMount:   sourceMount,
+		SyncFolder:    syncFolder,
 	}
 	syncParams := common.SyncParameters{
 		PushParams:      parameters,
@@ -265,7 +265,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, portExposureMap map[int32]versionsCommon.ExposureType) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -274,7 +274,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	labels["component"] = componentName
 	labels[componentlabels.ComponentTypeLabel] = componentType
 
-	containers, err := utils.GetContainers(a.Devfile)
+	containers, err := generator.GetContainers(a.Devfile)
 	if err != nil {
 		return err
 	}
@@ -282,6 +282,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
+
+	// Add the project volume before generating init containers
+	utils.AddOdoProjectVolume(&containers)
 
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
 	if err != nil {
@@ -294,29 +297,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
-
-	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
-
-	// if there are preStart events, add them as init containers to the podTemplateSpec
-	preStartEvents := a.Devfile.Data.GetEvents().PreStart
-	if len(preStartEvents) > 0 {
-		var eventCommands []string
-		commandsMap := a.Devfile.Data.GetCommands()
-		containersMap := utils.GetContainersMap(containers)
-
-		for _, event := range preStartEvents {
-			eventSubCommands := common.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
-			eventCommands = append(eventCommands, eventSubCommands...)
-		}
-
-		klog.V(4).Infof("PreStart event commands are: %v", strings.Join(eventCommands, ","))
-		utils.AddPreStartEventInitContainer(podTemplateSpec, commandsMap, eventCommands, containersMap)
-		if len(eventCommands) > 0 {
-			log.Successf("PreStart commands have been added to the component: %s", strings.Join(eventCommands, ","))
-		}
-	}
+	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
+	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
+	initContainers := utils.GetPreStartInitContainers(a.Devfile, containers)
+	initContainers = append(initContainers, supervisordInitContainer)
 
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
@@ -365,40 +349,37 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	// Add PVC and Volume Mounts to the podTemplateSpec
-	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
+	// Get PVC volumes and Volume Mounts
+	containers, pvcVolumes, err := kclient.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
 
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
-		"component": componentName,
-	})
+	odoMandatoryVolumes := utils.GetOdoContainerVolumes()
 
-	var containerPorts []corev1.ContainerPort
-
-	for _, c := range deploymentSpec.Template.Spec.Containers {
-		// No need to check
-		if reflect.DeepEqual(a.Devfile.Ctx.GetApiVersion(), "1.0.0") {
-			containerPorts = append(containerPorts, c.Ports...)
-		} else {
-			for _, port := range c.Ports {
-				portExist := false
-				for _, entry := range containerPorts {
-					if entry.ContainerPort == port.ContainerPort {
-						portExist = true
-						break
-					}
-				}
-				// if Exposure == none, should not create a service for that port
-				if !portExist && portExposureMap[port.ContainerPort] != versionsCommon.None {
-					containerPorts = append(containerPorts, port)
-				}
-			}
-		}
+	podTemplateSpecParams := generator.PodTemplateSpecParams{
+		ObjectMeta:     objectMeta,
+		InitContainers: initContainers,
+		Containers:     containers,
+		Volumes:        append(pvcVolumes, odoMandatoryVolumes...),
 	}
+	podTemplateSpec := generator.GetPodTemplateSpec(podTemplateSpecParams)
 
-	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
+	deployParams := generator.DeploymentSpecParams{
+		PodTemplateSpec: *podTemplateSpec,
+		PodSelectorLabels: map[string]string{
+			"component": componentName,
+		},
+	}
+	deploymentSpec := generator.GetDeploymentSpec(deployParams)
+
+	selectorLabels := map[string]string{
+		"component": componentName,
+	}
+	serviceSpec, err := generator.GetService(a.Devfile, selectorLabels)
+	if err != nil {
+		return err
+	}
 	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 
@@ -412,7 +393,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
@@ -445,7 +426,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			return err
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		if len(serviceSpec.Ports) > 0 {
@@ -475,9 +456,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 // container to sync to, so return an error
 func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, string, error) {
 	for _, c := range containers {
-		for _, vol := range c.VolumeMounts {
-			if vol.Name == kclient.OdoSourceVolume {
-				return c.Name, vol.MountPath, nil
+		for _, env := range c.Env {
+			if env.Name == generator.EnvProjectsSrc {
+				return c.Name, env.Value, nil
 			}
 		}
 	}

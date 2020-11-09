@@ -184,6 +184,70 @@ func TestValidateComponents(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Case 11: Invalid container with same endpoint names",
+			components: []common.DevfileComponent{
+				{
+					Name: "name1",
+					Container: &common.Container{
+						Image: "image1",
+
+						Endpoints: []common.Endpoint{
+							{
+								Name:       "url1",
+								TargetPort: 8080,
+								Exposure:   common.Public,
+							},
+						},
+					},
+				},
+				{
+					Name: "name2",
+					Container: &common.Container{
+						Image: "image2",
+
+						Endpoints: []common.Endpoint{
+							{
+								Name:       "url1",
+								TargetPort: 8081,
+								Exposure:   common.Public,
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 12: Invalid container with same endpoint target ports",
+			components: []common.DevfileComponent{
+				{
+					Name: "name1",
+					Container: &common.Container{
+						Image: "image1",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       "url1",
+								TargetPort: 8080,
+							},
+						},
+					},
+				},
+				{
+					Name: "name2",
+					Container: &common.Container{
+						Image: "image2",
+						Endpoints: []common.Endpoint{
+							{
+								Name:       "url2",
+								TargetPort: 8080,
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

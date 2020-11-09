@@ -199,7 +199,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			componentAdapter := New(adapterCtx, *fkclient)
 			fkclient.Namespace = componentAdapter.Client.Namespace
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, map[int32]versionsCommon.ExposureType{})
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
