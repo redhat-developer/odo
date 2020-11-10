@@ -45,7 +45,6 @@ func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []s
 		var noCsvs, noServices bool
 		o.Context = genericclioptions.NewContext(cmd)
 		o.csvs, err = catalog.ListOperatorServices()
-		// o.csvs, err = o.KClient.GetClusterServiceVersionList()
 		if err != nil {
 			// Error only occurs when OperatorHub is not installed/enabled on the
 			// Kubernetes or OpenShift 4.x cluster. It doesn't occur when there are
