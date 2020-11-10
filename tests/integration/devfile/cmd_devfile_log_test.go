@@ -1,8 +1,9 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/tests/helper"
 	"path/filepath"
+
+	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -56,8 +57,7 @@ var _ = Describe("odo devfile log command tests", func() {
 
 			projectDir := filepath.Join(commonVar.Context, "projectDir")
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDir)
-
+			helper.CopyExample(filepath.Join("source", "web-nodejs-sample"), projectDir)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", projectDir)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDir, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDir)
