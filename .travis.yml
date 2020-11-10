@@ -158,6 +158,7 @@ jobs:
         - travis_wait make test-e2e-java
         - travis_wait make test-e2e-source
         - travis_wait make test-e2e-images
+        - travis_wait make test-e2e-devfile
         - odo logout
     
     # Fix https://github.com/openshift/odo/issues/3714 to uncomment tests
