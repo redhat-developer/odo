@@ -295,12 +295,7 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 
 // ListOperatorServices fetches a list of Operators from the cluster and
 // returns only those Operators which are successfully installed on the cluster
-func ListOperatorServices() (*olm.ClusterServiceVersionList, error) {
-	client, err := kclient.New()
-	if err != nil {
-		return nil, err
-	}
-
+func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
 	allCsvs, err := client.GetClusterServiceVersionList()
 	if err != nil {
 		return nil, err
