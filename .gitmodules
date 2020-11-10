@@ -1,3 +1,0 @@
-[submodule "tests/examples/source/web-nodejs-sample"]
-	path = tests/examples/source/web-nodejs-sample
-	url = https://github.com/che-samples/web-nodejs-sample
