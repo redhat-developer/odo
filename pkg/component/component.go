@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -890,8 +891,10 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
-		components = append(components, component)
-		componentNamesMap[component.Name] = true
+		if !reflect.ValueOf(component).IsZero() {
+			components = append(components, component)
+			componentNamesMap[component.Name] = true
+		}
 	}
 
 	if deploymentConfigSupported && client != nil {
@@ -907,8 +910,10 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 			if err != nil {
 				return ComponentList{}, errors.Wrap(err, "Unable to get component")
 			}
-			components = append(components, component)
-			componentNamesMap[component.Name] = true
+			if !reflect.ValueOf(component).IsZero() {
+				components = append(components, component)
+				componentNamesMap[component.Name] = true
+			}
 		}
 	}
 
@@ -1428,7 +1433,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 // getRemoteComponentMetadata provides component metadata from the cluster
 func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, projectName string, getUrls, getStorage bool) (component Component, err error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
-	if err != nil {
+	if err != nil || fromCluster == nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
 	}
 
