@@ -4,11 +4,11 @@ set -e
 
 HTPASSWD_FILE="./htpass"
 HTPASSWD_SECRET="htpasswd-secret"
+USERPASS="password@123"
 
 createhtpasswd() {
     # List of users to create
     USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
-    USERPASS="password@123"
     # Remove existing htpasswd file, if any
     if [ -f $HTPASSWD_FILE ]; then
         rm -rf $HTPASSWD_FILE
