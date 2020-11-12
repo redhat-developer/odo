@@ -3057,6 +3057,18 @@ func (c *Client) IsVolumeAnEmptyDir(volumeMountName string, dc *appsv1.Deploymen
 	return false
 }
 
+// IsVolumeAnConfigMap returns true if the volume is an ConfigMap, false if not
+func (c *Client) IsVolumeAnConfigMap(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.ConfigMap != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // GetPVCNameFromVolumeMountName returns the PVC associated with the given volume
 // An empty string is returned if the volume is not found
 func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv1.DeploymentConfig) string {
