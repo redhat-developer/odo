@@ -20,7 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -42,7 +41,6 @@ import (
 	buildv1 "github.com/openshift/api/build/v1"
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	imagev1 "github.com/openshift/api/image/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	oauthv1client "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -2383,80 +2381,6 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 	return planList.Items, nil
 }
 
-// CreateRoute creates a route object for the given service and with the given labels
-// serviceName is the name of the service for the target reference
-// portNumber is the target port of the route
-// path is the path of the endpoint URL
-// secureURL indicates if the route is a secure one or not
-func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
-
-	objectMeta := generator.GetObjectMeta(name, c.Namespace, labels, nil)
-	routeParams := generator.RouteParams{
-		ServiceName: serviceName,
-		PortNumber:  portNumber,
-		Secure:      secureURL,
-		Path:        path,
-	}
-
-	routeSpec := generator.GetRouteSpec(routeParams)
-	route := &routev1.Route{
-		ObjectMeta: objectMeta,
-		Spec:       *routeSpec,
-	}
-
-	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
-
-	r, err := c.routeClient.Routes(c.Namespace).Create(route)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating route")
-	}
-	return r, nil
-}
-
-// DeleteRoute deleted the given route
-func (c *Client) DeleteRoute(name string) error {
-	err := c.routeClient.Routes(c.Namespace).Delete(name, &metav1.DeleteOptions{})
-	if err != nil {
-		return errors.Wrap(err, "unable to delete route")
-	}
-	return nil
-}
-
-// ListRoutes lists all the routes based on the given label selector
-func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
-	klog.V(3).Infof("Listing routes with label selector: %v", labelSelector)
-	routeList, err := c.routeClient.Routes(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get route list")
-	}
-
-	return routeList.Items, nil
-}
-
-func (c *Client) GetRoute(name string) (*routev1.Route, error) {
-	route, err := c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
-	return route, err
-
-}
-
-// ListRouteNames lists all the names of the routes based on the given label
-// selector
-func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
-	routes, err := c.ListRoutes(labelSelector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list routes")
-	}
-
-	var routeNames []string
-	for _, r := range routes {
-		routeNames = append(routeNames, r.Name)
-	}
-
-	return routeNames, nil
-}
-
 // ListSecrets lists all the secrets based on the given label selector
 func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 	listOptions := metav1.ListOptions{}
@@ -2980,12 +2904,6 @@ func isSubDir(baseDir, otherDir string) bool {
 	//matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
 	matches, _ := filepath.Match(filepath.Join(cleanedBaseDir, "*"), cleanedOtherDir)
 	return matches
-}
-
-// IsRouteSupported checks if route resource type is present on the cluster
-func (c *Client) IsRouteSupported() (bool, error) {
-
-	return c.isResourceSupported("route.openshift.io", "v1", "routes")
 }
 
 // IsImageStreamSupported checks if imagestream resource type is present on the cluster
