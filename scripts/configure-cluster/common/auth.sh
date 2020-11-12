@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 HTPASSWD_FILE="./htpass"
 HTPASSWD_SECRET="htpasswd-secret"
 
@@ -84,7 +86,7 @@ waitforstablelogin() {
     fi
 }
 
-setupfirstprojectandvalidate() {
+setupfirstproject() {
     # Setup project
     oc new-project myproject
     sleep 4
@@ -97,4 +99,4 @@ createhtpasswd
 createclustersecret
 configureclusterauth
 waitforstablelogin
-setupfirstprojectandvalidate
+setupfirstproject
