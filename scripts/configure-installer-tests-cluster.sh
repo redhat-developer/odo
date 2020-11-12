@@ -2,7 +2,12 @@
 set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
-LIBDIR="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )/configure-cluster"
+if [[ $0 == *"bin"* ]]; then
+    CURRSCRIPT=$1
+else
+    CURRSCRIPT=$0
+fi
+LIBDIR="$( cd "$(dirname "$CURRSCRIPT")" >/dev/null 2>&1 ; pwd -P )/configure-cluster"
 SETUP_OPERATORS="./scripts/setup-operators.sh"
 # Overrideable information
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
