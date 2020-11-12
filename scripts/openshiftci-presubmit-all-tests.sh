@@ -59,4 +59,6 @@ else
     make test-e2e-all
 fi
 
+cp -r reports $ARTIFACTS_DIR 
+
 odo logout
