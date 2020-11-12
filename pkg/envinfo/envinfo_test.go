@@ -20,7 +20,6 @@ func TestSetEnvInfo(t *testing.T) {
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
-	testPush := EnvInfoPushCommand{Init: "myinit", Build: "myBuild", Run: "myRun"}
 
 	tests := []struct {
 		name               string
@@ -49,16 +48,6 @@ func TestSetEnvInfo(t *testing.T) {
 			},
 			checkConfigSetting: []string{"URL"},
 			expectError:        true,
-		},
-		{
-			name:      "Case 4: Test fields setup from push parameter",
-			parameter: Push,
-			value:     testPush,
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{},
-			},
-			checkConfigSetting: []string{"PushCommand"},
-			expectError:        false,
 		},
 	}
 	for _, tt := range tests {
