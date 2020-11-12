@@ -2,13 +2,10 @@
 set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
-if [[ $0 == *"bin"* ]]; then
-    CURRSCRIPT=$1
-else
-    CURRSCRIPT=$0
-fi
-LIBDIR="$( cd "$(dirname "$CURRSCRIPT")" >/dev/null 2>&1 ; pwd -P )/configure-cluster"
-SETUP_OPERATORS="./scripts/setup-operators.sh"
+LIBDIR="./scripts/configure-cluster"
+LIBCOMMON="$LIBDIR/common"
+SETUP_OPERATORS="$LIBCOMMON/setup-operators.sh"
+AUTH_SCRIPT="$LIBCOMMON/auth.sh"
 # Overrideable information
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
@@ -73,7 +70,7 @@ done
 # Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
 
-. $LIBDIR/common/auth.sh
+sh $AUTH_SCRIPT
 
 # KUBECONFIG cleanup only if CI is set
 if [ ! -f $CI ]; then
