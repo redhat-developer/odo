@@ -3,7 +3,7 @@ package parser
 import (
 	"encoding/json"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"

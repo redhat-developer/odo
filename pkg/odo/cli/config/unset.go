@@ -133,12 +133,12 @@ func (o *UnsetOptions) DevfileRun() (err error) {
 		log.Italic("\nRun `odo push` command to apply changes to the cluster")
 		return err
 	}
-	if isSet := o.devfileObj.IsSet(o.paramName); isSet {
+	if isSet := config.IsSetInDevfile(o.devfileObj, o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
-		err = o.devfileObj.DeleteConfiguration(strings.ToLower(o.paramName))
+		err = config.DeleteDevfileConfiguration(o.devfileObj, strings.ToLower(o.paramName))
 		log.Success("Devfile was successfully updated.")
 		return err
 	}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
@@ -609,6 +610,7 @@ var (
 		Ports:  PortsDescription,
 		Memory: MemoryDescription,
 	}
+	lowerCaseDevfileParameters = util.GetLowerCaseParameters(GetDevfileSupportedParameters())
 )
 
 // FormatLocallySupportedParameters outputs supported parameters and their description
@@ -640,6 +642,67 @@ func AsLocallySupportedParameter(param string) (string, bool) {
 // GetLocallySupportedParameters returns the name of the supported global parameters
 func GetLocallySupportedParameters() []string {
 	return util.GetSortedKeys(supportedLocalParameterDescriptions)
+}
+
+// AsDevfileSupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter
+func AsDevfileSupportedParameter(param string) (string, bool) {
+	lower := strings.ToLower(param)
+	return lower, lowerCaseDevfileParameters[lower]
+}
+
+// SetDevfileConfiguration allows setting all the parameters that are configurable in a devfile
+func SetDevfileConfiguration(d parser.DevfileObj, parameter string, value interface{}) error {
+
+	// we are ignoring this error becase a developer is usually aware of the type of value that is
+	// being passed. So consider this a shortcut, if you know its a string value use this strValue
+	// else parse it inside the switch case.
+	strValue, _ := value.(string)
+	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch parameter {
+		case "name":
+			return d.SetMetadataName(strValue)
+		case "ports":
+			arrValue := strings.Split(strValue, ",")
+			return d.SetPorts(arrValue...)
+		case "memory":
+			return d.SetMemory(strValue)
+		}
+
+	}
+	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
+
+}
+
+// DeleteConfiguration allows deleting  the parameters that are configurable in a devfile
+func DeleteDevfileConfiguration(d parser.DevfileObj, parameter string) error {
+	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch parameter {
+		case "name":
+			return d.SetMetadataName("")
+		case "ports":
+			return d.RemovePorts()
+		case "memory":
+			return d.SetMemory("")
+		}
+	}
+	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
+}
+
+// IsSet checks if a parameter is set in the devfile
+func IsSetInDevfile(d parser.DevfileObj, parameter string) bool {
+
+	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch parameter {
+		case "name":
+			return d.GetMetadataName() != ""
+		case "ports":
+			return d.HasPorts()
+		case "memory":
+			return d.GetMemory() != ""
+		}
+	}
+	return false
+
 }
 
 // SrcType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names

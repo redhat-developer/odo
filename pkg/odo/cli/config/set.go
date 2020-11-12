@@ -145,7 +145,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 	}
 	if !o.configForceFlag {
 
-		if o.devfileObj.IsSet(o.paramName) {
+		if config.IsSetInDevfile(o.devfileObj, o.paramName) {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
 				fmt.Println("Aborted by the user.")
 				return nil
@@ -153,7 +153,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 		}
 	}
 
-	err = o.devfileObj.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	err = config.SetDevfileConfiguration(o.devfileObj, strings.ToLower(o.paramName), o.paramValue)
 	if err != nil {
 		return err
 	}

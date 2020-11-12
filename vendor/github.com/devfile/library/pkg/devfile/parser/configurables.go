@@ -2,12 +2,10 @@ package parser
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
 	v1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -20,72 +18,8 @@ const (
 	NameDescription   = "The name of the component"
 )
 
-var (
-	supportedDevfileParameterDescriptions = map[string]string{
-		Name:   NameDescription,
-		Ports:  PortsDescription,
-		Memory: MemoryDescription,
-	}
-
-	lowerCaseDevfileParameters = GetLowerCaseParameters(GetDevfileSupportedParameters())
-)
-
-// SetConfiguration allows setting all the parameters that are configurable in a devfile
-func (d DevfileObj) SetConfiguration(parameter string, value interface{}) error {
-
-	// we are ignoring this error becase a developer is usually aware of the type of value that is
-	// being passed. So consider this a shortcut, if you know its a string value use this strValue
-	// else parse it inside the switch case.
-	strValue, _ := value.(string)
-	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
-		switch parameter {
-		case "name":
-			return d.setMetadataName(strValue)
-		case "ports":
-			arrValue := strings.Split(strValue, ",")
-			return d.setPorts(arrValue...)
-		case "memory":
-			return d.setMemory(strValue)
-		}
-
-	}
-	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
-
-}
-
-// DeleteConfiguration allows deleting  the parameters that are configurable in a devfile
-func (d DevfileObj) DeleteConfiguration(parameter string) error {
-	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
-		switch parameter {
-		case "name":
-			return d.setMetadataName("")
-		case "ports":
-			return d.removePorts()
-		case "memory":
-			return d.setMemory("")
-		}
-	}
-	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
-}
-
-// IsSet checks if a parameter is set in the devfile
-func (d DevfileObj) IsSet(parameter string) bool {
-
-	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
-		switch parameter {
-		case "name":
-			return d.GetMetadataName() != ""
-		case "ports":
-			return d.hasPorts()
-		case "memory":
-			return d.GetMemory() != ""
-		}
-	}
-	return false
-
-}
-
-func (d DevfileObj) setMetadataName(name string) error {
+// SetMetadataName set metadata name in a devfile
+func (d DevfileObj) SetMetadataName(name string) error {
 	metadata := d.Data.GetMetadata()
 	d.Data.SetMetadata(name, metadata.Version)
 	return d.WriteYamlDevfile()
@@ -118,7 +52,8 @@ func (d DevfileObj) RemoveEnvVars(keys []string) (err error) {
 	return d.WriteYamlDevfile()
 }
 
-func (d DevfileObj) setPorts(ports ...string) error {
+// SetPorts converts ports to endpoints, adds to a devfile
+func (d DevfileObj) SetPorts(ports ...string) error {
 	components := d.Data.GetComponents()
 	endpoints, err := portsToEndpoints(ports...)
 	if err != nil {
@@ -133,7 +68,8 @@ func (d DevfileObj) setPorts(ports ...string) error {
 	return d.WriteYamlDevfile()
 }
 
-func (d DevfileObj) removePorts() error {
+// RemovePorts removes all container endpoints from a devfile
+func (d DevfileObj) RemovePorts() error {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
@@ -144,7 +80,8 @@ func (d DevfileObj) removePorts() error {
 	return d.WriteYamlDevfile()
 }
 
-func (d DevfileObj) hasPorts() bool {
+// HasPorts checks if a devfile contains container endpoints
+func (d DevfileObj) HasPorts() bool {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
@@ -156,7 +93,8 @@ func (d DevfileObj) hasPorts() bool {
 	return false
 }
 
-func (d DevfileObj) setMemory(memory string) error {
+// SetMemory sets memoryLimit in devfile container
+func (d DevfileObj) SetMemory(memory string) error {
 	components := d.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil {
@@ -166,6 +104,8 @@ func (d DevfileObj) setMemory(memory string) error {
 	}
 	return d.WriteYamlDevfile()
 }
+
+// GetMemory gets memoryLimit from devfile container
 func (d DevfileObj) GetMemory() string {
 	components := d.Data.GetComponents()
 	for _, component := range components {
@@ -179,29 +119,9 @@ func (d DevfileObj) GetMemory() string {
 	return ""
 }
 
+// GetMetadataName gets metadata name from a devfile
 func (d DevfileObj) GetMetadataName() string {
 	return d.Data.GetMetadata().Name
-}
-
-// AsDevfileSupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter
-func AsDevfileSupportedParameter(param string) (string, bool) {
-	lower := strings.ToLower(param)
-	return lower, lowerCaseDevfileParameters[lower]
-}
-
-// GetDevfileSupportedParameters returns the name of the supported global parameters
-func GetDevfileSupportedParameters() []string {
-	keys := make([]string, len(supportedDevfileParameterDescriptions))
-
-	i := 0
-	for k := range supportedDevfileParameterDescriptions {
-		keys[i] = k
-		i++
-	}
-
-	sort.Strings(keys)
-
-	return keys
 }
 
 func portsToEndpoints(ports ...string) ([]v1.Endpoint, error) {
@@ -248,15 +168,6 @@ func addEndpoints(current []v1.Endpoint, other []v1.Endpoint) []v1.Endpoint {
 	}
 
 	return newList
-}
-
-// GetLowerCaseParameters creates a set-like map of supported parameters from the supported parameter names
-func GetLowerCaseParameters(parameters []string) map[string]bool {
-	result := make(map[string]bool, len(parameters))
-	for _, v := range parameters {
-		result[strings.ToLower(v)] = true
-	}
-	return result
 }
 
 // GetContainerPortsFromStrings generates ContainerPort values from the array of string port values
