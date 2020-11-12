@@ -53,7 +53,7 @@ The following section describes how to install `odo` on different platforms via 
 === Setting the `PATH` variable for Windows 10
 
 Edit `Environment Variables` using search:
-The following examples demonstrates how to set up a path variable. Your binaries can be located in any location, but this example uses C:\odo as the location.
+The following example demonstrates how to set up a path variable. Your binary can be located in any location, but this example uses C:\odo as the location.
 
 . Click *Search* and type `env` or `environment`.
 . Select *Edit environment variables for your account*.
