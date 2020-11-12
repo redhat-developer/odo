@@ -87,9 +87,15 @@ set +x
 oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
 set -x
 
-shout "Running integration/e2e tests"
-make test-e2e-all
+shout "Running integration Tests"
+make test-integration
+make test-integration-devfile	
+make test-cmd-login-logout	
+make test-cmd-project	
+make test-operator-hub
 
+shout "Running e2e tests"
+make test-e2e-all
 
 shout "cleanup"
 shout "Logging into 4x cluster for cleanup (logs hidden)"
