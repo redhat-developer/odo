@@ -7,6 +7,7 @@ HTPASSWD_SECRET="htpasswd-secret"
 USERPASS="password@123"
 
 createhtpasswd() {
+    echo "Creating htpasswd"
     # List of users to create
     USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
     # Remove existing htpasswd file, if any
@@ -26,6 +27,7 @@ createhtpasswd() {
 
 createclustersecret() {
     # Create secret in cluster, removing if it already exists
+    echo "Creating cluster secret for htpasswd"
     oc get secret $HTPASSWD_SECRET -n openshift-config &> /dev/null
     if [ $? -eq 0 ]; then
         oc delete secret $HTPASSWD_SECRET -n openshift-config &> /dev/null
@@ -35,6 +37,7 @@ createclustersecret() {
 
 configureclusterauth() {
     # Upload htpasswd as new login config
+    echo "configurig cluster to use configured auth"
 oc apply -f - <<EOF
 apiVersion: config.openshift.io/v1
 kind: OAuth
@@ -54,6 +57,7 @@ EOF
 }
 
 waitforstablelogin() {
+    echo "ensuring login api stability"
     OC_STABLE_LOGIN="false"
     # Login as developer and check for stable server
     for i in {1..40}; do
@@ -87,6 +91,7 @@ waitforstablelogin() {
 }
 
 setupfirstproject() {
+    echo "Setting up first project"
     # Setup project
     oc new-project myproject
     sleep 4
