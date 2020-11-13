@@ -14,6 +14,7 @@ mkdir bin
 GOBIN="`pwd`/bin"
 KUBECONFIG="`pwd`/config"
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
+export SKIP_USER_LOGIN_TESTS="true"
 
 shout "Getting oc binary"
 if [[ $BASE_OS == "linux"  ]]; then
