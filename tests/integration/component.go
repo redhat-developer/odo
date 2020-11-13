@@ -64,7 +64,7 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")...)
 			helper.ValidateLocalCmpExist(commonVar.Context, "Type,nodejs", "Name,"+componentName, "Application,app")
 			helper.CmdShouldPass("odo", append(args, "push")...)
-			appName := helper.CmdShouldPass("odo", "app", "list")
+			appName := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appName).ToNot(BeEmpty())
 
 			// checking if application name is set to "app"
