@@ -195,7 +195,6 @@ Below is a roadmap for odo where 2.1, 2.2 and 2.3 are odo versions.
 === 2.1 Planning (19th Jan - 13th April)
 
 - link:https://github.com/openshift/odo/issues/2756[#2756] - Add `odo deploy` command for initial transition from inner to outer loop
-	PR is stale and needs to be rewritten
 - link:https://github.com/openshift/odo/issues/3026[#3026] - Support for Knative:Service (odo deploy)
 - link:https://github.com/openshift/odo/issues/3782[#3782] - Devfile support followup
 - link:https://github.com/openshift/odo/issues/2618[#2618] - Link via ServiceBindingRequest
