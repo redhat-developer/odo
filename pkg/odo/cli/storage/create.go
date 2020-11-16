@@ -107,7 +107,6 @@ func (o *StorageCreateOptions) devfileRun() error {
 	err = devFile.Data.AddVolume(devfilev1.Component{
 		Name: o.storageName,
 		ComponentUnion: devfilev1.ComponentUnion{
-			ComponentType: devfilev1.VolumeComponentType,
 			Volume: &devfilev1.VolumeComponent{
 				Volume: devfilev1.Volume{
 					Size: o.storageSize,
