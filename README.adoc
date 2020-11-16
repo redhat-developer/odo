@@ -182,13 +182,18 @@ You can find the exact dates of all scheduled odo calls together with sprint dat
 
 To participate in the calls, please join link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group]. When you join the group, you will automatically get invites to all odo related calls and get permissions to all necessary documents.
 
-=== Timeline
+[[odo-roadmap]]
+== Roadmap for odo
 
-==== Before 19th Jan
+Below is a roadmap for odo where 2.1, 2.2 and 2.3 are odo versions.
+
+=== Post v2 (Before 19th Jan)
+
 - Refactor
 - Storage of linking info in devfile so that odo push can support this as well
 
-==== 2.1 Planning 19th Jan - 13th April 
+=== 2.1 Planning (19th Jan - 13th April)
+
 - link:https://github.com/openshift/odo/issues/2756[#2756] - Add `odo deploy` command for initial transition from inner to outer loop
 	PR is stale and needs to be rewritten
 - link:https://github.com/openshift/odo/issues/3026[#3026] - Support for Knative:Service (odo deploy)
@@ -198,13 +203,13 @@ To participate in the calls, please join link:https://groups.google.com/forum/#!
 - link:https://github.com/openshift/odo/issues/4192[#4192] - Show components created by other tools in odo
 - link:https://github.com/openshift/odo/issues/3132[#3132] - control over how rsync and start/stop happens
 
-==== 2.2 Planning 
+=== 2.2 Planning 
 
 - link:https://github.com/openshift/odo/issues/1238[#1238] - Integration with pipelines (CI)
 - link:https://github.com/openshift/odo/issues/4094[#4094] - Builds v2 Support (odo deploy should provide initial support for build v2 strategy)
 - link:https://github.com/openshift/odo/issues/2540[#2540] - e2e tests on windows & macOS
 
-==== 2.3 Planning 
+=== 2.3 Planning 
 
 - link:https://github.com/openshift/odo/issues/3026[#3026] - Support for Knative Eventing
 - link:https://github.com/openshift/odo/issues/3664[#3664] - Add --now option support for Storage
