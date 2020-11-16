@@ -2,8 +2,8 @@ package kclient
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/testingutil"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 )
@@ -114,115 +113,49 @@ func TestCreatePVC(t *testing.T) {
 	}
 }
 
-func TestGetPVC(t *testing.T) {
-
+func TestDeletePVC(t *testing.T) {
 	tests := []struct {
-		pvc        string
-		volumeName string
+		name    string
+		pvcName string
+		wantErr bool
 	}{
 		{
-			pvc:        "mypvc",
-			volumeName: "myvolume",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.volumeName, func(t *testing.T) {
-			volume := GetPVC(tt.volumeName, tt.pvc)
-
-			if volume.Name != tt.volumeName {
-				t.Errorf("TestGetPVC error: volume name does not match; expected %s got %s", tt.volumeName, volume.Name)
-			}
-
-			if volume.PersistentVolumeClaim.ClaimName != tt.pvc {
-				t.Errorf("TestGetPVC error: pvc name does not match; expected %s got %s", tt.pvc, volume.PersistentVolumeClaim.ClaimName)
-			}
-		})
-	}
-}
-
-func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
-
-	tests := []struct {
-		podName                string
-		namespace              string
-		serviceAccount         string
-		pvc                    string
-		volumeName             string
-		containerMountPathsMap map[string][]string
-		container              corev1.Container
-		labels                 map[string]string
-		wantErr                bool
-	}{
-		{
-			podName:        "podSpecTest",
-			namespace:      "default",
-			serviceAccount: "default",
-			pvc:            "mypvc",
-			volumeName:     "myvolume",
-			containerMountPathsMap: map[string][]string{
-				"container1": {"/tmp/path1", "/tmp/path2"},
-			},
-			container: corev1.Container{
-				Name:            "container1",
-				Image:           "image1",
-				ImagePullPolicy: corev1.PullAlways,
-
-				Command: []string{"tail"},
-				Args:    []string{"-f", "/dev/null"},
-				Env:     []corev1.EnvVar{},
-			},
-			labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
+			name:    "storage 10Gi",
+			pvcName: "postgresql",
 			wantErr: false,
 		},
-		{
-			podName:        "podSpecTest",
-			namespace:      "default",
-			serviceAccount: "default",
-			pvc:            "mypvc",
-			volumeName:     "myvolume",
-			containerMountPathsMap: map[string][]string{
-				"container1": {"/tmp/path1", "/tmp/path2"},
-			},
-			container: corev1.Container{},
-			labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
-			wantErr: true,
-		},
 	}
-
 	for _, tt := range tests {
-		t.Run(tt.podName, func(t *testing.T) {
-			containers := AddVolumeMountToContainers([]corev1.Container{tt.container}, tt.volumeName, tt.containerMountPathsMap)
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
 
-			mountPathCount := 0
-			for _, container := range containers {
-				if container.Name == tt.container.Name {
-					for _, volumeMount := range container.VolumeMounts {
-						if volumeMount.Name == tt.volumeName {
-							for _, mountPath := range tt.containerMountPathsMap[tt.container.Name] {
-								if volumeMount.MountPath == mountPath {
-									mountPathCount++
-								}
-							}
-						}
-					}
-				}
+			fakeClientSet.Kubernetes.PrependReactor("delete", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			err := fakeClient.DeletePVC(tt.pvcName)
+
+			//Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.DeletePVC(name) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if mountPathCount != len(tt.containerMountPathsMap[tt.container.Name]) {
-				t.Errorf("Volume Mounts for %s have not been properly mounted to the podTemplateSpec", tt.volumeName)
+			// Check for validating actions performed
+			if (len(fakeClientSet.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
+				t.Errorf("expected 1 action in DeletePVC got: %v", fakeClientSet.Kubernetes.Actions())
+			}
+
+			// Check for value with which the function has called
+			DeletedPVC := fakeClientSet.Kubernetes.Actions()[0].(ktesting.DeleteAction).GetName()
+			if DeletedPVC != tt.pvcName {
+				t.Errorf("Delete action is performed with wrong pvcName, expected: %s, got %s", tt.pvcName, DeletedPVC)
+
 			}
 		})
 	}
 }
 
-func TestGetPVCsFromSelector(t *testing.T) {
+func TestListPVCs(t *testing.T) {
 	tests := []struct {
 		name      string
 		pvcName   string
@@ -281,7 +214,7 @@ func TestGetPVCsFromSelector(t *testing.T) {
 				return true, &listOfPVC, nil
 			})
 
-			PVCs, err := fkclient.GetPVCsFromSelector(selector)
+			PVCs, err := fkclient.ListPVCs(selector)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestGetPVCsFromSelector: Error listing PVCs with selector: %v", err)
 			}
@@ -304,154 +237,107 @@ func TestGetPVCsFromSelector(t *testing.T) {
 	}
 }
 
-func TestGetPVCAndVolumeMount(t *testing.T) {
-
-	volNames := [...]string{"volume1", "volume2", "volume3"}
-	volContainerPath := [...]string{"/home/user/path1", "/home/user/path2", "/home/user/path3"}
-
+func TestGetPVCFromName(t *testing.T) {
 	tests := []struct {
-		name                    string
-		podName                 string
-		namespace               string
-		labels                  map[string]string
-		containers              []corev1.Container
-		volumeNameToPVCName     map[string]string
-		componentAliasToVolumes map[string][]common.DevfileVolume
-		wantErr                 bool
+		name    string
+		pvcName string
+		wantPVC *corev1.PersistentVolumeClaim
+		wantErr bool
 	}{
 		{
-			name:      "Case: Valid case",
-			podName:   "podSpecTest",
-			namespace: "default",
-			labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
-			containers: []corev1.Container{
-				{
-					Name: "container1",
-				},
-				{
-					Name: "container2",
-				},
-			},
-			volumeNameToPVCName: map[string]string{
-				"volume1": "volume1-pvc",
-				"volume2": "volume2-pvc",
-				"volume3": "volume3-pvc",
-			},
-			componentAliasToVolumes: map[string][]common.DevfileVolume{
-				"container1": []common.DevfileVolume{
-					{
-						Name:          volNames[0],
-						ContainerPath: volContainerPath[0],
-					},
-					{
-						Name:          volNames[0],
-						ContainerPath: volContainerPath[1],
-					},
-					{
-						Name:          volNames[1],
-						ContainerPath: volContainerPath[2],
-					},
-				},
-				"container2": []common.DevfileVolume{
-					{
-						Name:          volNames[1],
-						ContainerPath: volContainerPath[1],
-					},
-					{
-						Name:          volNames[2],
-						ContainerPath: volContainerPath[2],
-					},
+			name:    "storage 10Gi",
+			pvcName: "postgresql",
+			wantPVC: &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "postgresql",
 				},
 			},
 			wantErr: false,
 		},
-		{
-			name:      "Case: Error case",
-			podName:   "podSpecTest",
-			namespace: "default",
-			labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
-			containers: []corev1.Container{
-				{
-					Name: "container2",
-				},
-			},
-			volumeNameToPVCName: map[string]string{
-				"volume2": "",
-				"volume3": "volume3-pvc",
-			},
-			componentAliasToVolumes: map[string][]common.DevfileVolume{
-				"container2": []common.DevfileVolume{
-					{
-						Name:          volNames[1],
-						ContainerPath: volContainerPath[1],
-					},
-					{
-						Name:          volNames[2],
-						ContainerPath: volContainerPath[2],
-					},
-				},
-			},
-			wantErr: true,
-		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
 
-			containers, pvcVols, err := GetPVCAndVolumeMount(tt.containers, tt.volumeNameToPVCName, tt.componentAliasToVolumes)
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() unexpected error %v, wantErr %v", err, tt.wantErr)
-			} else if tt.wantErr && err != nil {
-				return
-			} else if tt.wantErr && err == nil {
-				t.Error("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() expected error but got nil")
+			fakeClientSet.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.wantPVC, nil
+			})
+
+			returnPVC, err := fakeClient.GetPVCFromName(tt.pvcName)
+
+			//Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.GetPVCFromName(name) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+			// Check for validating actions performed
+			if (len(fakeClientSet.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
+				t.Errorf("expected 1 action in GetPVCFromName got: %v", fakeClientSet.Kubernetes.Actions())
+			}
+			// Check for value with which the function has called
+			PVCname := fakeClientSet.Kubernetes.Actions()[0].(ktesting.GetAction).GetName()
+			if PVCname != tt.pvcName {
+				t.Errorf("Get action is performed with wrong pvcName, expected: %s, got %s", tt.pvcName, PVCname)
+
+			}
+			// Check for returnPVC and tt.wantPVC is same
+			if returnPVC != tt.wantPVC {
+				t.Errorf("Get action has returned pvc with wrong name, expected: %s, got %s", tt.wantPVC, returnPVC)
+			}
+		})
+	}
+}
+
+func TestListPVCNames(t *testing.T) {
+	type args struct {
+		selector string
+	}
+	tests := []struct {
+		name         string
+		args         args
+		returnedPVCs *corev1.PersistentVolumeClaimList
+		want         []string
+		wantErr      bool
+	}{
+		{
+			name: "case 1: two pvcs returned",
+			args: args{
+				"component-name=nodejs",
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("storage-1", "1Gi", map[string]string{"component-name": "nodejs"}),
+					*testingutil.FakePVC("storage-2", "1Gi", map[string]string{"component-name": "nodejs"}),
+				},
+			},
+			want: []string{"storage-1", "storage-2"},
+		},
+		{
+			name: "case 2: no pvcs returned",
+			args: args{
+				"component-name=nodejs",
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{},
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+
+			fkclientset.Kubernetes.PrependReactor("list", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.returnedPVCs, nil
+			})
+
+			got, err := fkclient.ListPVCNames(tt.args.selector)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListPVCNames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			// The total number of expected volumes is equal to the number of volumes defined in the devfile
-			expectedNumVolumes := len(tt.volumeNameToPVCName)
-
-			// check the number of containers and volumes in the pod template spec
-			if len(containers) != len(tt.containers) {
-				t.Errorf("TestGetPVCAndVolumeMount error - Incorrect number of Containers found in the pod template spec, expected: %v found: %v", len(tt.containers), len(containers))
-				return
-			}
-			if len(pvcVols) != expectedNumVolumes {
-				t.Errorf("TestGetPVCAndVolumeMount error - incorrect amount of pvc volumes in pod template spec expected %v, actual %v", expectedNumVolumes, len(pvcVols))
-				return
-			}
-
-			// check the volume mounts of the pod template spec containers
-			for _, container := range containers {
-				for testcontainerAlias, testContainerVolumes := range tt.componentAliasToVolumes {
-					if container.Name == testcontainerAlias {
-						// check if container has the correct number of volume mounts
-						if len(container.VolumeMounts) != len(testContainerVolumes) {
-							t.Errorf("TestGetPVCAndVolumeMount - Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), len(container.VolumeMounts))
-						}
-
-						// check if container has the specified volume
-						volumeMatched := 0
-						for _, volumeMount := range container.VolumeMounts {
-							for _, testVolume := range testContainerVolumes {
-								testVolumeName := testVolume.Name
-								testVolumePath := testVolume.ContainerPath
-								if strings.Contains(volumeMount.Name, testVolumeName) && volumeMount.MountPath == testVolumePath {
-									volumeMatched++
-								}
-							}
-						}
-						if volumeMatched != len(testContainerVolumes) {
-							t.Errorf("TestGetPVCAndVolumeMount - Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), volumeMatched)
-						}
-					}
-				}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ListPVCNames() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

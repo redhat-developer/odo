@@ -350,7 +350,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	// Get PVC volumes and Volume Mounts
-	containers, pvcVolumes, err := kclient.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
+	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}

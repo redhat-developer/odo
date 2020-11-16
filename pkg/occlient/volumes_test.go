@@ -88,48 +88,6 @@ func TestCreatePVC(t *testing.T) {
 	}
 }
 
-func TestDeletePVC(t *testing.T) {
-	tests := []struct {
-		name    string
-		pvcName string
-		wantErr bool
-	}{
-		{
-			name:    "storage 10Gi",
-			pvcName: "postgresql",
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fakeClient, fakeClientSet := FakeNew()
-
-			fakeClientSet.Kubernetes.PrependReactor("delete", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, nil, nil
-			})
-
-			err := fakeClient.DeletePVC(tt.pvcName)
-
-			//Checks for error in positive cases
-			if !tt.wantErr == (err != nil) {
-				t.Errorf(" client.DeletePVC(name) unexpected error %v, wantErr %v", err, tt.wantErr)
-			}
-
-			// Check for validating actions performed
-			if (len(fakeClientSet.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
-				t.Errorf("expected 1 action in DeletePVC got: %v", fakeClientSet.Kubernetes.Actions())
-			}
-
-			// Check for value with which the function has called
-			DeletedPVC := fakeClientSet.Kubernetes.Actions()[0].(ktesting.DeleteAction).GetName()
-			if DeletedPVC != tt.pvcName {
-				t.Errorf("Delete action is performed with wrong pvcName, expected: %s, got %s", tt.pvcName, DeletedPVC)
-
-			}
-		})
-	}
-}
-
 func TestAddPVCToDeploymentConfig(t *testing.T) {
 	type args struct {
 		dc   *appsv1.DeploymentConfig
@@ -359,7 +317,7 @@ func TestRemoveVolumeFromDC(t *testing.T) {
 	}
 }
 
-func TestRemoveVolumeMountsFromDC(t *testing.T) {
+func Test_removeVolumeMountsFromDC(t *testing.T) {
 	type args struct {
 		volName string
 		dc      appsv1.DeploymentConfig
@@ -408,6 +366,193 @@ func TestRemoveVolumeMountsFromDC(t *testing.T) {
 				}
 			}
 
+		})
+	}
+}
+
+func TestGetPVCNameFromVolumeMountName(t *testing.T) {
+	type args struct {
+		volumeMountName string
+		dc              *appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Test case : Deployment config with given PVC",
+			args: args{
+				volumeMountName: "test-pvc",
+				dc: &appsv1.DeploymentConfig{
+					Spec: appsv1.DeploymentConfigSpec{
+						Selector: map[string]string{
+							"deploymentconfig": "test",
+						},
+						Template: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "test",
+										VolumeMounts: []corev1.VolumeMount{
+											{
+												MountPath: "/tmp",
+												Name:      "test-pvc",
+											},
+										},
+									},
+								},
+								Volumes: []corev1.Volume{
+									{
+										Name: "test-pvc",
+										VolumeSource: corev1.VolumeSource{
+											PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+												ClaimName: "test-pvc",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "test-pvc",
+		},
+		{
+			name: "Test case : Deployment config without given PVC",
+			args: args{
+				volumeMountName: "non-existent-pvc",
+				dc: &appsv1.DeploymentConfig{
+					Spec: appsv1.DeploymentConfigSpec{
+						Selector: map[string]string{
+							"deploymentconfig": "test",
+						},
+						Template: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "test",
+										VolumeMounts: []corev1.VolumeMount{
+											{
+												MountPath: "/tmp",
+												Name:      "test-pvc",
+											},
+										},
+									},
+								},
+								Volumes: []corev1.Volume{
+									{
+										Name: "test-pvc",
+										VolumeSource: corev1.VolumeSource{
+											PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+												ClaimName: "test-pvc",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, _ := FakeNew()
+
+			returnValue := fakeClient.GetPVCNameFromVolumeMountName(tt.args.volumeMountName, tt.args.dc)
+
+			// Check for validating return value
+			if returnValue != tt.want {
+				t.Errorf("error in return value got: %v, expected %v", returnValue, tt.want)
+			}
+
+		})
+	}
+}
+
+func TestRemoveVolumeFromDeploymentConfig(t *testing.T) {
+	type args struct {
+		pvc    string
+		dcName string
+	}
+	tests := []struct {
+		name     string
+		dcBefore *appsv1.DeploymentConfig
+		args     args
+		wantErr  bool
+	}{
+		{
+			name: "Test case : 1",
+			dcBefore: &appsv1.DeploymentConfig{
+				Spec: appsv1.DeploymentConfigSpec{
+					Selector: map[string]string{
+						"deploymentconfig": "test",
+					},
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test",
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											MountPath: "/tmp",
+											Name:      "test-pvc",
+										},
+									},
+								},
+							},
+							Volumes: []corev1.Volume{
+								{
+									Name: "test-pvc",
+									VolumeSource: corev1.VolumeSource{
+										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+											ClaimName: "test-pvc",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				pvc:    "test-pvc",
+				dcName: "test",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.dcBefore, nil
+			})
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+			err := fakeClient.RemoveVolumeFromDeploymentConfig(tt.args.pvc, tt.args.dcName)
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.RemoveVolumeFromDeploymentConfig(pvc, dcName) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+			// Check for validating number of actions performed
+			if (len(fakeClientSet.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
+				t.Errorf("expected 2 actions in GetPVCFromName got: %v", fakeClientSet.Kubernetes.Actions())
+			}
+			updatedDc := fakeClientSet.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+			//	validating volume got removed from dc
+			for _, volume := range updatedDc.Spec.Template.Spec.Volumes {
+				if volume.PersistentVolumeClaim.ClaimName == tt.args.pvc {
+					t.Errorf("expected volume with name : %v to be removed from dc", tt.args.pvc)
+				}
+			}
 		})
 	}
 }

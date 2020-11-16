@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 )
 
@@ -40,11 +41,20 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string, o
 		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 
-	createdPvc, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create PVC")
+	return c.kubeClient.CreatePVC(pvc.ObjectMeta, pvc.Spec)
+}
+
+// GetPVCNameFromVolumeMountName returns the PVC associated with the given volume
+// An empty string is returned if the volume is not found
+func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv1.DeploymentConfig) string {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.PersistentVolumeClaim != nil {
+				return volume.PersistentVolumeClaim.ClaimName
+			}
+		}
 	}
-	return createdPvc, nil
+	return ""
 }
 
 // AddPVCToDeploymentConfig adds the given PVC to the given Deployment Config
@@ -77,29 +87,57 @@ func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc strin
 	return nil
 }
 
-// UpdatePVCLabels updates the given PVC with the given labels
-func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
-	pvc.Labels = labels
-	_, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
-	if err != nil {
-		return errors.Wrap(err, "unable to remove storage label from PVC")
-	}
-	return nil
-}
-
-// DeletePVC deletes the given PVC by name
-func (c *Client) DeletePVC(name string) error {
-	return c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(name, nil)
-}
-
 // IsAppSupervisorDVolume checks if the volume is a supervisorD volume
 func (c *Client) IsAppSupervisorDVolume(volumeName, dcName string) bool {
 	return volumeName == getAppRootVolumeName(dcName)
 }
 
+// RemoveVolumeFromDeploymentConfig removes the volume associated with the
+// given PVC from the Deployment Config. Both, the volume entry and the
+// volume mount entry in the containers, are deleted.
+func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) error {
+
+	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+
+		dc, err := c.GetDeploymentConfigFromName(dcName)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get Deployment Config: %v", dcName)
+		}
+
+		volumeNames := getVolumeNamesFromPVC(pvc, dc)
+		numVolumes := len(volumeNames)
+		if numVolumes == 0 {
+			return fmt.Errorf("no volume found for PVC %v in DC %v, expected one", pvc, dc.Name)
+		} else if numVolumes > 1 {
+			return fmt.Errorf("found more than one volume for PVC %v in DC %v, expected one", pvc, dc.Name)
+		}
+		volumeName := volumeNames[0]
+
+		// Remove volume if volume exists in Deployment Config
+		err = removeVolumeFromDC(volumeName, dc)
+		if err != nil {
+			return err
+		}
+		klog.V(3).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
+
+		// Remove at max 2 volume mounts if volume mounts exists
+		err = removeVolumeMountsFromDC(volumeName, dc)
+		if err != nil {
+			return err
+		}
+
+		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
+		return updateErr
+	})
+	if retryErr != nil {
+		return errors.Wrapf(retryErr, "updating Deployment Config %v failed", dcName)
+	}
+	return nil
+}
+
 // getVolumeNamesFromPVC returns the name of the volume associated with the given
 // PVC in the given Deployment Config
-func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) []string {
+func getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) []string {
 	var volumes []string
 	for _, volume := range dc.Spec.Template.Spec.Volumes {
 
