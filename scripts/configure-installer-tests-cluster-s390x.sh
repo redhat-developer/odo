@@ -21,7 +21,7 @@ USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odolo
 
 
 # list of namespace to create
-IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7"
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12"
 
 # Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
