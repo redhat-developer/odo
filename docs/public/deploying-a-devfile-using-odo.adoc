@@ -136,6 +136,8 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
 
 . Create a URL in order to access the deployed component:
 +
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
 [source,sh]
 ----
  $ odo url create  --host example.com
@@ -144,7 +146,6 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -243,6 +244,8 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
 
 . Create a URL in order to access the deployed component:
 +
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
 [source,sh]
 ----
  $ odo url create --host example.com
@@ -251,7 +254,6 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -335,6 +337,8 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
 
 . Create a URL in order to access the deployed component:
 +
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
 [source,sh]
 ----
  $ odo url create  --host example.com
@@ -343,7 +347,6 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -426,6 +429,8 @@ In this example we will be deploying a https://github.com/OpenLiberty/applicatio
 
 . Create a URL in order to access the deployed component:
 +
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
 [source,sh]
 ----
  $ odo url create --host example.com
@@ -434,7 +439,6 @@ In this example we will be deploying a https://github.com/OpenLiberty/applicatio
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
