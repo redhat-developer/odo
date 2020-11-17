@@ -17,12 +17,14 @@ import (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	var project string
+	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		// TODO: remove this when OperatorHub integration is fully baked into odo
 		// helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		oc = helper.NewOcRunner("oc")
 	})
 
 	preSetup := func() {
@@ -81,7 +83,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			Expect(stdOut).To(ContainSubstring("Service 'example' was created"))
 
 			// now verify if the pods for the operator have started
-			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			pods := oc.GetAllPodsInNs(project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
@@ -110,7 +112,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", project)
 
 			// now verify if the pods for the operator have started
-			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			pods := oc.GetAllPodsInNs(project)
 			// Look for pod with custom name because that's the name etcd will give to the pods.
 			compileString := name + `-.[a-z0-9]*`
 			etcdPod := regexp.MustCompile(compileString).FindString(pods)
@@ -209,7 +211,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, "--project", project)
 
 			// now verify if the pods for the operator have started
-			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			pods := oc.GetAllPodsInNs(project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
@@ -329,7 +331,7 @@ spec:
 			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
 
 			// now verify if the pods for the operator have started
-			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			pods := oc.GetAllPodsInNs(project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
@@ -423,7 +425,7 @@ spec:
 			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
 
 			// now verify if the pods for the operator have started
-			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			pods := oc.GetAllPodsInNs(project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 

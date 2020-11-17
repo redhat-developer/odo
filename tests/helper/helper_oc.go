@@ -593,3 +593,12 @@ func (oc OcRunner) GetAllPVCNames(namespace string) []string {
 func (oc OcRunner) DeletePod(podName string, namespace string) {
 	CmdShouldPass(oc.path, "delete", "pod", "--namespace", namespace, podName)
 }
+
+func (oc OcRunner) GetAllPodsInNs(namespace string) string {
+	cmd := []string{"get", "pods", "-n", namespace}
+	noResourcesMsg := fmt.Sprintf("No resources found in %s namespace", namespace)
+	WaitForCmdOut(oc.path, cmd, 1, true, func(output string) bool {
+		return !strings.Contains(output, noResourcesMsg)
+	}, true)
+	return CmdShouldPass(oc.path, cmd...)
+}
