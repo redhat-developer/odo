@@ -27,7 +27,7 @@ const (
 	DefaultTimeout = 1
 
 	// DefaultPushTimeout is the default timeout for pods (in seconds)
-	DefaultPushTimeout = 240
+	DefaultPushTimeout = 2400
 
 	// DefaultBuildTimeout is the default build timeout for pods (in seconds)
 	DefaultBuildTimeout = 300
