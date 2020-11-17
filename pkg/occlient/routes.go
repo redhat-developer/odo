@@ -17,9 +17,7 @@ func (c *Client) IsRouteSupported() (bool, error) {
 
 // GetRoute gets the route with the given name
 func (c *Client) GetRoute(name string) (*routev1.Route, error) {
-	route, err := c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
-	return route, err
-
+	return c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
 }
 
 // CreateRoute creates a route object for the given service and with the given labels
@@ -79,7 +77,7 @@ func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
 func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
 	routes, err := c.ListRoutes(labelSelector)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list routes")
+		return nil, err
 	}
 
 	var routeNames []string
