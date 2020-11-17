@@ -143,7 +143,7 @@ func TestGetPushTimeout(t *testing.T) {
 		{
 			name:           "Case 1: Validating default value from test case",
 			existingConfig: Preference{},
-			want:           240,
+			want:           DefaultPushTimeout,
 		},
 
 		{
