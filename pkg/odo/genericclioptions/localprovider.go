@@ -5,8 +5,6 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/odo/util"
-	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )
@@ -19,19 +17,7 @@ func GetValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 // getValidEnvInfo accesses the environment file
 func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 
-	// Get details from the env file
-	componentContext := FlagValueIfSet(command, ContextFlagName)
-
-	// Grab the absolute path of the env file
-	if componentContext != "" {
-		fAbs, err := pkgUtil.GetAbsPath(componentContext)
-		util.LogErrorAndExit(err, "")
-		componentContext = fAbs
-	} else {
-		fAbs, err := pkgUtil.GetAbsPath(".")
-		util.LogErrorAndExit(err, "")
-		componentContext = fAbs
-	}
+	componentContext := GetContextFlagValue(command)
 
 	// Access the env file
 	envInfo, err := envinfo.NewEnvSpecificInfo(componentContext)
@@ -59,15 +45,8 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 
 func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*config.LocalConfigInfo, error) {
 
-	// Get details from the local config file
-	contextDir := FlagValueIfSet(command, ContextFlagName)
+	contextDir := GetContextFlagValue(command)
 
-	// Grab the absolute path of the configuration
-	if contextDir != "" {
-		fAbs, err := pkgUtil.GetAbsPath(contextDir)
-		util.LogErrorAndExit(err, "")
-		contextDir = fAbs
-	}
 	// Access the local configuration
 	localConfiguration, err := config.NewLocalConfigInfo(contextDir)
 	if err != nil {
