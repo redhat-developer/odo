@@ -89,35 +89,35 @@ var _ = Describe("odo supported images e2e tests", func() {
 		})
 
 		It("Should be able to verify the nodejs-10 image", func() {
-			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("rhoar-nodejs", "nodejs-10:latest"), "nodejs:latest", commonVar.Project)
-			verifySupportedImage(filepath.Join("rhoar-nodejs", "nodejs-10:latest"), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.ToSlash(filepath.Join("rhoar-nodejs", "nodejs-10:latest")), "nodejs:latest", commonVar.Project)
+			verifySupportedImage(filepath.ToSlash(filepath.Join("rhoar-nodejs", "nodejs-10:latest")), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-10-centos7 image", func() {
-			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-10-centos7:latest"), "nodejs:latest", commonVar.Project)
-			verifySupportedImage(filepath.Join("centos", "nodejs-10-centos7:latest"), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("docker.io", filepath.ToSlash(filepath.Join("centos", "nodejs-10-centos7:latest")), "nodejs:latest", commonVar.Project)
+			verifySupportedImage(filepath.ToSlash(filepath.Join("centos", "nodejs-10-centos7:latest")), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12-centos7 image", func() {
-			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-12-centos7:latest"), "nodejs:latest", commonVar.Project)
-			verifySupportedImage(filepath.Join("centos", "nodejs-12-centos7:latest"), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("docker.io", filepath.ToSlash(filepath.Join("centos", "nodejs-12-centos7:latest")), "nodejs:latest", commonVar.Project)
+			verifySupportedImage(filepath.ToSlash(filepath.Join("centos", "nodejs-12-centos7:latest")), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 	})
 
 	Context("odo supported images deployment", func() {
 		It("Should be able to verify the openjdk18-openshift image", func() {
-			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "java:8", commonVar.Project)
-			verifySupportedImage(filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "openjdk", "java:8", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.ToSlash(filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest")), "java:8", commonVar.Project)
+			verifySupportedImage(filepath.ToSlash(filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest")), "openjdk", "java:8", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the openjdk-11-rhel7 image", func() {
-			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "java:8", commonVar.Project)
-			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "openjdk", "java:8", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.ToSlash(filepath.Join("openjdk", "openjdk-11-rhel7:latest")), "java:8", commonVar.Project)
+			verifySupportedImage(filepath.ToSlash(filepath.Join("openjdk", "openjdk-11-rhel7:latest")), "openjdk", "java:8", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-10-rhel7 image", func() {
-			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("rhscl", "nodejs-10-rhel7:latest"), "nodejs:latest", commonVar.Project)
-			verifySupportedImage(filepath.Join("rhscl", "nodejs-10-rhel7:latest"), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.ToSlash(filepath.Join("rhscl", "nodejs-10-rhel7:latest")), "nodejs:latest", commonVar.Project)
+			verifySupportedImage(filepath.ToSlash(filepath.Join("rhscl", "nodejs-10-rhel7:latest")), "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 	})
 
@@ -130,18 +130,18 @@ var _ = Describe("odo supported images e2e tests", func() {
 		})
 
 		It("Should be able to verify the openjdk-11-rhel8 image", func() {
-			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "java:8", "openjdk-11-rhel8")
-			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "openjdk", "java:8", "openjdk-11-rhel8", appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.ToSlash(filepath.Join("openjdk", "openjdk-11-rhel8:latest")), "java:8", "openjdk-11-rhel8")
+			verifySupportedImage(filepath.ToSlash(filepath.Join("openjdk", "openjdk-11-rhel8:latest")), "openjdk", "java:8", "openjdk-11-rhel8", appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12-rhel7 image", func() {
-			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs:latest", "nodejs-12-rhel7")
-			verifySupportedImage(filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs", "nodejs:latest", "nodejs-12-rhel7", appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.ToSlash(filepath.Join("rhscl", "nodejs-12-rhel7:latest")), "nodejs:latest", "nodejs-12-rhel7")
+			verifySupportedImage(filepath.ToSlash(filepath.Join("rhscl", "nodejs-12-rhel7:latest")), "nodejs", "nodejs:latest", "nodejs-12-rhel7", appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12 image", func() {
-			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("ubi8", "nodejs-12:latest"), "nodejs:latest", "nodejs-12")
-			verifySupportedImage(filepath.Join("ubi8", "nodejs-12:latest"), "nodejs", "nodejs:latest", "nodejs-12", appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.ToSlash(filepath.Join("ubi8", "nodejs-12:latest")), "nodejs:latest", "nodejs-12")
+			verifySupportedImage(filepath.ToSlash(filepath.Join("ubi8", "nodejs-12:latest")), "nodejs", "nodejs:latest", "nodejs-12", appName, commonVar.Context)
 		})
 	})
 
