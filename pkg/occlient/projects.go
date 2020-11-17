@@ -15,8 +15,8 @@ import (
 	"k8s.io/klog"
 )
 
-// GetProject returns project based on the name of the project.Errors related to
-// project not being found or forbidden are translated to nil project for compatibility
+// GetProject returns project based on the name of the project
+// errors related to project not being found or forbidden are translated to nil project for compatibility
 func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
 	prj, err := c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
 	if err != nil {
@@ -40,11 +40,11 @@ func (c *Client) ListProjects() (*projectv1.ProjectList, error) {
 	return c.projectClient.Projects().List(metav1.ListOptions{})
 }
 
-// GetProjectNames return list of existing project names that user has access to.
-func (c *Client) GetProjectNames() ([]string, error) {
+// ListProjectNames return list of existing project names that user has access to.
+func (c *Client) ListProjectNames() ([]string, error) {
 	projects, err := c.ListProjects()
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list projects")
+		return nil, err
 	}
 
 	var projectNames []string
@@ -156,7 +156,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 // CreateNewProject creates project with given projectName
 func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	// Instantiate watcher before requesting new project
-	// If watched is created after the project it can lead to situation when the project is created before the watcher.
+	// If watcher is created after the project it can lead to situation when the project is created before the watcher.
 	// When this happens, it gets stuck waiting for event that already happened.
 	var watcher watch.Interface
 	var err error
@@ -220,7 +220,7 @@ func (c *Client) GetCurrentProjectName() string {
 func (c *Client) SetCurrentProject(projectName string) error {
 	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", projectName)
+		return err
 	}
 
 	rawConfig.Contexts[rawConfig.CurrentContext].Namespace = projectName

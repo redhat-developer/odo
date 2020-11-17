@@ -33,11 +33,6 @@ func TestCreateNewProject(t *testing.T) {
 			wait:     true,
 			wantErr:  false,
 		},
-		// {
-		// 	name:     "Case 2: empty project name",
-		// 	projName: "",
-		// 	wantErr:  true,
-		// },
 	}
 
 	for _, tt := range tests {
@@ -148,7 +143,7 @@ func TestListProjects(t *testing.T) {
 	}
 }
 
-func TestGetProjectNames(t *testing.T) {
+func TestListProjectNames(t *testing.T) {
 	tests := []struct {
 		name             string
 		returnedProjects *projectv1.ProjectList
@@ -176,13 +171,13 @@ func TestGetProjectNames(t *testing.T) {
 				return true, tt.returnedProjects, nil
 			})
 
-			got, err := fkclient.GetProjectNames()
+			got, err := fkclient.ListProjectNames()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetProjectNames() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListProjectNames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetProjectNames() got = %v, want %v", got, tt.want)
+				t.Errorf("ListProjectNames() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
