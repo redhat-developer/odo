@@ -19,9 +19,8 @@ import (
 type ComponentSettings struct {
 	Name string `yaml:"Name,omitempty"`
 
-	Project     string              `yaml:"Project,omitempty"`
-	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
-	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
+	Project string        `yaml:"Project,omitempty"`
+	URL     *[]EnvInfoURL `yaml:"Url,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
 	// for grouping of components. A namespace can contain multiple applications
 	AppName string         `yaml:"AppName,omitempty" json:"AppName,omitempty"`
@@ -235,9 +234,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 			} else {
 				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
 			}
-		case "push":
-			pushCommandValue := value.(EnvInfoPushCommand)
-			esi.componentSettings.PushCommand = &pushCommandValue
+
 		case "link":
 			linkValue := value.(EnvInfoLink)
 			if esi.componentSettings.Link != nil {
@@ -385,14 +382,6 @@ func (ei *EnvInfo) GetURL() []EnvInfoURL {
 		return []EnvInfoURL{}
 	}
 	return *ei.componentSettings.URL
-}
-
-// GetPushCommand returns the EnvInfoPushCommand, returns default if nil
-func (ei *EnvInfo) GetPushCommand() EnvInfoPushCommand {
-	if ei.componentSettings.PushCommand == nil {
-		return EnvInfoPushCommand{}
-	}
-	return *ei.componentSettings.PushCommand
 }
 
 // GetName returns the component name
