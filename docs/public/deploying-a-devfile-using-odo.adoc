@@ -116,7 +116,6 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
 [source,sh]
 ----
    $ odo create java-springboot myspring
-   Experimental mode is enabled, use at your own risk
 
    Validation
     ✓  Checking devfile compatibility [195728ns]
@@ -232,7 +231,6 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
 [source,sh]
 ----
  $ odo create nodejs mynodejs
- Experimental mode is enabled, use at your own risk
 
  Validation
   ✓  Checking devfile compatibility [111738ns]
@@ -325,7 +323,6 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
 [source,sh]
 ----
    $ odo create java-quarkus myquarkus
-   Experimental mode is enabled, use at your own risk
 
    Validation
     ✓  Checking devfile compatibility [195728ns]
@@ -484,6 +481,8 @@ Pushing devfile component myopenliberty
 ----
 
 You can now continue developing your application. Just refreshing the browser will render the source code changes.
+
+Run `odo delete` to delete the application from cluster.
 
 . To delete your deployed application:
 +
