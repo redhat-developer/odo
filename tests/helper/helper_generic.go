@@ -288,11 +288,10 @@ func CommonBeforeEach() CommonVar {
 	commonVar.Context = CreateNewContext()
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
 	commonVar.CliRunner = GetCliRunner()
+	LocalKubeconfigSet(commonVar.Context)
 	commonVar.Project = commonVar.CliRunner.CreateRandNamespaceProject()
 	commonVar.OriginalWorkingDirectory = Getwd()
-
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "preference.yaml"))
-	LocalKubeconfigSet(commonVar.Context)
 
 	return commonVar
 }
