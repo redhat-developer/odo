@@ -98,128 +98,15 @@ Once the pod for this `CatalogSource` is up, wait a few seconds before trying to
 
 === Installing the Service Binding Operator
 
-We use the link:https://github.com/redhat-developer/service-binding-operator/[Service Binding Operator] to provide `odo link` feature which links an odo component with an Operator backed service. Thus, to be able to use this feature, it's essential that we install the Operator first.
+odo uses the link:https://github.com/redhat-developer/service-binding-operator/[Service Binding Operator] to provide `odo link` feature which links an odo component with an Operator backed service. Thus, to be able to use this feature, it's essential that we install the Operator first.
 
 Service Binding Operator is not yet available via the OLM. The team is link:https://github.com/redhat-developer/service-binding-operator/issues/727[working on making it available] through OLM.
 
-At the moment, to make Service Binding Operator work on Kubernetes, we need to keep a couple of things in mind:
-
-. It needs to be installed by cloning its GitHub repository
-. It must be installed in a namespace other than `operators` namespace.
-. In this guide, we're installing the Service Binding Operator in `default` namespace. You can install it in the namespace you prefer to use it in
-
-Let's setup the Service Binding Operator now.
-
-. First, let's clone its repository on the host system where we're running minikube and checkout the specific tag that is currently supported by `odo link` command:
-+
+To install the Operator, execute the following `kubectl` command:
 [source,sh]
 ----
-$ git clone https://github.com/redhat-developer/service-binding-operator/
-$ cd service-binding-operator
-$ git fetch --tags
-$ git checkout tags/v0.1.1-364 -b v0.1.1-364
-$ cd deploy
+$ kubectl apply -f https://github.com/redhat-developer/service-binding-operator/releases/download/v0.1.1-364/install-v0.1.1-364.yaml
 ----
-
-. Next, install its CRD (link:https://docs.openshift.com/container-platform/latest/operators/understanding/crds/crd-extending-api-with-crds.html[Custom Resource Definition]) and create link:https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[ServiceAccount], https://kubernetes.io/docs/reference/access-authn-authz/rbac/#role-and-clusterrole[Role] and link:https://kubernetes.io/docs/reference/access-authn-authz/rbac/#rolebinding-and-clusterrolebinding[RoleBinding] it requires:
-+
-[source,sh]
-----
-$ kubectl create -f https://raw.githubusercontent.com/redhat-developer/service-binding-operator/v0.1.1-364/deploy/crds/apps.openshift.io_servicebindingrequests_crd.yaml
-$ kubectl create -f service_account.yaml -f role.yaml -f role_binding.yaml
-----
-
-. Now, create a link:https://kubernetes.io/docs/reference/access-authn-authz/rbac/#role-and-clusterrole[ClusterRole] and a link:https://kubernetes.io/docs/reference/access-authn-authz/rbac/#rolebinding-and-clusterrolebinding[ClusterRoleBinding] that are required to allow the Service Binding Operator access resources of API groups `apps.openshift.io` and `apiextensions.k8s.io` at cluster level:
-+
-[source,sh]
-----
-$ kubectl create -f - << EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: sbo-cluster-role
-rules:
-- apiGroups: 
-  - apps.openshift.io
-  resources: 
-  - "*"
-  verbs:
-  - "*"
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  - customresourcedefinitions/status
-  verbs:
-  - get
-  - list
-  - patch
-  - watch
-EOF
-
-$ kubectl create -f - << EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: sbo-cluster-role-binding
-subjects:
-- kind: ServiceAccount
-  name: service-binding-operator
-  namespace: default
-roleRef:
-  kind: ClusterRole
-  name: sbo-cluster-role
-  apiGroup: rbac.authorization.k8s.io
-EOF
-----
-
-. Next, we modify the `operator.yaml` file to install the Operator in a specific namespace and use the container image that matches the version of Service Binding Operator that odo supports. Below is the resulting `operator.yaml` file (set the value of namespace to suit your environment):
-+
-[source,yaml]
-----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: service-binding-operator
-  namespace: default
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      name: service-binding-operator
-  template:
-    metadata:
-      labels:
-        name: service-binding-operator
-    spec:
-      serviceAccountName: service-binding-operator
-      containers:
-        - name: service-binding-operator
-          # Replace this with the built image name
-          image: quay.io/redhat-developer/app-binding-operator:v0.1.1-364
-          command:
-          - service-binding-operator
-          imagePullPolicy: Always
-          env:
-            - name: WATCH_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: OPERATOR_NAME
-              value: "service-binding-operator"
-----
-
-. Finally, install the Operator using below command:
-+
-[source,sh]
-----
-$ kubectl create -f operator.yaml
-----
-
 
 You should now see a `Deployment` for Service Binding Operator in the namespace where you installed it:
 [source,sh]
@@ -227,3 +114,14 @@ You should now see a `Deployment` for Service Binding Operator in the namespace 
 $ kubectl get deploy -n <replace-namespace-value>
 ----
 
+==== Troubleshooting
+
+If linking doesn't work after installing the Service Binding Operator as described above, please open an issue on the odo repository describing the issue. On the issue, please provide the logs of the `Pod` created by the `Deployment` of Service Binding Operator. Execute below command in the namespace where you installed Service Binding Operator (note that `Pod` name will be different in your environment than what's shown below):
+[source,sh]
+----
+$ kubectl get pods
+NAME                                        READY   STATUS    RESTARTS   AGE
+service-binding-operator-65745c4bdc-gc6km   1/1     Running   0          34m
+
+$ kubectl logs service-binding-operator-65745c4bdc-gc6km --follow
+----
