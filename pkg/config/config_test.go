@@ -521,7 +521,7 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			args: map[string]string{
 				"memory": "500Mi",
 			},
-			currentDevfile: testDevfileObj(fs),
+			currentDevfile: testingutil.GetTestDevfileObj(fs),
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
@@ -573,7 +573,7 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			args: map[string]string{
 				"ports": "8080,8081/UDP,8080/TCP",
 			},
-			currentDevfile: testDevfileObj(fs),
+			currentDevfile: testingutil.GetTestDevfileObj(fs),
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
@@ -643,7 +643,7 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			args: map[string]string{
 				"ports": "8080,8081/UDP,8083/",
 			},
-			currentDevfile: testDevfileObj(fs),
+			currentDevfile: testingutil.GetTestDevfileObj(fs),
 			wantErr:        true,
 		},
 	}
@@ -696,50 +696,4 @@ func createDirectoryAndFile(create bool, fs filesystem.Filesystem, odoDir string
 		return err
 	}
 	return nil
-}
-
-func testDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
-	return parser.DevfileObj{
-		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-		Data: &testingutil.TestDevfileData{
-			Commands: []devfilev1.Command{
-				{
-					Id: "devbuild",
-					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{
-							WorkingDir: "/projects/nodejs-starter",
-						},
-					},
-				},
-			},
-			Components: []devfilev1.Component{
-				{
-					Name: "runtime",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Container: devfilev1.Container{
-								Image: "quay.io/nodejs-12",
-							},
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "port-3030",
-									TargetPort: 3000,
-								},
-							},
-						},
-					},
-				},
-				{
-					Name: "loadbalancer",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Container: devfilev1.Container{
-								Image: "quay.io/nginx",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 }

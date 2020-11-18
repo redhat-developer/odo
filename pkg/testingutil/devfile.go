@@ -5,7 +5,10 @@ import (
 
 	v1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	devfilepkg "github.com/devfile/api/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 )
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
@@ -225,5 +228,52 @@ func GetFakeVolumeMount(name, path string) v1.VolumeMount {
 	return v1.VolumeMount{
 		Name: name,
 		Path: path,
+	}
+}
+
+// GetTestDevfileObj returns a devfile object for testing
+func GetTestDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
+	return parser.DevfileObj{
+		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: &TestDevfileData{
+			Commands: []v1.Command{
+				{
+					Id: "devbuild",
+					CommandUnion: v1.CommandUnion{
+						Exec: &v1.ExecCommand{
+							WorkingDir: "/projects/nodejs-starter",
+						},
+					},
+				},
+			},
+			Components: []v1.Component{
+				{
+					Name: "runtime",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Container: v1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-3030",
+									TargetPort: 3000,
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "loadbalancer",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Container: v1.Container{
+								Image: "quay.io/nginx",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
