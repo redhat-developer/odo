@@ -93,7 +93,7 @@ func List(context *genericclioptions.Context) (ProjectList, error) {
 
 	var allProjects []string
 	if projectSupport {
-		allProjects, err = context.Client.GetProjectNames()
+		allProjects, err = context.Client.ListProjectNames()
 		if err != nil {
 			return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
 		}

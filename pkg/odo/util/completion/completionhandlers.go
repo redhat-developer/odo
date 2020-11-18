@@ -165,7 +165,7 @@ var FileCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 // ProjectNameCompletionHandler provides project name completion
 var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	projects, err := context.Client.GetProjectNames()
+	projects, err := context.Client.ListProjectNames()
 	if err != nil {
 		return completions
 	}
