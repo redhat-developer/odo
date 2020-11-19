@@ -12,7 +12,7 @@ odo utilizes Operators in order to provide a seamless method for custom controll
 
 ==== Prerequisites
 
-* You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes].
+* You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes]. If you're running a link:https://minikube.sigs.k8s.io/docs/[minikube] cluster, you can refer link:operators-on-minikube.adoc[this guide] to install Operators required to run example mentioned in this document.
 
 == Creating a project
 
