@@ -197,7 +197,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	// experimental workflow
 
-	devfileComponents := component.ComponentList{}
+	devfileComponents := []component.Component{}
 	var selector string
 	// TODO: wrap this into a component list for docker support
 	if lo.allAppsFlag {
@@ -209,11 +209,13 @@ func (lo *ListOptions) Run() (err error) {
 	currentComponentState := component.StateTypeNotPushed
 
 	if lo.KClient != nil {
-		devfileComponents, err = component.ListDevfileComponents(lo.Client, selector)
+		devfileComponentsOut, err := component.ListDevfileComponents(lo.Client, selector)
 		if err != nil {
 			return err
 		}
-		for _, comp := range devfileComponents.Items {
+
+		devfileComponents = devfileComponentsOut.Items
+		for _, comp := range devfileComponents {
 			if lo.EnvSpecificInfo != nil {
 				// if we can find a component from the listing from server then the local state is pushed
 				if lo.EnvSpecificInfo.EnvInfo.MatchComponent(comp.Name, comp.Spec.App, comp.Namespace) {
@@ -233,7 +235,7 @@ func (lo *ListOptions) Run() (err error) {
 			comp.Namespace = envinfo.GetNamespace()
 			comp.Spec.App = envinfo.GetApplication()
 			comp.Spec.Type = lo.componentType
-			devfileComponents.Items = append(devfileComponents.Items, comp)
+			devfileComponents = append(devfileComponents, comp)
 		}
 	}
 
@@ -279,11 +281,11 @@ func (lo *ListOptions) Run() (err error) {
 
 	if !log.IsJSON() {
 
-		if len(devfileComponents.Items) != 0 {
+		if len(devfileComponents) != 0 {
 			lo.hasDevfileComponents = true
 			fmt.Fprintln(w, "Devfile Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
-			for _, comp := range devfileComponents.Items {
+			for _, comp := range devfileComponents {
 				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Status.State)
 			}
 			w.Flush()
@@ -309,7 +311,7 @@ func (lo *ListOptions) Run() (err error) {
 			return
 		}
 	} else {
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(components, devfileComponents.Items)
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(components, devfileComponents)
 		machineoutput.OutputSuccess(combinedComponents)
 	}
 
