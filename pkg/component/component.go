@@ -857,6 +857,9 @@ func GetComponentNames(client *occlient.Client, applicationName string) ([]strin
 	return names, nil
 }
 
+// ListDevfileComponents returns the devfile component matching a selector.
+// The selector could be about selecting components part of an application.
+// There are helpers in "applabels" package for this.
 func ListDevfileComponents(client *occlient.Client, selector string) (ComponentList, error) {
 
 	var deploymentList []v1.Deployment
@@ -891,7 +894,7 @@ func ListS2IComponents(client *occlient.Client, applicationName string, localCon
 
 	var applicationSelector string
 	if applicationName != "" {
-		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+		applicationSelector = applabels.GetSelector(applicationName)
 	}
 
 	deploymentConfigSupported := false
@@ -953,11 +956,11 @@ func ListS2IComponents(client *occlient.Client, applicationName string, localCon
 	return compoList, nil
 }
 
-// List lists all components in active application
+// List lists all s2i and devfile components in active application
 func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 	var applicationSelector string
 	if applicationName != "" {
-		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+		applicationSelector = applabels.GetSelector(applicationName)
 	}
 	var components []Component
 	devfileList, err := ListDevfileComponents(client, applicationSelector)
@@ -1583,6 +1586,7 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 	return cmp
 }
 
+// NewComponent provides a constructor to component struct with some metadata prefilled
 func NewComponent(componentName string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
