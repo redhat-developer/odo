@@ -331,10 +331,11 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CmdShouldPass("odo", "create", cmpName, "--project", commonVar.Project, "--starter")
 
 			pathsToValidate := map[string]bool{
-				filepath.Join(contextDevfile, "java", "application", "rest"):                       true,
-				filepath.Join(contextDevfile, "java", "application", "Info.java"):                  true,
-				filepath.Join(contextDevfile, "java", "application", "rest", "v1", "Example.java"): true,
-				filepath.Join(contextDevfile, "resources", "public", "index.html"):                 true,
+				filepath.Join(contextDevfile, "java", "com"):                                            true,
+				filepath.Join(contextDevfile, "java", "com", "example"):                                 true,
+				filepath.Join(contextDevfile, "java", "com", "example", "demo"):                         true,
+				filepath.Join(contextDevfile, "java", "com", "example", "demo", "DemoApplication.java"): true,
+				filepath.Join(contextDevfile, "resources", "application.properties"):                    true,
 			}
 
 			pathsNotToBePresent := map[string]bool{
