@@ -7,13 +7,13 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	svc "github.com/openshift/odo/pkg/service"
 	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	"github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"
@@ -88,7 +88,7 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
-	options.commonLinkOptions.csvSupport, _ = util.IsCSVSupported()
+	options.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 	options.commonLinkOptions.sbr = &sbo.ServiceBindingRequest{}
 	return &options
 }

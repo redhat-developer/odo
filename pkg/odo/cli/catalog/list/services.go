@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	cmdutil "github.com/openshift/odo/pkg/odo/util"
+	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
 )
@@ -39,12 +39,12 @@ func NewListServicesOptions() *ListServicesOptions {
 
 // Complete completes ListServicesOptions after they've been created
 func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.csvSupport, err = cmdutil.IsCSVSupported(); err != nil {
+	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
 		return err
 	} else if o.csvSupport {
 		var noCsvs, noServices bool
 		o.Context = genericclioptions.NewContext(cmd)
-		o.csvs, err = o.KClient.GetClusterServiceVersionList()
+		o.csvs, err = catalog.ListOperatorServices(o.KClient)
 		if err != nil {
 			// Error only occurs when OperatorHub is not installed/enabled on the
 			// Kubernetes or OpenShift 4.x cluster. It doesn't occur when there are
