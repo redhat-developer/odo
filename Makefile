@@ -402,6 +402,11 @@ test-e2e-source:
 test-e2e-images:
 	ginkgo $(GINKGO_FLAGS) -focus="odo supported images e2e tests" tests/e2escenarios/
 
+# Run devfile e2e tests: odo devfile supported tests
+.PHONY: test-e2e-devfile
+test-e2e-devfile:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile supported tests" tests/e2escenarios/
+
 # Run all e2e test scenarios
 .PHONY: test-e2e-all
 test-e2e-all:
