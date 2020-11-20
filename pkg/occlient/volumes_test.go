@@ -371,6 +371,16 @@ func Test_removeVolumeMountsFromDC(t *testing.T) {
 }
 
 func TestGetPVCNameFromVolumeMountName(t *testing.T) {
+	dcWithPVC := fakeDeploymentConfig("test", "test", nil, nil, nil)
+	dcWithPVC.Spec.Template.Spec.Volumes = append(dcWithPVC.Spec.Template.Spec.Volumes, corev1.Volume{
+		Name: "test-pvc",
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: "test-pvc",
+			},
+		},
+	})
+
 	type args struct {
 		volumeMountName string
 		dc              *appsv1.DeploymentConfig
@@ -384,38 +394,7 @@ func TestGetPVCNameFromVolumeMountName(t *testing.T) {
 			name: "Test case : Deployment config with given PVC",
 			args: args{
 				volumeMountName: "test-pvc",
-				dc: &appsv1.DeploymentConfig{
-					Spec: appsv1.DeploymentConfigSpec{
-						Selector: map[string]string{
-							"deploymentconfig": "test",
-						},
-						Template: &corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "test",
-										VolumeMounts: []corev1.VolumeMount{
-											{
-												MountPath: "/tmp",
-												Name:      "test-pvc",
-											},
-										},
-									},
-								},
-								Volumes: []corev1.Volume{
-									{
-										Name: "test-pvc",
-										VolumeSource: corev1.VolumeSource{
-											PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-												ClaimName: "test-pvc",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				dc:              dcWithPVC,
 			},
 			want: "test-pvc",
 		},
@@ -423,38 +402,7 @@ func TestGetPVCNameFromVolumeMountName(t *testing.T) {
 			name: "Test case : Deployment config without given PVC",
 			args: args{
 				volumeMountName: "non-existent-pvc",
-				dc: &appsv1.DeploymentConfig{
-					Spec: appsv1.DeploymentConfigSpec{
-						Selector: map[string]string{
-							"deploymentconfig": "test",
-						},
-						Template: &corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									{
-										Name: "test",
-										VolumeMounts: []corev1.VolumeMount{
-											{
-												MountPath: "/tmp",
-												Name:      "test-pvc",
-											},
-										},
-									},
-								},
-								Volumes: []corev1.Volume{
-									{
-										Name: "test-pvc",
-										VolumeSource: corev1.VolumeSource{
-											PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-												ClaimName: "test-pvc",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				dc:              fakeDeploymentConfig("test", "test", nil, nil, nil),
 			},
 			want: "",
 		},
@@ -469,7 +417,6 @@ func TestGetPVCNameFromVolumeMountName(t *testing.T) {
 			if returnValue != tt.want {
 				t.Errorf("error in return value got: %v, expected %v", returnValue, tt.want)
 			}
-
 		})
 	}
 }
