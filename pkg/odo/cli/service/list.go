@@ -44,7 +44,7 @@ func NewServiceListOptions() *ServiceListOptions {
 
 // Complete completes ServiceListOptions after they've been created
 func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.csvSupport, err = odoutil.IsCSVSupported(); err != nil {
+	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
 		return err
 	} else if o.csvSupport {
 		o.Context = genericclioptions.NewDevfileContext(cmd)

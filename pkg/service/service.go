@@ -680,3 +680,13 @@ func isRequired(required []string, name string) bool {
 	}
 	return false
 }
+
+// IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
+func IsCSVSupported() (bool, error) {
+	oclient, err := occlient.New()
+	if err != nil {
+		return false, err
+	}
+
+	return oclient.IsCSVSupported()
+}

@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	cmdutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	svc "github.com/openshift/odo/pkg/service"
@@ -134,7 +133,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		o.interactive = true
 	}
 
-	if o.csvSupport, err = cmdutil.IsCSVSupported(); err != nil {
+	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
 		return err
 	} else if o.csvSupport {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
@@ -520,7 +519,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	}
 
 	// we ignore the error because it doesn't matter at this place to deal with it and the function returns a *cobra.Command
-	csvSupport, _ := cmdutil.IsCSVSupported()
+	csvSupport, _ := svc.IsCSVSupported()
 
 	if csvSupport {
 		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
