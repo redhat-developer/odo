@@ -37,4 +37,6 @@ make test-operator-hub
 # E2e tests
 make test-e2e-all
 
+cp -r reports $ARTIFACTS_DIR 
+
 odo logout

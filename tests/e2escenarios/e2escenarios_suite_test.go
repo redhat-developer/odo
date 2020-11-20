@@ -5,11 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/helper/reporter"
 )
 
 func TestE2eScenarios(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "odo e2e scenarios")
-	// Keep CustomReporters commented till https://github.com/onsi/ginkgo/issues/628 is fixed
-	//RunSpecsWithDefaultAndCustomReporters(t, "odo e2e scenarios", []Reporter{reporter.JunitReport(t, "../../reports")})
+	RunSpecsWithDefaultAndCustomReporters(t, "odo e2e scenarios", []Reporter{reporter.JunitReport(t, "../../reports")})
 }
