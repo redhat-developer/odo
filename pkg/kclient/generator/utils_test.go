@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -17,12 +17,12 @@ func TestConvertEnvs(t *testing.T) {
 	envVarsValues := []string{"value1", "value2", "value3"}
 	tests := []struct {
 		name    string
-		envVars []common.Env
+		envVars []devfilev1.EnvVar
 		want    []corev1.EnvVar
 	}{
 		{
 			name: "Case 1: One env var",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -37,7 +37,7 @@ func TestConvertEnvs(t *testing.T) {
 		},
 		{
 			name: "Case 2: Multiple env vars",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -68,7 +68,7 @@ func TestConvertEnvs(t *testing.T) {
 		},
 		{
 			name:    "Case 3: No env vars",
-			envVars: []common.Env{},
+			envVars: []devfilev1.EnvVar{},
 			want:    []corev1.EnvVar{},
 		},
 	}
@@ -85,15 +85,15 @@ func TestConvertEnvs(t *testing.T) {
 
 func TestConvertPorts(t *testing.T) {
 	endpointsNames := []string{"endpoint1", "endpoint2"}
-	endpointsPorts := []int32{8080, 9090}
+	endpointsPorts := []int{8080, 9090}
 	tests := []struct {
 		name      string
-		endpoints []common.Endpoint
+		endpoints []devfilev1.Endpoint
 		want      []corev1.ContainerPort
 	}{
 		{
 			name: "Case 1: One Endpoint",
-			endpoints: []common.Endpoint{
+			endpoints: []devfilev1.Endpoint{
 				{
 					Name:       endpointsNames[0],
 					TargetPort: endpointsPorts[0],
@@ -102,13 +102,13 @@ func TestConvertPorts(t *testing.T) {
 			want: []corev1.ContainerPort{
 				{
 					Name:          endpointsNames[0],
-					ContainerPort: endpointsPorts[0],
+					ContainerPort: int32(endpointsPorts[0]),
 				},
 			},
 		},
 		{
 			name: "Case 2: Multiple env vars",
-			endpoints: []common.Endpoint{
+			endpoints: []devfilev1.Endpoint{
 				{
 					Name:       endpointsNames[0],
 					TargetPort: endpointsPorts[0],
@@ -121,17 +121,17 @@ func TestConvertPorts(t *testing.T) {
 			want: []corev1.ContainerPort{
 				{
 					Name:          endpointsNames[0],
-					ContainerPort: endpointsPorts[0],
+					ContainerPort: int32(endpointsPorts[0]),
 				},
 				{
 					Name:          endpointsNames[1],
-					ContainerPort: endpointsPorts[1],
+					ContainerPort: int32(endpointsPorts[1]),
 				},
 			},
 		},
 		{
 			name:      "Case 3: No endpoints",
-			endpoints: []common.Endpoint{},
+			endpoints: []devfilev1.Endpoint{},
 			want:      []corev1.ContainerPort{},
 		},
 	}
@@ -154,15 +154,19 @@ func TestGetResourceReqs(t *testing.T) {
 	}
 	tests := []struct {
 		name      string
-		component common.DevfileComponent
+		component devfilev1.Component
 		want      corev1.ResourceRequirements
 	}{
 		{
 			name: "Case 1: One Endpoint",
-			component: common.DevfileComponent{
+			component: devfilev1.Component{
 				Name: "testcomponent",
-				Container: &common.Container{
-					MemoryLimit: "1024Mi",
+				ComponentUnion: devfilev1.ComponentUnion{
+					Container: &devfilev1.ContainerComponent{
+						Container: devfilev1.Container{
+							MemoryLimit: "1024Mi",
+						},
+					},
 				},
 			},
 			want: corev1.ResourceRequirements{
@@ -173,16 +177,21 @@ func TestGetResourceReqs(t *testing.T) {
 		},
 		{
 			name:      "Case 2: Empty DevfileComponent",
-			component: common.DevfileComponent{},
+			component: devfilev1.Component{},
 			want:      corev1.ResourceRequirements{},
 		},
 		{
 			name: "Case 3: Valid container, but empty memoryLimit",
-			component: common.DevfileComponent{
+			component: devfilev1.Component{
 				Name: "testcomponent",
-				Container: &common.Container{
-					Image: "testimage",
-				}},
+				ComponentUnion: devfilev1.ComponentUnion{
+					Container: &devfilev1.ContainerComponent{
+						Container: devfilev1.Container{
+							Image: "testimage",
+						},
+					},
+				},
+			},
 			want: corev1.ResourceRequirements{},
 		},
 	}
@@ -201,29 +210,41 @@ func TestGetDevfileContainerComponents(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		component            []common.DevfileComponent
+		component            []devfilev1.Component
 		alias                []string
 		expectedMatchesCount int
 	}{
 		{
 			name:                 "Case 1: Invalid devfile",
-			component:            []common.DevfileComponent{},
+			component:            []devfilev1.Component{},
 			expectedMatchesCount: 0,
 		},
 		{
-			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []common.DevfileComponent{{Openshift: &common.Openshift{}}},
+			name: "Case 2: Valid devfile with wrong component type (Openshift)",
+			component: []devfilev1.Component{
+				{
+					ComponentUnion: devfilev1.ComponentUnion{
+						Openshift: &devfilev1.OpenshiftComponent{},
+					},
+				},
+			},
 			expectedMatchesCount: 0,
 		},
 		{
-			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []common.DevfileComponent{{Kubernetes: &common.Kubernetes{}}},
+			name: "Case 3: Valid devfile with wrong component type (Kubernetes)",
+			component: []devfilev1.Component{
+				{
+					ComponentUnion: devfilev1.ComponentUnion{
+						Kubernetes: &devfilev1.KubernetesComponent{},
+					},
+				},
+			},
 			expectedMatchesCount: 0,
 		},
 
 		{
 			name:                 "Case 4 : Valid devfile with correct component type (Container)",
-			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
+			component:            []devfilev1.Component{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
 			expectedMatchesCount: 2,
 		},
 	}
@@ -249,35 +270,47 @@ func TestGetDevfileVolumeComponents(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		component            []common.DevfileComponent
+		component            []devfilev1.Component
 		alias                []string
 		expectedMatchesCount int
 	}{
 		{
 			name:                 "Case 1: Invalid devfile",
-			component:            []common.DevfileComponent{},
+			component:            []devfilev1.Component{},
 			expectedMatchesCount: 0,
 		},
 		{
-			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []common.DevfileComponent{{Openshift: &common.Openshift{}}},
+			name: "Case 2: Valid devfile with wrong component type (Openshift)",
+			component: []devfilev1.Component{
+				{
+					ComponentUnion: devfilev1.ComponentUnion{
+						Openshift: &devfilev1.OpenshiftComponent{},
+					},
+				},
+			},
 			expectedMatchesCount: 0,
 		},
 		{
-			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []common.DevfileComponent{{Kubernetes: &common.Kubernetes{}}},
+			name: "Case 3: Valid devfile with wrong component type (Kubernetes)",
+			component: []devfilev1.Component{
+				{
+					ComponentUnion: devfilev1.ComponentUnion{
+						Kubernetes: &devfilev1.KubernetesComponent{},
+					},
+				},
+			},
 			expectedMatchesCount: 0,
 		},
 
 		{
 			name:                 "Case 4 : Valid devfile with wrong component type (Container)",
-			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
+			component:            []devfilev1.Component{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
 			expectedMatchesCount: 0,
 		},
 
 		{
 			name:                 "Case 5: Valid devfile with correct component type (Volume)",
-			component:            []common.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
+			component:            []devfilev1.Component{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
 			expectedMatchesCount: 1,
 		},
 	}
@@ -304,25 +337,29 @@ func TestGetPortExposure(t *testing.T) {
 	urlName2 := "testurl2"
 	tests := []struct {
 		name                string
-		containerComponents []common.DevfileComponent
-		wantMap             map[int32]common.ExposureType
+		containerComponents []devfilev1.Component
+		wantMap             map[int]devfilev1.EndpointExposure
 		wantErr             bool
 	}{
 		{
 			name: "Case 1: devfile has single container with single endpoint",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
+			wantMap: map[int]devfilev1.EndpointExposure{
+				8080: devfilev1.PublicEndpointExposure,
 			},
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Public,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Exposure:   devfilev1.PublicEndpointExposure,
+								},
 							},
 						},
 					},
@@ -331,36 +368,44 @@ func TestGetPortExposure(t *testing.T) {
 		},
 		{
 			name:    "Case 2: devfile no endpoints",
-			wantMap: map[int32]common.ExposureType{},
-			containerComponents: []common.DevfileComponent{
+			wantMap: map[int]devfilev1.EndpointExposure{},
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+						},
 					},
 				},
 			},
 		},
 		{
 			name: "Case 3: devfile has multiple endpoints with same port, 1 public and 1 internal, should assign public",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
+			wantMap: map[int]devfilev1.EndpointExposure{
+				8080: devfilev1.PublicEndpointExposure,
 			},
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Public,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
 							},
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Internal,
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Exposure:   devfilev1.PublicEndpointExposure,
+								},
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Exposure:   devfilev1.InternalEndpointExposure,
+								},
 							},
 						},
 					},
@@ -369,24 +414,28 @@ func TestGetPortExposure(t *testing.T) {
 		},
 		{
 			name: "Case 4: devfile has multiple endpoints with same port, 1 public and 1 none, should assign public",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
+			wantMap: map[int]devfilev1.EndpointExposure{
+				8080: devfilev1.PublicEndpointExposure,
 			},
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Public,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
 							},
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.None,
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Exposure:   devfilev1.PublicEndpointExposure,
+								},
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Exposure:   devfilev1.NoneEndpointExposure,
+								},
 							},
 						},
 					},
@@ -395,24 +444,28 @@ func TestGetPortExposure(t *testing.T) {
 		},
 		{
 			name: "Case 5: devfile has multiple endpoints with same port, 1 internal and 1 none, should assign internal",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Internal,
+			wantMap: map[int]devfilev1.EndpointExposure{
+				8080: devfilev1.InternalEndpointExposure,
 			},
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.Internal,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
 							},
-							{
-								Name:       urlName,
-								TargetPort: 8080,
-								Exposure:   common.None,
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Exposure:   devfilev1.InternalEndpointExposure,
+								},
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Exposure:   devfilev1.NoneEndpointExposure,
+								},
 							},
 						},
 					},
@@ -421,40 +474,46 @@ func TestGetPortExposure(t *testing.T) {
 		},
 		{
 			name: "Case 6: devfile has multiple endpoints with different port",
-			wantMap: map[int32]common.ExposureType{
-				8080: common.Public,
-				9090: common.Internal,
-				3000: common.None,
+			wantMap: map[int]devfilev1.EndpointExposure{
+				8080: devfilev1.PublicEndpointExposure,
+				9090: devfilev1.InternalEndpointExposure,
+				3000: devfilev1.NoneEndpointExposure,
 			},
-			containerComponents: []common.DevfileComponent{
+			containerComponents: []devfilev1.Component{
 				{
 					Name: "testcontainer1",
-					Container: &common.Container{
-						Image: "quay.io/nodejs-12",
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName,
-								TargetPort: 8080,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
 							},
-							{
-								Name:       urlName,
-								TargetPort: 3000,
-								Exposure:   common.None,
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+								},
+								{
+									Name:       urlName,
+									TargetPort: 3000,
+									Exposure:   devfilev1.NoneEndpointExposure,
+								},
 							},
 						},
 					},
 				},
 				{
 					Name: "testcontainer2",
-					Container: &common.Container{
-						Endpoints: []common.Endpoint{
-							{
-								Name:       urlName2,
-								TargetPort: 9090,
-								Secure:     true,
-								Path:       "/testpath",
-								Exposure:   common.Internal,
-								Protocol:   common.HTTPS,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName2,
+									TargetPort: 9090,
+									Secure:     true,
+									Path:       "/testpath",
+									Exposure:   devfilev1.InternalEndpointExposure,
+									Protocol:   devfilev1.HTTPSEndpointProtocol,
+								},
 							},
 						},
 					},
@@ -520,24 +579,26 @@ func TestAddSyncFolder(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		projects []common.DevfileProject
+		projects []devfilev1.Project
 		want     string
 		wantErr  bool
 	}{
 		{
 			name:     "Case 1: No projects",
-			projects: []common.DevfileProject{},
+			projects: []devfilev1.Project{},
 			want:     sourceVolumePath,
 			wantErr:  false,
 		},
 		{
 			name: "Case 2: One project",
-			projects: []common.DevfileProject{
+			projects: []devfilev1.Project{
 				{
 					Name: projectNames[0],
-					Git: &common.Git{
-						GitLikeProjectSource: common.GitLikeProjectSource{
-							Remotes: map[string]string{"origin": projectRepos[0]},
+					ProjectSource: devfilev1.ProjectSource{
+						Git: &devfilev1.GitProjectSource{
+							GitLikeProjectSource: devfilev1.GitLikeProjectSource{
+								Remotes: map[string]string{"origin": projectRepos[0]},
+							},
 						},
 					},
 				},
@@ -547,27 +608,33 @@ func TestAddSyncFolder(t *testing.T) {
 		},
 		{
 			name: "Case 3: Multiple projects",
-			projects: []common.DevfileProject{
+			projects: []devfilev1.Project{
 				{
 					Name: projectNames[0],
-					Git: &common.Git{
-						GitLikeProjectSource: common.GitLikeProjectSource{
-							Remotes: map[string]string{"origin": projectRepos[0]},
+					ProjectSource: devfilev1.ProjectSource{
+						Git: &devfilev1.GitProjectSource{
+							GitLikeProjectSource: devfilev1.GitLikeProjectSource{
+								Remotes: map[string]string{"origin": projectRepos[0]},
+							},
 						},
 					},
 				},
 				{
 					Name: projectNames[1],
-					Github: &common.Github{
-						GitLikeProjectSource: common.GitLikeProjectSource{
-							Remotes: map[string]string{"origin": projectRepos[1]},
+					ProjectSource: devfilev1.ProjectSource{
+						Github: &devfilev1.GithubProjectSource{
+							GitLikeProjectSource: devfilev1.GitLikeProjectSource{
+								Remotes: map[string]string{"origin": projectRepos[1]},
+							},
 						},
 					},
 				},
 				{
 					Name: projectNames[1],
-					Zip: &common.Zip{
-						Location: projectRepos[1],
+					ProjectSource: devfilev1.ProjectSource{
+						Zip: &devfilev1.ZipProjectSource{
+							Location: projectRepos[1],
+						},
 					},
 				},
 			},
@@ -576,12 +643,14 @@ func TestAddSyncFolder(t *testing.T) {
 		},
 		{
 			name: "Case 4: Clone path set",
-			projects: []common.DevfileProject{
+			projects: []devfilev1.Project{
 				{
 					ClonePath: projectClonePath,
 					Name:      projectNames[0],
-					Zip: &common.Zip{
-						Location: projectRepos[0],
+					ProjectSource: devfilev1.ProjectSource{
+						Zip: &devfilev1.ZipProjectSource{
+							Location: projectRepos[0],
+						},
 					},
 				},
 			},
@@ -590,13 +659,15 @@ func TestAddSyncFolder(t *testing.T) {
 		},
 		{
 			name: "Case 5: Invalid clone path, set with absolute path",
-			projects: []common.DevfileProject{
+			projects: []devfilev1.Project{
 				{
 					ClonePath: invalidClonePaths[0],
 					Name:      projectNames[0],
-					Github: &common.Github{
-						GitLikeProjectSource: common.GitLikeProjectSource{
-							Remotes: map[string]string{"origin": projectRepos[0]},
+					ProjectSource: devfilev1.ProjectSource{
+						Github: &devfilev1.GithubProjectSource{
+							GitLikeProjectSource: devfilev1.GitLikeProjectSource{
+								Remotes: map[string]string{"origin": projectRepos[0]},
+							},
 						},
 					},
 				},
@@ -606,13 +677,15 @@ func TestAddSyncFolder(t *testing.T) {
 		},
 		{
 			name: "Case 6: Invalid clone path, starts with ..",
-			projects: []common.DevfileProject{
+			projects: []devfilev1.Project{
 				{
 					ClonePath: invalidClonePaths[1],
 					Name:      projectNames[0],
-					Git: &common.Git{
-						GitLikeProjectSource: common.GitLikeProjectSource{
-							Remotes: map[string]string{"origin": projectRepos[0]},
+					ProjectSource: devfilev1.ProjectSource{
+						Git: &devfilev1.GitProjectSource{
+							GitLikeProjectSource: devfilev1.GitLikeProjectSource{
+								Remotes: map[string]string{"origin": projectRepos[0]},
+							},
 						},
 					},
 				},
@@ -622,12 +695,14 @@ func TestAddSyncFolder(t *testing.T) {
 		},
 		{
 			name: "Case 7: Invalid clone path, contains ..",
-			projects: []common.DevfileProject{
+			projects: []devfilev1.Project{
 				{
 					ClonePath: invalidClonePaths[2],
 					Name:      projectNames[0],
-					Zip: &common.Zip{
-						Location: projectRepos[0],
+					ProjectSource: devfilev1.ProjectSource{
+						Zip: &devfilev1.ZipProjectSource{
+							Location: projectRepos[0],
+						},
 					},
 				},
 			},

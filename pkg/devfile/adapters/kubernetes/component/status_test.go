@@ -5,9 +5,9 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -163,9 +163,9 @@ func TestGetDeploymentStatus(t *testing.T) {
 			comp := testingutil.GetFakeContainerComponent(testComponentName)
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{comp},
-					Commands: []versionsCommon.DevfileCommand{
-						getExecCommand("run", versionsCommon.RunCommandGroupType),
+					Components: []devfilev1.Component{comp},
+					Commands: []devfilev1.Command{
+						getExecCommand("run", devfilev1.RunCommandGroupKind),
 					},
 				},
 			}

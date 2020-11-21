@@ -18,12 +18,12 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -58,7 +58,7 @@ func (a Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 	return a.pod, nil
 }
 
-func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -69,7 +69,7 @@ func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.Co
 	}, nil
 }
 
-func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -152,7 +152,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return fmt.Errorf("debug command is not valid")
 		}
-		pushDevfileCommands[versionsCommon.DebugCommandGroupType] = pushDevfileDebugCommands
+		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
 		currentMode = envinfo.Debug
 	}
 
@@ -529,13 +529,13 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
 	}
 
-	var command versionsCommon.DevfileCommand
+	var command devfilev1.Command
 	if debug {
 		command, err = common.GetDebugCommand(a.Devfile.Data, "")
 		if err != nil {
 			return nil, err
 		}
-		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+		if reflect.DeepEqual(devfilev1.Command{}, command) {
 			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
 		}
 

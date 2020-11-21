@@ -8,9 +8,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"

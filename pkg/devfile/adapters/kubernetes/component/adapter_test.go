@@ -8,10 +8,9 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -40,7 +39,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		componentType versionsCommon.DevfileComponentType
+		componentType devfilev1.ComponentType
 		envInfo       envinfo.EnvSpecificInfo
 		running       bool
 		wantErr       bool
@@ -54,7 +53,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		},
 		{
 			name:          "Case 2: Valid devfile",
-			componentType: versionsCommon.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       false,
 			wantErr:       false,
@@ -68,7 +67,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		},
 		{
 			name:          "Case 4: Valid devfile, already running component",
-			componentType: versionsCommon.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       true,
 			wantErr:       false,
@@ -76,14 +75,14 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var comp versionsCommon.DevfileComponent
+			var comp devfilev1.Component
 			if tt.componentType != "" {
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{comp},
-					Commands:   []versionsCommon.DevfileCommand{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []devfilev1.Component{comp},
+					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
 				},
 			}
 
@@ -224,7 +223,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		componentType    versionsCommon.DevfileComponentType
+		componentType    devfilev1.ComponentType
 		componentName    string
 		getComponentName string
 		envInfo          envinfo.EnvSpecificInfo
@@ -260,8 +259,8 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
-					Commands:   []versionsCommon.DevfileCommand{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
+					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
 				},
 			}
 
@@ -318,7 +317,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		componentType versionsCommon.DevfileComponentType
+		componentType devfilev1.ComponentType
 		status        corev1.PodPhase
 		wantErr       bool
 	}{
@@ -342,7 +341,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
 				},
 			}
 
@@ -507,19 +506,25 @@ func TestAdapterDelete(t *testing.T) {
 	}
 }
 
-func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.DevfileCommand {
+func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Command {
 
 	commands := [...]string{"ls -la", "pwd"}
 	component := "component"
 	workDir := [...]string{"/", "/root"}
 
-	return versionsCommon.DevfileCommand{
+	return devfilev1.Command{
 		Id: id,
-		Exec: &common.Exec{
-			CommandLine: commands[0],
-			Component:   component,
-			WorkingDir:  workDir[0],
-			Group:       &common.Group{Kind: group},
+		CommandUnion: devfilev1.CommandUnion{
+			Exec: &devfilev1.ExecCommand{
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{Kind: group},
+					},
+				},
+				CommandLine: commands[0],
+				Component:   component,
+				WorkingDir:  workDir[0],
+			},
 		},
 	}
 

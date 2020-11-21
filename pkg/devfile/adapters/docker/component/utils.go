@@ -12,10 +12,10 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/lclient"
@@ -160,7 +160,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	return
 }
 
-func (a Adapter) pullAndStartContainer(mounts []mount.Mount, comp versionsCommon.DevfileComponent) error {
+func (a Adapter) pullAndStartContainer(mounts []mount.Mount, comp devfilev1.Component) error {
 	// Container doesn't exist, so need to pull its image (to be safe) and start a new container
 	s := log.Spinnerf("Pulling image %s", comp.Container.Image)
 
@@ -181,7 +181,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, comp versionsCommon
 	return nil
 }
 
-func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.DevfileComponent) error {
+func (a Adapter) startComponent(mounts []mount.Mount, comp devfilev1.Component) error {
 	hostConfig, namePortMapping, err := a.generateAndGetHostConfig(comp.Container.Endpoints)
 	hostConfig.Mounts = mounts
 	if err != nil {
@@ -196,7 +196,8 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 	updateComponentWithSupervisord(&comp, runCommand, a.supervisordVolumeName, &hostConfig)
 
 	// If the component set `mountSources` to true, add the source volume and env PROJECTS_ROOT to it
-	if comp.Container.MountSources {
+	// Default mountSources is true
+	if comp.Container.MountSources == nil || *comp.Container.MountSources {
 		var syncFolder, projectsRoot string
 		if comp.Container.SourceMapping != "" {
 			syncFolder = comp.Container.SourceMapping
@@ -211,7 +212,7 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 		if projectsRoot == "" {
 			envName := common.EnvProjectsRoot
 			envValue := syncFolder
-			comp.Container.Env = append(comp.Container.Env, versionsCommon.Env{
+			comp.Container.Env = append(comp.Container.Env, devfilev1.EnvVar{
 				Name:  envName,
 				Value: envValue,
 			})
@@ -236,7 +237,7 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 	return nil
 }
 
-func (a Adapter) generateAndGetContainerConfig(componentName string, comp versionsCommon.DevfileComponent) container.Config {
+func (a Adapter) generateAndGetContainerConfig(componentName string, comp devfilev1.Component) container.Config {
 	// Convert the env vars in the Devfile to the format expected by Docker
 	envVars := utils.ConvertEnvs(comp.Container.Env)
 	ports := utils.ConvertPorts(comp.Container.Endpoints)
@@ -246,7 +247,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 	return containerConfig
 }
 
-func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Endpoint) (container.HostConfig, map[nat.Port]string, error) {
+func (a Adapter) generateAndGetHostConfig(endpoints []devfilev1.Endpoint) (container.HostConfig, map[nat.Port]string, error) {
 	// Convert the port bindings from env.yaml and generate docker host config
 	portMap, namePortMapping, err := getPortMap(a.Context, endpoints, true)
 	if err != nil {
@@ -261,7 +262,7 @@ func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Endpoint) (
 	return hostConfig, namePortMapping, nil
 }
 
-func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) (nat.PortMap, map[nat.Port]string, error) {
+func getPortMap(context string, endpoints []devfilev1.Endpoint, show bool) (nat.PortMap, map[nat.Port]string, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
 	// Todo: Use context to get the appropriate envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}
@@ -445,7 +446,7 @@ func (a Adapter) startBootstrapSupervisordInitContainer(supervisordVolumeName st
 // UpdateComponentWithSupervisord updates the devfile component's
 // 1. command and args with supervisord, if absent
 // 2. env with ODO_COMMAND_RUN and ODO_COMMAND_RUN_WORKING_DIR, if absent
-func updateComponentWithSupervisord(comp *versionsCommon.DevfileComponent, runCommand versionsCommon.DevfileCommand, supervisordVolumeName string, hostConfig *container.HostConfig) {
+func updateComponentWithSupervisord(comp *devfilev1.Component, runCommand devfilev1.Command, supervisordVolumeName string, hostConfig *container.HostConfig) {
 
 	// Mount the supervisord volume for the run command container
 	if runCommand.Exec.Component == comp.Name {
@@ -460,7 +461,7 @@ func updateComponentWithSupervisord(comp *versionsCommon.DevfileComponent, runCo
 		if !common.IsEnvPresent(comp.Container.Env, common.EnvOdoCommandRun) {
 			envName := common.EnvOdoCommandRun
 			envValue := runCommand.Exec.CommandLine
-			comp.Container.Env = append(comp.Container.Env, versionsCommon.Env{
+			comp.Container.Env = append(comp.Container.Env, devfilev1.EnvVar{
 				Name:  envName,
 				Value: envValue,
 			})
@@ -469,7 +470,7 @@ func updateComponentWithSupervisord(comp *versionsCommon.DevfileComponent, runCo
 		if !common.IsEnvPresent(comp.Container.Env, common.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != "" {
 			envName := common.EnvOdoCommandRunWorkingDir
 			envValue := runCommand.Exec.WorkingDir
-			comp.Container.Env = append(comp.Container.Env, versionsCommon.Env{
+			comp.Container.Env = append(comp.Container.Env, devfilev1.EnvVar{
 				Name:  envName,
 				Value: envValue,
 			})

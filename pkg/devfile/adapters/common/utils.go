@@ -6,9 +6,10 @@ import (
 
 	"k8s.io/klog"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/kclient/generator"
 )
 
@@ -120,11 +121,11 @@ func GetBootstrapperImage() string {
 }
 
 // getCommandsByGroup gets commands by the group kind
-func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
-	var commands []common.DevfileCommand
+func getCommandsByGroup(data data.DevfileData, groupType devfilev1.CommandGroupKind) []devfilev1.Command {
+	var commands []devfilev1.Command
 
 	for _, command := range data.GetCommands() {
-		commandGroup := command.GetGroup()
+		commandGroup := parsercommon.GetGroup(command)
 		if commandGroup != nil && commandGroup.Kind == groupType {
 			commands = append(commands, command)
 		}
@@ -134,7 +135,7 @@ func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGr
 }
 
 // GetVolumeMountPath gets the volume mount's path
-func GetVolumeMountPath(volumeMount common.VolumeMount) string {
+func GetVolumeMountPath(volumeMount devfilev1.VolumeMount) string {
 	// if there is no volume mount path, default to volume mount name as per devfile schema
 	if volumeMount.Path == "" {
 		volumeMount.Path = "/" + volumeMount.Name
@@ -183,7 +184,7 @@ func IsRestartRequired(hotReload bool, runModeChanged bool) bool {
 }
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
-func IsEnvPresent(envVars []common.Env, envVarName string) bool {
+func IsEnvPresent(envVars []devfilev1.EnvVar, envVarName string) bool {
 	for _, envVar := range envVars {
 		if envVar.Name == envVarName {
 			return true
@@ -194,9 +195,9 @@ func IsEnvPresent(envVars []common.Env, envVarName string) bool {
 }
 
 // IsPortPresent checks if the port is present in the endpoints array
-func IsPortPresent(endpoints []common.Endpoint, port int) bool {
+func IsPortPresent(endpoints []devfilev1.Endpoint, port int) bool {
 	for _, endpoint := range endpoints {
-		if endpoint.TargetPort == int32(port) {
+		if endpoint.TargetPort == port {
 			return true
 		}
 	}
@@ -206,7 +207,7 @@ func IsPortPresent(endpoints []common.Endpoint, port int) bool {
 
 // GetComponentEnvVar returns true if a list of env vars contains the specified env var
 // If the env exists, it returns the value of it
-func GetComponentEnvVar(env string, envs []common.Env) string {
+func GetComponentEnvVar(env string, envs []devfilev1.EnvVar) string {
 	for _, envVar := range envs {
 		if envVar.Name == env {
 			return envVar.Value
@@ -217,7 +218,7 @@ func GetComponentEnvVar(env string, envs []common.Env) string {
 
 // GetCommandsFromEvent returns the list of commands from the event name.
 // If the event is a composite command, it returns the sub-commands from the tree
-func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventName string) []string {
+func GetCommandsFromEvent(commandsMap map[string]devfilev1.Command, eventName string) []string {
 	var commands []string
 
 	if command, ok := commandsMap[eventName]; ok {

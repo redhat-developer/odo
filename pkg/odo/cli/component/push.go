@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -89,6 +90,10 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		po.Devfile, err = devfile.ParseAndValidate(po.DevfilePath)
 		if err != nil {
 			return errors.Wrap(err, "unable to parse devfile")
+		}
+		err = validate.ValidateDevfileData(po.Devfile.Data)
+		if err != nil {
+			return err
 		}
 
 		// We retrieve the configuration information. If this does not exist, then BLANK is returned (important!).

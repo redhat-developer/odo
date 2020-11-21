@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"text/tabwriter"
 
+	"github.com/devfile/library/pkg/devfile"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient/generator"
 	pkgutil "github.com/openshift/odo/pkg/util"
@@ -130,6 +131,10 @@ func (o *URLListOptions) Run() (err error) {
 			devObj, err := devfile.ParseAndValidate(o.devfilePath)
 			if err != nil {
 				return errors.Wrap(err, "fail to parse the devfile")
+			}
+			err = validate.ValidateDevfileData(devObj.Data)
+			if err != nil {
+				return err
 			}
 
 			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)

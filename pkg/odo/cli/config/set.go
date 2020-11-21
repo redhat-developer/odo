@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -135,7 +135,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 		if err != nil {
 			return err
 		}
-		err = o.devfileObj.AddEnvVars(newEnvVarList)
+		err = o.devfileObj.AddEnvVars(newEnvVarList.ToDevfileEnv())
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 	}
 	if !o.configForceFlag {
 
-		if o.devfileObj.IsSet(o.paramName) {
+		if config.IsSetInDevfile(o.devfileObj, o.paramName) {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
 				fmt.Println("Aborted by the user.")
 				return nil
@@ -153,7 +153,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 		}
 	}
 
-	err = o.devfileObj.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	err = config.SetDevfileConfiguration(o.devfileObj, strings.ToLower(o.paramName), o.paramValue)
 	if err != nil {
 		return err
 	}
@@ -274,7 +274,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	configurationSetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Set a value in odo config file",
-		Long:    fmt.Sprintf(setLongDesc, parser.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Long:    fmt.Sprintf(setLongDesc, config.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
 		Example: getSetExampleString(fullName),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if o.envArray != nil {

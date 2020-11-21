@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -13,12 +13,12 @@ import (
 // validateComponents validates that the components
 // 1. makes sure the container components reference a valid volume component if it uses volume mounts
 // 2. makes sure the volume components are unique
-func validateComponents(components []common.DevfileComponent) error {
+func validateComponents(components []devfilev1.Component) error {
 
 	processedVolumes := make(map[string]bool)
 	processedVolumeMounts := make(map[string]bool)
 	processedEndPointName := make(map[string]bool)
-	processedEndPointPort := make(map[int32]bool)
+	processedEndPointPort := make(map[int]bool)
 
 	for _, component := range components {
 
@@ -49,7 +49,7 @@ func validateComponents(components []common.DevfileComponent) error {
 			// two component containers cannot have the same target port but two endpoints
 			// in a single component container can have the same target port
 
-			processedContainerEndPointPort := make(map[int32]bool)
+			processedContainerEndPointPort := make(map[int]bool)
 
 			for _, endPoint := range component.Container.Endpoints {
 				if _, ok := processedEndPointName[endPoint.Name]; ok {

@@ -2,12 +2,12 @@ package common
 
 import (
 	"fmt"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/testingutil"
 	"io"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/testingutil"
 )
 
 // Create a simple mock client for the ExecClient interface for the devfile exec unit tests.
@@ -31,36 +31,42 @@ func TestExecuteDevfileCommand(t *testing.T) {
 	compInfo := ComponentInfo{
 		ContainerName: "some-container",
 	}
-	cif := func(command common.DevfileCommand) (ComponentInfo, error) {
+	cif := func(command devfilev1.Command) (ComponentInfo, error) {
 		return compInfo, nil
 	}
 
 	commands := []string{"command1", "command2", "command3", "command4"}
 	tests := []struct {
 		name       string
-		commands   []common.DevfileCommand
-		cmd        common.DevfileCommand
+		commands   []devfilev1.Command
+		cmd        devfilev1.Command
 		execClient ExecClient
 		wantErr    bool
 	}{
 		{
 			name: "Case 1: Non-parallel, successful exec",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{""}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
 				},
 			},
 			cmd: createCommandFrom(commands[2],
-				common.Composite{
+				devfilev1.CompositeCommand{
 					Commands: []string{commands[0], commands[1]},
 					Parallel: false,
 				}),
@@ -69,21 +75,27 @@ func TestExecuteDevfileCommand(t *testing.T) {
 		},
 		{
 			name: "Case 2: Non-parallel, failed exec",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{""}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
 				},
 			},
-			cmd: createCommandFrom(commands[2], common.Composite{
+			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[1]},
 				Parallel: false,
 			}),
@@ -92,18 +104,27 @@ func TestExecuteDevfileCommand(t *testing.T) {
 		},
 		{
 			name: "Case 3: Parallel, successful exec",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false}},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
+				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false}},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
+				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{""}}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
+				},
 			},
-			cmd: createCommandFrom(commands[2], common.Composite{
+			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[1]},
 				Parallel: true,
 			}),
@@ -112,18 +133,27 @@ func TestExecuteDevfileCommand(t *testing.T) {
 		},
 		{
 			name: "Case 4: Parallel, failed exec",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false}},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
+				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false}},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
+				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{""}}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
+				},
 			},
-			cmd: createCommandFrom(commands[2], common.Composite{
+			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[1]},
 				Parallel: true,
 			}),
@@ -132,21 +162,27 @@ func TestExecuteDevfileCommand(t *testing.T) {
 		},
 		{
 			name: "Case 5: Non-Parallel, command not found",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{""}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
 				},
 			},
-			cmd: createCommandFrom(commands[2], common.Composite{
+			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], "fake-command"},
 				Parallel: false,
 			}),
@@ -155,21 +191,27 @@ func TestExecuteDevfileCommand(t *testing.T) {
 		},
 		{
 			name: "Case 6: Parallel, command not found",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{""}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
 				},
 			},
-			cmd: createCommandFrom(commands[2], common.Composite{
+			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], "fake-command"},
 				Parallel: true,
 			}),
@@ -178,25 +220,33 @@ func TestExecuteDevfileCommand(t *testing.T) {
 		},
 		{
 			name: "Case 7: Nested composite commands",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{commands[0], commands[1]}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{commands[0], commands[1]}},
+					},
 				},
 				{
-					Id:        commands[3],
-					Composite: &common.Composite{Commands: []string{""}},
+					Id: commands[3],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
 				},
 			},
-			cmd: createCommandFrom(commands[3], common.Composite{
+			cmd: createCommandFrom(commands[3], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[2]},
 				Parallel: false,
 			}),
@@ -205,25 +255,33 @@ func TestExecuteDevfileCommand(t *testing.T) {
 		},
 		{
 			name: "Case 8: Nested parallel composite commands",
-			commands: []common.DevfileCommand{
+			commands: []devfilev1.Command{
 				{
-					Id:   commands[0],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[0],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:   commands[1],
-					Exec: &common.Exec{HotReloadCapable: false},
+					Id: commands[1],
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+					},
 				},
 				{
-					Id:        commands[2],
-					Composite: &common.Composite{Commands: []string{commands[0], commands[1]}},
+					Id: commands[2],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{commands[0], commands[1]}},
+					},
 				},
 				{
-					Id:        commands[3],
-					Composite: &common.Composite{Commands: []string{""}},
+					Id: commands[3],
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{Commands: []string{""}},
+					},
 				},
 			},
-			cmd: createCommandFrom(commands[3], common.Composite{
+			cmd: createCommandFrom(commands[3], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[2]},
 				Parallel: true,
 			}),
@@ -241,7 +299,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 	}
 }
 
-func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif func(command common.DevfileCommand) (ComponentInfo, error)) *GenericAdapter {
+func adapter(fakeExecClient ExecClient, commands []devfilev1.Command, cif func(command devfilev1.Command) (ComponentInfo, error)) *GenericAdapter {
 	data := &testingutil.TestDevfileData{}
 	_ = data.AddCommands(commands...)
 	devObj := devfileParser.DevfileObj{
@@ -256,6 +314,6 @@ func adapter(fakeExecClient ExecClient, commands []common.DevfileCommand, cif fu
 	return a
 }
 
-func createCommandFrom(id string, composite common.Composite) common.DevfileCommand {
-	return common.DevfileCommand{Composite: &composite}
+func createCommandFrom(id string, composite devfilev1.CompositeCommand) devfilev1.Command {
+	return devfilev1.Command{CommandUnion: devfilev1.CommandUnion{Composite: &composite}}
 }

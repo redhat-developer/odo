@@ -1,13 +1,13 @@
 package validate
 
 import (
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 )
 
 // validateComponents validates the devfile components:
 // 1. there should be at least one component
 // 2. there should be at least one container component
-func validateComponents(components []common.DevfileComponent) error {
+func validateComponents(components []devfilev1.Component) error {
 
 	// components cannot be empty
 	if len(components) < 1 {

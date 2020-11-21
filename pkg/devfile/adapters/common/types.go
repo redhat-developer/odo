@@ -1,8 +1,9 @@
 package common
 
 import (
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/openshift/odo/pkg/envinfo"
 )
 
@@ -65,9 +66,9 @@ func (ci ComponentInfo) IsEmpty() bool {
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.
-type PushCommandsMap map[common.DevfileCommandGroupType]common.DevfileCommand
+type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
 
 // NewPushCommandMap returns the instance of PushCommandsMap
 func NewPushCommandMap() PushCommandsMap {
-	return make(map[common.DevfileCommandGroupType]common.DevfileCommand)
+	return make(map[devfilev1.CommandGroupKind]devfilev1.Command)
 }

@@ -4,15 +4,16 @@ import (
 	"reflect"
 	"testing"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/devfile/library/pkg/testingutil/filesystem"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -186,7 +187,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{},
+					Components: []devfilev1.Component{},
 				},
 			}
 			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)

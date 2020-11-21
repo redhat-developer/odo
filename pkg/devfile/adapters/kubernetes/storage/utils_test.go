@@ -2,9 +2,10 @@ package storage
 
 import (
 	"fmt"
-	v1 "k8s.io/api/core/v1"
 	"reflect"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
 
@@ -133,12 +133,12 @@ func (o *UnsetOptions) DevfileRun() (err error) {
 		log.Italic("\nRun `odo push` command to apply changes to the cluster")
 		return err
 	}
-	if isSet := o.devfileObj.IsSet(o.paramName); isSet {
+	if isSet := config.IsSetInDevfile(o.devfileObj, o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
-		err = o.devfileObj.DeleteConfiguration(strings.ToLower(o.paramName))
+		err = config.DeleteDevfileConfiguration(o.devfileObj, strings.ToLower(o.paramName))
 		log.Success("Devfile was successfully updated.")
 		return err
 	}
@@ -215,7 +215,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	configurationUnsetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Unset a value in odo config file",
-		Long:    fmt.Sprintf(unsetLongDesc, parser.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Long:    fmt.Sprintf(unsetLongDesc, config.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
 		Example: getUnSetExampleString(fullName),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if o.envArray != nil {

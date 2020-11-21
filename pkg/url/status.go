@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
@@ -25,7 +25,7 @@ const (
 )
 
 // StartURLHttpRequestStatusWatchForK8S begins testing URLs for responses, outputting the result to console
-func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, loggingClient machineoutput.MachineEventLoggingClient, containerComponents []common.DevfileComponent) {
+func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, loggingClient machineoutput.MachineEventLoggingClient, containerComponents []devfilev1.Component) {
 
 	// This is a non-blocking function so that other status watchers may start as needed
 	go func() {
@@ -94,7 +94,7 @@ func startURLTester(urlsToTest [][]statusURL, loggingClient machineoutput.Machin
 	}
 }
 
-func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, ignoreUnpushed bool, containerComponents []common.DevfileComponent) ([]statusURL, error) {
+func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, ignoreUnpushed bool, containerComponents []devfilev1.Component) ([]statusURL, error) {
 	componentName := envInfo.GetName()
 
 	routesSupported := false

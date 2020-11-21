@@ -1,8 +1,8 @@
 package component
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -69,6 +69,6 @@ type ContainerRepr struct {
 
 type PortRepr struct {
 	Name        string `yaml:"Name" json:"Name"`
-	ExposedPort int32  `yaml:"ExposedPort" json:"ExposedPort"`
+	ExposedPort int    `yaml:"ExposedPort" json:"ExposedPort"`
 	Protocol    string `yaml:"Protocol" json:"Protocol"`
 }

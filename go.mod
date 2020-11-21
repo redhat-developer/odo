@@ -8,6 +8,8 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containerd/containerd v1.3.3 // indirect
+	github.com/devfile/api v0.0.0-20201103130402-29b8738e196e
+	github.com/devfile/library v0.0.0-20201112211805-e68d67cf4204
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce
 	github.com/fatih/color v1.7.0
@@ -42,7 +44,6 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
-	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/zalando/go-keyring v0.1.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gopkg.in/AlecAivazis/survey.v1 v1.8.0
@@ -53,7 +54,6 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/kubectl v0.0.0
-	sigs.k8s.io/controller-runtime v0.6.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 

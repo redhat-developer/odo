@@ -12,6 +12,8 @@ import (
 	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
 	types "github.com/docker/docker/api/types"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -19,9 +21,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
@@ -51,7 +50,7 @@ func (urls URLList) Get(urlName string) URL {
 }
 
 // GetIngressOrRoute returns ingress/route spec for given URL name
-func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, containerComponents []common.DevfileComponent, componentName string, routeSupported bool) (URL, error) {
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, containerComponents []devfilev1.Component, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
@@ -88,7 +87,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 				continue
 			}
 
-			if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
+			if localEndpoint.Exposure == devfilev1.NoneEndpointExposure || localEndpoint.Exposure == devfilev1.InternalEndpointExposure {
 				return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
 			}
 			var devfileURL envinfo.EnvInfoURL
@@ -439,7 +438,7 @@ func (s sortableURLs) Swap(i, j int) {
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []parsercommon.DevfileComponent, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []devfilev1.Component, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := oclient.GetKubeClient().ListIngresses(labelSelector)
@@ -488,7 +487,7 @@ func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalC
 		for _, comp := range containerComponents {
 			for _, localEndpoint := range comp.Container.Endpoints {
 				// only exposed endpoint will be shown as a URL in `odo url list`
-				if localEndpoint.Exposure == common.None || localEndpoint.Exposure == common.Internal {
+				if localEndpoint.Exposure == devfilev1.NoneEndpointExposure || localEndpoint.Exposure == devfilev1.InternalEndpointExposure {
 					continue
 				}
 				var devfileURL envinfo.EnvInfoURL
@@ -885,7 +884,7 @@ type PushParameters struct {
 	EnvURLS                   []envinfo.EnvInfoURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool
-	ContainerComponents       []common.DevfileComponent
+	ContainerComponents       []devfilev1.Component
 	IsS2I                     bool
 }
 
@@ -906,7 +905,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, comp := range parameters.ContainerComponents {
 			for _, endpoint := range comp.Container.Endpoints {
 				// skip URL creation if the URL is not publicly exposed
-				if endpoint.Exposure == common.None || endpoint.Exposure == common.Internal {
+				if endpoint.Exposure == devfilev1.NoneEndpointExposure || endpoint.Exposure == devfilev1.InternalEndpointExposure {
 					continue
 				}
 				secure := false
@@ -1077,7 +1076,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 }
 
 // AddEndpointInDevfile writes the provided endpoint information into devfile
-func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint parsercommon.Endpoint, container string) error {
+func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint devfilev1.Endpoint, container string) error {
 	components := devObj.Data.GetComponents()
 	for _, component := range components {
 		if component.Container != nil && component.Name == container {

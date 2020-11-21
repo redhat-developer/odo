@@ -7,12 +7,12 @@ import (
 
 	"github.com/docker/go-connections/nat"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -26,7 +26,7 @@ func TestComponentExists(t *testing.T) {
 		name          string
 		componentName string
 		client        *lclient.Client
-		components    []common.DevfileComponent
+		components    []devfilev1.Component
 		want          bool
 		wantErr       bool
 	}{
@@ -34,7 +34,7 @@ func TestComponentExists(t *testing.T) {
 			name:          "Case 1: Component exists",
 			componentName: "golang",
 			client:        fakeClient,
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				testingutil.GetFakeContainerComponent("alias1"),
 				testingutil.GetFakeContainerComponent("alias2"),
 			},
@@ -45,7 +45,7 @@ func TestComponentExists(t *testing.T) {
 			name:          "Case 2: Component doesn't exist",
 			componentName: "fakecomponent",
 			client:        fakeClient,
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			want:    false,
@@ -55,7 +55,7 @@ func TestComponentExists(t *testing.T) {
 			name:          "Case 3: Error with docker client",
 			componentName: "golang",
 			client:        fakeErrorClient,
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				testingutil.GetFakeContainerComponent("alias1"),
 			},
 			want:    false,
@@ -65,7 +65,7 @@ func TestComponentExists(t *testing.T) {
 			name:          "Case 4: Container and devfile component mismatch",
 			componentName: "test",
 			client:        fakeClient,
-			components:    []common.DevfileComponent{},
+			components:    []devfilev1.Component{},
 			want:          true,
 			wantErr:       true,
 		},
@@ -73,9 +73,11 @@ func TestComponentExists(t *testing.T) {
 			name:          "Case 5: Devfile does not have supported components",
 			componentName: "abc",
 			client:        fakeClient,
-			components: []common.DevfileComponent{
+			components: []devfilev1.Component{
 				{
-					Kubernetes: &common.Kubernetes{},
+					ComponentUnion: devfilev1.ComponentUnion{
+						Kubernetes: &devfilev1.KubernetesComponent{},
+					},
 				},
 			},
 			want:    false,
@@ -175,12 +177,12 @@ func TestConvertEnvs(t *testing.T) {
 	envVarsValues := []string{"value1", "value2", "value3"}
 	tests := []struct {
 		name    string
-		envVars []common.Env
+		envVars []devfilev1.EnvVar
 		want    []string
 	}{
 		{
 			name: "Case 1: One env var",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -190,7 +192,7 @@ func TestConvertEnvs(t *testing.T) {
 		},
 		{
 			name: "Case 2: Multiple env vars",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -208,7 +210,7 @@ func TestConvertEnvs(t *testing.T) {
 		},
 		{
 			name:    "Case 3: No env vars",
-			envVars: []common.Env{},
+			envVars: []devfilev1.EnvVar{},
 			want:    []string{},
 		},
 	}
@@ -232,7 +234,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		envVars         []common.Env
+		envVars         []devfilev1.EnvVar
 		mounts          []mount.Mount
 		image           string
 		containerConfig container.Config
@@ -243,7 +245,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 	}{
 		{
 			name: "Case 1: No changes",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -274,7 +276,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 		},
 		{
 			name: "Case 2: Update required, env var changed",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[2],
 					Value: envVarsValues[2],
@@ -289,7 +291,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 		},
 		{
 			name: "Case 3: Update required, image changed",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[2],
 					Value: envVarsValues[2],
@@ -304,7 +306,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 		},
 		{
 			name: "Case 4: Update required, volumes changed",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -339,7 +341,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 		},
 		{
 			name: "Case 5: Update required, port changed",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -377,7 +379,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 		},
 		{
 			name: "Case 6: Update required, exposed port changed",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -433,7 +435,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 		},
 		{
 			name: "Case 7: Update not required, exposed port unchanged",
-			envVars: []common.Env{
+			envVars: []devfilev1.EnvVar{
 				{
 					Name:  envVarsNames[0],
 					Value: envVarsValues[0],
@@ -491,10 +493,14 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			component := common.DevfileComponent{
-				Container: &common.Container{
-					Image: tt.image,
-					Env:   tt.envVars,
+			component := devfilev1.Component{
+				ComponentUnion: devfilev1.ComponentUnion{
+					Container: &devfilev1.ContainerComponent{
+						Container: devfilev1.Container{
+							Image: tt.image,
+							Env:   tt.envVars,
+						},
+					},
 				},
 			}
 			needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig, &tt.hostConfig, tt.mounts, tt.containerMounts, tt.portmap)
