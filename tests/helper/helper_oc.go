@@ -3,7 +3,6 @@ package helper
 import (
 	"bufio"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -312,8 +311,8 @@ func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 
 // ImportImageFromRegistry import the required image of the respective component type from the specified registry
 func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project string) {
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from="+registry+"/"+image, "--confirm")
-	CmdShouldPass(oc.path, "annotate", filepath.ToSlash(filepath.Join("istag", cmpType)), "--namespace="+project, "tags=builder", "--overwrite")
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, fmt.Sprintf("--from=%s/%s", registry, image), "--confirm")
+	CmdShouldPass(oc.path, "annotate", fmt.Sprintf("istag/%s", cmpType), "--namespace="+project, "tags=builder", "--overwrite")
 
 }
 
