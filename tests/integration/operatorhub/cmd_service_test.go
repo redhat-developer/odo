@@ -30,10 +30,10 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		helper.CmdShouldPass("odo", "project", "set", project)
 
 		// wait till oc can see the all operators installed by setup script in the namespace
-		ocArgs := []string{"catalog", "list", "services"}
+		odoArgs := []string{"catalog", "list", "services"}
 		operators := []string{"etcdoperator", "service-binding-operator"}
 		for _, operator := range operators {
-			helper.WaitForCmdOut("odo", ocArgs, 1, true, func(output string) bool {
+			helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
 				return strings.Contains(output, operator)
 			})
 		}
