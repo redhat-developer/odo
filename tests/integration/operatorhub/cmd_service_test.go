@@ -131,6 +131,15 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	})
 
 	Context("When deleting an invalid operator backed service", func() {
+
+		JustBeforeEach(func() {
+			preSetup()
+		})
+
+		JustAfterEach(func() {
+			cleanPreSetup()
+		})
+
 		It("should correctly detect invalid service names", func() {
 			names := []string{"EtcdCluster", "EtcdCluster/", "/example"}
 
