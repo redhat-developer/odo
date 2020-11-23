@@ -57,6 +57,7 @@ EOF
 }
 
 waitforstablelogin() {
+    set +e
     echo "ensuring login api stability"
     OC_STABLE_LOGIN="false"
     # Login as developer and check for stable server
@@ -83,7 +84,7 @@ waitforstablelogin() {
         fi
         sleep 3
     done
-
+    set -e
     if [ $OC_STABLE_LOGIN == "false" ]; then
         echo "Failed to login as developer"
         exit 1
