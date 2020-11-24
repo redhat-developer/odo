@@ -100,8 +100,8 @@ git clone https://$openshift_docs_repo $tmp_openshift_docs_dir
 dir=$tmp_openshift_docs_dir$odo_doc_directory
 
 # Convert all the documentation to markdown from the OpenShift upstream repository
-for f in $dir/*.adoc; do
-  convert_to_markdown $f $dir
+for f in $dir/*.adoc $dir/creating_and_deploying_applications_with_odo/*.adoc; do
+  convert_to_markdown $f
 done
 
 ########################
