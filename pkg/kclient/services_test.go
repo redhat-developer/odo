@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"reflect"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
@@ -165,6 +166,60 @@ func TestUpdateService(t *testing.T) {
 
 			}
 
+		})
+	}
+}
+
+func TestListServices(t *testing.T) {
+	type args struct {
+		selector string
+	}
+	tests := []struct {
+		name             string
+		args             args
+		returnedServices corev1.ServiceList
+		want             []corev1.Service
+		wantErr          bool
+	}{
+		{
+			name: "case 1: returned 3 services",
+			args: args{
+				selector: "component-name=nodejs",
+			},
+			returnedServices: corev1.ServiceList{
+				Items: testingutil.FakeKubeServices("nodejs"),
+			},
+			want: testingutil.FakeKubeServices("nodejs"),
+		},
+		{
+			name: "case 2: no service retuned",
+			args: args{
+				selector: "component-name=nodejs",
+			},
+			returnedServices: corev1.ServiceList{
+				Items: nil,
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+			fkclient.Namespace = "default"
+
+			fkclientset.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.returnedServices, nil
+			})
+
+			got, err := fkclient.ListServices(tt.args.selector)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListServices() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ListServices() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

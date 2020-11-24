@@ -62,7 +62,7 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 			return err
 		}
 
-		pod, err = f.client.GetPodUsingComponentName(f.componentName, f.appName)
+		pod, err = f.client.GetPodUsingDeploymentConfig(f.componentName, f.appName)
 		if err != nil {
 			return err
 		}
@@ -77,12 +77,7 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 		return err
 	}
 
-	var req *rest.Request
-	if f.kClient != nil && isDevfile {
-		req = f.kClient.GeneratePortForwardReq(pod.Name)
-	} else {
-		req = f.client.BuildPortForwardReq(pod.Name)
-	}
+	req := f.kClient.GeneratePortForwardReq(pod.Name)
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
 	fw, err := portforward.New(dialer, []string{portPair}, stopChan, readyChan, f.Out, f.ErrOut)

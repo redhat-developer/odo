@@ -2,6 +2,8 @@ package occlient
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -127,4 +129,27 @@ func GetS2IEnvForDevfile(sourceType string, env config.EnvVarList, imageStreamIm
 	}
 
 	return configEnvs, nil
+}
+
+// generateServiceSpec generates the service spec for s2i components
+func generateServiceSpec(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) corev1.ServiceSpec {
+	// generate the Service spec
+	var svcPorts []corev1.ServicePort
+	for _, containerPort := range containerPorts {
+		svcPort := corev1.ServicePort{
+
+			Name:       containerPort.Name,
+			Port:       containerPort.ContainerPort,
+			Protocol:   containerPort.Protocol,
+			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
+		}
+		svcPorts = append(svcPorts, svcPort)
+	}
+
+	return corev1.ServiceSpec{
+		Ports: svcPorts,
+		Selector: map[string]string{
+			"deploymentconfig": commonObjectMeta.Name,
+		},
+	}
 }

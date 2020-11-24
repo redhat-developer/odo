@@ -117,7 +117,7 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 
 	// lookup all the components of the application
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
-	componentsDCs, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	componentsDCs, err := client.ListDeploymentConfigs(applicationSelector)
 	if err != nil {
 		return errors.Wrapf(err, "unable to list the components in order to check if they need to be unlinked")
 	}
@@ -252,7 +252,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 	}
 
 	// retrieve secrets in order to set status
-	secrets, err := client.ListSecrets("")
+	secrets, err := client.GetKubeClient().ListSecrets("")
 	if err != nil {
 		return ServiceList{}, errors.Wrapf(err, "unable to list secrets as part of the bindings check")
 	}
@@ -265,7 +265,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 		applabels.ApplicationLabel: applicationName,
 	}
 	applicationSelector := util.ConvertLabelsToSelector(labels)
-	deploymentConfigs, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	deploymentConfigs, err := client.ListDeploymentConfigs(applicationSelector)
 	if err != nil {
 		return ServiceList{}, err
 	}

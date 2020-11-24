@@ -259,11 +259,11 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			// service is in running state.
 			// This can take a long time to occur if the image of the service has yet to be downloaded
 			log.Progressf("Waiting for secret of service %s to come up", o.secretName)
-			_, err = o.Client.WaitAndGetSecret(o.secretName, o.Project)
+			_, err = o.Client.GetKubeClient().WaitAndGetSecret(o.secretName, o.Project)
 		} else {
 			// we also need to check whether there is a secret with the same name as the service
 			// the secret should have been created along with the secret
-			_, err = o.Client.GetSecret(o.secretName, o.Project)
+			_, err = o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
 			if err != nil {
 				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
 			}
@@ -353,7 +353,7 @@ func (o *commonLinkOptions) run() (err error) {
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
 
-	secret, err := o.Client.GetSecret(o.secretName, o.Project)
+	secret, err := o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
 	if err != nil {
 		return err
 	}
@@ -415,13 +415,13 @@ func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
 	// first wait for the pod to be pending (meaning that the deployment is being put into effect)
 	// we need this intermediate wait because there is a change that the this point could be reached
 	// without Openshift having had the time to launch the new deployment
-	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodPending, "Waiting for component to redeploy")
+	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodPending, "Waiting for component to redeploy")
 	if err != nil {
 		return err
 	}
 
 	// now wait for the pod to be running
-	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
 	return err
 }
 

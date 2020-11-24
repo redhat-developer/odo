@@ -267,7 +267,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 		for _, linkedService := range cfd.Status.LinkedServices {
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetSecret(linkedService, cfd.GetNamespace())
+			secrets, err := client.GetKubeClient().GetSecret(linkedService, cfd.GetNamespace())
 			if err != nil {
 				return err
 			}

@@ -234,7 +234,7 @@ func getType(component provider) (string, error) {
 func GetPushedComponents(c *occlient.Client, applicationName string) (map[string]PushedComponent, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 
-	dcList, err := c.GetDeploymentConfigsFromSelector(applicationSelector)
+	dcList, err := c.ListDeploymentConfigs(applicationSelector)
 	if err != nil {
 		if !isIgnorableError(err) {
 			return nil, err
