@@ -10,27 +10,34 @@ import (
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/util"
 )
 
+type JSONEnvInfoRepr struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              ComponentSettings `json:"spec" yaml:"spec"`
+}
+
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	Name string `yaml:"Name,omitempty"`
+	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 
-	Project string        `yaml:"Project,omitempty"`
-	URL     *[]EnvInfoURL `yaml:"Url,omitempty"`
+	Project string        `yaml:"Project,omitempty" json:"project,omitempty"`
+	URL     *[]EnvInfoURL `yaml:"Url,omitempty" json:"url,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
 	// for grouping of components. A namespace can contain multiple applications
-	AppName string         `yaml:"AppName,omitempty" json:"AppName,omitempty"`
-	Link    *[]EnvInfoLink `yaml:"Link,omitempty"`
+	AppName string         `yaml:"AppName,omitempty" json:"appName,omitempty"`
+	Link    *[]EnvInfoLink `yaml:"Link,omitempty" json:"link,omitempty"`
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
-	DebugPort *int `yaml:"DebugPort,omitempty"`
+	DebugPort *int `yaml:"DebugPort,omitempty" json:"debugPort,omitempty"`
 
 	// RunMode indicates the mode of run used for a successful push
-	RunMode *RUNMode `yaml:"RunMode,omitempty"`
+	RunMode *RUNMode `yaml:"RunMode,omitempty" json:"runMode,omitempty"`
 }
 
 type RUNMode string
@@ -60,26 +67,19 @@ const (
 // EnvInfoURL holds URL related information
 type EnvInfoURL struct {
 	// Name of the URL
-	Name string `yaml:"Name,omitempty"`
+	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty"`
+	Port int `yaml:"Port,omitempty" json:"port,omitempty"`
 	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty"`
+	Secure bool `yaml:"Secure,omitempty" json:"secure,omitempty"`
 	// Cluster host
-	Host string `yaml:"Host,omitempty"`
+	Host string `yaml:"Host,omitempty" json:"host,omitempty"`
 	// TLS secret name to create ingress to provide a secure URL
-	TLSSecret string `yaml:"TLSSecret,omitempty"`
+	TLSSecret string `yaml:"TLSSecret,omitempty" json:"tlsSecret,omitempty"`
 	// Exposed port number for docker container, required for local scenarios
-	ExposedPort int `yaml:"ExposedPort,omitempty"`
+	ExposedPort int `yaml:"ExposedPort,omitempty" json:"exposedPort,omitempty"`
 	// Kind is the kind of the URL
-	Kind URLKind `yaml:"Kind,omitempty"`
-}
-
-// EnvInfoPushCommand holds the devfile push commands for the component
-type EnvInfoPushCommand struct {
-	Init  string `yaml:"Init,omitempty"`
-	Build string `yaml:"Build,omitempty"`
-	Run   string `yaml:"Run,omitempty"`
+	Kind URLKind `yaml:"Kind,omitempty" json:"kind,omitempty"`
 }
 
 // LocalConfigProvider is an interface which all local config providers need to implement
@@ -116,17 +116,27 @@ type EnvSpecificInfo struct {
 	envinfoFileExists bool
 }
 
-func (esi EnvSpecificInfo) GetDevfilePath() string {
-	return esi.devfilePath
-}
-
 type EnvInfoLink struct {
 	// Name of link (same as name of k8s secret)
-	Name string
+	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 	// Kind of service with which the component is linked
-	ServiceKind string
+	ServiceKind string `yaml:"ServiceKind,omitempty" json:"serviceKind,omitempty"`
 	// Name of the instance of the ServiceKind that component is linked with
-	ServiceName string
+	ServiceName string `yaml:"ServiceName,omitempty" json:"serviceName,omitempty"`
+}
+
+func WrapForJSONOutput(compSettings ComponentSettings) JSONEnvInfoRepr {
+	return JSONEnvInfoRepr{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "EnvInfo",
+			APIVersion: "odo.dev/v1alpha1",
+		},
+		Spec: compSettings,
+	}
+}
+
+func (esi EnvSpecificInfo) GetDevfilePath() string {
+	return esi.devfilePath
 }
 
 // getEnvInfoFile first checks for the ENVINFO variable
