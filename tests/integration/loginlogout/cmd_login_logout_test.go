@@ -11,7 +11,7 @@ import (
 var _ = Describe("odo login and logout command tests", func() {
 	// user related constants
 	const loginTestUserForNoProject = "odologinnoproject"
-	const loginTestUserPassword = "developer"
+	const loginTestUserPassword = "password@123"
 	var session1 string
 	var testUserToken string
 	var oc helper.OcRunner
