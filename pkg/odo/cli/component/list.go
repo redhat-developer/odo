@@ -239,7 +239,7 @@ func (lo *ListOptions) Run() (err error) {
 		}
 	}
 
-	var components []component.Component
+	var s2iComponents []component.Component
 	// we now check if DC is supported
 	if lo.hasDCSupport {
 
@@ -255,7 +255,7 @@ func (lo *ListOptions) Run() (err error) {
 				if err != nil {
 					return err
 				}
-				components = append(components, comps.Items...)
+				s2iComponents = append(s2iComponents, comps.Items...)
 			}
 
 			// iterating over list of application and get list of all components
@@ -264,13 +264,13 @@ func (lo *ListOptions) Run() (err error) {
 				if err != nil {
 					return err
 				}
-				components = append(components, comps.Items...)
+				s2iComponents = append(s2iComponents, comps.Items...)
 			}
 		} else {
 
 			componentList, err := component.ListS2IComponents(lo.Client, lo.Application, lo.LocalConfigInfo)
 			// compat
-			components = componentList.Items
+			s2iComponents = componentList.Items
 			if err != nil {
 				return errors.Wrapf(err, "failed to fetch component list")
 			}
@@ -295,12 +295,12 @@ func (lo *ListOptions) Run() (err error) {
 			fmt.Fprintln(w)
 		}
 
-		if len(components) != 0 {
+		if len(s2iComponents) != 0 {
 			lo.hasS2IComponents = true
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "S2I Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
-			for _, comp := range components {
+			for _, comp := range s2iComponents {
 				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
 			}
 			w.Flush()
@@ -311,7 +311,7 @@ func (lo *ListOptions) Run() (err error) {
 			return
 		}
 	} else {
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(components, devfileComponents)
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComponents, devfileComponents)
 		machineoutput.OutputSuccess(combinedComponents)
 	}
 

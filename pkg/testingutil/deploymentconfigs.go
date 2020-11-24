@@ -3,6 +3,7 @@ package testingutil
 import (
 	"fmt"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/util"
 
 	v1 "github.com/openshift/api/apps/v1"
@@ -34,6 +35,7 @@ func getDeploymentConfig(namespace string, componentName string, componentType s
 				"app.kubernetes.io/instance": componentName,
 				"app.kubernetes.io/name":     componentType,
 				"app.kubernetes.io/part-of":  applicationName,
+				applabels.OdoManagedBy:       "odo",
 			},
 			Annotations: map[string]string{ // Convert into separate function when other source types required in tests
 				"app.kubernetes.io/component-source-type": "git",
