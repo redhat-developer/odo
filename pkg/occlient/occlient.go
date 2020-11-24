@@ -59,7 +59,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 )
 
@@ -1403,7 +1402,7 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 		}
 
 		// Cleanup after the supervisor
-		err = c.DeletePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name))
+		err = c.GetKubeClient().DeletePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name))
 		if err != nil {
 			return errors.Wrapf(err, "unable to delete S2I data PVC from %s", ucp.CommonObjectMeta.Name)
 		}
@@ -2487,49 +2486,6 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }
 
-// RemoveVolumeFromDeploymentConfig removes the volume associated with the
-// given PVC from the Deployment Config. Both, the volume entry and the
-// volume mount entry in the containers, are deleted.
-func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) error {
-
-	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-
-		dc, err := c.GetDeploymentConfigFromName(dcName)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get Deployment Config: %v", dcName)
-		}
-
-		volumeNames := c.getVolumeNamesFromPVC(pvc, dc)
-		numVolumes := len(volumeNames)
-		if numVolumes == 0 {
-			return fmt.Errorf("no volume found for PVC %v in DC %v, expected one", pvc, dc.Name)
-		} else if numVolumes > 1 {
-			return fmt.Errorf("found more than one volume for PVC %v in DC %v, expected one", pvc, dc.Name)
-		}
-		volumeName := volumeNames[0]
-
-		// Remove volume if volume exists in Deployment Config
-		err = removeVolumeFromDC(volumeName, dc)
-		if err != nil {
-			return err
-		}
-		klog.V(3).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
-
-		// Remove at max 2 volume mounts if volume mounts exists
-		err = removeVolumeMountsFromDC(volumeName, dc)
-		if err != nil {
-			return err
-		}
-
-		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-		return updateErr
-	})
-	if retryErr != nil {
-		return errors.Wrapf(retryErr, "updating Deployment Config %v failed", dcName)
-	}
-	return nil
-}
-
 // GetDeploymentConfigsFromSelector returns an array of Deployment Config
 // resources which match the given selector
 func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.DeploymentConfig, error) {
@@ -2572,33 +2528,6 @@ func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentCon
 		return nil, err
 	}
 	return deploymentConfig, nil
-}
-
-// GetPVCsFromSelector returns the PVCs based on the given selector
-func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolumeClaim, error) {
-	pvcList, err := c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get PVCs for selector: %v", selector)
-	}
-
-	return pvcList.Items, nil
-}
-
-// GetPVCNamesFromSelector returns the PVC names for the given selector
-func (c *Client) GetPVCNamesFromSelector(selector string) ([]string, error) {
-	pvcs, err := c.GetPVCsFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get PVCs from selector")
-	}
-
-	var names []string
-	for _, pvc := range pvcs {
-		names = append(names, pvc.Name)
-	}
-
-	return names, nil
 }
 
 // GetOneDeploymentConfigFromSelector returns the Deployment Config object associated
@@ -2857,24 +2786,6 @@ func (c *Client) IsVolumeAnConfigMap(volumeMountName string, dc *appsv1.Deployme
 		}
 	}
 	return false
-}
-
-// GetPVCNameFromVolumeMountName returns the PVC associated with the given volume
-// An empty string is returned if the volume is not found
-func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv1.DeploymentConfig) string {
-	for _, volume := range dc.Spec.Template.Spec.Volumes {
-		if volume.Name == volumeMountName {
-			if volume.PersistentVolumeClaim != nil {
-				return volume.PersistentVolumeClaim.ClaimName
-			}
-		}
-	}
-	return ""
-}
-
-// GetPVCFromName returns the PVC of the given name
-func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error) {
-	return c.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
 }
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
