@@ -13,8 +13,6 @@ micro_nav: true
 ---
 With `odo`, you can create and deploy applications on clusters.
 
-# Prerequisites
-
   - `odo` is installed.
 
   - You have a running cluster. You can use [CodeReady Containers (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/) to deploy a local cluster quickly.
@@ -122,7 +120,7 @@ You can modify your application code and have the changes applied to your applic
 
 # Adding storage to the application components
 
-Persistent storage keeps data available between restarts of odo. Use the `odo storage` command to add persistent data to your application. Examples of data that must persist include database files, dependencies, and build artifacts, such as a `.m2` Maven directory.
+Use the `odo storage` command to add persistent data to your application. Examples of data that must persist include database files, dependencies, and build artifacts, such as a `.m2` Maven directory.
 
 1.  Add the storage to your component:
     
@@ -231,9 +229,7 @@ The OpenShift service catalog is an implementation of the Open Service Broker AP
 
 # Deleting an application
 
-> **Important**
-> 
-> Deleting an application will delete all components associated with the application.
+Use the `odo app delete` command to delete your application.
 
 1.  List the applications in the current project:
     

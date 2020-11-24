@@ -67,6 +67,11 @@ grid_navigation:
       cta: Read more
       url: 'docs/operator-hub'
 
+    - title: Installing Operators on minikube
+      excerpt: Installing etcd Operator and Service Binding Operator on minikube
+      cta: Read more
+      url: 'docs/operator-hub'
+
     - title: Migrating S2I (Source-to-Image) components to Devfile components
       excerpt: Use odo's built-in tool to convert your S2I deployment to devfile
       cta: Read more
