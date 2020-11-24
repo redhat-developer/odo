@@ -37,7 +37,7 @@ createclustersecret() {
 
 configureclusterauth() {
     # Upload htpasswd as new login config
-    echo "configurig cluster to use configured auth"
+    echo "configuring cluster to use configured auth"
 oc apply -f - <<EOF
 apiVersion: config.openshift.io/v1
 kind: OAuth
@@ -57,7 +57,6 @@ EOF
 }
 
 waitforstablelogin() {
-    set +e
     echo "ensuring login api stability"
     OC_STABLE_LOGIN="false"
     # Login as developer and check for stable server
@@ -84,7 +83,6 @@ waitforstablelogin() {
         fi
         sleep 3
     done
-    set -e
     if [ $OC_STABLE_LOGIN == "false" ]; then
         echo "Failed to login as developer"
         exit 1
@@ -102,7 +100,9 @@ setupfirstproject() {
 }
 
 createhtpasswd
+set +e
 createclustersecret
 configureclusterauth
 waitforstablelogin
+set -e
 setupfirstproject
