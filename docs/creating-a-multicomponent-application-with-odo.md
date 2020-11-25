@@ -15,8 +15,6 @@ micro_nav: true
 
 This example describes how to deploy a multicomponent application - a shooter game. The application consists of a front-end Node.js component and a back-end Java component.
 
-# Prerequisites
-
   - `odo` is installed.
 
   - You have a running cluster. Developers can use [CodeReady Containers (CRC)](https://access.redhat.com/documentation/en-us/red_hat_codeready_containers/) to deploy a local cluster quickly.
@@ -147,7 +145,7 @@ To create a Java component, import the Java builder image, download the Java app
 9.  Create a component configuration of Java component-type named `backend`:
     
     ``` terminal
-    $ odo create openjdk18 backend --binary target/wildwest-1.0.jar
+    $ odo create --s2i openjdk18 backend --binary target/wildwest-1.0.jar
     ```
     
     **Example output.**
@@ -275,7 +273,7 @@ To create and deploy a front-end component, download the Node.js application and
 4.  Create a component configuration of Node.js component-type named `frontend`:
     
     ``` terminal
-    $ odo create nodejs frontend
+    $ odo create --s2i nodejs frontend
     ```
     
     **Example output.**
@@ -447,9 +445,7 @@ Components running on the cluster need to be connected in order to interact. Ope
 
 # Deleting an application
 
-> **Important**
-> 
-> Deleting an application will delete all components associated with the application.
+Use the `odo app delete` command to delete your application.
 
 1.  List the applications in the current project:
     

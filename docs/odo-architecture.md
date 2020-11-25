@@ -31,7 +31,7 @@ OpenShift Source-to-Image (S2I) is an open-source project which helps in buildin
 
 Init containers are specialized containers that run before the application container starts and configure the necessary environment for the application containers to run. Init containers can have files that application images do not have, for example setup scripts. Init containers always run to completion and the application container does not start if any of the init containers fails.
 
-The Pod created by odo executes two Init Containers:
+The pod created by odo executes two Init Containers:
 
   - The `copy-supervisord` Init container.
 
@@ -89,7 +89,7 @@ Application container is mounted with two Volumes:
 
 ## `PersistentVolume` and `PersistentVolumeClaim`
 
-`PersistentVolumeClaim` (`PVC`) is a volume type in Kubernetes which provisions a `PersistentVolume`. The life of a `PersistentVolume` is independent of a Pod lifecycle. The data on the `PersistentVolume` persists across Pod restarts.
+`PersistentVolumeClaim` (`PVC`) is a volume type in Kubernetes which provisions a `PersistentVolume`. The life of a `PersistentVolume` is independent of a pod lifecycle. The data on the `PersistentVolume` persists across pod restarts.
 
 The `copy-files-to-volume` Init container copies necessary files onto the `PersistentVolume`. The main application container utilizes these files at runtime for execution.
 
@@ -102,7 +102,7 @@ The naming convention of the `PersistentVolume` is \<component-name\>-s2idata.
 
 ## `emptyDir` Volume
 
-An `emptyDir` Volume is created when a Pod is assigned to a node, and exists as long as that Pod is running on the node. If the container is restarted or moved, the content of the `emptyDir` is removed, Init container restores the data back to the `emptyDir`. `emptyDir` is initially empty.
+An `emptyDir` Volume is created when a pod is assigned to a node, and exists as long as that pod is running on the node. If the container is restarted or moved, the content of the `emptyDir` is removed, Init container restores the data back to the `emptyDir`. `emptyDir` is initially empty.
 
 The `copy-supervisord` Init container copies necessary files onto the `emptyDir` volume. These files are then utilized by the main application container at runtime for execution.
 
@@ -113,9 +113,9 @@ The `copy-supervisord` Init container copies necessary files onto the `emptyDir`
 
 ## Service
 
-Service is a Kubernetes concept of abstracting the way of communicating with a set of Pods.
+Service is a Kubernetes concept of abstracting the way of communicating with a set of pods.
 
-odo creates a Service for every application Pod to make it accessible for communication.
+odo creates a Service for every application pod to make it accessible for communication.
 
 # `odo push` workflow
 

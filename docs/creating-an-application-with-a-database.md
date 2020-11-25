@@ -13,8 +13,6 @@ micro_nav: true
 ---
 This example describes how to deploy and connect a database to a front-end application.
 
-# Prerequisites
-
   - `odo` is installed.
 
   - `oc` client is installed.
@@ -86,7 +84,7 @@ To create and deploy a front-end component, download the Node.js application and
 4.  Create a component configuration of Node.js component-type named `frontend`:
     
     ``` terminal
-    $ odo create nodejs frontend
+    $ odo create --s2i nodejs frontend
     ```
     
     **Example output.**
@@ -306,50 +304,3 @@ odo provides a command-line interactive mode which simplifies deployment.
     Type:   MongoDB
     URL:    mongodb://172.30.126.3:27017/sampledb
     ```
-
-# Deleting an application
-
-> **Important**
-> 
-> Deleting an application will delete all components associated with the application.
-
-1.  List the applications in the current project:
-    
-    ``` terminal
-    $ odo app list
-    ```
-    
-    **Example output.**
-    
-    ``` terminal
-        The project '<project_name>' has the following applications:
-        NAME
-        app
-    ```
-
-2.  List the components associated with the applications. These components will be deleted with the application:
-    
-    ``` terminal
-    $ odo component list
-    ```
-    
-    **Example output.**
-    
-    ``` terminal
-        APP     NAME                      TYPE       SOURCE        STATE
-        app     nodejs-nodejs-ex-elyf     nodejs     file://./     Pushed
-    ```
-
-3.  Delete the application:
-    
-    ``` terminal
-    $ odo app delete <application_name>
-    ```
-    
-    **Example output.**
-    
-    ``` terminal
-        ? Are you sure you want to delete the application: <application_name> from project: <project_name>
-    ```
-
-4.  Confirm the deletion with `Y`. You can suppress the confirmation prompt using the `-f` flag.
