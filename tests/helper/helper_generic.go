@@ -257,10 +257,10 @@ func GetCliRunner() CliRunner {
 
 // Suffocate the string by removing all the space from it ;-)
 func Suffocate(s string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "\t", "")
+	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "\t", ""), "\n", "")
 }
 
-// IsJson returns true if a string is in json format
+// IsJSON returns true if a string is in json format
 func IsJSON(s string) bool {
 	var js map[string]interface{}
 	return json.Unmarshal([]byte(s), &js) == nil

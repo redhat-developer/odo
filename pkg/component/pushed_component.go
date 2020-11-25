@@ -76,7 +76,6 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 	if d.urls == nil {
 		name := d.GetName()
 		var routes url.URLList
-
 		if routeAvailable, err := d.client.IsRouteSupported(); routeAvailable && err == nil {
 			routes, err = url.ListPushed(d.client, name, d.GetApplication())
 			if err != nil && !isIgnorableError(err) {

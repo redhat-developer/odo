@@ -327,6 +327,7 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 
 	klog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routes, err := client.ListRoutes(labelSelector)
+
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}

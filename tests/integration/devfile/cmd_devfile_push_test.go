@@ -946,8 +946,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
 
 			output = helper.CmdShouldPass("odo", "list", "--project", commonVar.Project)
-			Expect(output).To(ContainSubstring(cmpName))
-			Expect(output).ToNot(ContainSubstring(cmpName2))
+			// this test makes sure that a devfile component doesn't show up as an s2i component as well
+			Expect(helper.Suffocate(output)).To(Equal(helper.Suffocate(fmt.Sprintf(`
+			Devfile Components: 
+			APP        NAME       PROJECT        TYPE       STATE
+			app        %[1]s     %[2]s           nodejs     Pushed
+			`, cmpName, commonVar.Project))))
 
 			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", commonVar.Project)
 

@@ -857,17 +857,48 @@ func GetComponentNames(client *occlient.Client, applicationName string) ([]strin
 	return names, nil
 }
 
-// List lists components in active application
-func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
+// ListDevfileComponents returns the devfile component matching a selector.
+// The selector could be about selecting components part of an application.
+// There are helpers in "applabels" package for this.
+func ListDevfileComponents(client *occlient.Client, selector string) (ComponentList, error) {
+
+	var deploymentList []v1.Deployment
+	var components []Component
+
+	// retrieve all the deployments that are associated with this application
+	deploymentList, err := client.GetKubeClient().GetDeploymentFromSelector(selector)
+	if err != nil {
+		return ComponentList{}, errors.Wrapf(err, "unable to list components")
+	}
+
+	// extract the labels we care about from each component
+	for _, elem := range deploymentList {
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.Namespace)
+		if err != nil {
+			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+		}
+
+		if !reflect.ValueOf(component).IsZero() {
+			component.Spec.SourceType = string(config.LOCAL)
+			components = append(components, component)
+		}
+
+	}
+
+	compoList := GetMachineReadableFormatForList(components)
+	return compoList, nil
+}
+
+// ListS2IComponents lists s2i components in active application
+func ListS2IComponents(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 
 	var applicationSelector string
 	if applicationName != "" {
-		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+		applicationSelector = applabels.GetSelector(applicationName)
 	}
 
 	deploymentConfigSupported := false
 	var err error
-	var deploymentList []v1.Deployment
 
 	var components []Component
 	componentNamesMap := make(map[string]bool)
@@ -876,24 +907,6 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		deploymentConfigSupported, err = client.IsDeploymentConfigSupported()
 		if err != nil {
 			return ComponentList{}, err
-		}
-
-		// retrieve all the deployments that are associated with this application
-		deploymentList, err = client.GetKubeClient().GetDeploymentFromSelector(applicationSelector)
-		if err != nil {
-			return ComponentList{}, errors.Wrapf(err, "unable to list components")
-		}
-	}
-
-	// extract the labels we care about from each component
-	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
-		if err != nil {
-			return ComponentList{}, errors.Wrap(err, "Unable to get component")
-		}
-		if !reflect.ValueOf(component).IsZero() {
-			components = append(components, component)
-			componentNamesMap[component.Name] = true
 		}
 	}
 
@@ -917,6 +930,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		}
 	}
 
+	// this adds the local s2i component if there is one
 	if localConfigInfo != nil {
 		component, err := GetComponentFromConfig(localConfigInfo)
 
@@ -940,6 +954,28 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 
 	compoList := GetMachineReadableFormatForList(components)
 	return compoList, nil
+}
+
+// List lists all s2i and devfile components in active application
+func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
+	var applicationSelector string
+	if applicationName != "" {
+		applicationSelector = applabels.GetSelector(applicationName)
+	}
+	var components []Component
+	devfileList, err := ListDevfileComponents(client, applicationSelector)
+	if err != nil {
+		return ComponentList{}, nil
+	}
+	components = append(components, devfileList.Items...)
+
+	s2iList, err := ListS2IComponents(client, applicationName, localConfigInfo)
+	if err != nil {
+		return ComponentList{}, err
+	}
+	components = append(components, s2iList.Items...)
+
+	return GetMachineReadableFormatForList(components), nil
 }
 
 // GetComponentFromConfig returns the component on the config if it exists
@@ -1057,8 +1093,8 @@ func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, erro
 	return components, err
 }
 
-func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]DevfileComponent, error) {
-	var components []DevfileComponent
+func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Component, error) {
+	var components []Component
 	var err error
 	for _, path := range paths {
 		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
@@ -1084,11 +1120,10 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Devf
 				}
 				con, _ := filepath.Abs(filepath.Dir(path))
 
-				comp := NewDevfileComponent(data.GetName())
+				comp := NewComponent(data.GetName())
 				comp.Status.State = StateTypeUnknown
 				comp.Spec.App = data.GetApplication()
 				comp.Namespace = data.GetNamespace()
-				comp.Spec.Name = data.GetName()
 				comp.Status.Context = con
 
 				// since the config file maybe belong to a component of a different project
@@ -1546,6 +1581,13 @@ func GetLogs(client *occlient.Client, componentName string, applicationName stri
 }
 
 func getMachineReadableFormat(componentName, componentType string) Component {
+	cmp := NewComponent(componentName)
+	cmp.Spec.Type = componentType
+	return cmp
+}
+
+// NewComponent provides a constructor to component struct with some metadata prefilled
+func NewComponent(componentName string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
@@ -1554,12 +1596,8 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: componentName,
 		},
-		Spec: ComponentSpec{
-			Type: componentType,
-		},
 		Status: ComponentStatus{},
 	}
-
 }
 
 // GetMachineReadableFormatForList returns list of devfile and s2i components in machine readable format
@@ -1579,12 +1617,12 @@ func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
 }
 
 // GetMachineReadableFormatForCombinedCompList returns list of devfile and s2i components in machine readable format
-func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []DevfileComponent) CombinedComponentList {
+func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []Component) CombinedComponentList {
 	if len(s2iComps) == 0 {
 		s2iComps = []Component{}
 	}
 	if len(devfileComps) == 0 {
-		devfileComps = []DevfileComponent{}
+		devfileComps = []Component{}
 	}
 
 	return CombinedComponentList{
