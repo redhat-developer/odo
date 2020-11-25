@@ -17,7 +17,7 @@ ORIGINAL_KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconf
 export KUBECONFIG=$ORIGINAL_KUBECONFIG
 
 # list of namespace to create
-IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12"
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11"
 
 # Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
