@@ -7,6 +7,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -59,6 +61,10 @@ func (o *ViewOptions) Validate() (err error) {
 // Run contains the logic for the command
 func (o *ViewOptions) Run() (err error) {
 	cs := o.cfg.GetComponentSettings()
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(envinfo.WrapForJSONOutput(cs))
+		return
+	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER NAME", "\t", "PARAMETER VALUE")
 	fmt.Fprintln(w, "Name", "\t", cs.Name)
