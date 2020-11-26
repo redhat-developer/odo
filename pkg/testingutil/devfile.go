@@ -114,6 +114,9 @@ func (d TestDevfileData) Validate() error {
 // SetMetadata sets metadata for devfile
 func (d TestDevfileData) SetMetadata(name, version string) {}
 
+// GetSchemaVersion gets the schema version for the test devfile
+func (d TestDevfileData) GetSchemaVersion() string { return "testSchema" }
+
 // SetSchemaVersion sets schema version for devfile
 func (d TestDevfileData) SetSchemaVersion(version string) {}
 
@@ -229,6 +232,28 @@ func GetFakeVolumeMount(name, path string) v1.VolumeMount {
 		Name: name,
 		Path: path,
 	}
+}
+
+// GetDevfileContainerComponents gets the container components from the test devfile
+func (d TestDevfileData) GetDevfileContainerComponents() []v1.Component {
+	var components []v1.Component
+	for _, comp := range d.GetComponents() {
+		if comp.Container != nil {
+			components = append(components, comp)
+		}
+	}
+	return components
+}
+
+// GetDevfileVolumeComponents gets the volume components from the test devfile
+func (d TestDevfileData) GetDevfileVolumeComponents() []v1.Component {
+	var components []v1.Component
+	for _, comp := range d.GetComponents() {
+		if comp.Volume != nil {
+			components = append(components, comp)
+		}
+	}
+	return components
 }
 
 // GetTestDevfileObj returns a devfile object for testing

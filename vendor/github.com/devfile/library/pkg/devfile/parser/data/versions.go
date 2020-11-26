@@ -10,7 +10,7 @@ import (
 // SupportedApiVersions stores the supported devfile API versions
 type supportedApiVersion string
 
-// Supported devfile API versions in odo
+// Supported devfile API versions
 const (
 	APIVersion200 supportedApiVersion = "2.0.0"
 )

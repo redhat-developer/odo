@@ -7,6 +7,7 @@ import (
 
 // DevfileData is an interface that defines functions for Devfile data operations
 type DevfileData interface {
+	GetSchemaVersion() string
 	SetSchemaVersion(version string)
 	GetMetadata() devfilepkg.DevfileMetadata
 	SetMetadata(name, version string)
@@ -44,4 +45,8 @@ type DevfileData interface {
 	AddVolume(volume v1.Component, path string) error
 	DeleteVolume(name string) error
 	GetVolumeMountPath(name string) (string, error)
+
+	//utils
+	GetDevfileContainerComponents() []v1.Component
+	GetDevfileVolumeComponents() []v1.Component
 }

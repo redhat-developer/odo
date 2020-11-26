@@ -11,7 +11,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	pkgutil "github.com/openshift/odo/pkg/util"
 
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -137,7 +136,7 @@ func (o *URLListOptions) Run() (err error) {
 				return err
 			}
 
-			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)
+			containerComponents := devObj.Data.GetDevfileContainerComponents()
 			urls, err := url.ListIngressAndRoute(o.Context.Client, o.EnvSpecificInfo, containerComponents, componentName, routeSupported)
 			if err != nil {
 				return err

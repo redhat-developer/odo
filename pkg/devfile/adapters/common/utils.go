@@ -10,7 +10,6 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/kclient/generator"
 )
 
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
@@ -146,8 +145,8 @@ func GetVolumeMountPath(volumeMount devfilev1.VolumeMount) string {
 
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
-	containerComponents := generator.GetDevfileContainerComponents(devfileObj.Data)
-	volumeComponents := generator.GetDevfileVolumeComponents(devfileObj.Data)
+	containerComponents := devfileObj.Data.GetDevfileContainerComponents()
+	volumeComponents := devfileObj.Data.GetDevfileVolumeComponents()
 
 	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
 	containerNameToVolumes := make(map[string][]DevfileVolume)

@@ -1,8 +1,8 @@
 package occlient
 
 import (
+	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -26,20 +26,17 @@ func (c *Client) GetRoute(name string) (*routev1.Route, error) {
 // path is the path of the endpoint URL
 // secureURL indicates if the route is a secure one or not
 func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
-
-	objectMeta := generator.GetObjectMeta(name, c.Namespace, labels, nil)
 	routeParams := generator.RouteParams{
-		ServiceName: serviceName,
-		PortNumber:  portNumber,
-		Secure:      secureURL,
-		Path:        path,
+		ObjectMeta: generator.GetObjectMeta(name, c.Namespace, labels, nil),
+		RouteSpecParams: generator.RouteSpecParams{
+			ServiceName: serviceName,
+			PortNumber:  portNumber,
+			Secure:      secureURL,
+			Path:        path,
+		},
 	}
 
-	routeSpec := generator.GetRouteSpec(routeParams)
-	route := &routev1.Route{
-		ObjectMeta: objectMeta,
-		Spec:       *routeSpec,
-	}
+	route := generator.GetRoute(routeParams)
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 

@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
@@ -154,7 +153,7 @@ func (so *StatusOptions) Run() (err error) {
 			oclient.Namespace = so.KClient.Namespace
 		}
 
-		containerComponents := generator.GetDevfileContainerComponents(so.devObj.Data)
+		containerComponents := so.devObj.Data.GetDevfileContainerComponents()
 		url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, so.EnvSpecificInfo, loggingClient, containerComponents)
 	}
 

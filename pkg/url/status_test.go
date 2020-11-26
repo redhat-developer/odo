@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kclient_fake "github.com/openshift/odo/pkg/kclient/fake"
-	"github.com/openshift/odo/pkg/kclient/generator"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery/fake"
@@ -190,7 +189,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 					Components: []devfilev1.Component{},
 				},
 			}
-			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)
+			containerComponents := devObj.Data.GetDevfileContainerComponents()
 
 			statusUrls, err := getURLsForKubernetes(fkoclient, fkclient, esi, false, containerComponents)
 

@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 
@@ -37,11 +37,12 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 	}
 
 	objectMeta := generator.GetObjectMeta(podName, "default", labels, nil)
-	podTemplateSpecParams := generator.PodTemplateSpecParams{
+
+	deploymentParams := generator.DeploymentParams{
 		ObjectMeta: objectMeta,
 		Containers: containers,
 	}
-	podTemplateSpec := generator.GetPodTemplateSpec(podTemplateSpecParams)
+	deploy := generator.GetDeployment(deploymentParams)
 
 	fkclientset.Kubernetes.PrependReactor("create", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if podName == "" {
@@ -60,13 +61,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		return true, &deployment, nil
 	})
 
-	deployParams := generator.DeploymentSpecParams{
-		PodTemplateSpec:   *podTemplateSpec,
-		PodSelectorLabels: podTemplateSpec.Labels,
-	}
-
-	deploymentSpec := generator.GetDeploymentSpec(deployParams)
-	createdDeployment, err := fkclient.CreateDeployment(*deploymentSpec)
+	createdDeployment, err := fkclient.CreateDeployment(*deploy)
 	if err != nil {
 		return nil, err
 	}
@@ -224,11 +219,11 @@ func TestUpdateDeployment(t *testing.T) {
 
 			objectMeta := generator.GetObjectMeta(tt.deploymentName, "default", labels, nil)
 
-			podTemplateSpecParams := generator.PodTemplateSpecParams{
+			deploymentParams := generator.DeploymentParams{
 				ObjectMeta: objectMeta,
 				Containers: containers,
 			}
-			podTemplateSpec := generator.GetPodTemplateSpec(podTemplateSpecParams)
+			deploy := generator.GetDeployment(deploymentParams)
 
 			fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
@@ -246,13 +241,7 @@ func TestUpdateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			deployParams := generator.DeploymentSpecParams{
-				PodTemplateSpec:   *podTemplateSpec,
-				PodSelectorLabels: podTemplateSpec.Labels,
-			}
-
-			deploymentSpec := generator.GetDeploymentSpec(deployParams)
-			updatedDeployment, err := fkclient.UpdateDeployment(*deploymentSpec)
+			updatedDeployment, err := fkclient.UpdateDeployment(*deploy)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

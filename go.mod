@@ -9,7 +9,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containerd/containerd v1.3.3 // indirect
 	github.com/devfile/api v0.0.0-20201103130402-29b8738e196e
-	github.com/devfile/library v0.0.0-20201112211805-e68d67cf4204
+	github.com/devfile/library v0.0.0-20201125155652-6eabeab3ee52
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce
 	github.com/fatih/color v1.7.0

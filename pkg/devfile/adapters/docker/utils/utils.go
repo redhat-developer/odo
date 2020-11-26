@@ -9,7 +9,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/openshift/odo/pkg/kclient/generator"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -38,7 +37,7 @@ func ComponentExists(client lclient.Client, data data.DevfileData, name string) 
 		return false, errors.Wrapf(err, "unable to get the containers for component %s", name)
 	}
 
-	containerComponents := generator.GetDevfileContainerComponents(data)
+	containerComponents := data.GetDevfileContainerComponents()
 
 	var componentExists bool
 	if len(containers) == 0 {

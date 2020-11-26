@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
@@ -19,7 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/fake"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -468,22 +468,22 @@ func TestCreate(t *testing.T) {
 						t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.returnedIngress.Labels, createdIngress.Labels))
 					}
 
-					wantedIngressParams := generator.IngressParams{
+					wantedIngressSpecParams := generator.IngressSpecParams{
 						ServiceName:   serviceName,
 						IngressDomain: tt.args.host,
 						PortNumber:    intstr.FromInt(tt.args.portNumber),
 						TLSSecretName: tt.args.tlsSecret,
 					}
 
-					if !reflect.DeepEqual(createdIngress.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal, wantedIngressParams.PortNumber.IntVal) {
+					if !reflect.DeepEqual(createdIngress.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal, wantedIngressSpecParams.PortNumber.IntVal) {
 						t.Errorf("ingress port not matching, expected: %s, got %s", tt.returnedRoute.Spec.Port, createdIngress.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.StrVal)
 					}
 					if tt.args.secure {
-						if wantedIngressParams.TLSSecretName == "" {
-							wantedIngressParams.TLSSecretName = tt.args.componentName + "-tlssecret"
+						if wantedIngressSpecParams.TLSSecretName == "" {
+							wantedIngressSpecParams.TLSSecretName = tt.args.componentName + "-tlssecret"
 						}
-						if !reflect.DeepEqual(createdIngress.Spec.TLS[0].SecretName, wantedIngressParams.TLSSecretName) {
-							t.Errorf("ingress tls name not matching, expected: %s, got %s", wantedIngressParams.TLSSecretName, createdIngress.Spec.TLS)
+						if !reflect.DeepEqual(createdIngress.Spec.TLS[0].SecretName, wantedIngressSpecParams.TLSSecretName) {
+							t.Errorf("ingress tls name not matching, expected: %s, got %s", wantedIngressSpecParams.TLSSecretName, createdIngress.Spec.TLS)
 						}
 					}
 

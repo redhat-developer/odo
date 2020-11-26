@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/kclient/generator"
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/storage/labels"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -51,13 +51,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 		labels.DevfileStorageLabel: name,
 	}
 
-	quantity, err := resource.ParseQuantity(size)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
-	}
-
 	objectMeta := generator.GetObjectMeta(pvcName, Client.Namespace, labels, nil)
-	pvcSpec := generator.GetPVCSpec(quantity)
 
 	// Get the deployment
 	deployment, err := Client.GetDeploymentByName(componentName)
@@ -69,9 +63,20 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 	ownerReference := generator.GetOwnerReference(deployment)
 	objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 
+	quantity, err := resource.ParseQuantity(size)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
+	}
+
+	pvcParams := generator.PVCParams{
+		ObjectMeta: objectMeta,
+		Quantity:   quantity,
+	}
+	pvc := generator.GetPVC(pvcParams)
+
 	// Create PVC
 	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
-	pvc, err := Client.CreatePVC(objectMeta, *pvcSpec)
+	pvc, err = Client.CreatePVC(*pvc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}

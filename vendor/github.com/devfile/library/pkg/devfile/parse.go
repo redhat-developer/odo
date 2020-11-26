@@ -16,8 +16,7 @@ func ParseFromURLAndValidate(url string) (d parser.DevfileObj, err error) {
 		return d, err
 	}
 
-	// odo specific validation on devfile content
-	// err = validate.ValidateDevfileData(d.Data)
+	// generic validation on devfile content - TODO
 
 	return d, err
 }
@@ -33,8 +32,7 @@ func ParseFromDataAndValidate(data []byte) (d parser.DevfileObj, err error) {
 		return d, err
 	}
 
-	// odo specific validation on devfile content
-	// err = validate.ValidateDevfileData(d.Data)
+	// generic validation on devfile content - TODO
 
 	return d, err
 }
@@ -51,8 +49,7 @@ func ParseAndValidate(path string) (d parser.DevfileObj, err error) {
 		return d, err
 	}
 
-	// odo specific validation on devfile content
-	// err = validate.ValidateDevfileData(d.Data)
+	// generic validation on devfile content - TODO
 
 	return d, err
 }
