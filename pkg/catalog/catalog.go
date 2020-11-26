@@ -387,7 +387,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 	currentNamespace := client.GetCurrentProjectName()
 
 	// Fetch imagestreams from default openshift namespace
-	openshiftNSImageStreams, openshiftNSISFetchError := client.GetImageStreams(occlient.OpenShiftNameSpace)
+	openshiftNSImageStreams, openshiftNSISFetchError := client.ListImageStreams(occlient.OpenShiftNameSpace)
 	if openshiftNSISFetchError != nil {
 		// Tolerate the error as it might only be a partial failure
 		// We may get the imagestreams from other Namespaces
@@ -397,7 +397,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 	}
 
 	// Fetch imagestreams from current namespace
-	currentNSImageStreams, currentNSISFetchError := client.GetImageStreams(currentNamespace)
+	currentNSImageStreams, currentNSISFetchError := client.ListImageStreams(currentNamespace)
 	// If failure to fetch imagestreams from current namespace, log the failure for debugging purposes
 	if currentNSISFetchError != nil {
 		// Tolerate the error as it is totally a valid scenario to not have any imagestreams in current namespace

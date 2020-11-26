@@ -271,7 +271,7 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 
-	return c.patchDeploymentOfComponent(componentName, applicationName, deploymentPatchProvider)
+	return c.patchDeployment(componentName, deploymentPatchProvider)
 }
 
 // UnlinkSecret unlinks a secret to the Deployment of a component
@@ -293,22 +293,18 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
 	}
 
-	return c.patchDeploymentOfComponent(componentName, applicationName, deploymentPatchProvider)
+	return c.patchDeployment(componentName, deploymentPatchProvider)
 }
 
 // this function will look up the appropriate DC, and execute the specified patch
 // the whole point of using patch is to avoid race conditions where we try to update
 // deployment while it's being simultaneously updated from another source (for example Kubernetes itself)
 // this will result in the triggering of a redeployment
-func (c *Client) patchDeploymentOfComponent(componentName, applicationName string, deploymentPatchProvider deploymentPatchProvider) error {
-	// deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
-	// if err != nil {
-	// 	return err
-	// }
+func (c *Client) patchDeployment(deploymentName string, deploymentPatchProvider deploymentPatchProvider) error {
 
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(componentName, metav1.GetOptions{})
+	deployment, err := c.GetDeploymentByName(deploymentName)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to locate Deployment for component %s of application %s", componentName, applicationName)
+		return errors.Wrapf(err, "Unable to locate Deployment %s", deploymentName)
 	}
 
 	if deploymentPatchProvider != nil {
@@ -318,7 +314,7 @@ func (c *Client) patchDeploymentOfComponent(componentName, applicationName strin
 		}
 
 		// patch the Deployment with the secret
-		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(componentName, types.JSONPatchType, []byte(patch))
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(deploymentName, types.JSONPatchType, []byte(patch))
 		if err != nil {
 			return errors.Wrapf(err, "Deployment not patched %s", deployment.Name)
 		}

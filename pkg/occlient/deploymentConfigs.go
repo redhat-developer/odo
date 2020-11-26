@@ -3,6 +3,9 @@ package occlient
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
+	"time"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	"github.com/openshift/odo/pkg/util"
@@ -10,9 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
-	"sort"
-	"time"
 )
 
 // IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
@@ -52,6 +54,54 @@ func (c *Client) GetDeploymentConfigFromSelector(selector string) (*appsv1.Deplo
 	}
 
 	return &deploymentConfigs[0], nil
+}
+
+// UpdateDCAnnotations updates the DeploymentConfig file
+// dcName is the name of the DeploymentConfig file to be updated
+// annotations contains the annotations for the DeploymentConfig file
+func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]string) error {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
+	}
+
+	dc.Annotations = annotations
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
+	}
+	return nil
+}
+
+// Define a function that is meant to create patch based on the contents of the DC
+type dcPatchProvider func(dc *appsv1.DeploymentConfig) (string, error)
+
+// this function will look up the appropriate DC, and execute the specified patch
+// the whole point of using patch is to avoid race conditions where we try to update
+// dc while it's being simultaneously updated from another source (for example Kubernetes itself)
+// this will result in the triggering of a redeployment
+func (c *Client) patchDC(dcName string, dcPatchProvider dcPatchProvider) error {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to locate DeploymentConfig %s", dcName)
+	}
+
+	if dcPatchProvider != nil {
+		patch, err := dcPatchProvider(dc)
+		if err != nil {
+			return errors.Wrap(err, "Unable to create a patch for the DeploymentConfig")
+		}
+
+		// patch the DeploymentConfig with the secret
+		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(dcName, types.JSONPatchType, []byte(patch))
+		if err != nil {
+			return errors.Wrapf(err, "DeploymentConfig not patched %s", dc.Name)
+		}
+	} else {
+		return errors.Wrapf(err, "dcPatch was not properly set")
+	}
+
+	return nil
 }
 
 // ListDeploymentConfigs returns an array of Deployment Config
@@ -216,4 +266,48 @@ func (c *Client) GetPodUsingDeploymentConfig(componentName, appName string) (*co
 	// Find Pod for component
 	podSelector := fmt.Sprintf("deploymentconfig=%s", deploymentConfigName)
 	return c.GetKubeClient().GetOnePodFromSelector(podSelector)
+}
+
+// GetEnvVarsFromDC retrieves the env vars from the DC
+// dcName is the name of the dc from which the env vars are retrieved
+// projectName is the name of the project
+func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
+	if err != nil {
+		return nil, errors.Wrap(err, "error occurred while retrieving the dc")
+	}
+
+	numContainers := len(dc.Spec.Template.Spec.Containers)
+	if numContainers != 1 {
+		return nil, fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
+	}
+
+	return dc.Spec.Template.Spec.Containers[0].Env, nil
+}
+
+// AddEnvironmentVariablesToDeploymentConfig adds the given environment
+// variables to the only container in the Deployment Config and updates in the
+// cluster
+func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar, dc *appsv1.DeploymentConfig) error {
+	numContainers := len(dc.Spec.Template.Spec.Containers)
+	if numContainers != 1 {
+		return fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
+	}
+
+	dc.Spec.Template.Spec.Containers[0].Env = append(dc.Spec.Template.Spec.Containers[0].Env, envs...)
+
+	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
+	}
+	return nil
+}
+
+// GetVolumeMountsFromDC returns a list of all volume mounts in the given DC
+func (c *Client) GetVolumeMountsFromDC(dc *appsv1.DeploymentConfig) []corev1.VolumeMount {
+	var volumeMounts []corev1.VolumeMount
+	for _, container := range dc.Spec.Template.Spec.Containers {
+		volumeMounts = append(volumeMounts, container.VolumeMounts...)
+	}
+	return volumeMounts
 }
