@@ -601,7 +601,7 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 			podName := ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
 			envs := ocRunner.GetEnvs(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
-			stdOut = ocRunner.ExecListDir(podName, project, filepath.Join(dir, "src"))
+			stdOut = ocRunner.ExecListDir(podName, project, filepath.ToSlash(filepath.Join(dir, "src")))
 		}
 	case "docker":
 		dockerRunner := runner.(helper.DockerRunner)
