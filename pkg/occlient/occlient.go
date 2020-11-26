@@ -11,10 +11,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/config"
@@ -26,7 +24,6 @@ import (
 
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
-	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
@@ -49,12 +46,10 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/klog"
@@ -64,10 +59,6 @@ var (
 	DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR string = "deploymentconfigs.apps.openshift.io \"%s\" not found"
 	DEPLOYMENT_CONFIG_NOT_FOUND           error  = fmt.Errorf("Requested deployment config does not exist")
 )
-
-// We use a mutex here in order to make 100% sure that functions such as CollectEvents
-// so that there are no race conditions
-var mu sync.Mutex
 
 // CreateArgs is a container of attributes of component create action
 type CreateArgs struct {
@@ -88,7 +79,6 @@ type CreateArgs struct {
 }
 
 const (
-	failedEventCount                = 5
 	OcUpdateTimeout                 = 5 * time.Minute
 	OpenShiftNameSpace              = "openshift"
 	waitForComponentDeletionTimeout = 120 * time.Second
@@ -98,9 +88,6 @@ const (
 
 	// The length of the string to be generated for names of resources
 	nameLength = 5
-
-	// ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
-	ComponentPortAnnotationName = "component-port"
 
 	// EnvS2IScriptsURL is an env var exposed to https://github.com/openshift/odo-init-image/blob/master/assemble-and-restart to indicate location of s2i scripts in this case assemble script
 	EnvS2IScriptsURL = "ODO_S2I_SCRIPTS_URL"
@@ -629,15 +616,6 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 	return imageStream, nil
 }
 
-// GetSecret returns the Secret object in the given namespace
-func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
-	secret, err := c.kubeClient.KubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
-	}
-	return secret, nil
-}
-
 // GetImageStreamImage returns image and error if any, corresponding to the passed imagestream and image tag
 func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag string) (*imagev1.ImageStreamImage, error) {
 	imageNS := imageStream.ObjectMeta.Namespace
@@ -785,56 +763,16 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	}
 
 	// Create a service
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
+	commonObjectMeta.SetOwnerReferences(append(commonObjectMeta.GetOwnerReferences(), ownerReference))
+	svc, err := c.GetKubeClient().CreateService(commonObjectMeta, generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports))
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
 	// Create secret(s)
-	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
+	err = c.GetKubeClient().CreateSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 
 	return err
-}
-
-// Create a secret for each port, containing the host and port of the component
-// This is done so other components can later inject the secret into the environment
-// and have the "coordinates" to communicate with this component
-func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.ObjectMeta, svc *corev1.Service, ownerReference metav1.OwnerReference) error {
-	originalName := commonObjectMeta.Name
-	for _, svcPort := range svc.Spec.Ports {
-		portAsString := fmt.Sprintf("%v", svcPort.Port)
-
-		// we need to create multiple secrets, so each one has to contain the port in it's name
-		// so we change the name of each secret by adding the port number
-		commonObjectMeta.Name = fmt.Sprintf("%v-%v", originalName, portAsString)
-
-		// we also add the port as an annotation to the secret
-		// this comes in handy when we need to "query" for the appropriate secret
-		// of a component based on the port
-		commonObjectMeta.Annotations[ComponentPortAnnotationName] = portAsString
-
-		err := c.CreateSecret(
-			commonObjectMeta,
-			map[string]string{
-				secretKeyName(componentName, "host"): svc.Name,
-				secretKeyName(componentName, "port"): portAsString,
-			},
-			ownerReference)
-
-		if err != nil {
-			return errors.Wrapf(err, "unable to create Secret for %s", commonObjectMeta.Name)
-		}
-	}
-
-	// restore the original values of the fields we changed
-	commonObjectMeta.Name = originalName
-	delete(commonObjectMeta.Annotations, ComponentPortAnnotationName)
-
-	return nil
-}
-
-func secretKeyName(componentName, baseKeyName string) string {
-	return fmt.Sprintf("COMPONENT_%v_%v", strings.Replace(strings.ToUpper(componentName), "-", "_", -1), strings.ToUpper(baseKeyName))
 }
 
 // getS2ILabelValue returns the requested S2I label value from the passed set of labels attached to builder image
@@ -1100,12 +1038,15 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		}
 	}
 
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
+	// Create a service
+	commonObjectMeta.SetOwnerReferences(append(commonObjectMeta.GetOwnerReferences(), ownerReference))
+
+	svc, err := c.GetKubeClient().CreateService(commonObjectMeta, generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports))
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
-	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
+	err = c.GetKubeClient().CreateSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 	if err != nil {
 		return err
 	}
@@ -1116,57 +1057,6 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		return errors.Wrapf(err, "unable to create PVC for %s", commonObjectMeta.Name)
 	}
 
-	return nil
-}
-
-// CreateService generates and creates the service
-// commonObjectMeta is the ObjectMeta for the service
-// dc is the deploymentConfig to get the container ports
-func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort, ownerReference metav1.OwnerReference) (*corev1.Service, error) {
-	// generate and create Service
-	var svcPorts []corev1.ServicePort
-	for _, containerPort := range containerPorts {
-		svcPort := corev1.ServicePort{
-
-			Name:       containerPort.Name,
-			Port:       containerPort.ContainerPort,
-			Protocol:   containerPort.Protocol,
-			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
-		}
-		svcPorts = append(svcPorts, svcPort)
-	}
-	svc := corev1.Service{
-		ObjectMeta: commonObjectMeta,
-		Spec: corev1.ServiceSpec{
-			Ports: svcPorts,
-			Selector: map[string]string{
-				"deploymentconfig": commonObjectMeta.Name,
-			},
-		},
-	}
-	svc.SetOwnerReferences(append(svc.GetOwnerReferences(), ownerReference))
-
-	createdSvc, err := c.kubeClient.KubeClient.CoreV1().Services(c.Namespace).Create(&svc)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
-	}
-	return createdSvc, err
-}
-
-// CreateSecret generates and creates the secret
-// commonObjectMeta is the ObjectMeta for the service
-func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]string, ownerReference metav1.OwnerReference) error {
-
-	secret := corev1.Secret{
-		ObjectMeta: objectMeta,
-		Type:       corev1.SecretTypeOpaque,
-		StringData: data,
-	}
-	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
-	_, err := c.kubeClient.KubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
-	}
 	return nil
 }
 
@@ -1655,241 +1545,6 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer, buildT
 	}
 }
 
-// WaitAndGetDC block and waits until the DeploymentConfig has updated it's annotation
-// Parameters:
-//	name: Name of DC
-//	timeout: Interval of time.Duration to wait for before timing out waiting for its rollout
-//	waitCond: Function indicating when to consider dc rolled out
-// Returns:
-//	Updated DC and errors if any
-func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.Duration, waitCond func(*appsv1.DeploymentConfig, int64) bool) (*appsv1.DeploymentConfig, error) {
-
-	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
-	})
-	defer w.Stop()
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch dc")
-	}
-
-	timeoutChannel := time.After(timeout)
-	// Keep trying until we're timed out or got a result or got an error
-	for {
-		select {
-
-		// Timout after X amount of seconds
-		case <-timeoutChannel:
-			return nil, errors.New("Timed out waiting for annotation to update")
-
-		// Each loop we check the result
-		case val, ok := <-w.ResultChan():
-
-			if !ok {
-				break
-			}
-			if e, ok := val.Object.(*appsv1.DeploymentConfig); ok {
-				for _, cond := range e.Status.Conditions {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonCond, _ := json.Marshal(cond)
-					klog.V(3).Infof("DeploymentConfig Condition: %s", string(jsonCond))
-				}
-				// If the annotation has been updated, let's exit
-				if waitCond(e, desiredRevision) {
-					return e, nil
-				}
-
-			}
-		}
-	}
-}
-
-// CollectEvents collects events in a Goroutine by manipulating a spinner.
-// We don't care about the error (it's usually ran in a go routine), so erroring out is not needed.
-func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int) {
-
-	// Secondly, we will start a go routine for watching for events related to the pod and update our pod status accordingly.
-	eventWatcher, err := c.kubeClient.KubeClient.CoreV1().Events(c.Namespace).Watch(metav1.ListOptions{})
-	if err != nil {
-		log.Warningf("Unable to watch for events: %s", err)
-		return
-	}
-	defer eventWatcher.Stop()
-
-	// Create an endless loop for collecting
-	for {
-		select {
-		case <-quit:
-			klog.V(3).Info("Quitting collect events")
-			return
-		case val, ok := <-eventWatcher.ResultChan():
-			mu.Lock()
-			if !ok {
-				log.Warning("Watch channel was closed")
-				return
-			}
-			if e, ok := val.Object.(*corev1.Event); ok {
-
-				// If there are many warning events happening during deployment, let's log them.
-				if e.Type == "Warning" {
-
-					if e.Count >= failedEventCount {
-						newEvent := e
-						(events)[e.Name] = *newEvent
-						klog.V(3).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
-						// Change the spinner message to show the warning
-						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s", e.Count, e.Reason))
-					}
-
-				}
-
-			} else {
-				log.Warning("Unable to convert object to event")
-				return
-			}
-			mu.Unlock()
-		}
-	}
-}
-
-// WaitAndGetPod block and waits until pod matching selector is in in Running state
-// desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
-
-	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
-	pushTimeout := preference.DefaultPushTimeout * time.Second
-	cfg, configReadErr := preference.New()
-	if configReadErr != nil {
-		klog.V(3).Info(errors.Wrap(configReadErr, "unable to read config file"))
-	} else {
-		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
-	}
-
-	klog.V(3).Infof("Waiting for %s pod", selector)
-	spinner := log.Spinner(waitMessage)
-	defer spinner.End(false)
-
-	w, err := c.kubeClient.KubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch pod")
-	}
-	defer w.Stop()
-
-	// Here we are going to start a loop watching for the pod status
-	podChannel := make(chan *corev1.Pod)
-	watchErrorChannel := make(chan error)
-	go func(spinny *log.Status) {
-	loop:
-		for {
-			val, ok := <-w.ResultChan()
-			if !ok {
-				watchErrorChannel <- errors.New("watch channel was closed")
-				break loop
-			}
-			if e, ok := val.Object.(*corev1.Pod); ok {
-				klog.V(3).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
-				for _, cond := range e.Status.Conditions {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonCond, _ := json.Marshal(cond)
-					klog.V(3).Infof("Pod Conditions: %s", string(jsonCond))
-				}
-				for _, status := range e.Status.ContainerStatuses {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonStatus, _ := json.Marshal(status)
-					klog.V(3).Infof("Container Status: %s", string(jsonStatus))
-				}
-				switch e.Status.Phase {
-				case desiredPhase:
-					klog.V(3).Infof("Pod %s is %v", e.Name, desiredPhase)
-					podChannel <- e
-					break loop
-				case corev1.PodFailed, corev1.PodUnknown:
-					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
-					break loop
-				}
-			} else {
-				watchErrorChannel <- errors.New("unable to convert event object to Pod")
-				break loop
-			}
-		}
-		close(podChannel)
-		close(watchErrorChannel)
-	}(spinner)
-
-	// Collect all the events in a separate go routine
-	failedEvents := make(map[string]corev1.Event)
-	quit := make(chan int)
-	go c.CollectEvents(selector, failedEvents, spinner, quit)
-	defer close(quit)
-
-	select {
-	case val := <-podChannel:
-		spinner.End(true)
-		return val, nil
-	case err := <-watchErrorChannel:
-		return nil, err
-	case <-time.After(pushTimeout):
-
-		// Create a useful error if there are any failed events
-		errorMessage := fmt.Sprintf(`waited %s but couldn't find running pod matching selector: '%s'`, pushTimeout, selector)
-
-		if len(failedEvents) != 0 {
-
-			// Create an output table
-			tableString := &strings.Builder{}
-			table := tablewriter.NewWriter(tableString)
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-			table.SetCenterSeparator("")
-			table.SetColumnSeparator("")
-			table.SetRowSeparator("")
-
-			// Header
-			table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
-
-			// List of events
-			for name, event := range failedEvents {
-				table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
-			}
-
-			// Here we render the table as well as a helpful error message
-			table.Render()
-			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
-For more information to help determine the cause of the error, re-run with '-v'.
-See below for a list of failed events that occured more than %d times during deployment:
-%s`, pushTimeout, selector, failedEventCount, tableString)
-		}
-
-		return nil, errors.Errorf(errorMessage)
-	}
-}
-
-// WaitAndGetSecret blocks and waits until the secret is available
-func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error) {
-	klog.V(3).Infof("Waiting for secret %s to become available", name)
-
-	w, err := c.kubeClient.KubeClient.CoreV1().Secrets(namespace).Watch(metav1.ListOptions{
-		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch secret")
-	}
-	defer w.Stop()
-	for {
-		val, ok := <-w.ResultChan()
-		if !ok {
-			break
-		}
-		if e, ok := val.Object.(*corev1.Secret); ok {
-			klog.V(3).Infof("Secret %s now exists", e.Name)
-			return e, nil
-		}
-	}
-	return nil, errors.Errorf("unknown error while waiting for secret '%s'", name)
-}
-
 // FollowBuildLog stream build log to stdout
 func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
 	buildLogOptions := buildv1.BuildLogOptions{
@@ -1916,39 +1571,6 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout
 	}
 
 	return nil
-}
-
-// DisplayDeploymentConfigLog logs the deployment config to stdout
-func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followLog bool, stdout io.Writer) error {
-
-	// Set standard log options
-	deploymentLogOptions := appsv1.DeploymentLogOptions{Follow: false, NoWait: true}
-
-	// If the log is being followed, set it to follow / don't wait
-	if followLog {
-		// TODO: https://github.com/kubernetes/kubernetes/pull/60696
-		// Unable to set to 0, until openshift/client-go updates their Kubernetes vendoring to 1.11.0
-		// Set to 1 for now.
-		tailLines := int64(1)
-		deploymentLogOptions = appsv1.DeploymentLogOptions{Follow: true, NoWait: false, Previous: false, TailLines: &tailLines}
-	}
-
-	// RESTClient call to OpenShift
-	rd, err := c.appsClient.RESTClient().Get().
-		Namespace(c.Namespace).
-		Name(deploymentConfigName).
-		Resource("deploymentconfigs").
-		SubResource("log").
-		VersionedParams(&deploymentLogOptions, appsschema.ParameterCodec).
-		Stream()
-	if err != nil {
-		return errors.Wrapf(err, "unable get deploymentconfigs log %s", deploymentConfigName)
-	}
-	if rd == nil {
-		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
-	}
-
-	return util.DisplayLog(followLog, rd, deploymentConfigName)
 }
 
 // Delete takes labels as a input and based on it, deletes respective resource
@@ -2065,32 +1687,6 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 	}
 
 	return nil
-}
-
-// GetDeploymentConfigLabelValues get label values of given label from objects in project that are matching selector
-// returns slice of unique label values
-func (c *Client) GetDeploymentConfigLabelValues(label string, selector string) ([]string, error) {
-
-	// List DeploymentConfig according to selectors
-	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
-	}
-
-	// Grab all the matched strings
-	var values []string
-	for _, elem := range dcList.Items {
-		for key, val := range elem.Labels {
-			if key == label {
-				values = append(values, val)
-			}
-		}
-	}
-
-	// Sort alphabetically
-	sort.Strings(values)
-
-	return values, nil
 }
 
 // GetServiceInstanceLabelValues get label values of given label from objects in project that match the selector
@@ -2381,23 +1977,6 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 	return planList.Items, nil
 }
 
-// ListSecrets lists all the secrets based on the given label selector
-func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
-	listOptions := metav1.ListOptions{}
-	if len(labelSelector) > 0 {
-		listOptions = metav1.ListOptions{
-			LabelSelector: labelSelector,
-		}
-	}
-
-	secretList, err := c.kubeClient.KubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get secret list")
-	}
-
-	return secretList.Items, nil
-}
-
 // DeleteBuildConfig deletes the given BuildConfig by name using CommonObjectMeta..
 func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 
@@ -2408,109 +1987,6 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 	// Delete BuildConfig
 	klog.V(3).Info("Deleting BuildConfigs with DeleteBuildConfig")
 	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-}
-
-// GetDeploymentConfigsFromSelector returns an array of Deployment Config
-// resources which match the given selector
-func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.DeploymentConfig, error) {
-	var dcList *appsv1.DeploymentConfigList
-	var err error
-
-	if selector != "" {
-		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
-			LabelSelector: selector,
-		})
-	} else {
-		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
-			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
-		})
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
-	}
-	return dcList.Items, nil
-}
-
-// GetServicesFromSelector returns an array of Service resources which match the
-// given selector
-func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, error) {
-	serviceList, err := c.kubeClient.KubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list Services")
-	}
-	return serviceList.Items, nil
-}
-
-// GetDeploymentConfigFromName returns the Deployment Config resource given
-// the Deployment Config name
-func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
-	klog.V(3).Infof("Getting DeploymentConfig: %s", name)
-	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return deploymentConfig, nil
-}
-
-// GetOneDeploymentConfigFromSelector returns the Deployment Config object associated
-// with the given selector.
-// An error is thrown when exactly one Deployment Config is not found for the
-// selector.
-func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.DeploymentConfig, error) {
-	deploymentConfigs, err := c.GetDeploymentConfigsFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get DeploymentConfigs for the selector: %v", selector)
-	}
-
-	numDC := len(deploymentConfigs)
-	if numDC == 0 {
-		return nil, fmt.Errorf("no Deployment Config was found for the selector: %v", selector)
-	} else if numDC > 1 {
-		return nil, fmt.Errorf("multiple Deployment Configs exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &deploymentConfigs[0], nil
-}
-
-// GetOnePodFromSelector returns the Pod  object associated with the given selector.
-// An error is thrown when exactly one Pod is not found.
-func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
-
-	pods, err := c.kubeClient.KubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Pod for the selector: %v", selector)
-	}
-	numPods := len(pods.Items)
-	if numPods == 0 {
-		return nil, fmt.Errorf("no Pod was found for the selector: %v", selector)
-	} else if numPods > 1 {
-		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &pods.Items[0], nil
-}
-
-// GetOneServiceFromSelector returns the Service object associated with the
-// given selector.
-// An error is thrown when exactly one Service is not found for the selector
-func (c *Client) GetOneServiceFromSelector(selector string) (*corev1.Service, error) {
-	services, err := c.GetServicesFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get services for the selector: %v", selector)
-	}
-
-	numServices := len(services)
-	if numServices == 0 {
-		return nil, fmt.Errorf("no Service was found for the selector: %v", selector)
-	} else if numServices > 1 {
-		return nil, fmt.Errorf("multiple Services exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &services[0], nil
 }
 
 // AddEnvironmentVariablesToDeploymentConfig adds the given environment
@@ -2659,16 +2135,6 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 		return err
 	}
 	return nil
-}
-
-// BuildPortForwardReq builds a port forward request
-func (c *Client) BuildPortForwardReq(podName string) *rest.Request {
-	return c.kubeClient.KubeClient.CoreV1().RESTClient().
-		Post().
-		Resource("pods").
-		Namespace(c.Namespace).
-		Name(podName).
-		SubResource("portforward")
 }
 
 func (c *Client) GetKubeClient() *kclient.Client {
@@ -2833,29 +2299,6 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	return err
 }
 
-// StartDeployment instantiates a given deployment
-// deploymentName is the name of the deployment to instantiate
-func (c *Client) StartDeployment(deploymentName string) (string, error) {
-	if deploymentName == "" {
-		return "", errors.Errorf("deployment name is empty")
-	}
-	klog.V(3).Infof("Deployment %s started.", deploymentName)
-	deploymentRequest := appsv1.DeploymentRequest{
-		Name: deploymentName,
-		// latest is set to true to prevent image name resolution issue
-		// inspired from https://github.com/openshift/origin/blob/882ed02142fbf7ba16da9f8efeb31dab8cfa8889/pkg/oc/cli/rollout/latest.go#L194
-		Latest: true,
-		Force:  true,
-	}
-	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(deploymentName, &deploymentRequest)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to instantiate Deployment for %s", deploymentName)
-	}
-	klog.V(3).Infof("Deployment %s for DeploymentConfig %s triggered.", deploymentName, result.Name)
-
-	return result.Name, nil
-}
-
 func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.EnvVar {
 	return uniqueAppendOrOverwriteEnvVars(
 		existingVars,
@@ -2885,14 +2328,6 @@ func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.En
 		},
 	)
 
-}
-
-// IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
-func (c *Client) IsDeploymentConfigSupported() (bool, error) {
-	const Group = "apps.openshift.io"
-	const Version = "v1"
-
-	return c.isResourceSupported(Group, Version, "deploymentconfigs")
 }
 
 func isSubDir(baseDir, otherDir string) bool {

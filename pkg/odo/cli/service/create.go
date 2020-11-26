@@ -483,7 +483,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 
 	if o.wait {
 		s = log.Spinner("Waiting for service to come up")
-		_, err = o.Client.WaitAndGetSecret(o.ServiceName, o.Project)
+		_, err = o.Client.GetKubeClient().WaitAndGetSecret(o.ServiceName, o.Project)
 		if err == nil {
 			s.End(true)
 			log.Successf(`Service '%s' is ready for use`, o.ServiceName)

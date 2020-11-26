@@ -1,6 +1,7 @@
 package secret
 
 import (
+	"github.com/openshift/odo/pkg/kclient"
 	"testing"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -52,7 +53,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8080",
+								kclient.ComponentPortAnnotationName: "8080",
 							},
 						},
 					},
@@ -77,7 +78,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8080",
+								kclient.ComponentPortAnnotationName: "8080",
 							},
 						},
 					},
@@ -90,7 +91,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8080",
+								kclient.ComponentPortAnnotationName: "8080",
 							},
 						},
 					},
@@ -115,7 +116,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8080",
+								kclient.ComponentPortAnnotationName: "8080",
 							},
 						},
 					},
@@ -128,7 +129,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8443",
+								kclient.ComponentPortAnnotationName: "8443",
 							},
 						},
 					},
@@ -153,7 +154,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8080",
+								kclient.ComponentPortAnnotationName: "8080",
 							},
 						},
 					},
@@ -166,7 +167,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8443",
+								kclient.ComponentPortAnnotationName: "8443",
 							},
 						},
 					},
@@ -191,7 +192,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8443",
+								kclient.ComponentPortAnnotationName: "8443",
 							},
 						},
 					},
@@ -204,7 +205,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8080",
+								kclient.ComponentPortAnnotationName: "8080",
 							},
 						},
 					},
@@ -217,7 +218,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 								componentlabels.ComponentTypeLabel: "java",
 							},
 							Annotations: map[string]string{
-								occlient.ComponentPortAnnotationName: "8779",
+								kclient.ComponentPortAnnotationName: "8779",
 							},
 						},
 					},

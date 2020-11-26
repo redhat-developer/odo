@@ -34,3 +34,15 @@ func (c *Client) UpdateService(commonObjectMeta metav1.ObjectMeta, svcSpec corev
 	}
 	return service, err
 }
+
+// ListServices returns an array of Service resources which match the
+// given selector
+func (c *Client) ListServices(selector string) ([]corev1.Service, error) {
+	serviceList, err := c.KubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list Services")
+	}
+	return serviceList.Items, nil
+}

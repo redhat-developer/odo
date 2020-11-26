@@ -181,7 +181,7 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to fetch deployment configs for the selector %v", componentSelector)
 	}
@@ -200,7 +200,7 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to fetch deployment configs for the selector %v", componentSelector)
 	}
@@ -283,7 +283,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 		}
 
 		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
-		_, err = client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+		_, err = client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
 		if err != nil {
 			return err
 		}
@@ -664,7 +664,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return errors.Wrap(err, "unable to get deployment for component")
 	}
@@ -672,7 +672,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
 
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	pod, err := client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
@@ -912,7 +912,7 @@ func ListS2IComponents(client *occlient.Client, applicationName string, localCon
 
 	if deploymentConfigSupported && client != nil {
 		// retrieve all the deployment configs that are associated with this application
-		dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+		dcList, err := client.ListDeploymentConfigs(applicationSelector)
 		if err != nil {
 			return ComponentList{}, errors.Wrapf(err, "unable to list components")
 		}
@@ -1538,13 +1538,13 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	linkedComponents := make(map[string][]string)
 	linkedSecretNames := fromCluster.GetLinkedSecretNames()
 	for _, secretName := range linkedSecretNames {
-		secret, err := client.GetSecret(secretName, projectName)
+		secret, err := client.GetKubeClient().GetSecret(secretName, projectName)
 		if err != nil {
 			return Component{}, errors.Wrapf(err, "unable to get info about secret %s", secretName)
 		}
 		componentName, containsComponentLabel := secret.Labels[componentlabels.ComponentLabel]
 		if containsComponentLabel {
-			if port, ok := secret.Annotations[occlient.ComponentPortAnnotationName]; ok {
+			if port, ok := secret.Annotations[kclient.ComponentPortAnnotationName]; ok {
 				linkedComponents[componentName] = append(linkedComponents[componentName], port)
 			}
 		} else {
@@ -1572,7 +1572,7 @@ func GetLogs(client *occlient.Client, componentName string, applicationName stri
 	}
 
 	// Retrieve the logs
-	err = client.DisplayDeploymentConfigLog(namespacedOpenShiftObject, follow, stdout)
+	err = client.DisplayDeploymentConfigLog(namespacedOpenShiftObject, follow)
 	if err != nil {
 		return err
 	}

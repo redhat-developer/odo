@@ -7,6 +7,7 @@ import (
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -156,4 +157,23 @@ func FakeServiceClassInstance(serviceInstanceName string, serviceClassName strin
 		},
 	}
 	return service
+}
+
+func FakeKubeService(componentName, serviceName string) corev1.Service {
+	return corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: serviceName,
+			Labels: map[string]string{
+				"component-name": componentName,
+			},
+		},
+	}
+}
+
+func FakeKubeServices(componentName string) []corev1.Service {
+	return []corev1.Service{
+		FakeKubeService(componentName, "service-1"),
+		FakeKubeService(componentName, "service-2"),
+		FakeKubeService(componentName, "service-3"),
+	}
 }

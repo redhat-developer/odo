@@ -2,6 +2,7 @@ package secret
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/kclient"
 
 	"strings"
 
@@ -17,7 +18,7 @@ import (
 func DetermineSecretName(client *occlient.Client, componentName, applicationName, port string) (string, error) {
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName) +
 		fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
-	secrets, err := client.ListSecrets(labelSelector)
+	secrets, err := client.GetKubeClient().ListSecrets(labelSelector)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +41,7 @@ Please delete the component and recreate it using 'odo create'`, componentName)
 
 	// search each secret to see which port is corresponds to
 	for _, secret := range secrets {
-		if secret.Annotations[occlient.ComponentPortAnnotationName] == port {
+		if secret.Annotations[kclient.ComponentPortAnnotationName] == port {
 			return secret.Name, nil
 		}
 	}
@@ -52,7 +53,7 @@ Please delete the component and recreate it using 'odo create'`, componentName)
 func availablePorts(secrets []corev1.Secret) []string {
 	ports := make([]string, 0, len(secrets))
 	for _, secret := range secrets {
-		ports = append(ports, secret.Annotations[occlient.ComponentPortAnnotationName])
+		ports = append(ports, secret.Annotations[kclient.ComponentPortAnnotationName])
 	}
 	return ports
 }

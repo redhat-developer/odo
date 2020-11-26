@@ -67,7 +67,7 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 	// Get DeploymentConfig for the given component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
@@ -120,7 +120,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
 	}
@@ -349,7 +349,7 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 	// Get DeploymentConfig for the given component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
