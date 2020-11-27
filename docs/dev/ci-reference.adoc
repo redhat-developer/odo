@@ -8,17 +8,17 @@ For default oc, use the configuration in `.travis.yaml`. For example:
 ----
   # Run generic, login and plugin handler integration tests
     - <<: *base-test
-    stage: test
-    name: "generic, login and plugin handler integration tests"
-    script:
-      - ./scripts/oc-cluster.sh
-      - make configure-supported-311-is
-      - make bin
-      - sudo cp odo /usr/bin
-      - odo login -u developer
-      - travis_wait make test-generic
-      - travis_wait make test-plugin-handler
-      - odo logout
+      stage: test
+      name: "generic, login and plugin handler integration tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
+        - travis_wait make test-generic
+        - travis_wait make test-plugin-handler
+        - odo logout
 ----
 
 If you need to run `odo` integration tests against a specific version of Openshift, use env variable `OPENSHIFT_CLIENT_BINARY_URL` to pass the https://github.com/openshift/origin/releases[released] oc client URL in `.travis.yaml`. For oc v3.10.0, use the configuration:
