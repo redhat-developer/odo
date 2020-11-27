@@ -502,14 +502,21 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 			// here we remove the tag and digest
 			ns, img, tag, _, _ := occlient.ParseImageName(urlImageName)
 			imageName = ns + "/" + img + ":" + tag
-		} else if tagRef.From.Kind == "ImageStreamTag" {
+			tagMap[tagRef.Name] = imageName
+		}
+	}
+
+	for _, tagRef := range tagRefs {
+		if tagRef.From.Kind == "ImageStreamTag" {
+			imageName := tagRef.From.Name
 			tagList := strings.Split(imageName, ":")
 			tag := tagList[len(tagList)-1]
 			// if the kind is a image stream tag that means its pointing to an existing dockerImage or image stream image
 			// we just look it up from the tapMap we already have
 			imageName = tagMap[tag]
+			tagMap[tagRef.Name] = imageName
 		}
-		tagMap[tagRef.Name] = imageName
+
 	}
 	return tagMap
 }
