@@ -37,6 +37,32 @@ commands:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
+  - id: buildWithEnv
+    exec:
+      component: runtime
+      commandLine: npm install && mkdir $BUILD_ENV1
+      workingDir: ${PROJECTS_ROOT}
+      env:
+        - name: BUILD_ENV1
+          value: "test_build_env_variable"
+  - id: buildWithMultipleEnv
+    exec:
+      component: runtime
+      commandLine: "sh -c 'mkdir $BUILD_ENV1 $BUILD_ENV2' && npm install"
+      workingDir: ${PROJECTS_ROOT}
+      env:
+        - name: BUILD_ENV1
+          value: "test_build_env_variable1"
+        - name: BUILD_ENV2
+          value: "test_build_env_variable2"
+  - id: buildEnvWithSpace
+    exec:
+      component: runtime
+      commandLine: npm install && mkdir "$BUILD_ENV1"
+      workingDir: ${PROJECTS_ROOT}
+      env:
+        - name: BUILD_ENV1
+          value: "build env variable with space"
   - id: firstrun
     exec:
       component: runtime
@@ -64,7 +90,7 @@ commands:
   - id: multipleenv
     exec:
       component: runtime
-      commandLine: mkdir $ENV1 $ENV2
+      commandLine: "sh -c 'mkdir $ENV1 $ENV2'"
       env:
        - name: ENV1
          value: "test_env_variable1"

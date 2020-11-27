@@ -807,12 +807,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "singleenv", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("mkdir $ENV1"))
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "buildWithEnv", "--run-command", "singleenv", "--context", commonVar.Context)
+			helper.MatchAllInOutput(output, []string{"mkdir $ENV1", "mkdir $BUILD_ENV1"})
 
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 			output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
-			Expect(output).To(ContainSubstring("test_env_variable"))
+			helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
 
 		})
 
@@ -820,12 +820,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "multipleenv", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("mkdir $ENV1 $ENV2"))
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "buildWithMultipleEnv", "--run-command", "multipleenv", "--context", commonVar.Context)
+			helper.MatchAllInOutput(output, []string{"mkdir $ENV1 $ENV2", "mkdir $BUILD_ENV1 $BUILD_ENV2"})
 
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 			output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
-			helper.MatchAllInOutput(output, []string{"test_env_variable1", "test_env_variable2"})
+			helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
 
 		})
 
@@ -833,12 +833,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "envwithspace", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("mkdir \\\"$ENV1\\\""))
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "buildEnvWithSpace", "--run-command", "envwithspace", "--context", commonVar.Context)
+			helper.MatchAllInOutput(output, []string{"mkdir \\\"$ENV1\\\"", "mkdir \\\"$BUILD_ENV1\\\""})
 
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 			output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
-			helper.MatchAllInOutput(output, []string{"env with space"})
+			helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
 
 		})
 	})

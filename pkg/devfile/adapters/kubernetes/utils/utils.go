@@ -116,7 +116,10 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
 				klog.V(2).Infof("Updating container %v env with run command", container.Name)
 				var setEnvVariable, command string
-				for _, envVar := range runCommand.Exec.Env {
+				for i, envVar := range runCommand.Exec.Env {
+					if i == 0 {
+						setEnvVariable = "export "
+					}
 					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
 				}
 				if setEnvVariable == "" {
@@ -170,7 +173,10 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebug) {
 				klog.V(2).Infof("Updating container %v env with debug command", container.Name)
 				var setEnvVariable, command string
-				for _, envVar := range debugCommand.Exec.Env {
+				for i, envVar := range debugCommand.Exec.Env {
+					if i == 0 {
+						setEnvVariable = "export "
+					}
 					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
 				}
 				if setEnvVariable == "" {

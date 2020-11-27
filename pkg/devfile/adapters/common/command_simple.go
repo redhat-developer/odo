@@ -28,7 +28,10 @@ func newSimpleCommand(command devfilev1.Command, executor commandExecutor) (comm
 
 	// deal with environment variables
 	var setEnvVariable, cmdLine string
-	for _, envVar := range exe.Env {
+	for i, envVar := range exe.Env {
+		if i == 0 {
+			setEnvVariable = "export "
+		}
 		setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
 	}
 	if setEnvVariable == "" {
