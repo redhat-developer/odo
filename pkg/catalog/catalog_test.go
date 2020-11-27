@@ -317,7 +317,7 @@ func MockImageStream() *imagev1.ImageStream {
 		"12": "docker.io/rhscl/nodejs-12-rhel7:latest",
 		"10": "docker.io/rhscl/nodejs-10-rhel7:latest",
 
-		// an unsupported one
+		// unsupported ones
 		"8": "docker.io/rhoar-nodejs/nodejs-8:latest",
 		"6": "docker.io/rhoar-nodejs/nodejs-6:latest",
 	}
@@ -328,6 +328,18 @@ func MockImageStream() *imagev1.ImageStream {
 			Namespace: "openshift",
 		},
 	}
+
+	// this append is intentionally added before adding other tags
+	// to confirm that tag references work even when they are out of order
+	imageStream.Spec.Tags = append(imageStream.Spec.Tags,
+		imagev1.TagReference{
+			Name:        "latest",
+			Annotations: map[string]string{"tags": "builder"},
+			From: &corev1.ObjectReference{
+				Kind: "ImageStreamTag",
+				Name: "12",
+			},
+		})
 
 	for tagName, imageName := range tags {
 		imageTag := imagev1.TagReference{
@@ -340,16 +352,6 @@ func MockImageStream() *imagev1.ImageStream {
 		}
 		imageStream.Spec.Tags = append(imageStream.Spec.Tags, imageTag)
 	}
-
-	imageStream.Spec.Tags = append(imageStream.Spec.Tags,
-		imagev1.TagReference{
-			Name:        "latest",
-			Annotations: map[string]string{"tags": "builder"},
-			From: &corev1.ObjectReference{
-				Kind: "ImageStreamTag",
-				Name: "12",
-			},
-		})
 
 	return imageStream
 }
