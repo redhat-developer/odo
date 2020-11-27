@@ -66,8 +66,8 @@ The following example demonstrates how to set up a path variable. Your binary ca
 . Select *Advanced systems settings* and click the *Environment Variables* button at the bottom.
 . Select the *Path* variable from the *System variable* section and click *Edit*.
 . Scroll to the end of the *Variable Value* and add `;C:\odo` and click *OK*.
-. CLick *OK* to close the *Environment Variable* dialog.
-. CLick *OK* to close the *Systems Properties* dialog.
+. Click *OK* to close the *Environment Variable* dialog.
+. Click *OK* to close the *Systems Properties* dialog.
 
 = Installing odo in Visual Studio Code (VSCode)
 
