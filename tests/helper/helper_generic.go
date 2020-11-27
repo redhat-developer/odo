@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -311,15 +310,4 @@ func CommonAfterEach(commonVar CommonVar) {
 	DeleteDir(commonVar.Context)
 
 	os.Unsetenv("GLOBALODOCONFIG")
-}
-
-// GenFileURL Converts file path on windows to /C:/path/to/file to work in URL
-func GenFileURL() string {
-	var sourcePath string
-	if runtime.GOOS == "windows" {
-		sourcePath = "file:///./"
-		return sourcePath
-	}
-	sourcePath = "file://./"
-	return sourcePath
 }

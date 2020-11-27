@@ -210,9 +210,9 @@ func GenFileURL(location string, os ...string) string {
 	}
 	urlPath := location
 	if currOS == WIN {
-		urlPath = "/" + strings.Replace(location, "\\", "/", -1)
+		urlPath = strings.Replace(location, "\\", "/", -1)
 	}
-	return "file://" + urlPath
+	return "file:///" + urlPath
 }
 
 // ConvertKeyValueStringToMap converts String Slice of Parameters to a Map[String]string
