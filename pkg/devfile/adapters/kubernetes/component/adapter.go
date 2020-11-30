@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -159,7 +159,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if currentMode != previousMode {
 		parameters.RunModeChanged = true
 	}
-	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
+	containerComponents := a.Devfile.Data.GetDevfileContainerComponents()
 
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
@@ -357,58 +357,57 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	odoMandatoryVolumes := utils.GetOdoContainerVolumes()
 
-	podTemplateSpecParams := generator.PodTemplateSpecParams{
-		ObjectMeta:     objectMeta,
-		InitContainers: initContainers,
-		Containers:     containers,
-		Volumes:        append(pvcVolumes, odoMandatoryVolumes...),
-	}
-	podTemplateSpec := generator.GetPodTemplateSpec(podTemplateSpecParams)
-
-	deployParams := generator.DeploymentSpecParams{
-		PodTemplateSpec: *podTemplateSpec,
-		PodSelectorLabels: map[string]string{
-			"component": componentName,
-		},
-	}
-	deploymentSpec := generator.GetDeploymentSpec(deployParams)
-
 	selectorLabels := map[string]string{
 		"component": componentName,
 	}
-	serviceSpec, err := generator.GetService(a.Devfile, selectorLabels)
+
+	deployParams := generator.DeploymentParams{
+		TypeMeta:          generator.GetTypeMeta(kclient.DeploymentKind, kclient.DeploymentAPIVersion),
+		ObjectMeta:        objectMeta,
+		InitContainers:    initContainers,
+		Containers:        containers,
+		Volumes:           append(pvcVolumes, odoMandatoryVolumes...),
+		PodSelectorLabels: selectorLabels,
+	}
+
+	deployment := generator.GetDeployment(deployParams)
+
+	serviceParams := generator.ServiceParams{
+		ObjectMeta:     objectMeta,
+		SelectorLabels: selectorLabels,
+	}
+	service, err := generator.GetService(a.Devfile, serviceParams)
 	if err != nil {
 		return err
 	}
-	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	klog.V(2).Infof("Creating deployment %v", deployment.Spec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
+		deployment, err := a.Client.UpdateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
-		objectMetaTemp := objectMeta
 		ownerReference := generator.GetOwnerReference(deployment)
-		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
-			if len(serviceSpec.Ports) > 0 {
-				_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+			if len(service.Spec.Ports) > 0 {
+				_, err = a.Client.CreateService(*service)
 				if err != nil {
 					return err
 				}
 				klog.V(2).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
-			if len(serviceSpec.Ports) > 0 {
-				serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
-				objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
-				_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
+			if len(service.Spec.Ports) > 0 {
+				service.Spec.ClusterIP = oldSvc.Spec.ClusterIP
+				service.ResourceVersion = oldSvc.GetResourceVersion()
+				_, err = a.Client.UpdateService(*service)
 				if err != nil {
 					return err
 				}
@@ -421,16 +420,15 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			}
 		}
 	} else {
-		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
+		deployment, err := a.Client.CreateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
 		ownerReference := generator.GetOwnerReference(deployment)
-		objectMetaTemp := objectMeta
-		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
-		if len(serviceSpec.Ports) > 0 {
-			_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
+		if len(service.Spec.Ports) > 0 {
+			_, err = a.Client.CreateService(*service)
 			if err != nil {
 				return err
 			}

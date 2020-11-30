@@ -9,7 +9,6 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/kclient/generator"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -160,7 +159,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	var configProvider envinfo.LocalConfigProvider = localConfigInfo
 	if envInfo != nil {
 		configProvider = envInfo
-		components = generator.GetDevfileContainerComponents(devfile.Data)
+		components = devfile.Data.GetDevfileContainerComponents()
 	}
 	urls, err = urlpkg.ListIngressAndRoute(client, configProvider, components, componentName, routeSupported)
 	if err != nil {

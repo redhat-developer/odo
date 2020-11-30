@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -66,12 +66,17 @@ func TestCreateService(t *testing.T) {
 				return true, &service, nil
 			})
 
-			serviceSpec, err := generator.GetService(devObj, labels)
+			serviceParams := generator.ServiceParams{
+				ObjectMeta:     objectMeta,
+				SelectorLabels: labels,
+			}
+
+			service, err := generator.GetService(devObj, serviceParams)
 			if err != nil {
 				t.Errorf("generator.GetService unexpected error %v", err)
 			}
 
-			createdService, err := fkclient.CreateService(objectMeta, *serviceSpec)
+			createdService, err := fkclient.CreateService(*service)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -142,12 +147,17 @@ func TestUpdateService(t *testing.T) {
 				return true, &service, nil
 			})
 
-			serviceSpec, err := generator.GetService(devObj, labels)
+			serviceParams := generator.ServiceParams{
+				ObjectMeta:     objectMeta,
+				SelectorLabels: labels,
+			}
+
+			service, err := generator.GetService(devObj, serviceParams)
 			if err != nil {
 				t.Errorf("generator.GetService unexpected error %v", err)
 			}
 
-			updatedService, err := fkclient.UpdateService(objectMeta, *serviceSpec)
+			updatedService, err := fkclient.UpdateService(*service)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

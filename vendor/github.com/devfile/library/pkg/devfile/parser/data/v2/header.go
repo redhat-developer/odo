@@ -4,6 +4,11 @@ import (
 	devfilepkg "github.com/devfile/api/pkg/devfile"
 )
 
+//GetSchemaVersion gets devfile schema version
+func (d *DevfileV2) GetSchemaVersion() string {
+	return d.SchemaVersion
+}
+
 //SetSchemaVersion sets devfile schema version
 func (d *DevfileV2) SetSchemaVersion(version string) {
 	d.SchemaVersion = version

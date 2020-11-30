@@ -49,8 +49,9 @@ github.com/davecgh/go-spew/spew
 # github.com/devfile/api v0.0.0-20201103130402-29b8738e196e
 github.com/devfile/api/pkg/apis/workspaces/v1alpha2
 github.com/devfile/api/pkg/devfile
-# github.com/devfile/library v0.0.0-20201112211805-e68d67cf4204
+# github.com/devfile/library v0.0.0-20201125155652-6eabeab3ee52
 github.com/devfile/library/pkg/devfile
+github.com/devfile/library/pkg/devfile/generator
 github.com/devfile/library/pkg/devfile/parser
 github.com/devfile/library/pkg/devfile/parser/context
 github.com/devfile/library/pkg/devfile/parser/data

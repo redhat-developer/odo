@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 )
@@ -31,7 +30,7 @@ func (a Adapter) createComponent() (err error) {
 
 	log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 
-	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
+	containerComponents := a.Devfile.Data.GetDevfileContainerComponents()
 	if len(containerComponents) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
@@ -74,7 +73,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
 	err = stoAdapter.Create(a.uniqueStorage)
 
-	containerComponents := generator.GetDevfileContainerComponents(a.Devfile.Data)
+	containerComponents := a.Devfile.Data.GetDevfileContainerComponents()
 	if len(containerComponents) == 0 {
 		return componentExists, fmt.Errorf("no valid components found in the devfile")
 	}

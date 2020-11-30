@@ -764,7 +764,11 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 
 	// Create a service
 	commonObjectMeta.SetOwnerReferences(append(commonObjectMeta.GetOwnerReferences(), ownerReference))
-	svc, err := c.GetKubeClient().CreateService(commonObjectMeta, generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports))
+	service := corev1.Service{
+		ObjectMeta: commonObjectMeta,
+		Spec:       generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports),
+	}
+	svc, err := c.GetKubeClient().CreateService(service)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
@@ -1040,8 +1044,11 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	// Create a service
 	commonObjectMeta.SetOwnerReferences(append(commonObjectMeta.GetOwnerReferences(), ownerReference))
-
-	svc, err := c.GetKubeClient().CreateService(commonObjectMeta, generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports))
+	service := corev1.Service{
+		ObjectMeta: commonObjectMeta,
+		Spec:       generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports),
+	}
+	svc, err := c.GetKubeClient().CreateService(service)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}

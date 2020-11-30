@@ -2,6 +2,8 @@ package occlient
 
 import (
 	"fmt"
+
+	"github.com/devfile/library/pkg/devfile/generator"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -20,28 +22,18 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string, o
 		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
 	}
 
-	pvc := &corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: quantity,
-				},
-			},
-			AccessModes: []corev1.PersistentVolumeAccessMode{
-				corev1.ReadWriteOnce,
-			},
-		},
+	pvcParams := generator.PVCParams{
+		ObjectMeta: generator.GetObjectMeta(name, c.Namespace, labels, nil),
+		Quantity:   quantity,
 	}
+
+	pvc := generator.GetPVC(pvcParams)
 
 	for _, owRf := range ownerReference {
 		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 
-	return c.kubeClient.CreatePVC(pvc.ObjectMeta, pvc.Spec)
+	return c.kubeClient.CreatePVC(*pvc)
 }
 
 // GetPVCNameFromVolumeMountName returns the PVC associated with the given volume

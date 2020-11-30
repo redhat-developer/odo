@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/kclient/generator"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
@@ -320,13 +320,18 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 func generateBuildConfig(commonObjectMeta metav1.ObjectMeta, gitURL, gitRef, imageName, imageNamespace string) buildv1.BuildConfig {
 
 	params := generator.BuildConfigParams{
-		CommonObjectMeta: commonObjectMeta,
-		GitURL:           gitURL,
-		GitRef:           gitRef,
-		BuildStrategy:    generator.GetSourceBuildStrategy(imageName, imageNamespace),
+		ObjectMeta: commonObjectMeta,
+		BuildConfigSpecParams: generator.BuildConfigSpecParams{
+			ImageStreamTagName: commonObjectMeta.Name,
+			GitURL:             gitURL,
+			GitRef:             gitRef,
+			BuildStrategy:      generator.GetSourceBuildStrategy(imageName, imageNamespace),
+		},
 	}
 
-	return generator.GetBuildConfig(params)
+	buildConfig := generator.GetBuildConfig(params)
+
+	return *buildConfig
 }
 
 //

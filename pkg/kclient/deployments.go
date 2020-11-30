@@ -54,7 +54,7 @@ func (c *Client) GetOneDeploymentFromSelector(selector string) (*appsv1.Deployme
 	return &deployments[0], nil
 }
 
-// GetDeploymentsFromSelector returns an array of Deployment resources which
+// GetDeploymentFromSelector returns an array of Deployment resources which
 // match the given selector
 func (c *Client) GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error) {
 	var deploymentList *appsv1.DeploymentList
@@ -162,45 +162,21 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 }
 
 // CreateDeployment creates a deployment based on the given deployment spec
-func (c *Client) CreateDeployment(deploymentSpec appsv1.DeploymentSpec) (*appsv1.Deployment, error) {
-	// inherit ObjectMeta from deployment spec so that namespace, labels, owner references etc will be the same
-	objectMeta := deploymentSpec.Template.ObjectMeta
-
-	deployment := appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       DeploymentKind,
-			APIVersion: DeploymentAPIVersion,
-		},
-		ObjectMeta: objectMeta,
-		Spec:       deploymentSpec,
-	}
-
-	deploy, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(&deployment)
+func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(&deploy)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Deployment %s", objectMeta.Name)
+		return nil, errors.Wrapf(err, "unable to create Deployment %s", deploy.Name)
 	}
-	return deploy, nil
+	return deployment, nil
 }
 
 // UpdateDeployment updates a deployment based on the given deployment spec
-func (c *Client) UpdateDeployment(deploymentSpec appsv1.DeploymentSpec) (*appsv1.Deployment, error) {
-	// inherit ObjectMeta from deployment spec so that namespace, labels, owner references etc will be the same
-	objectMeta := deploymentSpec.Template.ObjectMeta
-
-	deployment := appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       DeploymentKind,
-			APIVersion: DeploymentAPIVersion,
-		},
-		ObjectMeta: objectMeta,
-		Spec:       deploymentSpec,
-	}
-
-	deploy, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(&deployment)
+func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(&deploy)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update Deployment %s", objectMeta.Name)
+		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
-	return deploy, nil
+	return deployment, nil
 }
 
 // DeleteDeployment deletes the deployments with the given selector

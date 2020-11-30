@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
@@ -248,24 +248,28 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 		}
 
-		ingressParam := generator.IngressParams{
-			ServiceName:   serviceName,
-			IngressDomain: ingressDomain,
-			PortNumber:    intstr.FromInt(parameters.portNumber),
-			TLSSecretName: parameters.secretName,
-			Path:          parameters.path,
-		}
-		ingressSpec := generator.GetIngressSpec(ingressParam)
 		objectMeta := generator.GetObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
 		// to avoid error due to duplicate ingress name defined in different devfile components
 		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+
+		ingressParam := generator.IngressParams{
+			ObjectMeta: objectMeta,
+			IngressSpecParams: generator.IngressSpecParams{
+				ServiceName:   serviceName,
+				IngressDomain: ingressDomain,
+				PortNumber:    intstr.FromInt(parameters.portNumber),
+				TLSSecretName: parameters.secretName,
+				Path:          parameters.path,
+			},
+		}
+		ingress := generator.GetIngress(ingressParam)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
-		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
+		i, err := kClient.CreateIngress(*ingress)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create ingress")
 		}
-		return GetURLString(GetProtocol(routev1.Route{}, *ingress), "", ingressDomain, false), nil
+		return GetURLString(GetProtocol(routev1.Route{}, *i), "", ingressDomain, false), nil
 	} else {
 		if !isRouteSupported {
 			return "", errors.Errorf("routes are not available on non OpenShift clusters")
@@ -1092,7 +1096,7 @@ func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint devfilev1.Endpoint,
 // RemoveEndpointInDevfile deletes the specific endpoint information from devfile
 func RemoveEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
 	found := false
-	for _, component := range generator.GetDevfileContainerComponents(devObj.Data) {
+	for _, component := range devObj.Data.GetDevfileContainerComponents() {
 		for index, enpoint := range component.Container.Endpoints {
 			if enpoint.Name == urlName {
 				component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)

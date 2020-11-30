@@ -3,8 +3,8 @@ package component
 import (
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 

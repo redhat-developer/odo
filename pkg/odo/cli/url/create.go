@@ -7,10 +7,10 @@ import (
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient/generator"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -208,7 +208,7 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			o.urlType = envinfo.DOCKER
 		} else {
 			foundContainer := false
-			containerComponents := generator.GetDevfileContainerComponents(devObj.Data)
+			containerComponents := devObj.Data.GetDevfileContainerComponents()
 			// map TargetPort with containerName
 			containerPortMap := make(map[int]string)
 			for _, component := range containerComponents {

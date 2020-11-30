@@ -2,9 +2,10 @@ package kclient
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/testingutil"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil"
 
 	"github.com/pkg/errors"
 
@@ -15,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/openshift/odo/pkg/kclient/generator"
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/util"
 )
 
@@ -73,7 +74,6 @@ func TestCreatePVC(t *testing.T) {
 			} else if err != nil && tt.size == "garbage" {
 				return
 			}
-			pvcSpec := generator.GetPVCSpec(quantity)
 
 			objectMeta := generator.GetObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
 
@@ -93,7 +93,13 @@ func TestCreatePVC(t *testing.T) {
 				return true, &pvc, nil
 			})
 
-			createdPVC, err := fkclient.CreatePVC(objectMeta, *pvcSpec)
+			pvcParams := generator.PVCParams{
+				ObjectMeta: objectMeta,
+				Quantity:   quantity,
+			}
+			pvc := generator.GetPVC(pvcParams)
+
+			createdPVC, err := fkclient.CreatePVC(*pvc)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

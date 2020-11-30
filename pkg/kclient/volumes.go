@@ -14,14 +14,8 @@ const (
 )
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and labels
-func (c *Client) CreatePVC(objectMeta metav1.ObjectMeta, pvcSpec corev1.PersistentVolumeClaimSpec) (*corev1.PersistentVolumeClaim, error) {
-
-	pvc := &corev1.PersistentVolumeClaim{
-		ObjectMeta: objectMeta,
-		Spec:       pvcSpec,
-	}
-
-	createdPvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
+func (c *Client) CreatePVC(pvc corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
+	createdPvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(&pvc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}

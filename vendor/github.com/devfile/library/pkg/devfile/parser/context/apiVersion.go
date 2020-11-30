@@ -56,7 +56,7 @@ func (d *DevfileCtx) GetApiVersion() string {
 	return d.apiVersion
 }
 
-// IsApiVersionSupported return true if the apiVersion in DevfileCtx is supported in odo
+// IsApiVersionSupported return true if the apiVersion in DevfileCtx is supported
 func (d *DevfileCtx) IsApiVersionSupported() bool {
 	return data.IsApiVersionSupported(d.apiVersion)
 }

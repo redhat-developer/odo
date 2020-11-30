@@ -219,8 +219,8 @@ github.com/deislabs/oras v0.7.0/go.mod h1:sqMKPG3tMyIX9xwXUBRLhZ24o+uT4y6jgBD2Rz
 github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3/go.mod h1:zAg7JM8CkOJ43xKXIj7eRO9kmWm/TW578qo+oDO6tuM=
 github.com/devfile/api v0.0.0-20201103130402-29b8738e196e h1:Ha6wyKs7VWqQTz2Fm1o4PAYpKX6SIiYjgWmGzNW8cBE=
 github.com/devfile/api v0.0.0-20201103130402-29b8738e196e/go.mod h1:hp5Lmob7ESmtSZXZ7xRN9o8vemsen9111+ASi2YuXs4=
-github.com/devfile/library v0.0.0-20201112211805-e68d67cf4204 h1:rWcsIrGErsVIYRUopre3XkZ/ko+o+LYqs9YZzn+UpvY=
-github.com/devfile/library v0.0.0-20201112211805-e68d67cf4204/go.mod h1:jQTcvSRQuAofQPuVuC//B04v+ay4ttwqE4NVZp/p+uQ=
+github.com/devfile/library v0.0.0-20201125155652-6eabeab3ee52 h1:crtWc9SVN0Qw4DkXxD84ChcOomgm0JC/nQ5fKYha4LU=
+github.com/devfile/library v0.0.0-20201125155652-6eabeab3ee52/go.mod h1:eQMM2+rxfAZzpG/Ujyoa5yQuezws/q0izcCkTUv0dG8=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=

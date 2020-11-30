@@ -38,13 +38,13 @@ func GetDevfileJSONSchema(version string) (string, error) {
 		}
 		return "", fmt.Errorf("unable to find schema for version %q. The parser supports devfile schema for version %s", version, strings.Join(supportedVersions, ", "))
 	}
-	klog.V(4).Infof("devfile apiVersion '%s' is supported in odo", version)
+	klog.V(4).Infof("devfile apiVersion '%s' is supported", version)
 
 	// Successful
 	return schema, nil
 }
 
-// IsApiVersionSupported returns true if the API version is supported in odo
+// IsApiVersionSupported returns true if the API version is supported
 func IsApiVersionSupported(version string) bool {
 	return apiVersionToDevfileStruct[supportedApiVersion(version)] != nil
 }

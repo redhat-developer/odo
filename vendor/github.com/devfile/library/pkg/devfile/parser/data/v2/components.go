@@ -10,6 +10,28 @@ func (d *DevfileV2) GetComponents() []v1.Component {
 	return d.Components
 }
 
+// GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components
+func (d *DevfileV2) GetDevfileContainerComponents() []v1.Component {
+	var components []v1.Component
+	for _, comp := range d.GetComponents() {
+		if comp.Container != nil {
+			components = append(components, comp)
+		}
+	}
+	return components
+}
+
+// GetDevfileVolumeComponents iterates through the components in the devfile and returns a list of devfile volume components
+func (d *DevfileV2) GetDevfileVolumeComponents() []v1.Component {
+	var components []v1.Component
+	for _, comp := range d.GetComponents() {
+		if comp.Volume != nil {
+			components = append(components, comp)
+		}
+	}
+	return components
+}
+
 // AddComponents adds the slice of Component objects to the devfile's components
 // if a component is already defined, error out
 func (d *DevfileV2) AddComponents(components []v1.Component) error {
