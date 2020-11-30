@@ -212,7 +212,13 @@ func GenFileURL(location string, os ...string) string {
 	if currOS == WIN {
 		urlPath = strings.Replace(location, "\\", "/", -1)
 	}
-	return "file:///" + urlPath
+	if filepath.IsAbs(urlPath) || strings.Contains(urlPath, ":/") {
+		if currOS == WIN && !strings.HasPrefix(urlPath, "/") {
+			urlPath = "/" + urlPath
+		}
+		return "file://" + urlPath
+	}
+	return urlPath
 }
 
 // ConvertKeyValueStringToMap converts String Slice of Parameters to a Map[String]string
