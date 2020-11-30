@@ -12,7 +12,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/mgutz/ansi"
-	terminal2 "golang.org/x/crypto/ssh/terminal"
+	terminal2 "golang.org/x/term"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"

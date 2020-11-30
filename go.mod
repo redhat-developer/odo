@@ -48,9 +48,10 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	github.com/zalando/go-keyring v0.1.0
-	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392
+	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392 // indirect
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
+	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
 	gopkg.in/AlecAivazis/survey.v1 v1.8.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.2

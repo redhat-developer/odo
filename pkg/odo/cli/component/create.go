@@ -895,15 +895,16 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 		return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
 	}
 
+	refName := plumbing.ReferenceName(revision)
+
 	if revision != "" {
 		log.Warning("Specifying 'revision' in 'checkoutFrom' is not yet supported in odo.")
+		// lets consider revision to be a branch name first
+		refName = plumbing.NewBranchReferenceName(revision)
 	}
 
 	downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
 	defer downloadSpinner.End(false)
-
-	// lets consider revision to be a branch name first
-	refName := plumbing.NewBranchReferenceName(revision)
 
 	cloneOptions := &git.CloneOptions{
 		URL:           remoteUrl,
@@ -936,7 +937,7 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 
 		// it returns the following error if no matching ref found
 		// if we get this error, we are trying again considering revision as tag.
-		if _, ok := err.(git.NoMatchingRefSpecError); !ok {
+		if _, ok := err.(git.NoMatchingRefSpecError); !ok || revision == "" {
 			return err
 		}
 
