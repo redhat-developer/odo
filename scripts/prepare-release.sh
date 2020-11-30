@@ -33,7 +33,7 @@ for arch in `ls -1 $BIN_DIR/`;do
 
     # Create a tar.gz of the binary
     echo "gzipping binary $source_file as $target_file"
-    if ["$suffix" == "exe"]; then
+    if ["$suffix" == ".exe"]; then
         tar -czvf $target_file.zip --directory=$source_dir $source_filename
     else
         tar -czvf $target_file.tar.gz --directory=$source_dir $source_filename
