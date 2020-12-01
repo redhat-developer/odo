@@ -602,3 +602,22 @@ func (oc OcRunner) GetAllPodsInNs(namespace string) string {
 	}, true)
 	return CmdShouldPass(oc.path, cmd...)
 }
+
+func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) string {
+	var result string
+	oc.CheckCmdOpInRemoteCmpPod(
+		cmpName,
+		appName,
+		project,
+		[]string{"stat", filepath},
+		func(cmdOp string, err error) bool {
+			//strip out access info as
+			// 1. Touching a file (such as running it in a script) modifies access times. This gives wrong value on mounts without noatime
+			// 2. We are not interested in Access info anyway.
+			re := regexp.MustCompile("(?m)[\r\n]+^.*Access.*$")
+			result = re.ReplaceAllString(cmdOp, "")
+			return true
+		},
+	)
+	return result
+}
