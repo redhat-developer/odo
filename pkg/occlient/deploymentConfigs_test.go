@@ -2,6 +2,10 @@ package occlient
 
 import (
 	"fmt"
+	"reflect"
+	"testing"
+	"time"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -10,9 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
-	"reflect"
-	"testing"
-	"time"
 )
 
 func TestGetDeploymentConfigLabelValues(t *testing.T) {
@@ -381,6 +382,236 @@ func TestGetDeploymentConfigFromSelector(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetDeploymentConfigFromSelector() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetEnvVarsFromDC(t *testing.T) {
+	tests := []struct {
+		name            string
+		dcName          string
+		projectName     string
+		returnedDC      appsv1.DeploymentConfig
+		returnedEnvVars []corev1.EnvVar
+		wantErr         bool
+	}{
+		{
+			name:        "case 1: with valid existing dc and one valid env var pair",
+			dcName:      "nodejs-app",
+			projectName: "project",
+			returnedDC: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs-app",
+				},
+				Spec: appsv1.DeploymentConfigSpec{
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Env: []corev1.EnvVar{
+										{
+											Name:  "key",
+											Value: "value",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "case 2: with valid existing dc and two valid env var pairs",
+			dcName:      "nodejs-app",
+			projectName: "project",
+			returnedDC: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs-app",
+				},
+				Spec: appsv1.DeploymentConfigSpec{
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Env: []corev1.EnvVar{
+										{
+											Name:  "key",
+											Value: "value",
+										},
+										{
+											Name:  "key-1",
+											Value: "value-1",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+				{
+					Name:  "key-1",
+					Value: "value-1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "case 3: with non valid existing dc",
+			dcName:      "nodejs-app",
+			projectName: "project",
+			returnedDC: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "wildfly-app",
+				},
+				Spec: appsv1.DeploymentConfigSpec{
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Env: []corev1.EnvVar{},
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedEnvVars: []corev1.EnvVar{},
+			wantErr:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				dcName := action.(ktesting.GetAction).GetName()
+				if dcName != tt.dcName {
+					return true, nil, fmt.Errorf("get dc called with different name, expected: %s, got %s", tt.dcName, dcName)
+				}
+				return true, &tt.returnedDC, nil
+			})
+
+			envVars, err := fakeClient.GetEnvVarsFromDC(tt.dcName)
+
+			if err == nil && !tt.wantErr {
+				// Check for validating actions performed
+				if len(fakeClientSet.AppsClientset.Actions()) != 1 {
+					t.Errorf("expected 1 action in GetBuildConfigFromName got: %v", fakeClientSet.AppsClientset.Actions())
+				}
+
+				if !reflect.DeepEqual(tt.returnedEnvVars, envVars) {
+					t.Errorf("env vars are not matching with expected values, expected: %s, got %s", tt.returnedEnvVars, envVars)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestUpdateDCAnnotations(t *testing.T) {
+	tests := []struct {
+		name        string
+		dcName      string
+		annotations map[string]string
+		existingDc  appsv1.DeploymentConfig
+		wantErr     bool
+	}{
+		{
+			name:   "existing dc",
+			dcName: "nodejs",
+			annotations: map[string]string{
+				"app.kubernetes.io/component-source-type": "local",
+			},
+			existingDc: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs",
+					Annotations: map[string]string{"app.openshift.io/vcs-uri": "https://github.com/sclorg/nodejs-ex",
+						"app.kubernetes.io/component-source-type": "git",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "non existing dc",
+			dcName: "nodejs",
+			annotations: map[string]string{
+				"app.kubernetes.io/component-source-type": "local",
+			},
+			existingDc: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "wildfly",
+					Annotations: map[string]string{"app.openshift.io/vcs-uri": "https://github.com/sclorg/nodejs-ex",
+						"app.kubernetes.io/component-source-type": "git",
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				dcName := action.(ktesting.GetAction).GetName()
+				if dcName != tt.dcName {
+					return true, nil, fmt.Errorf("'get' called with a different dcName")
+				}
+
+				if tt.dcName != tt.existingDc.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+				return true, &tt.existingDc, nil
+			})
+
+			fkclientset.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				if dc.Name != tt.existingDc.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+				return true, dc, nil
+			})
+
+			err := fkclient.UpdateDCAnnotations(tt.dcName, tt.annotations)
+
+			if err == nil && !tt.wantErr {
+				// Check for validating actions performed
+				if (len(fkclientset.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
+					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppsClientset.Actions())
+				}
+
+				updatedDc := fkclientset.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				if updatedDc.Name != tt.dcName {
+					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.dcName, updatedDc.Name)
+				}
+
+				if !reflect.DeepEqual(updatedDc.Annotations, tt.annotations) {
+					t.Errorf("deployment Config annotations not matching with expected values, expected: %s, got %s", tt.annotations, updatedDc.Annotations)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}

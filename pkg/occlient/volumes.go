@@ -84,6 +84,30 @@ func (c *Client) IsAppSupervisorDVolume(volumeName, dcName string) bool {
 	return volumeName == getAppRootVolumeName(dcName)
 }
 
+// IsVolumeAnEmptyDir returns true if the volume is an EmptyDir, false if not
+func (c *Client) IsVolumeAnEmptyDir(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.EmptyDir != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// IsVolumeAnConfigMap returns true if the volume is an ConfigMap, false if not
+func (c *Client) IsVolumeAnConfigMap(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.ConfigMap != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // RemoveVolumeFromDeploymentConfig removes the volume associated with the
 // given PVC from the Deployment Config. Both, the volume entry and the
 // volume mount entry in the containers, are deleted.

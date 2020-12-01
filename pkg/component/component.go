@@ -1268,7 +1268,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 
 	// we choose the env variables in the config over the one present in the DC
 	// so the local config is reflected on the cluster
-	evl, err := occlient.GetInputEnvVarsFromStrings(envVarsList.ToStringSlice())
+	evl, err := kclient.GetInputEnvVarsFromStrings(envVarsList.ToStringSlice())
 	if err != nil {
 		return err
 	}

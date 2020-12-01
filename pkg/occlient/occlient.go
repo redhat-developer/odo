@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -25,7 +24,6 @@ import (
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
@@ -35,8 +33,6 @@ import (
 	// api resource types
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	buildv1 "github.com/openshift/api/build/v1"
-	dockerapiv10 "github.com/openshift/api/image/docker10"
 	imagev1 "github.com/openshift/api/image/v1"
 	oauthv1client "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,7 +41,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -53,11 +48,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/klog"
-)
-
-var (
-	DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR string = "deploymentconfigs.apps.openshift.io \"%s\" not found"
-	DEPLOYMENT_CONFIG_NOT_FOUND           error  = fmt.Errorf("Requested deployment config does not exist")
 )
 
 // CreateArgs is a container of attributes of component create action
@@ -308,64 +298,6 @@ func ParseImageName(image string) (string, string, string, string, error) {
 
 }
 
-// imageWithMetadata mutates the given image. It parses raw DockerImageManifest data stored in the image and
-// fills its DockerImageMetadata and other fields.
-// Copied from v3.7 github.com/openshift/origin/pkg/image/apis/image/v1/helpers.go
-func imageWithMetadata(image *imagev1.Image) error {
-	// Check if the metadata are already filled in for this image.
-	meta, hasMetadata := image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage)
-	if hasMetadata && meta.Size > 0 {
-		return nil
-	}
-
-	version := image.DockerImageMetadataVersion
-	if len(version) == 0 {
-		version = "1.0"
-	}
-
-	obj := &dockerapiv10.DockerImage{}
-	if len(image.DockerImageMetadata.Raw) != 0 {
-		if err := json.Unmarshal(image.DockerImageMetadata.Raw, obj); err != nil {
-			return err
-		}
-		image.DockerImageMetadata.Object = obj
-	}
-
-	image.DockerImageMetadataVersion = version
-
-	return nil
-}
-
-// GetPortsFromBuilderImage returns list of available port from given builder image of given component type
-func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error) {
-	// checking port through builder image
-	imageNS, imageName, imageTag, _, err := ParseImageName(componentType)
-	if err != nil {
-		return []string{}, err
-	}
-	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
-	if err != nil {
-		return []string{}, err
-	}
-	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
-	if err != nil {
-		return []string{}, err
-	}
-	containerPorts, err := c.GetExposedPorts(imageStreamImage)
-	if err != nil {
-		return []string{}, err
-	}
-	var portList []string
-	for _, po := range containerPorts {
-		port := fmt.Sprint(po.ContainerPort) + "/" + string(po.Protocol)
-		portList = append(portList, port)
-	}
-	if len(portList) == 0 {
-		return []string{}, fmt.Errorf("given component type doesn't expose any ports, please use --port flag to specify a port")
-	}
-	return portList, nil
-}
-
 // RunLogout logs out the current user from cluster
 func (c *Client) RunLogout(stdout io.Writer) error {
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
@@ -453,222 +385,6 @@ func addLabelsToArgs(labels map[string]string, args []string) []string {
 	return args
 }
 
-// getExposedPortsFromISI parse ImageStreamImage definition and return all exposed ports in form of ContainerPorts structs
-func getExposedPortsFromISI(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
-	// file DockerImageMetadata
-	err := imageWithMetadata(&image.Image)
-	if err != nil {
-		return nil, err
-	}
-
-	var ports []corev1.ContainerPort
-
-	var exposedPorts = image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).ContainerConfig.ExposedPorts
-
-	if image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).Config != nil {
-		if exposedPorts == nil {
-			exposedPorts = make(map[string]struct{})
-		}
-
-		// add ports from Config
-		for exposedPort := range image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).Config.ExposedPorts {
-			var emptyStruct struct{}
-			exposedPorts[exposedPort] = emptyStruct
-		}
-	}
-
-	for exposedPort := range exposedPorts {
-		splits := strings.Split(exposedPort, "/")
-		if len(splits) != 2 {
-			return nil, fmt.Errorf("invalid port %s", exposedPort)
-		}
-
-		portNumberI64, err := strconv.ParseInt(splits[0], 10, 32)
-		if err != nil {
-			return nil, errors.Wrapf(err, "invalid port number %s", splits[0])
-		}
-		portNumber := int32(portNumberI64)
-
-		var portProto corev1.Protocol
-		switch strings.ToUpper(splits[1]) {
-		case "TCP":
-			portProto = corev1.ProtocolTCP
-		case "UDP":
-			portProto = corev1.ProtocolUDP
-		default:
-			return nil, fmt.Errorf("invalid port protocol %s", splits[1])
-		}
-
-		port := corev1.ContainerPort{
-			Name:          fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProto))),
-			ContainerPort: portNumber,
-			Protocol:      portProto,
-		}
-
-		ports = append(ports, port)
-	}
-
-	return ports, nil
-}
-
-// GetImageStreams returns the Image Stream objects in the given namespace
-func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error) {
-	imageStreamList, err := c.imageClient.ImageStreams(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list imagestreams")
-	}
-	return imageStreamList.Items, nil
-}
-
-// GetImageStreamsNames returns the names of the image streams in a given
-// namespace
-func (c *Client) GetImageStreamsNames(namespace string) ([]string, error) {
-	imageStreams, err := c.GetImageStreams(namespace)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get image streams")
-	}
-
-	var names []string
-	for _, imageStream := range imageStreams {
-		names = append(names, imageStream.Name)
-	}
-	return names, nil
-}
-
-// isTagInImageStream takes a imagestream and a tag and checks if the tag is present in the imagestream's status attribute
-func isTagInImageStream(is imagev1.ImageStream, imageTag string) bool {
-	// Loop through the tags in the imagestream's status attribute
-	for _, tag := range is.Status.Tags {
-		// look for a matching tag
-		if tag.Tag == imageTag {
-			// Return true if found
-			return true
-		}
-	}
-	// Return false if not found.
-	return false
-}
-
-// GetImageStream returns the imagestream using image details like imageNS, imageName and imageTag
-// imageNS can be empty in which case, this function searches currentNamespace on priority. If
-// imagestream of required tag not found in current namespace, then searches openshift namespace.
-// If not found, error out. If imageNS is not empty string, then, the requested imageNS only is searched
-// for requested imagestream
-func (c *Client) GetImageStream(imageNS string, imageName string, imageTag string) (*imagev1.ImageStream, error) {
-	var err error
-	var imageStream *imagev1.ImageStream
-	currentProjectName := c.GetCurrentProjectName()
-	/*
-		If User has not chosen image NS then,
-			1. Use image from current NS if available
-			2. If not 1, use default openshift NS
-			3. If not 2, return errors from both 1 and 2
-		else
-			Use user chosen namespace
-			If image doesn't exist in user chosen namespace,
-				error out
-			else
-				Proceed
-	*/
-	// User has not passed any particular ImageStream
-	if imageNS == "" {
-
-		// First try finding imagestream from current namespace
-		currentNSImageStream, e := c.imageClient.ImageStreams(currentProjectName).Get(imageName, metav1.GetOptions{})
-		if e != nil {
-			err = errors.Wrapf(e, "no match found for : %s in namespace %s", imageName, currentProjectName)
-		} else {
-			if isTagInImageStream(*currentNSImageStream, imageTag) {
-				return currentNSImageStream, nil
-			}
-		}
-
-		// If not in current namespace, try finding imagestream from openshift namespace
-		openshiftNSImageStream, e := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(imageName, metav1.GetOptions{})
-		if e != nil {
-			// The image is not available in current Namespace.
-			err = errors.Wrapf(e, "no match found for : %s in namespace %s", imageName, OpenShiftNameSpace)
-		} else {
-			if isTagInImageStream(*openshiftNSImageStream, imageTag) {
-				return openshiftNSImageStream, nil
-			}
-		}
-		if e != nil && err != nil {
-			return nil, fmt.Errorf("component type %q not found", imageName)
-		}
-
-		// Required tag not in openshift and current namespaces
-		return nil, fmt.Errorf("image stream %s with tag %s not found in openshift and %s namespaces", imageName, imageTag, currentProjectName)
-
-	}
-
-	// Fetch imagestream from requested namespace
-	imageStream, err = c.imageClient.ImageStreams(imageNS).Get(imageName, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(
-			err, "no match found for %s in namespace %s", imageName, imageNS,
-		)
-	}
-	if !isTagInImageStream(*imageStream, imageTag) {
-		return nil, fmt.Errorf("image stream %s with tag %s not found in %s namespaces", imageName, imageTag, currentProjectName)
-	}
-
-	return imageStream, nil
-}
-
-// GetImageStreamImage returns image and error if any, corresponding to the passed imagestream and image tag
-func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag string) (*imagev1.ImageStreamImage, error) {
-	imageNS := imageStream.ObjectMeta.Namespace
-	imageName := imageStream.ObjectMeta.Name
-
-	for _, tag := range imageStream.Status.Tags {
-		// look for matching tag
-		if tag.Tag == imageTag {
-			klog.V(3).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
-
-			if len(tag.Items) > 0 {
-				tagDigest := tag.Items[0].Image
-				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
-
-				// look for imageStreamImage for given tag (reference by digest)
-				imageStreamImage, err := c.imageClient.ImageStreamImages(imageNS).Get(imageStreamImageName, metav1.GetOptions{})
-				if err != nil {
-					return nil, errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
-				}
-				return imageStreamImage, nil
-			}
-
-			return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
-
-		}
-	}
-
-	// return error since its an unhandled case if code reaches here
-	return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
-}
-
-// GetImageStreamTags returns all the ImageStreamTag objects in the given namespace
-func (c *Client) GetImageStreamTags(namespace string) ([]imagev1.ImageStreamTag, error) {
-	imageStreamTagList, err := c.imageClient.ImageStreamTags(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list imagestreamtags")
-	}
-	return imageStreamTagList.Items, nil
-}
-
-// GetExposedPorts returns list of ContainerPorts that are exposed by given image
-func (c *Client) GetExposedPorts(imageStreamImage *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
-	var containerPorts []corev1.ContainerPort
-
-	// get ports that are exported by image
-	containerPorts, err := getExposedPortsFromISI(imageStreamImage)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get exported ports from image %+v", imageStreamImage)
-	}
-
-	return containerPorts, nil
-}
-
 func getAppRootVolumeName(dcName string) string {
 	return fmt.Sprintf("%s-s2idata", dcName)
 }
@@ -702,7 +418,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 
 	var containerPorts []corev1.ContainerPort
 	if len(params.Ports) == 0 {
-		containerPorts, err = c.GetExposedPorts(imageStreamImage)
+		containerPorts, err = getExposedPortsFromISI(imageStreamImage)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
 		}
@@ -716,7 +432,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 		}
 	}
 
-	inputEnvVars, err := GetInputEnvVarsFromStrings(params.EnvVars)
+	inputEnvVars, err := kclient.GetInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -788,91 +504,6 @@ func getS2ILabelValue(labels map[string]string, expectedLabelsSet []string) stri
 		}
 	}
 	return ""
-}
-
-// GetS2IMetaInfoFromBuilderImg returns script path protocol, S2I scripts path, S2I source or binary expected path, S2I deployment dir and errors(if any) from the passed builder image
-func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths, error) {
-
-	// Define structs for internal un-marshalling of imagestreamimage to extract label from it
-	type ContainerConfig struct {
-		Labels     map[string]string `json:"Labels"`
-		WorkingDir string            `json:"WorkingDir"`
-	}
-	type DockerImageMetaDataRaw struct {
-		ContainerConfig ContainerConfig `json:"ContainerConfig"`
-		Config          ContainerConfig `json:"Config"`
-	}
-
-	var dimdr DockerImageMetaDataRaw
-
-	// The label $S2IScriptsURLLabel needs to be extracted from builderImage#Image#DockerImageMetadata#Raw which is byte array
-	dimdrByteArr := (*builderImage).Image.DockerImageMetadata.Raw
-
-	// Unmarshal the byte array into the struct for ease of access of required fields
-	err := json.Unmarshal(dimdrByteArr, &dimdr)
-	if err != nil {
-		return S2IPaths{}, errors.Wrap(err, "unable to bootstrap supervisord")
-	}
-
-	labels := make(map[string]string)
-
-	// Put labels from both ContainerConfig and Config into one map
-	// if there is the same label in both, the Config has priority
-	for k, v := range dimdr.ContainerConfig.Labels {
-		labels[k] = v
-	}
-	for k, v := range dimdr.Config.Labels {
-		labels[k] = v
-	}
-
-	// If by any chance, labels attribute is nil(although ideally not the case for builder images), return
-	if len(labels) == 0 {
-		klog.V(3).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
-		return S2IPaths{}, nil
-	}
-
-	// Extract the label containing S2I scripts URL
-	s2iScriptsURL := labels[S2IScriptsURLLabel]
-	s2iSrcOrBinPath := labels[S2ISrcOrBinLabel]
-	s2iBuilderImgName := labels[S2IBuilderImageName]
-
-	if s2iSrcOrBinPath == "" {
-		// In cases like nodejs builder image, where there is no concept of binary and sources are directly run, use destination as source
-		// s2iSrcOrBinPath = getS2ILabelValue(dimdr.Config.Labels, S2IDeploymentsDir)
-		s2iSrcOrBinPath = DefaultS2ISrcOrBinPath
-	}
-
-	s2iDestinationDir := getS2ILabelValue(labels, S2IDeploymentsDir)
-	// The URL is a combination of protocol and the path to script details of which can be found @
-	// https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#s2i-scripts
-	// Extract them out into protocol and path separately to minimise the task in
-	// https://github.com/openshift/odo-init-image/blob/master/assemble-and-restart when custom handling
-	// for each of the protocols is added
-	s2iScriptsProtocol := ""
-	s2iScriptsPath := ""
-
-	switch {
-	case strings.HasPrefix(s2iScriptsURL, "image://"):
-		s2iScriptsProtocol = "image://"
-		s2iScriptsPath = strings.TrimPrefix(s2iScriptsURL, "image://")
-	case strings.HasPrefix(s2iScriptsURL, "file://"):
-		s2iScriptsProtocol = "file://"
-		s2iScriptsPath = strings.TrimPrefix(s2iScriptsURL, "file://")
-	case strings.HasPrefix(s2iScriptsURL, "http(s)://"):
-		s2iScriptsProtocol = "http(s)://"
-		s2iScriptsPath = s2iScriptsURL
-	default:
-		return S2IPaths{}, fmt.Errorf("Unknown scripts url %s", s2iScriptsURL)
-	}
-	return S2IPaths{
-		ScriptsPathProtocol: s2iScriptsProtocol,
-		ScriptsPath:         s2iScriptsPath,
-		SrcOrBinPath:        s2iSrcOrBinPath,
-		DeploymentDir:       s2iDestinationDir,
-		WorkingDir:          dimdr.Config.WorkingDir,
-		SrcBackupPath:       DefaultS2ISrcBackupDir,
-		BuilderImgName:      s2iBuilderImgName,
-	}, nil
 }
 
 // uniqueAppendOrOverwriteEnvVars appends/overwrites the passed existing list of env vars with the elements from the to-be appended passed list of envs
@@ -960,7 +591,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 	}
 
-	inputEnvs, err := GetInputEnvVarsFromStrings(params.EnvVars)
+	inputEnvs, err := kclient.GetInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -983,7 +614,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	// Extract s2i scripts path and path type from imagestream image
 	//s2iScriptsProtocol, s2iScriptsURL, s2iSrcOrBinPath, s2iDestinationDir
-	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
+	s2iPaths, err := getS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1077,37 +708,6 @@ func updateEnvVar(dc *appsv1.DeploymentConfig, envVars []corev1.EnvVar) error {
 	}
 
 	dc.Spec.Template.Spec.Containers[0].Env = envVars
-	return nil
-}
-
-// UpdateBuildConfig updates the BuildConfig file
-// buildConfigName is the name of the BuildConfig file to be updated
-// projectName is the name of the project
-// gitURL equals to the git URL of the source and is equals to "" if the source is of type dir or binary
-// annotations contains the annotations for the BuildConfig file
-func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annotations map[string]string) error {
-	if gitURL == "" {
-		return errors.New("gitURL for UpdateBuildConfig must not be blank")
-	}
-
-	// generate BuildConfig
-	buildSource := buildv1.BuildSource{
-		Git: &buildv1.GitBuildSource{
-			URI: gitURL,
-		},
-		Type: buildv1.BuildSourceGit,
-	}
-
-	buildConfig, err := c.GetBuildConfigFromName(buildConfigName)
-	if err != nil {
-		return errors.Wrap(err, "unable to get the BuildConfig file")
-	}
-	buildConfig.Spec.Source = buildSource
-	buildConfig.Annotations = annotations
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Update(buildConfig)
-	if err != nil {
-		return errors.Wrap(err, "unable to update the component")
-	}
 	return nil
 }
 
@@ -1345,7 +945,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 
-	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
+	s2iPaths, err := getS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1430,23 +1030,6 @@ func addInitVolumesToDC(dc *appsv1.DeploymentConfig, dcName string, deploymentDi
 	}
 }
 
-// UpdateDCAnnotations updates the DeploymentConfig file
-// dcName is the name of the DeploymentConfig file to be updated
-// annotations contains the annotations for the DeploymentConfig file
-func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
-	}
-
-	dc.Annotations = annotations
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
-	}
-	return nil
-}
-
 // removeTracesOfSupervisordFromDC takes a DeploymentConfig and removes any traces of the supervisord from it
 // so it removes things like supervisord volumes, volumes mounts and init containers
 func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
@@ -1467,114 +1050,6 @@ func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
 		if container.Name == "copy-files-to-volume" {
 			dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers[:i], dc.Spec.Template.Spec.InitContainers[i+1:]...)
 		}
-	}
-
-	return nil
-}
-
-// GetLatestBuildName gets the name of the latest build
-// buildConfigName is the name of the buildConfig for which we are fetching the build name
-// returns the name of the latest build or the error
-func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
-	buildConfig, err := c.buildClient.BuildConfigs(c.Namespace).Get(buildConfigName, metav1.GetOptions{})
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get the latest build name")
-	}
-	return fmt.Sprintf("%s-%d", buildConfigName, buildConfig.Status.LastVersion), nil
-}
-
-// StartBuild starts new build as it is, returns name of the build stat was started
-func (c *Client) StartBuild(name string) (string, error) {
-	klog.V(3).Infof("Build %s started.", name)
-	buildRequest := buildv1.BuildRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-	}
-	result, err := c.buildClient.BuildConfigs(c.Namespace).Instantiate(name, &buildRequest)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
-	}
-	klog.V(3).Infof("Build %s for BuildConfig %s triggered.", name, result.Name)
-
-	return result.Name, nil
-}
-
-// WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
-func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
-	// following indicates if we have already setup the following logic
-	following := false
-	klog.V(3).Infof("Waiting for %s  build to finish", buildName)
-
-	// start a watch on the build resources and look for the given build name
-	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
-		FieldSelector: fields.Set{"metadata.name": buildName}.AsSelector().String(),
-	})
-	if err != nil {
-		return errors.Wrapf(err, "unable to watch build")
-	}
-	defer w.Stop()
-	timeout := time.After(buildTimeout)
-	for {
-		select {
-		// when a event is received regarding the given buildName
-		case val, ok := <-w.ResultChan():
-			if !ok {
-				break
-			}
-			// cast the object returned to a build object and check the phase of the build
-			if e, ok := val.Object.(*buildv1.Build); ok {
-				klog.V(3).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
-				switch e.Status.Phase {
-				case buildv1.BuildPhaseComplete:
-					// the build is completed thus return
-					klog.V(3).Infof("Build %s completed.", e.Name)
-					return nil
-				case buildv1.BuildPhaseFailed, buildv1.BuildPhaseCancelled, buildv1.BuildPhaseError:
-					// the build failed/got cancelled/error occurred thus return with error
-					return errors.Errorf("build %s status %s", e.Name, e.Status.Phase)
-				case buildv1.BuildPhaseRunning:
-					// since the pod is ready and the build is now running, start following the logs
-					if !following {
-						// setting following to true as we need to set it up only once
-						following = true
-						err := c.FollowBuildLog(buildName, stdout, buildTimeout)
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-		case <-timeout:
-			// timeout has occurred while waiting for the build to start/complete, so error out
-			return errors.Errorf("timeout waiting for build %s to start", buildName)
-		}
-	}
-}
-
-// FollowBuildLog stream build log to stdout
-func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
-	buildLogOptions := buildv1.BuildLogOptions{
-		Follow: true,
-		NoWait: false,
-	}
-
-	rd, err := c.buildClient.RESTClient().Get().
-		Timeout(buildTimeout).
-		Namespace(c.Namespace).
-		Resource("builds").
-		Name(buildName).
-		SubResource("log").
-		VersionedParams(&buildLogOptions, buildschema.ParameterCodec).
-		Stream()
-
-	if err != nil {
-		return errors.Wrapf(err, "unable get build log %s", buildName)
-	}
-	defer rd.Close()
-
-	if _, err = io.Copy(stdout, rd); err != nil {
-		return errors.Wrapf(err, "error streaming logs for %s", buildName)
 	}
 
 	return nil
@@ -1731,16 +1206,6 @@ func (c *Client) GetServiceInstanceList(selector string) ([]scv1beta1.ServiceIns
 	return svcList.Items, nil
 }
 
-// GetBuildConfigFromName get BuildConfig by its name
-func (c *Client) GetBuildConfigFromName(name string) (*buildv1.BuildConfig, error) {
-	klog.V(3).Infof("Getting BuildConfig: %s", name)
-	bc, err := c.buildClient.BuildConfigs(c.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
-	}
-	return bc, nil
-}
-
 // GetClusterServiceClasses queries the service service catalog to get available clusterServiceClasses
 func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, error) {
 	classList, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{})
@@ -1864,9 +1329,6 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 	return &runtime.RawExtension{Raw: paramsJSON}, nil
 }
 
-// Define a function that is meant to create patch based on the contents of the DC
-type dcPatchProvider func(dc *appsv1.DeploymentConfig) (string, error)
-
 // LinkSecret links a secret to the DeploymentConfig of a component
 func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
 
@@ -1880,7 +1342,12 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 
-	return c.patchDCOfComponent(componentName, applicationName, dcPatchProvider)
+	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return err
+	}
+
+	return c.patchDC(dcName, dcPatchProvider)
 }
 
 // UnlinkSecret unlinks a secret to the DeploymentConfig of a component
@@ -1902,40 +1369,12 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
 	}
 
-	return c.patchDCOfComponent(componentName, applicationName, dcPatchProvider)
-}
-
-// this function will look up the appropriate DC, and execute the specified patch
-// the whole point of using patch is to avoid race conditions where we try to update
-// dc while it's being simultaneously updated from another source (for example Kubernetes itself)
-// this will result in the triggering of a redeployment
-func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPatchProvider dcPatchProvider) error {
 	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return err
 	}
 
-	dc, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(dcName, metav1.GetOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "Unable to locate DeploymentConfig for component %s of application %s", componentName, applicationName)
-	}
-
-	if dcPatchProvider != nil {
-		patch, err := dcPatchProvider(dc)
-		if err != nil {
-			return errors.Wrap(err, "Unable to create a patch for the DeploymentConfig")
-		}
-
-		// patch the DeploymentConfig with the secret
-		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(dcName, types.JSONPatchType, []byte(patch))
-		if err != nil {
-			return errors.Wrapf(err, "DeploymentConfig not patched %s", dc.Name)
-		}
-	} else {
-		return errors.Wrapf(err, "dcPatch was not properly set")
-	}
-
-	return nil
+	return c.patchDC(dcName, dcPatchProvider)
 }
 
 // GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category
@@ -1982,36 +1421,6 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 	}
 
 	return planList.Items, nil
-}
-
-// DeleteBuildConfig deletes the given BuildConfig by name using CommonObjectMeta..
-func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
-
-	// Convert labels to selector
-	selector := util.ConvertLabelsToSelector(commonObjectMeta.Labels)
-	klog.V(3).Infof("DeleteBuildConfig selectors used for deletion: %s", selector)
-
-	// Delete BuildConfig
-	klog.V(3).Info("Deleting BuildConfigs with DeleteBuildConfig")
-	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-}
-
-// AddEnvironmentVariablesToDeploymentConfig adds the given environment
-// variables to the only container in the Deployment Config and updates in the
-// cluster
-func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar, dc *appsv1.DeploymentConfig) error {
-	numContainers := len(dc.Spec.Template.Spec.Containers)
-	if numContainers != 1 {
-		return fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
-	}
-
-	dc.Spec.Template.Spec.Containers[0].Env = append(dc.Spec.Template.Spec.Containers[0].Env, envs...)
-
-	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
-	}
-	return nil
 }
 
 // ServerInfo contains the fields that contain the server's information like
@@ -2152,70 +1561,6 @@ func (c *Client) SetKubeClient(client *kclient.Client) {
 	c.kubeClient = client
 }
 
-// GetVolumeMountsFromDC returns a list of all volume mounts in the given DC
-func (c *Client) GetVolumeMountsFromDC(dc *appsv1.DeploymentConfig) []corev1.VolumeMount {
-	var volumeMounts []corev1.VolumeMount
-	for _, container := range dc.Spec.Template.Spec.Containers {
-		volumeMounts = append(volumeMounts, container.VolumeMounts...)
-	}
-	return volumeMounts
-}
-
-// IsVolumeAnEmptyDir returns true if the volume is an EmptyDir, false if not
-func (c *Client) IsVolumeAnEmptyDir(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
-	for _, volume := range dc.Spec.Template.Spec.Volumes {
-		if volume.Name == volumeMountName {
-			if volume.EmptyDir != nil {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// IsVolumeAnConfigMap returns true if the volume is an ConfigMap, false if not
-func (c *Client) IsVolumeAnConfigMap(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
-	for _, volume := range dc.Spec.Template.Spec.Volumes {
-		if volume.Name == volumeMountName {
-			if volume.ConfigMap != nil {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
-// envVars is the array containing the environment variables
-func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, gitRef string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
-
-	// Retrieve the namespace, image name and the appropriate tag
-	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
-	if err != nil {
-		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to parse image name")
-	}
-	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
-	if err != nil {
-		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to retrieve image stream for CreateBuildConfig")
-	}
-	imageNS = imageStream.ObjectMeta.Namespace
-
-	klog.V(3).Infof("Using namespace: %s for the CreateBuildConfig function", imageNS)
-
-	// Use BuildConfig to build the container with Git
-	bc := generateBuildConfig(commonObjectMeta, gitURL, gitRef, imageName+":"+imageTag, imageNS)
-
-	if len(envVars) > 0 {
-		bc.Spec.Strategy.SourceStrategy.Env = envVars
-	}
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(&bc)
-	if err != nil {
-		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
-	}
-
-	return bc, nil
-}
-
 // FindContainer finds the container
 func FindContainer(containers []corev1.Container, name string) (corev1.Container, error) {
 
@@ -2230,48 +1575,6 @@ func FindContainer(containers []corev1.Container, name string) (corev1.Container
 	}
 
 	return corev1.Container{}, errors.New("Unable to find container")
-}
-
-// GetInputEnvVarsFromStrings generates corev1.EnvVar values from the array of string key=value pairs
-// envVars is the array containing the key=value pairs
-func GetInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
-	var inputEnvVars []corev1.EnvVar
-	var keys = make(map[string]int)
-	for _, env := range envVars {
-		splits := strings.SplitN(env, "=", 2)
-		if len(splits) < 2 {
-			return nil, errors.New("invalid syntax for env, please specify a VariableName=Value pair")
-		}
-		_, ok := keys[splits[0]]
-		if ok {
-			return nil, errors.Errorf("multiple values found for VariableName: %s", splits[0])
-		}
-
-		keys[splits[0]] = 1
-
-		inputEnvVars = append(inputEnvVars, corev1.EnvVar{
-			Name:  splits[0],
-			Value: splits[1],
-		})
-	}
-	return inputEnvVars, nil
-}
-
-// GetEnvVarsFromDC retrieves the env vars from the DC
-// dcName is the name of the dc from which the env vars are retrieved
-// projectName is the name of the project
-func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
-	if err != nil {
-		return nil, errors.Wrap(err, "error occurred while retrieving the dc")
-	}
-
-	numContainers := len(dc.Spec.Template.Spec.Containers)
-	if numContainers != 1 {
-		return nil, fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
-	}
-
-	return dc.Spec.Template.Spec.Containers[0].Env, nil
 }
 
 // PropagateDeletes deletes the watch detected deleted files from remote component pod from each of the paths in passed s2iPaths
@@ -2346,12 +1649,6 @@ func isSubDir(baseDir, otherDir string) bool {
 	//matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
 	matches, _ := filepath.Match(filepath.Join(cleanedBaseDir, "*"), cleanedOtherDir)
 	return matches
-}
-
-// IsImageStreamSupported checks if imagestream resource type is present on the cluster
-func (c *Client) IsImageStreamSupported() (bool, error) {
-
-	return c.isResourceSupported("image.openshift.io", "v1", "imagestreams")
 }
 
 // IsSBRSupported checks if resource of type service binding request present on the cluster
