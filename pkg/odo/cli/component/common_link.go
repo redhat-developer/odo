@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
-	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,10 +25,10 @@ import (
 var (
 	// Hardcoded variables since we can't install SBO on k8s using OLM
 	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
-	sbrGroup    = "apps.openshift.io"
-	sbrVersion  = "v1alpha1"
-	sbrKind     = "ServiceBindingRequest"
-	sbrResource = "servicebindingrequests"
+	serviceBindingGroup    = "operators.coreos.com"
+	serviceBindingVersion  = "v1alpha1"
+	serviceBindingKind     = "ServiceBinding"
+	serviceBindingResource = "servicebindings"
 )
 
 const unlink = "unlink"
@@ -46,9 +46,9 @@ type commonLinkOptions struct {
 	operationName string
 
 	// Service Binding Operator options
-	sbr         *sbo.ServiceBindingRequest
-	serviceType string
-	serviceName string
+	serviceBinding *servicebinding.ServiceBinding
+	serviceType    string
+	serviceName    string
 	*genericclioptions.Context
 	// choose between Operator Hub and Service Catalog. If true, Operator Hub
 	csvSupport bool
@@ -84,13 +84,13 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	}
 
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
-		sboSupport, err := o.Client.IsSBRSupported()
+		serviceBindingSupport, err := o.Client.IsServiceBindingSupported()
 		if err != nil {
 			return err
 		}
 
-		if !sboSupport {
-			return fmt.Errorf("please install Service Binding Operator to be able to create/delete a link")
+		if !serviceBindingSupport {
+			return fmt.Errorf("please install Service Binding Operator to be able to create/delete a link\nrefer https://odo.dev/docs/install-service-binding-operator")
 		}
 
 		o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(suppliedName)
@@ -106,13 +106,14 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		componentName := o.EnvSpecificInfo.GetName()
 
 		// Assign static/hardcoded values to SBR
-		o.sbr.Kind = sbrKind
-		o.sbr.APIVersion = strings.Join([]string{sbrGroup, sbrVersion}, "/")
+		o.serviceBinding.Kind = serviceBindingKind
+		o.serviceBinding.APIVersion = strings.Join([]string{serviceBindingGroup, serviceBindingVersion}, "/")
 
 		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
-		o.sbr.Name = getSBRName(componentName, o.serviceType, o.serviceName)
-		o.sbr.Namespace = o.EnvSpecificInfo.GetNamespace()
-		o.sbr.Spec.DetectBindingResources = true // because we want the operator what to bind from the service
+		o.serviceBinding.Name = getServiceBindingName(componentName, o.serviceType, o.serviceName)
+		o.serviceBinding.Namespace = o.EnvSpecificInfo.GetNamespace()
+		truePtr := true
+		o.serviceBinding.Spec.DetectBindingResources = &truePtr // because we want the operator what to bind from the service
 
 		deployment, err := o.KClient.GetDeploymentByName(componentName)
 		if err != nil {
@@ -121,7 +122,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
 		ownerReference := generator.GetOwnerReference(deployment)
-		o.sbr.SetOwnerReferences(append(o.sbr.GetOwnerReferences(), ownerReference))
+		o.serviceBinding.SetOwnerReferences(append(o.serviceBinding.GetOwnerReferences(), ownerReference))
 		if err != nil {
 			return err
 		}
@@ -131,14 +132,14 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		deploymentSelfLinkSplit := strings.Split(deployment.SelfLink, "/")
 
 		// Populate the application selector field in service binding request
-		o.sbr.Spec.ApplicationSelector = sbo.ApplicationSelector{
+		o.serviceBinding.Spec.Application = &servicebinding.Application{
 			GroupVersionResource: metav1.GroupVersionResource{
 				Group:    deploymentSelfLinkSplit[2], // "apps" in above example output
 				Version:  deploymentSelfLinkSplit[3], // "v1" in above example output
 				Resource: deploymentSelfLinkSplit[6], // "deployments" in above example output
 			},
-			ResourceRef: componentName,
 		}
+		o.serviceBinding.Spec.Application.Name = componentName
 
 		return nil
 	}
@@ -192,25 +193,25 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 
 		if o.operationName == unlink {
 			componentName := o.EnvSpecificInfo.GetName()
-			sbrName := getSBRName(componentName, o.serviceType, o.serviceName)
+			serviceBindingName := getServiceBindingName(componentName, o.serviceType, o.serviceName)
 			links := o.EnvSpecificInfo.GetLink()
 
-			linked := isComponentLinked(sbrName, links)
+			linked := isComponentLinked(serviceBindingName, links)
 			if !linked {
 				// user's trying to unlink a service that's not linked with the component
 				return fmt.Errorf("failed to unlink the service %q since it's not linked with the component %q", svcFullName, componentName)
 			}
 
 			// Verify if the underlying service binding request actually exists
-			sbrSvcFullName := strings.Join([]string{sbrKind, sbrName}, "/")
-			sbrExists, err := svc.OperatorSvcExists(o.KClient, sbrSvcFullName)
+			serviceBindingSvcFullName := strings.Join([]string{serviceBindingKind, serviceBindingName}, "/")
+			serviceBindingExists, err := svc.OperatorSvcExists(o.KClient, serviceBindingSvcFullName)
 			if err != nil {
 				return err
 			}
-			if !sbrExists {
-				// This could have happened if the service binding request was deleted outside odo workflow (eg: oc delete sbr/<sbr-name>)
+			if !serviceBindingExists {
+				// This could have happened if the service binding was deleted outside odo workflow (eg: oc delete sb/<sb-name>)
 				// we must remove entry of the link from env.yaml in this case
-				err = o.Context.EnvSpecificInfo.DeleteLink(sbrName)
+				err = o.Context.EnvSpecificInfo.DeleteLink(serviceBindingName)
 				if err != nil {
 					return fmt.Errorf("component's link with %q has been deleted outside odo; unable to delete odo's state of the link", svcFullName)
 				}
@@ -232,15 +233,16 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			return err
 		}
 
-		o.sbr.Spec.BackingServiceSelector = &sbo.BackingServiceSelector{
+		service := servicebinding.Service{
 			GroupVersionKind: metav1.GroupVersionKind{
 				Group:   group,
 				Version: version,
 				Kind:    kind,
 			},
-			ResourceRef: o.serviceName,
-			Namespace:   &o.KClient.Namespace,
+			Namespace: &o.KClient.Namespace,
 		}
+		service.Name = o.serviceName
+		o.serviceBinding.Spec.Services = &[]servicebinding.Service{service}
 
 		return nil
 	}
@@ -265,7 +267,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			// the secret should have been created along with the secret
 			_, err = o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
 			if err != nil {
-				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
+				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'", o.secretName, o.operationName)
 			}
 		}
 	}
@@ -276,14 +278,14 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 func (o *commonLinkOptions) run() (err error) {
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
-			sbrName := getSBRName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
-			svcFullName := getSvcFullName(sbrKind, sbrName)
+			serviceBindingName := getServiceBindingName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
+			svcFullName := getSvcFullName(serviceBindingKind, serviceBindingName)
 			err = svc.DeleteServiceBindingRequest(o.KClient, svcFullName)
 			if err != nil {
 				return err
 			}
 
-			err = o.Context.EnvSpecificInfo.DeleteLink(sbrName)
+			err = o.Context.EnvSpecificInfo.DeleteLink(serviceBindingName)
 			if err != nil {
 				return err
 			}
@@ -296,19 +298,19 @@ func (o *commonLinkOptions) run() (err error) {
 
 		// convert service binding request into a ma[string]interface{} type so
 		// as to use it with dynamic client
-		sbrMap := make(map[string]interface{})
-		inrec, _ := json.Marshal(o.sbr)
-		err = json.Unmarshal(inrec, &sbrMap)
+		serviceBindingMap := make(map[string]interface{})
+		intermediate, _ := json.Marshal(o.serviceBinding)
+		err = json.Unmarshal(intermediate, &serviceBindingMap)
 		if err != nil {
 			return err
 		}
 
 		// this creates a link by creating a service of type
 		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
-		err = o.KClient.CreateDynamicResource(sbrMap, sbrGroup, sbrVersion, sbrResource)
+		err = o.KClient.CreateDynamicResource(serviceBindingMap, serviceBindingGroup, serviceBindingVersion, serviceBindingResource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
-				return fmt.Errorf("component %q is already linked with the service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+				return fmt.Errorf("component %q is already linked with the service %q", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
 			}
 			return err
 		}
@@ -316,7 +318,7 @@ func (o *commonLinkOptions) run() (err error) {
 		// once the link is created, we need to store the information in
 		// env.yaml so that subsequent odo push can create a new deployment
 		// based on it
-		err = o.Context.EnvSpecificInfo.SetConfiguration("link", envinfo.EnvInfoLink{Name: o.sbr.Name, ServiceKind: o.serviceType, ServiceName: o.serviceName})
+		err = o.Context.EnvSpecificInfo.SetConfiguration("link", envinfo.EnvInfoLink{Name: o.serviceBinding.Name, ServiceKind: o.serviceType, ServiceName: o.serviceName})
 		if err != nil {
 			return err
 		}
@@ -430,16 +432,16 @@ func getSvcFullName(serviceType, serviceName string) string {
 	return strings.Join([]string{serviceType, serviceName}, "/")
 }
 
-// getSBRName creates a name to be used for creation/deletion of SBR during link/unlink operations
-func getSBRName(componentName, serviceType, serviceName string) string {
+// getServiceBindingName creates a name to be used for creation/deletion of SBR during link/unlink operations
+func getServiceBindingName(componentName, serviceType, serviceName string) string {
 	return strings.Join([]string{componentName, strings.ToLower(serviceType), serviceName}, "-")
 }
 
-// isComponentLinked checks if link with "sbrName" exists in the component's
+// isComponentLinked checks if link with "serviceBindingName" exists in the component's
 // config. It confirms if the component is linked with the service
-func isComponentLinked(sbrName string, links []envinfo.EnvInfoLink) bool {
+func isComponentLinked(serviceBindingName string, links []envinfo.EnvInfoLink) bool {
 	for _, link := range links {
-		if link.Name == sbrName {
+		if link.Name == serviceBindingName {
 			return true
 		}
 	}

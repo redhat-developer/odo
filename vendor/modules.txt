@@ -434,8 +434,8 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/redhat-developer/service-binding-operator v0.1.1
-github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1
+# github.com/redhat-developer/service-binding-operator v0.3.0
+github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
 # github.com/sergi/go-diff v1.1.0
@@ -872,7 +872,6 @@ k8s.io/utils/exec
 k8s.io/utils/integer
 k8s.io/utils/trace
 # sigs.k8s.io/controller-runtime v0.6.0
-sigs.k8s.io/controller-runtime/pkg/runtime/scheme
 sigs.k8s.io/controller-runtime/pkg/scheme
 # sigs.k8s.io/kustomize v2.0.3+incompatible
 sigs.k8s.io/kustomize/pkg/commands/build

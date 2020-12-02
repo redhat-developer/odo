@@ -1651,9 +1651,15 @@ func isSubDir(baseDir, otherDir string) bool {
 	return matches
 }
 
-// IsSBRSupported checks if resource of type service binding request present on the cluster
-func (c *Client) IsSBRSupported() (bool, error) {
-	return c.isResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
+// IsImageStreamSupported checks if imagestream resource type is present on the cluster
+func (c *Client) IsImageStreamSupported() (bool, error) {
+
+	return c.isResourceSupported("image.openshift.io", "v1", "imagestreams")
+}
+
+// IsServiceBindingSupported checks if resource of type service binding request present on the cluster
+func (c *Client) IsServiceBindingSupported() (bool, error) {
+	return c.isResourceSupported("operators.coreos.com", "v1alpha1", "servicebindings")
 }
 
 // IsCSVSupported checks if resource of type service binding request present on the cluster
