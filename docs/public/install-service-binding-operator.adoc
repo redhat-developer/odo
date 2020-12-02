@@ -1,6 +1,6 @@
 == Installing Service Binding Operator
 
-This document walks you through the steps to install link:https://github.com/redhat-developer/service-binding-operator/[Service Binding Operator] on OpenShift and Kubernetes clusters.
+This document walks you through the steps to install link:https://github.com/redhat-developer/service-binding-operator/tree/v0.3.0[Service Binding Operator v0.3.0] on OpenShift and Kubernetes clusters.
 
 === Why do I need the Service Binding Operator?
 

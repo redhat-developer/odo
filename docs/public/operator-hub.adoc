@@ -151,9 +151,9 @@ $ odo service list
 
 === Linking an odo component with an Operator backed service
 
-Linking a component to a service means, in simplest terms, to make a service usable from the component.
+Linking a component to a service means, in simplest terms, to make a service usable from the component. odo uses link:https://github.com/redhat-developer/service-binding-operator/tree/v0.3.0[Service Binding Operator v0.3.0] to provide the linking feature. Please refer link:install-service-binding-operator.adoc[this document] to install it on OpenShift or Kubernetes.
 
-For example, once you link an EtcdCluster service with your nodejs application, you can use (or, interact with) the EtcdCluster from within your node app. The way odo facilitates linking is by making sure that specific environment variables from the pod in which the service is running are configured in the pod of the component as well.
+For example, once you link an EtcdCluster service with your Node.js application, you can use (or, interact with) the EtcdCluster from within your node app. The way odo facilitates linking is by making sure that specific environment variables from the pod in which the service is running are configured in the pod of the component as well.
 
 After having created a service using either of the two approaches discussed above, we can now connect an odo component with the service thus created.
 
@@ -183,6 +183,8 @@ For the link between a component and Operator Hub backed service to take effect,
 === Unlinking an odo component from an Operator backed service
 
 Unlinking unsets the environment variables that were set by linking. This would cause your application to cease being able to communicate with the service linked using `odo link`.
+
+IMPORTANT: `odo unlink` doesn't work on a cluster other than OpenShift (that is, minikube, or vanilla Kubernetes, etc.) because Service Binding Operator cannot be setup the OLM way (that is, we cannot list it by doing `odo catalog list services` or `kubectl get csv` like we can do for etcd Operator in this document). We are link:https://github.com/redhat-developer/service-binding-operator/issues/623[working making this possible].
 
 . Make sure you are executing the command for a component that's pushed (`odo push`) to the cluster.
 
