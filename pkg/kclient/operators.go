@@ -29,9 +29,9 @@ func (c *Client) IsCSVSupported() (bool, error) {
 	return c.IsResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
 }
 
-// ListClusterServiceVersion returns a list of CSVs in the cluster
+// ListClusterServiceVersions returns a list of CSVs in the cluster
 // It is equivalent to doing `oc get csvs` using oc cli
-func (c *Client) ListClusterServiceVersion() (*olm.ClusterServiceVersionList, error) {
+func (c *Client) ListClusterServiceVersions() (*olm.ClusterServiceVersionList, error) {
 	klog.V(3).Infof("Fetching list of operators installed in cluster")
 	csvs, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).List(v1.ListOptions{})
 	if err != nil {
@@ -62,7 +62,7 @@ func (c *Client) GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]ol
 // given keyword then return it
 func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServiceVersionList, error) {
 	var result []olm.ClusterServiceVersion
-	csvs, err := c.ListClusterServiceVersion()
+	csvs, err := c.ListClusterServiceVersions()
 	if err != nil {
 		return &olm.ClusterServiceVersionList{}, errors.Wrap(err, "unable to list services")
 	}
@@ -92,7 +92,7 @@ func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServi
 // GetCustomResource returns the CR matching the name
 func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, error) {
 	// Get all csvs in the namespace
-	csvs, err := c.ListClusterServiceVersion()
+	csvs, err := c.ListClusterServiceVersions()
 	if err != nil {
 		return &olm.CRDDescription{}, err
 	}
@@ -114,7 +114,7 @@ func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, 
 
 // GetCSVWithCR returns the CSV (Operator) that contains the CR (service)
 func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
-	csvs, err := c.ListClusterServiceVersion()
+	csvs, err := c.ListClusterServiceVersions()
 	if err != nil {
 		return &olm.ClusterServiceVersion{}, errors.Wrap(err, "unable to list services")
 	}

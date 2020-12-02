@@ -70,7 +70,7 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 // able to find them, an error otherwise.
 func GetCSV(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
 	cr := crd["kind"].(string)
-	csvs, err := client.ListClusterServiceVersion()
+	csvs, err := client.ListClusterServiceVersions()
 	if err != nil {
 		return cr, olm.ClusterServiceVersion{}, err
 	}
@@ -301,7 +301,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	klog.V(4).Info("Getting list of services")
 
 	// First let's get the list of all the operators in the namespace
-	csvs, err := client.ListClusterServiceVersion()
+	csvs, err := client.ListClusterServiceVersions()
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to list operator backed services")
 	}

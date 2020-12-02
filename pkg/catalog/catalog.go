@@ -298,7 +298,7 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 // ListOperatorServices fetches a list of Operators from the cluster and
 // returns only those Operators which are successfully installed on the cluster
 func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
-	allCsvs, err := client.ListClusterServiceVersion()
+	allCsvs, err := client.ListClusterServiceVersions()
 	if err != nil {
 		return nil, err
 	}
