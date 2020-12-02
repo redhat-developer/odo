@@ -12,7 +12,7 @@ KUBEADMIN_SCRIPT="$LIBCOMMON/kubeconfigandadmin.sh"
 # Exported to current env
 
 # list of namespace to create
-IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12"
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11"
 
 . $KUBEADMIN_SCRIPT
 
@@ -37,41 +37,31 @@ for i in `echo $IMAGE_TEST_NAMESPACES`; do
 done
 
 #Missing required images in OpenShift and Adding it manually to cluster
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nodejs/imagestreams/nodejs-rhel.json
-sleep 5
-oc delete istag nodejs:latest -n openshift
-sleep 5
-oc import-image nodejs:latest --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
-sleep 5
+oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nodejs/imagestreams/nodejs-rhel.json
+oc --request-timeout 5m delete istag nodejs:latest -n openshift
+oc --request-timeout 5m import-image nodejs:latest --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
 oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite
-oc import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
-sleep 5
+oc --request-timeout 5m delete istag java:8 -n openshift
+oc --request-timeout 5m import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
 oc annotate istag/java:8 --namespace=openshift tags=builder --overwrite
-oc import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
-sleep 5
+oc --request-timeout 5m delete istag java:latest -n openshift
+oc --request-timeout 5m import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
 oc annotate istag/java:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/ruby/imagestreams/ruby-rhel.json
-sleep 5
+oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/ruby/imagestreams/ruby-rhel.json
 oc annotate istag/ruby:latest --namespace=openshift tags=builder --overwrite
-oc import-image wildfly --confirm \--from docker.io/clefos/wildfly-120-centos7:latest --insecure -n openshift
-sleep 5
+oc --request-timeout 5m import-image wildfly --confirm \--from docker.io/clefos/wildfly-120-centos7:latest --insecure -n openshift
 oc annotate istag/wildfly:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nginx/imagestreams/nginx-rhel.json
-sleep 5
+oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/nginx/imagestreams/nginx-rhel.json
 oc annotate istag/nginx:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/dotnet/imagestreams/dotnet-centos.json
-sleep 5
+oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/dotnet/imagestreams/dotnet-centos.json
 oc annotate istag/dotnet:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/php/imagestreams/php-rhel.json
-sleep 5
+oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/php/imagestreams/php-rhel.json
 oc annotate istag/php:latest --namespace=openshift tags=builder --overwrite
-oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/python/imagestreams/python-rhel.json
-sleep 5
+oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/python/imagestreams/python-rhel.json
 oc annotate istag/python:latest --namespace=openshift tags=builder --overwrite
 
 sh $AUTH_SCRIPT
 
-setup_kubeadmin
 oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/myproject/g" | oc apply -f -
 
 # Project list
