@@ -108,7 +108,7 @@ dependencies with other features, forward and backward compatibility, API and fl
 
 * Avoid merging the PR manually (unless it is an emergency and  you have the required permissions). Prow’s tide component automatically merges the PR once all the conditions are met.
 It also ensures that post-submit tests (tests that run before merge) validate the PR.
-* Use the link:https://deck-ci.svc.ci.openshift.org/command-help[command-help] to see the list of possible bot commands.
+* Use the link:https://prow.ci.openshift.org/command-help[command-help] to see the list of possible bot commands.
 
 === Setting custom Init Container image for bootstrapping Supervisord
 For quick deployment of components, odo uses the link:https://github.com/ochinchina/supervisord[Supervisord] process manager.
