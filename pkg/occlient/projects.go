@@ -208,7 +208,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 
 // IsProjectSupported checks if Project resource type is present on the cluster
 func (c *Client) IsProjectSupported() (bool, error) {
-	return c.isResourceSupported("project.openshift.io", "v1", "projects")
+	return c.GetKubeClient().IsResourceSupported("project.openshift.io", "v1", "projects")
 }
 
 // GetCurrentProjectName returns the current project name

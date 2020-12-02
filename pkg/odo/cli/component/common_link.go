@@ -84,7 +84,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	}
 
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
-		sboSupport, err := o.Client.IsSBRSupported()
+		sboSupport, err := o.Client.GetKubeClient().IsSBRSupported()
 		if err != nil {
 			return err
 		}
@@ -248,7 +248,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 	if o.isTargetAService {
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
-		_, err = o.Client.GetServiceBinding(o.secretName, o.Project)
+		_, err = o.Client.GetKubeClient().GetServiceBinding(o.secretName, o.Project)
 		if err != nil {
 			return fmt.Errorf("The service was not created via odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
 		}

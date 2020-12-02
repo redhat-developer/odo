@@ -6,6 +6,7 @@ import (
 
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -18,12 +19,25 @@ const (
 	apiVersion = "odo.dev/v1alpha1"
 )
 
-// GetClusterServiceVersionList returns a list of CSVs in the cluster
+// IsSBRSupported checks if resource of type service binding request present on the cluster
+func (c *Client) IsSBRSupported() (bool, error) {
+	return c.IsResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
+}
+
+// IsCSVSupported checks if resource of type service binding request present on the cluster
+func (c *Client) IsCSVSupported() (bool, error) {
+	return c.IsResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
+}
+
+// ListClusterServiceVersion returns a list of CSVs in the cluster
 // It is equivalent to doing `oc get csvs` using oc cli
-func (c *Client) GetClusterServiceVersionList() (*olm.ClusterServiceVersionList, error) {
+func (c *Client) ListClusterServiceVersion() (*olm.ClusterServiceVersionList, error) {
 	klog.V(3).Infof("Fetching list of operators installed in cluster")
 	csvs, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).List(v1.ListOptions{})
 	if err != nil {
+		if kerrors.IsNotFound(err) {
+			return &olm.ClusterServiceVersionList{}, ErrNoSuchOperator
+		}
 		return &olm.ClusterServiceVersionList{}, err
 	}
 	return csvs, nil
@@ -31,16 +45,11 @@ func (c *Client) GetClusterServiceVersionList() (*olm.ClusterServiceVersionList,
 
 // GetClusterServiceVersion returns a particular CSV from a list of CSVs
 func (c *Client) GetClusterServiceVersion(name string) (olm.ClusterServiceVersion, error) {
-	csvs, err := c.GetClusterServiceVersionList()
+	csv, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).Get(name, v1.GetOptions{})
 	if err != nil {
 		return olm.ClusterServiceVersion{}, err
 	}
-	for _, item := range csvs.Items {
-		if item.Name == name {
-			return item, nil
-		}
-	}
-	return olm.ClusterServiceVersion{}, ErrNoSuchOperator
+	return *csv, nil
 }
 
 // GetCustomResourcesFromCSV returns a list of CRs provided by an operator/CSV.
@@ -53,7 +62,7 @@ func (c *Client) GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]ol
 // given keyword then return it
 func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServiceVersionList, error) {
 	var result []olm.ClusterServiceVersion
-	csvs, err := c.GetClusterServiceVersionList()
+	csvs, err := c.ListClusterServiceVersion()
 	if err != nil {
 		return &olm.ClusterServiceVersionList{}, errors.Wrap(err, "unable to list services")
 	}
@@ -83,7 +92,7 @@ func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServi
 // GetCustomResource returns the CR matching the name
 func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, error) {
 	// Get all csvs in the namespace
-	csvs, err := c.GetClusterServiceVersionList()
+	csvs, err := c.ListClusterServiceVersion()
 	if err != nil {
 		return &olm.CRDDescription{}, err
 	}
@@ -105,7 +114,7 @@ func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, 
 
 // GetCSVWithCR returns the CSV (Operator) that contains the CR (service)
 func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
-	csvs, err := c.GetClusterServiceVersionList()
+	csvs, err := c.ListClusterServiceVersion()
 	if err != nil {
 		return &olm.ClusterServiceVersion{}, errors.Wrap(err, "unable to list services")
 	}

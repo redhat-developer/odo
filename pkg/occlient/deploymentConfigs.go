@@ -22,7 +22,7 @@ func (c *Client) IsDeploymentConfigSupported() (bool, error) {
 	const Group = "apps.openshift.io"
 	const Version = "v1"
 
-	return c.isResourceSupported(Group, Version, "deploymentconfigs")
+	return c.GetKubeClient().IsResourceSupported(Group, Version, "deploymentconfigs")
 }
 
 // GetDeploymentConfigFromName returns the Deployment Config resource given

@@ -12,7 +12,7 @@ import (
 // IsRouteSupported checks if route resource type is present on the cluster
 func (c *Client) IsRouteSupported() (bool, error) {
 
-	return c.isResourceSupported("route.openshift.io", "v1", "routes")
+	return c.GetKubeClient().IsResourceSupported("route.openshift.io", "v1", "routes")
 }
 
 // GetRoute gets the route with the given name

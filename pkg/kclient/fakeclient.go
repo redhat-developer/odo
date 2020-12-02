@@ -1,16 +1,17 @@
 package kclient
 
 import (
-	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
-
+	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
 )
 
 // FakeClientset holds fake ClientSets
 // this is returned by FakeNew to access methods of fake client sets
 type FakeClientset struct {
-	Kubernetes *fakeKubeClientset.Clientset
+	Kubernetes              *fakeKubeClientset.Clientset
+	ServiceCatalogClientSet *fakeServiceCatalogClientSet.Clientset
 }
 
 // FakeNew creates new fake client for testing
@@ -22,6 +23,9 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	fkclientset.Kubernetes = fakeKubeClientset.NewSimpleClientset()
 	client.KubeClient = fkclientset.Kubernetes
+
+	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
+	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.ServicecatalogV1beta1()
 
 	return &client, &fkclientset
 }

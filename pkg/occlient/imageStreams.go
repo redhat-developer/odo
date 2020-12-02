@@ -17,7 +17,7 @@ import (
 // IsImageStreamSupported checks if imagestream resource type is present on the cluster
 func (c *Client) IsImageStreamSupported() (bool, error) {
 
-	return c.isResourceSupported("image.openshift.io", "v1", "imagestreams")
+	return c.GetKubeClient().IsResourceSupported("image.openshift.io", "v1", "imagestreams")
 }
 
 // GetImageStream returns the imagestream using image details like imageNS, imageName and imageTag

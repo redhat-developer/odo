@@ -163,7 +163,8 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			// Initializing the fake occlient
 			fkoclient, fakeoclientSet := occlient.FakeNew()
 			fkoclient.Namespace = "default"
-			fkoclient.SetDiscoveryInterface(fakeDiscoveryWithProject)
+			fkoclient.SetKubeClient(fkclient)
+			fkoclient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithProject)
 			fkoclient.SetKubeClient(fkclient)
 
 			// Return the test's route list when requested

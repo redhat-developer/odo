@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/onsi/gomega/matchers"
 	"github.com/openshift/odo/pkg/testingutil"

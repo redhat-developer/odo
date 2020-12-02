@@ -4,10 +4,13 @@ import (
 	"strings"
 	"time"
 
+	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/discovery"
 	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/klog"
 
@@ -33,16 +36,19 @@ Consult your Kubernetes distribution's documentation for more details
 
 // Client is a collection of fields used for client configuration and interaction
 type Client struct {
-	KubeClient       kubernetes.Interface
-	KubeConfig       clientcmd.ClientConfig
-	KubeClientConfig *rest.Config
-	Namespace        string
-	OperatorClient   *operatorsclientset.OperatorsV1alpha1Client
-	appsClient       appsclientset.AppsV1Interface
+	KubeClient           kubernetes.Interface
+	KubeConfig           clientcmd.ClientConfig
+	KubeClientConfig     *rest.Config
+	Namespace            string
+	OperatorClient       *operatorsclientset.OperatorsV1alpha1Client
+	appsClient           appsclientset.AppsV1Interface
+	serviceCatalogClient servicecatalogclienset.ServicecatalogV1beta1Interface
 	// DynamicClient interacts with client-go's `dynamic` package. It is used
 	// to dynamically create service from an operator. It can take an arbitrary
 	// yaml and create k8s/OpenShift resource from it.
-	DynamicClient dynamic.Interface
+	DynamicClient      dynamic.Interface
+	discoveryClient    discovery.DiscoveryInterface
+	supportedResources map[string]bool
 }
 
 // New creates a new client
@@ -92,6 +98,16 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 		return nil, err
 	}
 	client.appsClient = appsClient
+
+	client.serviceCatalogClient, err = servicecatalogclienset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	client.discoveryClient, err = discovery.NewDiscoveryClientForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -177,4 +193,37 @@ func (c *Client) GeneratePortForwardReq(podName string) *rest.Request {
 		Namespace(c.Namespace).
 		Name(podName).
 		SubResource("portforward")
+}
+
+func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
+	c.discoveryClient = client
+}
+
+func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
+	if c.supportedResources == nil {
+		c.supportedResources = make(map[string]bool, 7)
+	}
+	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
+
+	supported, found := c.supportedResources[groupVersion]
+	if !found {
+		list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+		if err != nil {
+			if kerrors.IsNotFound(err) {
+				supported = false
+			} else {
+				// don't record, just attempt again next time in case it's a transient error
+				return false, err
+			}
+		} else {
+			for _, resources := range list.APIResources {
+				if resources.Name == resourceName {
+					supported = true
+					break
+				}
+			}
+		}
+		c.supportedResources[groupVersion] = supported
+	}
+	return supported, nil
 }

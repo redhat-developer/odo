@@ -59,7 +59,7 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	// Get all ServiceInstances with the "app" label
 	// Okay, so there is an edge-case here.. if Service Catalog is *not* enabled in the cluster, we shouldn't error out..
 	// however, we should at least warn the user.
-	serviceInstanceAppNames, err := client.GetServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+	serviceInstanceAppNames, err := client.GetKubeClient().ListServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
 		klog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
 	} else {

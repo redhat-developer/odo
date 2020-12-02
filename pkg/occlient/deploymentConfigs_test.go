@@ -92,7 +92,6 @@ func TestGetDeploymentConfigLabelValues(t *testing.T) {
 				return true, &tt.args.deploymentConfigList, nil
 			})
 
-			// Run function GetServiceInstanceLabelValues
 			list, err := fakeClient.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 
 			if err == nil && !tt.wantErr {
@@ -103,7 +102,7 @@ func TestGetDeploymentConfigLabelValues(t *testing.T) {
 				}
 
 				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
-					t.Errorf("expected %v action(s) in GetServiceInstanceLabelValues got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+					t.Errorf("expected %v action(s) in TestGetDeploymentConfigLabelValues got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
 				}
 
 			} else if err == nil && tt.wantErr {
