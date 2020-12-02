@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	projectv1 "github.com/openshift/api/project/v1"
-	v1 "github.com/openshift/api/project/v1"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -412,7 +411,7 @@ func TestList(t *testing.T) {
 	tests := []struct {
 		name             string
 		wantErr          bool
-		returnedProjects *v1.ProjectList
+		returnedProjects *projectv1.ProjectList
 		expectedProjects ProjectList
 	}{
 		{
@@ -440,7 +439,7 @@ func TestList(t *testing.T) {
 		{
 			name:             "Case 3: No project returned",
 			wantErr:          false,
-			returnedProjects: &v1.ProjectList{},
+			returnedProjects: &projectv1.ProjectList{},
 			expectedProjects: getMachineReadableFormatForList(
 				nil,
 			),

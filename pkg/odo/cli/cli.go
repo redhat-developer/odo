@@ -24,7 +24,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -173,8 +172,8 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
-	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
-	cobra.AddTemplateFunc("ModifyAdditionalFlags", odoutil.ModifyAdditionalFlags)
+	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", util.CapitalizeFlagDescriptions)
+	cobra.AddTemplateFunc("ModifyAdditionalFlags", util.ModifyAdditionalFlags)
 
 	rootCmdList := append([]*cobra.Command{}, application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
 		catalog.NewCmdCatalog(catalog.RecommendedCommandName, util.GetFullName(fullName, catalog.RecommendedCommandName)),
@@ -210,7 +209,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// Add all subcommands to base commands
 	rootCmd.AddCommand(rootCmdList...)
 
-	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
+	util.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
 	return rootCmd
 }
