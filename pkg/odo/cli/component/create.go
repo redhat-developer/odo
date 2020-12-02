@@ -897,8 +897,13 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 
 	refName := plumbing.ReferenceName(revision)
 
+	if plumbing.IsHash(revision) {
+		log.Warning("Specifying commit in 'revision' is not yet supported in odo.")
+		// overriding revision to empty as we do not support this
+		revision = ""
+	}
+
 	if revision != "" {
-		log.Warning("Specifying 'revision' in 'checkoutFrom' is not yet supported in odo.")
 		// lets consider revision to be a branch name first
 		refName = plumbing.NewBranchReferenceName(revision)
 	}
@@ -936,7 +941,7 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 	if err != nil {
 
 		// it returns the following error if no matching ref found
-		// if we get this error, we are trying again considering revision as tag.
+		// if we get this error, we are trying again considering revision as tag, only if revision is specified.
 		if _, ok := err.(git.NoMatchingRefSpecError); !ok || revision == "" {
 			return err
 		}

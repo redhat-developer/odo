@@ -187,6 +187,32 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with git tag or git branch specified in starter project", func() {
+		JustBeforeEach(func() {
+			contextDevfile = helper.CreateNewContext()
+			helper.Chdir(contextDevfile)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-branch.yaml"), filepath.Join(contextDevfile, "devfile.yaml"))
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteDir(contextDevfile)
+			helper.Chdir(commonVar.Context)
+		})
+
+		It("should successfully create the component and download the source from the specified branch", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+		})
+
+		It("should successfully create the component and download the source from the specified tag", func() {
+			helper.ReplaceString(filepath.Join(contextDevfile, "devfile.yaml"), "revision: test-branch", "revision: v0.0.1")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+		})
+	})
+
 	Context("When executing odo create with component with no devBuild command", func() {
 		It("should successfully create the devfile component", func() {
 			// Quarkus devfile has no devBuild command
