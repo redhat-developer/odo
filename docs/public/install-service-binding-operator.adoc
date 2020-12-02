@@ -1,0 +1,42 @@
+== Installing Service Binding Operator
+
+This document walks you through the steps to install link:https://github.com/redhat-developer/service-binding-operator/[Service Binding Operator] on OpenShift and Kubernetes clusters.
+
+=== Why do I need the Service Binding Operator?
+
+odo uses Service Binding Operator to provide the `odo link` feature which helps connect an odo component to a service or another component.
+
+=== Installing Service Binding Operator on OpenShift
+
+To install Service Binding Operator on OpenShift, refer link:https://www.youtube.com/watch?v=8QmewscQwHg[this video].
+
+=== Installing Service Binding Operator on Kubernetes
+
+Steps mentioned in this section were tested on link:https://minikube.sigs.k8s.io/[minikube]. We tested this on minikube v1.15.1 but it should work on v1.11.0 and above.
+
+For Kubernetes, Service Binding Operator is not yet available via the OLM. The team is link:https://github.com/redhat-developer/service-binding-operator/issues/727[working on making it available].
+
+To install the Operator, execute the following `kubectl` command:
+[source,sh]
+----
+$ kubectl apply -f https://gist.githubusercontent.com/dharmit/0e05be20e98c9271b2117acea7908cc2/raw/1e45fc89fc576e184e41fcc23e88d35f0e08a7e9/install.yaml
+----
+
+You should now see a `Deployment` for Service Binding Operator in the `default` namespace:
+[source,sh]
+----
+$ kubectl get deploy -n default
+----
+
+If you would like to install the Service Binding Operator in a different namespace, edit link:https://gist.github.com/dharmit/0e05be20e98c9271b2117acea7908cc2#file-install-yaml-L464[this line] by downloading the YAML mentioned in previous set to the namespace of your choice.
+
+==== Making sure that Service Binding Operator got correctly installed
+
+One way to make sure that the Operator installed properly is to verify that its link:https://kubernetes.io/docs/concepts/workloads/pods/[pod] started and is in "Running" state (note that you will have to specify the namespace where you installed Service Binding Operator in earlier step, and the pod name will be different in your setup than what's shown in below output):
+
+[source,sh]
+----
+$ kubectl get pods --namespace default
+NAME                                        READY   STATUS     RESTARTS   AGE
+service-binding-operator-6b7c654c89-rg9gq   1/1     Running    0          15m
+----

@@ -24,15 +24,17 @@ install_service_binding_operator(){
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    name: service-binding-operator
+    labels:
+      operators.coreos.com/rh-service-binding-operator.openshift-operators: ""
+    name: rh-service-binding-operator
     namespace: openshift-operators
   spec:
-    channel: alpha
+    channel: beta
     installPlanApproval: Automatic
-    name: service-binding-operator
-    source: community-operators
+    name: rh-service-binding-operator
+    source: redhat-operators
     sourceNamespace: openshift-marketplace
-    startingCSV: service-binding-operator.v0.1.1-364
+    startingCSV: service-binding-operator.v0.3.0
 EOF
 }
 

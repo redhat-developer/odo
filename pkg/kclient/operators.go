@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	ErrNoSuchOperator = errors.New("Could not find specified operator")
+	ErrNoSuchOperator = errors.New("could not find specified operator")
 )
 
 const (
 	apiVersion = "odo.dev/v1alpha1"
 )
 
-// IsSBRSupported checks if resource of type service binding request present on the cluster
-func (c *Client) IsSBRSupported() (bool, error) {
+// IsServiceBindingSupported checks if resource of type service binding request present on the cluster
+func (c *Client) IsServiceBindingSupported() (bool, error) {
 	return c.IsResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
 }
 
@@ -109,7 +109,7 @@ func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, 
 		}
 	}
 
-	return &olm.CRDDescription{}, fmt.Errorf("Couldn't find a Custom Resource named %q in the namespace", customResource)
+	return &olm.CRDDescription{}, fmt.Errorf("could not find a Custom Resource named %q in the namespace", customResource)
 }
 
 // GetCSVWithCR returns the CSV (Operator) that contains the CR (service)
@@ -127,5 +127,5 @@ func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 			}
 		}
 	}
-	return &olm.ClusterServiceVersion{}, fmt.Errorf("Could not find any Operator containing requested CR: %s", name)
+	return &olm.ClusterServiceVersion{}, fmt.Errorf("could not find any Operator containing requested CR: %s", name)
 }

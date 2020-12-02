@@ -39,7 +39,7 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200422144016-a6acf50218ed
 	github.com/pkg/errors v0.8.1
 	github.com/posener/complete v1.1.2
-	github.com/redhat-developer/service-binding-operator v0.1.1
+	github.com/redhat-developer/service-binding-operator v0.3.0
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
