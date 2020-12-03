@@ -448,7 +448,7 @@ spec:
 			// next, delete a link outside of odo (using oc) and ensure that it throws an error
 			helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
 			sbrName := strings.Join([]string{componentName, "etcdcluster", "example"}, "-")
-			helper.CmdShouldPass("oc", "delete", fmt.Sprintf("ServiceBindingRequest/%s", sbrName))
+			helper.CmdShouldPass("oc", "delete", fmt.Sprintf("ServiceBinding/%s", sbrName))
 			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
 			helper.MatchAllInOutput(stdOut, []string{"component's link with", "has been deleted outside odo"})
 		})
