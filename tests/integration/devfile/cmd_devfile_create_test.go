@@ -206,7 +206,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should successfully create the component and download the source from the specified tag", func() {
-			helper.ReplaceString(filepath.Join(contextDevfile, "devfile.yaml"), "revision: test-branch", "revision: v0.0.1")
+			helper.ReplaceString(filepath.Join(contextDevfile, "devfile.yaml"), "revision: test-branch", "revision: 0.0.1")
 			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
