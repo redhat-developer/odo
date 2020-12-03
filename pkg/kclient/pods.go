@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
 	"github.com/openshift/odo/pkg/preference"
 	"io"
-	"strconv"
 	"strings"
 	"time"
 
@@ -100,7 +98,8 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
+// hideSpinner hides the spinner
+func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string, hideSpinner bool) (*corev1.Pod, error) {
 
 	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
 	pushTimeout := preference.DefaultPushTimeout * time.Second
@@ -112,8 +111,12 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 	}
 
 	klog.V(3).Infof("Waiting for %s pod", selector)
-	spinner := log.Spinner(waitMessage)
-	defer spinner.End(false)
+
+	var spinner *log.Status
+	if !hideSpinner {
+		spinner = log.Spinner(waitMessage)
+		defer spinner.End(false)
+	}
 
 	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
@@ -172,7 +175,9 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 
 	select {
 	case val := <-podChannel:
-		spinner.End(true)
+		if spinner != nil {
+			spinner.End(true)
+		}
 		return val, nil
 	case err := <-watchErrorChannel:
 		return nil, err
@@ -183,29 +188,12 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 
 		if len(failedEvents) != 0 {
 
-			// Create an output table
-			tableString := &strings.Builder{}
-			table := tablewriter.NewWriter(tableString)
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-			table.SetCenterSeparator("")
-			table.SetColumnSeparator("")
-			table.SetRowSeparator("")
+			tableString := getErrorMessageFromEvents(failedEvents)
 
-			// Header
-			table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
-
-			// List of events
-			for name, event := range failedEvents {
-				table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
-			}
-
-			// Here we render the table as well as a helpful error message
-			table.Render()
 			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
 For more information to help determine the cause of the error, re-run with '-v'.
 See below for a list of failed events that occured more than %d times during deployment:
-%s`, pushTimeout, selector, failedEventCount, tableString)
+%s`, pushTimeout, selector, failedEventCount, tableString.String())
 		}
 
 		return nil, errors.Errorf(errorMessage)

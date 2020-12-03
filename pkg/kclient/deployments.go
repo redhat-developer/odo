@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
@@ -110,6 +111,11 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 	success := make(chan *appsv1.Deployment)
 	failure := make(chan error)
 
+	// Collect all the events in a separate go routine
+	failedEvents := make(map[string]corev1.Event)
+	quit := make(chan int)
+	go c.CollectEvents("", failedEvents, s, quit)
+
 	go func() {
 		defer close(success)
 		defer close(failure)
@@ -157,6 +163,17 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 	case err := <-failure:
 		return nil, err
 	case <-time.After(5 * time.Minute):
+		errorMessage := fmt.Sprintf("timeout while waiting for %s deployment roll out", deploymentName)
+		if len(failedEvents) != 0 {
+			tableString := getErrorMessageFromEvents(failedEvents)
+
+			errorMessage = errorMessage + fmt.Sprintf(`\nFor more information to help determine the cause of the error, re-run with '-v'.
+See below for a list of failed events that occured more than %d times during deployment:
+%s`, failedEventCount, tableString.String())
+
+			return nil, errors.Errorf(errorMessage)
+		}
+
 		return nil, errors.Errorf("timeout while waiting for %s deployment roll out", deploymentName)
 	}
 }

@@ -1,9 +1,11 @@
 package kclient
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"reflect"
+	"strings"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestGetInputEnvVarsFromStrings(t *testing.T) {
@@ -97,6 +99,59 @@ func TestGetInputEnvVarsFromStrings(t *testing.T) {
 				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
 				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func Test_getErrorMessageFromEvents(t *testing.T) {
+	type args struct {
+		failedEvents map[string]corev1.Event
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "case 1: three failed events",
+			args: args{
+				failedEvents: map[string]corev1.Event{
+					"pvc": {
+						Reason:  "pvc not bound",
+						Message: "pvc not bound",
+						Count:   5,
+					},
+					"deployment": {
+						Reason:  "deployment not running",
+						Message: "deployment not running",
+						Count:   3,
+					},
+					"pod": {
+						Reason:  "pod not running",
+						Message: "pod not running",
+						Count:   8,
+					},
+				},
+			},
+			want: []string{"pvc not bound", "deployment not running", "pod not running", "8", "5", "3"},
+		},
+		{
+			name: "case 2: no failed events",
+			args: args{
+				failedEvents: map[string]corev1.Event{},
+			},
+			want: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getErrorMessageFromEvents(tt.args.failedEvents)
+
+			for _, wantString := range tt.want {
+				if !strings.Contains(got.String(), wantString) {
+					t.Errorf("getErrorMessageFromEvents() out: %s, doesn't contain: %s", got.String(), wantString)
+				}
 			}
 		})
 	}

@@ -415,13 +415,13 @@ func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
 	// first wait for the pod to be pending (meaning that the deployment is being put into effect)
 	// we need this intermediate wait because there is a change that the this point could be reached
 	// without Openshift having had the time to launch the new deployment
-	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodPending, "Waiting for component to redeploy")
+	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodPending, "Waiting for component to redeploy", false)
 	if err != nil {
 		return err
 	}
 
 	// now wait for the pod to be running
-	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
+	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start", false)
 	return err
 }
 
