@@ -14,7 +14,6 @@ import (
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	dockerapi "github.com/openshift/api/image/docker10"
-	dockerapiv10 "github.com/openshift/api/image/docker10"
 	imagev1 "github.com/openshift/api/image/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -216,8 +215,8 @@ func fakeImageStreamImage(imageName string, ports []string, containerConfig stri
 				Name: "@sha256:9579a93ee",
 			},
 			DockerImageMetadata: runtime.RawExtension{
-				Object: &dockerapiv10.DockerImage{
-					ContainerConfig: dockerapiv10.DockerConfig{
+				Object: &dockerapi.DockerImage{
+					ContainerConfig: dockerapi.DockerConfig{
 						ExposedPorts: exposedPorts,
 					},
 				},
@@ -792,8 +791,8 @@ func Test_getExposedPortsFromISI(t *testing.T) {
 						Name: "@sha256:9579a93ee",
 					},
 					DockerImageMetadata: runtime.RawExtension{
-						Object: &dockerapiv10.DockerImage{
-							ContainerConfig: dockerapiv10.DockerConfig{
+						Object: &dockerapi.DockerImage{
+							ContainerConfig: dockerapi.DockerConfig{
 								ExposedPorts: map[string]struct{}{
 									"8080/tcp": {},
 								},
@@ -822,8 +821,8 @@ func Test_getExposedPortsFromISI(t *testing.T) {
 						Name: "@sha256:9579a93ee",
 					},
 					DockerImageMetadata: runtime.RawExtension{
-						Object: &dockerapiv10.DockerImage{
-							Config: &dockerapiv10.DockerConfig{
+						Object: &dockerapi.DockerImage{
+							Config: &dockerapi.DockerConfig{
 								ExposedPorts: map[string]struct{}{
 									"8080/tcp": {},
 								},
@@ -852,14 +851,14 @@ func Test_getExposedPortsFromISI(t *testing.T) {
 						Name: "@sha256:9579a93ee",
 					},
 					DockerImageMetadata: runtime.RawExtension{
-						Object: &dockerapiv10.DockerImage{
-							ContainerConfig: dockerapiv10.DockerConfig{
+						Object: &dockerapi.DockerImage{
+							ContainerConfig: dockerapi.DockerConfig{
 								ExposedPorts: map[string]struct{}{
 									"8080/tcp": {},
 									"9090/tcp": {},
 								},
 							},
-							Config: &dockerapiv10.DockerConfig{
+							Config: &dockerapi.DockerConfig{
 								ExposedPorts: map[string]struct{}{
 									"9090/tcp": {},
 									"9191/tcp": {},

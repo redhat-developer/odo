@@ -29,8 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktesting "k8s.io/client-go/testing"
-
-	. "github.com/openshift/odo/pkg/config"
 )
 
 func TestGetComponentFrom(t *testing.T) {
@@ -364,7 +362,7 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	mockConfig := GetOneExistingConfigInfo("comp", "app", "test")
+	mockConfig := config.GetOneExistingConfigInfo("comp", "app", "test")
 	componentConfig, err := GetComponentFromConfig(&mockConfig)
 	if err != nil {
 		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
@@ -406,7 +404,7 @@ func TestList(t *testing.T) {
 		deploymentList            v1.DeploymentList
 		projectExists             bool
 		wantErr                   bool
-		existingLocalConfigInfo   *LocalConfigInfo
+		existingLocalConfigInfo   *config.LocalConfigInfo
 		output                    ComponentList
 	}{
 		{
@@ -858,7 +856,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 	tests := []struct {
 		name           string
 		isConfigExists bool
-		existingConfig LocalConfigInfo
+		existingConfig config.LocalConfigInfo
 		wantSpec       Component
 	}{
 		{
@@ -931,7 +929,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewLocalConfigInfo("")
+			_, err := config.NewLocalConfigInfo("")
 			if err != nil {
 				t.Error(err)
 			}

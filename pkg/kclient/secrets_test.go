@@ -2,13 +2,13 @@ package kclient
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/watch"
 	"reflect"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/watch"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	ktesting "k8s.io/client-go/testing"
@@ -25,8 +25,8 @@ func TestCreateTLSSecret(t *testing.T) {
 			name: "Case: Valid Secret name",
 			objectMeta: metav1.ObjectMeta{
 				Name: "testComponent-tlssecret",
-				OwnerReferences: []v1.OwnerReference{
-					metav1.OwnerReference{
+				OwnerReferences: []metav1.OwnerReference{
+					{
 						APIVersion: "1",
 						Kind:       "fakeOwnerReference",
 						Name:       "testDeployment",
@@ -40,8 +40,8 @@ func TestCreateTLSSecret(t *testing.T) {
 			name: "Case: Invalid Secret name",
 			objectMeta: metav1.ObjectMeta{
 				Name: "",
-				OwnerReferences: []v1.OwnerReference{
-					metav1.OwnerReference{
+				OwnerReferences: []metav1.OwnerReference{
+					{
 						APIVersion: "1",
 						Kind:       "fakeOwnerReference",
 						Name:       "testDeployment",

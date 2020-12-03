@@ -14,8 +14,6 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
@@ -1006,11 +1004,11 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 }
 
 // GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
-func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, devfileParser.DevfileObj, error) {
+func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
 	if info.Exists() {
-		devfile, err := devfileParser.Parse(info.GetDevfilePath())
+		devfile, err := parser.Parse(info.GetDevfilePath())
 		if err != nil {
-			return Component{}, devfileParser.DevfileObj{}, err
+			return Component{}, parser.DevfileObj{}, err
 		}
 		component := getComponentFrom(info, devfile.Data.GetMetadata().Name)
 		for _, cmp := range devfile.Data.GetComponents() {
@@ -1023,7 +1021,7 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, devfileP
 
 		return component, devfile, nil
 	}
-	return Component{}, devfileParser.DevfileObj{}, nil
+	return Component{}, parser.DevfileObj{}, nil
 }
 
 func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Component {
