@@ -166,7 +166,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	}
 
 	if o.interactive {
-		classesByCategory, err := client.GetServiceClassesByCategory()
+		classesByCategory, err := client.GetKubeClient().ListServiceClassesByCategory()
 		if err != nil {
 			return fmt.Errorf("unable to retrieve service classes: %v", err)
 		}
@@ -177,7 +177,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 		class, o.ServiceType = ui.SelectClassInteractively(classesByCategory)
 
-		plans, err := client.GetMatchingPlans(class)
+		plans, err := client.GetKubeClient().ListMatchingPlans(class)
 		if err != nil {
 			return fmt.Errorf("couldn't retrieve plans for class %s: %v", class.GetExternalName(), err)
 		}
@@ -398,7 +398,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		}
 	}
 	// make sure the service type exists
-	classPtr, err := o.Client.GetClusterServiceClass(o.ServiceType)
+	classPtr, err := o.Client.GetKubeClient().GetClusterServiceClass(o.ServiceType)
 	if err != nil {
 		return errors.Wrap(err, "unable to create service because Service Catalog is not enabled in your cluster")
 	}
@@ -407,7 +407,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	}
 
 	// check plan
-	plans, err := o.Client.GetMatchingPlans(*classPtr)
+	plans, err := o.Client.GetKubeClient().ListMatchingPlans(*classPtr)
 	if err != nil {
 		return err
 	}

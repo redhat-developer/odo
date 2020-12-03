@@ -8,7 +8,6 @@ import (
 	"net"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"time"
 
@@ -22,7 +21,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	// api clientsets
-	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
@@ -31,19 +29,14 @@ import (
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 
 	// api resource types
-	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	oauthv1client "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
@@ -171,22 +164,15 @@ odo login https://mycluster.mydomain.com
 `
 
 type Client struct {
-	kubeClient           *kclient.Client
-	imageClient          imageclientset.ImageV1Interface
-	appsClient           appsclientset.AppsV1Interface
-	buildClient          buildclientset.BuildV1Interface
-	projectClient        projectclientset.ProjectV1Interface
-	serviceCatalogClient servicecatalogclienset.ServicecatalogV1beta1Interface
-	routeClient          routeclientset.RouteV1Interface
-	userClient           userclientset.UserV1Interface
-	KubeConfig           clientcmd.ClientConfig
-	discoveryClient      discovery.DiscoveryInterface
-	Namespace            string
-	supportedResources   map[string]bool
-}
-
-func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
-	c.discoveryClient = client
+	kubeClient    *kclient.Client
+	imageClient   imageclientset.ImageV1Interface
+	appsClient    appsclientset.AppsV1Interface
+	buildClient   buildclientset.BuildV1Interface
+	projectClient projectclientset.ProjectV1Interface
+	routeClient   routeclientset.RouteV1Interface
+	userClient    userclientset.UserV1Interface
+	KubeConfig    clientcmd.ClientConfig
+	Namespace     string
 }
 
 // New creates a new client
@@ -223,11 +209,6 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
-	client.serviceCatalogClient, err = servicecatalogclienset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
 	client.projectClient, err = projectclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -239,11 +220,6 @@ func New() (*Client, error) {
 	}
 
 	client.userClient, err = userclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	client.discoveryClient, err = discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -1140,195 +1116,6 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 	}
 }
 
-// DeleteServiceInstance takes labels as a input and based on it, deletes respective service instance
-func (c *Client) DeleteServiceInstance(labels map[string]string) error {
-	klog.V(3).Infof("Deleting Service Instance")
-
-	// convert labels to selector
-	selector := util.ConvertLabelsToSelector(labels)
-	klog.V(3).Infof("Selectors used for deletion: %s", selector)
-
-	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
-	serviceInstances, err := c.GetServiceInstanceList(selector)
-	if err != nil {
-		return errors.Wrap(err, "unable to list service instance")
-	}
-
-	// Iterating over serviceInstance List and deleting one by one
-	for _, serviceInstance := range serviceInstances {
-		// we need to delete the ServiceBinding before deleting the ServiceInstance
-		err = c.serviceCatalogClient.ServiceBindings(c.Namespace).Delete(serviceInstance.Name, &metav1.DeleteOptions{})
-		if err != nil {
-			return errors.Wrap(err, "unable to delete serviceBinding")
-		}
-		// now we perform the actual deletion
-		err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Delete(serviceInstance.Name, &metav1.DeleteOptions{})
-		if err != nil {
-			return errors.Wrap(err, "unable to delete serviceInstance")
-		}
-	}
-
-	return nil
-}
-
-// GetServiceInstanceLabelValues get label values of given label from objects in project that match the selector
-func (c *Client) GetServiceInstanceLabelValues(label string, selector string) ([]string, error) {
-
-	// List ServiceInstance according to given selectors
-	svcList, err := c.serviceCatalogClient.ServiceInstances(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list ServiceInstances")
-	}
-
-	// Grab all the matched strings
-	var values []string
-	for _, elem := range svcList.Items {
-		val, ok := elem.Labels[label]
-		if ok {
-			values = append(values, val)
-		}
-	}
-
-	// Sort alphabetically
-	sort.Strings(values)
-
-	return values, nil
-}
-
-// GetServiceInstanceList returns list service instances
-func (c *Client) GetServiceInstanceList(selector string) ([]scv1beta1.ServiceInstance, error) {
-	// List ServiceInstance according to given selectors
-	svcList, err := c.serviceCatalogClient.ServiceInstances(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list ServiceInstances")
-	}
-
-	return svcList.Items, nil
-}
-
-// GetClusterServiceClasses queries the service service catalog to get available clusterServiceClasses
-func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, error) {
-	classList, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list cluster service classes")
-	}
-	return classList.Items, nil
-}
-
-// GetClusterServiceClass returns the required service class from the service name
-// serviceName is the name of the service
-// returns the required service class and the error
-func (c *Client) GetClusterServiceClass(serviceName string) (*scv1beta1.ClusterServiceClass, error) {
-	opts := metav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector("spec.externalName", serviceName).String(),
-	}
-	searchResults, err := c.serviceCatalogClient.ClusterServiceClasses().List(opts)
-	if err != nil {
-		return nil, fmt.Errorf("unable to search classes by name (%s)", err)
-	}
-	if len(searchResults.Items) == 0 {
-		return nil, fmt.Errorf("class '%s' not found", serviceName)
-	}
-	if len(searchResults.Items) > 1 {
-		return nil, fmt.Errorf("more than one matching class found for '%s'", serviceName)
-	}
-	return &searchResults.Items[0], nil
-}
-
-// GetClusterPlansFromServiceName returns the plans associated with a service class
-// serviceName is the name (the actual id, NOT the external name) of the service class whose plans are required
-// returns array of ClusterServicePlans or error
-func (c *Client) GetClusterPlansFromServiceName(serviceName string) ([]scv1beta1.ClusterServicePlan, error) {
-	opts := metav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector("spec.clusterServiceClassRef.name", serviceName).String(),
-	}
-	searchResults, err := c.serviceCatalogClient.ClusterServicePlans().List(opts)
-	if err != nil {
-		return nil, fmt.Errorf("unable to search plans for service name '%s', (%s)", serviceName, err)
-	}
-	return searchResults.Items, nil
-}
-
-// CreateServiceInstance creates service instance from service catalog
-func (c *Client) CreateServiceInstance(serviceName string, serviceType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
-	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
-	if err != nil {
-		return errors.Wrap(err, "unable to create the service instance parameters")
-	}
-
-	_, err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Create(
-		&scv1beta1.ServiceInstance{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ServiceInstance",
-				APIVersion: "servicecatalog.k8s.io/v1beta1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      serviceName,
-				Namespace: c.Namespace,
-				Labels:    labels,
-			},
-			Spec: scv1beta1.ServiceInstanceSpec{
-				PlanReference: scv1beta1.PlanReference{
-					ClusterServiceClassExternalName: serviceType,
-					ClusterServicePlanExternalName:  servicePlan,
-				},
-				Parameters: serviceInstanceParameters,
-			},
-		})
-
-	if err != nil {
-		return errors.Wrapf(err, "unable to create the service instance %s for the service type %s and plan %s", serviceName, serviceType, servicePlan)
-	}
-
-	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateServiceBinding(serviceName, c.Namespace, labels)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
-	}
-
-	return nil
-}
-
-// CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
-// service instance created using the service's parameters.
-func (c *Client) CreateServiceBinding(bindingName string, namespace string, labels map[string]string) error {
-	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
-		&scv1beta1.ServiceBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      bindingName,
-				Namespace: namespace,
-				Labels:    labels,
-			},
-			Spec: scv1beta1.ServiceBindingSpec{
-				InstanceRef: scv1beta1.LocalObjectReference{
-					Name: bindingName,
-				},
-				SecretName: bindingName,
-			},
-		})
-
-	if err != nil {
-		return errors.Wrap(err, "Creation of the secret failed")
-	}
-
-	return nil
-}
-
-// GetServiceBinding returns the ServiceBinding named serviceName in the namespace namespace
-func (c *Client) GetServiceBinding(serviceName string, namespace string) (*scv1beta1.ServiceBinding, error) {
-	return c.serviceCatalogClient.ServiceBindings(namespace).Get(serviceName, metav1.GetOptions{})
-}
-
-// serviceInstanceParameters converts a map of variable assignments to a byte encoded json document,
-// which is what the ServiceCatalog API consumes.
-func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension, error) {
-	paramsJSON, err := json.Marshal(params)
-	if err != nil {
-		return nil, err
-	}
-	return &runtime.RawExtension{Raw: paramsJSON}, nil
-}
-
 // LinkSecret links a secret to the DeploymentConfig of a component
 func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
 
@@ -1375,52 +1162,6 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 	}
 
 	return c.patchDC(dcName, dcPatchProvider)
-}
-
-// GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category
-func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta1.ClusterServiceClass, err error) {
-	categories = make(map[string][]scv1beta1.ClusterServiceClass)
-	classes, err := c.GetClusterServiceClasses()
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: Should we replicate the classification performed in
-	// https://github.com/openshift/console/blob/master/frontend/public/components/catalog/catalog-items.jsx?
-	for _, class := range classes {
-		tags := class.Spec.Tags
-		category := "other"
-		if len(tags) > 0 && len(tags[0]) > 0 {
-			category = tags[0]
-		}
-		categories[category] = append(categories[category], class)
-	}
-
-	return categories, err
-}
-
-// GetMatchingPlans retrieves a map associating service plan name to service plan instance associated with the specified service
-// class
-func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans map[string]scv1beta1.ClusterServicePlan, err error) {
-	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{
-		FieldSelector: "spec.clusterServiceClassRef.name==" + class.Spec.ExternalID,
-	})
-
-	plans = make(map[string]scv1beta1.ClusterServicePlan)
-	for _, v := range planList.Items {
-		plans[v.Spec.ExternalName] = v
-	}
-	return plans, err
-}
-
-// GetAllClusterServicePlans returns list of available plans
-func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, error) {
-	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get cluster service plan")
-	}
-
-	return planList.Items, nil
 }
 
 // ServerInfo contains the fields that contain the server's information like
@@ -1651,16 +1392,6 @@ func isSubDir(baseDir, otherDir string) bool {
 	return matches
 }
 
-// IsSBRSupported checks if resource of type service binding request present on the cluster
-func (c *Client) IsSBRSupported() (bool, error) {
-	return c.isResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
-}
-
-// IsCSVSupported checks if resource of type service binding request present on the cluster
-func (c *Client) IsCSVSupported() (bool, error) {
-	return c.isResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
-}
-
 // GenerateOwnerReference generates an ownerReference which can then be set as
 // owner for various OpenShift objects and ensure that when the owner object is
 // deleted from the cluster, all other objects are automatically removed by
@@ -1675,33 +1406,4 @@ func GenerateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 	}
 
 	return ownerReference
-}
-
-func (c *Client) isResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
-	if c.supportedResources == nil {
-		c.supportedResources = make(map[string]bool, 7)
-	}
-	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
-
-	supported, found := c.supportedResources[groupVersion]
-	if !found {
-		list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
-		if err != nil {
-			if kerrors.IsNotFound(err) {
-				supported = false
-			} else {
-				// don't record, just attempt again next time in case it's a transient error
-				return false, err
-			}
-		} else {
-			for _, resources := range list.APIResources {
-				if resources.Name == resourceName {
-					supported = true
-					break
-				}
-			}
-		}
-		c.supportedResources[groupVersion] = supported
-	}
-	return supported, nil
 }

@@ -57,7 +57,7 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 	labels := componentlabels.GetLabels(serviceName, applicationName, true)
 	// save service type as label
 	labels[componentlabels.ComponentTypeLabel] = serviceType
-	err := client.CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
+	err := client.GetKubeClient().CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
 	if err != nil {
 		return errors.Wrap(err, "unable to create service instance")
 
@@ -70,7 +70,7 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 // able to find them, an error otherwise.
 func GetCSV(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
 	cr := crd["kind"].(string)
-	csvs, err := client.GetClusterServiceVersionList()
+	csvs, err := client.ListClusterServiceVersions()
 	if err != nil {
 		return cr, olm.ClusterServiceVersion{}, err
 	}
@@ -110,7 +110,7 @@ func CreateOperatorService(client *kclient.Client, group, version, resource stri
 func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName string, applicationName string) error {
 	// first we attempt to delete the service instance itself
 	labels := componentlabels.GetLabels(serviceName, applicationName, false)
-	err := client.DeleteServiceInstance(labels)
+	err := client.GetKubeClient().DeleteServiceInstance(labels)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 	applicationSelector := util.ConvertLabelsToSelector(labels)
 
 	// get service instance list based on given selector
-	serviceInstanceList, err := client.GetServiceInstanceList(applicationSelector)
+	serviceInstanceList, err := client.GetKubeClient().ListServiceInstances(applicationSelector)
 	if err != nil {
 		return ServiceList{}, errors.Wrapf(err, "unable to list services")
 	}
@@ -301,7 +301,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	klog.V(4).Info("Getting list of services")
 
 	// First let's get the list of all the operators in the namespace
-	csvs, err := client.GetClusterServiceVersionList()
+	csvs, err := client.ListClusterServiceVersions()
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to list operator backed services")
 	}
@@ -577,7 +577,7 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 // the first parameter returned is the ServiceClass object
 // the second parameter returned is the array of ServicePlan associated with the service class
 func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (ServiceClass, []ServicePlan, error) {
-	result, err := client.GetClusterServiceClass(serviceName)
+	result, err := client.GetKubeClient().GetClusterServiceClass(serviceName)
 	if err != nil {
 		return ServiceClass{}, nil, errors.Wrap(err, "unable to get the given service")
 	}
@@ -608,7 +608,7 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 	}
 
 	// get the plans according to the service name
-	planResults, err := client.GetClusterPlansFromServiceName(result.Name)
+	planResults, err := client.GetKubeClient().ListClusterServicePlansByServiceName(result.Name)
 	if err != nil {
 		return ServiceClass{}, nil, errors.Wrap(err, "unable to get plans for the given service")
 	}
@@ -683,10 +683,10 @@ func isRequired(required []string, name string) bool {
 
 // IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
 func IsCSVSupported() (bool, error) {
-	oclient, err := occlient.New()
+	occlient, err := occlient.New()
 	if err != nil {
 		return false, err
 	}
 
-	return oclient.IsCSVSupported()
+	return occlient.GetKubeClient().IsCSVSupported()
 }

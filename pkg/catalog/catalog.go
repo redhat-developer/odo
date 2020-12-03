@@ -298,7 +298,7 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 // ListOperatorServices fetches a list of Operators from the cluster and
 // returns only those Operators which are successfully installed on the cluster
 func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
-	allCsvs, err := client.GetClusterServiceVersionList()
+	allCsvs, err := client.ListClusterServiceVersions()
 	if err != nil {
 		return nil, err
 	}
@@ -345,12 +345,12 @@ func SearchService(client *occlient.Client, name string) (ServiceTypeList, error
 func getClusterCatalogServices(client *occlient.Client) ([]ServiceType, error) {
 	var classNames []ServiceType
 
-	classes, err := client.GetClusterServiceClasses()
+	classes, err := client.GetKubeClient().ListClusterServiceClasses()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get cluster service classes")
 	}
 
-	planListItems, err := client.GetAllClusterServicePlans()
+	planListItems, err := client.GetKubeClient().ListClusterServicePlans()
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to get service plans")
 	}

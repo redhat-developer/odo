@@ -102,7 +102,7 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		return err
 	}
 
-	o.csvSupport, err = o.Client.IsCSVSupported()
+	o.csvSupport, err = o.Client.GetKubeClient().IsCSVSupported()
 	if err != nil {
 		return err
 	}

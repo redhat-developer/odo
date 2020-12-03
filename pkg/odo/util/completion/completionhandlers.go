@@ -39,7 +39,7 @@ var ServiceCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context
 // ServiceClassCompletionHandler provides catalog service class name completion
 var ServiceClassCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	services, err := context.Client.GetClusterServiceClasses()
+	services, err := context.Client.GetKubeClient().ListClusterServiceClasses()
 	if err != nil {
 		complete.Log("error retrieving services")
 		return completions
@@ -70,13 +70,13 @@ var ServicePlanCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 
 	complete.Log(fmt.Sprintf("Using input: serviceName = %s", inputServiceName))
 
-	clusterServiceClass, err := context.Client.GetClusterServiceClass(inputServiceName)
+	clusterServiceClass, err := context.Client.GetKubeClient().GetClusterServiceClass(inputServiceName)
 	if err != nil {
 		complete.Log("Error retrieving details of service")
 		return completions
 	}
 
-	servicePlans, err := context.Client.GetClusterPlansFromServiceName(clusterServiceClass.Name)
+	servicePlans, err := context.Client.GetKubeClient().ListClusterServicePlansByServiceName(clusterServiceClass.Name)
 	if err != nil {
 		complete.Log("Error retrieving details of plans of service")
 		return completions

@@ -1,6 +1,9 @@
 package occlient
 
 import (
+	"os"
+	"sync"
+
 	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
 	fakeAppsClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	fakeBuildClientset "github.com/openshift/client-go/build/clientset/versioned/fake"
@@ -13,8 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
-	"os"
-	"sync"
 )
 
 // FakeClientset holds fake ClientSets
@@ -40,6 +41,7 @@ func FakeNew() (*Client, *FakeClientset) {
 	kc, fkcs := kclient.FakeNew()
 	client.kubeClient = kc
 	fkclientset.Kubernetes = fkcs.Kubernetes
+	fkclientset.ServiceCatalogClientSet = fkcs.ServiceCatalogClientSet
 
 	fkclientset.AppsClientset = fakeAppsClientset.NewSimpleClientset()
 	client.appsClient = fkclientset.AppsClientset.AppsV1()
@@ -59,14 +61,11 @@ func FakeNew() (*Client, *FakeClientset) {
 	fkclientset.BuildClientset = fakeBuildClientset.NewSimpleClientset()
 	client.buildClient = fkclientset.BuildClientset.BuildV1()
 
-	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
-	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.ServicecatalogV1beta1()
-
 	if os.Getenv("KUBERNETES") != "true" {
-		client.SetDiscoveryInterface(fakeDiscoveryWithRoute)
-		client.SetDiscoveryInterface(fakeDiscoveryWithDeploymentConfig)
+		client.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithRoute)
+		client.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithDeploymentConfig)
 	} else {
-		client.SetDiscoveryInterface(&fakeDiscovery{
+		client.GetKubeClient().SetDiscoveryInterface(&fakeDiscovery{
 			resourceMap: map[string]*resourceMapEntry{},
 		})
 	}
