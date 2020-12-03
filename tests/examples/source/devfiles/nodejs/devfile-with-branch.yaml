@@ -6,6 +6,7 @@ starterProjects:
     git:
       remotes:
         origin: "https://github.com/odo-devfiles/nodejs-ex.git"
+      checkoutFrom:
         revision: test-branch
 components:
   - name: runtime
