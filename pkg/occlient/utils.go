@@ -2,12 +2,14 @@ package occlient
 
 import (
 	"fmt"
-
 	appsv1 "github.com/openshift/api/apps/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/library-go/pkg/apps/appsutil"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/kclient"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
 )
 
@@ -93,12 +95,12 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 func GetS2IEnvForDevfile(sourceType string, env config.EnvVarList, imageStreamImage imagev1.ImageStreamImage) (config.EnvVarList, error) {
 	klog.V(2).Info("Get S2I environment variables to be added in devfile")
 
-	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(&imageStreamImage)
+	s2iPaths, err := getS2IMetaInfoFromBuilderImg(&imageStreamImage)
 	if err != nil {
 		return nil, err
 	}
 
-	inputEnvs, err := GetInputEnvVarsFromStrings(env.ToStringSlice())
+	inputEnvs, err := kclient.GetInputEnvVarsFromStrings(env.ToStringSlice())
 	if err != nil {
 		return nil, err
 	}
@@ -127,4 +129,27 @@ func GetS2IEnvForDevfile(sourceType string, env config.EnvVarList, imageStreamIm
 	}
 
 	return configEnvs, nil
+}
+
+// generateServiceSpec generates the service spec for s2i components
+func generateServiceSpec(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) corev1.ServiceSpec {
+	// generate the Service spec
+	var svcPorts []corev1.ServicePort
+	for _, containerPort := range containerPorts {
+		svcPort := corev1.ServicePort{
+
+			Name:       containerPort.Name,
+			Port:       containerPort.ContainerPort,
+			Protocol:   containerPort.Protocol,
+			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
+		}
+		svcPorts = append(svcPorts, svcPort)
+	}
+
+	return corev1.ServiceSpec{
+		Ports: svcPorts,
+		Selector: map[string]string{
+			"deploymentconfig": commonObjectMeta.Name,
+		},
+	}
 }

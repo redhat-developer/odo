@@ -6,8 +6,10 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,12 +18,12 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -31,6 +33,7 @@ import (
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
+
 	adapter := Adapter{Client: client}
 	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
 	adapter.GenericAdapter.InitWith(adapter)
@@ -55,7 +58,7 @@ func (a Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 	return a.pod, nil
 }
 
-func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -66,7 +69,7 @@ func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.Co
 	}, nil
 }
 
-func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -87,7 +90,6 @@ type Adapter struct {
 	Client kclient.Client
 	*common.GenericAdapter
 
-	devfileInitCmd   string
 	devfileBuildCmd  string
 	devfileRunCmd    string
 	devfileDebugCmd  string
@@ -103,7 +105,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 
-	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 	a.devfileDebugCmd = parameters.DevfileDebugCmd
@@ -124,7 +125,17 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileInitCmd, a.devfileBuildCmd, a.devfileRunCmd)
+	err = util.ValidateK8sResourceName("component name", a.ComponentName)
+	if err != nil {
+		return err
+	}
+
+	err = util.ValidateK8sResourceName("component namespace", parameters.EnvSpecificInfo.GetNamespace())
+	if err != nil {
+		return err
+	}
+
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
@@ -141,20 +152,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return fmt.Errorf("debug command is not valid")
 		}
-		pushDevfileCommands[versionsCommon.DebugCommandGroupType] = pushDevfileDebugCommands
+		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
 		currentMode = envinfo.Debug
 	}
 
 	if currentMode != previousMode {
 		parameters.RunModeChanged = true
 	}
+	containerComponents := a.Devfile.Data.GetDevfileContainerComponents()
 
-	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
-	if err != nil {
-		return errors.Wrap(err, "unable to get endpoints")
-	}
-
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, endpointsMap)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -170,7 +177,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, endpointsMap)
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, containerComponents, false)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -181,7 +188,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, sourceMount, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
@@ -192,7 +199,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
-		SourceMount:   sourceMount,
+		SyncFolder:    syncFolder,
 	}
 	syncParams := common.SyncParameters{
 		PushParams:      parameters,
@@ -222,6 +229,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
+	} else {
+		// no file was modified/added/deleted/renamed, thus return without syncing files
+		log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 	}
 
 	return nil
@@ -255,7 +265,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, endpointMap map[int32]versionsCommon.Endpoint) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -264,7 +274,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	labels["component"] = componentName
 	labels[componentlabels.ComponentTypeLabel] = componentType
 
-	containers, err := utils.GetContainers(a.Devfile)
+	containers, err := generator.GetContainers(a.Devfile)
 	if err != nil {
 		return err
 	}
@@ -272,6 +282,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
+
+	// Add the project volume before generating init containers
+	utils.AddOdoProjectVolume(&containers)
 
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
 	if err != nil {
@@ -284,29 +297,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
-
-	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
-
-	// if there are preStart events, add them as init containers to the podTemplateSpec
-	preStartEvents := a.Devfile.Data.GetEvents().PreStart
-	if len(preStartEvents) > 0 {
-		var eventCommands []string
-		commandsMap := a.Devfile.Data.GetCommands()
-		containersMap := utils.GetContainersMap(containers)
-
-		for _, event := range preStartEvents {
-			eventSubCommands := common.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
-			eventCommands = append(eventCommands, eventSubCommands...)
-		}
-
-		klog.V(4).Infof("PreStart event commands are: %v", strings.Join(eventCommands, ","))
-		utils.AddPreStartEventInitContainer(podTemplateSpec, commandsMap, eventCommands, containersMap)
-		if len(eventCommands) > 0 {
-			log.Successf("PreStart commands have been added to the component: %s", strings.Join(eventCommands, ","))
-		}
-	}
+	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
+	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
+	initContainers := utils.GetPreStartInitContainers(a.Devfile, containers)
+	initContainers = append(initContainers, supervisordInitContainer)
 
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
@@ -355,62 +349,65 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	// Add PVC and Volume Mounts to the podTemplateSpec
-	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
+	// Get PVC volumes and Volume Mounts
+	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
 
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
+	odoMandatoryVolumes := utils.GetOdoContainerVolumes()
+
+	selectorLabels := map[string]string{
 		"component": componentName,
-	})
-
-	var containerPorts []corev1.ContainerPort
-
-	for _, c := range deploymentSpec.Template.Spec.Containers {
-		// No need to check
-		if reflect.DeepEqual(a.Devfile.Ctx.GetApiVersion(), "1.0.0") {
-			containerPorts = append(containerPorts, c.Ports...)
-		} else {
-			for _, port := range c.Ports {
-				// if Exposure == none, should not create a service for that port
-				if endpointMap[port.ContainerPort].Exposure != "none" {
-					containerPorts = append(containerPorts, port)
-				}
-			}
-		}
 	}
 
-	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	klog.V(2).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	deployParams := generator.DeploymentParams{
+		TypeMeta:          generator.GetTypeMeta(kclient.DeploymentKind, kclient.DeploymentAPIVersion),
+		ObjectMeta:        objectMeta,
+		InitContainers:    initContainers,
+		Containers:        containers,
+		Volumes:           append(pvcVolumes, odoMandatoryVolumes...),
+		PodSelectorLabels: selectorLabels,
+	}
+
+	deployment := generator.GetDeployment(deployParams)
+
+	serviceParams := generator.ServiceParams{
+		ObjectMeta:     objectMeta,
+		SelectorLabels: selectorLabels,
+	}
+	service, err := generator.GetService(a.Devfile, serviceParams)
+	if err != nil {
+		return err
+	}
+	klog.V(2).Infof("Creating deployment %v", deployment.Spec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
+		deployment, err := a.Client.UpdateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
-		objectMetaTemp := objectMeta
-		ownerReference := kclient.GenerateOwnerReference(deployment)
-		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+		ownerReference := generator.GetOwnerReference(deployment)
+		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
-			if len(serviceSpec.Ports) > 0 {
-				_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+			if len(service.Spec.Ports) > 0 {
+				_, err = a.Client.CreateService(*service)
 				if err != nil {
 					return err
 				}
 				klog.V(2).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
-			if len(serviceSpec.Ports) > 0 {
-				serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
-				objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
-				_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
+			if len(service.Spec.Ports) > 0 {
+				service.Spec.ClusterIP = oldSvc.Spec.ClusterIP
+				service.ResourceVersion = oldSvc.GetResourceVersion()
+				_, err = a.Client.UpdateService(*service)
 				if err != nil {
 					return err
 				}
@@ -423,16 +420,15 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			}
 		}
 	} else {
-		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
+		deployment, err := a.Client.CreateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
-		ownerReference := kclient.GenerateOwnerReference(deployment)
-		objectMetaTemp := objectMeta
-		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
-		if len(serviceSpec.Ports) > 0 {
-			_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+		ownerReference := generator.GetOwnerReference(deployment)
+		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
+		if len(service.Spec.Ports) > 0 {
+			_, err = a.Client.CreateService(*service)
 			if err != nil {
 				return err
 			}
@@ -458,9 +454,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 // container to sync to, so return an error
 func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, string, error) {
 	for _, c := range containers {
-		for _, vol := range c.VolumeMounts {
-			if vol.Name == kclient.OdoSourceVolume {
-				return c.Name, vol.MountPath, nil
+		for _, env := range c.Env {
+			if env.Name == generator.EnvProjectsSrc {
+				return c.Name, env.Value, nil
 			}
 		}
 	}
@@ -531,13 +527,13 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
 	}
 
-	var command versionsCommon.DevfileCommand
+	var command devfilev1.Command
 	if debug {
 		command, err = common.GetDebugCommand(a.Devfile.Data, "")
 		if err != nil {
 			return nil, err
 		}
-		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+		if reflect.DeepEqual(devfilev1.Command{}, command) {
 			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
 		}
 

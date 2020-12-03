@@ -4,7 +4,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
@@ -13,7 +13,7 @@ import (
 
 // ComponentInfoFactory defines a type for a function which creates a ComponentInfo based on the information provided by the specified DevfileCommand.
 // This is used by adapters to provide the proper ComponentInfo identifying which component (including supervisor) to target when executing the command.
-type ComponentInfoFactory func(command common.DevfileCommand) (ComponentInfo, error)
+type ComponentInfoFactory func(command devfilev1.Command) (ComponentInfo, error)
 
 // GenericAdapter provides common code that can be reused by adapters allowing them to focus on more specific behavior
 type GenericAdapter struct {
@@ -49,11 +49,15 @@ func (a GenericAdapter) Logger() machineoutput.MachineEventLoggingClient {
 	return a.logger
 }
 
-func (a GenericAdapter) ComponentInfo(command common.DevfileCommand) (ComponentInfo, error) {
+func (a *GenericAdapter) SetLogger(loggingClient machineoutput.MachineEventLoggingClient) {
+	a.logger = loggingClient
+}
+
+func (a GenericAdapter) ComponentInfo(command devfilev1.Command) (ComponentInfo, error) {
 	return a.componentInfo(command)
 }
 
-func (a GenericAdapter) SupervisorComponentInfo(command common.DevfileCommand) (ComponentInfo, error) {
+func (a GenericAdapter) SupervisorComponentInfo(command devfilev1.Command) (ComponentInfo, error) {
 	return a.supervisordComponentInfo(command)
 }
 
@@ -63,7 +67,7 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 }
 
 // ExecuteDevfileCommand executes the devfile init, build and test command actions synchronously
-func (a GenericAdapter) ExecuteDevfileCommand(command common.DevfileCommand, show bool) error {
+func (a GenericAdapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) error {
 	c, err := New(command, a.Devfile.Data.GetCommands(), a)
 	if err != nil {
 		return err
@@ -84,7 +88,7 @@ func closeWriterAndWaitForAck(stdoutWriter *io.PipeWriter, stdoutChannel chan in
 	}
 }
 
-func convertGroupKindToString(exec *common.Exec) string {
+func convertGroupKindToString(exec *devfilev1.ExecCommand) string {
 	if exec.Group == nil {
 		return ""
 	}
@@ -104,27 +108,17 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 
 	commands := make([]command, 0, 7)
 
-	// Only add runinit to the expected commands if the component doesn't already exist
-	// This would be the case when first running the container
-	if !componentExists {
-		// Get Init Command
-		commands, err = a.addToComposite(commandsMap, common.InitCommandGroupType, devfileCommandMap, commands)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Get Build Command
-	commands, err = a.addToComposite(commandsMap, common.BuildCommandGroupType, devfileCommandMap, commands)
+	commands, err = a.addToComposite(commandsMap, devfilev1.BuildCommandGroupKind, devfileCommandMap, commands)
 	if err != nil {
 		return err
 	}
 
-	group := common.RunCommandGroupType
+	group := devfilev1.RunCommandGroupKind
 	defaultCmd := string(DefaultDevfileRunCommand)
 
 	if params.Debug {
-		group = common.DebugCommandGroupType
+		group = devfilev1.DebugCommandGroupKind
 		defaultCmd = string(DefaultDevfileDebugCommand)
 
 	}
@@ -174,7 +168,7 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 	return nil
 }
 
-func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType common.DevfileCommandGroupType, devfileCommandMap map[string]common.DevfileCommand, commands []command) ([]command, error) {
+func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType devfilev1.CommandGroupKind, devfileCommandMap map[string]devfilev1.Command, commands []command) ([]command, error) {
 	command, ok := commandsMap[groupType]
 	if ok {
 		if c, err := New(command, devfileCommandMap, a); err == nil {

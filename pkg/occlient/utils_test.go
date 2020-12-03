@@ -1,6 +1,8 @@
 package occlient
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestHasTag(t *testing.T) {
 	cases := []struct {

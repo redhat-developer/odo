@@ -1,8 +1,13 @@
 package kclient
 
 import (
+	"reflect"
 	"testing"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,7 +18,13 @@ import (
 
 func TestCreateService(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}})
+	devObj := devfileParser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []devfilev1.Component{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
+	}
 
 	tests := []struct {
 		name          string
@@ -37,7 +48,11 @@ func TestCreateService(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
-			objectMeta := CreateObjectMeta(tt.componentName, "default", nil, nil)
+			objectMeta := generator.GetObjectMeta(tt.componentName, "default", nil, nil)
+
+			labels := map[string]string{
+				"component": tt.componentName,
+			}
 
 			fkclientset.Kubernetes.PrependReactor("create", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.componentName == "" {
@@ -51,8 +66,17 @@ func TestCreateService(t *testing.T) {
 				return true, &service, nil
 			})
 
-			serviceSpec := GenerateServiceSpec(tt.componentName, container.Ports)
-			createdService, err := fkclient.CreateService(objectMeta, *serviceSpec)
+			serviceParams := generator.ServiceParams{
+				ObjectMeta:     objectMeta,
+				SelectorLabels: labels,
+			}
+
+			service, err := generator.GetService(devObj, serviceParams)
+			if err != nil {
+				t.Errorf("generator.GetService unexpected error %v", err)
+			}
+
+			createdService, err := fkclient.CreateService(*service)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -75,7 +99,13 @@ func TestCreateService(t *testing.T) {
 
 func TestUpdateService(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{{Name: "port1", ContainerPort: 9090}})
+	devObj := devfileParser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []devfilev1.Component{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
+	}
 
 	tests := []struct {
 		name          string
@@ -99,7 +129,11 @@ func TestUpdateService(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
-			objectMeta := CreateObjectMeta(tt.componentName, "default", nil, nil)
+			objectMeta := generator.GetObjectMeta(tt.componentName, "default", nil, nil)
+
+			labels := map[string]string{
+				"component": tt.componentName,
+			}
 
 			fkclientset.Kubernetes.PrependReactor("update", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.componentName == "" {
@@ -113,8 +147,17 @@ func TestUpdateService(t *testing.T) {
 				return true, &service, nil
 			})
 
-			serviceSpec := GenerateServiceSpec(tt.componentName, container.Ports)
-			updatedService, err := fkclient.UpdateService(objectMeta, *serviceSpec)
+			serviceParams := generator.ServiceParams{
+				ObjectMeta:     objectMeta,
+				SelectorLabels: labels,
+			}
+
+			service, err := generator.GetService(devObj, serviceParams)
+			if err != nil {
+				t.Errorf("generator.GetService unexpected error %v", err)
+			}
+
+			updatedService, err := fkclient.UpdateService(*service)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -133,6 +176,60 @@ func TestUpdateService(t *testing.T) {
 
 			}
 
+		})
+	}
+}
+
+func TestListServices(t *testing.T) {
+	type args struct {
+		selector string
+	}
+	tests := []struct {
+		name             string
+		args             args
+		returnedServices corev1.ServiceList
+		want             []corev1.Service
+		wantErr          bool
+	}{
+		{
+			name: "case 1: returned 3 services",
+			args: args{
+				selector: "component-name=nodejs",
+			},
+			returnedServices: corev1.ServiceList{
+				Items: testingutil.FakeKubeServices("nodejs"),
+			},
+			want: testingutil.FakeKubeServices("nodejs"),
+		},
+		{
+			name: "case 2: no service retuned",
+			args: args{
+				selector: "component-name=nodejs",
+			},
+			returnedServices: corev1.ServiceList{
+				Items: nil,
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+			fkclient.Namespace = "default"
+
+			fkclientset.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.returnedServices, nil
+			})
+
+			got, err := fkclient.ListServices(tt.args.selector)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListServices() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ListServices() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

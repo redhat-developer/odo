@@ -2,6 +2,8 @@ package storage
 
 import (
 	"fmt"
+
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/storage/labels"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -49,13 +51,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 		labels.DevfileStorageLabel: name,
 	}
 
-	quantity, err := resource.ParseQuantity(size)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
-	}
-
-	objectMeta := kclient.CreateObjectMeta(pvcName, Client.Namespace, labels, nil)
-	pvcSpec := kclient.GeneratePVCSpec(quantity)
+	objectMeta := generator.GetObjectMeta(pvcName, Client.Namespace, labels, nil)
 
 	// Get the deployment
 	deployment, err := Client.GetDeploymentByName(componentName)
@@ -64,12 +60,23 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 	}
 
 	// Generate owner reference for the deployment and update objectMeta
-	ownerReference := kclient.GenerateOwnerReference(deployment)
+	ownerReference := generator.GetOwnerReference(deployment)
 	objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+
+	quantity, err := resource.ParseQuantity(size)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
+	}
+
+	pvcParams := generator.PVCParams{
+		ObjectMeta: objectMeta,
+		Quantity:   quantity,
+	}
+	pvc := generator.GetPVC(pvcParams)
 
 	// Create PVC
 	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
-	pvc, err := Client.CreatePVC(objectMeta, *pvcSpec)
+	pvc, err = Client.CreatePVC(*pvc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}
@@ -97,7 +104,7 @@ func GetExistingPVC(Client *kclient.Client, volumeName, componentName string) (s
 
 	klog.V(2).Infof("Checking PVC for volume %v and label %v\n", volumeName, label)
 
-	PVCs, err := Client.GetPVCsFromSelector(label)
+	PVCs, err := Client.ListPVCs(label)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to get PVC with selectors "+label)
 	}
@@ -116,7 +123,7 @@ func GetExistingPVC(Client *kclient.Client, volumeName, componentName string) (s
 // DeleteOldPVCs deletes all the old PVCs which are not in the processedVolumes map
 func DeleteOldPVCs(Client *kclient.Client, componentName string, processedVolumes map[string]bool) error {
 	label := fmt.Sprintf("component=%s", componentName)
-	PVCs, err := Client.GetPVCsFromSelector(label)
+	PVCs, err := Client.ListPVCs(label)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get PVC with selectors "+label)
 	}
@@ -132,4 +139,76 @@ func DeleteOldPVCs(Client *kclient.Client, componentName string, processedVolume
 		}
 	}
 	return nil
+}
+
+// GetPVCAndVolumeMount gets the PVC and updates the containers with the volume mount
+// volumeNameToPVCName is a map of volume name to the PVC created
+// containerNameToVolumes is a map of the Devfile container names to the Devfile Volumes
+func GetPVCAndVolumeMount(containers []corev1.Container, volumeNameToPVCName map[string]string, containerNameToVolumes map[string][]common.DevfileVolume) ([]corev1.Container, []corev1.Volume, error) {
+	var pvcVols []corev1.Volume
+	for volName, pvcName := range volumeNameToPVCName {
+		generatedVolumeName, err := generateVolumeNameFromPVC(pvcName)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Unable to generate volume name from pvc name")
+		}
+		pvcVols = append(pvcVols, getPVC(generatedVolumeName, pvcName))
+
+		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
+		containerNameToMountPaths := make(map[string][]string)
+		for containerName, volumes := range containerNameToVolumes {
+			for _, volume := range volumes {
+				if volName == volume.Name {
+					containerNameToMountPaths[containerName] = append(containerNameToMountPaths[containerName], volume.ContainerPath)
+				}
+			}
+		}
+
+		containers = addVolumeMountToContainers(containers, generatedVolumeName, containerNameToMountPaths)
+	}
+	return containers, pvcVols, nil
+}
+
+// getPVC gets a pvc type volume with the given volume name and pvc name
+func getPVC(volumeName, pvcName string) corev1.Volume {
+
+	return corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: pvcName,
+			},
+		},
+	}
+}
+
+// generateVolumeNameFromPVC generates a volume name based on the pvc name
+func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
+	volumeName, err = util.NamespaceOpenShiftObject(pvc, "vol")
+	if err != nil {
+		return "", err
+	}
+	return
+}
+
+// addVolumeMountToContainers adds the Volume Mounts in containerNameToMountPaths to the containers for a given pvc and volumeName
+// containerNameToMountPaths is a map of a container name to an array of its Mount Paths
+func addVolumeMountToContainers(containers []corev1.Container, volumeName string, containerNameToMountPaths map[string][]string) []corev1.Container {
+
+	for containerName, mountPaths := range containerNameToMountPaths {
+		for i, container := range containers {
+			if container.Name == containerName {
+				for _, mountPath := range mountPaths {
+					container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+						Name:      volumeName,
+						MountPath: mountPath,
+						SubPath:   "",
+					},
+					)
+				}
+				containers[i] = container
+			}
+		}
+	}
+
+	return containers
 }

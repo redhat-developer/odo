@@ -42,7 +42,7 @@ Service::
 A service is software that your component links to or depends on.
 Examples of services: MariaDB, MySQL.
 Devfile::
-A portable file responsible for your entire reproducable development environment.
+A portable file responsible for your entire reproducible development environment.
 
 [id="odo-supported-devfiles"]
 === Official Devfiles
@@ -90,7 +90,7 @@ Devfiles describe your development environment link. link:https://odo.dev/docs/d
 
 [NOTE]
 ====
-The list of available Devfiles is sourced from the official link:https://github.com/odo-devfiles/registry[odo registry] as well as any other registies added via `odo registry add`.
+The list of available Devfiles is sourced from the official link:https://github.com/odo-devfiles/registry[odo registry] as well as any other registries added via `odo registry add`.
 ====
 
 To list the available Devfiles:
@@ -111,7 +111,7 @@ nodejs               Stack with NodeJS 12                   DefaultDevfileRegist
 
 
 * link:https://odo.dev/docs/installing-odo/[Installing odo]
-* link:https://odo.dev/docs/understanding-odo/[Undestanding odo]
+* link:https://odo.dev/docs/understanding-odo/[Understanding odo]
 * link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile using odo]
 * link:https://odo.dev/file-reference/[Devfile file reference]
 * link:https://odo.dev/docs/debugging-applications-in-odo/[Debugging applications in odo]
@@ -135,7 +135,7 @@ link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile usi
 
 The following demonstration provides an overview of `odo`:
 
-https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicast]]
+https://asciinema.org/a/uIcSZvdbrFKKeH2sqrLsFdXym[image:https://asciinema.org/a/uIcSZvdbrFKKeH2sqrLsFdXym.svg[asciicast]]
 
 [[contributing]]
 == Community, discussion, contribution, and support
@@ -148,11 +148,22 @@ https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicas
 * For general help and inquiries, join our link:https://groups.google.com/forum/#!forum/odo-users[odo-users Google group].
 * For any developmental discussion, use our link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group].
 
-*Chat:* Join us on link:https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[Slack].
+*Chat:* 
 
-*Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
+All of our developer and user discussions happen in the link:https://kubernetes.slack.com/archives/C01D6L2NUAG[#odo channel on the official Kubernetes Slack].
 
-*Documentation Issues*: If you have any documentation issues related to the link:https://docs.openshift.com[docs.openshift.com] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
+If you haven't already joined the Kubernetes Slack, you can link:https://slack.k8s.io/[invite yourself here].
+
+Ask questions, inquire about odo or even discuss a new feature.
+
+*Issues:* 
+
+If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
+
+*Documentation Issues*: 
+
+- For any documentation issues on link:https://odo.dev[odo.dev] open a link:https://github.com/openshift/odo/issues/new?template=Documentation.md[GitHub issue with the documentation label].
+- If you have any documentation issues related to the link:https://docs.openshift.com[docs.openshift.com] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
 
 === Contributing
 Want to become a contributor and submit your code?
@@ -171,6 +182,38 @@ You can find the exact dates of all scheduled odo calls together with sprint dat
 
 To participate in the calls, please join link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group]. When you join the group, you will automatically get invites to all odo related calls and get permissions to all necessary documents.
 
+[[odo-roadmap]]
+== Roadmap for odo
+
+Below is a roadmap for odo where 2.1, 2.2 and 2.3 are odo versions.
+
+=== Post v2 (Before 19th Jan)
+
+- Refactor
+- Storage of linking info in devfile so that odo push can support this as well
+
+=== 2.1 Planning (19th Jan - 13th April)
+
+- link:https://github.com/openshift/odo/issues/2756[#2756] - Add `odo deploy` command for initial transition from inner to outer loop
+- link:https://github.com/openshift/odo/issues/3026[#3026] - Support for Knative:Service (odo deploy)
+- link:https://github.com/openshift/odo/issues/3782[#3782] - Devfile support followup
+- link:https://github.com/openshift/odo/issues/2618[#2618] - Link via ServiceBindingRequest
+- link:https://github.com/openshift/odo/issues/2613[#2613] - Instantiate and manage services through Operator
+- link:https://github.com/openshift/odo/issues/4192[#4192] - Show components created by other tools in odo
+- link:https://github.com/openshift/odo/issues/3132[#3132] - control over how rsync and start/stop happens
+
+=== 2.2 Planning 
+
+- link:https://github.com/openshift/odo/issues/1238[#1238] - Integration with pipelines (CI)
+- link:https://github.com/openshift/odo/issues/4094[#4094] - Builds v2 Support (odo deploy should provide initial support for build v2 strategy)
+- link:https://github.com/openshift/odo/issues/2540[#2540] - e2e tests on windows & macOS
+
+=== 2.3 Planning 
+
+- link:https://github.com/openshift/odo/issues/3026[#3026] - Support for Knative Eventing
+- link:https://github.com/openshift/odo/issues/3664[#3664] - Add --now option support for Storage
+- link:https://github.com/openshift/odo/issues/3126[#3126] - allow `.devfile.yaml`
+- link:https://github.com/openshift/odo/issues/2191[#2191] - URL support for https
 
 [[projects-using-odo]]
 == Projects using odo

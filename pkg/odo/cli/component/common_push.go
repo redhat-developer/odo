@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/fatih/color"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -104,7 +104,7 @@ func (cpo *CommonPushOptions) ValidateComponentCreate() error {
 
 func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
 	if !cpo.pushConfig {
-		// Not the case of component creation or updation(with new config)
+		// Not the case of component creation or update (with new config)
 		// So nothing to do here and hence return from here
 		return nil
 	}
@@ -128,7 +128,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		}
 	}
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, map[int32]parsercommon.Endpoint{})
+	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, []devfilev1.Component{}, true)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -358,7 +358,7 @@ func retrieveKubernetesDefaultNamespace() (string, error) {
 	return client.Namespace, nil
 }
 
-// retrieveCmdNamespace retrieves the namespace from project or namespace, if neither of those are available
+// retrieveCmdNamespace retrieves the namespace from project flag, if unset
 // we revert to the default namespace available from Kubernetes
 func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
 	var componentNamespace string
@@ -367,12 +367,6 @@ func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
 	// For "odo create" check to see if --project has been passed.
 	if cmd.Flags().Changed("project") {
 		componentNamespace, err = cmd.Flags().GetString("project")
-		if err != nil {
-			return "", err
-		}
-	} else if cmd.Flags().Changed("namespace") {
-		// For "odo push" check to see if project has been passed
-		componentNamespace, err = cmd.Flags().GetString("namespace")
 		if err != nil {
 			return "", err
 		}

@@ -2,9 +2,12 @@ package storage
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile"
+	"path/filepath"
+
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
 	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/component"
@@ -14,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"path/filepath"
 )
 
 const createRecommendedCommandName = "create"
@@ -49,19 +51,16 @@ func NewStorageCreateOptions() *StorageCreateOptions {
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.devfilePath = filepath.Join(o.componentContext, o.devfilePath)
 	o.isDevfile = util.CheckPathExists(o.devfilePath)
+
 	if o.isDevfile {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
-
 		o.componentName = o.EnvSpecificInfo.GetName()
-		if o.storageSize == "" {
-			o.storageSize = adapterCommon.DefaultVolumeSize
-		}
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
 		o.componentName = o.LocalConfigInfo.GetName()
 
-		if o.storageSize == "" {
-			return fmt.Errorf("\"size\" flag is required for s2i components")
+		if o.storageSize == "" || o.storagePath == "" {
+			return fmt.Errorf("\"size\" and \"path\" flags are required for s2i components")
 		}
 	}
 
@@ -70,7 +69,20 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	} else {
 		o.storageName = fmt.Sprintf("%s-%s", o.componentName, util.GenerateRandomString(4))
 	}
+
+	o.applyDevfileStorageDefault()
+
 	return
+}
+
+func (o *StorageCreateOptions) applyDevfileStorageDefault() {
+	if o.storageSize == "" {
+		o.storageSize = adapterCommon.DefaultVolumeSize
+	}
+	if o.storagePath == "" {
+		// acc to the devfile schema, if the mount path is absent; it will be mounted at the dir with the mount name
+		o.storagePath = "/" + o.storageName
+	}
 }
 
 // Validate validates the StorageCreateOptions based on completed values
@@ -87,10 +99,20 @@ func (o *StorageCreateOptions) devfileRun() error {
 	if err != nil {
 		return err
 	}
+	err = validate.ValidateDevfileData(devFile.Data)
+	if err != nil {
+		return err
+	}
 
-	err = devFile.Data.AddVolume(common.Volume{
+	err = devFile.Data.AddVolume(devfilev1.Component{
 		Name: o.storageName,
-		Size: o.storageSize,
+		ComponentUnion: devfilev1.ComponentUnion{
+			Volume: &devfilev1.VolumeComponent{
+				Volume: devfilev1.Volume{
+					Size: o.storageSize,
+				},
+			},
+		},
 	}, o.storagePath)
 
 	if err != nil {
@@ -146,8 +168,6 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 
 	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
-
-	_ = storageCreateCmd.MarkFlagRequired("path")
 
 	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)

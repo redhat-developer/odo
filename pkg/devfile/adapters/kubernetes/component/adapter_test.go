@@ -3,14 +3,14 @@ package component
 import (
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -39,9 +39,8 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		componentType versionsCommon.DevfileComponentType
+		componentType devfilev1.ComponentType
 		envInfo       envinfo.EnvSpecificInfo
-		endpointMap   map[int32]versionsCommon.Endpoint
 		running       bool
 		wantErr       bool
 	}{
@@ -49,15 +48,13 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:          "Case 1: Invalid devfile",
 			componentType: "",
 			envInfo:       envinfo.EnvSpecificInfo{},
-			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       false,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 2: Valid devfile",
-			componentType: versionsCommon.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			envInfo:       envinfo.EnvSpecificInfo{},
-			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       false,
 			wantErr:       false,
 		},
@@ -65,29 +62,27 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			name:          "Case 3: Invalid devfile, already running component",
 			componentType: "",
 			envInfo:       envinfo.EnvSpecificInfo{},
-			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       true,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 4: Valid devfile, already running component",
-			componentType: versionsCommon.ContainerComponentType,
+			componentType: devfilev1.ContainerComponentType,
 			envInfo:       envinfo.EnvSpecificInfo{},
-			endpointMap:   map[int32]versionsCommon.Endpoint{},
 			running:       true,
 			wantErr:       false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var comp versionsCommon.DevfileComponent
+			var comp devfilev1.Component
 			if tt.componentType != "" {
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   []versionsCommon.DevfileComponent{comp},
-					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []devfilev1.Component{comp},
+					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
 				},
 			}
 
@@ -109,7 +104,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, tt.endpointMap)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -129,147 +124,98 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			name: "Case: One container, no volumes",
+			name: "Case: One container, Project Source Env",
 			containers: []corev1.Container{
 				{
 					Name: "test",
-				},
-			},
-			want:           "",
-			wantSourcePath: "",
-			wantErr:        true,
-		},
-		{
-			name: "Case: One container, no source volume",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
+					Env: []corev1.EnvVar{
 						{
-							Name: "test",
+							Name:  "RANDOMENV",
+							Value: "/mypath2",
 						},
-					},
-				},
-			},
-			want:           "",
-			wantSourcePath: "",
-			wantErr:        true,
-		},
-		{
-			name: "Case: One container, source volume",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
 						{
-							Name:      kclient.OdoSourceVolume,
-							MountPath: kclient.OdoSourceVolumeMount,
+							Name:  generator.EnvProjectsSrc,
+							Value: "/mypath",
 						},
 					},
 				},
 			},
 			want:           "test",
-			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantSourcePath: "/mypath",
 			wantErr:        false,
 		},
 		{
-			name: "Case: One container, multiple volumes",
+			name: "Case: Multiple containers, multiple Project Source Env",
 			containers: []corev1.Container{
 				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
+					Name: "test1",
+					Env: []corev1.EnvVar{
 						{
-							Name: "test",
+							Name:  "RANDOMENV",
+							Value: "/mypath1",
 						},
 						{
-							Name:      kclient.OdoSourceVolume,
-							MountPath: kclient.OdoSourceVolumeMount,
+							Name:  generator.EnvProjectsSrc,
+							Value: "/mypath1",
+						},
+					},
+				},
+				{
+					Name: "test2",
+					Env: []corev1.EnvVar{
+						{
+							Name:  "RANDOMENV",
+							Value: "/mypath2",
+						},
+						{
+							Name:  generator.EnvProjectsSrc,
+							Value: "/mypath2",
 						},
 					},
 				},
 			},
-			want:           "test",
-			wantSourcePath: kclient.OdoSourceVolumeMount,
+			want:           "test1",
+			wantSourcePath: "/mypath1",
 			wantErr:        false,
 		},
 		{
-			name: "Case: Multiple containers, no source volumes",
+			name: "Case: Multiple containers, no Project Source Env",
 			containers: []corev1.Container{
 				{
-					Name: "test",
+					Name: "test1",
+					Env: []corev1.EnvVar{
+						{
+							Name:  "RANDOMENV",
+							Value: "/mypath1",
+						},
+					},
 				},
 				{
-					Name: "test",
-					VolumeMounts: []corev1.VolumeMount{
+					Name: "test2",
+					Env: []corev1.EnvVar{
 						{
-							Name: "test",
+							Name:  "RANDOMENV",
+							Value: "/mypath2",
 						},
 					},
 				},
 			},
-			want:           "",
-			wantSourcePath: "",
-			wantErr:        true,
-		},
-		{
-			name: "Case: Multiple containers, multiple volumes",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-				},
-				{
-					Name: "container-two",
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name: "test",
-						},
-						{
-							Name:      kclient.OdoSourceVolume,
-							MountPath: kclient.OdoSourceVolumeMount,
-						},
-					},
-				},
-			},
-			want:           "container-two",
-			wantSourcePath: kclient.OdoSourceVolumeMount,
-			wantErr:        false,
-		},
-		{
-			name: "Case: Multiple volumes, different source volume path",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-				},
-				{
-					Name: "container-two",
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name: "test",
-						},
-						{
-							Name:      kclient.OdoSourceVolume,
-							MountPath: "/some/path",
-						},
-					},
-				},
-			},
-			want:           "container-two",
-			wantSourcePath: "/some/path",
-			wantErr:        false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
-		container, sourcePath, err := getFirstContainerWithSourceVolume(tt.containers)
-		if container != tt.want {
-			t.Errorf("expected %s, actual %s", tt.want, container)
-		}
-
-		if sourcePath != tt.wantSourcePath {
-			t.Errorf("expected %s, actual %s", tt.wantSourcePath, sourcePath)
-		}
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, actual %v", tt.wantErr, err)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			container, syncFolder, err := getFirstContainerWithSourceVolume(tt.containers)
+			if container != tt.want {
+				t.Errorf("expected %s, actual %s", tt.want, container)
+			}
+			if syncFolder != tt.wantSourcePath {
+				t.Errorf("expected %s, actual %s", tt.wantSourcePath, syncFolder)
+			}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, actual %v", tt.wantErr, err)
+			}
+		})
 	}
 }
 
@@ -277,11 +223,10 @@ func TestDoesComponentExist(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		componentType    versionsCommon.DevfileComponentType
+		componentType    devfilev1.ComponentType
 		componentName    string
 		getComponentName string
 		envInfo          envinfo.EnvSpecificInfo
-		endpointMap      map[int32]versionsCommon.Endpoint
 		want             bool
 		wantErr          bool
 	}{
@@ -290,7 +235,6 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			endpointMap:      map[int32]versionsCommon.Endpoint{},
 			want:             true,
 			wantErr:          false,
 		},
@@ -299,7 +243,6 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "fake-component",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			endpointMap:      map[int32]versionsCommon.Endpoint{},
 			want:             false,
 			wantErr:          false,
 		},
@@ -308,7 +251,6 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
-			endpointMap:      map[int32]versionsCommon.Endpoint{},
 			want:             false,
 			wantErr:          true,
 		},
@@ -317,8 +259,8 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
-					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
+					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
 				},
 			}
 
@@ -336,7 +278,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, tt.endpointMap)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if err != nil {
@@ -375,7 +317,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		componentType versionsCommon.DevfileComponentType
+		componentType devfilev1.ComponentType
 		status        corev1.PodPhase
 		wantErr       bool
 	}{
@@ -399,7 +341,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
+					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
 				},
 			}
 
@@ -564,18 +506,26 @@ func TestAdapterDelete(t *testing.T) {
 	}
 }
 
-func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.Exec {
+func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Command {
 
 	commands := [...]string{"ls -la", "pwd"}
 	component := "component"
 	workDir := [...]string{"/", "/root"}
 
-	return versionsCommon.Exec{
-		Id:          id,
-		CommandLine: commands[0],
-		Component:   component,
-		WorkingDir:  workDir[0],
-		Group:       &common.Group{Kind: group},
+	return devfilev1.Command{
+		Id: id,
+		CommandUnion: devfilev1.CommandUnion{
+			Exec: &devfilev1.ExecCommand{
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{Kind: group},
+					},
+				},
+				CommandLine: commands[0],
+				Component:   component,
+				WorkingDir:  workDir[0],
+			},
+		},
 	}
 
 }

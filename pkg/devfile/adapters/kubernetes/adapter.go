@@ -1,9 +1,10 @@
 package kubernetes
 
 import (
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"io"
+
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/openshift/odo/pkg/machineoutput"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
@@ -79,10 +80,20 @@ func (k Adapter) Logger() machineoutput.MachineEventLoggingClient {
 	return k.componentAdapter.Logger()
 }
 
-func (k Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (k Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	return k.componentAdapter.ComponentInfo(command)
 }
 
-func (k Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (k Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	return k.componentAdapter.SupervisorComponentInfo(command)
+}
+
+// StartContainerStatusWatch outputs Kubernetes pod/container status changes to the console, as used by the status command
+func (k Adapter) StartContainerStatusWatch() {
+	k.componentAdapter.StartContainerStatusWatch()
+}
+
+// StartSupervisordCtlStatusWatch outputs supervisord program status changes to the console, as used by the status command
+func (k Adapter) StartSupervisordCtlStatusWatch() {
+	k.componentAdapter.StartSupervisordCtlStatusWatch()
 }

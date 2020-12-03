@@ -8,15 +8,16 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containerd/containerd v1.3.3 // indirect
+	github.com/devfile/api v0.0.0-20201103130402-29b8738e196e
+	github.com/devfile/library v0.0.0-20201125155652-6eabeab3ee52
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-git/go-git/v5 v5.1.0
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe
-	github.com/golang/mock v1.4.3
-	github.com/google/go-github/v32 v32.1.0
-	github.com/google/go-querystring v1.0.1-0.20190318165438-c8c88dbee036 // indirect
+	github.com/golang/mock v1.4.4
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
@@ -42,8 +43,7 @@ require (
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.4.0
-	github.com/xeipuuv/gojsonschema v1.2.0
+	github.com/stretchr/testify v1.6.1
 	github.com/zalando/go-keyring v0.1.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gopkg.in/AlecAivazis/survey.v1 v1.8.0
@@ -54,15 +54,15 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/kubectl v0.0.0
-	sigs.k8s.io/controller-runtime v0.6.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
+	bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 	github.com/apcera/gssapi => github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b
 	github.com/containers/image => github.com/openshift/containers-image v0.0.0-20190130162819-76de87591e9d
 	github.com/docker/docker => github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
-	github.com/kr/pty => github.com/creack/pty v1.1.9
+	github.com/kr/pty => github.com/creack/pty v1.1.11
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200205133042-34f0ec8dab87
 	k8s.io/api => k8s.io/api v0.17.1
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.1
@@ -86,5 +86,6 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.17.1
 	k8s.io/metrics => k8s.io/metrics v0.17.1
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.17.1
+	vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9787
 
 )

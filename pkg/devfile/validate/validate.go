@@ -3,34 +3,40 @@ package validate
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"k8s.io/klog"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2"
+	"github.com/openshift/odo/pkg/devfile/validate/generic"
 
-	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
-	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
+	"k8s.io/klog"
 )
 
 // ValidateDevfileData validates whether sections of devfile are odo compatible
+// after invoking the generic devfile validation
 func ValidateDevfileData(data interface{}) error {
-	var components []common.DevfileComponent
+	var components []devfilev1.Component
+	var commandsMap map[string]devfilev1.Command
+
+	// Validate the generic devfile data before validating odo specific logic
+	if err := generic.ValidateDevfileData(data); err != nil {
+		return err
+	}
 
 	switch d := data.(type) {
-	case *v100.Devfile100:
-		return fmt.Errorf("unsupported devfile version. Only devfiles with schema version 2.0.0 are supported")
-	case *v200.Devfile200:
+	case *v2.DevfileV2:
 		components = d.GetComponents()
+		commandsMap = d.GetCommands()
 
-		// Validate Events
-		if err := validateEvents(d); err != nil {
+		// Validate all the devfile components before validating commands
+		if err := validateComponents(components); err != nil {
+			return err
+		}
+
+		// Validate all the devfile commands before validating events
+		if err := validateCommands(commandsMap); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("unknown devfile type %T", d)
-	}
-
-	// Validate Components
-	if err := validateComponents(components); err != nil {
-		return err
 	}
 
 	// Successful

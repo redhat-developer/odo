@@ -29,7 +29,7 @@ chmod 640 $TMP_DIR/kubeconfig
 export KUBECONFIG=$TMP_DIR/kubeconfig
 
 # Login as developer
-odo login -u developer -p developer
+odo login -u developer -p password@123
 
 # Check login user name for debugging purpose
 oc whoami
@@ -43,19 +43,11 @@ if [ "${ARCH}" == "s390x" ]; then
     make test-e2e-all
 elif  [ "${ARCH}" == "ppc64le" ]; then
     # Integration tests
-    make test-generic
-    make test-cmd-link-unlink
-    make test-cmd-pref-config
-    make test-cmd-watch
-    make test-cmd-debug
+    make test-integration
     make test-cmd-login-logout
     make test-cmd-project
-    make test-cmd-app
-    make test-cmd-storage
-    make test-cmd-push
-    make test-cmd-watch
     # E2e tests
-    make test-e2e-beta
+    make test-e2e-all
 else
     # Integration tests
     make test-integration
@@ -66,5 +58,7 @@ else
     # E2e tests
     make test-e2e-all
 fi
+
+cp -r reports $ARTIFACTS_DIR 
 
 odo logout

@@ -1,0 +1,26 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+parent:
+  uri: https://raw.githubusercontent.com/openshift/odo/master/tests/examples/source/devfiles/nodejs/devfileCompositeCommands.yaml
+  commands:
+  - id: buildAndMkdir
+    composite:
+         label: Build and Mkdir
+         commands:
+           - createfile
+           - install
+         parallel: false
+         group: 
+            kind: build
+            isDefault: true
+commands:
+  - id: createfile
+    exec:
+      component: runtime
+      commandLine: touch /projects/testfile
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: false

@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/machineoutput"
 )
 
@@ -11,7 +11,7 @@ type commandExecutor interface {
 	// Logger returns the MachineEventLoggingClient associated with this executor
 	Logger() machineoutput.MachineEventLoggingClient
 	// ComponentInfo retrieves the component information associated with the specified command
-	ComponentInfo(command common.DevfileCommand) (ComponentInfo, error)
+	ComponentInfo(command devfilev1.Command) (ComponentInfo, error)
 	// ComponentInfo retrieves the component information associated with the specified command for supervisor initialization purposes
-	SupervisorComponentInfo(command common.DevfileCommand) (ComponentInfo, error)
+	SupervisorComponentInfo(command devfilev1.Command) (ComponentInfo, error)
 }

@@ -1,6 +1,8 @@
 #this is a template spec and actual spec will be generated
 #debuginfo not supported with Go
 %global debug_package %{nil}
+%global _enable_debug_package 0
+%global __os_install_post /usr/lib/rpm/brp-compress %{nil}
 %global package_name odo
 %global product_name odo
 %global golang_version ${GOLANG_VERSION}
@@ -12,6 +14,7 @@
 %global source_dir openshift-odo-%{odo_version}-%{odo_release}
 %global source_tar %{source_dir}.tar.gz
 %global gopath  %{_builddir}/gocode
+%global _missing_build_ids_terminate_build 0
 
 Name:           %{package_name}
 Version:        %{odo_version}
@@ -23,8 +26,8 @@ URL:            https://github.com/openshift/odo/tree/%{odo_cli_version}
 Source0:        %{source_tar}
 BuildRequires:  gcc
 BuildRequires:  golang >= %{golang_version}
-Provides:       %{package_name}
-Obsoletes:      %{package_name}
+Provides:       %{package_name} = %{odo_version}
+Obsoletes:      %{package_name} <= %{odo_version}
 
 %description
 odo is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
@@ -40,11 +43,11 @@ export GOPATH=%{gopath}
 cd %{gopath}/src/github.com/openshift/odo
 %ifarch x86_64
 # go test -race is not supported on all arches
-make test
+GOFLAGS='-mod=vendor' make test
 %endif
 make prepare-release
+echo "%{odo_version}" > dist/release/VERSION
 unlink %{gopath}/src/github.com/openshift/odo
-rm -rf %{gopath}
 
 %install
 mkdir -p %{buildroot}/%{_bindir}
@@ -59,7 +62,7 @@ install -p -m 755 dist/release/odo-darwin-amd64 %{buildroot}%{_datadir}/%{name}-
 install -p -m 755 dist/release/odo-windows-amd64.exe %{buildroot}%{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
 cp -avrf dist/release/odo*.tar.gz %{buildroot}%{_datadir}/%{name}-redistributable
 cp -avrf dist/release/SHA256_SUM %{buildroot}%{_datadir}/%{name}-redistributable
-
+cp -avrf dist/release/VERSION %{buildroot}%{_datadir}/%{name}-redistributable
 
 %files
 %license LICENSE
@@ -69,8 +72,8 @@ cp -avrf dist/release/SHA256_SUM %{buildroot}%{_datadir}/%{name}-redistributable
 Summary:        %{product_name} client CLI binaries for Linux, macOS and Windows
 BuildRequires:  gcc
 BuildRequires:  golang >= %{golang_version}
-Provides:       %{package_name}-redistributable
-Obsoletes:      %{package_name}-redistributable
+Provides:       %{package_name}-redistributable = %{odo_version}
+Obsoletes:      %{package_name}-redistributable <= %{odo_version}
 
 %description redistributable
 %{product_name} client odo cross platform binaries for Linux, macOS and Windows.
@@ -91,3 +94,4 @@ Obsoletes:      %{package_name}-redistributable
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe.tar.gz
 %{_datadir}/%{name}-redistributable/SHA256_SUM
+%{_datadir}/%{name}-redistributable/VERSION

@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
@@ -105,7 +106,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 						},
 					},
 
-					// Create a volume that will be shared betwen InitContainer and the applicationContainer
+					// Create a volume that will be shared between InitContainer and the applicationContainer
 					// in order to pass over the SupervisorD binary
 					Volumes: []corev1.Volume{
 						{
@@ -118,7 +119,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 				},
 			},
 			// We provide triggers to create an ImageStream so that the application container will use the
-			// correct and approriate image that's located internally within the OpenShift commonObjectMeta.Namespace
+			// correct and appropriate image that's located internally within the OpenShift commonObjectMeta.Namespace
 			Triggers: []appsv1.DeploymentTriggerPolicy{
 				{
 					Type: "ConfigChange",
@@ -318,37 +319,19 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 // generateBuildConfig creates a BuildConfig for Git URL's being passed into Odo
 func generateBuildConfig(commonObjectMeta metav1.ObjectMeta, gitURL, gitRef, imageName, imageNamespace string) buildv1.BuildConfig {
 
-	buildSource := buildv1.BuildSource{
-		Git: &buildv1.GitBuildSource{
-			URI: gitURL,
-			Ref: gitRef,
+	params := generator.BuildConfigParams{
+		ObjectMeta: commonObjectMeta,
+		BuildConfigSpecParams: generator.BuildConfigSpecParams{
+			ImageStreamTagName: commonObjectMeta.Name,
+			GitURL:             gitURL,
+			GitRef:             gitRef,
+			BuildStrategy:      generator.GetSourceBuildStrategy(imageName, imageNamespace),
 		},
-		Type: buildv1.BuildSourceGit,
 	}
 
-	return buildv1.BuildConfig{
-		ObjectMeta: commonObjectMeta,
-		Spec: buildv1.BuildConfigSpec{
-			CommonSpec: buildv1.CommonSpec{
-				Output: buildv1.BuildOutput{
-					To: &corev1.ObjectReference{
-						Kind: "ImageStreamTag",
-						Name: commonObjectMeta.Name + ":latest",
-					},
-				},
-				Source: buildSource,
-				Strategy: buildv1.BuildStrategy{
-					SourceStrategy: &buildv1.SourceBuildStrategy{
-						From: corev1.ObjectReference{
-							Kind:      "ImageStreamTag",
-							Name:      imageName,
-							Namespace: imageNamespace,
-						},
-					},
-				},
-			},
-		},
-	}
+	buildConfig := generator.GetBuildConfig(params)
+
+	return *buildConfig
 }
 
 //
@@ -405,7 +388,7 @@ mv $DEST.setup-volume $DEST
 }
 
 // addBootstrapSupervisordInitContainer creates an init container that will copy over
-// supervisord to the application image during the start-up procress.
+// supervisord to the application image during the start-up process.
 func addBootstrapSupervisordInitContainer(dc *appsv1.DeploymentConfig, dcName string) {
 
 	dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers,

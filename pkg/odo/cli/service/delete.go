@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -34,6 +33,8 @@ type ServiceDeleteOptions struct {
 	*genericclioptions.Context
 	// Context to use when listing service. This will use app and project values from the context
 	componentContext string
+	// choose between Operator Hub and Service Catalog. If true, Operator Hub
+	csvSupport bool
 }
 
 // NewServiceDeleteOptions creates a new ServiceDeleteOptions instance
@@ -43,7 +44,9 @@ func NewServiceDeleteOptions() *ServiceDeleteOptions {
 
 // Complete completes ServiceDeleteOptions after they've been created
 func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
+		return err
+	} else if o.csvSupport {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
@@ -55,7 +58,7 @@ func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the ServiceDeleteOptions based on completed values
 func (o *ServiceDeleteOptions) Validate() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport {
 		svcExists, err := svc.OperatorSvcExists(o.KClient, o.serviceName)
 		if err != nil {
 			return err
@@ -79,7 +82,7 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service delete command
 func (o *ServiceDeleteOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport {
 		if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
 
 			s := log.Spinner("Waiting for service to be deleted")

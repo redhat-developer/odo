@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
@@ -37,7 +37,6 @@ type Adapter struct {
 	containerNameToVolumes    map[string][]common.DevfileVolume
 	uniqueStorage             []common.Storage
 	volumeNameToDockerVolName map[string]string
-	devfileInitCmd            string
 	devfileBuildCmd           string
 	devfileRunCmd             string
 	supervisordVolumeName     string
@@ -57,7 +56,7 @@ func (a *Adapter) getContainers() ([]types.Container, error) {
 	return a.containers, nil
 }
 
-func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	containers, err := a.getContainers()
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -67,7 +66,7 @@ func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.Co
 	return compInfo, nil
 }
 
-func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (a Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	containers, err := a.getContainers()
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -96,14 +95,13 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to process volumes for component %s", a.ComponentName)
 	}
 
-	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileInitCmd, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
@@ -148,7 +146,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// podChanged is defaulted to false, since docker volume is always present even if container goes down
 	compInfo := common.ComponentInfo{
 		ContainerName: containerID,
-		SourceMount:   sourceMount,
+		SyncFolder:    sourceMount,
 	}
 	syncParams := common.SyncParameters{
 		PushParams:      parameters,
@@ -237,7 +235,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 	spinner := log.Spinnerf("Deleting devfile component %s", componentName)
 	defer spinner.End(false)
 
-	containers, err := a.Client.GetContainerList()
+	containers, err := a.Client.GetContainerList(true)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve container list for delete operation")
 	}
@@ -362,13 +360,13 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 		return nil, errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
 	}
 
-	var command versionsCommon.DevfileCommand
+	var command devfilev1.Command
 	if debug {
 		command, err = common.GetDebugCommand(a.Devfile.Data, "")
 		if err != nil {
 			return nil, err
 		}
-		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+		if reflect.DeepEqual(devfilev1.Command{}, command) {
 			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
 		}
 

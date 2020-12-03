@@ -5,10 +5,11 @@ metadata:
 starterProjects:
   - name: nodejs-starter
     git:
-      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+      remotes:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       mountSources: true
@@ -16,32 +17,32 @@ components:
         - name: http-3000
           targetPort: 3000
 commands:
-  - exec:
-      id: install
+  - id: install
+    exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: false
-  - exec:
-      id: mkdir
+  - id: mkdir
+    exec:
       component: runtime
       commandLine: mkdir /projects/testfolder
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
         isDefault: false
-  - exec:
-      id: run
+  - id: run
+    exec:
       component: runtime
       commandLine: npm start
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
         isDefault: true
-  - composite:
-         id: buildAndMkdir
+  - id: buildAndMkdir
+    composite:
          label: Build and Mkdir
          commands:
            - mkdir

@@ -3,7 +3,6 @@ package helper
 import (
 	"bufio"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -30,13 +29,6 @@ func (oc OcRunner) Run(cmd string) *gexec.Session {
 	session := CmdRunner(cmd)
 	Eventually(session).Should(gexec.Exit(0))
 	return session
-}
-
-// SwitchProject switch to the project
-func (oc OcRunner) SwitchProject(projectName string) {
-	fmt.Fprintf(GinkgoWriter, "Switching to project : %s\n", projectName)
-	session := CmdShouldPass(oc.path, "project", projectName)
-	Expect(session).To(ContainSubstring(projectName))
 }
 
 // GetCurrentProject get currently active project in oc
@@ -207,7 +199,7 @@ func (oc OcRunner) VerifyCmpName(cmpName string, namespace string) {
 	Expect(session).To(ContainSubstring(cmpName))
 }
 
-// GetDcName execute oc command and returns dc name of a delopyed
+// GetDcName execute oc command and returns dc name of a deployed
 // component by passing component name as a argument
 func (oc OcRunner) GetDcName(compName string, namespace string) string {
 	session := CmdShouldPass(oc.path, "get", "dc", "--namespace", namespace)
@@ -286,7 +278,7 @@ func (oc OcRunner) SourceLocationBC(componentName string, appName string, projec
 	return sourceLocation
 }
 
-// checkForImageStream checks if there is a ImageStram with name and tag in openshift namespace
+// checkForImageStream checks if there is a ImageStream with name and tag in openshift namespace
 func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	// first check if there is ImageStream with given name
 	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
@@ -319,14 +311,14 @@ func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 
 // ImportImageFromRegistry import the required image of the respective component type from the specified registry
 func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project string) {
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from="+filepath.Join(registry, image), "--confirm")
-	CmdShouldPass(oc.path, "annotate", filepath.Join("istag", cmpType), "--namespace="+project, "tags=builder", "--overwrite")
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, fmt.Sprintf("--from=%s/%s", registry, image), "--confirm")
+	CmdShouldPass(oc.path, "annotate", fmt.Sprintf("istag/%s", cmpType), "--namespace="+project, "tags=builder", "--overwrite")
 
 }
 
 // ImportJavaIS import the openjdk image which is used for jars
 func (oc OcRunner) ImportJavaIS(project string) {
-	// if ImageStram already exists, no need to do anything
+	// if ImageStream already exists, no need to do anything
 	if oc.checkForImageStream("java", "8") {
 		return
 	}
@@ -341,7 +333,7 @@ func (oc OcRunner) ImportJavaIS(project string) {
 
 // ImportDotnet20IS import the dotnet image
 func (oc OcRunner) ImportDotnet20IS(project string) {
-	// if ImageStram already exists, no need to do anything
+	// if ImageStream already exists, no need to do anything
 	if oc.checkForImageStream("dotnet", "2.0") {
 		return
 	}
@@ -372,7 +364,7 @@ func (oc OcRunner) EnvVarTest(resourceName string, sourceType string, envString 
 	Expect(envVars).To(Equal(envString))
 }
 
-// GetRunningPodNameOfComp executes oc command and returns the running pod name of a delopyed
+// GetRunningPodNameOfComp executes oc command and returns the running pod name of a deployed
 // component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) string {
 	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
@@ -381,7 +373,7 @@ func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) st
 	return strings.TrimSpace(podName)
 }
 
-// GetRunningPodNameByComponent executes oc command and returns the running pod name of a delopyed
+// GetRunningPodNameByComponent executes oc command and returns the running pod name of a deployed
 // devfile component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
@@ -446,6 +438,16 @@ func (oc OcRunner) GetVolumeMountNamesandPathsFromContainer(deployName string, c
 			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
 
 	return strings.TrimSpace(volumeName)
+}
+
+// GetContainerEnv returns the container env in the format name:value\n
+func (oc OcRunner) GetContainerEnv(podName, containerName, namespace string) string {
+	containerEnv := CmdShouldPass(oc.path, "get", "po", podName, "--namespace", namespace,
+		"-o", "go-template="+
+			"{{range .spec.containers}}{{if eq .name \""+containerName+
+			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+
+	return strings.TrimSpace(containerEnv)
 }
 
 // GetVolumeMountName returns the name of the volume
@@ -585,4 +587,9 @@ func (oc OcRunner) GetAllPVCNames(namespace string) []string {
 		return []string{}
 	}
 	return strings.Split(output, " ")
+}
+
+// DeletePod deletes a specified pod in the namespace
+func (oc OcRunner) DeletePod(podName string, namespace string) {
+	CmdShouldPass(oc.path, "delete", "pod", "--namespace", namespace, podName)
 }

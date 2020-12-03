@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"index/suffixarray"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -39,8 +40,10 @@ func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"Executing defaultbuild command \"/artifacts/bin/build-container-full.sh\"",
-		"Executing defaultrun command \"/artifacts/bin/start-server.sh\"",
+		"Executing defaultbuild command",
+		"mvn clean",
+		"Executing defaultrun command",
+		"spring-boot:run",
 	})
 }
 
@@ -220,6 +223,21 @@ func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string, freeP
 	helper.CmdShouldPass("odo", args...)
 }
 
+func ExecPushWithCompositeOverride(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "parentSupport", "devfile-with-parent-composite.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	output := helper.CmdShouldPass("odo", args...)
+
+	helper.MatchAllInOutput(output, []string{"Executing createfile command", "touch /projects/testfile"})
+}
+
 func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string, freePort int) {
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
@@ -347,8 +365,9 @@ type OdoV1Watch struct {
 }
 
 type OdoV2Watch struct {
-	CmpName            string
-	StringsToBeMatched []string
+	CmpName               string
+	StringsToBeMatched    []string
+	StringsNotToBeMatched []string
 }
 
 // OdoWatch creates files, dir in the context and watches for the changes to be pushed
@@ -377,11 +396,10 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 			_, err = os.Create(filepath.Join(context, "a.txt"))
 			Expect(err).To(BeNil())
 
-			helper.DeleteDir(filepath.Join(context, "abcd"))
-
 			if isDevfileTest {
 				helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
 			} else {
+				helper.DeleteDir(filepath.Join(context, "abcd"))
 				if odoV1Watch.SrcType == "openjdk" {
 					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
 				} else {
@@ -416,10 +434,24 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 				}
 
 				if stringsMatched {
-					// Verify directory deleted from component pod
-					err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
-					Expect(err).To(BeNil())
-					return true
+
+					// first push is successful
+					// now delete a folder and check if the deletion is propagated properly
+					// and the file is removed from the cluster
+					index := suffixarray.New([]byte(output))
+					offsets := index.Lookup([]byte(filepath.Join(context, "abcd")+" changed"), -1)
+
+					// the first occurrence of '<target-dir> changed' means the creation of it was pushed to the cluster
+					// and the first push was successful
+					if len(offsets) == 1 {
+						helper.DeleteDir(filepath.Join(context, "abcd"))
+					} else if len(offsets) > 1 {
+						// the occurrence of 'target-directory' more than once indicates that the deletion was propagated too
+						// Verify directory deleted from component pod
+						err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+						Expect(err).To(BeNil())
+						return true
+					}
 				}
 			} else {
 				curlURL := helper.CmdShouldPass("curl", odoV1Watch.RouteURL)
@@ -505,6 +537,56 @@ func OdoWatchWithDebug(odoV2Watch OdoV2Watch, context, flag string) {
 	Expect(err).To(BeNil())
 }
 
+// OdoWatchWithIgnore checks if odo watch ignores the specified files and
+// it also checks if odo-file-index.json and .git are ignored
+// when --ignores is used
+func OdoWatchWithIgnore(odoV2Watch OdoV2Watch, context, flag string) {
+
+	startSimulationCh := make(chan bool)
+	go func() {
+		startMsg := <-startSimulationCh
+		if startMsg {
+			_, err := os.Create(filepath.Join(context, "doignoreme.txt"))
+			Expect(err).To(BeNil())
+
+			_, err = os.Create(filepath.Join(context, "donotignoreme.txt"))
+			Expect(err).To(BeNil())
+		}
+	}()
+
+	success, err := helper.WatchNonRetCmdStdOut(
+		("odo watch " + flag + " --context " + context),
+		time.Duration(5)*time.Minute,
+		func(output string) bool {
+			stringsMatched := true
+			for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
+				if !strings.Contains(output, stringToBeMatched) {
+					stringsMatched = false
+				}
+			}
+
+			stringsNotMatched := true
+			for _, stringNotToBeMatched := range odoV2Watch.StringsNotToBeMatched {
+				if strings.Contains(output, stringNotToBeMatched) {
+					stringsNotMatched = false
+				}
+			}
+
+			if stringsMatched && stringsNotMatched {
+				return true
+			}
+
+			return false
+		},
+		startSimulationCh,
+		func(output string) bool {
+			return strings.Contains(output, "Waiting for something to change")
+		})
+
+	Expect(success).To(Equal(true))
+	Expect(err).To(BeNil())
+}
+
 func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) error {
 	var stdOut string
 
@@ -519,7 +601,7 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 			podName := ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
 			envs := ocRunner.GetEnvs(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
-			stdOut = ocRunner.ExecListDir(podName, project, filepath.Join(dir, "src"))
+			stdOut = ocRunner.ExecListDir(podName, project, filepath.ToSlash(filepath.Join(dir, "src")))
 		}
 	case "docker":
 		dockerRunner := runner.(helper.DockerRunner)
@@ -649,4 +731,28 @@ func VerifyCatalogListComponent(output string, cmpName []string) error {
 		helper.MatchAllInOutput(output, cmpName)
 	}
 	return nil
+}
+
+// VerifyContainerSyncEnv verifies the sync env in the container
+func VerifyContainerSyncEnv(podName, containerName, namespace, projectSourceValue, projectsRootValue string, cliRunner helper.CliRunner) {
+	envProjectsRoot, envProjectSource := "PROJECTS_ROOT", "PROJECT_SOURCE"
+	projectSourceMatched, projectsRootMatched := false, false
+
+	envNamesAndValues := cliRunner.GetContainerEnv(podName, "runtime", namespace)
+	envNamesAndValuesArr := strings.Fields(envNamesAndValues)
+
+	for _, envNamesAndValues := range envNamesAndValuesArr {
+		envNameAndValueArr := strings.Split(envNamesAndValues, ":")
+
+		if envNameAndValueArr[0] == envProjectSource && strings.Contains(envNameAndValueArr[1], projectSourceValue) {
+			projectSourceMatched = true
+		}
+
+		if envNameAndValueArr[0] == envProjectsRoot && strings.Contains(envNameAndValueArr[1], projectsRootValue) {
+			projectsRootMatched = true
+		}
+	}
+
+	Expect(projectSourceMatched).To(Equal(true))
+	Expect(projectsRootMatched).To(Equal(true))
 }

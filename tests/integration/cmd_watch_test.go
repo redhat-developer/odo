@@ -1,9 +1,7 @@
 package integration
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,27 +10,17 @@ import (
 )
 
 var _ = Describe("odo watch command tests", func() {
-	var project string
-	var context string
-	var currentWorkingDirectory string
+	var commonVar helper.CommonVar
 
-	// Setup up state for each test spec
-	// create new project (not set as active) and new context directory for each test spec
-	// This is before every spec (It)
-	BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		project = helper.CreateRandProject()
+	// This is run before every Spec (It)
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
-	AfterEach(func() {
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("when running help for watch command", func() {
@@ -44,24 +32,20 @@ var _ = Describe("odo watch command tests", func() {
 
 	Context("when executing watch without pushing the component", func() {
 		It("should fail", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
-			output := helper.CmdShouldFail("odo", "watch", "--context", context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
+			output := helper.CmdShouldFail("odo", "watch", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
 	})
 
 	Context("when executing odo watch against an app that doesn't exist", func() {
 		JustBeforeEach(func() {
-			currentWorkingDirectory = helper.Getwd()
-			helper.Chdir(context)
-		})
-		JustAfterEach(func() {
-			helper.Chdir(currentWorkingDirectory)
+			helper.Chdir(commonVar.Context)
 		})
 		It("should fail with proper error", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project)
 			output := helper.CmdShouldFail("odo", "watch", "--app", "dummy")
 			Expect(output).To(ContainSubstring("component does not exist"))
 		})
@@ -69,8 +53,8 @@ var _ = Describe("odo watch command tests", func() {
 
 	Context("when executing watch on a git source type component", func() {
 		It("should fail", func() {
-			helper.CmdShouldPass("odo", "create", "--context", context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
-			output := helper.CmdShouldFail("odo", "watch", "--context", context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "--context", commonVar.Context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
+			output := helper.CmdShouldFail("odo", "watch", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("Watch is supported by binary and local components only"))
 		})
 	})

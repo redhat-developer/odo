@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,10 +37,13 @@ func TestCreateIngress(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
-			objectMeta := CreateObjectMeta(tt.ingressName, "default", nil, nil)
-
-			IngressSpec := GenerateIngressSpec(IngressParameter{ServiceName: tt.ingressName})
-			createdIngress, err := fkclient.CreateIngress(objectMeta, *IngressSpec)
+			objectMeta := generator.GetObjectMeta(tt.ingressName, "default", nil, nil)
+			ingressParams := generator.IngressParams{
+				ObjectMeta:        objectMeta,
+				IngressSpecParams: generator.IngressSpecParams{ServiceName: tt.ingressName},
+			}
+			ingress := generator.GetIngress(ingressParams)
+			createdIngress, err := fkclient.CreateIngress(*ingress)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

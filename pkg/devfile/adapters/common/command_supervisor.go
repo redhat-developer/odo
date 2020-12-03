@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/machineoutput"
 )
 
@@ -16,7 +16,7 @@ type supervisorCommand struct {
 
 // newSupervisorInitCommand creates a command that initializes the supervisor for the specified devfile if needed
 // nil is returned if no devfile-specified container needing supervisor initialization is found
-func newSupervisorInitCommand(command common.DevfileCommand, adapter commandExecutor) (command, error) {
+func newSupervisorInitCommand(command devfilev1.Command, adapter commandExecutor) (command, error) {
 	cmd := []string{SupervisordBinaryPath, "-c", SupervisordConfFile, "-d"}
 	info, err := adapter.SupervisorComponentInfo(command)
 	if err != nil {
@@ -34,7 +34,7 @@ func newSupervisorInitCommand(command common.DevfileCommand, adapter commandExec
 }
 
 // newSupervisorStopCommand creates a command implementation that stops the specified command via the supervisor
-func newSupervisorStopCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
+func newSupervisorStopCommand(command devfilev1.Command, executor commandExecutor) (command, error) {
 	cmd := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "stop", "all"}
 	if stop, err := newOverriddenSimpleCommand(command, executor, cmd); err == nil {
 		// use empty spinner message to avoid showing it altogether
@@ -46,7 +46,7 @@ func newSupervisorStopCommand(command common.DevfileCommand, executor commandExe
 }
 
 // newSupervisorStartCommand creates a command implementation that starts the specified command via the supervisor
-func newSupervisorStartCommand(command common.DevfileCommand, cmd string, adapter commandExecutor, restart bool) (command, error) {
+func newSupervisorStartCommand(command devfilev1.Command, cmd string, adapter commandExecutor, restart bool) (command, error) {
 	cmdLine := []string{SupervisordBinaryPath, SupervisordCtlSubCommand, "start", cmd}
 	start, err := newOverriddenSimpleCommand(command, adapter, cmdLine)
 	if err != nil {

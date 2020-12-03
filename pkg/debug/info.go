@@ -105,7 +105,7 @@ func GetDebugInfo(f *DefaultPortForwarder) (OdoDebugFile, bool) {
 // returns the OdoDebugFile from the debug info file
 // returns true if debugging is running else false
 func getDebugInfo(f *DefaultPortForwarder, fs filesystem.Filesystem) (OdoDebugFile, bool) {
-	// gets the debug info file path and reads/unmarshals it
+	// gets the debug info file path and reads/unmarshalls it
 	debugInfoFilePath := GetDebugInfoFilePath(f.componentName, f.appName, f.projectName)
 	readFile, err := fs.ReadFile(debugInfoFilePath)
 	if err != nil {

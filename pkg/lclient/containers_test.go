@@ -212,7 +212,7 @@ func TestGetContainersList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			containers, err := tt.client.GetContainerList()
+			containers, err := tt.client.GetContainerList(false)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
@@ -494,4 +494,34 @@ func convertLogsToString(rd io.ReadCloser) string {
 		logString = fmt.Sprintf("%s%s", logString, string(buf[:n]))
 	}
 	return logString
+}
+
+func TestGetContainersListAll(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		client, mockDockerClient := FakeNewMockClient(ctrl)
+
+		expectedContainer := []types.Container{{
+			ID: "some-id",
+		}}
+
+		mockDockerClient.EXPECT().ContainerList(gomock.Any(), gomock.Eq(
+			types.ContainerListOptions{
+				All: true,
+			},
+		)).Return(expectedContainer, nil)
+
+		resultList, err := client.GetContainerList(true)
+
+		if err != nil {
+			t.Errorf("Unexpected error %v", err)
+		}
+
+		if !reflect.DeepEqual(resultList, expectedContainer) {
+			t.Errorf("Expected %v, got %v", expectedContainer, resultList)
+		}
+	})
 }

@@ -10,9 +10,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/util"
 
@@ -37,7 +37,7 @@ func ComponentExists(client lclient.Client, data data.DevfileData, name string) 
 		return false, errors.Wrapf(err, "unable to get the containers for component %s", name)
 	}
 
-	containerComponents := adaptersCommon.GetDevfileContainerComponents(data)
+	containerComponents := data.GetDevfileContainerComponents()
 
 	var componentExists bool
 	if len(containers) == 0 {
@@ -53,7 +53,7 @@ func ComponentExists(client lclient.Client, data data.DevfileData, name string) 
 
 // GetComponentContainers returns a list of the running component containers
 func GetComponentContainers(client lclient.Client, componentName string) (containers []types.Container, err error) {
-	containerList, err := client.GetContainerList()
+	containerList, err := client.GetContainerList(false)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func GetContainerIDForAlias(containers []types.Container, alias string) string {
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to an array of strings, as expected by Docker
-func ConvertEnvs(vars []common.Env) []string {
+func ConvertEnvs(vars []devfilev1.EnvVar) []string {
 	dockerVars := []string{}
 	for _, env := range vars {
 		envString := fmt.Sprintf("%s=%s", env.Name, env.Value)
@@ -84,7 +84,7 @@ func ConvertEnvs(vars []common.Env) []string {
 }
 
 // ConvertPorts converts endpoints from the devfile structure to PortSet, which is expected by Docker
-func ConvertPorts(endpoints []common.Endpoint) nat.PortSet {
+func ConvertPorts(endpoints []devfilev1.Endpoint) nat.PortSet {
 	portSet := nat.PortSet{}
 	for _, endpoint := range endpoints {
 		port := nat.Port(strconv.Itoa(int(endpoint.TargetPort)) + "/tcp")
@@ -98,7 +98,7 @@ func ConvertPorts(endpoints []common.Endpoint) nat.PortSet {
 // If any of the values between the two differ, a restart is required (and this function returns true)
 // Unlike Kube, Docker doesn't provide a mechanism to update a container in place only when necesary
 // so this function is necessary to prevent having to restart the container on every odo pushs
-func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfig *container.Config, hostConfig *container.HostConfig, devfileMounts []mount.Mount, containerMounts []types.MountPoint, portMap nat.PortMap) bool {
+func DoesContainerNeedUpdating(component devfilev1.Component, containerConfig *container.Config, hostConfig *container.HostConfig, devfileMounts []mount.Mount, containerMounts []types.MountPoint, portMap nat.PortMap) bool {
 	// If the image was changed in the devfile, the container needs to be updated
 	if component.Container.Image != containerConfig.Image {
 		return true

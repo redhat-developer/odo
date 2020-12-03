@@ -165,10 +165,15 @@ test-generic:
 test-cmd-login-logout:
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo login and logout command tests" tests/integration/loginlogout/
 
-# Run link and unlink command tests
-.PHONY: test-cmd-link-unlink
-test-cmd-link-unlink:
-	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/
+# Run link and unlink commnad tests against 4.x cluster
+.PHONY: test-cmd-link-unlink-4-cluster
+test-cmd-link-unlink-4-cluster:
+	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink commnad tests" tests/integration/
+
+# Run link and unlink command tests against 3.11 cluster
+.PHONY: test-cmd-link-unlink-311-cluster
+test-cmd-link-unlink-311-cluster:
+	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/servicecatalog/
 
 # Run odo service command tests
 .PHONY: test-cmd-service
@@ -235,10 +240,20 @@ test-cmd-devfile-exec:
 test-cmd-docker-devfile-exec:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile exec command tests" tests/integration/devfile/docker
 
+# Run odo status devfile command tests
+.PHONY: test-cmd-devfile-status
+test-cmd-devfile-status:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile status command tests" tests/integration/devfile/
+
 # Run odo devfile watch command tests
 .PHONY: test-cmd-devfile-watch
 test-cmd-devfile-watch:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile watch command tests" tests/integration/devfile/
+
+# Run odo devfile app command tests
+.PHONY: test-cmd-devfile-app
+test-cmd-devfile-app:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile app command tests" tests/integration/devfile/
 
 # Run odo devfile delete command tests
 .PHONY: test-cmd-devfile-delete
@@ -317,6 +332,11 @@ test-cmd-devfile-config:
 # test-cmd-docker-devfile-delete:
 # 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
 
+# Run odo status docker devfile command tests
+#.PHONY: test-cmd-docker-devfile-status
+#test-cmd-docker-devfile-status:
+#	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile status command tests" tests/integration/devfile/docker/
+
 # # Run odo catalog devfile command tests
 # .PHONY: test-cmd-docker-devfile-catalog
 # test-cmd-docker-devfile-catalog:
@@ -382,6 +402,11 @@ test-e2e-source:
 test-e2e-images:
 	ginkgo $(GINKGO_FLAGS) -focus="odo supported images e2e tests" tests/e2escenarios/
 
+# Run devfile e2e tests: odo devfile supported tests
+.PHONY: test-e2e-devfile
+test-e2e-devfile:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile supported tests" tests/e2escenarios/
+
 # Run all e2e test scenarios
 .PHONY: test-e2e-all
 test-e2e-all:
@@ -402,7 +427,7 @@ upload-packages:
 # Update vendoring
 .PHONY: vendor-update
 vendor-update:
-	glide update --strip-vendor
+	go mod vendor
 
 .PHONY: openshiftci-presubmit-unittests
 openshiftci-presubmit-unittests:
@@ -412,3 +437,7 @@ openshiftci-presubmit-unittests:
 .PHONY: test-operator-hub
 test-operator-hub:
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo service command tests" tests/integration/operatorhub/
+
+.PHONY: test-cmd-devfile-describe
+test-cmd-devfile-describe:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile describe command tests" tests/integration/devfile/

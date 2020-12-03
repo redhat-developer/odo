@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,6 +33,8 @@ type ServiceListOptions struct {
 	*genericclioptions.Context
 	// Context to use when listing service. This will use app and project values from the context
 	componentContext string
+	// choose between Operator Hub and Service Catalog. If true, Operator Hub
+	csvSupport bool
 }
 
 // NewServiceListOptions creates a new ServiceListOptions instance
@@ -43,7 +44,9 @@ func NewServiceListOptions() *ServiceListOptions {
 
 // Complete completes ServiceListOptions after they've been created
 func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
+		return err
+	} else if o.csvSupport {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
@@ -53,7 +56,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates the ServiceListOptions based on completed values
 func (o *ServiceListOptions) Validate() (err error) {
-	if !experimental.IsExperimentalModeEnabled() {
+	if !o.csvSupport {
 		// Throw error if project and application values are not available.
 		// This will most likely be the case when user does odo service list from outside a component directory and
 		// doesn't provide --app and/or --project flags
@@ -66,9 +69,9 @@ func (o *ServiceListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		// if experimental mode is enabled, we list only operator hub backed
-		// services and not service catalog ones
+	if o.csvSupport {
+		// if cluster supports Operators, we list only operator backed services
+		// and not service catalog ones
 		var list []unstructured.Unstructured
 		list, err = svc.ListOperatorServices(o.KClient)
 		if err != nil {

@@ -39,7 +39,11 @@ func CmdShouldPass(program string, args ...string) string {
 func CmdShouldRunWithTimeout(timeout time.Duration, program string, args ...string) string {
 	session := CmdRunner(program, args...)
 	time.Sleep(timeout)
-	session.Terminate()
+	if runtime.GOOS == "windows" {
+		session.Kill()
+	} else {
+		session.Terminate()
+	}
 	return string(session.Out.Contents())
 }
 

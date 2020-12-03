@@ -2,9 +2,11 @@ package component
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -31,6 +33,18 @@ the feature will be available with experimental mode enabled.
 The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
+
+// Constants for devfile component
+const (
+	devFile = "devfile.yaml"
+)
+
+// DevfilePath is the devfile path that is used by odo,
+// which means odo can:
+// 1. Directly use the devfile in DevfilePath
+// 2. Download devfile from registry to DevfilePath then use the devfile in DevfilePath
+// 3. Copy user's own devfile (path is specified via --devfile flag) to DevfilePath then use the devfile in DevfilePath
+var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() error {
@@ -66,6 +80,12 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 	// Parse devfile and validate
 	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
+
+	if err != nil {
+		return err
+	}
+
+	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
 	}
@@ -105,7 +125,6 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		ForceBuild:      po.forceBuild,
 		Show:            po.show,
 		EnvSpecificInfo: *po.EnvSpecificInfo,
-		DevfileInitCmd:  strings.ToLower(po.devfileInitCommand),
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 		DevfileDebugCmd: strings.ToLower(po.devfileDebugCommand),
@@ -134,6 +153,10 @@ func (po *PushOptions) devfilePushInner() (err error) {
 func (lo LogOptions) DevfileComponentLog() error {
 	// Parse devfile
 	devObj, err := devfile.ParseAndValidate(lo.devfilePath)
+	if err != nil {
+		return err
+	}
+	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
 	}
@@ -176,6 +199,10 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	if err != nil {
 		return err
 	}
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return err
+	}
 	componentName := do.EnvSpecificInfo.GetName()
 
 	kc := kubernetes.KubernetesContext{
@@ -215,7 +242,7 @@ func (to *TestOptions) RunTestCommand() error {
 }
 
 func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
-	// warnIfURLSInvalid checks if env.yaml contains a valide URL for the current pushtarget
+	// warnIfURLSInvalid checks if env.yaml contains a valid URL for the current pushtarget
 	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
 	dockerURLExists := false
 	kubeURLExists := false
@@ -243,6 +270,10 @@ func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 	// Parse devfile
 	devObj, err := devfile.ParseAndValidate(eo.devfilePath)
+	if err != nil {
+		return err
+	}
+	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
 	}

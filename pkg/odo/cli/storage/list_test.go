@@ -1,10 +1,11 @@
 package storage
 
 import (
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"testing"
+
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/testingutil"
-	"testing"
 )
 
 func Test_isContainerDisplay(t *testing.T) {
@@ -16,7 +17,7 @@ func Test_isContainerDisplay(t *testing.T) {
 
 	type args struct {
 		storageList storage.StorageList
-		obj         []common.DevfileComponent
+		obj         []devfilev1.Component
 	}
 	tests := []struct {
 		name string
@@ -32,7 +33,7 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
 					},
 				},
-				obj: []common.DevfileComponent{
+				obj: []devfilev1.Component{
 					testingutil.GetFakeContainerComponent("container-0"),
 					testingutil.GetFakeContainerComponent("container-1"),
 				},
@@ -48,7 +49,7 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/path"), storage.StateTypePushed, "container-1"),
 					},
 				},
-				obj: []common.DevfileComponent{
+				obj: []devfilev1.Component{
 					testingutil.GetFakeContainerComponent("container-0"),
 					testingutil.GetFakeContainerComponent("container-1"),
 				},
@@ -64,7 +65,7 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypeNotPushed, "container-1"),
 					},
 				},
-				obj: []common.DevfileComponent{
+				obj: []devfilev1.Component{
 					testingutil.GetFakeContainerComponent("container-0"),
 					testingutil.GetFakeContainerComponent("container-1"),
 				},
@@ -79,7 +80,7 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
 					},
 				},
-				obj: []common.DevfileComponent{
+				obj: []devfilev1.Component{
 					testingutil.GetFakeContainerComponent("container-0"),
 					testingutil.GetFakeContainerComponent("container-1"),
 				},
@@ -95,7 +96,7 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
 					},
 				},
-				obj: []common.DevfileComponent{
+				obj: []devfilev1.Component{
 					testingutil.GetFakeContainerComponent("container-0"),
 				},
 			},

@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/olekukonko/tablewriter"
+	"github.com/openshift/odo/pkg/preference"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -92,6 +95,120 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 		return nil, err
 	case <-time.After(waitForPodTimeOut):
 		return nil, errors.Errorf("waited %s but couldn't find running pod matching selector: '%s'", waitForPodTimeOut, watchOptions.LabelSelector)
+	}
+}
+
+// WaitAndGetPod block and waits until pod matching selector is in in Running state
+// desiredPhase cannot be PodFailed or PodUnknown
+func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
+
+	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
+	pushTimeout := preference.DefaultPushTimeout * time.Second
+	cfg, configReadErr := preference.New()
+	if configReadErr != nil {
+		klog.V(3).Info(errors.Wrap(configReadErr, "unable to read config file"))
+	} else {
+		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
+	}
+
+	klog.V(3).Infof("Waiting for %s pod", selector)
+	spinner := log.Spinner(waitMessage)
+	defer spinner.End(false)
+
+	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch pod")
+	}
+	defer w.Stop()
+
+	// Here we are going to start a loop watching for the pod status
+	podChannel := make(chan *corev1.Pod)
+	watchErrorChannel := make(chan error)
+	go func(spinny *log.Status) {
+	loop:
+		for {
+			val, ok := <-w.ResultChan()
+			if !ok {
+				watchErrorChannel <- errors.New("watch channel was closed")
+				break loop
+			}
+			if e, ok := val.Object.(*corev1.Pod); ok {
+				klog.V(3).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				for _, cond := range e.Status.Conditions {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonCond, _ := json.Marshal(cond)
+					klog.V(3).Infof("Pod Conditions: %s", string(jsonCond))
+				}
+				for _, status := range e.Status.ContainerStatuses {
+					// using this just for debugging message, so ignoring error on purpose
+					jsonStatus, _ := json.Marshal(status)
+					klog.V(3).Infof("Container Status: %s", string(jsonStatus))
+				}
+				switch e.Status.Phase {
+				case desiredPhase:
+					klog.V(3).Infof("Pod %s is %v", e.Name, desiredPhase)
+					podChannel <- e
+					break loop
+				case corev1.PodFailed, corev1.PodUnknown:
+					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
+					break loop
+				}
+			} else {
+				watchErrorChannel <- errors.New("unable to convert event object to Pod")
+				break loop
+			}
+		}
+		close(podChannel)
+		close(watchErrorChannel)
+	}(spinner)
+
+	// Collect all the events in a separate go routine
+	failedEvents := make(map[string]corev1.Event)
+	quit := make(chan int)
+	go c.CollectEvents(selector, failedEvents, spinner, quit)
+	defer close(quit)
+
+	select {
+	case val := <-podChannel:
+		spinner.End(true)
+		return val, nil
+	case err := <-watchErrorChannel:
+		return nil, err
+	case <-time.After(pushTimeout):
+
+		// Create a useful error if there are any failed events
+		errorMessage := fmt.Sprintf(`waited %s but couldn't find running pod matching selector: '%s'`, pushTimeout, selector)
+
+		if len(failedEvents) != 0 {
+
+			// Create an output table
+			tableString := &strings.Builder{}
+			table := tablewriter.NewWriter(tableString)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetCenterSeparator("")
+			table.SetColumnSeparator("")
+			table.SetRowSeparator("")
+
+			// Header
+			table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
+
+			// List of events
+			for name, event := range failedEvents {
+				table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
+			}
+
+			// Here we render the table as well as a helpful error message
+			table.Render()
+			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
+For more information to help determine the cause of the error, re-run with '-v'.
+See below for a list of failed events that occured more than %d times during deployment:
+%s`, pushTimeout, selector, failedEventCount, tableString)
+		}
+
+		return nil, errors.Errorf(errorMessage)
 	}
 }
 
@@ -190,7 +307,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
 
 	// Set standard log options
-	podLogOptions := corev1.PodLogOptions{Follow: false}
+	podLogOptions := corev1.PodLogOptions{Follow: false, Container: containerName}
 
 	// If the log is being followed, set it to follow / don't wait
 	if followLog {

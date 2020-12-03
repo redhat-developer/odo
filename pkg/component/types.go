@@ -1,6 +1,8 @@
 package component
 
 import (
+	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,14 +17,16 @@ type Component struct {
 
 // ComponentSpec is spec of components
 type ComponentSpec struct {
-	App        string          `json:"app,omitempty"`
-	Type       string          `json:"type,omitempty"`
-	Source     string          `json:"source,omitempty"`
-	SourceType string          `json:"sourceType,omitempty"`
-	URL        []string        `json:"url,omitempty"`
-	Storage    []string        `json:"storage,omitempty"`
-	Env        []corev1.EnvVar `json:"env,omitempty"`
-	Ports      []string        `json:"ports,omitempty"`
+	App         string            `json:"app,omitempty"`
+	Type        string            `json:"type,omitempty"`
+	Source      string            `json:"source,omitempty"`
+	SourceType  string            `json:"sourceType,omitempty"`
+	URL         []string          `json:"url,omitempty"`
+	URLSpec     []url.URL         `json:"-"`
+	Storage     []string          `json:"storage,omitempty"`
+	StorageSpec []storage.Storage `json:"-"`
+	Env         []corev1.EnvVar   `json:"env,omitempty"`
+	Ports       []string          `json:"ports,omitempty"`
 }
 
 // ComponentList is list of components
@@ -40,7 +44,15 @@ type ComponentStatus struct {
 	LinkedServices   []string            `json:"linkedServices,omitempty"`
 }
 
-// State reperesents component state
+// CombinedComponentList is list of s2i and devfile components
+type CombinedComponentList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ListMeta   `json:"metadata,omitempty"`
+	S2IComponents     []Component `json:"s2iComponents"`
+	DevfileComponents []Component `json:"devfileComponents"`
+}
+
+// State represents the component state
 type State string
 
 const (

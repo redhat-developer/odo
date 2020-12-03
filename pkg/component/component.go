@@ -7,9 +7,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"time"
 
+	v1 "k8s.io/api/apps/v1"
+
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 
@@ -18,22 +23,19 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -46,6 +48,12 @@ const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
 const apiVersion = "odo.dev/v1alpha1"
+
+var validSourceTypes = map[string]bool{
+	"git":    true,
+	"local":  true,
+	"binary": true,
+}
 
 // GetComponentDir returns source repo name
 // Parameters:
@@ -120,17 +128,7 @@ func GetDefaultComponentName(componentPath string, componentPathType config.SrcT
 
 // validateSourceType check if given sourceType is supported
 func validateSourceType(sourceType string) bool {
-	validSourceTypes := []string{
-		"git",
-		"local",
-		"binary",
-	}
-	for _, valid := range validSourceTypes {
-		if valid == sourceType {
-			return true
-		}
-	}
-	return false
+	return validSourceTypes[sourceType]
 }
 
 // CreateFromGit inputPorts is the array containing the string port values
@@ -181,7 +179,7 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to fetch deployment configs for the selector %v", componentSelector)
 	}
@@ -200,9 +198,28 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to fetch deployment configs for the selector %v", componentSelector)
+	}
+
+	for _, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
+		if env.SecretRef != nil {
+			secretNames = append(secretNames, env.SecretRef.Name)
+		}
+	}
+
+	return secretNames, nil
+}
+
+// GetDevfileComponentLinkedSecretNames
+func GetDevfileComponentLinkedSecretNames(client *kclient.Client, componentName string, applicationName string) (secretNames []string, err error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	dc, err := client.GetOneDeploymentFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to fetch deployments for the selector %v", componentSelector)
 	}
 
 	for _, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
@@ -264,7 +281,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 		}
 
 		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
-		_, err = client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+		_, err = client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
 		if err != nil {
 			return err
 		}
@@ -564,11 +581,11 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
-//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each enpoint entry
+//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each endpoint entry
+//  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, endpointMap map[int32]parsercommon.Endpoint) (err error) {
-	isExperimentalModeEnabled := experimental.IsExperimentalModeEnabled()
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, containerComponents []devfilev1.Component, isS2I bool) (err error) {
 
 	if client == nil {
 		var err error
@@ -580,7 +597,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		client.Namespace = kClient.Namespace
 	}
 
-	if !isExperimentalModeEnabled {
+	if isS2I {
 		// if component exist then only call the update function
 		if cmpExist {
 			if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
@@ -591,11 +608,12 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 
 	var componentName string
 	var applicationName string
-	if !isExperimentalModeEnabled || kClient == nil {
+	if isS2I || kClient == nil {
 		componentName = componentConfig.GetName()
 		applicationName = componentConfig.GetApplication()
 	} else {
 		componentName = envSpecificInfo.GetName()
+		applicationName = envSpecificInfo.GetApplication()
 	}
 
 	isRouteSupported := false
@@ -605,13 +623,13 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	}
 
 	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
-		ComponentName:             componentName,
-		ApplicationName:           applicationName,
-		ConfigURLs:                componentConfig.GetURL(),
-		EnvURLS:                   envSpecificInfo.GetURL(),
-		IsRouteSupported:          isRouteSupported,
-		IsExperimentalModeEnabled: isExperimentalModeEnabled,
-		EndpointMap:               endpointMap,
+		ComponentName:       componentName,
+		ApplicationName:     applicationName,
+		ConfigURLs:          componentConfig.GetURL(),
+		EnvURLS:             envSpecificInfo.GetURL(),
+		IsRouteSupported:    isRouteSupported,
+		ContainerComponents: containerComponents,
+		IsS2I:               isS2I,
 	})
 }
 
@@ -644,7 +662,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return errors.Wrap(err, "unable to get deployment for component")
 	}
@@ -652,7 +670,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
 
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	pod, err := client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
@@ -670,7 +688,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// If there are files identified as deleted, propagate them to the component pod
 	if len(delFiles) > 0 {
-		klog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
+		klog.V(4).Infof("propagating deletion of files %s to pod", strings.Join(delFiles, " "))
 		/*
 			Delete files observed by watch to have been deleted from each of s2i directories like:
 				deployment dir: In interpreted runtimes like python, source is copied over to deployment dir so delete needs to happen here as well
@@ -823,69 +841,94 @@ func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision
 	return nil
 }
 
-// GetComponentType returns type of component in given application and project
-func GetComponentType(client *occlient.Client, componentName string, applicationName string) (string, error) {
-
-	// filter according to component and application name
-	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
-	componentImageTypes, err := client.GetDeploymentConfigLabelValues(componentlabels.ComponentTypeLabel, selector)
+// GetComponentNames retrieves the names of the components in the specified application
+func GetComponentNames(client *occlient.Client, applicationName string) ([]string, error) {
+	components, err := GetPushedComponents(client, applicationName)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get type of %s component")
+		return []string{}, err
 	}
-	if len(componentImageTypes) < 1 {
-		// no type returned
-		return "", errors.Wrap(err, "unable to find type of %s component")
+	names := make([]string, 0, len(components))
+	for name := range components {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, nil
+}
 
+// ListDevfileComponents returns the devfile component matching a selector.
+// The selector could be about selecting components part of an application.
+// There are helpers in "applabels" package for this.
+func ListDevfileComponents(client *occlient.Client, selector string) (ComponentList, error) {
+
+	var deploymentList []v1.Deployment
+	var components []Component
+
+	// retrieve all the deployments that are associated with this application
+	deploymentList, err := client.GetKubeClient().GetDeploymentFromSelector(selector)
+	if err != nil {
+		return ComponentList{}, errors.Wrapf(err, "unable to list components")
 	}
-	// check if all types are the same
-	// it should be as we are secting only exactly one component, and it doesn't make sense
-	// to have one component labeled with different component type labels
-	for _, componentImageType := range componentImageTypes {
-		if componentImageTypes[0] != componentImageType {
-			return "", errors.Wrap(err, "data mismatch: %s component has objects with different types")
+
+	// extract the labels we care about from each component
+	for _, elem := range deploymentList {
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.Namespace)
+		if err != nil {
+			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+		}
+
+		if !reflect.ValueOf(component).IsZero() {
+			component.Spec.SourceType = string(config.LOCAL)
+			components = append(components, component)
 		}
 
 	}
-	return componentImageTypes[0], nil
+
+	compoList := GetMachineReadableFormatForList(components)
+	return compoList, nil
 }
 
-// List lists components in active application
-func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
+// ListS2IComponents lists s2i components in active application
+func ListS2IComponents(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 
 	var applicationSelector string
 	if applicationName != "" {
-		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+		applicationSelector = applabels.GetSelector(applicationName)
 	}
+
+	deploymentConfigSupported := false
+	var err error
 
 	var components []Component
 	componentNamesMap := make(map[string]bool)
 
 	if client != nil {
-		project, err := client.GetProject(client.Namespace)
+		deploymentConfigSupported, err = client.IsDeploymentConfigSupported()
 		if err != nil {
 			return ComponentList{}, err
 		}
+	}
 
-		if project != nil {
-			// retrieve all the deployment configs that are associated with this application
-			dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	if deploymentConfigSupported && client != nil {
+		// retrieve all the deployment configs that are associated with this application
+		dcList, err := client.ListDeploymentConfigs(applicationSelector)
+		if err != nil {
+			return ComponentList{}, errors.Wrapf(err, "unable to list components")
+		}
+
+		// extract the labels we care about from each component
+		for _, elem := range dcList {
+			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
 			if err != nil {
-				return ComponentList{}, errors.Wrapf(err, "unable to list components")
+				return ComponentList{}, errors.Wrap(err, "Unable to get component")
 			}
-
-			// extract the labels we care about from each component
-			for _, elem := range dcList {
-				component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
-				if err != nil {
-					return ComponentList{}, errors.Wrap(err, "Unable to get component")
-				}
+			if !reflect.ValueOf(component).IsZero() {
 				components = append(components, component)
 				componentNamesMap[component.Name] = true
 			}
 		}
-
 	}
 
+	// this adds the local s2i component if there is one
 	if localConfigInfo != nil {
 		component, err := GetComponentFromConfig(localConfigInfo)
 
@@ -911,30 +954,41 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 	return compoList, nil
 }
 
+// List lists all s2i and devfile components in active application
+func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
+	var applicationSelector string
+	if applicationName != "" {
+		applicationSelector = applabels.GetSelector(applicationName)
+	}
+	var components []Component
+	devfileList, err := ListDevfileComponents(client, applicationSelector)
+	if err != nil {
+		return ComponentList{}, nil
+	}
+	components = append(components, devfileList.Items...)
+
+	s2iList, err := ListS2IComponents(client, applicationName, localConfigInfo)
+	if err != nil {
+		return ComponentList{}, err
+	}
+	components = append(components, s2iList.Items...)
+
+	return GetMachineReadableFormatForList(components), nil
+}
+
 // GetComponentFromConfig returns the component on the config if it exists
 func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, error) {
-	if localConfig.ConfigFileExists() {
-		component := getMachineReadableFormat(localConfig.GetName(), localConfig.GetType())
-
-		component.Namespace = localConfig.GetProject()
-
-		component.Spec = ComponentSpec{
-			App:        localConfig.GetApplication(),
-			Type:       localConfig.GetType(),
-			Source:     localConfig.GetSourceLocation(),
-			Ports:      localConfig.GetPorts(),
-			SourceType: string(localConfig.GetSourceType()),
-		}
-
-		if localConfig.GetSourceType() == "local" || localConfig.GetSourceType() == "binary" {
-			component.Spec.Source = util.GenFileURL(localConfig.GetSourceLocation())
-		}
-
-		urls := localConfig.GetURL()
-		if len(urls) > 0 {
-			for _, url := range urls {
-				component.Spec.URL = append(component.Spec.URL, url.Name)
-			}
+	component := getComponentFrom(localConfig, localConfig.GetType())
+	if len(component.Name) > 0 {
+		location := localConfig.GetSourceLocation()
+		sourceType := localConfig.GetSourceType()
+		component.Spec.Ports = localConfig.GetPorts()
+		component.Spec.SourceType = string(sourceType)
+		switch sourceType {
+		case config.LOCAL, config.BINARY:
+			component.Spec.Source = util.GenFileURL(location)
+		default:
+			component.Spec.Source = location
 		}
 
 		for _, localEnv := range localConfig.GetEnvVars() {
@@ -949,8 +1003,53 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 	return Component{}, nil
 }
 
+// GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
+func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
+	if info.Exists() {
+		devfile, err := parser.Parse(info.GetDevfilePath())
+		if err != nil {
+			return Component{}, parser.DevfileObj{}, err
+		}
+		component := getComponentFrom(info, devfile.Data.GetMetadata().Name)
+		for _, cmp := range devfile.Data.GetComponents() {
+			if cmp.Container != nil {
+				for _, env := range cmp.Container.Env {
+					component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
+				}
+			}
+		}
+
+		return component, devfile, nil
+	}
+	return Component{}, parser.DevfileObj{}, nil
+}
+
+func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Component {
+	if info.Exists() {
+		component := getMachineReadableFormat(info.GetName(), componentType)
+
+		component.Namespace = info.GetNamespace()
+
+		component.Spec = ComponentSpec{
+			App:   info.GetApplication(),
+			Type:  componentType,
+			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
+		}
+
+		urls := info.GetURL()
+		if len(urls) > 0 {
+			for _, url := range urls {
+				component.Spec.URL = append(component.Spec.URL, url.Name)
+			}
+		}
+
+		return component
+	}
+	return Component{}
+}
+
 // ListIfPathGiven lists all available component in given path directory
-func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, error) {
+func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, error) {
 	var components []Component
 	var err error
 	for _, path := range paths {
@@ -989,7 +1088,61 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 		})
 
 	}
-	return GetMachineReadableFormatForList(components), err
+	return components, err
+}
+
+func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Component, error) {
+	var components []Component
+	var err error
+	for _, path := range paths {
+		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+			// we check for .odo/env/env.yaml folder first and then find devfile.yaml, this could be changed
+			// TODO: optimise this
+			if f != nil && strings.Contains(f.Name(), ".odo") {
+				// lets find if there is a devfile and an env.yaml
+				dir := filepath.Dir(path)
+				data, err := envinfo.NewEnvSpecificInfo(dir)
+				if err != nil {
+					return err
+				}
+
+				// if the .odo folder doesn't contain a proper env file
+				if data.GetName() == "" || data.GetApplication() == "" || data.GetNamespace() == "" {
+					return nil
+				}
+
+				// we just want to confirm if the devfile is correct
+				_, err = parser.Parse(filepath.Join(dir, "devfile.yaml"))
+				if err != nil {
+					return err
+				}
+				con, _ := filepath.Abs(filepath.Dir(path))
+
+				comp := NewComponent(data.GetName())
+				comp.Status.State = StateTypeUnknown
+				comp.Spec.App = data.GetApplication()
+				comp.Namespace = data.GetNamespace()
+				comp.Status.Context = con
+
+				// since the config file maybe belong to a component of a different project
+				if client != nil {
+					client.Namespace = data.GetNamespace()
+					deployment, err := client.GetDeploymentByName(data.GetName())
+					if err != nil {
+						comp.Status.State = StateTypeNotPushed
+					} else if deployment != nil {
+						comp.Status.State = StateTypePushed
+					}
+				}
+
+				components = append(components, comp)
+			}
+
+			return nil
+		})
+
+	}
+	return components, err
 }
 
 // GetComponentSource what source type given component uses
@@ -997,30 +1150,12 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 // The second returned string is a source (url to git repository or local path or path to binary)
 // we retrieve the source type by looking up the DeploymentConfig that's deployed
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string) (string, string, error) {
-
-	// Namespace the application
-	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	component, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", "", errors.Wrapf(err, "unable to get type of %s component", componentName)
+	} else {
+		return component.GetSource()
 	}
-
-	deploymentConfig, err := client.GetDeploymentConfigFromName(namespacedOpenShiftObject)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
-	}
-
-	sourceType := deploymentConfig.ObjectMeta.Annotations[ComponentSourceTypeAnnotation]
-	if !validateSourceType(sourceType) {
-		return "", "", fmt.Errorf("unsupported component source type %s", sourceType)
-	}
-
-	var sourcePath string
-	if sourceType == string(config.GIT) {
-		sourcePath = deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
-	}
-
-	klog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
-	return sourceType, sourcePath, nil
 }
 
 // Update updates the requested component
@@ -1131,7 +1266,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 
 	// we choose the env variables in the config over the one present in the DC
 	// so the local config is reflected on the cluster
-	evl, err := occlient.GetInputEnvVarsFromStrings(envVarsList.ToStringSlice())
+	evl, err := kclient.GetInputEnvVarsFromStrings(envVarsList.ToStringSlice())
 	if err != nil {
 		return err
 	}
@@ -1312,61 +1447,84 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 }
 
 func GetComponentState(client *occlient.Client, componentName, applicationName string) State {
-	deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	// first check if a deployment exists
+	c, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
 		return StateTypeUnknown
 	}
-	_, err = client.GetDeploymentConfigFromName(deploymentName)
-
-	if kerrors.IsNotFound(err) {
-		return StateTypeNotPushed
-	} else if err != nil {
-		return StateTypeUnknown
+	if c != nil {
+		return StateTypePushed
 	}
-
-	return StateTypePushed
+	return StateTypeNotPushed
 }
 
 // GetComponent provides component definition
 func GetComponent(client *occlient.Client, componentName string, applicationName string, projectName string) (component Component, err error) {
+	return getRemoteComponentMetadata(client, componentName, applicationName, projectName, true, true)
+}
+
+// getRemoteComponentMetadata provides component metadata from the cluster
+func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, projectName string, getUrls, getStorage bool) (component Component, err error) {
+	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
+	if err != nil || fromCluster == nil {
+		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
+	}
+
 	// Component Type
-	componentType, err := GetComponentType(client, componentName, applicationName)
+	componentType, err := fromCluster.GetType()
 	if err != nil {
 		return component, errors.Wrap(err, "unable to get source type")
 	}
+
+	// init component
+	component = getMachineReadableFormat(componentName, componentType)
+
 	// Source
-	sourceType, path, err := GetComponentSource(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get source path")
+	sourceType, path, sourceError := fromCluster.GetSource()
+	if sourceError != nil {
+		_, sourceAbsent := sourceError.(noSourceError)
+		if !sourceAbsent {
+			return Component{}, errors.Wrap(err, "unable to get source path")
+		}
+	} else {
+		component.Spec.Source = path
+		component.Spec.SourceType = sourceType
 	}
+
 	// URL
-	urlList, err := urlpkg.ListPushed(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get url list")
-	}
-	var urls []string
-	for _, url := range urlList.Items {
-		urls = append(urls, url.Name)
+	if getUrls {
+		urls, err := fromCluster.GetURLs()
+		if err != nil {
+			return Component{}, err
+		}
+		component.Spec.URLSpec = urls
+		urlsNb := len(urls)
+		if urlsNb > 0 {
+			res := make([]string, 0, urlsNb)
+			for _, url := range urls {
+				res = append(res, url.Name)
+			}
+			component.Spec.URL = res
+		}
 	}
 
 	// Storage
-	appStore, err := storage.List(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get storage list")
+	if getStorage {
+		appStore, err := fromCluster.GetStorage()
+		if err != nil {
+			return Component{}, errors.Wrap(err, "unable to get storage list")
+		}
+
+		component.Spec.StorageSpec = appStore
+		var storageList []string
+		for _, store := range appStore {
+			storageList = append(storageList, store.Name)
+		}
+		component.Spec.Storage = storageList
 	}
-	var storage []string
-	for _, store := range appStore.Items {
-		storage = append(storage, store.Name)
-	}
+
 	// Environment Variables
-	DC, err := util.NamespaceOpenShiftObject(componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get DC list")
-	}
-	envVars, err := client.GetEnvVarsFromDC(DC)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get envVars list")
-	}
+	envVars := fromCluster.GetEnvVars()
 	var filteredEnv []corev1.EnvVar
 	for _, env := range envVars {
 		if !strings.Contains(env.Name, "ODO") {
@@ -1374,24 +1532,17 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 		}
 	}
 
-	if err != nil {
-		return component, errors.Wrap(err, "unable to get envVars list")
-	}
-
 	linkedServices := make([]string, 0, 5)
 	linkedComponents := make(map[string][]string)
-	linkedSecretNames, err := GetComponentLinkedSecretNames(client, componentName, applicationName)
-	if err != nil {
-		return component, errors.Wrap(err, "unable to list linked secrets")
-	}
+	linkedSecretNames := fromCluster.GetLinkedSecretNames()
 	for _, secretName := range linkedSecretNames {
-		secret, err := client.GetSecret(secretName, projectName)
+		secret, err := client.GetKubeClient().GetSecret(secretName, projectName)
 		if err != nil {
-			return component, errors.Wrapf(err, "unable to get info about secret %s", secretName)
+			return Component{}, errors.Wrapf(err, "unable to get info about secret %s", secretName)
 		}
 		componentName, containsComponentLabel := secret.Labels[componentlabels.ComponentLabel]
 		if containsComponentLabel {
-			if port, ok := secret.Annotations[occlient.ComponentPortAnnotationName]; ok {
+			if port, ok := secret.Annotations[kclient.ComponentPortAnnotationName]; ok {
 				linkedComponents[componentName] = append(linkedComponents[componentName], port)
 			}
 		} else {
@@ -1399,13 +1550,8 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 		}
 	}
 
-	component = getMachineReadableFormat(componentName, componentType)
 	component.Namespace = client.Namespace
 	component.Spec.App = applicationName
-	component.Spec.Source = path
-	component.Spec.URL = urls
-	component.Spec.SourceType = sourceType
-	component.Spec.Storage = storage
 	component.Spec.Env = filteredEnv
 	component.Status.LinkedComponents = linkedComponents
 	component.Status.LinkedServices = linkedServices
@@ -1424,7 +1570,7 @@ func GetLogs(client *occlient.Client, componentName string, applicationName stri
 	}
 
 	// Retrieve the logs
-	err = client.DisplayDeploymentConfigLog(namespacedOpenShiftObject, follow, stdout)
+	err = client.DisplayDeploymentConfigLog(namespacedOpenShiftObject, follow)
 	if err != nil {
 		return err
 	}
@@ -1433,6 +1579,13 @@ func GetLogs(client *occlient.Client, componentName string, applicationName stri
 }
 
 func getMachineReadableFormat(componentName, componentType string) Component {
+	cmp := NewComponent(componentName)
+	cmp.Spec.Type = componentType
+	return cmp
+}
+
+// NewComponent provides a constructor to component struct with some metadata prefilled
+func NewComponent(componentName string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
@@ -1441,28 +1594,44 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: componentName,
 		},
-		Spec: ComponentSpec{
-			Type: componentType,
-		},
 		Status: ComponentStatus{},
 	}
-
 }
 
-// GetMachineReadableFormatForList returns list of components in machine readable format
-func GetMachineReadableFormatForList(components []Component) ComponentList {
-	if len(components) == 0 {
-		components = []Component{}
+// GetMachineReadableFormatForList returns list of devfile and s2i components in machine readable format
+func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
+	if len(s2iComps) == 0 {
+		s2iComps = []Component{}
 	}
+
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
 			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
-		Items:    components,
+		Items:    s2iComps,
+	}
+}
+
+// GetMachineReadableFormatForCombinedCompList returns list of devfile and s2i components in machine readable format
+func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []Component) CombinedComponentList {
+	if len(s2iComps) == 0 {
+		s2iComps = []Component{}
+	}
+	if len(devfileComps) == 0 {
+		devfileComps = []Component{}
 	}
 
+	return CombinedComponentList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: apiVersion,
+		},
+		ListMeta:          metav1.ListMeta{},
+		S2IComponents:     s2iComps,
+		DevfileComponents: devfileComps,
+	}
 }
 
 // getStorageFromConfig gets all the storage from the config

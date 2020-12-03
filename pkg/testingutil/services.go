@@ -3,10 +3,11 @@ package testingutil
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
+
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -15,16 +16,16 @@ import (
 type M map[string]interface{}
 
 // FakeClusterServiceClass creates a fake service class with the specified name for testing purposes
-func FakeClusterServiceClass(name string, tags ...string) v1beta1.ClusterServiceClass {
+func FakeClusterServiceClass(name string, tags ...string) scv1beta1.ClusterServiceClass {
 	classExternalMetaData := make(map[string]interface{})
 	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
 	if err != nil {
 		panic(err)
 	}
 
-	class := v1beta1.ClusterServiceClass{
-		Spec: v1beta1.ClusterServiceClassSpec{
-			CommonServiceClassSpec: v1beta1.CommonServiceClassSpec{
+	class := scv1beta1.ClusterServiceClass{
+		Spec: scv1beta1.ClusterServiceClassSpec{
+			CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
 				ExternalName:     name,
 				ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
 			},
@@ -40,16 +41,16 @@ func FakeClusterServiceClass(name string, tags ...string) v1beta1.ClusterService
 
 // FakeClusterServicePlan creates a fake plan with the specified external name and using planNumber to customize description,
 // metadata and parameter values
-func FakeClusterServicePlan(name string, planNumber int) v1beta1.ClusterServicePlan {
-	return v1beta1.ClusterServicePlan{
+func FakeClusterServicePlan(name string, planNumber int) scv1beta1.ClusterServicePlan {
+	return scv1beta1.ClusterServicePlan{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1beta1.ClusterServicePlanSpec{
-			ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+		Spec: scv1beta1.ClusterServicePlanSpec{
+			ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
 				Name: "1dda1477cace09730bd8ed7a6505607e",
 			},
-			CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+			CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
 				ExternalName:                  name,
 				Description:                   fmt.Sprintf("this is a example description %d", planNumber),
 				ExternalMetadata:              SingleValuedRawExtension("displayName", fmt.Sprintf("plan-name-%d", planNumber)),
@@ -156,4 +157,23 @@ func FakeServiceClassInstance(serviceInstanceName string, serviceClassName strin
 		},
 	}
 	return service
+}
+
+func FakeKubeService(componentName, serviceName string) corev1.Service {
+	return corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: serviceName,
+			Labels: map[string]string{
+				"component-name": componentName,
+			},
+		},
+	}
+}
+
+func FakeKubeServices(componentName string) []corev1.Service {
+	return []corev1.Service{
+		FakeKubeService(componentName, "service-1"),
+		FakeKubeService(componentName, "service-2"),
+		FakeKubeService(componentName, "service-3"),
+	}
 }

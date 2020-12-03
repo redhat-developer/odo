@@ -4,10 +4,11 @@ metadata:
 starterProjects:
   - name: nodejs-starter
     git:
-      location: "https://github.com/che-samples/web-nodejs-sample.git"
+      remotes:
+        origin: "https://github.com/che-samples/web-nodejs-sample.git"
 components:
-  - container:
-      name: runtime
+  - name: runtime
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       env:
@@ -20,35 +21,34 @@ components:
       volumeMounts:
         - name: myvol
           path: /data
-  - container:
-      name: runtime2
+  - name: runtime2
+    container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       mountSources: false
       volumeMounts:
         - name: myvol
-          path: /data
         - name: myvol2
           path: /data2
-  - volume:
-      name: myvol
+  - name: myvol
+    volume:
       size: 3Gi
-  - volume:
-      name: myvol2
+  - name: myvol2
+    volume: {}
 commands:
-  - exec:
-      id: devbuild
+  - id: devbuild
+    exec:
       component: runtime
       commandLine: "echo hello >> myfile.log"
       workingDir: /data
       group:
         kind: build
         isDefault: true
-  - exec:
-      id: devrun
+  - id: devrun
+    exec:
       component: runtime2
       commandLine: "cat myfile.log"
-      workingDir: /data
+      workingDir: /myvol
       group:
         kind: run
         isDefault: true

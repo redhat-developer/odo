@@ -1,9 +1,10 @@
 package docker
 
 import (
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"io"
+
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/openshift/odo/pkg/machineoutput"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/component"
@@ -52,7 +53,7 @@ func (d Adapter) Test(testCmd string, show bool) error {
 	return d.componentAdapter.Test(testCmd, show)
 }
 
-// Log show logs from component
+// Log shows logs from component
 func (d Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	return d.componentAdapter.Log(follow, debug)
 }
@@ -69,10 +70,20 @@ func (d Adapter) Logger() machineoutput.MachineEventLoggingClient {
 	return d.componentAdapter.Logger()
 }
 
-func (d Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (d Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	return d.componentAdapter.ComponentInfo(command)
 }
 
-func (d Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+func (d Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	return d.componentAdapter.SupervisorComponentInfo(command)
+}
+
+// StartContainerStatusWatch outputs container Docker status changes to the console, as used by status command
+func (d Adapter) StartContainerStatusWatch() {
+	d.componentAdapter.StartContainerStatusWatch()
+}
+
+// StartSupervisordCtlStatusWatch outputs supervisord program status changes to the console, as used by status command
+func (d Adapter) StartSupervisordCtlStatusWatch() {
+	d.componentAdapter.StartSupervisordCtlStatusWatch()
 }

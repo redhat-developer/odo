@@ -13,7 +13,6 @@ jobs:
       install:
         - make goget-tools
       script:
-        - lsb_release -a
         - export PATH="$PATH:$GOPATH/bin"
         - make bin
         - make validate
@@ -21,6 +20,10 @@ jobs:
       after_success:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
+      after_failure:
+        - free -m
+        - dmesg | grep memory
+
       
     # YAML alias, for settings shared across the tests on windows
     - &windows-test
@@ -101,7 +104,7 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-service
-        - travis_wait make test-cmd-link-unlink
+        - travis_wait make test-cmd-link-unlink-311-cluster
         - odo logout
 
     - <<: *base-test
@@ -127,7 +130,7 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, watch, delete, registry, exec, test, env, config, debug and log command integration tests"
+      name: "devfile catalog, create, push, watch, delete, registry, exec, test, env, status, config, debug and log command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make configure-supported-311-is
@@ -154,6 +157,7 @@ jobs:
         - travis_wait make test-e2e-java
         - travis_wait make test-e2e-source
         - travis_wait make test-e2e-images
+        - travis_wait make test-e2e-devfile
         - odo logout
     
     # Fix https://github.com/openshift/odo/issues/3714 to uncomment tests
@@ -164,6 +168,7 @@ jobs:
     #     - make bin
     #     - sudo cp odo /usr/bin
     #     - travis_wait make test-cmd-docker-devfile-push
+    #     - travis_wait make test-cmd-docker-devfile-status
     #     - travis_wait make test-cmd-docker-devfile-watch
     #     - travis_wait make test-cmd-docker-devfile-catalog
     #     - travis_wait make test-cmd-docker-devfile-delete
@@ -174,7 +179,7 @@ jobs:
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog,url, watch, push, debug, delete, exec, test, log, storage and create command integration tests on kubernetes cluster"
+      name: "devfile catalog, url, watch, push, debug, delete, exec, test, log, status, storage and create command integration tests on kubernetes cluster"
       env:
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false

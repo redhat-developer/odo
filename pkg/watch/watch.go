@@ -48,8 +48,6 @@ type WatchParameters struct {
 	Show bool
 	// EnvSpecificInfo contains infomation of env.yaml file
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
-	// DevfileInitCmd takes the init command through the command line and overwrites devfile init command
-	DevfileInitCmd string
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileBuildCmd string
 	// DevfileRunCmd takes the run command through the command line and overwrites devfile run command
@@ -328,7 +326,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 
 			deletedPaths = removeDuplicates(deletedPaths)
 
-			for _, file := range changedFiles {
+			for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 				fmt.Fprintf(out, "File %s changed\n", file)
 			}
 			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
@@ -347,7 +345,6 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							WatchDeletedFiles:        deletedPaths,
 							IgnoredFiles:             parameters.FileIgnores,
 							ForceBuild:               false,
-							DevfileInitCmd:           parameters.DevfileInitCmd,
 							DevfileBuildCmd:          parameters.DevfileBuildCmd,
 							DevfileRunCmd:            parameters.DevfileRunCmd,
 							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
@@ -374,7 +371,6 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							WatchDeletedFiles:        deletedPaths,
 							IgnoredFiles:             parameters.FileIgnores,
 							ForceBuild:               false,
-							DevfileInitCmd:           parameters.DevfileInitCmd,
 							DevfileBuildCmd:          parameters.DevfileBuildCmd,
 							DevfileRunCmd:            parameters.DevfileRunCmd,
 							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,

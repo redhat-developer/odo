@@ -1,34 +1,52 @@
 = Installing odo
 
-The following section describes how to install `odo` on different platforms using the CLI.
+The following section describes how to install `odo` on different platforms via CLI as well as IDEs.
 
-= Installing v2.0.0-alpha-2 of odo
-
-v2.0.0-alpha-2 of odo uses **devfile** as its default deployment mechanism.
+= Installing the odo CLI tool (latest)
 
 == Installing odo on Linux
 
 === Binary installation
 
+[source,sh]
 ----
-# curl -L https://github.com/openshift/odo/releases/download/v2.0.0-alpha-2/odo-linux-amd64 -o /usr/local/bin/odo
-# chmod +x /usr/local/bin/odo
+  $ curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-amd64 -o /usr/local/bin/odo
+  $ chmod +x /usr/local/bin/odo
+----
+
+== Installing odo on Linux on IBM Z
+
+=== Binary installation
+
+----
+  $ curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-s390x -o /usr/local/bin/odo
+  $ chmod +x /usr/local/bin/odo
+----
+
+== Installing odo on Linux on IBM Power
+
+=== Binary installation
+
+----
+  $ curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-ppc64le -o /usr/local/bin/odo
+  $ chmod +x /usr/local/bin/odo
 ----
 
 == Installing odo on macOS
 
 === Binary installation
 
+[source,sh]
 ----
-# curl -L https://github.com/openshift/odo/releases/download/v2.0.0-alpha-2/odo-darwin-amd64 -o /usr/local/bin/odo
-# chmod +x /usr/local/bin/odo
+  $ curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64 -o /usr/local/bin/odo
+  $ chmod +x /usr/local/bin/odo
 ----
 
 == Installing odo on Windows
 
 === Binary installation
 
-. Download the latest link:https://github.com/openshift/odo/releases/download/v2.0.0-alpha-2/odo-windows-amd64.exe[`odo.exe`] file.
+. Download the latest link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe[`odo.exe`] file.
 . Add the location of your `odo.exe` to your `GOPATH/bin` directory.
 
 === Setting the `PATH` variable for Windows 10
@@ -51,8 +69,17 @@ The following example demonstrates how to set up a path variable. Your binaries 
 . Select *Path* from the *Variable* section and click *Edit*.
 . Click *New* and type `C:\go-bin` into the field or click *Browse* and select the directory, and click *OK*.
 
-= Installing v1.2.5 of odo
+= Installing odo in Visual Studio Code (VSCode)
 
-v1.2.5 of odo uses **Source-to-Image** as its default deployment mechanism.
+The https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector[OpenShift VSCode extension] uses both `odo` and the `oc` binary to interact with your Kubernetes or OpenShift cluster.
 
-Visit the latest link:https://docs.openshift.com/container-platform/4.5/cli_reference/developer_cli_odo/installing-odo.html[OpenShift documentation] for installation details.
+== Plugin installation
+
+. Launch VS Code Quick Open (Ctrl+P)
+
+. Paste the following command:
++
+[source,sh]
+----
+  $ ext install redhat.vscode-openshift-connector
+----

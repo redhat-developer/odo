@@ -22,7 +22,7 @@ chmod 640 $TMP_DIR/kubeconfig
 export KUBECONFIG=$TMP_DIR/kubeconfig
 
 # Login as developer
-odo login -u developer -p developer
+odo login -u developer -p password@123
 
 # Check login user name for debugging purpose
 oc whoami
@@ -36,5 +36,7 @@ make test-operator-hub
 
 # E2e tests
 make test-e2e-all
+
+cp -r reports $ARTIFACTS_DIR 
 
 odo logout

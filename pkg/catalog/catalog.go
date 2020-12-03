@@ -12,11 +12,13 @@ import (
 	"github.com/zalando/go-keyring"
 
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -25,6 +27,19 @@ import (
 const (
 	apiVersion = "odo.dev/v1alpha1"
 )
+
+var supportedImages = map[string]bool{
+	"redhat-openjdk-18/openjdk18-openshift:latest": true,
+	"openjdk/openjdk-11-rhel8:latest":              true,
+	"openjdk/openjdk-11-rhel7:latest":              true,
+	"ubi8/openjdk-11:latest":                       true,
+	"centos/nodejs-10-centos7:latest":              true,
+	"centos/nodejs-12-centos7:latest":              true,
+	"rhscl/nodejs-10-rhel7:latest":                 true,
+	"rhscl/nodejs-12-rhel7:latest":                 true,
+	"rhoar-nodejs/nodejs-10:latest":                true,
+	"ubi8/nodejs-12:latest":                        true,
+}
 
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
@@ -116,7 +131,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 		URL: indexLink,
 	}
 	if registryUtil.IsSecure(registry.Name) {
-		token, err := keyring.Get(util.CredentialPrefix+registry.Name, "default")
+		token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 		if err != nil {
 			return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
 		}
@@ -280,6 +295,27 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 	}, nil
 }
 
+// ListOperatorServices fetches a list of Operators from the cluster and
+// returns only those Operators which are successfully installed on the cluster
+func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
+	allCsvs, err := client.GetClusterServiceVersionList()
+	if err != nil {
+		return nil, err
+	}
+
+	// now let's filter only those csvs which are successfully installed
+	var csvList olm.ClusterServiceVersionList
+	csvList.TypeMeta = allCsvs.TypeMeta
+	csvList.ListMeta = allCsvs.ListMeta
+	for _, csv := range allCsvs.Items {
+		if csv.Status.Phase == "Succeeded" {
+			csvList.Items = append(csvList.Items, csv)
+		}
+	}
+
+	return &csvList, nil
+}
+
 // SearchService searches for the services
 func SearchService(client *occlient.Client, name string) (ServiceTypeList, error) {
 	var result []ServiceType
@@ -351,7 +387,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 	currentNamespace := client.GetCurrentProjectName()
 
 	// Fetch imagestreams from default openshift namespace
-	openshiftNSImageStreams, openshiftNSISFetchError := client.GetImageStreams(occlient.OpenShiftNameSpace)
+	openshiftNSImageStreams, openshiftNSISFetchError := client.ListImageStreams(occlient.OpenShiftNameSpace)
 	if openshiftNSISFetchError != nil {
 		// Tolerate the error as it might only be a partial failure
 		// We may get the imagestreams from other Namespaces
@@ -361,7 +397,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 	}
 
 	// Fetch imagestreams from current namespace
-	currentNSImageStreams, currentNSISFetchError := client.GetImageStreams(currentNamespace)
+	currentNSImageStreams, currentNSISFetchError := client.ListImageStreams(currentNamespace)
 	// If failure to fetch imagestreams from current namespace, log the failure for debugging purposes
 	if currentNSISFetchError != nil {
 		// Tolerate the error as it is totally a valid scenario to not have any imagestreams in current namespace
@@ -466,14 +502,21 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 			// here we remove the tag and digest
 			ns, img, tag, _, _ := occlient.ParseImageName(urlImageName)
 			imageName = ns + "/" + img + ":" + tag
-		} else if tagRef.From.Kind == "ImageStreamTag" {
+			tagMap[tagRef.Name] = imageName
+		}
+	}
+
+	for _, tagRef := range tagRefs {
+		if tagRef.From.Kind == "ImageStreamTag" {
+			imageName := tagRef.From.Name
 			tagList := strings.Split(imageName, ":")
 			tag := tagList[len(tagList)-1]
 			// if the kind is a image stream tag that means its pointing to an existing dockerImage or image stream image
 			// we just look it up from the tapMap we already have
 			imageName = tagMap[tag]
+			tagMap[tagRef.Name] = imageName
 		}
-		tagMap[tagRef.Name] = imageName
+
 	}
 	return tagMap
 }
@@ -481,22 +524,7 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 // isSupportedImages returns if the image is supported or not. the supported images have been provided here
 // https://github.com/openshift/odo-init-image/blob/master/language-scripts/image-mappings.json
 func isSupportedImage(imgName string) bool {
-	supportedImages := []string{
-		"redhat-openjdk-18/openjdk18-openshift:latest",
-		"openjdk/openjdk-11-rhel8:latest",
-		"openjdk/openjdk-11-rhel7:latest",
-		"centos/nodejs-10-centos7:latest",
-		"centos/nodejs-12-centos7:latest",
-		"rhscl/nodejs-10-rhel7:latest",
-		"rhscl/nodejs-12-rhel7:latest",
-		"rhoar-nodejs/nodejs-10:latest",
-	}
-	for _, supImage := range supportedImages {
-		if supImage == imgName {
-			return true
-		}
-	}
-	return false
+	return supportedImages[imgName]
 }
 
 // getBuildersFromImageStreams returns all the builder Images from the image streams provided and also hides the builder images

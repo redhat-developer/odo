@@ -2,6 +2,9 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/storage"
 
@@ -9,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
@@ -29,15 +31,14 @@ type ComponentOptions struct {
 
 // Complete completes component options
 func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	co.Context = genericclioptions.NewContext(cmd)
-
-	// If no arguments have been passed, get the current component
-	// else, use the first argument and check to see if it exists
-	if len(args) == 0 {
-		co.componentName = co.Context.Component()
+	context := genericclioptions.GetContextFlagValue(cmd)
+	devfilePath := filepath.Join(context, devFile)
+	if util.CheckPathExists(devfilePath) {
+		co.Context = genericclioptions.NewDevfileContext(cmd)
 	} else {
-		co.componentName = co.Context.Component(args[0])
+		co.Context = genericclioptions.NewContext(cmd)
 	}
+	co.componentName = co.Context.Component(args...)
 	return
 }
 
@@ -57,6 +58,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	watchCmd := NewCmdWatch(WatchRecommendedCommandName, odoutil.GetFullName(fullName, WatchRecommendedCommandName))
 	testCmd := NewCmdTest(TestRecommendedCommandName, odoutil.GetFullName(fullName, TestRecommendedCommandName))
 	execCmd := NewCmdExec(ExecRecommendedCommandName, odoutil.GetFullName(fullName, ExecRecommendedCommandName))
+	statusCmd := NewCmdStatus(StatusRecommendedCommandName, odoutil.GetFullName(fullName, StatusRecommendedCommandName))
 
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
@@ -73,9 +75,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
 	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd, execCmd)
-	if experimental.IsExperimentalModeEnabled() {
-		componentCmd.AddCommand(testCmd)
-	}
+	componentCmd.AddCommand(testCmd, statusCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "main"}

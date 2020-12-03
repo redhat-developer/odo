@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/openshift/odo/pkg/envinfo"
+
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
@@ -77,17 +80,7 @@ type ComponentSettings struct {
 
 	Envs EnvVarList `yaml:"Envs,omitempty"`
 
-	URL *[]ConfigURL `yaml:"Url,omitempty"`
-}
-
-// ConfigURL holds URL related information
-type ConfigURL struct {
-	// Name of the URL
-	Name string `yaml:"Name,omitempty"`
-	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty"`
-	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty"`
+	URL *[]envinfo.EnvInfoURL `yaml:"Url,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
@@ -257,11 +250,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
 		case "url":
-			urlValue := value.(ConfigURL)
+			urlValue := value.(envinfo.EnvInfoURL)
 			if lci.componentSettings.URL != nil {
 				*lci.componentSettings.URL = append(*lci.componentSettings.URL, urlValue)
 			} else {
-				lci.componentSettings.URL = &[]ConfigURL{urlValue}
+				lci.componentSettings.URL = &[]envinfo.EnvInfoURL{urlValue}
 			}
 		}
 
@@ -319,8 +312,8 @@ func (lci *LocalConfigInfo) IsSet(parameter string) bool {
 	return util.IsSet(lci.componentSettings, parameter)
 }
 
-// ConfigFileExists if a config file exists or not
-func (lci *LocalConfigInfo) ConfigFileExists() bool {
+// Exists returns whether the config file exists or not
+func (lci *LocalConfigInfo) Exists() bool {
 	return lci.configFileExists
 }
 
@@ -395,10 +388,7 @@ func (lci *LocalConfigInfo) SetEnvVars(envVars EnvVarList) error {
 
 // GetEnvVars gets the env variables from the component settings
 func (lci *LocalConfigInfo) GetEnvVars() EnvVarList {
-	if lci.componentSettings.Envs == nil {
-		return EnvVarList{}
-	}
-	return lci.componentSettings.Envs
+	return lci.GetEnvs()
 }
 
 func (lci *LocalConfigInfo) writeToFile() error {
@@ -450,6 +440,11 @@ func (lc *LocalConfig) GetProject() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Project)
 }
 
+// GetProject returns the project, returns default if nil
+func (lc *LocalConfig) GetNamespace() string {
+	return lc.GetProject()
+}
+
 // GetName returns the Name, returns default if nil
 func (lc *LocalConfig) GetName() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Name)
@@ -486,9 +481,9 @@ func (lc *LocalConfig) GetMaxCPU() string {
 }
 
 // GetURL returns the ConfigURL, returns default if nil
-func (lc *LocalConfig) GetURL() []ConfigURL {
+func (lc *LocalConfig) GetURL() []envinfo.EnvInfoURL {
 	if lc.componentSettings.URL == nil {
-		return []ConfigURL{}
+		return []envinfo.EnvInfoURL{}
 	}
 	return *lc.componentSettings.URL
 }
@@ -566,7 +561,7 @@ const (
 	ProjectDescription = "Project is the name of the project the component is part of"
 	// ApplicationDescription is the description of app component setting
 	ApplicationDescription = "Application is the name of application the component needs to be part of"
-	// PortsDescription is the desctription of the ports component setting
+	// PortsDescription is the description of the ports component setting
 	PortsDescription = "Ports to be opened in the component"
 	// RefDescription is the description of ref setting
 	RefDescription = "Git ref to use for creating component from git source"
@@ -609,12 +604,33 @@ var (
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())
 )
 
+var (
+	supportedDevfileParameterDescriptions = map[string]string{
+		Name:   NameDescription,
+		Ports:  PortsDescription,
+		Memory: MemoryDescription,
+	}
+	lowerCaseDevfileParameters = util.GetLowerCaseParameters(GetDevfileSupportedParameters())
+)
+
 // FormatLocallySupportedParameters outputs supported parameters and their description
 func FormatLocallySupportedParameters() (result string) {
 	for _, v := range GetLocallySupportedParameters() {
 		result = result + " " + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
 	}
 	return "\nAvailable Parameters for s2i Components:\n" + result
+}
+
+// FormatDevfileSupportedParameters outputs supported parameters and their description
+func FormatDevfileSupportedParameters() (result string) {
+	for _, v := range GetDevfileSupportedParameters() {
+		result = result + " " + v + " - " + supportedDevfileParameterDescriptions[v] + "\n"
+	}
+	return "\nAvailable Parameters for Devfile Components:\n" + result
+}
+
+func GetDevfileSupportedParameters() []string {
+	return util.GetSortedKeys(supportedDevfileParameterDescriptions)
 }
 
 // AsLocallySupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter
@@ -626,6 +642,67 @@ func AsLocallySupportedParameter(param string) (string, bool) {
 // GetLocallySupportedParameters returns the name of the supported global parameters
 func GetLocallySupportedParameters() []string {
 	return util.GetSortedKeys(supportedLocalParameterDescriptions)
+}
+
+// AsDevfileSupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter
+func AsDevfileSupportedParameter(param string) (string, bool) {
+	lower := strings.ToLower(param)
+	return lower, lowerCaseDevfileParameters[lower]
+}
+
+// SetDevfileConfiguration allows setting all the parameters that are configurable in a devfile
+func SetDevfileConfiguration(d parser.DevfileObj, parameter string, value interface{}) error {
+
+	// we are ignoring this error becase a developer is usually aware of the type of value that is
+	// being passed. So consider this a shortcut, if you know its a string value use this strValue
+	// else parse it inside the switch case.
+	strValue, _ := value.(string)
+	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch parameter {
+		case "name":
+			return d.SetMetadataName(strValue)
+		case "ports":
+			arrValue := strings.Split(strValue, ",")
+			return d.SetPorts(arrValue...)
+		case "memory":
+			return d.SetMemory(strValue)
+		}
+
+	}
+	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
+
+}
+
+// DeleteConfiguration allows deleting  the parameters that are configurable in a devfile
+func DeleteDevfileConfiguration(d parser.DevfileObj, parameter string) error {
+	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch parameter {
+		case "name":
+			return d.SetMetadataName("")
+		case "ports":
+			return d.RemovePorts()
+		case "memory":
+			return d.SetMemory("")
+		}
+	}
+	return errors.Errorf("unknown parameter :'%s' is not a configurable parameter in the devfile", parameter)
+}
+
+// IsSet checks if a parameter is set in the devfile
+func IsSetInDevfile(d parser.DevfileObj, parameter string) bool {
+
+	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch parameter {
+		case "name":
+			return d.GetMetadataName() != ""
+		case "ports":
+			return d.HasPorts()
+		case "memory":
+			return d.GetMemory() != ""
+		}
+	}
+	return false
+
 }
 
 // SrcType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names

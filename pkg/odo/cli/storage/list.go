@@ -2,14 +2,16 @@ package storage
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/odo/cli/component"
-	odoutil "github.com/openshift/odo/pkg/util"
 	"os"
 	"path/filepath"
 	"text/tabwriter"
+
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/validate"
+	"github.com/openshift/odo/pkg/odo/cli/component"
+	odoutil "github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -55,6 +57,10 @@ func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []st
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		o.DevfileObj, err = devfile.ParseAndValidate(devFilePath)
+		if err != nil {
+			return err
+		}
+		err = validate.ValidateDevfileData(o.DevfileObj.Data)
 		if err != nil {
 			return err
 		}
@@ -155,13 +161,13 @@ func printStorageWithContainer(storageList storage.StorageList, compName string)
 }
 
 // isContainerDisplay checks whether the container name should be included in the output
-func isContainerDisplay(storageList storage.StorageList, components []common.DevfileComponent) bool {
+func isContainerDisplay(storageList storage.StorageList, components []devfilev1.Component) bool {
 
 	// get all the container names
 	componentsMap := make(map[string]bool)
 	for _, comp := range components {
 		if comp.Container != nil {
-			componentsMap[comp.Container.Name] = true
+			componentsMap[comp.Name] = true
 		}
 	}
 

@@ -3,13 +3,15 @@ package kclient
 import (
 	"testing"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/pkg/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,9 +22,27 @@ import (
 // createFakeDeployment creates a fake deployment with the given pod name and labels
 func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName string, labels map[string]string) (*appsv1.Deployment, error) {
 	fakeUID := types.UID("12345")
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{})
-	objectMeta := CreateObjectMeta(podName, "default", labels, nil)
-	podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
+
+	devObj := devfileParser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []devfilev1.Component{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
+	}
+
+	containers, err := generator.GetContainers(devObj)
+	if err != nil {
+		return nil, err
+	}
+
+	objectMeta := generator.GetObjectMeta(podName, "default", labels, nil)
+
+	deploymentParams := generator.DeploymentParams{
+		ObjectMeta: objectMeta,
+		Containers: containers,
+	}
+	deploy := generator.GetDeployment(deploymentParams)
 
 	fkclientset.Kubernetes.PrependReactor("create", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if podName == "" {
@@ -41,8 +61,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		return true, &deployment, nil
 	})
 
-	deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
-	createdDeployment, err := fkclient.CreateDeployment(*deploymentSpec)
+	createdDeployment, err := fkclient.CreateDeployment(*deploy)
 	if err != nil {
 		return nil, err
 	}
@@ -158,11 +177,22 @@ func TestGetDeploymentByName(t *testing.T) {
 
 func TestUpdateDeployment(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{})
-
 	labels := map[string]string{
 		"app":       "app",
 		"component": "frontend",
+	}
+
+	devObj := devfileParser.DevfileObj{
+		Data: &testingutil.TestDevfileData{
+			Components: []devfilev1.Component{
+				testingutil.GetFakeContainerComponent("container1"),
+			},
+		},
+	}
+
+	containers, err := generator.GetContainers(devObj)
+	if err != nil {
+		t.Errorf("generator.GetContainers unexpected error %v", err)
 	}
 
 	tests := []struct {
@@ -187,9 +217,13 @@ func TestUpdateDeployment(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
-			objectMeta := CreateObjectMeta(tt.deploymentName, "default", labels, nil)
+			objectMeta := generator.GetObjectMeta(tt.deploymentName, "default", labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
+			deploymentParams := generator.DeploymentParams{
+				ObjectMeta: objectMeta,
+				Containers: containers,
+			}
+			deploy := generator.GetDeployment(deploymentParams)
 
 			fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
@@ -207,8 +241,7 @@ func TestUpdateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
-			updatedDeployment, err := fkclient.UpdateDeployment(*deploymentSpec)
+			updatedDeployment, err := fkclient.UpdateDeployment(*deploy)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

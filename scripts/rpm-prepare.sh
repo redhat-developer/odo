@@ -5,7 +5,7 @@ set +ex
 echo "Reading ODO_VERSION, ODO_RELEASE and GIT_COMMIT env, if they are set"
 # Change version as needed. In most cases ODO_RELEASE would not be touched unless
 # we want to do a re-lease of same version as we are not backporting
-export ODO_VERSION=${ODO_VERSION:=1.2.6}
+export ODO_VERSION=${ODO_VERSION:=2.0.2}
 export ODO_RELEASE=${ODO_RELEASE:=1}
 
 export GIT_COMMIT=${GIT_COMMIT:=`git rev-parse --short HEAD 2>/dev/null`}
@@ -37,17 +37,11 @@ NAME="openshift-odo-$ODO_RPM_VERSION-$ODO_RELEASE"
 echo "Making release for $NAME, git commit $GIT_COMMIT"
 
 echo "Cleaning up old content"
-if [[ -d $DIST_DIR ]]; then
-    rm -rf $DIST_DIR
-fi
-if [[ -d $FINAL_OUT_DIR ]]; then
-    rm -rf $FINAL_OUT_DIR
-fi
+rm -rf $DIST_DIR
+rm -rf $FINAL_OUT_DIR
 
 echo "Configuring output directory $OUT_DIR"
-if [[ -d $OUT_DIR  ]]; then
-    rm -rf $OUT_DIR
-fi
+rm -rf $OUT_DIR
 mkdir -p $SPEC_DIR
 mkdir -p $SOURCES_DIR/$NAME
 mkdir -p $FINAL_OUT_DIR
@@ -61,17 +55,13 @@ cp -arf ./* $SOURCES_DIR/$NAME
 pushd $SOURCES_DIR
 pushd $NAME
 # Remove bin if it exists, we dont need it in tarball
-if [[ -f ./odo  ]]; then
-    rm -rf ./odo
-fi
+rm -rf ./odo
 popd
 
 # Create tarball
 tar -czf $NAME.tar.gz $NAME
 # Removed copied content
-if [[ -d $NAME ]]; then
-    rm -rf $NAME
-fi
+rm -rf $NAME
 popd
 
 echo "Finalizing..."

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 )
 
@@ -16,8 +17,8 @@ func JunitReport(t *testing.T, filePath string) *reporters.JUnitReporter {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		_ = os.Mkdir(filePath, os.ModePerm)
 	}
-	xmlFileName := fmt.Sprintf(filepath.Join(filePath, "junit_%d-%d-%d_%02d-%02d-%02d.xml"), time.Year(), time.Month(),
-		time.Day(), time.Hour(), time.Minute(), time.Second())
+	xmlFileName := fmt.Sprintf(filepath.Join(filePath, "junit_%d-%d-%d_%02d-%02d-%02d_%d.xml"), time.Year(), time.Month(),
+		time.Day(), time.Hour(), time.Minute(), time.Second(), config.GinkgoConfig.ParallelNode)
 	junitReporter := reporters.NewJUnitReporter(xmlFileName)
 	return junitReporter
 }

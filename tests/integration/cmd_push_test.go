@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"time"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -14,40 +13,30 @@ import (
 )
 
 var _ = Describe("odo push command tests", func() {
-	var project string
-	var context string
-	var currentWorkingDirectory string
-
+	var oc helper.OcRunner
+	var commonVar helper.CommonVar
 	appName := "app"
 	cmpName := "nodejs"
 
-	oc := helper.NewOcRunner("oc")
-
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		project = helper.CreateRandProject()
-		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		oc = helper.NewOcRunner("oc")
+		commonVar = helper.CommonBeforeEach()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
-		helper.Chdir(currentWorkingDirectory)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Check pod timeout", func() {
 
 		It("Check that pod timeout works and we time out immediately..", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "preference", "set", "PushTimeout", "1")
-			output := helper.CmdShouldFail("odo", "push", "--context", context+"/nodejs-ex")
+			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			Expect(output).To(ContainSubstring("waited 1s but couldn't find running pod matching selector"))
 		})
 
@@ -56,65 +45,65 @@ var _ = Describe("odo push command tests", func() {
 	Context("Check memory and cpu config before odo push", func() {
 		It("Should work when memory is set..", func() {
 
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
 
-			helper.CmdShouldPass("odo", "config", "set", "Memory", "300Mi", "--context", context)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "Memory", "300Mi", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 		})
 
 		It("Should fail if minMemory is set but maxmemory is not set..", func() {
 
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
 
-			helper.CmdShouldPass("odo", "config", "set", "minmemory", "100Mi", "--context", context)
-			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "minmemory", "100Mi", "--context", commonVar.Context)
+			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("`minmemory` should accompany `maxmemory` or use `odo config set memory` to use same value for both min and max"))
 		})
 
 		It("should fail if maxmemory is set but minmemory is not set..", func() {
 
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
 
-			helper.CmdShouldPass("odo", "config", "set", "maxmemory", "400Mi", "--context", context)
-			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "maxmemory", "400Mi", "--context", commonVar.Context)
+			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("`minmemory` should accompany `maxmemory` or use `odo config set memory` to use same value for both min and max"))
 		})
 
 		It("Should work when cpu is set", func() {
 
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
 
-			helper.CmdShouldPass("odo", "config", "set", "cpu", "0.4", "--context", context)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "cpu", "0.4", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 		})
 
 		It("Should fail if mincpu is set but maxcpu is not set..", func() {
 
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
 
-			helper.CmdShouldPass("odo", "config", "set", "mincpu", "0.4", "--context", context)
-			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "mincpu", "0.4", "--context", commonVar.Context)
+			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("`mincpu` should accompany `maxcpu` or use `odo config set cpu` to use same value for both min and max"))
 		})
 
 		It("should fail if maxcpu is set but mincpu is not set..", func() {
 
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
 
-			helper.CmdShouldPass("odo", "config", "set", "maxcpu", "0.5", "--context", context)
-			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "maxcpu", "0.5", "--context", commonVar.Context)
+			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("`mincpu` should accompany `maxcpu` or use `odo config set cpu` to use same value for both min and max"))
 		})
 	})
@@ -122,20 +111,20 @@ var _ = Describe("odo push command tests", func() {
 	Context("Check for label propagation after pushing", func() {
 
 		It("Check for labels", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			// Check for all the labels
-			oc.VerifyLabelExistsOfComponent(cmpName, project, "app:"+appName)
-			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/part-of:"+appName)
-			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/managed-by:odo")
+			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app:"+appName)
+			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app.kubernetes.io/part-of:"+appName)
+			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app.kubernetes.io/managed-by:odo")
 
 			// Check for the version
 			versionInfo := helper.CmdShouldPass("odo", "version")
 			re := regexp.MustCompile(`v[0-9]\S*`)
 			odoVersionString := re.FindStringSubmatch(versionInfo)
-			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/managed-by-version:"+odoVersionString[0])
+			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app.kubernetes.io/managed-by-version:"+odoVersionString[0])
 		})
 	})
 
@@ -143,127 +132,121 @@ var _ = Describe("odo push command tests", func() {
 
 		// Change to "outside" the directory before running the below tests
 		JustBeforeEach(func() {
-			currentWorkingDirectory = helper.Getwd()
-			helper.Chdir(context)
-		})
-
-		// Change back to the currentWorkingDirectory
-		JustAfterEach(func() {
-			helper.Chdir(currentWorkingDirectory)
+			helper.Chdir(commonVar.Context)
 		})
 
 		It("Push, modify a file and then push outside of the working directory", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			// Create a new file to test propagating changes
-			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
+			newFilePath := filepath.Join(commonVar.Context, "nodejs-ex", "foobar.txt")
 			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
 				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
 			}
 
 			// Test propagating changes
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			// Delete the file and check that the file is deleted
 			helper.DeleteDir(newFilePath)
 
 			// Test propagating deletions
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 		})
 
 	})
 
 	Context("when push command is executed", func() {
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context+"/nodejs-ex")
+			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
-			url := oc.GetFirstURL(cmpName, appName, project)
-			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "views", "index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
+			url := oc.GetFirstURL(cmpName, appName, commonVar.Project)
+			helper.ReplaceString(filepath.Join(commonVar.Context, "nodejs-ex", "views", "index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
 
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions and build", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
+			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// Create a new file that we plan on deleting later...
-			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
+			newFilePath := filepath.Join(commonVar.Context, "nodejs-ex", "foobar.txt")
 			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
 				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
 			}
 
 			// Create a new directory
-			newDirPath := filepath.Join(context, "nodejs-ex", "testdir")
+			newDirPath := filepath.Join(commonVar.Context, "nodejs-ex", "testdir")
 			helper.MakeDir(newDirPath)
 
 			// Push
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := oc.GetRunningPodNameOfComp(cmpName, project)
+			podName := oc.GetRunningPodNameOfComp(cmpName, commonVar.Project)
 
-			envs := oc.GetEnvs(cmpName, appName, project)
+			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
 			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
-			stdOut := oc.ExecListDir(podName, project, dir)
+			stdOut := oc.ExecListDir(podName, commonVar.Project, dir)
 			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 
 			// Now we delete the file and dir and push
 			helper.DeleteDir(newFilePath)
 			helper.DeleteDir(newDirPath)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "-v4")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex", "-v4")
 
 			// Then check to see if it's truly been deleted
-			stdOut = oc.ExecListDir(podName, project, dir)
+			stdOut = oc.ExecListDir(podName, commonVar.Project, dir)
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 		})
 
 		It("should build when a file and a folder is renamed in the directory", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
+			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// rename a file and push
-			helper.RenameFile(filepath.Join(context, "nodejs-ex", "README.md"), filepath.Join(context, "nodejs-ex", "NEW-FILE.md"))
-			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.RenameFile(filepath.Join(commonVar.Context, "nodejs-ex", "README.md"), filepath.Join(commonVar.Context, "nodejs-ex", "NEW-FILE.md"))
+			output = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// get the name of running pod
-			podName := oc.GetRunningPodNameOfComp(cmpName, project)
+			podName := oc.GetRunningPodNameOfComp(cmpName, commonVar.Project)
 
-			envs := oc.GetEnvs(cmpName, appName, project)
+			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
 			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
 			// verify that the new file was pushed
-			stdOut := oc.ExecListDir(podName, project, dir)
+			stdOut := oc.ExecListDir(podName, commonVar.Project, dir)
 
 			Expect(stdOut).To(Not(ContainSubstring("README.md")))
 
 			Expect(stdOut).To(ContainSubstring("NEW-FILE.md"))
 
 			// rename a folder and push
-			helper.RenameFile(filepath.Join(context, "nodejs-ex", "tests"), filepath.Join(context, "nodejs-ex", "testing"))
-			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.RenameFile(filepath.Join(commonVar.Context, "nodejs-ex", "tests"), filepath.Join(commonVar.Context, "nodejs-ex", "testing"))
+			output = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// verify that the new file was pushed
-			stdOut = oc.ExecListDir(podName, project, dir)
+			stdOut = oc.ExecListDir(podName, commonVar.Project, dir)
 
 			Expect(stdOut).To(Not(ContainSubstring("tests")))
 
@@ -271,35 +254,35 @@ var _ = Describe("odo push command tests", func() {
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context+"/nodejs-ex")
 
 			// use the force build flag and push
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "-f")
+			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex", "-f")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 		})
 
 		It("should push only the modified files", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", cmpName, "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 
-			url := oc.GetFirstURL(cmpName, appName, project)
+			url := oc.GetFirstURL(cmpName, appName, commonVar.Project)
 			// Wait for running app before getting info about files.
 			// During the startup sequence there is something that will modify the access time of a source file.
 			helper.HttpWaitFor("http://"+url, "Welcome to your Node.js", 30, 1)
 
-			envs := oc.GetEnvs(cmpName, appName, project)
+			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 
 			earlierCatServerFile := ""
 			oc.CheckCmdOpInRemoteCmpPod(
 				cmpName,
 				appName,
-				project,
+				commonVar.Project,
 				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
 				func(cmdOp string, err error) bool {
 					earlierCatServerFile = cmdOp
@@ -311,7 +294,7 @@ var _ = Describe("odo push command tests", func() {
 			oc.CheckCmdOpInRemoteCmpPod(
 				cmpName,
 				appName,
-				project,
+				commonVar.Project,
 				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html"))},
 				func(cmdOp string, err error) bool {
 					earlierCatViewFile = cmdOp
@@ -319,15 +302,15 @@ var _ = Describe("odo push command tests", func() {
 				},
 			)
 
-			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "views", "index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.ReplaceString(filepath.Join(commonVar.Context, "nodejs-ex", "views", "index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 
 			modifiedCatViewFile := ""
 			oc.CheckCmdOpInRemoteCmpPod(
 				cmpName,
 				appName,
-				project,
+				commonVar.Project,
 				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html"))},
 				func(cmdOp string, err error) bool {
 					modifiedCatViewFile = cmdOp
@@ -339,7 +322,7 @@ var _ = Describe("odo push command tests", func() {
 			oc.CheckCmdOpInRemoteCmpPod(
 				cmpName,
 				appName,
-				project,
+				commonVar.Project,
 				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
 				func(cmdOp string, err error) bool {
 					modifiedCatServerFile = cmdOp
@@ -352,21 +335,21 @@ var _ = Describe("odo push command tests", func() {
 		})
 
 		It("should delete the files from the container if its removed locally", func() {
-			oc.ImportJavaIS(project)
+			oc.ImportJavaIS(commonVar.Project)
 			cmpName := "backend"
-			helper.CopyExample(filepath.Join("source", "openjdk"), context)
-			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", context, "--app", appName)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CopyExample(filepath.Join("source", "openjdk"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "backend", "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
-			envs := oc.GetEnvs(cmpName, appName, project)
+			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 
 			var statErr error
 			oc.CheckCmdOpInRemoteCmpPod(
 				"backend",
 				appName,
-				project,
+				commonVar.Project,
 				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))},
 				func(cmdOp string, err error) bool {
 					statErr = err
@@ -374,13 +357,13 @@ var _ = Describe("odo push command tests", func() {
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
-			Expect(os.Remove(filepath.Join(context, "src", "main", "java", "AnotherMessageProducer.java"))).NotTo(HaveOccurred())
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			Expect(os.Remove(filepath.Join(commonVar.Context, "src", "main", "java", "AnotherMessageProducer.java"))).NotTo(HaveOccurred())
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			oc.CheckCmdOpInRemoteCmpPod(
 				"backend",
 				appName,
-				project,
+				commonVar.Project,
 				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))},
 				func(cmdOp string, err error) bool {
 					statErr = err
@@ -397,76 +380,75 @@ var _ = Describe("odo push command tests", func() {
 
 	Context("when .odoignore file exists", func() {
 		It("should create and push the contents of a named component excluding the contents and changes detected in .odoignore file", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
 
-			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".odoignore")
+			ignoreFilePath := filepath.Join(commonVar.Context, "nodejs-ex", ".odoignore")
 			if err := helper.CreateFileWithContent(ignoreFilePath, ".git\n*.md"); err != nil {
 				fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
 			}
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 
 			// get the name of running pod
-			podName := oc.GetRunningPodNameOfComp("nodejs", project)
+			podName := oc.GetRunningPodNameOfComp("nodejs", commonVar.Project)
 
-			envs := oc.GetEnvs(cmpName, appName, project)
+			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
 			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
 			// verify that the views folder got pushed
-			stdOut1 := oc.ExecListDir(podName, project, dir)
+			stdOut1 := oc.ExecListDir(podName, commonVar.Project, dir)
 			Expect(stdOut1).To(ContainSubstring("views"))
 
 			// verify that the README.md file was not pushed
-			stdOut3 := oc.ExecListDir(podName, project, dir)
+			stdOut3 := oc.ExecListDir(podName, commonVar.Project, dir)
 			Expect(stdOut3).To(Not(ContainSubstring(("README.md"))))
 
 			// modify a ignored file and push
-			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "README.md"), "This example will serve a welcome page", "This is a example welcome page!")
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.ReplaceString(filepath.Join(commonVar.Context, "nodejs-ex", "README.md"), "This example will serve a welcome page", "This is a example welcome page!")
+			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// test ignores using the flag
-			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "--ignore", "*.md")
+			output = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex", "--ignore", "*.md")
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 		})
 	})
 
 	Context("when .gitignore file exists", func() {
 		It("should create and push the contents of a named component and include odo-file-index.json path to .gitignore file to exclude the contents", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex", "--app", appName)
 
 			// push and include the odo-file-index.json path to .gitignore file
-			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context, "nodejs-ex"))
-			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".gitignore")
+			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(commonVar.Context, "nodejs-ex"))
+			ignoreFilePath := filepath.Join(commonVar.Context, "nodejs-ex", ".gitignore")
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
 		})
 	})
-
 	Context("when .gitignore file does not exist", func() {
 		It("should create and push the contents of a named component and also create .gitignore then include odo-file-index.json path to .gitignore file to exclude the contents", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
 
 			// push and include the odo-file-index.json path to .gitignore file
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			ignoreFilePath := filepath.Join(context, ".gitignore")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			ignoreFilePath := filepath.Join(commonVar.Context, ".gitignore")
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
 		})
 	})
 
 	Context("when running odo push with flag --show-log", func() {
 		It("should be able to execute odo push consecutively without breaking anything", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex")
 
 			// Run odo push in consecutive iteration
-			output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+			output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			for i := 0; i <= 1; i++ {
-				output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+				output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context+"/nodejs-ex")
 				Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 			}
 		})

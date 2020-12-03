@@ -3,14 +3,15 @@ package component
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 
 	"github.com/pkg/errors"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	"github.com/openshift/odo/pkg/util"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -55,12 +56,18 @@ func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the TestOptions based on completed values
 func (to *TestOptions) Validate() (err error) {
+
+	if !util.CheckPathExists(to.devfilePath) {
+		return fmt.Errorf("unable to find devfile, odo test command is only supported by devfile components")
+	}
+
 	devObj, err := devfile.ParseAndValidate(to.devfilePath)
 	if err != nil {
 		return errors.Wrap(err, "fail to parse devfile")
 	}
-	if reflect.DeepEqual(devObj.Ctx.GetApiVersion(), "1.0.0") {
-		return fmt.Errorf("'odo test' is not supported in devfile 1.0.0")
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return err
 	}
 	to.devObj = devObj
 	return

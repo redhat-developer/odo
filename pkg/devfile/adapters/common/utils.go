@@ -6,9 +6,10 @@ import (
 
 	"k8s.io/klog"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
@@ -35,7 +36,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
-	defaultBootstrapperImage = "registry.access.redhat.com/ocp-tools-4/odo-init-container-rhel8:1.1.5"
+	defaultBootstrapperImage = "registry.access.redhat.com/ocp-tools-4/odo-init-container-rhel8:1.1.7"
 
 	// SupervisordControlCommand sub command which stands for control
 	SupervisordControlCommand = "ctl"
@@ -61,11 +62,14 @@ const (
 	// BinBash The path to sh executable
 	BinBash = "/bin/sh"
 
-	// Default volume size for volumes defined in a devfile
+	// DefaultVolumeSize Default volume size for volumes defined in a devfile
 	DefaultVolumeSize = "1Gi"
 
-	// EnvProjectsRoot is the env defined for /projects where component mountSources=true
+	// EnvProjectsRoot is the env defined for project mount in a component container when component's mountSources=true
 	EnvProjectsRoot = "PROJECTS_ROOT"
+
+	// EnvProjectsSrc is the env defined for path to the project source in a component container
+	EnvProjectsSrc = "PROJECT_SOURCE"
 
 	// EnvOdoCommandRunWorkingDir is the env defined in the runtime component container which holds the work dir for the run command
 	EnvOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
@@ -107,25 +111,6 @@ type CommandNames struct {
 	AdapterName string
 }
 
-// isContainer checks if the component is a container
-func isContainer(component common.DevfileComponent) bool {
-	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
-	if component.Container != nil {
-		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Container.Name)
-		return true
-	}
-	return false
-}
-
-// isVolume checks if the component is a volume
-func isVolume(component common.DevfileComponent) bool {
-	if component.Volume != nil {
-		klog.V(2).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Volume.Name)
-		return true
-	}
-	return false
-}
-
 // GetBootstrapperImage returns the odo-init bootstrapper image
 func GetBootstrapperImage() string {
 	if env, ok := os.LookupEnv(bootstrapperImageEnvName); ok {
@@ -134,36 +119,12 @@ func GetBootstrapperImage() string {
 	return defaultBootstrapperImage
 }
 
-// GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components
-func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileComponent {
-	var components []common.DevfileComponent
-	// Only components with aliases are considered because without an alias commands cannot reference them
-	for _, comp := range data.GetAliasedComponents() {
-		if isContainer(comp) {
-			components = append(components, comp)
-		}
-	}
-	return components
-}
-
-// GetDevfileVolumeComponents iterates through the components in the devfile and returns a map of devfile volume components
-func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.DevfileComponent {
-	volumeNameToVolumeComponent := make(map[string]common.DevfileComponent)
-	// Only components with aliases are considered because without an alias commands cannot reference them
-	for _, comp := range data.GetComponents() {
-		if isVolume(comp) {
-			volumeNameToVolumeComponent[comp.Volume.Name] = comp
-		}
-	}
-	return volumeNameToVolumeComponent
-}
-
 // getCommandsByGroup gets commands by the group kind
-func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
-	var commands []common.DevfileCommand
+func getCommandsByGroup(data data.DevfileData, groupType devfilev1.CommandGroupKind) []devfilev1.Command {
+	var commands []devfilev1.Command
 
 	for _, command := range data.GetCommands() {
-		commandGroup := command.GetGroup()
+		commandGroup := parsercommon.GetGroup(command)
 		if commandGroup != nil && commandGroup.Kind == groupType {
 			commands = append(commands, command)
 		}
@@ -172,10 +133,20 @@ func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGr
 	return commands
 }
 
+// GetVolumeMountPath gets the volume mount's path
+func GetVolumeMountPath(volumeMount devfilev1.VolumeMount) string {
+	// if there is no volume mount path, default to volume mount name as per devfile schema
+	if volumeMount.Path == "" {
+		volumeMount.Path = "/" + volumeMount.Name
+	}
+
+	return volumeMount.Path
+}
+
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
-	containerComponents := GetDevfileContainerComponents(devfileObj.Data)
-	volumeNameToVolumeComponent := GetDevfileVolumeComponents(devfileObj.Data)
+	containerComponents := devfileObj.Data.GetDevfileContainerComponents()
+	volumeComponents := devfileObj.Data.GetDevfileVolumeComponents()
 
 	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
 	containerNameToVolumes := make(map[string][]DevfileVolume)
@@ -184,19 +155,19 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 			size := DefaultVolumeSize
 
 			// check if there is a volume component name against the container component volume mount name
-			if volumeComp, ok := volumeNameToVolumeComponent[volumeMount.Name]; ok {
-				// If there is a volume size mentioned in the devfile, use it
-				if len(volumeComp.Volume.Size) > 0 {
+			for _, volumeComp := range volumeComponents {
+				if volumeComp.Name == volumeMount.Name && len(volumeComp.Volume.Size) > 0 {
+					// If there is a volume size mentioned in the devfile, use it
 					size = volumeComp.Volume.Size
 				}
 			}
 
 			vol := DevfileVolume{
 				Name:          volumeMount.Name,
-				ContainerPath: volumeMount.Path,
+				ContainerPath: GetVolumeMountPath(volumeMount),
 				Size:          size,
 			}
-			containerNameToVolumes[containerComp.Container.Name] = append(containerNameToVolumes[containerComp.Container.Name], vol)
+			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)
 		}
 	}
 	return containerNameToVolumes
@@ -212,7 +183,7 @@ func IsRestartRequired(hotReload bool, runModeChanged bool) bool {
 }
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
-func IsEnvPresent(envVars []common.Env, envVarName string) bool {
+func IsEnvPresent(envVars []devfilev1.EnvVar, envVarName string) bool {
 	for _, envVar := range envVars {
 		if envVar.Name == envVarName {
 			return true
@@ -223,9 +194,9 @@ func IsEnvPresent(envVars []common.Env, envVarName string) bool {
 }
 
 // IsPortPresent checks if the port is present in the endpoints array
-func IsPortPresent(endpoints []common.Endpoint, port int) bool {
+func IsPortPresent(endpoints []devfilev1.Endpoint, port int) bool {
 	for _, endpoint := range endpoints {
-		if endpoint.TargetPort == int32(port) {
+		if endpoint.TargetPort == port {
 			return true
 		}
 	}
@@ -235,7 +206,7 @@ func IsPortPresent(endpoints []common.Endpoint, port int) bool {
 
 // GetComponentEnvVar returns true if a list of env vars contains the specified env var
 // If the env exists, it returns the value of it
-func GetComponentEnvVar(env string, envs []common.Env) string {
+func GetComponentEnvVar(env string, envs []devfilev1.EnvVar) string {
 	for _, envVar := range envs {
 		if envVar.Name == env {
 			return envVar.Value
@@ -246,20 +217,20 @@ func GetComponentEnvVar(env string, envs []common.Env) string {
 
 // GetCommandsFromEvent returns the list of commands from the event name.
 // If the event is a composite command, it returns the sub-commands from the tree
-func GetCommandsFromEvent(commandsMap map[string]common.DevfileCommand, eventName string) []string {
+func GetCommandsFromEvent(commandsMap map[string]devfilev1.Command, eventName string) []string {
 	var commands []string
 
 	if command, ok := commandsMap[eventName]; ok {
-		if command.IsComposite() {
-			klog.V(4).Infof("%s is a composite command", command.GetID())
+		if command.Composite != nil {
+			klog.V(4).Infof("%s is a composite command", command.Id)
 			for _, compositeSubCmd := range command.Composite.Commands {
 				klog.V(4).Infof("checking if sub-command %s is either an exec or a composite command ", compositeSubCmd)
 				subCommands := GetCommandsFromEvent(commandsMap, strings.ToLower(compositeSubCmd))
 				commands = append(commands, subCommands...)
 			}
 		} else {
-			klog.V(4).Infof("%s is an exec command", command.GetID())
-			commands = append(commands, command.GetID())
+			klog.V(4).Infof("%s is an exec command", command.Id)
+			commands = append(commands, command.Id)
 		}
 	}
 

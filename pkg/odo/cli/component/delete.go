@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/util"
@@ -80,7 +79,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 	ConfigFilePath = filepath.Join(do.componentContext, configFile)
 
 	// if experimental mode is enabled and devfile is present
-	if !do.componentDeleteS2iFlag && experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
 		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
 		if err != nil {
 			return err
@@ -88,7 +87,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		do.Context = genericclioptions.NewDevfileContext(cmd)
 		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
 			do.namespace = do.KClient.Namespace
 		}
 
@@ -105,7 +104,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 func (do *DeleteOptions) Validate() (err error) {
 
 	// if experimental mode is enabled and devfile is present
-	if !do.componentDeleteS2iFlag && experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
 		return nil
 	}
 
@@ -132,7 +131,7 @@ func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 
-	if !do.componentDeleteS2iFlag && experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if !do.componentDeleteS2iFlag && util.CheckPathExists(do.devfilePath) {
 		return do.DevFileRun()
 	}
 
@@ -241,7 +240,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
 		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete env folder?") {
-			if !do.EnvSpecificInfo.EnvInfoFileExists() {
+			if !do.EnvSpecificInfo.Exists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
 			}
 			if err = util.DeleteIndexFile(filepath.Dir(do.devfilePath)); err != nil {
@@ -312,10 +311,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteWaitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteS2iFlag, "s2i", "", false, "Delete s2i component if devfile and s2i both component present with same name")
 
-	// enable show flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		componentDeleteCmd.Flags().BoolVar(&do.show, "show-log", false, "If enabled, logs will be shown when deleted")
-	}
+	componentDeleteCmd.Flags().BoolVar(&do.show, "show-log", false, "If enabled, logs will be shown when deleted")
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)

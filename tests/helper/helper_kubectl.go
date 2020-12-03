@@ -64,7 +64,7 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 	return checkOp(stdOut, nil)
 }
 
-// GetRunningPodNameByComponent executes kubectl command and returns the running pod name of a delopyed
+// GetRunningPodNameByComponent executes kubectl command and returns the running pod name of a deployed
 // devfile component by passing component name as a argument
 func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
@@ -94,6 +94,16 @@ func (kubectl KubectlRunner) GetVolumeMountNamesandPathsFromContainer(deployName
 			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
 
 	return strings.TrimSpace(volumeName)
+}
+
+// GetContainerEnv returns the container env in the format name:value\n
+func (kubectl KubectlRunner) GetContainerEnv(podName, containerName, namespace string) string {
+	containerEnv := CmdShouldPass(kubectl.path, "get", "po", podName, "--namespace", namespace,
+		"-o", "go-template="+
+			"{{range .spec.containers}}{{if eq .name \""+containerName+
+			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+
+	return strings.TrimSpace(containerEnv)
 }
 
 // WaitAndCheckForExistence wait for the given and checks if the given resource type gets deleted on the cluster
@@ -169,4 +179,9 @@ func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
 		return []string{}
 	}
 	return strings.Split(output, " ")
+}
+
+// DeletePod deletes a specified pod in the namespace
+func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
+	CmdShouldPass(kubectl.path, "delete", "pod", "--namespace", namespace, podName)
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/storage"
 	urlPkg "github.com/openshift/odo/pkg/url"
 
@@ -103,13 +102,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	if len(componentDesc.Spec.Storage) > 0 {
 
 		var storages storage.StorageList
-		var err error
 
 		if componentDesc.Status.State == "Pushed" {
 			// Retrieve the storage list
-			storages, err = storage.List(client, currentComponentName, applicationName)
-			LogErrorAndExit(err, "")
-
+			storages = storage.StorageList{Items: componentDesc.Spec.StorageSpec}
 		} else {
 			localConfig, err := config.New()
 			LogErrorAndExit(err, "")
@@ -137,26 +133,25 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	if componentDesc.Spec.URL != nil {
 		var output string
 
-		if !experimental.IsExperimentalModeEnabled() {
-			// if the component is not pushed
-			if componentDesc.Status.State == component.StateTypeNotPushed {
-				// Gather the output
-				for i, componentURL := range componentDesc.Spec.URL {
-					output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL, componentDesc.Spec.Ports[i])
-				}
-			} else {
-				// Retrieve the URLs
-				urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
-				LogErrorAndExit(err, "")
-
-				// Gather the output
-				for _, componentURL := range componentDesc.Spec.URL {
-					url := urls.Get(componentURL)
-					output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", experimental.IsExperimentalModeEnabled()), url.Spec.Port)
-				}
-
+		// S2I Only (odo describe exits by default on Devfile by default anyways..)
+		// if the component is not pushed
+		if componentDesc.Status.State == component.StateTypeNotPushed {
+			// Gather the output
+			for i, componentURL := range componentDesc.Spec.URL {
+				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL, componentDesc.Spec.Ports[i])
 			}
+		} else {
+			// Retrieve the URLs
+			urls := urlPkg.URLList{Items: componentDesc.Spec.URLSpec}
+
+			// Gather the output
+			for _, componentURL := range componentDesc.Spec.URL {
+				url := urls.Get(componentURL)
+				output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", true), url.Spec.Port)
+			}
+
 		}
+
 		// Cut off the last newline and output
 		if len(output) > 0 {
 			output = output[:len(output)-1]
@@ -194,7 +189,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		for _, linkedService := range componentDesc.Status.LinkedServices {
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetSecret(linkedService, project)
+			secrets, err := client.GetKubeClient().GetSecret(linkedService, project)
 			LogErrorAndExit(err, "")
 
 			if len(secrets.Data) > 0 {

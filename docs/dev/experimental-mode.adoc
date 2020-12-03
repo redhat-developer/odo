@@ -8,11 +8,11 @@ It is understood that the features in experimental mode (hidden by default) are 
 #### Enabling Experimental mode:
 Experimental mode can be enabled by:
 
-- Setting an enviroment variable
+- Setting an environment variable
 - Setting odo preference
 
 ##### Setting environment variable `ODO_EXPERIMENTAL`:
-Experimental mode can be enabled by setting the enviroment variable `ODO_EXPERIMENTAL=true`
+Experimental mode can be enabled by setting the environment variable `ODO_EXPERIMENTAL=true`
 ```sh
 export ODO_EXPERIMENTAL=true
 ```
@@ -24,11 +24,11 @@ odo preference set experimental true
 #### Working with experimental mode:
 
 ##### Listing devfile components:
-When the experimental mode is enabled, `odo catalog list components` will list the devfile components alongside the OpenShift components.
+When the experimental mode is enabled, `odo catalog list components` will list the devfile components alongside the S2I components.
 
 ```
 $ odo catalog list components
-Odo OpenShift Components:
+Odo S2I Components:
 NAME                       PROJECT       TAGS                                        SUPPORTED
 nodejs                     openshift     10,8,8-RHOAR,latest                         YES
 codewind-odo-openjdk18     che           latest                                      YES

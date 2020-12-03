@@ -3,7 +3,7 @@ package validate
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 )
 
 // NoComponentsError returns an error if no component is found
@@ -19,43 +19,22 @@ type NoContainerComponentError struct {
 }
 
 func (e *NoContainerComponentError) Error() string {
-	return fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", common.ContainerComponentType)
+	return fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", devfilev1.ContainerComponentType)
 }
 
-// DuplicateVolumeComponentsError returns an error if duplicate volume components are found
-type DuplicateVolumeComponentsError struct {
+// UnsupportedOdoCommandError returns an error if the command is neither exec nor composite
+type UnsupportedOdoCommandError struct {
+	commandId string
 }
 
-func (e *DuplicateVolumeComponentsError) Error() string {
-	return "duplicate volume components present in devfile"
+func (e *UnsupportedOdoCommandError) Error() string {
+	return fmt.Sprintf("command %q must be of type \"exec\" or \"composite\"", e.commandId)
 }
 
-// InvalidVolumeSizeError returns an error if volume component has an invalid size
-type InvalidVolumeSizeError struct {
-	size            string
-	componentName   string
-	validationError error
+// CompositeRunKindError returns an error if the composite command is of kind run
+type CompositeRunKindError struct {
 }
 
-func (e *InvalidVolumeSizeError) Error() string {
-	return fmt.Sprintf("size %s for volume component %s is invalid: %v. Example - 2Gi, 1024Mi", e.size, e.componentName, e.validationError)
-}
-
-// MissingVolumeMountError returns an error if the container volume mount does not reference a valid volume component
-type MissingVolumeMountError struct {
-	volumeName string
-}
-
-func (e *MissingVolumeMountError) Error() string {
-	return fmt.Sprintf("unable to find volume mount %s in devfile volume components", e.volumeName)
-}
-
-// InvalidEventError returns an error if the devfile event type has invalid events
-type InvalidEventError struct {
-	eventType string
-	errorMsg  string
-}
-
-func (e *InvalidEventError) Error() string {
-	return fmt.Sprintf("%s type events is invalid: %s", e.eventType, e.errorMsg)
+func (e *CompositeRunKindError) Error() string {
+	return "composite commands of run kind are not supported currently"
 }

@@ -7,10 +7,10 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1"
 	"k8s.io/klog"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/validation"
@@ -18,7 +18,7 @@ import (
 )
 
 // SelectStarterProject allows user to select starter project in the prompt
-func SelectStarterProject(projects []common.DevfileStarterProject) string {
+func SelectStarterProject(projects []devfilev1.StarterProject) string {
 
 	if len(projects) == 0 {
 		return ""
@@ -77,11 +77,11 @@ func EnterDevfileComponentName(defaultComponentName string) string {
 	return componentName
 }
 
-// EnterDevfileComponentNamespace lets the user to specify the component namespace in the prompt
-func EnterDevfileComponentNamespace(defaultComponentNamespace string) string {
+// EnterDevfileComponentProject lets the user to specify the component project in the prompt
+func EnterDevfileComponentProject(defaultComponentNamespace string) string {
 	var name string
 	prompt := &survey.Input{
-		Message: "What namespace do you want the devfile component to be created in",
+		Message: "What project do you want the devfile component to be created in",
 		Default: defaultComponentNamespace,
 	}
 	err := survey.AskOne(prompt, &name, validation.NameValidator)
@@ -110,7 +110,7 @@ func getDevfileComponentTypeNameCandidates(options []catalog.DevfileComponentTyp
 	return result
 }
 
-func getProjectNames(projects []common.DevfileStarterProject) []string {
+func getProjectNames(projects []devfilev1.StarterProject) []string {
 	result := make([]string, len(projects))
 	for i, project := range projects {
 		result[i] = project.Name

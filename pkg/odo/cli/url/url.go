@@ -24,22 +24,21 @@ func NewCmdURL(name, fullName string) *cobra.Command {
 	urlCreateCmd := NewCmdURLCreate(createRecommendedCommandName, odoutil.GetFullName(fullName, createRecommendedCommandName))
 	urlDeleteCmd := NewCmdURLDelete(deleteRecommendedCommandName, odoutil.GetFullName(fullName, deleteRecommendedCommandName))
 	urlListCmd := NewCmdURLList(listRecommendedCommandName, odoutil.GetFullName(fullName, listRecommendedCommandName))
-	urlDescribeCmd := NewCmdURLDescribe(describeRecommendedCommandName, odoutil.GetFullName(fullName, describeRecommendedCommandName))
 	urlCmd := &cobra.Command{
 		Use:   name,
 		Short: urlShortDesc,
 		Long:  urlLongDesc,
-		Example: fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s",
+		Example: fmt.Sprintf("%s\n\n%s\n\n%s",
 			urlCreateCmd.Example,
 			urlDeleteCmd.Example,
 			urlListCmd.Example,
-			urlDescribeCmd.Example),
+		),
 	}
 
 	// Add a defined annotation in order to appear in the help menu
 	urlCmd.Annotations = map[string]string{"command": "main"}
 	urlCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	urlCmd.AddCommand(urlCreateCmd, urlDeleteCmd, urlListCmd, urlDescribeCmd)
+	urlCmd.AddCommand(urlCreateCmd, urlDeleteCmd, urlListCmd)
 
 	return urlCmd
 }

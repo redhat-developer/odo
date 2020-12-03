@@ -7,14 +7,11 @@
 
 == Slack
 
-Join us on Slack via our
-https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[invite
-link]
+All of our developer and user discussions happen in the https://kubernetes.slack.com/archives/C01D6L2NUAG[#odo channel on the official Kubernetes Slack].
 
-* https://openshiftdo.slack.com/messages/odo-dev[Odo Dev Channel] -
-Discuss odo development
-* https://openshiftdo.slack.com/messages/odo-users[Odo Users Channel] -
-Ask questions and discuss your use cases with odo
+If you haven't already joined the Kubernetes Slack, you can https://slack.k8s.io/[invite yourself here].
+
+Ask questions, inquire about odo or even discuss a new feature.
 
 == Email list
 
@@ -40,8 +37,8 @@ Every two weeks, we have a contributors call meeting.
 
 Every three weeks, we have two planning calls:
 
-* ``Sprint Planning Preparation and Issue Triage'' - on Monday
-* ``Sprint Planning'' - on Wednesday
+* "Sprint Planning Preparation and Issue Triage" - on Monday
+* "Sprint Planning" - on Wednesday
 
 You can find the exact dates of all scheduled odo calls together with
 sprint dates in the
@@ -55,8 +52,7 @@ https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group].
 
 === Where do I start?
 
-Odo is a complex project that touches both Kubernetes, OpenShift and
-Docker. We have a list of
+odo is a complex project that touches both Kubernetes and OpenShift. We have a list of
 https://github.com/openshift/odo/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22[good
 first issues] to help start.
 

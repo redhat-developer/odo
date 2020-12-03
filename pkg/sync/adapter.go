@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"k8s.io/klog"
@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// New instantiantes a component adapter
+// New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client SyncClient) Adapter {
 	return Adapter{
 		Client:         client,
@@ -79,6 +79,10 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 
 		changedFiles = pushParameters.WatchFiles
 		deletedFiles = pushParameters.WatchDeletedFiles
+		deletedFiles, err = util.RemoveRelativePathFromFiles(deletedFiles, pushParameters.Path)
+		if err != nil {
+			return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
+		}
 		indexRegeneratedByWatch = true
 
 	}
@@ -86,7 +90,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	if !indexRegeneratedByWatch {
 		// Calculate the files to sync
 		// Tries to sync the deltas unless it is a forced push
-		// if it is a forced push (isForcePush) reset the index to do a full snync
+		// if it is a forced push (isForcePush) reset the index to do a full sync
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
@@ -145,8 +149,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
 		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !isForcePush {
-			// no file was modified/added/deleted/renamed, thus return without synching files
-			log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 			return false, nil
 		}
 	}
@@ -187,9 +189,9 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	syncFolder := compInfo.SourceMount
+	syncFolder := compInfo.SyncFolder
 
-	if syncFolder != kclient.OdoSourceVolumeMount {
+	if syncFolder != generator.DevfileSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)

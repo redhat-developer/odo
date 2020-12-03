@@ -1,7 +1,6 @@
 package debug
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,53 +18,29 @@ import (
 // we execute these tests serially
 var _ = Describe("odo devfile debug command serial tests", func() {
 
-	var context string
-
-	var namespace, componentName, projectDirPath, originalKubeconfig string
+	var componentName, projectDirPath string
 	var projectDir = "/projectDir"
 
-	//  current directory and project (before eny test is run) so it can restored  after all testing is done
-	var originalDir string
+	var commonVar helper.CommonVar
 
-	// Using program command according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
-
-	// Setup up state for each test spec
-	// create new project (not set as active) and new context directory for each test spec
-	// This is before every spec (It)
-	BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		namespace = cliRunner.CreateRandNamespaceProject()
+	// This is run before every Spec (It)
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
 		componentName = helper.RandString(6)
-		originalDir = helper.Getwd()
-		helper.Chdir(context)
-		projectDirPath = context + projectDir
+		helper.Chdir(commonVar.Context)
+		projectDirPath = commonVar.Context + projectDir
 	})
 
-	// Clean up after the test
 	// This is run after every Spec (It)
-	AfterEach(func() {
-		helper.Chdir(originalDir)
-		cliRunner.DeleteNamespaceProject(namespace)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
 	})
 
 	It("should auto-select a local debug port when the given local port is occupied for a devfile component", func() {
 		helper.MakeDir(projectDirPath)
 		helper.Chdir(projectDirPath)
 
-		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+		helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 		helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")

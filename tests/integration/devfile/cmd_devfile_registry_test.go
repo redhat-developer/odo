@@ -1,45 +1,26 @@
 package devfile
 
 import (
-	"os"
-	"path/filepath"
-	"time"
-
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile registry command tests", func() {
-	var project, context, currentWorkingDirectory, originalKubeconfig string
 	const registryName string = "RegistryName"
 	const addRegistryURL string = "https://github.com/odo-devfiles/registry"
+
 	const updateRegistryURL string = "http://www.example.com/update"
+	var commonVar helper.CommonVar
 
-	// Using program commmand according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
-
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		project = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
+		commonVar = helper.CommonBeforeEach()
+		helper.Chdir(commonVar.Context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(project)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("When executing registry list", func() {

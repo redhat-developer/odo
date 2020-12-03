@@ -8,6 +8,7 @@ import (
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	svc "github.com/openshift/odo/pkg/service"
 
 	"github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -48,13 +49,27 @@ type UnlinkOptions struct {
 func NewUnlinkOptions() *UnlinkOptions {
 	options := UnlinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
+	options.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 	return &options
 }
 
 // Complete completes UnlinkOptions after they've been created
 func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	err = o.complete(name, cmd, args)
-	o.operation = o.Client.UnlinkSecret
+	if err != nil {
+		return err
+	}
+
+	o.csvSupport, err = o.Client.IsCSVSupported()
+	if err != nil {
+		return err
+	}
+
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+		o.operation = o.KClient.UnlinkSecret
+	} else {
+		o.operation = o.Client.UnlinkSecret
+	}
 	return err
 }
 

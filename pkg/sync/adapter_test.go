@@ -8,10 +8,10 @@ import (
 	"reflect"
 	"testing"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -26,13 +26,13 @@ func TestGetCmdToCreateSyncFolder(t *testing.T) {
 	}{
 		{
 			name:       "Case 1: Sync to /projects",
-			syncFolder: kclient.OdoSourceVolumeMount,
-			want:       []string{"mkdir", "-p", kclient.OdoSourceVolumeMount},
+			syncFolder: generator.DevfileSourceVolumeMount,
+			want:       []string{"mkdir", "-p", generator.DevfileSourceVolumeMount},
 		},
 		{
 			name:       "Case 2: Sync subdir of /projects",
-			syncFolder: kclient.OdoSourceVolumeMount + "/someproject",
-			want:       []string{"mkdir", "-p", kclient.OdoSourceVolumeMount + "/someproject"},
+			syncFolder: generator.DevfileSourceVolumeMount + "/someproject",
+			want:       []string{"mkdir", "-p", generator.DevfileSourceVolumeMount + "/someproject"},
 		},
 	}
 	for _, tt := range tests {
@@ -55,14 +55,14 @@ func TestGetCmdToDeleteFiles(t *testing.T) {
 		{
 			name:       "Case 1: One deleted file",
 			delFiles:   []string{"test.txt"},
-			syncFolder: kclient.OdoSourceVolumeMount,
-			want:       []string{"rm", "-rf", kclient.OdoSourceVolumeMount + "/test.txt"},
+			syncFolder: generator.DevfileSourceVolumeMount,
+			want:       []string{"rm", "-rf", generator.DevfileSourceVolumeMount + "/test.txt"},
 		},
 		{
 			name:       "Case 2: Multiple deleted files, default sync folder",
 			delFiles:   []string{"test.txt", "hello.c"},
-			syncFolder: kclient.OdoSourceVolumeMount,
-			want:       []string{"rm", "-rf", kclient.OdoSourceVolumeMount + "/test.txt", kclient.OdoSourceVolumeMount + "/hello.c"},
+			syncFolder: generator.DevfileSourceVolumeMount,
+			want:       []string{"rm", "-rf", generator.DevfileSourceVolumeMount + "/test.txt", generator.DevfileSourceVolumeMount + "/hello.c"},
 		},
 		{
 			name:       "Case 2: Multiple deleted files, different sync folder",
@@ -181,7 +181,7 @@ func TestSyncFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{},
+					Components: []devfilev1.Component{},
 				},
 			}
 
@@ -305,7 +305,7 @@ func TestPushLocal(t *testing.T) {
 			isForcePush: false,
 			compInfo: common.ComponentInfo{
 				ContainerName: "abcd",
-				SourceMount:   "/some/path",
+				SyncFolder:    "/some/path",
 			},
 			wantErr: false,
 		},
@@ -314,7 +314,7 @@ func TestPushLocal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{},
+					Components: []devfilev1.Component{},
 				},
 			}
 

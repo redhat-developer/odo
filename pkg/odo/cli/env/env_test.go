@@ -10,14 +10,14 @@ import (
 func TestPrintSupportedParameters(t *testing.T) {
 	supportedSetParameters := map[string]string{
 		nameParameter:      nameParameterDescription,
-		namespaceParameter: namespaceParameterDescription,
+		projectParameter:   projectParameterDescription,
 		debugportParameter: debugportParameterDescription,
 	}
 
 	wantSetParameters := `Available parameters:
   DebugPort: Use this value to set component debug port
   Name: Use this value to set component name
-  Namespace: Use this value to set component namespace`
+  Project: Use this value to set component project`
 
 	supportedUnsetParameters := map[string]string{
 		debugportParameter: debugportParameterDescription,

@@ -3,17 +3,15 @@ package utils
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
-	"strings"
 
 	"github.com/fatih/color"
 	imagev1 "github.com/openshift/api/image/v1"
 
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
@@ -221,8 +219,6 @@ func generateDevfileYaml(co *ConvertOptions) error {
 func generateEnvYaml(co *ConvertOptions) (err error) {
 	klog.V(2).Info("Generating env.yaml")
 
-	// list of urls having name, ports, secure
-	urls := co.context.LocalConfigInfo.GetURL()
 	debugPort := co.context.LocalConfigInfo.GetDebugPort()
 
 	application := co.context.LocalConfigInfo.GetApplication()
@@ -233,26 +229,10 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 		return err
 	}
 
-	var urlList []envinfo.EnvInfoURL
-
-	for _, url := range urls {
-		urlEnv := envinfo.EnvInfoURL{
-			Name:   url.Name,
-			Port:   url.Port,
-			Secure: url.Secure,
-			// s2i components are only run on openshift cluster
-			Kind: envinfo.ROUTE,
-		}
-
-		urlList = append(urlList, urlEnv)
-
-	}
-
 	componentSettings := envinfo.ComponentSettings{
-		Name:      co.componentName,
-		Namespace: co.context.Project,
-		URL:       &urlList,
-		AppName:   application,
+		Name:    co.componentName,
+		Project: co.context.Project,
+		AppName: application,
 	}
 
 	if debugPort != 0 || debugPort == config.DefaultDebugPort {
@@ -295,30 +275,41 @@ func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1
 func setDevfileCommandsForS2I(d data.DevfileData) {
 	klog.V(2).Info("Set devfile commands from s2i data")
 
-	buildCommand := common.DevfileCommand{
-		Exec: &common.Exec{
-			Id:          buildCommandID,
-			Component:   containerName,
-			CommandLine: buildCommandS2i,
-			Group: &common.Group{
-				Kind:      common.BuildCommandGroupType,
-				IsDefault: true,
+	buildCommand := devfilev1.Command{
+		Id: buildCommandID,
+		CommandUnion: devfilev1.CommandUnion{
+			Exec: &devfilev1.ExecCommand{
+				Component:   containerName,
+				CommandLine: buildCommandS2i,
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{
+							Kind:      devfilev1.BuildCommandGroupKind,
+							IsDefault: true,
+						},
+					},
+				},
 			},
 		},
 	}
 
-	runCommand := common.DevfileCommand{
-		Exec: &common.Exec{
-			Id:          runCommandID,
-			Component:   containerName,
-			CommandLine: runCommandS2i,
-			Group: &common.Group{
-				Kind:      common.RunCommandGroupType,
-				IsDefault: true,
+	runCommand := devfilev1.Command{
+		Id: runCommandID,
+		CommandUnion: devfilev1.CommandUnion{
+			Exec: &devfilev1.ExecCommand{
+				Component:   containerName,
+				CommandLine: runCommandS2i,
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{
+							Kind:      devfilev1.RunCommandGroupKind,
+							IsDefault: true,
+						},
+					},
+				},
 			},
 		},
 	}
-
 	// Ignoring error as we are writing new file
 	_ = d.AddCommands(buildCommand, runCommand)
 
@@ -330,23 +321,29 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 
 	maxMemory := localConfig.GetMaxMemory()
 	volumes := localConfig.GetStorage()
-	// list of ports taken from builder image and set into local config
-	ports := localConfig.GetPorts()
+	urls := localConfig.GetURL()
+	mountSources := true
 
-	var endpoints []common.Endpoint
-	var envs []common.Env
-	var volumeMounts []common.VolumeMount
-	var components []common.DevfileComponent
+	var endpoints []devfilev1.Endpoint
+	var envs []devfilev1.EnvVar
+	var volumeMounts []devfilev1.VolumeMount
+	var components []devfilev1.Component
 
 	// convert s2i storage to devfile volumes
 	for _, vol := range volumes {
-		volume := common.Volume{
+		volume := devfilev1.Component{
 			Name: vol.Name,
-			Size: vol.Size,
+			ComponentUnion: devfilev1.ComponentUnion{
+				Volume: &devfilev1.VolumeComponent{
+					Volume: devfilev1.Volume{
+						Size: vol.Size,
+					},
+				},
+			},
 		}
-		components = append(components, common.DevfileComponent{Volume: &volume})
+		components = append(components, volume)
 
-		volumeMount := common.VolumeMount{
+		volumeMount := devfilev1.VolumeMount{
 			Name: vol.Name,
 			Path: vol.Path,
 		}
@@ -356,49 +353,48 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 
 	// Add s2i specific env variable in devfile
 	for _, env := range s2iEnv {
-		env := common.Env{
+		env := devfilev1.EnvVar{
 			Name:  env.Name,
 			Value: env.Value,
 		}
 		envs = append(envs, env)
 	}
-	env := common.Env{
+	env := devfilev1.EnvVar{
 		Name:  envS2iConvertedDevfile,
 		Value: "true",
 	}
 	envs = append(envs, env)
 
 	// convert s2i ports to devfile endpoints
-	for _, port := range ports {
+	for _, url := range urls {
 
-		port := strings.Split(port, "/")
-		// from s2i config.yaml port is of the form 8080/TCP
-		// Ignoring TCP and Udp values here
-		portInt, err := strconv.ParseInt(port[0], 10, 32)
-		if err != nil {
-			return errors.Wrapf(err, "Unable to convert port %s from config.yaml to devfile.yaml", port)
-		}
-
-		endpoint := common.Endpoint{
-			Name:       fmt.Sprintf("port-%s", port[0]),
-			TargetPort: int32(portInt),
+		endpoint := devfilev1.Endpoint{
+			Name:       url.Name,
+			TargetPort: url.Port,
+			Secure:     url.Secure,
 		}
 
 		endpoints = append(endpoints, endpoint)
 	}
 
-	container := common.Container{
-		Name:          containerName,
-		Image:         s2iImage,
-		MountSources:  true,
-		SourceMapping: sourceMappingS2i,
-		MemoryLimit:   maxMemory,
-		Endpoints:     endpoints,
-		Env:           envs,
-		VolumeMounts:  volumeMounts,
+	container := devfilev1.Component{
+		Name: containerName,
+		ComponentUnion: devfilev1.ComponentUnion{
+			Container: &devfilev1.ContainerComponent{
+				Container: devfilev1.Container{
+					Image:         s2iImage,
+					MountSources:  &mountSources,
+					SourceMapping: sourceMappingS2i,
+					MemoryLimit:   maxMemory,
+					Env:           envs,
+					VolumeMounts:  volumeMounts,
+				},
+				Endpoints: endpoints,
+			},
+		},
 	}
 
-	components = append(components, common.DevfileComponent{Container: &container})
+	components = append(components, container)
 
 	// Ignoring error here as we are writing a new file
 	_ = d.AddComponents(components)

@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -21,7 +20,6 @@ func TestSetEnvInfo(t *testing.T) {
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
-	testPush := EnvInfoPushCommand{Init: "myinit", Build: "myBuild", Run: "myRun"}
 
 	tests := []struct {
 		name               string
@@ -50,16 +48,6 @@ func TestSetEnvInfo(t *testing.T) {
 			},
 			checkConfigSetting: []string{"URL"},
 			expectError:        true,
-		},
-		{
-			name:      "Case 4: Test fields setup from push parameter",
-			parameter: Push,
-			value:     testPush,
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{},
-			},
-			checkConfigSetting: []string{"PushCommand"},
-			expectError:        false,
 		},
 	}
 	for _, tt := range tests {
@@ -222,150 +210,9 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 
 }
 
-func TestGetPushCommand(t *testing.T) {
-	tempEnvFile, err := ioutil.TempFile("", "odoenvinfo")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempEnvFile.Close()
-	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-
-	tests := []struct {
-		name            string
-		existingEnvInfo EnvInfo
-		wantPushCommand EnvInfoPushCommand
-	}{
-		{
-			name: "Case 1: Init, Build & Run commands present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{
-						Init:  "myinit",
-						Build: "mybuild",
-						Run:   "myrun",
-					},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{
-				Init:  "myinit",
-				Run:   "myrun",
-				Build: "mybuild",
-			},
-		},
-		{
-			name: "Case 2: Build & Run commands present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{
-						Build: "mybuild",
-						Run:   "myrun",
-					},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{
-				Run:   "myrun",
-				Build: "mybuild",
-			},
-		},
-		{
-			name: "Case 3: Build & Init commands present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{
-						Build: "mybuild",
-						Init:  "myinit",
-					},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{
-				Init:  "myinit",
-				Build: "mybuild",
-			},
-		},
-		{
-			name: "Case 4: Init & Run commands present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{
-						Init: "myinit",
-						Run:  "myrun",
-					},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{
-				Run:  "myrun",
-				Init: "myinit",
-			},
-		},
-		{
-			name: "Case 5: Build command present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{
-						Build: "mybuild",
-					},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{
-				Build: "mybuild",
-			},
-		},
-		{
-			name: "Case 6: Run command present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{
-						Run: "myrun",
-					},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{
-				Run: "myrun",
-			},
-		},
-		{
-			name: "Case 7: Init command present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{
-						Init: "myinit",
-					},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{
-				Init: "myinit",
-			},
-		},
-		{
-			name: "Case 8: No commands present",
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{
-					PushCommand: &EnvInfoPushCommand{},
-				},
-			},
-			wantPushCommand: EnvInfoPushCommand{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			esi, err := NewEnvSpecificInfo("")
-			if err != nil {
-				t.Error(err)
-			}
-			esi.EnvInfo = tt.existingEnvInfo
-			pushCommand := esi.GetPushCommand()
-
-			if !reflect.DeepEqual(tt.wantPushCommand, pushCommand) {
-				t.Errorf("TestGetPushCommand error: push commands mismatch, expected: %v got: %v", tt.wantPushCommand, pushCommand)
-			}
-		})
-	}
-
-}
-
 func TestEnvSpecificInfonitDoesntCreateLocalOdoFolder(t *testing.T) {
 	// cleaning up old odo files if any
-	filename, err := getEnvInfoFile("")
+	filename, _, err := getEnvInfoFile("")
 	if err != nil {
 		t.Error(err)
 	}

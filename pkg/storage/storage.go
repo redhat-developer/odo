@@ -2,11 +2,12 @@ package storage
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"reflect"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 
@@ -66,7 +67,7 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 	// Get DeploymentConfig for the given component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
@@ -81,7 +82,7 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 		return errors.Wrapf(err, "unable to remove volume: %v from Deployment Config: %v", pvcName, dc.Name)
 	}
 
-	pvc, err := client.GetPVCFromName(pvcName)
+	pvc, err := client.GetKubeClient().GetPVCFromName(pvcName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get PersistentVolumeClaim from name: %v", pvcName)
 	}
@@ -89,7 +90,7 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 	pvcLabels[storagelabels.StorageLabel] = storageName
 
 	if updateLabels {
-		if err := client.UpdatePVCLabels(pvc, pvcLabels); err != nil {
+		if err := client.GetKubeClient().UpdatePVCLabels(pvc, pvcLabels); err != nil {
 			return errors.Wrapf(err, "unable to remove storage label from : %v", pvc.Name)
 		}
 	}
@@ -105,7 +106,7 @@ func Delete(client *occlient.Client, name string) error {
 	}
 
 	// delete the associated PVC with the component
-	err = client.DeletePVC(pvcName)
+	err = client.GetKubeClient().DeletePVC(pvcName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete PVC %v", pvcName)
 	}
@@ -119,12 +120,12 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
 	}
 
-	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
+	pvcs, err := client.GetKubeClient().ListPVCs(storagelabels.StorageLabel)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
@@ -143,6 +144,11 @@ func List(client *occlient.Client, componentName string, applicationName string)
 
 		// We should ignore emptyDir (related to supervisord implementation)
 		if client.IsVolumeAnEmptyDir(volumeMount.Name, dc) {
+			continue
+		}
+
+		// We should ignore ConfigMap (while PR2142 and PR2601 are not fixed)
+		if client.IsVolumeAnConfigMap(volumeMount.Name, dc) {
 			continue
 		}
 
@@ -207,7 +213,7 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 
 // ListUnmounted lists all the unmounted storage associated with the given application
 func ListUnmounted(client *occlient.Client, applicationName string) (StorageList, error) {
-	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
+	pvcs, err := client.GetKubeClient().ListPVCs(storagelabels.StorageLabel)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
@@ -240,7 +246,7 @@ func Exists(client *occlient.Client, storageName string, applicationName string)
 	labels[applabels.ApplicationLabel] = applicationName
 	labels[storagelabels.StorageLabel] = storageName
 	selector := util.ConvertLabelsToSelector(labels)
-	pvcs, err := client.GetPVCsFromSelector(selector)
+	pvcs, err := client.GetKubeClient().ListPVCs(selector)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to list storage for application %v", applicationName)
 	}
@@ -271,7 +277,7 @@ func getPVCNameFromStorageName(client *occlient.Client, storageName string) (str
 	labels[storagelabels.StorageLabel] = storageName
 
 	selector := util.ConvertLabelsToSelector(labels)
-	pvcs, err := client.GetPVCNamesFromSelector(selector)
+	pvcs, err := client.GetKubeClient().ListPVCNames(selector)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to get PVC names for selector %v", selector)
 	}
@@ -288,7 +294,7 @@ func GetComponentNameFromStorageName(client *occlient.Client, storageName string
 	labels[storagelabels.StorageLabel] = storageName
 
 	selector := util.ConvertLabelsToSelector(labels)
-	pvcs, err := client.GetPVCsFromSelector(selector)
+	pvcs, err := client.GetKubeClient().ListPVCs(selector)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to list the pvcs")
 	}
@@ -335,7 +341,7 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	pvc, err := client.GetPVCFromName(generatePVCNameFromStorageName(namespacedOpenShiftObject))
+	pvc, err := client.GetKubeClient().GetPVCFromName(generatePVCNameFromStorageName(namespacedOpenShiftObject))
 	if err != nil {
 		return errors.Wrap(err, "unable to get the pvc from the storage name")
 	}
@@ -343,7 +349,7 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 	// Get DeploymentConfig for the given component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	dc, err := client.GetDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
@@ -353,7 +359,7 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {
 		return errors.Wrap(err, "unable to add PVC to DeploymentConfig")
 	}
-	err = client.UpdatePVCLabels(pvc, storagelabels.GetLabels(storageName, componentName, applicationName, true))
+	err = client.GetKubeClient().UpdatePVCLabels(pvc, storagelabels.GetLabels(storageName, componentName, applicationName, true))
 	if err != nil {
 		return errors.Wrap(err, "unable to update the pvc")
 	}
@@ -569,8 +575,8 @@ func MachineReadableSuccessOutput(storageName string, message string) {
 	machineoutput.OutputSuccess(machineOutput)
 }
 
-// devfileListMounted lists the storage which are mounted on a container
-func devfileListMounted(kClient *kclient.Client, componentName string) (StorageList, error) {
+// DevfileListMounted lists the storage which are mounted on a container
+func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageList, error) {
 	pod, err := kClient.GetPodUsingComponentName(componentName)
 	if err != nil {
 		if _, ok := err.(*kclient.PodNotFoundError); ok {
@@ -598,7 +604,7 @@ func devfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 	}
 
 	label := fmt.Sprintf("component=%s", componentName)
-	pvcs, err := kClient.GetPVCsFromSelector(label)
+	pvcs, err := kClient.ListPVCs(label)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
@@ -620,20 +626,21 @@ func devfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 	return StorageList{Items: storage}, nil
 }
 
-// getLocalDevfileStorage lists the storage from the devfile
-func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
+// GetLocalDevfileStorage lists the storage from the devfile
+func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 	volumeSizeMap := make(map[string]string)
-	for _, component := range devfileData.GetComponents() {
+	components := devfileData.GetComponents()
+
+	for _, component := range components {
 		if component.Volume == nil {
 			continue
 		}
 		if component.Volume.Size == "" {
 			component.Volume.Size = common.DefaultVolumeSize
 		}
-		volumeSizeMap[component.Volume.Name] = component.Volume.Size
+		volumeSizeMap[component.Name] = component.Volume.Size
 	}
 
-	components := devfileData.GetComponents()
 	var storage []Storage
 	for _, component := range components {
 		if component.Container == nil {
@@ -642,7 +649,7 @@ func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 		for _, volumeMount := range component.Container.VolumeMounts {
 			size, ok := volumeSizeMap[volumeMount.Name]
 			if ok {
-				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, volumeMount.Path, component.Container.Name))
+				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, common.GetVolumeMountPath(volumeMount), component.Name))
 			}
 		}
 	}
@@ -652,9 +659,9 @@ func getLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 
 // DevfileList lists the storage from the local devfile and cluster with their respective state
 func DevfileList(kClient *kclient.Client, devfileData data.DevfileData, componentName string) (StorageList, error) {
-	localStorage := getLocalDevfileStorage(devfileData)
+	localStorage := GetLocalDevfileStorage(devfileData)
 
-	clusterStorage, err := devfileListMounted(kClient, componentName)
+	clusterStorage, err := DevfileListMounted(kClient, componentName)
 	if err != nil {
 		return StorageList{}, err
 	}

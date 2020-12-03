@@ -79,7 +79,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 		return err
 	}
 
-	// If -o json has been passed, let's output the approriate json output.
+	// If -o json has been passed, let's output the appropriate json output.
 	if log.IsJSON() {
 		project.MachineReadableSuccessOutput(pco.projectName, successMessage)
 	} else {

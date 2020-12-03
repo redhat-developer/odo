@@ -1,8 +1,9 @@
 package common
 
 import (
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/openshift/odo/pkg/envinfo"
 )
 
@@ -35,12 +36,11 @@ type PushParameters struct {
 	IgnoredFiles             []string                // IgnoredFiles is the list of files to not push up to a component
 	ForceBuild               bool                    // ForceBuild determines whether or not to push all of the files up to a component or just files that have changed, added or removed.
 	Show                     bool                    // Show tells whether the devfile command output should be shown on stdout
-	DevfileInitCmd           string                  // DevfileInitCmd takes the init command through the command line and overwrites devfile init command
 	DevfileBuildCmd          string                  // DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileRunCmd            string                  // DevfileRunCmd takes the run command through the command line and overwrites devfile run command
 	DevfileDebugCmd          string                  // DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
 	DevfileScanIndexForWatch bool                    // DevfileScanIndexForWatch is true if watch's push should regenerate the index file during SyncFiles, false otherwise. See 'pkg/sync/adapter.go' for details
-	EnvSpecificInfo          envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
+	EnvSpecificInfo          envinfo.EnvSpecificInfo // EnvSpecificInfo contains information of env.yaml file
 	Debug                    bool                    // Runs the component in debug mode
 	DebugPort                int                     // Port used for remote debugging
 	RunModeChanged           bool                    // It determines if run mode is changed from run to debug or vice versa
@@ -58,7 +58,7 @@ type SyncParameters struct {
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
-	SourceMount   string
+	SyncFolder    string
 }
 
 func (ci ComponentInfo) IsEmpty() bool {
@@ -66,9 +66,9 @@ func (ci ComponentInfo) IsEmpty() bool {
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.
-type PushCommandsMap map[common.DevfileCommandGroupType]common.DevfileCommand
+type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
 
 // NewPushCommandMap returns the instance of PushCommandsMap
 func NewPushCommandMap() PushCommandsMap {
-	return make(map[common.DevfileCommandGroupType]common.DevfileCommand)
+	return make(map[devfilev1.CommandGroupKind]devfilev1.Command)
 }

@@ -108,7 +108,7 @@ dependencies with other features, forward and backward compatibility, API and fl
 
 * Avoid merging the PR manually (unless it is an emergency and  you have the required permissions). Prow’s tide component automatically merges the PR once all the conditions are met.
 It also ensures that post-submit tests (tests that run before merge) validate the PR.
-* Use the link:https://deck-ci.svc.ci.openshift.org/command-help[command-help] to see the list of possible bot commands.
+* Use the link:https://prow.ci.openshift.org/command-help[command-help] to see the list of possible bot commands.
 
 === Setting custom Init Container image for bootstrapping Supervisord
 For quick deployment of components, odo uses the link:https://github.com/ochinchina/supervisord[Supervisord] process manager.
@@ -181,6 +181,9 @@ $ ./scripts/changelog-script.sh ${PREVIOUS_VERSION} ${NEW_VERSION}
 .. Create a PR to update `:tag` and `:revision` in the https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb[`odo.rb`] file
 in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Create a PR and update the file `build/VERSION` with the  latest version number.
+. Create a blog post! Follow the https://github.com/openshift/odo/tree/master/docs/blog[template.md] file and push it to the website (a tutorial is located on the https://github.com/openshift/odo/tree/gh-pages[gh-pages] branch of odo
+. After the blog post, ideally the CHANGELOG in the release should be the same as the blog post. This is an example of a good release changelog: https://github.com/openshift/odo/releases/tag/v2.0.0
+. Add the built site (including the blog post) to the release with `site.tar.gz` using the  https://github.com/openshift/odo/tree/gh-pages#bundling-the-site-for-releases[bundling the site for releases] guide.
 
 == Writing machine readable output code
 

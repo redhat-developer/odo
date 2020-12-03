@@ -5,119 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/testingutil"
 )
-
-func TestGetDevfileContainerComponents(t *testing.T) {
-
-	tests := []struct {
-		name                 string
-		component            []versionsCommon.DevfileComponent
-		alias                []string
-		expectedMatchesCount int
-	}{
-		{
-			name:                 "Case 1: Invalid devfile",
-			component:            []versionsCommon.DevfileComponent{},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
-			expectedMatchesCount: 0,
-		},
-
-		{
-			name:                 "Case 4 : Valid devfile with correct component type (Container)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
-			expectedMatchesCount: 2,
-		},
-
-		{
-			name:                 "Case 5: Valid devfile with correct component type (Container) without name",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("")},
-			expectedMatchesCount: 1,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.component,
-				},
-			}
-
-			devfileComponents := GetDevfileContainerComponents(devObj.Data)
-
-			if len(devfileComponents) != tt.expectedMatchesCount {
-				t.Errorf("TestGetDevfileContainerComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
-			}
-		})
-	}
-
-}
-
-func TestGetDevfileVolumeComponents(t *testing.T) {
-
-	tests := []struct {
-		name                 string
-		component            []versionsCommon.DevfileComponent
-		alias                []string
-		expectedMatchesCount int
-	}{
-		{
-			name:                 "Case 1: Invalid devfile",
-			component:            []versionsCommon.DevfileComponent{},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
-			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
-			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
-			expectedMatchesCount: 0,
-		},
-
-		{
-			name:                 "Case 4 : Valid devfile with wrong component type (Container)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
-			expectedMatchesCount: 0,
-		},
-
-		{
-			name:                 "Case 5: Valid devfile with correct component type (Volume)",
-			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvol", "4Gi")},
-			expectedMatchesCount: 1,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.component,
-				},
-			}
-
-			devfileComponents := GetDevfileVolumeComponents(devObj.Data)
-
-			if len(devfileComponents) != tt.expectedMatchesCount {
-				t.Errorf("TestGetDevfileVolumeComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
-			}
-		})
-	}
-
-}
 
 func TestGetVolumes(t *testing.T) {
 
@@ -125,12 +16,12 @@ func TestGetVolumes(t *testing.T) {
 
 	tests := []struct {
 		name                       string
-		component                  []versionsCommon.DevfileComponent
+		component                  []devfilev1.Component
 		wantContainerNameToVolumes map[string][]DevfileVolume
 	}{
 		{
 			name:      "Case 1: Valid devfile with container referencing a volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1", size)},
+			component: []devfilev1.Component{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume1", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
@@ -143,22 +34,26 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 2: Valid devfile with container referencing multiple volume components",
-			component: []versionsCommon.DevfileComponent{
+			component: []devfilev1.Component{
 				testingutil.GetFakeVolumeComponent("myvolume1", size),
 				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				testingutil.GetFakeVolumeComponent("myvolume3", size),
 				{
-					Container: &versionsCommon.Container{
-						Name:  "mycontainer",
-						Image: "image",
-						VolumeMounts: []versionsCommon.VolumeMount{
-							{
-								Name: "myvolume1",
-								Path: "/myvolume1",
-							},
-							{
-								Name: "myvolume2",
-								Path: "/myvolume2",
+					Name: "mycontainer",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "image",
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "myvolume1",
+										Path: "/myvolume1",
+									},
+									{
+										Name: "myvolume2",
+										Path: "/myvolume2",
+									},
+								},
 							},
 						},
 					},
@@ -181,7 +76,7 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name:      "Case 3: Valid devfile with container referencing no volume component",
-			component: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2", size)},
+			component: []devfilev1.Component{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeVolumeComponent("myvolume2", size)},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{
 				"comp1": {
 					{
@@ -194,16 +89,50 @@ func TestGetVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 4: Valid devfile with no container volume mounts",
-			component: []versionsCommon.DevfileComponent{
+			component: []devfilev1.Component{
 				testingutil.GetFakeVolumeComponent("myvolume2", size),
 				{
-					Container: &versionsCommon.Container{
-						Name:  "mycontainer",
-						Image: "image",
+					Name: "mycontainer",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "image",
+							},
+						},
 					},
 				},
 			},
 			wantContainerNameToVolumes: map[string][]DevfileVolume{},
+		},
+		{
+			name: "Case 5: Valid devfile with container referencing no volume mount path",
+			component: []devfilev1.Component{
+				testingutil.GetFakeVolumeComponent("myvolume1", size),
+				{
+					Name: "mycontainer",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "image",
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "myvolume1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantContainerNameToVolumes: map[string][]DevfileVolume{
+				"mycontainer": {
+					{
+						Name:          "myvolume1",
+						Size:          "4Gi",
+						ContainerPath: "/myvolume1",
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -229,7 +158,7 @@ func TestIsEnvPresent(t *testing.T) {
 	envName := "myenv"
 	envValue := "myenvvalue"
 
-	envVars := []common.Env{
+	envVars := []devfilev1.EnvVar{
 		{
 			Name:  envName,
 			Value: envValue,
@@ -266,9 +195,9 @@ func TestIsEnvPresent(t *testing.T) {
 func TestIsPortPresent(t *testing.T) {
 
 	endpointName := "8080/tcp"
-	var endpointPort int32 = 8080
+	var endpointPort int = 8080
 
-	endpoints := []common.Endpoint{
+	endpoints := []devfilev1.Endpoint{
 		{
 			Name:       endpointName,
 			TargetPort: endpointPort,
@@ -337,62 +266,35 @@ func TestGetBootstrapperImage(t *testing.T) {
 
 }
 
-func TestIsContainer(t *testing.T) {
+func TestGetVolumeMountPath(t *testing.T) {
 
 	tests := []struct {
-		name            string
-		component       common.DevfileComponent
-		wantIsSupported bool
+		name        string
+		volumeMount devfilev1.VolumeMount
+		wantPath    string
 	}{
 		{
-			name:            "Case 1: Container component",
-			component:       testingutil.GetFakeContainerComponent("comp1"),
-			wantIsSupported: true,
+			name: "Case 1: Mount Path is present",
+			volumeMount: devfilev1.VolumeMount{
+				Name: "name1",
+				Path: "/path1",
+			},
+			wantPath: "/path1",
 		},
 		{
-			name: "Case 2: Not a container component",
-			component: common.DevfileComponent{
-				Openshift: &versionsCommon.Openshift{},
+			name: "Case 2: Mount Path is absent",
+			volumeMount: devfilev1.VolumeMount{
+				Name: "name1",
 			},
-			wantIsSupported: false,
+			wantPath: "/name1",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isSupported := isContainer(tt.component)
-			if isSupported != tt.wantIsSupported {
-				t.Errorf("TestIsContainer error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
-			}
-		})
-	}
+			path := GetVolumeMountPath(tt.volumeMount)
 
-}
-
-func TestIsVolume(t *testing.T) {
-
-	tests := []struct {
-		name            string
-		component       common.DevfileComponent
-		wantIsSupported bool
-	}{
-		{
-			name:            "Case 1: Volume component",
-			component:       testingutil.GetFakeVolumeComponent("myvol", "4Gi"),
-			wantIsSupported: true,
-		},
-		{
-			name: "Case 2: Not a volume component",
-			component: common.DevfileComponent{
-				Openshift: &versionsCommon.Openshift{},
-			},
-			wantIsSupported: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			isSupported := isVolume(tt.component)
-			if isSupported != tt.wantIsSupported {
-				t.Errorf("TestIsVolume error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
+			if path != tt.wantPath {
+				t.Errorf("TestGetVolumeMountPath error: mount path mismatch, expected: %v got: %v", tt.wantPath, path)
 			}
 		})
 	}
@@ -401,63 +303,103 @@ func TestIsVolume(t *testing.T) {
 
 func TestGetCommandsForGroup(t *testing.T) {
 
-	component := []versionsCommon.DevfileComponent{
+	component := []devfilev1.Component{
 		testingutil.GetFakeContainerComponent("alias1"),
 	}
 	componentName := "alias1"
 	command := "ls -la"
 	workDir := "/"
-	execCommands := []common.Exec{
+	execCommands := []devfilev1.Command{
 		{
-			Id:          "run command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group: &versionsCommon.Group{
-				Kind:      runGroup,
-				IsDefault: true,
+			Id: "run command",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{
+								Kind:      runGroup,
+								IsDefault: true,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   componentName,
+					WorkingDir:  workDir,
+				},
 			},
 		},
 		{
-			Id:          "build command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: buildGroup},
+			Id: "build command",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{Kind: buildGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   componentName,
+					WorkingDir:  workDir,
+				},
+			},
 		},
 		{
-			Id:          "test command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: testGroup},
+			Id: "test command",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{Kind: testGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   componentName,
+					WorkingDir:  workDir,
+				},
+			},
 		},
 		{
-			Id:          "debug command",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: debugGroup},
+			Id: "debug command",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{Kind: debugGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   componentName,
+					WorkingDir:  workDir,
+				},
+			},
 		},
 		{
-			Id:          "customcommand",
-			CommandLine: command,
-			Component:   componentName,
-			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: runGroup},
+			Id: "customcommand",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{
+							Group: &devfilev1.CommandGroup{Kind: runGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   componentName,
+					WorkingDir:  workDir,
+				},
+			},
 		},
 	}
 
 	devObj := devfileParser.DevfileObj{
 		Data: &testingutil.TestDevfileData{
-			Components:   component,
-			ExecCommands: execCommands,
+			Components: component,
+			Commands:   execCommands,
 		},
 	}
 
 	tests := []struct {
 		name             string
-		groupType        common.DevfileCommandGroupType
+		groupType        devfilev1.CommandGroupKind
 		numberOfCommands int
 	}{
 		{
@@ -480,11 +422,6 @@ func TestGetCommandsForGroup(t *testing.T) {
 			groupType:        debugGroup,
 			numberOfCommands: 1,
 		},
-		{
-			name:             "Case 5: Wrong Group Command",
-			groupType:        initGroup,
-			numberOfCommands: 0,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -506,60 +443,92 @@ func TestGetCommandsForGroup(t *testing.T) {
 
 func TestGetCommands(t *testing.T) {
 
-	component := []versionsCommon.DevfileComponent{
+	component := []devfilev1.Component{
 		testingutil.GetFakeContainerComponent("alias1"),
 	}
 
 	tests := []struct {
 		name             string
-		execCommands     []common.Exec
-		compCommands     []common.Composite
-		expectedCommands []versionsCommon.DevfileCommand
+		execCommands     []devfilev1.Command
+		compCommands     []devfilev1.Command
+		expectedCommands []devfilev1.Command
 	}{
 		{
 			name: "Case 1: One command",
-			execCommands: []common.Exec{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "somecommand",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							HotReloadCapable: false,
+						},
+					},
 				},
 			},
-			expectedCommands: []versionsCommon.DevfileCommand{
+			expectedCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						Id: "somecommand",
+					Id: "somecommand",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							HotReloadCapable: false,
+						},
 					},
 				},
 			},
 		},
 		{
 			name: "Case 2: Multiple commands",
-			execCommands: []common.Exec{
+			execCommands: []devfilev1.Command{
 				{
 					Id: "somecommand",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							HotReloadCapable: false,
+						},
+					},
 				},
 				{
 					Id: "somecommand2",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							HotReloadCapable: false,
+						},
+					},
 				},
 			},
-			compCommands: []common.Composite{
+			compCommands: []devfilev1.Command{
 				{
 					Id: "mycomposite",
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							Commands: []string{},
+						},
+					},
 				},
 			},
-			expectedCommands: []versionsCommon.DevfileCommand{
+			expectedCommands: []devfilev1.Command{
 				{
-					Exec: &common.Exec{
-						Id: "somecommand",
+					Id: "somecommand",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							HotReloadCapable: false,
+						},
 					},
 				},
 				{
-					Exec: &common.Exec{
-						Id: "somecommand2",
+					Id: "somecommand2",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							HotReloadCapable: false,
+						},
 					},
 				},
 				{
-					Composite: &common.Composite{
-						Id: "mycomposite",
+					Id: "mycomposite",
+					CommandUnion: devfilev1.CommandUnion{
+						Composite: &devfilev1.CompositeCommand{
+							Commands: []string{},
+						},
 					},
 				},
 			},
@@ -569,9 +538,8 @@ func TestGetCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					Components:        component,
-					ExecCommands:      tt.execCommands,
-					CompositeCommands: tt.compCommands,
+					Components: component,
+					Commands:   append(tt.execCommands, tt.compCommands...),
 				},
 			}
 
@@ -580,9 +548,9 @@ func TestGetCommands(t *testing.T) {
 				t.Errorf("TestGetCommands error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}
 			for _, command := range tt.expectedCommands {
-				_, ok := commandsMap[command.GetID()]
+				_, ok := commandsMap[command.Id]
 				if !ok {
-					t.Errorf("TestGetCommands error: command %v not found in map", command.GetID())
+					t.Errorf("TestGetCommands error: command %v not found in map", command.Id)
 				}
 			}
 		})
@@ -595,7 +563,7 @@ func TestGetComponentEnvVar(t *testing.T) {
 	tests := []struct {
 		name string
 		env  string
-		envs []common.Env
+		envs []devfilev1.EnvVar
 		want string
 	}{
 		{
@@ -607,7 +575,7 @@ func TestGetComponentEnvVar(t *testing.T) {
 		{
 			name: "Case 2: Has env",
 			env:  "PROJECTS_ROOT",
-			envs: []common.Env{
+			envs: []devfilev1.EnvVar{
 				{
 					Name:  "SOME_ENV",
 					Value: "test",
@@ -626,7 +594,7 @@ func TestGetComponentEnvVar(t *testing.T) {
 		{
 			name: "Case 3: No env, multiple values",
 			env:  "PROJECTS_ROOT",
-			envs: []common.Env{
+			envs: []devfilev1.EnvVar{
 				{
 					Name:  "TESTER",
 					Value: "fake",
@@ -657,24 +625,37 @@ func TestGetComponentEnvVar(t *testing.T) {
 
 func TestGetCommandsFromEvent(t *testing.T) {
 
-	execCommands := []versionsCommon.Exec{
+	execCommands := []devfilev1.Command{
 		{
 			Id: "exec1",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{},
+			},
 		},
 		{
 			Id: "exec2",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{},
+			},
 		},
 		{
 			Id: "exec3",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{},
+			},
 		},
 	}
 
-	compCommands := []versionsCommon.Composite{
+	compCommands := []devfilev1.Command{
 		{
 			Id: "comp1",
-			Commands: []string{
-				"exec1",
-				"exec3",
+			CommandUnion: devfilev1.CommandUnion{
+				Composite: &devfilev1.CompositeCommand{
+					Commands: []string{
+						"exec1",
+						"exec3",
+					},
+				},
 			},
 		},
 	}
@@ -705,8 +686,7 @@ func TestGetCommandsFromEvent(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: &testingutil.TestDevfileData{
-					ExecCommands:      execCommands,
-					CompositeCommands: compCommands,
+					Commands: append(compCommands, execCommands...),
 				},
 			}
 

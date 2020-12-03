@@ -5,7 +5,7 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 )
 
-// New instantiantes a storage adapter
+// New instantiates a storage adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) common.StorageAdapter {
 	return &Adapter{
 		Client:         client,

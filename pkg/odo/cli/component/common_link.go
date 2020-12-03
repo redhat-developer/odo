@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
@@ -40,6 +39,8 @@ type commonLinkOptions struct {
 	secretName       string
 	isTargetAService bool
 
+	devfilePath string
+
 	suppliedName  string
 	operation     func(secretName, componentName, applicationName string) error
 	operationName string
@@ -49,6 +50,8 @@ type commonLinkOptions struct {
 	serviceType string
 	serviceName string
 	*genericclioptions.Context
+	// choose between Operator Hub and Service Catalog. If true, Operator Hub
+	csvSupport bool
 }
 
 func newCommonLinkOptions() *commonLinkOptions {
@@ -57,20 +60,31 @@ func newCommonLinkOptions() *commonLinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []string) (err error) {
+
 	o.operationName = name
 
 	suppliedName := args[0]
 	o.suppliedName = suppliedName
 
-	if experimental.IsExperimentalModeEnabled() {
+	// we need to support both devfile based component and s2i components.
+	// Let's first check if creating a devfile context is possible for the
+	// command provided by the user
+	_, err = genericclioptions.GetValidEnvInfo(cmd)
+	if err != nil {
+		// error means that we can't create a devfile context for the command
+		// and must create s2i context instead
+		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	} else {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
+	}
 
-		oclient, err := occlient.New()
-		if err != nil {
-			return err
-		}
+	o.Client, err = occlient.New()
+	if err != nil {
+		return err
+	}
 
-		sboSupport, err := oclient.IsSBRSupported()
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+		sboSupport, err := o.Client.IsSBRSupported()
 		if err != nil {
 			return err
 		}
@@ -106,7 +120,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		}
 
 		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
-		ownerReference := kclient.GenerateOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(deployment)
 		o.sbr.SetOwnerReferences(append(o.sbr.GetOwnerReferences(), ownerReference))
 		if err != nil {
 			return err
@@ -129,12 +143,10 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return nil
 	}
 
-	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
 	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
-		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Proceesing to only use components", suppliedName)
+		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Processing to only use components", suppliedName)
 		svcExists = false
 	}
 
@@ -167,8 +179,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 }
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
-
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		// let's validate if the service exists
 		svcFullName := strings.Join([]string{o.serviceType, o.serviceName}, "/")
 		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
@@ -248,11 +259,11 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			// service is in running state.
 			// This can take a long time to occur if the image of the service has yet to be downloaded
 			log.Progressf("Waiting for secret of service %s to come up", o.secretName)
-			_, err = o.Client.WaitAndGetSecret(o.secretName, o.Project)
+			_, err = o.Client.GetKubeClient().WaitAndGetSecret(o.secretName, o.Project)
 		} else {
 			// we also need to check whether there is a secret with the same name as the service
 			// the secret should have been created along with the secret
-			_, err = o.Client.GetSecret(o.secretName, o.Project)
+			_, err = o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
 			if err != nil {
 				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
 			}
@@ -263,7 +274,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 }
 
 func (o *commonLinkOptions) run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
 			sbrName := getSBRName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
 			svcFullName := getSvcFullName(sbrKind, sbrName)
@@ -282,6 +293,7 @@ func (o *commonLinkOptions) run() (err error) {
 
 			return
 		}
+
 		// convert service binding request into a ma[string]interface{} type so
 		// as to use it with dynamic client
 		sbrMap := make(map[string]interface{})
@@ -319,21 +331,29 @@ func (o *commonLinkOptions) run() (err error) {
 		linkType = "Service"
 	}
 
-	err = o.operation(o.secretName, o.Component(), o.Application)
+	var component string
+	if o.Context.EnvSpecificInfo != nil {
+		component = o.EnvSpecificInfo.GetName()
+		err = o.operation(o.secretName, component, o.Application)
+	} else {
+		component = o.Component()
+		err = o.operation(o.secretName, component, o.Application)
+	}
+
 	if err != nil {
 		return err
 	}
 
 	switch o.operationName {
 	case "link":
-		log.Successf("%s %s has been successfully linked to the component %s\n", linkType, o.suppliedName, o.Component())
+		log.Successf("%s %s has been successfully linked to the component %s\n", linkType, o.suppliedName, component)
 	case "unlink":
-		log.Successf("%s %s has been successfully unlinked from the component %s\n", linkType, o.suppliedName, o.Component())
+		log.Successf("%s %s has been successfully unlinked from the component %s\n", linkType, o.suppliedName, component)
 	default:
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
 
-	secret, err := o.Client.GetSecret(o.secretName, o.Project)
+	secret, err := o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
 	if err != nil {
 		return err
 	}
@@ -342,9 +362,9 @@ func (o *commonLinkOptions) run() (err error) {
 		log.Infof("There are no secret environment variables to expose within the %s service", o.suppliedName)
 	} else {
 		if o.operationName == "link" {
-			log.Infof("The below secret environment variables were added to the '%s' component:\n", o.Component())
+			log.Infof("The below secret environment variables were added to the '%s' component:\n", component)
 		} else {
-			log.Infof("The below secret environment variables were removed from the '%s' component:\n", o.Component())
+			log.Infof("The below secret environment variables were removed from the '%s' component:\n", component)
 		}
 
 		// Output the environment variables
@@ -364,7 +384,7 @@ func (o *commonLinkOptions) run() (err error) {
 		if o.operationName == "link" {
 			log.Italicf(`
 You can now access the environment variables from within the component pod, for example:
-$%s is now available as a variable within component %s`, exampleEnv, o.Component())
+$%s is now available as a variable within component %s`, exampleEnv, component)
 		}
 	}
 
@@ -378,7 +398,14 @@ $%s is now available as a variable within component %s`, exampleEnv, o.Component
 }
 
 func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
-	labels := componentlabels.GetLabels(o.Component(), o.Application, true)
+	var component string
+	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+		component = o.EnvSpecificInfo.GetName()
+	} else {
+		component = o.Component()
+	}
+
+	labels := componentlabels.GetLabels(component, o.Application, true)
 	selectorLabels, err := util.NamespaceOpenShiftObject(labels[componentlabels.ComponentLabel], labels["app"])
 	if err != nil {
 		return err
@@ -388,13 +415,13 @@ func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
 	// first wait for the pod to be pending (meaning that the deployment is being put into effect)
 	// we need this intermediate wait because there is a change that the this point could be reached
 	// without Openshift having had the time to launch the new deployment
-	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodPending, "Waiting for component to redeploy")
+	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodPending, "Waiting for component to redeploy")
 	if err != nil {
 		return err
 	}
 
 	// now wait for the pod to be running
-	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
 	return err
 }
 

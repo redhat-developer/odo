@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
@@ -23,7 +23,7 @@ type simpleCommand struct {
 
 // newSimpleCommand creates a new simpleCommand instance, adapting the devfile-defined command to run in the target component's
 // container, modifying it to add environment variables or adapting the path as needed.
-func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
+func newSimpleCommand(command devfilev1.Command, executor commandExecutor) (command, error) {
 	exe := command.Exec
 
 	// deal with environment variables
@@ -54,24 +54,23 @@ func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (
 // Note that the specified command will be run as-is in the target component's container so needs to be set accordingly as
 // opposed to the implementation provided by newSimpleCommand which will take the devfile's command definition and adapt it to
 // run in the container.
-func newOverriddenSimpleCommand(command common.DevfileCommand, executor commandExecutor, cmd []string) (*simpleCommand, error) {
+func newOverriddenSimpleCommand(command devfilev1.Command, executor commandExecutor, cmd []string) (*simpleCommand, error) {
 	// create the component info associated with the command
 	info, err := executor.ComponentInfo(command)
 	if err != nil {
 		return nil, err
 	}
 
-	id := command.GetID()
 	originalCmd := command.Exec.CommandLine
 	return &simpleCommand{
 		info:        info,
 		adapter:     executor,
 		cmd:         cmd,
-		id:          id,
+		id:          command.Id,
 		component:   command.Exec.Component,
 		originalCmd: originalCmd,
 		group:       convertGroupKindToString(command.Exec),
-		msg:         fmt.Sprintf("Executing %s command %q", id, originalCmd),
+		msg:         fmt.Sprintf("Executing %s command %q", command.Id, originalCmd),
 	}, nil
 }
 

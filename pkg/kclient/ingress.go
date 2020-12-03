@@ -10,15 +10,11 @@ import (
 )
 
 // CreateIngress creates an ingress object for the given service and with the given labels
-func (c *Client) CreateIngress(objectMeta metav1.ObjectMeta, spec extensionsv1.IngressSpec) (*extensionsv1.Ingress, error) {
-	ingress := &extensionsv1.Ingress{
-		ObjectMeta: objectMeta,
-		Spec:       spec,
-	}
+func (c *Client) CreateIngress(ingress extensionsv1.Ingress) (*extensionsv1.Ingress, error) {
 	if ingress.GetName() == "" {
 		return nil, fmt.Errorf("ingress name is empty")
 	}
-	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(ingress)
+	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(&ingress)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating ingress")
 	}

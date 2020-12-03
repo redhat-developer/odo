@@ -10,30 +10,39 @@ With a devfile you can describe:
 * A list of pre-defined commands that can be run
 * Projects to initially clone
 
-Odo takes this devfile and transforms it into a workspace of multiple containers running on OpenShift, Kubernetes or Docker.
+odo takes this devfile and transforms it into a workspace of multiple containers running on Kubernetes or OpenShift.
 
 Devfiles are YAML files with a defined https://devfile.github.io/devfile/_attachments/api-reference.html[schema].
 
-== Odo and devfile
+== odo and devfile
 
-Odo can now create components from devfiles as recorded in registries. Odo automatically consults the https://github.com/odo-devfiles/registry[default registry] but users can also add their own registries. Devfiles contribute new component types that users can pull to begin development immediately.
+odo can now create components from devfiles as recorded in registries. odo automatically consults the https://github.com/odo-devfiles/registry[default registry] but users can also add their own registries. Devfiles contribute new component types that users can pull to begin development immediately.
 
 An example deployment scenario:
 
 . `odo create` will consult the recorded devfile registries to offer the user a selection of available component types and pull down the associated `devfile.yaml` file
 . `odo push` parses and then deploys the component in the following order:
  .. Parses and validates the YAML file
- .. Deploys the development environment to your OpenShift cluster
+ .. Deploys the development environment to your Kubernetes or OpenShift cluster
  .. Synchronizes your source code to the containers
  .. Executes any prerequisite commands
 
 == Deploying your first devfile
 
-[discrete]
+===== Prerequisites for a Kubernetes Cluster
 
-==== Prerequisites for an OpenShift Cluster
+* Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
++
+Ingress IP is usually the external IP of ingress controller service. For example, for Minikube running in a virtual machine you can get it by
+`minikube ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
+
+===== Prerequisites for an OpenShift Cluster
 
 * Create a project to keep your source code, tests, and libraries organized in a separate single unit.
+* You must also know your ingress domain name or ingress IP to specify `--host` for `odo url create`. This can be found using `crc ip`.
++
+Ingress IP is usually the external IP of ingress controller service. For example, for link:https://developers.redhat.com/products/codeready-containers/overview[CodeReady Containers] running in a virtual machine you can get it by
+`crc ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
 
 . Log in to an OpenShift cluster:
 +
@@ -51,15 +60,6 @@ An example deployment scenario:
    ✓  New project created and now using project : myproject
 ----
 
-
-==== Prerequisites for a Kubernetes Cluster
-
-* Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
-+
-Ingress IP is usually the external IP of ingress controller service, for Minikube or CRC clusters running in a virtual machine you can get it by
-`minikube ip` or `crc ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
-
-
 == Listing all available devfile components
 
 * Before deploying your first component, have a look at what is available:
@@ -67,20 +67,6 @@ Ingress IP is usually the external IP of ingress controller service, for Minikub
 [source,sh]
 ----
   $ odo catalog list components
-  Odo OpenShift Components:
-  NAME              PROJECT       TAGS                        SUPPORTED
-  java              openshift     11,8,latest                 YES
-  nodejs            openshift     10-SCL,8,8-RHOAR,latest     YES
-  dotnet            openshift     2.1,2.2,3.0,latest          NO
-  golang            openshift     1.11.5,latest               NO
-  httpd             openshift     2.4,latest                  NO
-  modern-webapp     openshift     10.x,latest                 NO
-  nginx             openshift     1.10,1.12,latest            NO
-  perl              openshift     5.24,5.26,latest            NO
-  php               openshift     7.0,7.1,7.2,latest          NO
-  python            openshift     2.7,3.6,latest              NO
-  ruby              openshift     2.4,2.5,latest              NO
-
   Odo Devfile Components:
   NAME                 DESCRIPTION                            REGISTRY
   java-maven           Upstream Maven and OpenJDK 11          DefaultDevfileRegistry
@@ -89,15 +75,28 @@ Ingress IP is usually the external IP of ingress controller service, for Minikub
   java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
   nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
 
+  Odo S2I Components:
+  NAME        PROJECT       TAGS                                                                           SUPPORTED
+  java        openshift     11,8,latest                                                                    YES
+  dotnet      openshift     2.1,3.1,latest                                                                 NO
+  golang      openshift     1.13.4-ubi7,1.13.4-ubi8,latest                                                 NO
+  httpd       openshift     2.4-el7,2.4-el8,latest                                                         NO
+  nginx       openshift     1.14-el7,1.14-el8,1.16-el7,1.16-el8,latest                                     NO
+  nodejs      openshift     10-ubi7,10-ubi8,12-ubi7,12-ubi8,latest                                         NO
+  perl        openshift     5.26-el7,5.26-ubi8,5.30-el7,latest                                             NO
+  php         openshift     7.2-ubi7,7.2-ubi8,7.3-ubi7,7.3-ubi8,latest                                     NO
+  python      openshift     2.7-ubi7,2.7-ubi8,3.6-ubi7,3.6-ubi8,3.8-ubi7,3.8-ubi8,latest                   NO
+  ruby        openshift     2.5-ubi7,2.5-ubi8,2.6-ubi7,2.6-ubi8,2.7-ubi7,latest                            NO
+  wildfly     openshift     10.0,10.1,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,8.1,9.0,latest     NO
 ----
 
 In our example, we will be using `java-springboot` to deploy a sample https://spring.io/projects/spring-boot[Springboot] component.
 
-== Deploying a Java Spring Boot® component to an OpenShift / Kubernetes cluster
+== Deploying a Java Spring Boot® component to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying an https://github.com/odo-devfiles/springboot-ex[example Spring Boot® component] that uses https://maven.apache.org/install.html[Maven] and Java 8 JDK.
 
-. Download the example Spring Boot® component. 
+. Download the example Spring Boot® component.
 +
 [source,sh]
 ----
@@ -117,7 +116,6 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
 [source,sh]
 ----
    $ odo create java-springboot myspring
-   Experimental mode is enabled, use at your own risk
 
    Validation
     ✓  Checking devfile compatibility [195728ns]
@@ -137,6 +135,8 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
 
 . Create a URL in order to access the deployed component:
 +
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
 [source,sh]
 ----
  $ odo url create  --host example.com
@@ -145,7 +145,6 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -201,7 +200,7 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
    ✓  Successfully deleted component
 ----
 
-== Deploying a Node.js® component to an OpenShift / Kubernetes cluster
+== Deploying a Node.js® component to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying an https://github.com/odo-devfiles/nodejs-ex[example Node.js® component] that uses https://www.npmjs.com/[NPM].
 
@@ -224,7 +223,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
 [source,sh]
 ----
  $ ls
- app  LICENSE  package.json  package-lock.json  README.md
+ LICENSE  package.json  package-lock.json  README.md  server.js  test
 ----
 
 . Create a component configuration using the `nodejs` component-type named `mynodejs`:
@@ -232,7 +231,6 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
 [source,sh]
 ----
  $ odo create nodejs mynodejs
- Experimental mode is enabled, use at your own risk
 
  Validation
   ✓  Checking devfile compatibility [111738ns]
@@ -244,6 +242,8 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
 
 . Create a URL in order to access the deployed component:
 +
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
 [source,sh]
 ----
  $ odo url create --host example.com
@@ -252,7 +252,6 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -308,7 +307,7 @@ NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--ho
     ✓  Successfully deleted component
 ----
 
-== Deploying a Quarkus Application to an OpenShift / Kubernetes cluster
+== Deploying a Quarkus Application to a Kubernetes / OpenShift cluster
 
 In this example we will be deploying a https://github.com/odo-devfiles/quarkus-ex[Quarkus component] that uses GraalVM and JDK1.8+.
 
@@ -324,7 +323,6 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
 [source,sh]
 ----
    $ odo create java-quarkus myquarkus
-   Experimental mode is enabled, use at your own risk
 
    Validation
     ✓  Checking devfile compatibility [195728ns]
@@ -336,6 +334,8 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
 
 . Create a URL in order to access the deployed component:
 +
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
 [source,sh]
 ----
  $ odo url create  --host example.com
@@ -344,7 +344,6 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -398,4 +397,105 @@ Run `odo delete` to delete the application from cluster.
    ? Are you sure you want to delete the devfile component: java-springboot? Yes
     ✓  Deleting devfile component java-springboot [139ms]
     ✓  Successfully deleted component
+----
+
+== Deploying an Open Liberty Application to an OpenShift / Kubernetes cluster
+
+In this example we will be deploying a https://github.com/OpenLiberty/application-stack-intro[Open Liberty component] that uses Open Liberty and OpenJ9.
+
+. Download the example Open Liberty component
++
+[source,sh]
+----
+ $ git clone https://github.com/OpenLiberty/application-stack-intro.git && cd application-stack-intro
+----
+
+. Create an Open Liberty odo component
++
+[source,sh]
+----
+   $ odo create myopenliberty
+
+   Validation
+    ✓  Creating a devfile component from devfile path: .../application-stack-intro/devfile.yaml [253220ns]
+    ✓  Validating devfile component [263521ns]
+
+   Please use `odo push` command to create the component with source deployed
+
+----
+
+. Create a URL in order to access the deployed component:
++
+NOTE: If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
++
+[source,sh]
+----
+ $ odo url create --host example.com
+  ✓  URL myopenliberty-9080 created for component: myopenliberty
+
+ To apply the URL configuration changes, please use odo push
+----
++
+
+. Push the component to the cluster:
++
+[source,sh]
+----
+  $ odo push
+
+Validation
+ ✓  Validating the devfile [72932ns]
+
+Creating Kubernetes resources for component myopenliberty
+ ✓  Waiting for component to start [23s]
+
+Syncing to component myopenliberty
+ ✓  Checking files for pushing [4ms]
+ ✓  Syncing files to the component [4s]
+
+Executing devfile commands for component myopenliberty
+ ✓  Executing build command "if [ -e /projects/.disable-bld-cmd ]; then echo \"found the disable file\" && echo \"devBuild command will not run\" && exit 0; else echo \"will run the devBuild command\" && mkdir -p /projects/target/liberty && if [ ! -d /projects/target/liberty/wlp ]; then echo \"...moving liberty\"; mv /opt/ol/wlp /projects/target/liberty; touch ./.liberty-mv; elif [[ -d /projects/target/liberty/wlp && ! -e /projects/.liberty-mv ]]; then echo \"STACK WARNING - LIBERTY RUNTIME WAS LOADED FROM HOST\"; fi && mvn -Dliberty.runtime.version=20.0.0.10 package && touch ./.disable-bld-cmd; fi" [9s]
+ ✓  Executing run command "mvn -Dliberty.runtime.version=20.0.0.10 -Ddebug=false -DhotTests=true -DcompileWait=3 liberty:dev", if not running [2s]
+
+Pushing devfile component myopenliberty
+ ✓  Changes successfully pushed to component
+
+----
+
+. View your deployed application in a browser using the generated url
++
+[source,sh]
+----
+ $ odo url list
+  Found the following URLs for component myopenliberty
+  NAME                STATE      URL                                       PORT     SECURE
+  myopenliberty-9     Pushed     http://myopenliberty-9.example.com        9080     false
+----
+
+
+. Have odo watch for changes in the source code
++
+[source,sh]
+----
+ $ odo watch
+----
+
+You can now continue developing your application. Just refreshing the browser will render the source code changes.
+
+Run `odo delete` to delete the application from cluster.
+
+. To delete your deployed application:
++
+[source,sh]
+----
+   $ odo delete
+   Are you sure you want to delete the devfile component: myopenliberty? Yes
+
+   Gathering information for component myopenliberty
+    ✓  Checking status for component [99ms]
+
+   Deleting component myopenliberty
+    ✓  Deleting Kubernetes resources for component [107ms]
+    ✓  Successfully deleted component
+
 ----

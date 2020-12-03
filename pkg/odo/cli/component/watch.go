@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/validate"
 
+	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -41,10 +41,6 @@ var watchExampleWithDevfile = ktemplates.Examples(`  # Watch for changes in dire
 %[1]s --build-command="mybuild" --run-command="myrun"
   `)
 
-var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
-%[1]s
-  `)
-
 // WatchOptions contains attributes of the watch command
 type WatchOptions struct {
 	ignores []string
@@ -65,7 +61,6 @@ type WatchOptions struct {
 	initialDevfileHandler common.ComponentAdapter
 
 	// devfile commands
-	devfileInitCommand  string
 	devfileBuildCommand string
 	devfileRunCommand   string
 
@@ -82,7 +77,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	wo.devfilePath = filepath.Join(wo.componentContext, DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+	if util.CheckPathExists(wo.devfilePath) {
 		wo.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Set the source path to either the context or current working directory (if context not set)
@@ -108,10 +103,14 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		if err != nil {
 			return err
 		}
+		err = validate.ValidateDevfileData(devObj.Data)
+		if err != nil {
+			return err
+		}
 
 		var platformContext interface{}
 		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
 			wo.namespace = wo.KClient.Namespace
 			platformContext = kubernetes.KubernetesContext{
 				Namespace: wo.namespace,
@@ -161,7 +160,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	}
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+	if util.CheckPathExists(wo.devfilePath) {
 		exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName)
 		if err != nil {
 			return err
@@ -203,7 +202,7 @@ func (wo *WatchOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (wo *WatchOptions) Run() (err error) {
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+	if util.CheckPathExists(wo.devfilePath) {
 
 		err = watch.DevfileWatchAndPush(
 			os.Stdout,
@@ -217,7 +216,6 @@ func (wo *WatchOptions) Run() (err error) {
 				ExtChan:             make(chan bool),
 				DevfileWatchHandler: wo.regenerateAdapterAndPush,
 				Show:                wo.show,
-				DevfileInitCmd:      strings.ToLower(wo.devfileInitCommand),
 				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
 				DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
 				EnvSpecificInfo:     wo.EnvSpecificInfo,
@@ -255,12 +253,10 @@ func (wo *WatchOptions) Run() (err error) {
 func NewCmdWatch(name, fullName string) *cobra.Command {
 	wo := NewWatchOptions()
 
-	example := fmt.Sprintf(watchExample, fullName)
 	usage := name
 
-	if experimental.IsExperimentalModeEnabled() {
-		example = fmt.Sprintf(watchExampleWithDevfile, fullName)
-	}
+	// Add information on Devfile
+	example := fmt.Sprintf(watchExampleWithDevfile, fullName)
 
 	var watchCmd = &cobra.Command{
 		Use:         usage,
@@ -280,12 +276,8 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		watchCmd.Flags().StringVar(&wo.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
-		watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
-		watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
-	}
+	watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
+	watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
 
 	// Adding context flag
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)
@@ -325,6 +317,10 @@ func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters wat
 	devObj, err := devfile.ParseAndValidate(wo.devfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse and validate '%s'", wo.devfilePath)
+	}
+	err = validate.ValidateDevfileData(devObj.Data)
+	if err != nil {
+		return nil, err
 	}
 
 	var platformContext interface{}

@@ -1,7 +1,15 @@
 package kclient
 
 import (
+	"strings"
+	"time"
+
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
@@ -20,6 +28,7 @@ const (
 Please ensure you have an active kubernetes context to your cluster. 
 Consult your Kubernetes distribution's documentation for more details
 `
+	waitForComponentDeletionTimeout = 120 * time.Second
 )
 
 // Client is a collection of fields used for client configuration and interaction
@@ -29,6 +38,7 @@ type Client struct {
 	KubeClientConfig *rest.Config
 	Namespace        string
 	OperatorClient   *operatorsclientset.OperatorsV1alpha1Client
+	appsClient       appsclientset.AppsV1Interface
 	// DynamicClient interacts with client-go's `dynamic` package. It is used
 	// to dynamically create service from an operator. It can take an arbitrary
 	// yaml and create k8s/OpenShift resource from it.
@@ -37,13 +47,20 @@ type Client struct {
 
 // New creates a new client
 func New() (*Client, error) {
-	var client Client
-	var err error
+	return NewForConfig(nil)
+}
 
-	// initialize client-go clients
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+// NewForConfig creates a new client with the provided configuration or initializes the configuration if none is provided
+func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
+	if config == nil {
+		// initialize client-go clients
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		configOverrides := &clientcmd.ConfigOverrides{}
+		config = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	}
+
+	client = new(Client)
+	client.KubeConfig = config
 
 	client.KubeClientConfig, err = client.KubeConfig.ClientConfig()
 	if err != nil {
@@ -70,18 +87,94 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
-	return &client, nil
+	appsClient, err := appsclientset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+	client.appsClient = appsClient
+
+	return client, nil
 }
 
-// CreateObjectMeta creates a common object meta
-func CreateObjectMeta(name, namespace string, labels, annotations map[string]string) metav1.ObjectMeta {
+// Delete takes labels as a input and based on it, deletes respective resource
+func (c *Client) Delete(labels map[string]string, wait bool) error {
 
-	objectMeta := metav1.ObjectMeta{
-		Name:        name,
-		Namespace:   namespace,
-		Labels:      labels,
-		Annotations: annotations,
+	// convert labels to selector
+	selector := util.ConvertLabelsToSelector(labels)
+	klog.V(3).Infof("Selectors used for deletion: %s", selector)
+
+	var errorList []string
+	var deletionPolicy = metav1.DeletePropagationBackground
+
+	// for --wait flag, it deletes component dependents first and then delete component
+	if wait {
+		deletionPolicy = metav1.DeletePropagationForeground
+	}
+	// Delete Deployments
+	klog.V(3).Info("Deleting Deployments")
+	err := c.appsClient.Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		errorList = append(errorList, "unable to delete deployments")
 	}
 
-	return objectMeta
+	// for --wait it waits for component to be deleted
+	// TODO: Need to modify for `odo app delete`, currently wait flag is added only in `odo component delete`
+	//       so only one component gets passed in selector
+	if wait {
+		err = c.WaitForComponentDeletion(selector)
+		if err != nil {
+			errorList = append(errorList, err.Error())
+		}
+	}
+
+	// Error string
+	errString := strings.Join(errorList, ",")
+	if len(errString) != 0 {
+		return errors.New(errString)
+	}
+	return nil
+
+}
+
+// WaitForComponentDeletion waits for component to be deleted
+func (c *Client) WaitForComponentDeletion(selector string) error {
+
+	klog.V(3).Infof("Waiting for component to get deleted")
+
+	watcher, err := c.appsClient.Deployments(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+	eventCh := watcher.ResultChan()
+
+	for {
+		select {
+		case event, ok := <-eventCh:
+			_, typeOk := event.Object.(*appsv1.Deployment)
+			if !ok || !typeOk {
+				return errors.New("Unable to watch deployments")
+			}
+			if event.Type == watch.Deleted {
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted")
+				return nil
+			} else if event.Type == watch.Error {
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted ")
+				return errors.New("Unable to watch deployments")
+			}
+		case <-time.After(waitForComponentDeletionTimeout):
+			klog.V(3).Infof("WaitForComponentDeletion, Timeout")
+			return errors.New("Time out waiting for component to get deleted")
+		}
+	}
+}
+
+// GeneratePortForwardReq builds a port forward request
+func (c *Client) GeneratePortForwardReq(podName string) *rest.Request {
+	return c.KubeClient.CoreV1().RESTClient().
+		Post().
+		Resource("pods").
+		Namespace(c.Namespace).
+		Name(podName).
+		SubResource("portforward")
 }

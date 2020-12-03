@@ -21,11 +21,11 @@ Each logging output is categorizes into logging levels.
 
 Every `odo` command takes an optional flag `-v` that must be used with an integer log level in the range from 0-9. Any INFO severity log statement that is logged at a level lesser than or equal to the one passed with the command alongside `-v` flag will be logged to STDOUT.
 
-Alternatively, enviroment variable `ODO_LOG_LEVEL` can be used to set the verbosity of the log level in the integer range 0-9. The value set by `ODO_LOG_LEVEL` can be overridden by explicitly passing the `-v` command line flag to the `odo` command, in such an event `-v` flag takes precedence over the enviroment variable `ODO_LOG_LEVEL`.
+Alternatively, environment variable `ODO_LOG_LEVEL` can be used to set the verbosity of the log level in the integer range 0-9. The value set by `ODO_LOG_LEVEL` can be overridden by explicitly passing the `-v` command line flag to the `odo` command, in such an event `-v` flag takes precedence over the enviroment variable `ODO_LOG_LEVEL`.
 
 All ERROR severity level log messages will always be logged regardless of the values of `v` or `ODO_LOG_LEVEL`.
 
-In order to list multiple log levels, you can provide `--vmodule` to odo. `--vmodule` takes a key=value command-deliminated output. For example: `--vmodule "*=1,*=2,*=3"` to list log levels 1, 2 and 3 for all files (`*`), while `--vmodule "occlient=3"` would list all 3 level log messages in the `occlient` folder.
+In order to list multiple log levels, you can provide `--vmodule` to odo. `--vmodule` takes a key=value command-delimited output. For example: `--vmodule "*=1,*=2,*=3"` to list log levels 1, 2 and 3 for all files (`*`), while `--vmodule "occlient=3"` would list all 3 level log messages in the `occlient` folder.
 
 == Usage
 

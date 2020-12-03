@@ -139,7 +139,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 			if len(o.catalogDevfileList.Items) != 0 {
 				fmt.Fprintln(w)
 			}
-			fmt.Fprintln(w, "Odo OpenShift Components:")
+			fmt.Fprintln(w, "Odo S2I Components:")
 			fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS", "\t", "SUPPORTED")
 
 			if len(supCatalogList) != 0 {
@@ -201,9 +201,9 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType, supported string) {
 	for _, devfileComponent := range catalogDevfileList {
 		if supported != "" {
-			fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name, "\t", supported)
+			fmt.Fprintln(w, devfileComponent.Name, "\t", util.TruncateString(devfileComponent.Description, 60, "..."), "\t", devfileComponent.Registry.Name, "\t", supported)
 		} else {
-			fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name)
+			fmt.Fprintln(w, devfileComponent.Name, "\t", util.TruncateString(devfileComponent.Description, 60, "..."), "\t", devfileComponent.Registry.Name)
 		}
 	}
 }

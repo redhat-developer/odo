@@ -103,7 +103,7 @@ func MakeDir(dir string) {
 	Expect(err).ShouldNot(HaveOccurred())
 }
 
-// Getwd retruns current working dir
+// Getwd returns current working dir
 func Getwd() string {
 	dir, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
@@ -225,7 +225,7 @@ func CreateSymLink(oldFileName, newFileName string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-// VerifyFileExists recieves a path to a file, and returns whether or not
+// VerifyFileExists receives a path to a file, and returns whether or not
 // it points to an existing file
 func VerifyFileExists(filename string) bool {
 	info, err := os.Stat(filename)
@@ -235,7 +235,7 @@ func VerifyFileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-// VerifyFilesExist recieves an array of paths to files, and returns whether
+// VerifyFilesExist receives an array of paths to files, and returns whether
 // or not they all exist. If any one of the expected files doesn't exist, it
 // returns false
 func VerifyFilesExist(path string, files []string) bool {
@@ -295,4 +295,16 @@ func ReadFile(filePath string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+// CreateSimpleFile creates a simple file
+// return the file path with random string
+func CreateSimpleFile(context, filePrefix, fileExtension string) (string, string) {
+
+	FilePath := filepath.Join(context, filePrefix+RandString(10)+fileExtension)
+	content := []byte(RandString(10))
+	err := ioutil.WriteFile(FilePath, content, 0600)
+	Expect(err).NotTo(HaveOccurred())
+
+	return FilePath, string(content)
 }

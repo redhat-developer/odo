@@ -9,28 +9,21 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
-
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
-	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
@@ -40,11 +33,7 @@ import (
 	// api resource types
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	buildv1 "github.com/openshift/api/build/v1"
-	dockerapiv10 "github.com/openshift/api/image/docker10"
 	imagev1 "github.com/openshift/api/image/v1"
-	projectv1 "github.com/openshift/api/project/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	oauthv1client "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -52,28 +41,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
-
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/client-go/util/retry"
+	"k8s.io/klog"
 )
-
-var (
-	DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR string = "deploymentconfigs.apps.openshift.io \"%s\" not found"
-	DEPLOYMENT_CONFIG_NOT_FOUND           error  = fmt.Errorf("Requested deployment config does not exist")
-)
-
-// We use a mutex here in order to make 100% sure that functions such as CollectEvents
-// so that there are no race conditions
-var mu sync.Mutex
 
 // CreateArgs is a container of attributes of component create action
 type CreateArgs struct {
@@ -94,7 +69,6 @@ type CreateArgs struct {
 }
 
 const (
-	failedEventCount                = 5
 	OcUpdateTimeout                 = 5 * time.Minute
 	OpenShiftNameSpace              = "openshift"
 	waitForComponentDeletionTimeout = 120 * time.Second
@@ -104,9 +78,6 @@ const (
 
 	// The length of the string to be generated for names of resources
 	nameLength = 5
-
-	// ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
-	ComponentPortAnnotationName = "component-port"
 
 	// EnvS2IScriptsURL is an env var exposed to https://github.com/openshift/odo-init-image/blob/master/assemble-and-restart to indicate location of s2i scripts in this case assemble script
 	EnvS2IScriptsURL = "ODO_S2I_SCRIPTS_URL"
@@ -200,7 +171,7 @@ odo login https://mycluster.mydomain.com
 `
 
 type Client struct {
-	kubeClient           kubernetes.Interface
+	kubeClient           *kclient.Client
 	imageClient          imageclientset.ImageV1Interface
 	appsClient           appsclientset.AppsV1Interface
 	buildClient          buildclientset.BuildV1Interface
@@ -211,6 +182,7 @@ type Client struct {
 	KubeConfig           clientcmd.ClientConfig
 	discoveryClient      discovery.DiscoveryInterface
 	Namespace            string
+	supportedResources   map[string]bool
 }
 
 func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
@@ -231,66 +203,55 @@ func New() (*Client, error) {
 		return nil, errors.New(err.Error() + errorMsg)
 	}
 
-	kubeClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.kubeClient = kubeClient
-
-	imageClient, err := imageclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.imageClient = imageClient
-
-	appsClient, err := appsclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.appsClient = appsClient
-
-	buildClient, err := buildclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.buildClient = buildClient
-
-	serviceCatalogClient, err := servicecatalogclienset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.serviceCatalogClient = serviceCatalogClient
-
-	projectClient, err := projectclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.projectClient = projectClient
-
-	routeClient, err := routeclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	client.routeClient = routeClient
-
-	userClient, err := userclientset.NewForConfig(config)
+	client.kubeClient, err = kclient.NewForConfig(client.KubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	client.userClient = userClient
-
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	client.imageClient, err = imageclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	client.discoveryClient = discoveryClient
 
-	namespace, _, err := client.KubeConfig.Namespace()
+	client.appsClient, err = appsclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	client.Namespace = namespace
+
+	client.buildClient, err = buildclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.serviceCatalogClient, err = servicecatalogclienset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.projectClient, err = projectclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.routeClient, err = routeclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.userClient, err = userclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.discoveryClient, err = discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.Namespace, _, err = client.KubeConfig.Namespace()
+	if err != nil {
+		return nil, err
+	}
 
 	return &client, nil
 }
@@ -335,64 +296,6 @@ func ParseImageName(image string) (string, string, string, string, error) {
 	}
 	return "", "", "", "", fmt.Errorf("invalid image reference %s", image)
 
-}
-
-// imageWithMetadata mutates the given image. It parses raw DockerImageManifest data stored in the image and
-// fills its DockerImageMetadata and other fields.
-// Copied from v3.7 github.com/openshift/origin/pkg/image/apis/image/v1/helpers.go
-func imageWithMetadata(image *imagev1.Image) error {
-	// Check if the metadata are already filled in for this image.
-	meta, hasMetadata := image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage)
-	if hasMetadata && meta.Size > 0 {
-		return nil
-	}
-
-	version := image.DockerImageMetadataVersion
-	if len(version) == 0 {
-		version = "1.0"
-	}
-
-	obj := &dockerapiv10.DockerImage{}
-	if len(image.DockerImageMetadata.Raw) != 0 {
-		if err := json.Unmarshal(image.DockerImageMetadata.Raw, obj); err != nil {
-			return err
-		}
-		image.DockerImageMetadata.Object = obj
-	}
-
-	image.DockerImageMetadataVersion = version
-
-	return nil
-}
-
-// GetPortsFromBuilderImage returns list of available port from given builder image of given component type
-func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error) {
-	// checking port through builder image
-	imageNS, imageName, imageTag, _, err := ParseImageName(componentType)
-	if err != nil {
-		return []string{}, err
-	}
-	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
-	if err != nil {
-		return []string{}, err
-	}
-	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
-	if err != nil {
-		return []string{}, err
-	}
-	containerPorts, err := c.GetExposedPorts(imageStreamImage)
-	if err != nil {
-		return []string{}, err
-	}
-	var portList []string
-	for _, po := range containerPorts {
-		port := fmt.Sprint(po.ContainerPort) + "/" + string(po.Protocol)
-		portList = append(portList, port)
-	}
-	if len(portList) == 0 {
-		return []string{}, fmt.Errorf("given component type doesn't expose any ports, please use --port flag to specify a port")
-	}
-	return portList, nil
 }
 
 // RunLogout logs out the current user from cluster
@@ -467,116 +370,6 @@ func isServerUp(server string) bool {
 	return true
 }
 
-func (c *Client) GetCurrentProjectName() string {
-	return c.Namespace
-}
-
-// GetProjectNames return list of existing projects that user has access to.
-func (c *Client) GetProjectNames() ([]string, error) {
-	projects, err := c.projectClient.Projects().List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list projects")
-	}
-
-	var projectNames []string
-	for _, p := range projects.Items {
-		projectNames = append(projectNames, p.Name)
-	}
-	return projectNames, nil
-}
-
-// GetProject returns project based on the name of the project.Errors related to
-// project not being found or forbidden are translated to nil project for compatibility
-func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
-	prj, err := c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
-	if err != nil {
-		istatus, ok := err.(kerrors.APIStatus)
-		if ok {
-			status := istatus.Status()
-			if status.Reason == metav1.StatusReasonNotFound || status.Reason == metav1.StatusReasonForbidden {
-				return nil, nil
-			}
-		} else {
-			return nil, err
-		}
-
-	}
-	return prj, err
-
-}
-
-// CreateNewProject creates project with given projectName
-func (c *Client) CreateNewProject(projectName string, wait bool) error {
-	// Instantiate watcher before requesting new project
-	// If watched is created after the project it can lead to situation when the project is created before the watcher.
-	// When this happens, it gets stuck waiting for event that already happened.
-	var watcher watch.Interface
-	var err error
-	if wait {
-		watcher, err = c.projectClient.Projects().Watch(metav1.ListOptions{
-			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
-		})
-		if err != nil {
-			return errors.Wrapf(err, "unable to watch new project %s creation", projectName)
-		}
-		defer watcher.Stop()
-	}
-
-	projectRequest := &projectv1.ProjectRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: projectName,
-		},
-	}
-	_, err = c.projectClient.ProjectRequests().Create(projectRequest)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create new project %s", projectName)
-	}
-
-	if watcher != nil {
-		for {
-			val, ok := <-watcher.ResultChan()
-			if !ok {
-				break
-			}
-			if prj, ok := val.Object.(*projectv1.Project); ok {
-				klog.V(3).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
-				switch prj.Status.Phase {
-				//prj.Status.Phase can only be "Terminating" or "Active" or ""
-				case corev1.NamespaceActive:
-					if val.Type == watch.Added {
-						klog.V(3).Infof("Project %s now exists", prj.Name)
-						return nil
-					}
-					if val.Type == watch.Error {
-						return fmt.Errorf("failed watching the deletion of project %s", prj.Name)
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// SetCurrentProject sets the given projectName to current project
-func (c *Client) SetCurrentProject(projectName string) error {
-	rawConfig, err := c.KubeConfig.RawConfig()
-	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", projectName)
-	}
-
-	rawConfig.Contexts[rawConfig.CurrentContext].Namespace = projectName
-
-	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
-	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", projectName)
-	}
-
-	// we set the current namespace to the current project as well
-	c.Namespace = projectName
-	return nil
-}
-
 // addLabelsToArgs adds labels from map to args as a new argument in format that oc requires
 // --labels label1=value1,label2=value2
 func addLabelsToArgs(labels map[string]string, args []string) []string {
@@ -590,221 +383,6 @@ func addLabelsToArgs(labels map[string]string, args []string) []string {
 	}
 
 	return args
-}
-
-// getExposedPortsFromISI parse ImageStreamImage definition and return all exposed ports in form of ContainerPorts structs
-func getExposedPortsFromISI(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
-	// file DockerImageMetadata
-	err := imageWithMetadata(&image.Image)
-	if err != nil {
-		return nil, err
-	}
-
-	var ports []corev1.ContainerPort
-
-	for exposedPort := range image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).ContainerConfig.ExposedPorts {
-		splits := strings.Split(exposedPort, "/")
-		if len(splits) != 2 {
-			return nil, fmt.Errorf("invalid port %s", exposedPort)
-		}
-
-		portNumberI64, err := strconv.ParseInt(splits[0], 10, 32)
-		if err != nil {
-			return nil, errors.Wrapf(err, "invalid port number %s", splits[0])
-		}
-		portNumber := int32(portNumberI64)
-
-		var portProto corev1.Protocol
-		switch strings.ToUpper(splits[1]) {
-		case "TCP":
-			portProto = corev1.ProtocolTCP
-		case "UDP":
-			portProto = corev1.ProtocolUDP
-		default:
-			return nil, fmt.Errorf("invalid port protocol %s", splits[1])
-		}
-
-		port := corev1.ContainerPort{
-			Name:          fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProto))),
-			ContainerPort: portNumber,
-			Protocol:      portProto,
-		}
-
-		ports = append(ports, port)
-	}
-
-	return ports, nil
-}
-
-// GetImageStreams returns the Image Stream objects in the given namespace
-func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error) {
-	imageStreamList, err := c.imageClient.ImageStreams(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list imagestreams")
-	}
-	return imageStreamList.Items, nil
-}
-
-// GetImageStreamsNames returns the names of the image streams in a given
-// namespace
-func (c *Client) GetImageStreamsNames(namespace string) ([]string, error) {
-	imageStreams, err := c.GetImageStreams(namespace)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get image streams")
-	}
-
-	var names []string
-	for _, imageStream := range imageStreams {
-		names = append(names, imageStream.Name)
-	}
-	return names, nil
-}
-
-// isTagInImageStream takes a imagestream and a tag and checks if the tag is present in the imagestream's status attribute
-func isTagInImageStream(is imagev1.ImageStream, imageTag string) bool {
-	// Loop through the tags in the imagestream's status attribute
-	for _, tag := range is.Status.Tags {
-		// look for a matching tag
-		if tag.Tag == imageTag {
-			// Return true if found
-			return true
-		}
-	}
-	// Return false if not found.
-	return false
-}
-
-// GetImageStream returns the imagestream using image details like imageNS, imageName and imageTag
-// imageNS can be empty in which case, this function searches currentNamespace on priority. If
-// imagestream of required tag not found in current namespace, then searches openshift namespace.
-// If not found, error out. If imageNS is not empty string, then, the requested imageNS only is searched
-// for requested imagestream
-func (c *Client) GetImageStream(imageNS string, imageName string, imageTag string) (*imagev1.ImageStream, error) {
-	var err error
-	var imageStream *imagev1.ImageStream
-	currentProjectName := c.GetCurrentProjectName()
-	/*
-		If User has not chosen image NS then,
-			1. Use image from current NS if available
-			2. If not 1, use default openshift NS
-			3. If not 2, return errors from both 1 and 2
-		else
-			Use user chosen namespace
-			If image doesn't exist in user chosen namespace,
-				error out
-			else
-				Proceed
-	*/
-	// User has not passed any particular ImageStream
-	if imageNS == "" {
-
-		// First try finding imagestream from current namespace
-		currentNSImageStream, e := c.imageClient.ImageStreams(currentProjectName).Get(imageName, metav1.GetOptions{})
-		if e != nil {
-			err = errors.Wrapf(e, "no match found for : %s in namespace %s", imageName, currentProjectName)
-		} else {
-			if isTagInImageStream(*currentNSImageStream, imageTag) {
-				return currentNSImageStream, nil
-			}
-		}
-
-		// If not in current namespace, try finding imagestream from openshift namespace
-		openshiftNSImageStream, e := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(imageName, metav1.GetOptions{})
-		if e != nil {
-			// The image is not available in current Namespace.
-			err = errors.Wrapf(e, "no match found for : %s in namespace %s", imageName, OpenShiftNameSpace)
-		} else {
-			if isTagInImageStream(*openshiftNSImageStream, imageTag) {
-				return openshiftNSImageStream, nil
-			}
-		}
-		if e != nil && err != nil {
-			// Imagestream not found in openshift and current namespaces
-			if experimental.IsExperimentalModeEnabled() {
-				return nil, fmt.Errorf("component type %q not found", imageName)
-			}
-			return nil, err
-		}
-
-		// Required tag not in openshift and current namespaces
-		return nil, fmt.Errorf("image stream %s with tag %s not found in openshift and %s namespaces", imageName, imageTag, currentProjectName)
-
-	}
-
-	// Fetch imagestream from requested namespace
-	imageStream, err = c.imageClient.ImageStreams(imageNS).Get(imageName, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(
-			err, "no match found for %s in namespace %s", imageName, imageNS,
-		)
-	}
-	if !isTagInImageStream(*imageStream, imageTag) {
-		return nil, fmt.Errorf("image stream %s with tag %s not found in %s namespaces", imageName, imageTag, currentProjectName)
-	}
-
-	return imageStream, nil
-}
-
-// GetSecret returns the Secret object in the given namespace
-func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
-	secret, err := c.kubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
-	}
-	return secret, nil
-}
-
-// GetImageStreamImage returns image and error if any, corresponding to the passed imagestream and image tag
-func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag string) (*imagev1.ImageStreamImage, error) {
-	imageNS := imageStream.ObjectMeta.Namespace
-	imageName := imageStream.ObjectMeta.Name
-
-	for _, tag := range imageStream.Status.Tags {
-		// look for matching tag
-		if tag.Tag == imageTag {
-			klog.V(3).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
-
-			if len(tag.Items) > 0 {
-				tagDigest := tag.Items[0].Image
-				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
-
-				// look for imageStreamImage for given tag (reference by digest)
-				imageStreamImage, err := c.imageClient.ImageStreamImages(imageNS).Get(imageStreamImageName, metav1.GetOptions{})
-				if err != nil {
-					return nil, errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
-				}
-				return imageStreamImage, nil
-			}
-
-			return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
-
-		}
-	}
-
-	// return error since its an unhandled case if code reaches here
-	return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
-}
-
-// GetImageStreamTags returns all the ImageStreamTag objects in the given namespace
-func (c *Client) GetImageStreamTags(namespace string) ([]imagev1.ImageStreamTag, error) {
-	imageStreamTagList, err := c.imageClient.ImageStreamTags(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list imagestreamtags")
-	}
-	return imageStreamTagList.Items, nil
-}
-
-// GetExposedPorts returns list of ContainerPorts that are exposed by given image
-func (c *Client) GetExposedPorts(imageStreamImage *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
-	var containerPorts []corev1.ContainerPort
-
-	// get ports that are exported by image
-	containerPorts, err := getExposedPortsFromISI(imageStreamImage)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get exported ports from image %+v", imageStreamImage)
-	}
-
-	return containerPorts, nil
 }
 
 func getAppRootVolumeName(dcName string) string {
@@ -840,7 +418,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 
 	var containerPorts []corev1.ContainerPort
 	if len(params.Ports) == 0 {
-		containerPorts, err = c.GetExposedPorts(imageStreamImage)
+		containerPorts, err = getExposedPortsFromISI(imageStreamImage)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
 		}
@@ -854,7 +432,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 		}
 	}
 
-	inputEnvVars, err := GetInputEnvVarsFromStrings(params.EnvVars)
+	inputEnvVars, err := kclient.GetInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -901,56 +479,20 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	}
 
 	// Create a service
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
+	commonObjectMeta.SetOwnerReferences(append(commonObjectMeta.GetOwnerReferences(), ownerReference))
+	service := corev1.Service{
+		ObjectMeta: commonObjectMeta,
+		Spec:       generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports),
+	}
+	svc, err := c.GetKubeClient().CreateService(service)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
 	// Create secret(s)
-	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
+	err = c.GetKubeClient().CreateSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 
 	return err
-}
-
-// Create a secret for each port, containing the host and port of the component
-// This is done so other components can later inject the secret into the environment
-// and have the "coordinates" to communicate with this component
-func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.ObjectMeta, svc *corev1.Service, ownerReference metav1.OwnerReference) error {
-	originalName := commonObjectMeta.Name
-	for _, svcPort := range svc.Spec.Ports {
-		portAsString := fmt.Sprintf("%v", svcPort.Port)
-
-		// we need to create multiple secrets, so each one has to contain the port in it's name
-		// so we change the name of each secret by adding the port number
-		commonObjectMeta.Name = fmt.Sprintf("%v-%v", originalName, portAsString)
-
-		// we also add the port as an annotation to the secret
-		// this comes in handy when we need to "query" for the appropriate secret
-		// of a component based on the port
-		commonObjectMeta.Annotations[ComponentPortAnnotationName] = portAsString
-
-		err := c.CreateSecret(
-			commonObjectMeta,
-			map[string]string{
-				secretKeyName(componentName, "host"): svc.Name,
-				secretKeyName(componentName, "port"): portAsString,
-			},
-			ownerReference)
-
-		if err != nil {
-			return errors.Wrapf(err, "unable to create Secret for %s", commonObjectMeta.Name)
-		}
-	}
-
-	// restore the original values of the fields we changed
-	commonObjectMeta.Name = originalName
-	delete(commonObjectMeta.Annotations, ComponentPortAnnotationName)
-
-	return nil
-}
-
-func secretKeyName(componentName, baseKeyName string) string {
-	return fmt.Sprintf("COMPONENT_%v_%v", strings.Replace(strings.ToUpper(componentName), "-", "_", -1), strings.ToUpper(baseKeyName))
 }
 
 // getS2ILabelValue returns the requested S2I label value from the passed set of labels attached to builder image
@@ -962,79 +504,6 @@ func getS2ILabelValue(labels map[string]string, expectedLabelsSet []string) stri
 		}
 	}
 	return ""
-}
-
-// GetS2IMetaInfoFromBuilderImg returns script path protocol, S2I scripts path, S2I source or binary expected path, S2I deployment dir and errors(if any) from the passed builder image
-func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths, error) {
-
-	// Define structs for internal un-marshalling of imagestreamimage to extract label from it
-	type ContainerConfig struct {
-		Labels     map[string]string `json:"Labels"`
-		WorkingDir string            `json:"WorkingDir"`
-	}
-	type DockerImageMetaDataRaw struct {
-		ContainerConfig ContainerConfig `json:"ContainerConfig"`
-	}
-
-	var dimdr DockerImageMetaDataRaw
-
-	// The label $S2IScriptsURLLabel needs to be extracted from builderImage#Image#DockerImageMetadata#Raw which is byte array
-	dimdrByteArr := (*builderImage).Image.DockerImageMetadata.Raw
-
-	// Unmarshal the byte array into the struct for ease of access of required fields
-	err := json.Unmarshal(dimdrByteArr, &dimdr)
-	if err != nil {
-		return S2IPaths{}, errors.Wrap(err, "unable to bootstrap supervisord")
-	}
-
-	// If by any chance, labels attribute is nil(although ideally not the case for builder images), return
-	if dimdr.ContainerConfig.Labels == nil {
-		klog.V(3).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
-		return S2IPaths{}, nil
-	}
-
-	// Extract the label containing S2I scripts URL
-	s2iScriptsURL := dimdr.ContainerConfig.Labels[S2IScriptsURLLabel]
-	s2iSrcOrBinPath := dimdr.ContainerConfig.Labels[S2ISrcOrBinLabel]
-	s2iBuilderImgName := dimdr.ContainerConfig.Labels[S2IBuilderImageName]
-
-	if s2iSrcOrBinPath == "" {
-		// In cases like nodejs builder image, where there is no concept of binary and sources are directly run, use destination as source
-		// s2iSrcOrBinPath = getS2ILabelValue(dimdr.ContainerConfig.Labels, S2IDeploymentsDir)
-		s2iSrcOrBinPath = DefaultS2ISrcOrBinPath
-	}
-
-	s2iDestinationDir := getS2ILabelValue(dimdr.ContainerConfig.Labels, S2IDeploymentsDir)
-	// The URL is a combination of protocol and the path to script details of which can be found @
-	// https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#s2i-scripts
-	// Extract them out into protocol and path separately to minimise the task in
-	// https://github.com/openshift/odo-init-image/blob/master/assemble-and-restart when custom handling
-	// for each of the protocols is added
-	s2iScriptsProtocol := ""
-	s2iScriptsPath := ""
-
-	switch {
-	case strings.HasPrefix(s2iScriptsURL, "image://"):
-		s2iScriptsProtocol = "image://"
-		s2iScriptsPath = strings.TrimPrefix(s2iScriptsURL, "image://")
-	case strings.HasPrefix(s2iScriptsURL, "file://"):
-		s2iScriptsProtocol = "file://"
-		s2iScriptsPath = strings.TrimPrefix(s2iScriptsURL, "file://")
-	case strings.HasPrefix(s2iScriptsURL, "http(s)://"):
-		s2iScriptsProtocol = "http(s)://"
-		s2iScriptsPath = s2iScriptsURL
-	default:
-		return S2IPaths{}, fmt.Errorf("Unknown scripts url %s", s2iScriptsURL)
-	}
-	return S2IPaths{
-		ScriptsPathProtocol: s2iScriptsProtocol,
-		ScriptsPath:         s2iScriptsPath,
-		SrcOrBinPath:        s2iSrcOrBinPath,
-		DeploymentDir:       s2iDestinationDir,
-		WorkingDir:          dimdr.ContainerConfig.WorkingDir,
-		SrcBackupPath:       DefaultS2ISrcBackupDir,
-		BuilderImgName:      s2iBuilderImgName,
-	}, nil
 }
 
 // uniqueAppendOrOverwriteEnvVars appends/overwrites the passed existing list of env vars with the elements from the to-be appended passed list of envs
@@ -1122,7 +591,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 	}
 
-	inputEnvs, err := GetInputEnvVarsFromStrings(params.EnvVars)
+	inputEnvs, err := kclient.GetInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -1145,7 +614,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	// Extract s2i scripts path and path type from imagestream image
 	//s2iScriptsProtocol, s2iScriptsURL, s2iSrcOrBinPath, s2iDestinationDir
-	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
+	s2iPaths, err := getS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1204,12 +673,18 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		}
 	}
 
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
+	// Create a service
+	commonObjectMeta.SetOwnerReferences(append(commonObjectMeta.GetOwnerReferences(), ownerReference))
+	service := corev1.Service{
+		ObjectMeta: commonObjectMeta,
+		Spec:       generateServiceSpec(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports),
+	}
+	svc, err := c.GetKubeClient().CreateService(service)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
-	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
+	err = c.GetKubeClient().CreateSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 	if err != nil {
 		return err
 	}
@@ -1223,57 +698,6 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	return nil
 }
 
-// CreateService generates and creates the service
-// commonObjectMeta is the ObjectMeta for the service
-// dc is the deploymentConfig to get the container ports
-func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort, ownerReference metav1.OwnerReference) (*corev1.Service, error) {
-	// generate and create Service
-	var svcPorts []corev1.ServicePort
-	for _, containerPort := range containerPorts {
-		svcPort := corev1.ServicePort{
-
-			Name:       containerPort.Name,
-			Port:       containerPort.ContainerPort,
-			Protocol:   containerPort.Protocol,
-			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
-		}
-		svcPorts = append(svcPorts, svcPort)
-	}
-	svc := corev1.Service{
-		ObjectMeta: commonObjectMeta,
-		Spec: corev1.ServiceSpec{
-			Ports: svcPorts,
-			Selector: map[string]string{
-				"deploymentconfig": commonObjectMeta.Name,
-			},
-		},
-	}
-	svc.SetOwnerReferences(append(svc.GetOwnerReferences(), ownerReference))
-
-	createdSvc, err := c.kubeClient.CoreV1().Services(c.Namespace).Create(&svc)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
-	}
-	return createdSvc, err
-}
-
-// CreateSecret generates and creates the secret
-// commonObjectMeta is the ObjectMeta for the service
-func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]string, ownerReference metav1.OwnerReference) error {
-
-	secret := corev1.Secret{
-		ObjectMeta: objectMeta,
-		Type:       corev1.SecretTypeOpaque,
-		StringData: data,
-	}
-	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
-	_, err := c.kubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
-	}
-	return nil
-}
-
 // updateEnvVar updates the environmental variables to the container in the DC
 // dc is the deployment config to be updated
 // envVars is the array containing the corev1.EnvVar values
@@ -1284,37 +708,6 @@ func updateEnvVar(dc *appsv1.DeploymentConfig, envVars []corev1.EnvVar) error {
 	}
 
 	dc.Spec.Template.Spec.Containers[0].Env = envVars
-	return nil
-}
-
-// UpdateBuildConfig updates the BuildConfig file
-// buildConfigName is the name of the BuildConfig file to be updated
-// projectName is the name of the project
-// gitURL equals to the git URL of the source and is equals to "" if the source is of type dir or binary
-// annotations contains the annotations for the BuildConfig file
-func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annotations map[string]string) error {
-	if gitURL == "" {
-		return errors.New("gitURL for UpdateBuildConfig must not be blank")
-	}
-
-	// generate BuildConfig
-	buildSource := buildv1.BuildSource{
-		Git: &buildv1.GitBuildSource{
-			URI: gitURL,
-		},
-		Type: buildv1.BuildSourceGit,
-	}
-
-	buildConfig, err := c.GetBuildConfigFromName(buildConfigName)
-	if err != nil {
-		return errors.Wrap(err, "unable to get the BuildConfig file")
-	}
-	buildConfig.Spec.Source = buildSource
-	buildConfig.Annotations = annotations
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Update(buildConfig)
-	if err != nil {
-		return errors.Wrap(err, "unable to update the component")
-	}
 	return nil
 }
 
@@ -1504,7 +897,7 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 		}
 
 		// Cleanup after the supervisor
-		err = c.DeletePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name))
+		err = c.GetKubeClient().DeletePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name))
 		if err != nil {
 			return errors.Wrapf(err, "unable to delete S2I data PVC from %s", ucp.CommonObjectMeta.Name)
 		}
@@ -1552,7 +945,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 
-	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
+	s2iPaths, err := getS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1637,23 +1030,6 @@ func addInitVolumesToDC(dc *appsv1.DeploymentConfig, dcName string, deploymentDi
 	}
 }
 
-// UpdateDCAnnotations updates the DeploymentConfig file
-// dcName is the name of the DeploymentConfig file to be updated
-// annotations contains the annotations for the DeploymentConfig file
-func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
-	}
-
-	dc.Annotations = annotations
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
-	}
-	return nil
-}
-
 // removeTracesOfSupervisordFromDC takes a DeploymentConfig and removes any traces of the supervisord from it
 // so it removes things like supervisord volumes, volumes mounts and init containers
 func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
@@ -1677,382 +1053,6 @@ func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
 	}
 
 	return nil
-}
-
-// GetLatestBuildName gets the name of the latest build
-// buildConfigName is the name of the buildConfig for which we are fetching the build name
-// returns the name of the latest build or the error
-func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
-	buildConfig, err := c.buildClient.BuildConfigs(c.Namespace).Get(buildConfigName, metav1.GetOptions{})
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get the latest build name")
-	}
-	return fmt.Sprintf("%s-%d", buildConfigName, buildConfig.Status.LastVersion), nil
-}
-
-// StartBuild starts new build as it is, returns name of the build stat was started
-func (c *Client) StartBuild(name string) (string, error) {
-	klog.V(3).Infof("Build %s started.", name)
-	buildRequest := buildv1.BuildRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-	}
-	result, err := c.buildClient.BuildConfigs(c.Namespace).Instantiate(name, &buildRequest)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
-	}
-	klog.V(3).Infof("Build %s for BuildConfig %s triggered.", name, result.Name)
-
-	return result.Name, nil
-}
-
-// WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
-func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
-	// following indicates if we have already setup the following logic
-	following := false
-	klog.V(3).Infof("Waiting for %s  build to finish", buildName)
-
-	// start a watch on the build resources and look for the given build name
-	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
-		FieldSelector: fields.Set{"metadata.name": buildName}.AsSelector().String(),
-	})
-	if err != nil {
-		return errors.Wrapf(err, "unable to watch build")
-	}
-	defer w.Stop()
-	timeout := time.After(buildTimeout)
-	for {
-		select {
-		// when a event is received regarding the given buildName
-		case val, ok := <-w.ResultChan():
-			if !ok {
-				break
-			}
-			// cast the object returned to a build object and check the phase of the build
-			if e, ok := val.Object.(*buildv1.Build); ok {
-				klog.V(3).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
-				switch e.Status.Phase {
-				case buildv1.BuildPhaseComplete:
-					// the build is completed thus return
-					klog.V(3).Infof("Build %s completed.", e.Name)
-					return nil
-				case buildv1.BuildPhaseFailed, buildv1.BuildPhaseCancelled, buildv1.BuildPhaseError:
-					// the build failed/got cancelled/error occurred thus return with error
-					return errors.Errorf("build %s status %s", e.Name, e.Status.Phase)
-				case buildv1.BuildPhaseRunning:
-					// since the pod is ready and the build is now running, start following the logs
-					if !following {
-						// setting following to true as we need to set it up only once
-						following = true
-						err := c.FollowBuildLog(buildName, stdout, buildTimeout)
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-		case <-timeout:
-			// timeout has occurred while waiting for the build to start/complete, so error out
-			return errors.Errorf("timeout waiting for build %s to start", buildName)
-		}
-	}
-}
-
-// WaitAndGetDC block and waits until the DeploymentConfig has updated it's annotation
-// Parameters:
-//	name: Name of DC
-//	timeout: Interval of time.Duration to wait for before timing out waiting for its rollout
-//	waitCond: Function indicating when to consider dc rolled out
-// Returns:
-//	Updated DC and errors if any
-func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.Duration, waitCond func(*appsv1.DeploymentConfig, int64) bool) (*appsv1.DeploymentConfig, error) {
-
-	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
-	})
-	defer w.Stop()
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch dc")
-	}
-
-	timeoutChannel := time.After(timeout)
-	// Keep trying until we're timed out or got a result or got an error
-	for {
-		select {
-
-		// Timout after X amount of seconds
-		case <-timeoutChannel:
-			return nil, errors.New("Timed out waiting for annotation to update")
-
-		// Each loop we check the result
-		case val, ok := <-w.ResultChan():
-
-			if !ok {
-				break
-			}
-			if e, ok := val.Object.(*appsv1.DeploymentConfig); ok {
-				for _, cond := range e.Status.Conditions {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonCond, _ := json.Marshal(cond)
-					klog.V(3).Infof("DeploymentConfig Condition: %s", string(jsonCond))
-				}
-				// If the annotation has been updated, let's exit
-				if waitCond(e, desiredRevision) {
-					return e, nil
-				}
-
-			}
-		}
-	}
-}
-
-// CollectEvents collects events in a Goroutine by manipulating a spinner.
-// We don't care about the error (it's usually ran in a go routine), so erroring out is not needed.
-func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int) {
-
-	// Secondly, we will start a go routine for watching for events related to the pod and update our pod status accordingly.
-	eventWatcher, err := c.kubeClient.CoreV1().Events(c.Namespace).Watch(metav1.ListOptions{})
-	if err != nil {
-		log.Warningf("Unable to watch for events: %s", err)
-		return
-	}
-	defer eventWatcher.Stop()
-
-	// Create an endless loop for collecting
-	for {
-		select {
-		case <-quit:
-			klog.V(3).Info("Quitting collect events")
-			return
-		case val, ok := <-eventWatcher.ResultChan():
-			mu.Lock()
-			if !ok {
-				log.Warning("Watch channel was closed")
-				return
-			}
-			if e, ok := val.Object.(*corev1.Event); ok {
-
-				// If there are many warning events happening during deployment, let's log them.
-				if e.Type == "Warning" {
-
-					if e.Count >= failedEventCount {
-						newEvent := e
-						(events)[e.Name] = *newEvent
-						klog.V(3).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
-						// Change the spinner message to show the warning
-						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s", e.Count, e.Reason))
-					}
-
-				}
-
-			} else {
-				log.Warning("Unable to convert object to event")
-				return
-			}
-			mu.Unlock()
-		}
-	}
-}
-
-// WaitAndGetPod block and waits until pod matching selector is in in Running state
-// desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
-
-	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
-	pushTimeout := preference.DefaultPushTimeout * time.Second
-	cfg, configReadErr := preference.New()
-	if configReadErr != nil {
-		klog.V(3).Info(errors.Wrap(configReadErr, "unable to read config file"))
-	} else {
-		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
-	}
-
-	klog.V(3).Infof("Waiting for %s pod", selector)
-	spinner := log.Spinner(waitMessage)
-	defer spinner.End(false)
-
-	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch pod")
-	}
-	defer w.Stop()
-
-	// Here we are going to start a loop watching for the pod status
-	podChannel := make(chan *corev1.Pod)
-	watchErrorChannel := make(chan error)
-	go func(spinny *log.Status) {
-	loop:
-		for {
-			val, ok := <-w.ResultChan()
-			if !ok {
-				watchErrorChannel <- errors.New("watch channel was closed")
-				break loop
-			}
-			if e, ok := val.Object.(*corev1.Pod); ok {
-				klog.V(3).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
-				for _, cond := range e.Status.Conditions {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonCond, _ := json.Marshal(cond)
-					klog.V(3).Infof("Pod Conditions: %s", string(jsonCond))
-				}
-				for _, status := range e.Status.ContainerStatuses {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonStatus, _ := json.Marshal(status)
-					klog.V(3).Infof("Container Status: %#v", jsonStatus)
-				}
-				switch e.Status.Phase {
-				case desiredPhase:
-					klog.V(3).Infof("Pod %s is %v", e.Name, desiredPhase)
-					podChannel <- e
-					break loop
-				case corev1.PodFailed, corev1.PodUnknown:
-					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
-					break loop
-				}
-			} else {
-				watchErrorChannel <- errors.New("unable to convert event object to Pod")
-				break loop
-			}
-		}
-		close(podChannel)
-		close(watchErrorChannel)
-	}(spinner)
-
-	// Collect all the events in a separate go routine
-	failedEvents := make(map[string]corev1.Event)
-	quit := make(chan int)
-	go c.CollectEvents(selector, failedEvents, spinner, quit)
-	defer close(quit)
-
-	select {
-	case val := <-podChannel:
-		spinner.End(true)
-		return val, nil
-	case err := <-watchErrorChannel:
-		return nil, err
-	case <-time.After(pushTimeout):
-
-		// Create a useful error if there are any failed events
-		errorMessage := fmt.Sprintf(`waited %s but couldn't find running pod matching selector: '%s'`, pushTimeout, selector)
-
-		if len(failedEvents) != 0 {
-
-			// Create an output table
-			tableString := &strings.Builder{}
-			table := tablewriter.NewWriter(tableString)
-			table.SetAlignment(tablewriter.ALIGN_LEFT)
-			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-			table.SetCenterSeparator("")
-			table.SetColumnSeparator("")
-			table.SetRowSeparator("")
-
-			// Header
-			table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
-
-			// List of events
-			for name, event := range failedEvents {
-				table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
-			}
-
-			// Here we render the table as well as a helpful error message
-			table.Render()
-			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
-For more information to help determine the cause of the error, re-run with '-v'.
-See below for a list of failed events that occured more than %d times during deployment:
-%s`, pushTimeout, selector, failedEventCount, tableString)
-		}
-
-		return nil, errors.Errorf(errorMessage)
-	}
-}
-
-// WaitAndGetSecret blocks and waits until the secret is available
-func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error) {
-	klog.V(3).Infof("Waiting for secret %s to become available", name)
-
-	w, err := c.kubeClient.CoreV1().Secrets(namespace).Watch(metav1.ListOptions{
-		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch secret")
-	}
-	defer w.Stop()
-	for {
-		val, ok := <-w.ResultChan()
-		if !ok {
-			break
-		}
-		if e, ok := val.Object.(*corev1.Secret); ok {
-			klog.V(3).Infof("Secret %s now exists", e.Name)
-			return e, nil
-		}
-	}
-	return nil, errors.Errorf("unknown error while waiting for secret '%s'", name)
-}
-
-// FollowBuildLog stream build log to stdout
-func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
-	buildLogOptions := buildv1.BuildLogOptions{
-		Follow: true,
-		NoWait: false,
-	}
-
-	rd, err := c.buildClient.RESTClient().Get().
-		Timeout(buildTimeout).
-		Namespace(c.Namespace).
-		Resource("builds").
-		Name(buildName).
-		SubResource("log").
-		VersionedParams(&buildLogOptions, buildschema.ParameterCodec).
-		Stream()
-
-	if err != nil {
-		return errors.Wrapf(err, "unable get build log %s", buildName)
-	}
-	defer rd.Close()
-
-	if _, err = io.Copy(stdout, rd); err != nil {
-		return errors.Wrapf(err, "error streaming logs for %s", buildName)
-	}
-
-	return nil
-}
-
-// DisplayDeploymentConfigLog logs the deployment config to stdout
-func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followLog bool, stdout io.Writer) error {
-
-	// Set standard log options
-	deploymentLogOptions := appsv1.DeploymentLogOptions{Follow: false, NoWait: true}
-
-	// If the log is being followed, set it to follow / don't wait
-	if followLog {
-		// TODO: https://github.com/kubernetes/kubernetes/pull/60696
-		// Unable to set to 0, until openshift/client-go updates their Kubernetes vendoring to 1.11.0
-		// Set to 1 for now.
-		tailLines := int64(1)
-		deploymentLogOptions = appsv1.DeploymentLogOptions{Follow: true, NoWait: false, Previous: false, TailLines: &tailLines}
-	}
-
-	// RESTClient call to OpenShift
-	rd, err := c.appsClient.RESTClient().Get().
-		Namespace(c.Namespace).
-		Name(deploymentConfigName).
-		Resource("deploymentconfigs").
-		SubResource("log").
-		VersionedParams(&deploymentLogOptions, appsschema.ParameterCodec).
-		Stream()
-	if err != nil {
-		return errors.Wrapf(err, "unable get deploymentconfigs log %s", deploymentConfigName)
-	}
-	if rd == nil {
-		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
-	}
-
-	return util.DisplayLog(followLog, rd, deploymentConfigName)
 }
 
 // Delete takes labels as a input and based on it, deletes respective resource
@@ -2127,10 +1127,10 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 				return errors.New("Unable to watch deployment config")
 			}
 			if event.Type == watch.Deleted {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted")
 				return nil
 			} else if event.Type == watch.Error {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
+				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted ")
 				return errors.New("Unable to watch deployment config")
 			}
 		case <-time.After(waitForComponentDeletionTimeout):
@@ -2171,131 +1171,6 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 	return nil
 }
 
-// DeleteProject deletes given project
-//
-// NOTE:
-// There is a very specific edge case that may happen during project deletion when deleting a project and then immediately creating another.
-// Unfortunately, despite the watch interface, we cannot safely determine if the project is 100% deleted. See this link:
-// https://stackoverflow.com/questions/48208001/deleted-openshift-online-pro-project-has-left-a-trace-so-cannot-create-project-o
-// Will Gordon (Engineer @ Red Hat) describes the issue:
-//
-// "Projects are deleted asynchronously after you send the delete command. So it's possible that the deletion just hasn't been reconciled yet. It should happen within a minute or so, so try again.
-// Also, please be aware that in a multitenant environment, like OpenShift Online, you are prevented from creating a project with the same name as any other project in the cluster, even if it's not your own. So if you can't create the project, it's possible that someone has already created a project with the same name."
-func (c *Client) DeleteProject(name string, wait bool) error {
-
-	// Instantiate watcher for our "wait" function
-	var watcher watch.Interface
-	var err error
-
-	// If --wait has been passed, we will wait for the project to fully be deleted
-	if wait {
-		watcher, err = c.projectClient.Projects().Watch(metav1.ListOptions{
-			FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
-		})
-		if err != nil {
-			return errors.Wrapf(err, "unable to watch project")
-		}
-		defer watcher.Stop()
-	}
-
-	// Delete the project
-	err = c.projectClient.Projects().Delete(name, &metav1.DeleteOptions{})
-	if err != nil {
-		return errors.Wrap(err, "unable to delete project")
-	}
-
-	// If watcher has been created (wait was passed) we will create a go routine and actually **wait**
-	// until *EVERYTHING* is successfully deleted.
-	if watcher != nil {
-
-		// Project channel
-		// Watch error channel
-		projectChannel := make(chan *projectv1.Project)
-		watchErrorChannel := make(chan error)
-
-		// Create a go routine to run in the background
-		go func() {
-
-			for {
-
-				// If watch unexpected has been closed..
-				val, ok := <-watcher.ResultChan()
-				if !ok {
-					//return fmt.Errorf("received unexpected signal %+v on project watch channel", val)
-					watchErrorChannel <- errors.Errorf("watch channel was closed unexpectedly: %+v", val)
-					break
-				}
-
-				// So we depend on val.Type as val.Object.Status.Phase is just empty string and not a mapped value constant
-				if projectStatus, ok := val.Object.(*projectv1.Project); ok {
-
-					klog.V(3).Infof("Status of delete of project %s is '%s'", name, projectStatus.Status.Phase)
-
-					switch projectStatus.Status.Phase {
-					//projectStatus.Status.Phase can only be "Terminating" or "Active" or ""
-					case "":
-						if val.Type == watch.Deleted {
-							projectChannel <- projectStatus
-							break
-						}
-						if val.Type == watch.Error {
-							watchErrorChannel <- errors.Errorf("failed watching the deletion of project %s", name)
-							break
-						}
-					}
-
-				} else {
-					watchErrorChannel <- errors.New("unable to convert event object to Project")
-					break
-				}
-
-			}
-			close(projectChannel)
-			close(watchErrorChannel)
-		}()
-
-		select {
-		case val := <-projectChannel:
-			klog.V(3).Infof("Deletion information for project: %+v", val)
-			return nil
-		case err := <-watchErrorChannel:
-			return err
-		case <-time.After(waitForProjectDeletionTimeOut):
-			return errors.Errorf("waited %s but couldn't delete project %s in time", waitForProjectDeletionTimeOut, name)
-		}
-
-	}
-
-	// Return nil since we don't bother checking for the watcher..
-	return nil
-}
-
-// GetDeploymentConfigLabelValues get label values of given label from objects in project that are matching selector
-// returns slice of unique label values
-func (c *Client) GetDeploymentConfigLabelValues(label string, selector string) ([]string, error) {
-
-	// List DeploymentConfig according to selectors
-	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
-	}
-
-	// Grab all the matched strings
-	var values []string
-	for _, elem := range dcList.Items {
-		for key, val := range elem.Labels {
-			if key == label {
-				values = append(values, val)
-			}
-		}
-	}
-
-	// Sort alphabetically
-	sort.Strings(values)
-
-	return values, nil
-}
-
 // GetServiceInstanceLabelValues get label values of given label from objects in project that match the selector
 func (c *Client) GetServiceInstanceLabelValues(label string, selector string) ([]string, error) {
 
@@ -2329,16 +1204,6 @@ func (c *Client) GetServiceInstanceList(selector string) ([]scv1beta1.ServiceIns
 	}
 
 	return svcList.Items, nil
-}
-
-// GetBuildConfigFromName get BuildConfig by its name
-func (c *Client) GetBuildConfigFromName(name string) (*buildv1.BuildConfig, error) {
-	klog.V(3).Infof("Getting BuildConfig: %s", name)
-	bc, err := c.buildClient.BuildConfigs(c.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
-	}
-	return bc, nil
 }
 
 // GetClusterServiceClasses queries the service service catalog to get available clusterServiceClasses
@@ -2464,9 +1329,6 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 	return &runtime.RawExtension{Raw: paramsJSON}, nil
 }
 
-// Define a function that is meant to create patch based on the contents of the DC
-type dcPatchProvider func(dc *appsv1.DeploymentConfig) (string, error)
-
 // LinkSecret links a secret to the DeploymentConfig of a component
 func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
 
@@ -2480,7 +1342,12 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 
-	return c.patchDCOfComponent(componentName, applicationName, dcPatchProvider)
+	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return err
+	}
+
+	return c.patchDC(dcName, dcPatchProvider)
 }
 
 // UnlinkSecret unlinks a secret to the DeploymentConfig of a component
@@ -2502,40 +1369,12 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
 	}
 
-	return c.patchDCOfComponent(componentName, applicationName, dcPatchProvider)
-}
-
-// this function will look up the appropriate DC, and execute the specified patch
-// the whole point of using patch is to avoid race conditions where we try to update
-// dc while it's being simultaneously updated from another source (for example Kubernetes itself)
-// this will result in the triggering of a redeployment
-func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPatchProvider dcPatchProvider) error {
 	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return err
 	}
 
-	dc, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(dcName, metav1.GetOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "Unable to locate DeploymentConfig for component %s of application %s", componentName, applicationName)
-	}
-
-	if dcPatchProvider != nil {
-		patch, err := dcPatchProvider(dc)
-		if err != nil {
-			return errors.Wrap(err, "Unable to create a patch for the DeploymentConfig")
-		}
-
-		// patch the DeploymentConfig with the secret
-		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(dcName, types.JSONPatchType, []byte(patch))
-		if err != nil {
-			return errors.Wrapf(err, "DeploymentConfig not patched %s", dc.Name)
-		}
-	} else {
-		return errors.Wrapf(err, "dcPatch was not properly set")
-	}
-
-	return nil
+	return c.patchDC(dcName, dcPatchProvider)
 }
 
 // GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category
@@ -2584,313 +1423,6 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 	return planList.Items, nil
 }
 
-// CreateRoute creates a route object for the given service and with the given labels
-// serviceName is the name of the service for the target reference
-// portNumber is the target port of the route
-// path is the path of the endpoint URL
-// secureURL indicates if the route is a secure one or not
-func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
-	routePath := "/"
-	if path != "" {
-		routePath = path
-	}
-	route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
-		Spec: routev1.RouteSpec{
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: serviceName,
-			},
-			Port: &routev1.RoutePort{
-				TargetPort: portNumber,
-			},
-			Path: routePath,
-		},
-	}
-
-	if secureURL {
-		route.Spec.TLS = &routev1.TLSConfig{
-			Termination:                   routev1.TLSTerminationEdge,
-			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
-		}
-	}
-
-	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
-
-	r, err := c.routeClient.Routes(c.Namespace).Create(route)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating route")
-	}
-	return r, nil
-}
-
-// DeleteRoute deleted the given route
-func (c *Client) DeleteRoute(name string) error {
-	err := c.routeClient.Routes(c.Namespace).Delete(name, &metav1.DeleteOptions{})
-	if err != nil {
-		return errors.Wrap(err, "unable to delete route")
-	}
-	return nil
-}
-
-// ListRoutes lists all the routes based on the given label selector
-func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
-	klog.V(3).Infof("Listing routes with label selector: %v", labelSelector)
-	routeList, err := c.routeClient.Routes(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get route list")
-	}
-
-	return routeList.Items, nil
-}
-
-func (c *Client) GetRoute(name string) (*routev1.Route, error) {
-	route, err := c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
-	return route, err
-
-}
-
-// ListRouteNames lists all the names of the routes based on the given label
-// selector
-func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
-	routes, err := c.ListRoutes(labelSelector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list routes")
-	}
-
-	var routeNames []string
-	for _, r := range routes {
-		routeNames = append(routeNames, r.Name)
-	}
-
-	return routeNames, nil
-}
-
-// ListSecrets lists all the secrets based on the given label selector
-func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
-	listOptions := metav1.ListOptions{}
-	if len(labelSelector) > 0 {
-		listOptions = metav1.ListOptions{
-			LabelSelector: labelSelector,
-		}
-	}
-
-	secretList, err := c.kubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get secret list")
-	}
-
-	return secretList.Items, nil
-}
-
-// DeleteBuildConfig deletes the given BuildConfig by name using CommonObjectMeta..
-func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
-
-	// Convert labels to selector
-	selector := util.ConvertLabelsToSelector(commonObjectMeta.Labels)
-	klog.V(3).Infof("DeleteBuildConfig selectors used for deletion: %s", selector)
-
-	// Delete BuildConfig
-	klog.V(3).Info("Deleting BuildConfigs with DeleteBuildConfig")
-	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-}
-
-// RemoveVolumeFromDeploymentConfig removes the volume associated with the
-// given PVC from the Deployment Config. Both, the volume entry and the
-// volume mount entry in the containers, are deleted.
-func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) error {
-
-	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-
-		dc, err := c.GetDeploymentConfigFromName(dcName)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get Deployment Config: %v", dcName)
-		}
-
-		volumeNames := c.getVolumeNamesFromPVC(pvc, dc)
-		numVolumes := len(volumeNames)
-		if numVolumes == 0 {
-			return fmt.Errorf("no volume found for PVC %v in DC %v, expected one", pvc, dc.Name)
-		} else if numVolumes > 1 {
-			return fmt.Errorf("found more than one volume for PVC %v in DC %v, expected one", pvc, dc.Name)
-		}
-		volumeName := volumeNames[0]
-
-		// Remove volume if volume exists in Deployment Config
-		err = removeVolumeFromDC(volumeName, dc)
-		if err != nil {
-			return err
-		}
-		klog.V(3).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
-
-		// Remove at max 2 volume mounts if volume mounts exists
-		err = removeVolumeMountsFromDC(volumeName, dc)
-		if err != nil {
-			return err
-		}
-
-		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-		return updateErr
-	})
-	if retryErr != nil {
-		return errors.Wrapf(retryErr, "updating Deployment Config %v failed", dcName)
-	}
-	return nil
-}
-
-// GetDeploymentConfigsFromSelector returns an array of Deployment Config
-// resources which match the given selector
-func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.DeploymentConfig, error) {
-	var dcList *appsv1.DeploymentConfigList
-	var err error
-
-	if selector != "" {
-		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
-			LabelSelector: selector,
-		})
-	} else {
-		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
-			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
-		})
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
-	}
-	return dcList.Items, nil
-}
-
-// GetServicesFromSelector returns an array of Service resources which match the
-// given selector
-func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, error) {
-	serviceList, err := c.kubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list Services")
-	}
-	return serviceList.Items, nil
-}
-
-// GetDeploymentConfigFromName returns the Deployment Config resource given
-// the Deployment Config name
-func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
-	klog.V(3).Infof("Getting DeploymentConfig: %s", name)
-	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return deploymentConfig, nil
-}
-
-// GetPVCsFromSelector returns the PVCs based on the given selector
-func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolumeClaim, error) {
-	pvcList, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get PVCs for selector: %v", selector)
-	}
-
-	return pvcList.Items, nil
-}
-
-// GetPVCNamesFromSelector returns the PVC names for the given selector
-func (c *Client) GetPVCNamesFromSelector(selector string) ([]string, error) {
-	pvcs, err := c.GetPVCsFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get PVCs from selector")
-	}
-
-	var names []string
-	for _, pvc := range pvcs {
-		names = append(names, pvc.Name)
-	}
-
-	return names, nil
-}
-
-// GetOneDeploymentConfigFromSelector returns the Deployment Config object associated
-// with the given selector.
-// An error is thrown when exactly one Deployment Config is not found for the
-// selector.
-func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.DeploymentConfig, error) {
-	deploymentConfigs, err := c.GetDeploymentConfigsFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get DeploymentConfigs for the selector: %v", selector)
-	}
-
-	numDC := len(deploymentConfigs)
-	if numDC == 0 {
-		return nil, fmt.Errorf("no Deployment Config was found for the selector: %v", selector)
-	} else if numDC > 1 {
-		return nil, fmt.Errorf("multiple Deployment Configs exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &deploymentConfigs[0], nil
-}
-
-// GetOnePodFromSelector returns the Pod  object associated with the given selector.
-// An error is thrown when exactly one Pod is not found.
-func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
-
-	pods, err := c.kubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Pod for the selector: %v", selector)
-	}
-	numPods := len(pods.Items)
-	if numPods == 0 {
-		return nil, fmt.Errorf("no Pod was found for the selector: %v", selector)
-	} else if numPods > 1 {
-		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &pods.Items[0], nil
-}
-
-// GetOneServiceFromSelector returns the Service object associated with the
-// given selector.
-// An error is thrown when exactly one Service is not found for the selector
-func (c *Client) GetOneServiceFromSelector(selector string) (*corev1.Service, error) {
-	services, err := c.GetServicesFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get services for the selector: %v", selector)
-	}
-
-	numServices := len(services)
-	if numServices == 0 {
-		return nil, fmt.Errorf("no Service was found for the selector: %v", selector)
-	} else if numServices > 1 {
-		return nil, fmt.Errorf("multiple Services exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &services[0], nil
-}
-
-// AddEnvironmentVariablesToDeploymentConfig adds the given environment
-// variables to the only container in the Deployment Config and updates in the
-// cluster
-func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar, dc *appsv1.DeploymentConfig) error {
-	numContainers := len(dc.Spec.Template.Spec.Containers)
-	if numContainers != 1 {
-		return fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
-	}
-
-	dc.Spec.Template.Spec.Containers[0].Env = append(dc.Spec.Template.Spec.Containers[0].Env, envs...)
-
-	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
-	}
-	return nil
-}
-
 // ServerInfo contains the fields that contain the server's information like
 // address, OpenShift and Kubernetes versions
 type ServerInfo struct {
@@ -2923,7 +1455,8 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	}
 
 	// This will fetch the information about OpenShift Version
-	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
+	coreGet := c.kubeClient.KubeClient.CoreV1().RESTClient().Get()
+	rawOpenShiftVersion, err := coreGet.AbsPath("/version/openshift").Do().Raw()
 	if err != nil {
 		// when using Minishift (or plain 'oc cluster up' for that matter) with OKD 3.11, the version endpoint is missing...
 		klog.V(3).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
@@ -2936,7 +1469,7 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	}
 
 	// This will fetch the information about Kubernetes Version
-	rawKubernetesVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version").Do().Raw()
+	rawKubernetesVersion, err := coreGet.AbsPath("/version").Do().Raw()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get Kubernetes Version")
 	}
@@ -2964,7 +1497,7 @@ func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string,
 		podExecOptions.Container = compInfo.ContainerName
 	}
 
-	req := c.kubeClient.CoreV1().RESTClient().
+	req := c.kubeClient.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(c.Namespace).
 		Resource("pods").
@@ -3020,84 +1553,12 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 	return nil
 }
 
-// BuildPortForwardReq builds a port forward request
-func (c *Client) BuildPortForwardReq(podName string) *rest.Request {
-	return c.kubeClient.CoreV1().RESTClient().
-		Post().
-		Resource("pods").
-		Namespace(c.Namespace).
-		Name(podName).
-		SubResource("portforward")
+func (c *Client) GetKubeClient() *kclient.Client {
+	return c.kubeClient
 }
 
-// GetVolumeMountsFromDC returns a list of all volume mounts in the given DC
-func (c *Client) GetVolumeMountsFromDC(dc *appsv1.DeploymentConfig) []corev1.VolumeMount {
-	var volumeMounts []corev1.VolumeMount
-	for _, container := range dc.Spec.Template.Spec.Containers {
-		volumeMounts = append(volumeMounts, container.VolumeMounts...)
-	}
-	return volumeMounts
-}
-
-// IsVolumeAnEmptyDir returns true if the volume is an EmptyDir, false if not
-func (c *Client) IsVolumeAnEmptyDir(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
-	for _, volume := range dc.Spec.Template.Spec.Volumes {
-		if volume.Name == volumeMountName {
-			if volume.EmptyDir != nil {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// GetPVCNameFromVolumeMountName returns the PVC associated with the given volume
-// An empty string is returned if the volume is not found
-func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv1.DeploymentConfig) string {
-	for _, volume := range dc.Spec.Template.Spec.Volumes {
-		if volume.Name == volumeMountName {
-			if volume.PersistentVolumeClaim != nil {
-				return volume.PersistentVolumeClaim.ClaimName
-			}
-		}
-	}
-	return ""
-}
-
-// GetPVCFromName returns the PVC of the given name
-func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error) {
-	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
-}
-
-// CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
-// envVars is the array containing the environment variables
-func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, gitRef string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
-
-	// Retrieve the namespace, image name and the appropriate tag
-	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
-	if err != nil {
-		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to parse image name")
-	}
-	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
-	if err != nil {
-		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to retrieve image stream for CreateBuildConfig")
-	}
-	imageNS = imageStream.ObjectMeta.Namespace
-
-	klog.V(3).Infof("Using namespace: %s for the CreateBuildConfig function", imageNS)
-
-	// Use BuildConfig to build the container with Git
-	bc := generateBuildConfig(commonObjectMeta, gitURL, gitRef, imageName+":"+imageTag, imageNS)
-
-	if len(envVars) > 0 {
-		bc.Spec.Strategy.SourceStrategy.Env = envVars
-	}
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(&bc)
-	if err != nil {
-		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
-	}
-
-	return bc, nil
+func (c *Client) SetKubeClient(client *kclient.Client) {
+	c.kubeClient = client
 }
 
 // FindContainer finds the container
@@ -3116,52 +1577,10 @@ func FindContainer(containers []corev1.Container, name string) (corev1.Container
 	return corev1.Container{}, errors.New("Unable to find container")
 }
 
-// GetInputEnvVarsFromStrings generates corev1.EnvVar values from the array of string key=value pairs
-// envVars is the array containing the key=value pairs
-func GetInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
-	var inputEnvVars []corev1.EnvVar
-	var keys = make(map[string]int)
-	for _, env := range envVars {
-		splits := strings.SplitN(env, "=", 2)
-		if len(splits) < 2 {
-			return nil, errors.New("invalid syntax for env, please specify a VariableName=Value pair")
-		}
-		_, ok := keys[splits[0]]
-		if ok {
-			return nil, errors.Errorf("multiple values found for VariableName: %s", splits[0])
-		}
-
-		keys[splits[0]] = 1
-
-		inputEnvVars = append(inputEnvVars, corev1.EnvVar{
-			Name:  splits[0],
-			Value: splits[1],
-		})
-	}
-	return inputEnvVars, nil
-}
-
-// GetEnvVarsFromDC retrieves the env vars from the DC
-// dcName is the name of the dc from which the env vars are retrieved
-// projectName is the name of the project
-func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
-	if err != nil {
-		return nil, errors.Wrap(err, "error occurred while retrieving the dc")
-	}
-
-	numContainers := len(dc.Spec.Template.Spec.Containers)
-	if numContainers != 1 {
-		return nil, fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
-	}
-
-	return dc.Spec.Template.Spec.Containers[0].Env, nil
-}
-
 // PropagateDeletes deletes the watch detected deleted files from remote component pod from each of the paths in passed s2iPaths
 // Parameters:
 //	targetPodName: Name of component pod
-//	delSrcRelPaths: Paths to be deleted on the remote pod relative to component source base path ex: Compoent src: /abc/src, file deleted: abc/src/foo.lang => relative path: foo.lang
+//	delSrcRelPaths: Paths to be deleted on the remote pod relative to component source base path ex: Component src: /abc/src, file deleted: abc/src/foo.lang => relative path: foo.lang
 //	s2iPaths: Slice of all s2i paths -- deployment dir, destination dir, working dir, etc..
 func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string, s2iPaths []string) error {
 	reader, writer := io.Pipe()
@@ -3188,29 +1607,6 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 		return err
 	}
 	return err
-}
-
-// StartDeployment instantiates a given deployment
-// deploymentName is the name of the deployment to instantiate
-func (c *Client) StartDeployment(deploymentName string) (string, error) {
-	if deploymentName == "" {
-		return "", errors.Errorf("deployment name is empty")
-	}
-	klog.V(3).Infof("Deployment %s started.", deploymentName)
-	deploymentRequest := appsv1.DeploymentRequest{
-		Name: deploymentName,
-		// latest is set to true to prevent image name resolution issue
-		// inspired from https://github.com/openshift/origin/blob/882ed02142fbf7ba16da9f8efeb31dab8cfa8889/pkg/oc/cli/rollout/latest.go#L194
-		Latest: true,
-		Force:  true,
-	}
-	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(deploymentName, &deploymentRequest)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to instantiate Deployment for %s", deploymentName)
-	}
-	klog.V(3).Infof("Deployment %s for DeploymentConfig %s triggered.", deploymentName, result.Name)
-
-	return result.Name, nil
 }
 
 func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.EnvVar {
@@ -3244,14 +1640,6 @@ func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.En
 
 }
 
-// IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
-func (c *Client) IsDeploymentConfigSupported() (bool, error) {
-	const Group = "apps.openshift.io"
-	const Version = "v1"
-
-	return c.isResourceSupported(Group, Version, "deploymentconfigs")
-}
-
 func isSubDir(baseDir, otherDir string) bool {
 	cleanedBaseDir := filepath.Clean(baseDir)
 	cleanedOtherDir := filepath.Clean(otherDir)
@@ -3263,29 +1651,17 @@ func isSubDir(baseDir, otherDir string) bool {
 	return matches
 }
 
-// IsRouteSupported checks if route resource type is present on the cluster
-func (c *Client) IsRouteSupported() (bool, error) {
-
-	return c.isResourceSupported("route.openshift.io", "v1", "routes")
-}
-
-// IsProjectSupported checks if Project resource type is present on the cluster
-func (c *Client) IsProjectSupported() (bool, error) {
-	return c.isResourceSupported("project.openshift.io", "v1", "projects")
-}
-
-// IsImageStreamSupported checks if imagestream resource type is present on the cluster
-func (c *Client) IsImageStreamSupported() (bool, error) {
-
-	return c.isResourceSupported("image.openshift.io", "v1", "imagestreams")
-}
-
-// IsSBRSupported chekcs if resource of type service binding request present on the cluster
+// IsSBRSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsSBRSupported() (bool, error) {
 	return c.isResourceSupported("apps.openshift.io", "v1alpha1", "servicebindingrequests")
 }
 
-// GenerateOwnerReference genertes an ownerReference which can then be set as
+// IsCSVSupported checks if resource of type service binding request present on the cluster
+func (c *Client) IsCSVSupported() (bool, error) {
+	return c.isResourceSupported("operators.coreos.com", "v1alpha1", "clusterserviceversions")
+}
+
+// GenerateOwnerReference generates an ownerReference which can then be set as
 // owner for various OpenShift objects and ensure that when the owner object is
 // deleted from the cluster, all other objects are automatically removed by
 // OpenShift garbage collector
@@ -3302,20 +1678,30 @@ func GenerateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 }
 
 func (c *Client) isResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
-
+	if c.supportedResources == nil {
+		c.supportedResources = make(map[string]bool, 7)
+	}
 	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
 
-	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
-	if kerrors.IsNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	for _, resources := range list.APIResources {
-		if resources.Name == resourceName {
-			return true, nil
+	supported, found := c.supportedResources[groupVersion]
+	if !found {
+		list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+		if err != nil {
+			if kerrors.IsNotFound(err) {
+				supported = false
+			} else {
+				// don't record, just attempt again next time in case it's a transient error
+				return false, err
+			}
+		} else {
+			for _, resources := range list.APIResources {
+				if resources.Name == resourceName {
+					supported = true
+					break
+				}
+			}
 		}
+		c.supportedResources[groupVersion] = supported
 	}
-	return false, nil
+	return supported, nil
 }

@@ -1,12 +1,13 @@
 package storage
 
 import (
-	"github.com/kylelemons/godebug/pretty"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/kclient"
 	"reflect"
 	"testing"
+
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/kylelemons/godebug/pretty"
+	"github.com/openshift/odo/pkg/kclient"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
@@ -961,29 +962,37 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 			name: "case 1: list all the volumes in the devfile along with their respective size and containers",
 			args: args{
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "/path",
-									},
-									{
-										Name: "volume-1",
-										Path: "/data",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+												Path: "/path",
+											},
+											{
+												Name: "volume-1",
+												Path: "/data",
+											},
+										},
 									},
 								},
 							},
 						},
 						{
-							Container: &common.Container{
-								Name: "container-1",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-1",
-										Path: "/data",
+							Name: "container-1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-1",
+												Path: "/data",
+											},
+										},
 									},
 								},
 							},
@@ -1005,18 +1014,22 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 			name: "case 2: list all the volumes in the devfile with the default size when no size is mentioned",
 			args: args{
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "/path",
-									},
-									{
-										Name: "volume-1",
-										Path: "/data",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+												Path: "/path",
+											},
+											{
+												Name: "volume-1",
+												Path: "/data",
+											},
+										},
 									},
 								},
 							},
@@ -1034,13 +1047,45 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 			},
 		},
 		{
-			name: "case 3: return empty when no volumes is mounted",
+			name: "case 3: list all the volumes in the devfile with the default mount path when no path is mentioned",
 			args: args{
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+											},
+										},
+									},
+								},
+							},
+						},
+						testingutil.GetFakeVolumeComponent("volume-0", ""),
+					},
+				},
+			},
+			want: StorageList{
+				Items: []Storage{
+					generateStorage(GetMachineReadableFormat("volume-0", "1Gi", "/volume-0"), "", "container-0"),
+				},
+			},
+		},
+		{
+			name: "case 4: return empty when no volumes is mounted",
+			args: args{
+				devfileData: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{},
+								},
 							},
 						},
 						testingutil.GetFakeVolumeComponent("volume-0", ""),
@@ -1055,8 +1100,8 @@ func TestGetLocalDevfileStorage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getLocalDevfileStorage(tt.args.devfileData); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getLocalDevfileStorage() difference between got and want : %v", pretty.Compare(got, tt.want))
+			if got := GetLocalDevfileStorage(tt.args.devfileData); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLocalDevfileStorage() difference between got and want : %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}
@@ -1235,7 +1280,7 @@ func TestDevfileListMounted(t *testing.T) {
 				return true, tt.returnedPods, nil
 			})
 
-			got, err := devfileListMounted(fakeClient, tt.args.componentName)
+			got, err := DevfileListMounted(fakeClient, tt.args.componentName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("devfileListMounted() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1264,7 +1309,7 @@ func TestDevfileList(t *testing.T) {
 			name: "case 1: no volume on devfile and no pod on cluster",
 			args: args{
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						testingutil.GetFakeContainerComponent("runtime"),
 					},
 				},
@@ -1283,7 +1328,7 @@ func TestDevfileList(t *testing.T) {
 			name: "case 2: no volume on devfile and pod",
 			args: args{
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						testingutil.GetFakeContainerComponent("runtime"),
 					},
 				},
@@ -1305,18 +1350,22 @@ func TestDevfileList(t *testing.T) {
 			args: args{
 				componentName: "nodejs",
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "/data",
-									},
-									{
-										Name: "volume-1",
-										Path: "/path",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+												Path: "/data",
+											},
+											{
+												Name: "volume-1",
+												Path: "/path",
+											},
+										},
 									},
 								},
 							},
@@ -1353,18 +1402,22 @@ func TestDevfileList(t *testing.T) {
 			args: args{
 				componentName: "nodejs",
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "/data",
-									},
-									{
-										Name: "volume-1",
-										Path: "/path",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+												Path: "/data",
+											},
+											{
+												Name: "volume-1",
+												Path: "/path",
+											},
+										},
 									},
 								},
 							},
@@ -1403,25 +1456,33 @@ func TestDevfileList(t *testing.T) {
 			args: args{
 				componentName: "nodejs",
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "/data",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+												Path: "/data",
+											},
+										},
 									},
 								},
 							},
 						},
 						{
-							Container: &common.Container{
-								Name: "container-1",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-1",
-										Path: "/data",
+							Name: "container-1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-1",
+												Path: "/data",
+											},
+										},
 									},
 								},
 							},
@@ -1456,14 +1517,18 @@ func TestDevfileList(t *testing.T) {
 			args: args{
 				componentName: "nodejs",
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "/data",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+												Path: "/data",
+											},
+										},
 									},
 								},
 							},
@@ -1500,14 +1565,18 @@ func TestDevfileList(t *testing.T) {
 			args: args{
 				componentName: "nodejs",
 				devfileData: &testingutil.TestDevfileData{
-					Components: []common.DevfileComponent{
+					Components: []devfilev1.Component{
 						{
-							Container: &common.Container{
-								Name: "container-0",
-								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "/data",
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+												Path: "/data",
+											},
+										},
 									},
 								},
 							},
@@ -1525,6 +1594,49 @@ func TestDevfileList(t *testing.T) {
 			returnedPVCs: &corev1.PersistentVolumeClaimList{},
 			want:         StorageList{},
 			wantErr:      true,
+		},
+		{
+			name: "case 8: volume component with no size and container volume mount with no path",
+			args: args{
+				componentName: "nodejs",
+				devfileData: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "container-0",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										VolumeMounts: []devfilev1.VolumeMount{
+											{
+												Name: "volume-0",
+											},
+										},
+									},
+								},
+							},
+						},
+						testingutil.GetFakeVolumeComponent("volume-0", ""),
+					},
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-0-vol", MountPath: "/volume-0"},
+						}),
+					}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-0", "1Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+				},
+			},
+			want: GetMachineReadableFormatForList([]Storage{
+				generateStorage(GetMachineReadableFormat("volume-0", "1Gi", "/volume-0"), StateTypePushed, "container-0"),
+			}),
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

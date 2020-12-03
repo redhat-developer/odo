@@ -10,28 +10,34 @@ import (
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/util"
 )
 
+type JSONEnvInfoRepr struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              ComponentSettings `json:"spec" yaml:"spec"`
+}
+
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	Name string `yaml:"Name,omitempty"`
+	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 
-	Namespace   string              `yaml:"Namespace,omitempty"`
-	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
-	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
+	Project string        `yaml:"Project,omitempty" json:"project,omitempty"`
+	URL     *[]EnvInfoURL `yaml:"Url,omitempty" json:"url,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
 	// for grouping of components. A namespace can contain multiple applications
-	AppName string         `yaml:"AppName,omitempty" json:"AppName,omitempty"`
-	Link    *[]EnvInfoLink `yaml:"Link,omitempty"`
+	AppName string         `yaml:"AppName,omitempty" json:"appName,omitempty"`
+	Link    *[]EnvInfoLink `yaml:"Link,omitempty" json:"link,omitempty"`
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
-	DebugPort *int `yaml:"DebugPort,omitempty"`
+	DebugPort *int `yaml:"DebugPort,omitempty" json:"debugPort,omitempty"`
 
 	// RunMode indicates the mode of run used for a successful push
-	RunMode *RUNMode `yaml:"RunMode,omitempty"`
+	RunMode *RUNMode `yaml:"RunMode,omitempty" json:"runMode,omitempty"`
 }
 
 type RUNMode string
@@ -61,26 +67,19 @@ const (
 // EnvInfoURL holds URL related information
 type EnvInfoURL struct {
 	// Name of the URL
-	Name string `yaml:"Name,omitempty"`
+	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty"`
+	Port int `yaml:"Port,omitempty" json:"port,omitempty"`
 	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty"`
+	Secure bool `yaml:"Secure,omitempty" json:"secure,omitempty"`
 	// Cluster host
-	Host string `yaml:"Host,omitempty"`
+	Host string `yaml:"Host,omitempty" json:"host,omitempty"`
 	// TLS secret name to create ingress to provide a secure URL
-	TLSSecret string `yaml:"TLSSecret,omitempty"`
+	TLSSecret string `yaml:"TLSSecret,omitempty" json:"tlsSecret,omitempty"`
 	// Exposed port number for docker container, required for local scenarios
-	ExposedPort int `yaml:"ExposedPort,omitempty"`
+	ExposedPort int `yaml:"ExposedPort,omitempty" json:"exposedPort,omitempty"`
 	// Kind is the kind of the URL
-	Kind URLKind `yaml:"Kind,omitempty"`
-}
-
-// EnvInfoPushCommand holds the devfile push commands for the component
-type EnvInfoPushCommand struct {
-	Init  string `yaml:"Init,omitempty"`
-	Build string `yaml:"Build,omitempty"`
-	Run   string `yaml:"Run,omitempty"`
+	Kind URLKind `yaml:"Kind,omitempty" json:"kind,omitempty"`
 }
 
 // LocalConfigProvider is an interface which all local config providers need to implement
@@ -89,9 +88,14 @@ type EnvInfoPushCommand struct {
 // some day local config would get deprecated and hence to keep the interfaces in the new package
 type LocalConfigProvider interface {
 	GetApplication() string
+	GetName() string
+	GetNamespace() string
+	GetDebugPort() int
+	GetURL() []EnvInfoURL
+	Exists() bool
 }
 
-// EnvInfo holds all the env specific information relavent to a specific Component.
+// EnvInfo holds all the env specific information relevant to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
@@ -105,6 +109,7 @@ type proxyEnvInfo struct {
 // EnvSpecificInfo wraps the envinfo and provides helpers to
 // serialize it.
 type EnvSpecificInfo struct {
+	devfilePath       string
 	Filename          string `yaml:"FileName,omitempty"`
 	fs                filesystem.Filesystem
 	EnvInfo           `yaml:",omitempty"`
@@ -113,29 +118,43 @@ type EnvSpecificInfo struct {
 
 type EnvInfoLink struct {
 	// Name of link (same as name of k8s secret)
-	Name string
+	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 	// Kind of service with which the component is linked
-	ServiceKind string
+	ServiceKind string `yaml:"ServiceKind,omitempty" json:"serviceKind,omitempty"`
 	// Name of the instance of the ServiceKind that component is linked with
-	ServiceName string
+	ServiceName string `yaml:"ServiceName,omitempty" json:"serviceName,omitempty"`
+}
+
+func WrapForJSONOutput(compSettings ComponentSettings) JSONEnvInfoRepr {
+	return JSONEnvInfoRepr{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "EnvInfo",
+			APIVersion: "odo.dev/v1alpha1",
+		},
+		Spec: compSettings,
+	}
+}
+
+func (esi EnvSpecificInfo) GetDevfilePath() string {
+	return esi.devfilePath
 }
 
 // getEnvInfoFile first checks for the ENVINFO variable
 // then we check for directory and eventually the file (which we return as a string)
-func getEnvInfoFile(envDir string) (string, error) {
+func getEnvInfoFile(envDir string) (string, string, error) {
 	if env, ok := os.LookupEnv(envInfoEnvName); ok {
-		return env, nil
+		return env, filepath.Join(env, "..", "..", "..", "devfile.yaml"), nil
 	}
 
 	if envDir == "" {
 		var err error
 		envDir, err = os.Getwd()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 	}
 
-	return filepath.Join(envDir, ".odo", "env", envInfoFileName), nil
+	return filepath.Join(envDir, ".odo", "env", envInfoFileName), filepath.Join(envDir, "devfile.yaml"), nil
 }
 
 // New returns the EnvSpecificInfo
@@ -150,8 +169,8 @@ func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 
 // newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
-	// Get the path of the environemt file
-	envInfoFile, err := getEnvInfoFile(envDir)
+	// Get the path of the environment file
+	envInfoFile, devfilePath, err := getEnvInfoFile(envDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the path of the environment file")
 	}
@@ -159,6 +178,7 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 	// Organize that information into a struct
 	e := EnvSpecificInfo{
 		EnvInfo:           NewEnvInfo(),
+		devfilePath:       devfilePath,
 		Filename:          envInfoFile,
 		envinfoFileExists: true,
 		fs:                fs,
@@ -208,9 +228,9 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "name":
 			val := value.(string)
 			esi.componentSettings.Name = val
-		case "namespace":
+		case "project":
 			val := value.(string)
-			esi.componentSettings.Namespace = val
+			esi.componentSettings.Project = val
 		case "debugport":
 			val, err := strconv.Atoi(value.(string))
 			if err != nil {
@@ -224,9 +244,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 			} else {
 				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
 			}
-		case "push":
-			pushCommandValue := value.(EnvInfoPushCommand)
-			esi.componentSettings.PushCommand = &pushCommandValue
+
 		case "link":
 			linkValue := value.(EnvInfoLink)
 			if esi.componentSettings.Link != nil {
@@ -280,8 +298,8 @@ func (esi *EnvSpecificInfo) IsSet(parameter string) bool {
 	return util.IsSet(esi.componentSettings, parameter)
 }
 
-// EnvInfoFileExists if the envinfo file exists or not
-func (esi *EnvSpecificInfo) EnvInfoFileExists() bool {
+// Exists returns whether the envinfo file exists or not
+func (esi *EnvSpecificInfo) Exists() bool {
 	return esi.envinfoFileExists
 }
 
@@ -289,7 +307,7 @@ var (
 	// Mandatory parameters in the environment file (env.yaml)
 	manParams = []string{
 		"name",
-		"namespace",
+		"project",
 	}
 )
 
@@ -317,6 +335,9 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 
 // DeleteURL is used to delete environment specific info for url from envinfo
 func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
+	if esi.componentSettings.URL == nil {
+		return nil
+	}
 	for i, url := range *esi.componentSettings.URL {
 		if url.Name == parameter {
 			s := *esi.componentSettings.URL
@@ -373,14 +394,6 @@ func (ei *EnvInfo) GetURL() []EnvInfoURL {
 	return *ei.componentSettings.URL
 }
 
-// GetPushCommand returns the EnvInfoPushCommand, returns default if nil
-func (ei *EnvInfo) GetPushCommand() EnvInfoPushCommand {
-	if ei.componentSettings.PushCommand == nil {
-		return EnvInfoPushCommand{}
-	}
-	return *ei.componentSettings.PushCommand
-}
-
 // GetName returns the component name
 func (ei *EnvInfo) GetName() string {
 	return ei.componentSettings.Name
@@ -410,12 +423,17 @@ func (esi *EnvSpecificInfo) SetRunMode(runMode RUNMode) error {
 
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
-	return ei.componentSettings.Namespace
+	return ei.componentSettings.Project
 }
 
 // GetApplication returns the application name
 func (ei *EnvInfo) GetApplication() string {
 	return ei.componentSettings.AppName
+}
+
+// MatchComponent matches a component information provided by a devfile component with the local env info
+func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
+	return name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace()
 }
 
 // GetLink returns the EnvInfoLink, returns default if nil
@@ -431,10 +449,10 @@ const (
 	Name = "Name"
 	// NameDescription is the human-readable description for name setting
 	NameDescription = "Set this value to user-defined component name to specify the component name"
-	// Namespace is the name of the setting controlling the component namespace
-	Namespace = "Namespace"
-	// NamespaceDescription is the human-readable description for namespace setting
-	NamespaceDescription = "Set this value to user-defined namespace to let the component create under the namespace"
+	// Project is the name of the setting controlling the component project
+	Project = "Project"
+	// ProjectDescription is the human-readable description for project setting
+	ProjectDescription = "Set this value to user-defined project to let the component create under the project"
 	// DebugPort is the name of the setting controlling the component debug port
 	DebugPort = "DebugPort"
 	// DebugPortDescription s the human-readable description for debug port setting
@@ -456,7 +474,7 @@ const (
 var (
 	supportedLocalParameterDescriptions = map[string]string{
 		Name:      NameDescription,
-		Namespace: NamespaceDescription,
+		Project:   ProjectDescription,
 		DebugPort: DebugPortDescription,
 		URL:       URLDescription,
 		Push:      PushDescription,

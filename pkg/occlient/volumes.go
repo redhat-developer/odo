@@ -2,12 +2,15 @@ package occlient
 
 import (
 	"fmt"
+
+	"github.com/devfile/library/pkg/devfile/generator"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 )
 
@@ -19,32 +22,31 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string, o
 		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
 	}
 
-	pvc := &corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: quantity,
-				},
-			},
-			AccessModes: []corev1.PersistentVolumeAccessMode{
-				corev1.ReadWriteOnce,
-			},
-		},
+	pvcParams := generator.PVCParams{
+		ObjectMeta: generator.GetObjectMeta(name, c.Namespace, labels, nil),
+		Quantity:   quantity,
 	}
+
+	pvc := generator.GetPVC(pvcParams)
 
 	for _, owRf := range ownerReference {
 		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 
-	createdPvc, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create PVC")
+	return c.kubeClient.CreatePVC(*pvc)
+}
+
+// GetPVCNameFromVolumeMountName returns the PVC associated with the given volume
+// An empty string is returned if the volume is not found
+func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv1.DeploymentConfig) string {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.PersistentVolumeClaim != nil {
+				return volume.PersistentVolumeClaim.ClaimName
+			}
+		}
 	}
-	return createdPvc, nil
+	return ""
 }
 
 // AddPVCToDeploymentConfig adds the given PVC to the given Deployment Config
@@ -77,29 +79,81 @@ func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc strin
 	return nil
 }
 
-// UpdatePVCLabels updates the given PVC with the given labels
-func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
-	pvc.Labels = labels
-	_, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
-	if err != nil {
-		return errors.Wrap(err, "unable to remove storage label from PVC")
-	}
-	return nil
-}
-
-// DeletePVC deletes the given PVC by name
-func (c *Client) DeletePVC(name string) error {
-	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(name, nil)
-}
-
 // IsAppSupervisorDVolume checks if the volume is a supervisorD volume
 func (c *Client) IsAppSupervisorDVolume(volumeName, dcName string) bool {
 	return volumeName == getAppRootVolumeName(dcName)
 }
 
+// IsVolumeAnEmptyDir returns true if the volume is an EmptyDir, false if not
+func (c *Client) IsVolumeAnEmptyDir(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.EmptyDir != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// IsVolumeAnConfigMap returns true if the volume is an ConfigMap, false if not
+func (c *Client) IsVolumeAnConfigMap(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.ConfigMap != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// RemoveVolumeFromDeploymentConfig removes the volume associated with the
+// given PVC from the Deployment Config. Both, the volume entry and the
+// volume mount entry in the containers, are deleted.
+func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) error {
+
+	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+
+		dc, err := c.GetDeploymentConfigFromName(dcName)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get Deployment Config: %v", dcName)
+		}
+
+		volumeNames := getVolumeNamesFromPVC(pvc, dc)
+		numVolumes := len(volumeNames)
+		if numVolumes == 0 {
+			return fmt.Errorf("no volume found for PVC %v in DC %v, expected one", pvc, dc.Name)
+		} else if numVolumes > 1 {
+			return fmt.Errorf("found more than one volume for PVC %v in DC %v, expected one", pvc, dc.Name)
+		}
+		volumeName := volumeNames[0]
+
+		// Remove volume if volume exists in Deployment Config
+		err = removeVolumeFromDC(volumeName, dc)
+		if err != nil {
+			return err
+		}
+		klog.V(3).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
+
+		// Remove at max 2 volume mounts if volume mounts exists
+		err = removeVolumeMountsFromDC(volumeName, dc)
+		if err != nil {
+			return err
+		}
+
+		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
+		return updateErr
+	})
+	if retryErr != nil {
+		return errors.Wrapf(retryErr, "updating Deployment Config %v failed", dcName)
+	}
+	return nil
+}
+
 // getVolumeNamesFromPVC returns the name of the volume associated with the given
 // PVC in the given Deployment Config
-func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) []string {
+func getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) []string {
 	var volumes []string
 	for _, volume := range dc.Spec.Template.Spec.Volumes {
 
@@ -244,14 +298,14 @@ func updateStorageOwnerReference(client *Client, pvc *corev1.PersistentVolumeCla
 		return errors.New("owner references are empty")
 	}
 	// get the latest version of the PVC to avoid conflict errors
-	latestPVC, err := client.kubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Get(pvc.Name, metav1.GetOptions{})
+	latestPVC, err := client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Get(pvc.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	for _, owRf := range ownerReference {
 		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
-	_, err = client.kubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Update(latestPVC)
+	_, err = client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Update(latestPVC)
 	if err != nil {
 		return err
 	}

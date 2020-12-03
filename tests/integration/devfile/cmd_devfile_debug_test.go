@@ -17,28 +17,16 @@ import (
 )
 
 var _ = Describe("odo devfile debug command tests", func() {
-	var namespace, context, componentName, currentWorkingDirectory, projectDirPath, originalKubeconfig string
+	var componentName, projectDirPath string
 	var projectDir = "/projectDir"
+	var commonVar helper.CommonVar
 
-	// Using program command according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
-
-	// This is run after every Spec (It)
+	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		namespace = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
+		commonVar = helper.CommonBeforeEach()
 		componentName = helper.RandString(6)
-		helper.Chdir(context)
-		projectDirPath = context + projectDir
+		helper.Chdir(commonVar.Context)
+		projectDirPath = commonVar.Context + projectDir
 	})
 
 	preSetup := func() {
@@ -46,15 +34,9 @@ var _ = Describe("odo devfile debug command tests", func() {
 		helper.Chdir(projectDirPath)
 	}
 
-	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("odo debug on a nodejs:latest component", func() {
@@ -63,7 +45,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("check that machine output debug information works", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName, "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -92,7 +74,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName, "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -128,7 +110,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+namespace, "--project", namespace, "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+commonVar.Project, "--project", commonVar.Project, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -148,12 +130,12 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
 			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", projectDirPath)
 			Expect(runningString).To(ContainSubstring(freePort))
-			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(namespace + "-nodejs-cmp-" + namespace + "-odo-debug.json"))
+			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-" + commonVar.Project + "-odo-debug.json"))
 			stopChannel <- true
 		})
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName, "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -188,7 +170,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			// here's a hack to generate the event https://golang.org/cl/29290044
 			// but the solution is unacceptable https://github.com/golang/go/issues/6720#issuecomment-66087749
 			if runtime.GOOS != "windows" {
-				Expect(helper.ListFilesInDir(os.TempDir())).To(Not(ContainElement(namespace + "-app" + "-nodejs-cmp-" + namespace + "-odo-debug.json")))
+				Expect(helper.ListFilesInDir(os.TempDir())).To(Not(ContainElement(commonVar.Project + "-app" + "-nodejs-cmp-" + commonVar.Project + "-odo-debug.json")))
 			}
 
 		})
