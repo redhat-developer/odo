@@ -881,6 +881,7 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
+// downloadGitProject downloads the git starter projects from devfile.yaml
 func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, path string) error {
 
 	var projectSource devfilev1.GitLikeProjectSource
@@ -895,9 +896,13 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 		return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
 	}
 
+	// convert revision to referenceName type, ref name could be a branch or tag
+	// if revision is not specified it would be the default branch of the project
 	refName := plumbing.ReferenceName(revision)
 
 	if plumbing.IsHash(revision) {
+		// Specifying commit in the reference name is not supported by the go-git library
+		// while doing git.PlainClone()
 		log.Warning("Specifying commit in 'revision' is not yet supported in odo.")
 		// overriding revision to empty as we do not support this
 		revision = ""
