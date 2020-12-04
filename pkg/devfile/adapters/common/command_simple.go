@@ -6,6 +6,7 @@ import (
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -27,17 +28,13 @@ func newSimpleCommand(command devfilev1.Command, executor commandExecutor) (comm
 	exe := command.Exec
 
 	// deal with environment variables
-	var setEnvVariable, cmdLine string
-	for i, envVar := range exe.Env {
-		if i == 0 {
-			setEnvVariable = "export "
-		}
-		setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
-	}
+	var cmdLine string
+	setEnvVariable := util.GetCommandStringFromEnvs(exe.Env)
+
 	if setEnvVariable == "" {
 		cmdLine = exe.CommandLine
 	} else {
-		cmdLine = setEnvVariable + "&& " + exe.CommandLine
+		cmdLine = setEnvVariable + " && " + exe.CommandLine
 	}
 
 	// Change to the workdir and execute the command

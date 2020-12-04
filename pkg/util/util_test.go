@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -2622,6 +2623,52 @@ func TestGitSubDir(t *testing.T) {
 
 			_ = fs.RemoveAll(tt.args.srcPath)
 			_ = fs.RemoveAll(tt.args.destinationPath)
+		})
+	}
+}
+
+func TestGetCommandStringFromEnvs(t *testing.T) {
+	type args struct {
+		envVars []v1alpha2.EnvVar
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "case 1: three envs given",
+			args: args{
+				envVars: []v1alpha2.EnvVar{
+					{
+						Name:  "foo",
+						Value: "bar",
+					},
+					{
+						Name:  "JAVA_HOME",
+						Value: "/home/user/java",
+					},
+					{
+						Name:  "GOPATH",
+						Value: "/home/user/go",
+					},
+				},
+			},
+			want: "export foo=\"bar\" JAVA_HOME=\"/home/user/java\" GOPATH=\"/home/user/go\"",
+		},
+		{
+			name: "case 2: no envs given",
+			args: args{
+				envVars: []v1alpha2.EnvVar{},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetCommandStringFromEnvs(tt.args.envVars); got != tt.want {
+				t.Errorf("GetCommandStringFromEnvs() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

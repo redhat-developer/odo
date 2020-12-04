@@ -26,6 +26,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/gregjones/httpcache"
@@ -1432,4 +1433,16 @@ func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem
 		}
 	}
 	return fs.RemoveAll(srcPath)
+}
+
+// GetCommandStringFromEnvs creates a string from the given environment variables
+func GetCommandStringFromEnvs(envVars []v1alpha2.EnvVar) string {
+	var setEnvVariable string
+	for i, envVar := range envVars {
+		if i == 0 {
+			setEnvVariable = "export"
+		}
+		setEnvVariable = setEnvVariable + fmt.Sprintf(" %v=\"%v\"", envVar.Name, envVar.Value)
+	}
+	return setEnvVariable
 }
