@@ -20,7 +20,15 @@ An Operator is essentially a [custom controller](https://www.openshift.com/learn
 
 With Operators, odo allows you to create a service as defined by a Custom Resource Definition (CRD).
 
-odo utilizes Operators in order to provide a seamless method for custom controller service installation. These Operators could be installed using [Operator Hub](https://operatorhub.io/) or you could install a custom Operator developed within your organization.
+odo utilizes Operators and [Operator Hub](https://operatorhub.io/) in order to provide a seamless method for custom controller service installation.
+
+> **Warning**
+> 
+> You cannot install Operators with odo on your cluster.
+> 
+> To install Operators on a Kubernetes cluster, contact your cluster administrator or see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
+> 
+> To install Operators on an OpenShift cluster, contact your cluster administrator or see the [OpenShift documentation](https://docs.openshift.com/container-platform/4.6/operators/admin/olm-adding-operators-to-cluster.html).
 
 # Deploying your first Operator
 
