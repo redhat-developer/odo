@@ -719,7 +719,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		compInfo := common.ComponentInfo{
 			PodName: pod.Name,
 		}
-		err = sync.CopyFile(client, path, compInfo, targetPath, files, globExps)
+		err = sync.CopyFile(client.GetKubeClient(), path, compInfo, targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
@@ -738,7 +738,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	compInfo := common.ComponentInfo{
 		PodName: pod.Name,
 	}
-	err = common.ExecuteCommand(client, compInfo, cmdArr, show, nil, nil)
+	err = common.ExecuteCommand(client.GetKubeClient(), compInfo, cmdArr, show, nil, nil)
 
 	if err != nil {
 		s.End(false)
