@@ -20,12 +20,12 @@ export GINKGO_TEST_ARGS="--noColor"
 shout "Getting oc binary"
 if [[ $BASE_OS == "linux"  ]]; then
     set +x
-    curl -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.tar -o ./oc.tar
+    curl --connect-timeout 150 --max-time 2048 -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.tar -o ./oc.tar
     set -x
     tar -C $GOBIN -xvf ./oc.tar && rm -rf ./oc.tar
 else
     set +x
-    curl -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
+    curl --connect-timeout 150 --max-time 2048 -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
     set -x
     if [[ $BASE_OS == "windows" ]]; then
         GOBIN="$(cygpath -pw $GOBIN)"
