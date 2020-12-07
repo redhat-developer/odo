@@ -1,8 +1,10 @@
 package kclient
 
 import (
+	"strconv"
 	"strings"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -30,4 +32,29 @@ func GetInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
 		})
 	}
 	return inputEnvVars, nil
+}
+
+// getErrorMessageFromEvents generates a error message from the given events
+func getErrorMessageFromEvents(failedEvents map[string]corev1.Event) strings.Builder {
+	// Create an output table
+	tableString := &strings.Builder{}
+	table := tablewriter.NewWriter(tableString)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetCenterSeparator("")
+	table.SetColumnSeparator("")
+	table.SetRowSeparator("")
+
+	// Header
+	table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
+
+	// List of events
+	for name, event := range failedEvents {
+		table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
+	}
+
+	// Here we render the table as well as a helpful error message
+	table.Render()
+
+	return *tableString
 }

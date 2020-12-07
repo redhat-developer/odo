@@ -45,11 +45,9 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 func (a Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 	if refresh || a.pod == nil {
 		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
-		watchOptions := metav1.ListOptions{
-			LabelSelector: podSelector,
-		}
+
 		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", true)
+		pod, err := a.Client.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start", true)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 		}
