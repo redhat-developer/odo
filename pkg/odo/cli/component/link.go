@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
-	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -89,7 +89,7 @@ func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
 	options.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
-	options.commonLinkOptions.sbr = &sbo.ServiceBindingRequest{}
+	options.commonLinkOptions.serviceBinding = &servicebinding.ServiceBinding{}
 	return &options
 }
 
@@ -98,11 +98,6 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	o.commonLinkOptions.devfilePath = filepath.Join(o.componentContext, DevfilePath)
 
 	err = o.complete(name, cmd, args)
-	if err != nil {
-		return err
-	}
-
-	o.csvSupport, err = o.Client.GetKubeClient().IsCSVSupported()
 	if err != nil {
 		return err
 	}
