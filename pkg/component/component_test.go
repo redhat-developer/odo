@@ -12,8 +12,6 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	"github.com/openshift/odo/pkg/util"
-
 	"github.com/golang/mock/gomock"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -867,7 +865,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 				Spec: ComponentSpec{
 					App:    localExistingConfigInfoValue.GetApplication(),
 					Type:   localExistingConfigInfoValue.GetType(),
-					Source: util.GenFileURL(localExistingConfigInfoValue.GetSourceLocation()),
+					Source: localExistingConfigInfoValue.GetSourceLocation(),
 					URL: []string{
 						localExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, localExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
 					},

@@ -201,26 +201,6 @@ func ReadFilePath(u *url.URL, os string) string {
 	return location
 }
 
-// GenFileURL Converts file path on windows to /C:/path/to/file to work in URL
-func GenFileURL(location string, os ...string) string {
-	// param os is made variadic only for the purpose of UTs but need not be passed mandatorily
-	currOS := runtime.GOOS
-	if len(os) > 0 {
-		currOS = os[0]
-	}
-	urlPath := location
-	if currOS == WIN {
-		urlPath = strings.Replace(location, "\\", "/", -1)
-	}
-	if filepath.IsAbs(urlPath) || strings.Contains(urlPath, ":/") {
-		if currOS == WIN && !strings.HasPrefix(urlPath, "/") {
-			urlPath = "/" + urlPath
-		}
-		return "file://" + urlPath
-	}
-	return urlPath
-}
-
 // ConvertKeyValueStringToMap converts String Slice of Parameters to a Map[String]string
 // Each value of the slice is expected to be in the key=value format
 // Values that do not conform to this "spec", will be ignored
