@@ -139,7 +139,6 @@ In this example we will be deploying an [example Spring Boot® component](https:
     
     ``` sh
        $ odo create java-springboot myspring
-       Experimental mode is enabled, use at your own risk
     
        Validation
         ✓  Checking devfile compatibility [195728ns]
@@ -158,16 +157,16 @@ In this example we will be deploying an [example Spring Boot® component](https:
 
 5.  Create a URL in order to access the deployed component:
     
+    > **Note**
+    > 
+    > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
+    
     ``` sh
      $ odo url create  --host example.com
       ✓  URL myspring-8080.example.com created for component: myspring
     
      To apply the URL configuration changes, please use odo push
     ```
-    
-    > **Note**
-    > 
-    > If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 6.  Push the component to the cluster:
     
@@ -246,7 +245,6 @@ In this example we will be deploying an [example Node.js® component](https://gi
     
     ``` sh
      $ odo create nodejs mynodejs
-     Experimental mode is enabled, use at your own risk
     
      Validation
       ✓  Checking devfile compatibility [111738ns]
@@ -258,16 +256,16 @@ In this example we will be deploying an [example Node.js® component](https://gi
 
 5.  Create a URL in order to access the deployed component:
     
+    > **Note**
+    > 
+    > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
+    
     ``` sh
      $ odo url create --host example.com
       ✓  URL mynodejs-8080.example.com created for component: mynodejs
     
      To apply the URL configuration changes, please use odo push
     ```
-    
-    > **Note**
-    > 
-    > If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 6.  Push the component to the cluster:
     
@@ -333,7 +331,6 @@ In this example we will be deploying a [Quarkus component](https://github.com/od
     
     ``` sh
        $ odo create java-quarkus myquarkus
-       Experimental mode is enabled, use at your own risk
     
        Validation
         ✓  Checking devfile compatibility [195728ns]
@@ -345,16 +342,16 @@ In this example we will be deploying a [Quarkus component](https://github.com/od
 
 3.  Create a URL in order to access the deployed component:
     
+    > **Note**
+    > 
+    > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
+    
     ``` sh
      $ odo url create  --host example.com
       ✓  URL myquarkus-8080.example.com created for component: myquarkus
     
      To apply the URL configuration changes, please use odo push
     ```
-    
-    > **Note**
-    > 
-    > If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 4.  Push the component to the cluster:
     
@@ -403,5 +400,96 @@ Run `odo delete` to delete the application from cluster.
        $ odo delete
        ? Are you sure you want to delete the devfile component: java-springboot? Yes
         ✓  Deleting devfile component java-springboot [139ms]
+        ✓  Successfully deleted component
+    ```
+
+# Deploying an Open Liberty Application to an OpenShift / Kubernetes cluster
+
+In this example we will be deploying a [Open Liberty component](https://github.com/OpenLiberty/application-stack-intro) that uses Open Liberty and OpenJ9.
+
+1.  Download the example Open Liberty component
+    
+    ``` sh
+     $ git clone https://github.com/OpenLiberty/application-stack-intro.git && cd application-stack-intro
+    ```
+
+2.  Create an Open Liberty odo component
+    
+    ``` sh
+       $ odo create myopenliberty
+    
+       Validation
+        ✓  Creating a devfile component from devfile path: .../application-stack-intro/devfile.yaml [253220ns]
+        ✓  Validating devfile component [263521ns]
+    
+       Please use `odo push` command to create the component with source deployed
+    ```
+
+3.  Create a URL in order to access the deployed component:
+    
+    > **Note**
+    > 
+    > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
+    
+    ``` sh
+     $ odo url create --host example.com
+      ✓  URL myopenliberty-9080 created for component: myopenliberty
+    
+     To apply the URL configuration changes, please use odo push
+    ```
+
+4.  Push the component to the cluster:
+    
+    ``` sh
+      $ odo push
+    
+    Validation
+     ✓  Validating the devfile [72932ns]
+    
+    Creating Kubernetes resources for component myopenliberty
+     ✓  Waiting for component to start [23s]
+    
+    Syncing to component myopenliberty
+     ✓  Checking files for pushing [4ms]
+     ✓  Syncing files to the component [4s]
+    
+    Executing devfile commands for component myopenliberty
+     ✓  Executing build command "if [ -e /projects/.disable-bld-cmd ]; then echo \"found the disable file\" && echo \"devBuild command will not run\" && exit 0; else echo \"will run the devBuild command\" && mkdir -p /projects/target/liberty && if [ ! -d /projects/target/liberty/wlp ]; then echo \"...moving liberty\"; mv /opt/ol/wlp /projects/target/liberty; touch ./.liberty-mv; elif [[ -d /projects/target/liberty/wlp && ! -e /projects/.liberty-mv ]]; then echo \"STACK WARNING - LIBERTY RUNTIME WAS LOADED FROM HOST\"; fi && mvn -Dliberty.runtime.version=20.0.0.10 package && touch ./.disable-bld-cmd; fi" [9s]
+     ✓  Executing run command "mvn -Dliberty.runtime.version=20.0.0.10 -Ddebug=false -DhotTests=true -DcompileWait=3 liberty:dev", if not running [2s]
+    
+    Pushing devfile component myopenliberty
+     ✓  Changes successfully pushed to component
+    ```
+
+5.  View your deployed application in a browser using the generated url
+    
+    ``` sh
+     $ odo url list
+      Found the following URLs for component myopenliberty
+      NAME                STATE      URL                                       PORT     SECURE
+      myopenliberty-9     Pushed     http://myopenliberty-9.example.com        9080     false
+    ```
+
+6.  Have odo watch for changes in the source code
+    
+    ``` sh
+     $ odo watch
+    ```
+
+You can now continue developing your application. Just refreshing the browser will render the source code changes.
+
+Run `odo delete` to delete the application from cluster.
+
+1.  To delete your deployed application:
+    
+    ``` sh
+       $ odo delete
+       Are you sure you want to delete the devfile component: myopenliberty? Yes
+    
+       Gathering information for component myopenliberty
+        ✓  Checking status for component [99ms]
+    
+       Deleting component myopenliberty
+        ✓  Deleting Kubernetes resources for component [107ms]
         ✓  Successfully deleted component
     ```
