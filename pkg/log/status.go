@@ -34,7 +34,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/openshift/odo/pkg/log/fidget"
 	"github.com/spf13/pflag"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // Spacing for logging
@@ -70,7 +70,7 @@ func IsTerminal(w io.Writer) bool {
 	if runtime.GOOS == "windows" {
 		return true
 	} else if v, ok := (w).(*os.File); ok {
-		return terminal.IsTerminal(int(v.Fd()))
+		return term.IsTerminal(int(v.Fd()))
 	}
 	return false
 }
@@ -167,7 +167,7 @@ func getTerminalWidth(w io.Writer) *int {
 	if runtime.GOOS != "windows" {
 
 		if v, ok := (w).(*os.File); ok {
-			w, _, err := terminal.GetSize(int(v.Fd()))
+			w, _, err := term.GetSize(int(v.Fd()))
 			if err == nil {
 				return &w
 			}

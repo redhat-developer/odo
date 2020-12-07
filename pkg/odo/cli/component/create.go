@@ -881,6 +881,106 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
+// downloadGitProject downloads the git starter projects from devfile.yaml
+func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, path string) error {
+
+	var projectSource devfilev1.GitLikeProjectSource
+	if starterProject.Git != nil {
+		projectSource = starterProject.Git.GitLikeProjectSource
+	} else {
+		projectSource = starterProject.Github.GitLikeProjectSource
+	}
+
+	remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(projectSource)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
+	}
+
+	// convert revision to referenceName type, ref name could be a branch or tag
+	// if revision is not specified it would be the default branch of the project
+	refName := plumbing.ReferenceName(revision)
+
+	if plumbing.IsHash(revision) {
+		// Specifying commit in the reference name is not supported by the go-git library
+		// while doing git.PlainClone()
+		log.Warning("Specifying commit in 'revision' is not yet supported in odo.")
+		// overriding revision to empty as we do not support this
+		revision = ""
+	}
+
+	if revision != "" {
+		// lets consider revision to be a branch name first
+		refName = plumbing.NewBranchReferenceName(revision)
+	}
+
+	downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
+	defer downloadSpinner.End(false)
+
+	cloneOptions := &git.CloneOptions{
+		URL:           remoteUrl,
+		RemoteName:    remoteName,
+		ReferenceName: refName,
+		SingleBranch:  true,
+		// we don't need history for starter projects
+		Depth: 1,
+	}
+
+	if starterToken != "" {
+		cloneOptions.Auth = &http.BasicAuth{
+			Username: registryUtil.RegistryUser,
+			Password: starterToken,
+		}
+	}
+
+	originalPath := ""
+	if starterProject.SubDir != "" {
+		originalPath = path
+		path, err = ioutil.TempDir("", "")
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = git.PlainClone(path, false, cloneOptions)
+
+	if err != nil {
+
+		// it returns the following error if no matching ref found
+		// if we get this error, we are trying again considering revision as tag, only if revision is specified.
+		if _, ok := err.(git.NoMatchingRefSpecError); !ok || revision == "" {
+			return err
+		}
+
+		// try again to consider revision as tag name
+		cloneOptions.ReferenceName = plumbing.NewTagReferenceName(revision)
+		// remove if any .git folder downloaded in above try
+		_ = os.RemoveAll(filepath.Join(path, ".git"))
+		_, err = git.PlainClone(path, false, cloneOptions)
+		if err != nil {
+			return err
+		}
+	}
+
+	// we don't want to download project be a git repo
+	err = os.RemoveAll(filepath.Join(path, ".git"))
+	if err != nil {
+		// we don't need to return (fail) if this happens
+		log.Warning("Unable to delete .git from cloned starter project")
+	}
+
+	if starterProject.SubDir != "" {
+		err = util.GitSubDir(path, originalPath,
+			starterProject.SubDir)
+		if err != nil {
+			return err
+		}
+	}
+	downloadSpinner.End(true)
+
+	return nil
+
+}
+
 // Downloads first starter project from list of starter projects in devfile
 // Currently type git with a non github url is not supported
 func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projectPassed string, interactive bool) error {
@@ -929,70 +1029,12 @@ func (co *CreateOptions) downloadStarterProject(devObj parser.DevfileObj, projec
 	log.Info("\nStarter Project")
 
 	if starterProject.Git != nil || starterProject.Github != nil {
+		err := downloadGitProject(starterProject, co.devfileMetadata.starterToken, path)
 
-		var projectSource devfilev1.GitLikeProjectSource
-		if starterProject.Git != nil {
-			projectSource = starterProject.Git.GitLikeProjectSource
-		} else {
-			projectSource = starterProject.Github.GitLikeProjectSource
-		}
-
-		remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(projectSource)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
-		}
-
-		if revision != "" {
-			log.Warning("Specifying 'revision' in 'checkoutFrom' is not yet supported in odo.")
-		}
-
-		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
-		defer downloadSpinner.End(false)
-
-		cloneOptions := &git.CloneOptions{
-			URL:           remoteUrl,
-			RemoteName:    remoteName,
-			ReferenceName: plumbing.ReferenceName(revision),
-			SingleBranch:  true,
-			// we don't need history for starter projects
-			Depth: 1,
-		}
-
-		if co.devfileMetadata.starterToken != "" {
-			cloneOptions.Auth = &http.BasicAuth{
-				Username: registryUtil.RegistryUser,
-				Password: co.devfileMetadata.starterToken,
-			}
-		}
-
-		originalPath := ""
-		if starterProject.SubDir != "" {
-			originalPath = path
-			path, err = ioutil.TempDir("", "")
-			if err != nil {
-				return err
-			}
-		}
-		_, err = git.PlainClone(path, false, cloneOptions)
 		if err != nil {
 			return err
 		}
 
-		// we don't want to download project be a git repo
-		err = os.RemoveAll(filepath.Join(path, ".git"))
-		if err != nil {
-			// we don't need to return (fail) if this happens
-			log.Warning("Unable to delete .git from cloned starter project")
-		}
-
-		if starterProject.SubDir != "" {
-			err = util.GitSubDir(path, originalPath,
-				starterProject.SubDir)
-			if err != nil {
-				return err
-			}
-		}
-		downloadSpinner.End(true)
 	} else if starterProject.Zip != nil {
 		url := starterProject.Zip.Location
 		logUrl := starterProject.Zip.Location
