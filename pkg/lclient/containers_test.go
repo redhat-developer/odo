@@ -358,7 +358,7 @@ func TestExtractProjectToComponent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.client.ExtractProjectToComponent(compInfo, targetPath, r)
+			err := tt.client.ExtractProjectToComponent(compInfo.ContainerName, targetPath, r)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("got %v, wanted %v", err, tt.wantErr)
 			}
@@ -394,7 +394,7 @@ func TestExecCMDInContainer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.client.ExecCMDInContainer(compInfo, cmd, writer, writer, nil, false)
+			err := tt.client.ExecCMDInContainer(compInfo.ContainerName, cmd, writer, writer, nil, false)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("got %v, wanted %v", err, tt.wantErr)
 			}

@@ -1264,11 +1264,8 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	klog.V(3).Infof("s2ipaths marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	cmdArr = append(cmdArr, rmPaths...)
-	compInfo := common.ComponentInfo{
-		PodName: targetPodName,
-	}
 
-	err := c.GetKubeClient().ExecCMDInContainer(compInfo, cmdArr, writer, writer, reader, false)
+	err := c.GetKubeClient().ExecCMDInContainer("", targetPodName, cmdArr, writer, writer, reader, false)
 	if err != nil {
 		return err
 	}

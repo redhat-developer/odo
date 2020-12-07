@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -213,7 +212,7 @@ See below for a list of failed events that occured more than %d times during dep
 }
 
 // ExecCMDInContainer execute command in the container of a pod, pass an empty string for containerName to execute in the first container of the pod
-func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	podExecOptions := corev1.PodExecOptions{
 		Command: cmd,
 		Stdin:   stdin != nil,
@@ -223,15 +222,15 @@ func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string,
 	}
 
 	// If a container name was passed in, set it in the exec options, otherwise leave it blank
-	if compInfo.ContainerName != "" {
-		podExecOptions.Container = compInfo.ContainerName
+	if containerName != "" {
+		podExecOptions.Container = containerName
 	}
 
 	req := c.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(c.Namespace).
 		Resource("pods").
-		Name(compInfo.PodName).
+		Name(podName).
 		SubResource("exec").
 		VersionedParams(&podExecOptions, scheme.ParameterCodec)
 
@@ -260,13 +259,13 @@ func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string,
 }
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
+func (c *Client) ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error {
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	klog.V(3).Infof("Executing command %s", strings.Join(cmdArr, " "))
-	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
+	err := c.ExecCMDInContainer(containerName, podName, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
 		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
 		log.Errorf("stdout: %s\n", stdout.String())
