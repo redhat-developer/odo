@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -67,6 +66,9 @@ const (
 
 	// The length of the string to be generated for names of resources
 	nameLength = 5
+
+	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deploymentConfig
+	SupervisordVolumeName = "odo-supervisord-shared-data"
 
 	// EnvS2IScriptsURL is an env var exposed to https://github.com/openshift/odo-init-image/blob/master/assemble-and-restart to indicate location of s2i scripts in this case assemble script
 	EnvS2IScriptsURL = "ODO_S2I_SCRIPTS_URL"
@@ -803,7 +805,7 @@ func copyVolumesAndVolumeMounts(dc appsv1.DeploymentConfig, currentDC *appsv1.De
 			// Loop through all the volumes
 			for _, volume := range matchingContainer.VolumeMounts {
 				// If it's the supervisord volume, ignore it.
-				if volume.Name == common.SupervisordVolumeName {
+				if volume.Name == SupervisordVolumeName {
 					continue
 				} else {
 					// check if we are appending the same volume mount again or not
@@ -826,7 +828,7 @@ func copyVolumesAndVolumeMounts(dc appsv1.DeploymentConfig, currentDC *appsv1.De
 
 	// Now the same with Volumes, again, ignoring the supervisord volume.
 	for _, volume := range currentDC.Spec.Template.Spec.Volumes {
-		if volume.Name == common.SupervisordVolumeName {
+		if volume.Name == SupervisordVolumeName {
 			continue
 		} else {
 			// check if we are appending the same volume again or not
