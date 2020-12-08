@@ -6,7 +6,7 @@ LIBDIR="./scripts/configure-cluster"
 LIBCOMMON="$LIBDIR/common"
 SETUP_OPERATORS="$LIBCOMMON/setup-operators.sh"
 AUTH_SCRIPT="$LIBCOMMON/auth.sh"
-KUBEADMIN_SCRIPT="$LIBCOMMON/login-kubeadmin.sh"
+KUBEADMIN_SCRIPT="$LIBCOMMON/kubeconfigandadmin.sh"
 
 #CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 # Exported to current env
