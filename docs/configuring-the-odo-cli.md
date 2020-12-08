@@ -29,7 +29,7 @@ odo provides a smart completion of command parameters based on user input. For t
     
     2.  Press `y` when prompted to install the completion hook.
 
-  - To install the completion hook manually, add `complete -o nospace -C <full path to your odo binary> odo` to your shell configuration file. After any modification to your shell configuration file, restart your shell.
+  - To install the completion hook manually, add `complete -o nospace -C <full_path_to_your_odo_binary> odo` to your shell configuration file. After any modification to your shell configuration file, restart your shell.
 
   - To disable completion:
     

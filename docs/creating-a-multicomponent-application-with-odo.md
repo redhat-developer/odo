@@ -208,7 +208,7 @@ To create a Java component, import the Java builder image, download the Java app
      ✓  Building component [3s]
     ```
     
-    Using `odo push`, OpenShift creates a container to host the back-end component, deploys the container into a Pod running on the OpenShift cluster, and starts the `backend` component.
+    Using `odo push`, OpenShift creates a container to host the back-end component, deploys the container into a pod running on the OpenShift cluster, and starts the `backend` component.
 
 12. Validate:
     
@@ -326,7 +326,7 @@ Components running on the cluster need to be connected in order to interact. Ope
     app     frontend     testpro     nodejs        local          Pushed
     ```
 
-2.  Link the current front-end component to the backend:
+2.  Link the current front-end component to the back end:
     
     ``` terminal
     $ odo link backend --port 8080
@@ -394,11 +394,11 @@ Components running on the cluster need to be connected in order to interact. Ope
 
 > **Note**
 > 
-> If an application requires permissions to the active Service Account to access the OpenShift namespace and delete active pods, the following error may occur when looking at `odo log` from the back-end component:
+> If an application requires permissions to the active service account to access the OpenShift namespace and delete active pods, the following error may occur when looking at `odo log` from the back-end component:
 > 
 > `Message: Forbidden!Configured service account doesn’t have access. Service account may have been revoked`
 > 
-> To resolve this error, add permissions for the Service Account role:
+> To resolve this error, add permissions for the service account role:
 > 
 > ``` terminal
 > $ oc policy add-role-to-group view system:serviceaccounts -n <project>

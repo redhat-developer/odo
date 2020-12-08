@@ -39,7 +39,7 @@ The pod created by odo executes two Init Containers:
 
 ### `copy-supervisord`
 
-The `copy-supervisord` Init container copies necessary files onto an `emptyDir` Volume. The main application container utilizes these files from the `emptyDir` Volume.
+The `copy-supervisord` Init container copies necessary files onto an `emptyDir` volume. The main application container utilizes these files from the `emptyDir` volume.
 
   - Binaries:
     
@@ -63,59 +63,59 @@ The `copy-supervisord` Init container copies necessary files onto an `emptyDir` 
     
       - `language-scripts`: OpenShift S2I allows custom `assemble` and `run` scripts. A few language specific custom scripts are present in the `language-scripts` directory. The custom scripts provide additional configuration to make odo debug work.
 
-The `emtpyDir Volume` is mounted at the `/opt/odo` mount point for both the Init container and the application container.
+The `emptyDir` volume is mounted at the `/opt/odo` mount point for both the Init container and the application container.
 
 ### `copy-files-to-volume`
 
-The `copy-files-to-volume` Init container copies files that are in `/opt/app-root` in the S2I builder image onto the Persistent Volume. The volume is then mounted at the same location (`/opt/app-root`) in an application container.
+The `copy-files-to-volume` Init container copies files that are in `/opt/app-root` in the S2I builder image onto the persistent volume. The volume is then mounted at the same location (`/opt/app-root`) in an application container.
 
-Without the `PersistentVolume` on `/opt/app-root` the data in this directory is lost when `PersistentVolumeClaim` is mounted at the same location.
+Without the persistent volume on `/opt/app-root` the data in this directory is lost when the persistent volume claim is mounted at the same location.
 
-The `PVC` is mounted at the `/mnt` mount point inside the Init container.
+The PVC is mounted at the `/mnt` mount point inside the Init container.
 
 ## Application container
 
 Application container is the main container inside of which the user-source code executes.
 
-Application container is mounted with two Volumes:
+Application container is mounted with two volumes:
 
-  - `emptyDir` Volume mounted at `/opt/odo`
+  - `emptyDir` volume mounted at `/opt/odo`
 
-  - The `PersistentVolume` mounted at `/opt/app-root`
+  - The persistent volume mounted at `/opt/app-root`
 
 `go-init` is executed as the first process inside the application container. The `go-init` process then starts the `SupervisorD` daemon.
 
-`SupervisorD` executes and monitores the user assembled source code. If the user process crashes, `SupervisorD` restarts it.
+`SupervisorD` executes and monitors the user assembled source code. If the user process crashes, `SupervisorD` restarts it.
 
-## `PersistentVolume` and `PersistentVolumeClaim`
+## Persistent volumes and persistent volume claims
 
-`PersistentVolumeClaim` (`PVC`) is a volume type in Kubernetes which provisions a `PersistentVolume`. The life of a `PersistentVolume` is independent of a pod lifecycle. The data on the `PersistentVolume` persists across pod restarts.
+A persistent volume claim (PVC) is a volume type in Kubernetes which provisions a persistent volume. The life of a persistent volume is independent of a pod lifecycle. The data on the persistent volume persists across pod restarts.
 
-The `copy-files-to-volume` Init container copies necessary files onto the `PersistentVolume`. The main application container utilizes these files at runtime for execution.
+The `copy-files-to-volume` Init container copies necessary files onto the persistent volume. The main application container utilizes these files at runtime for execution.
 
-The naming convention of the `PersistentVolume` is \<component-name\>-s2idata.
+The naming convention of the persistent volume is \<component\_name\>-s2idata.
 
-| Container              | `PVC Mounted` at |
-| ---------------------- | ---------------- |
-| `copy-files-to-volume` | `/mnt`           |
-| Application container  | `/opt/app-root`  |
+| Container              | PVC mounted at  |
+| ---------------------- | --------------- |
+| `copy-files-to-volume` | `/mnt`          |
+| Application container  | `/opt/app-root` |
 
-## `emptyDir` Volume
+## `emptyDir` volume
 
-An `emptyDir` Volume is created when a pod is assigned to a node, and exists as long as that pod is running on the node. If the container is restarted or moved, the content of the `emptyDir` is removed, Init container restores the data back to the `emptyDir`. `emptyDir` is initially empty.
+An `emptyDir` volume is created when a pod is assigned to a node, and exists as long as that pod is running on the node. If the container is restarted or moved, the content of the `emptyDir` is removed, Init container restores the data back to the `emptyDir`. `emptyDir` is initially empty.
 
 The `copy-supervisord` Init container copies necessary files onto the `emptyDir` volume. These files are then utilized by the main application container at runtime for execution.
 
-| Container             | `emptyDir Volume` Mounted at |
+| Container             | `emptyDir volume` mounted at |
 | --------------------- | ---------------------------- |
 | `copy-supervisord`    | `/opt/odo`                   |
 | Application container | `/opt/odo`                   |
 
 ## Service
 
-Service is a Kubernetes concept of abstracting the way of communicating with a set of pods.
+A service is a Kubernetes concept of abstracting the way of communicating with a set of pods.
 
-odo creates a Service for every application pod to make it accessible for communication.
+odo creates a service for every application pod to make it accessible for communication.
 
 # `odo push` workflow
 
@@ -125,7 +125,7 @@ This section describes `odo push` workflow. odo push deploys user code on an Ope
     
     If not already created, `odo push` creates the following OpenShift resources:
     
-      - Deployment config (DC):
+      - `DeploymentConfig` object:
         
           - Two init containers are executed: `copy-supervisord` and `copy-files-to-volume`. The init containers copy files onto the `emptyDir` and the `PersistentVolume` type of volumes respectively.
         
@@ -137,11 +137,11 @@ This section describes `odo push` workflow. odo push deploys user code on an Ope
             > 
             > The user application code has not been copied into the application container yet, so the `SupervisorD` daemon does not execute the `run` script.
     
-      - Service
+      - `Service` object
     
-      - Secrets
+      - `Secret` objects
     
-      - `PersistentVolumeClaim`
+      - `PersistentVolumeClaim` object
 
 2.  Indexing files
     

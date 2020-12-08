@@ -59,7 +59,7 @@ To create a Node.js component, download the Node.js application and push the sou
 3.  Change the current directory to the directory with your application:
     
     ``` terminal
-    $ cd <directory name>
+    $ cd <directory_name>
     ```
 
 4.  Add a component of the type Node.js to your application:
@@ -101,7 +101,7 @@ To create a Node.js component, download the Node.js application and push the sou
 9.  View your deployed application using the generated URL.
     
     ``` terminal
-    $ curl <URL>
+    $ curl <url>
     ```
 
 # Modifying your application code
@@ -128,7 +128,7 @@ Use the `odo storage` command to add persistent data to your application. Exampl
     $ odo storage create <storage_name> --path=<path_to_the_directory> --size=<size>
     ```
 
-2.  Push the storage to the cluser:
+2.  Push the storage to the cluster:
     
     ``` terminal
     $ odo push
@@ -224,7 +224,7 @@ The OpenShift service catalog is an implementation of the Open Service Broker AP
   - To use service catalog-related operations:
     
     ``` terminal
-    $ odo service <verb> <servicename>
+    $ odo service <verb> <service_name>
     ```
 
 # Deleting an application

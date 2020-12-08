@@ -250,9 +250,9 @@ odo provides a command-line interactive mode which simplifies deployment.
     - admin_password
     ```
 
-2.  See the environment variables of the application and the database in the Pod:
+2.  See the environment variables of the application and the database in the pod:
     
-    1.  Get the Pod name:
+    1.  Get the pod name:
         
         ``` terminal
         $ oc get pods
@@ -266,7 +266,7 @@ odo provides a command-line interactive mode which simplifies deployment.
         nodejs-nodejs-ex-mhbb-app-4-vkn9l   1/1       Running   0          1m
         ```
     
-    2.  Connect to the Pod:
+    2.  Connect to the pod:
         
         ``` terminal
         $ oc rsh nodejs-nodejs-ex-mhbb-app-4-vkn9l

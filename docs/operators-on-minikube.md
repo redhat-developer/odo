@@ -22,6 +22,10 @@ In this guide, we will discuss installing two Operators on a minikube environmen
 
 2.  Service Binding Operator
 
+> **Note**
+> 
+> We will be updating our documentation with steps to install and work with more Operators in future.
+
 ## Prerequisites
 
 You must enable the `olm` addon for your minikube cluster by doing:
@@ -84,7 +88,7 @@ spec:
 EOF
 ```
 
-Give it a few seconds before checking the availability of the etcd Operator:
+Give it a few seconds before checking the availability of the etcd Operator. odo lists only those Operators which are successfully installed on the cluster. If an Operator failed to install or is getting installed (that is, its status is `Installing`), odo won’t list it. This is to prevent accidental creation of service(s) from an Operator that is not yet availabe for use:
 
 ``` sh
 $ odo catalog list services
@@ -101,7 +105,7 @@ If you don’t see etcd Operator using above command or by doing `kubectl get cs
 $ kubectl get po -n olm | grep operatorhubio-catalog
 ```
 
-If the state of this pod is `CrashLoopBackOff`, delete it so that Kubernetes will automatically spin up a new pod for the `CatalogSource`:
+If the state of this pod is `CrashLoopBackOff` or `NodeAffinity`, delete it so that Kubernetes will automatically spin up a new pod for the `CatalogSource`:
 
 ``` sh
 $ kubectl delete po -n olm <name-of-operatorhubio-catalog-pod>
@@ -111,30 +115,4 @@ Once the pod for this `CatalogSource` is up, wait a few seconds before trying to
 
 ## Installing the Service Binding Operator
 
-odo uses the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/) to provide `odo link` feature which links an odo component with an Operator backed service. Thus, to be able to use this feature, it’s essential that we install the Operator first.
-
-Service Binding Operator is not yet available via the OLM. The team is [working on making it available](https://github.com/redhat-developer/service-binding-operator/issues/727) through OLM.
-
-To install the Operator, execute the following `kubectl` command:
-
-``` sh
-$ kubectl apply -f https://github.com/redhat-developer/service-binding-operator/releases/download/v0.1.1-364/install-v0.1.1-364.yaml
-```
-
-You should now see a `Deployment` for Service Binding Operator in the namespace where you installed it:
-
-``` sh
-$ kubectl get deploy -n <replace-namespace-value>
-```
-
-### Troubleshooting
-
-If linking doesn’t work after installing the Service Binding Operator as described above, please open an issue on the odo repository describing the issue. On the issue, please provide the logs of the `Pod` created by the `Deployment` of Service Binding Operator. Execute below command in the namespace where you installed Service Binding Operator (note that `Pod` name will be different in your environment than what’s shown below):
-
-``` sh
-$ kubectl get pods
-NAME                                        READY   STATUS    RESTARTS   AGE
-service-binding-operator-65745c4bdc-gc6km   1/1     Running   0          34m
-
-$ kubectl logs service-binding-operator-65745c4bdc-gc6km --follow
-```
+Service Binding Operator is used by odo to provide `odo link` feature. Please refer [this document](install-service-binding-operator.adoc) to install it on both OpenShift and Kubernetes.
