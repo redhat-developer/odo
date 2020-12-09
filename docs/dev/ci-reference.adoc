@@ -6,32 +6,38 @@ For default oc, use the configuration in `.travis.yaml`. For example:
 
 [source,sh]
 ----
-  # Run main e2e tests
+  # Run generic, login and plugin handler integration tests
     - <<: *base-test
       stage: test
-      name: "Main e2e tests"
+      name: "generic, login and plugin handler integration tests"
       script:
         - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-main-e2e
+        - odo login -u developer
+        - travis_wait make test-generic
+        - travis_wait make test-plugin-handler
+        - odo logout
 ----
 
 If you need to run `odo` integration tests against a specific version of Openshift, use env variable `OPENSHIFT_CLIENT_BINARY_URL` to pass the https://github.com/openshift/origin/releases[released] oc client URL in `.travis.yaml`. For oc v3.10.0, use the configuration:
 
 [source,sh]
 ----
-  # Run main e2e tests
+  # Run generic, login and plugin handler integration tests
     - <<: *base-test
       stage: test
-      name: "Main e2e tests"
+      name: "generic, login and plugin handler integration tests"
       script:
         - OPENSHIFT_CLIENT_BINARY_URL=https://github.com/openshift/origin/releases/download/v3.10.0/openshift-origin-client-tools-v3.10.0-dd10d17-linux-64bit.tar.gz ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-main-e2e
+        - odo login -u developer
+        - travis_wait make test-generic
+        - travis_wait make test-plugin-handler
+        - odo logout
 ----
 
 == Running integration tests on Prow
@@ -41,27 +47,43 @@ Prow is the Kubernetes or OpenShift way of managing workflow, including tests. O
 For running integration test on 4.x cluster, job configuration file will be
 [source,sh]
 ----
-    tests:
     - as: integration-e2e
-      commands: scripts/openshiftci-presubmit-all-tests.sh
-      openshift_installer_src:
-       cluster_profile: aws
-      secret:
-       mount_path: /tmp/secret
-       name: odo-secret
+    steps:
+      cluster_profile: aws
+      test:
+      - as: integration-e2e-steps
+        commands: scripts/openshiftci-presubmit-all-tests.sh
+        credentials:
+        - mount_path: /usr/local/ci-secrets/odo-rabbitmq
+          name: odo-rabbitmq
+          namespace: test-credentials
+        env:
+        - default: /usr/local/ci-secrets/odo-rabbitmq/amqpuri
+          name: ODO_RABBITMQ_AMQP_URL
+        from: oc-bin-image
+        resources:
+          requests:
+            cpu: "2"
+            memory: 6Gi
+      workflow: ipi-aws
 ----
 
 Similarly for running periodic test on 4.x cluster, job configuration file will be
 [source,sh]
 ----
-    tests:
-    - as: integration-e2e
-      commands: scripts/openshiftci-periodic-tests.sh
-      openshift_installer_src:
-       cluster_profile: aws
-      secret:
-       mount_path: /tmp/secret
-       name: odo-secret
+    - as: integration-e2e-periodic
+    cron: 0 */6 * * *
+    steps:
+      cluster_profile: aws
+      test:
+      - as: integration-e2e-periodic-steps
+        commands: scripts/openshiftci-periodic-tests.sh
+        from: oc-bin-image
+        resources:
+          requests:
+            cpu: "2"
+            memory: 6Gi
+      workflow: ipi-aws
 ----
 
 To generate the odo job file, run `make jobs` in https://github.com/openshift/release[openshift/release] for the odo pr and periodic tests.
