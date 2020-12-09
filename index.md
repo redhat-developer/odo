@@ -70,7 +70,7 @@ grid_navigation:
     - title: Installing Operators on minikube
       excerpt: Installing etcd Operator on minikube
       cta: Read more
-      url: 'docs/operator-hub'
+      url: 'docs/operators-on-minikube'
 
     - title: Installing Service Binding Operator
       excerpt: Installing Service Binding Operator on OpenShift and Kubernetes
