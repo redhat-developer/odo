@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 )
 
 var _ = Describe("odo preference and config command tests", func() {
@@ -95,9 +96,10 @@ var _ = Describe("odo preference and config command tests", func() {
 		It("should show json output", func() {
 			prefJSONOutput, err := helper.Unindented(helper.CmdShouldPass("odo", "preference", "view", "-o", "json"))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind":"PreferenceList","apiVersion":"odo.dev/v1alpha1","items":[{"Name":"UpdateNotification","Value":null,"Default":true,"Type":"bool","Description":"Flag to control if an update notification is shown or not (Default: true)"},{"Name":"NamePrefix","Value":null,"Default":"","Type":"string","Description":"Use this value to set a default name prefix (Default: current directory name)"},{"Name":"Timeout","Value":null,"Default":1,"Type":"int","Description":"Timeout (in seconds) for OpenShift server connection check (Default: 1)"},{"Name":"BuildTimeout","Value":null,"Default":300,"Type":"int","Description":"BuildTimeout (in seconds) for waiting for a build of the git component to complete (Default: 300)"},{"Name":"PushTimeout","Value":null,"Default":240,"Type":"int","Description":"PushTimeout (in seconds) for waiting for a Pod to come up (Default: 240)"},{"Name":"Experimental","Value":null,"Default":false,"Type":"bool","Description":"Set this value to true to expose features in development/experimental mode"},{"Name":"PushTarget","Value":null,"Default":"kube","Type":"string","Description":"Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube)"}]}`)
-			Expect(err).Should(BeNil())
-			Expect(prefJSONOutput).Should(MatchJSON(expected))
+			values := gjson.GetMany(prefJSONOutput, "kind", "items.0.name", "items.0.Description")
+			expected := []string{"AppPreferenceListlication", "UpdateNotification", "Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube)"}
+			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+
 		})
 
 	})

@@ -1,12 +1,12 @@
 package integration
 
 import (
-	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 )
 
 var _ = Describe("odo app command tests", func() {
@@ -30,7 +30,8 @@ var _ = Describe("odo app command tests", func() {
 	Context("when running help for app command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "app", "-h")
-			Expect(appHelp).To(ContainSubstring("Performs application operations related to your project."))
+			// Trimmed the end of the message string to make it compatible across clusters
+			Expect(appHelp).To(ContainSubstring("Performs application operations related to"))
 		})
 	})
 
@@ -39,8 +40,9 @@ var _ = Describe("odo app command tests", func() {
 			appList := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appList).To(ContainSubstring("There are no applications deployed"))
 			actual := helper.CmdShouldPass("odo", "app", "list", "-o", "json", "--project", commonVar.Project)
-			desired := `{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[]}`
-			Expect(desired).Should(MatchJSON(actual))
+			values := gjson.GetMany(actual, "kind", "apiVerson")
+			expected := []string{"List", "odo.dev/v1alpha1"}
+			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 
 			appDelete := helper.CmdShouldFail("odo", "app", "delete", "test", "--project", commonVar.Project, "-f")
 			Expect(appDelete).To(ContainSubstring("test app does not exists"))
@@ -61,14 +63,14 @@ var _ = Describe("odo app command tests", func() {
 			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appListOutput).To(ContainSubstring(appName))
 			actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json", "--project", commonVar.Project)
-
-			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"s2iComponents":[{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","sourceType":"local","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}],"devfileComponents":[]}`, commonVar.Project)
-			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
-
+			valuesL := gjson.GetMany(actualCompListJSON, "kind", "s2iComponents.0.metadata.name", "s2iComponents.0.metadata.namespace")
+			expectedL := []string{"List", "nodejs", commonVar.Project}
+			Expect(helper.GjsonMatcher(valuesL, expectedL)).To(Equal(true))
 			helper.CmdShouldPass("odo", "app", "describe", "--project", commonVar.Project)
-			desiredDesAppJSON := fmt.Sprintf(`{"kind":"Application","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components": ["nodejs"]}}`, commonVar.Project)
 			actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", "app", "-o", "json", "--project", commonVar.Project)
-			Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
+			valuesDes := gjson.GetMany(actualDesAppJSON, "kind", "metadata.name", "metadata.namespace")
+			expectedDes := []string{"Application", "app", commonVar.Project}
+			Expect(helper.GjsonMatcher(valuesDes, expectedDes)).To(Equal(true))
 
 			helper.CmdShouldPass("odo", "app", "delete", "-f", "--project", commonVar.Project)
 		})
@@ -97,14 +99,15 @@ var _ = Describe("odo app command tests", func() {
 			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appListOutput).To(ContainSubstring(appName))
 			actualCompListJSON := helper.CmdShouldPass("odo", "app", "list", "-o", "json", "--project", commonVar.Project)
-			//desiredCompListJSON := `{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[]}`
-			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"Application","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]}}]}`, commonVar.Project, cmpName)
-			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
+			valuesList := gjson.GetMany(actualCompListJSON, "kind", "items.#.metadata.name", "items.#.metadata.namespace")
+			expectedList := []string{"List", "app", commonVar.Project}
+			Expect(helper.GjsonMatcher(valuesList, expectedList)).To(Equal(true))
 
 			helper.CmdShouldPass("odo", "app", "describe", appName, "--project", commonVar.Project)
-			desiredDesAppJSON := fmt.Sprintf(`{"kind":"Application","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]}}`, appName, commonVar.Project, cmpName)
 			actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", appName, "--project", commonVar.Project, "-o", "json")
-			Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
+			valuesDes := gjson.GetMany(actualDesAppJSON, "kind", "metadata.name", "metadata.namespace")
+			expectedDes := []string{"Application", appName, commonVar.Project}
+			Expect(helper.GjsonMatcher(valuesDes, expectedDes)).To(Equal(true))
 
 			helper.CmdShouldPass("odo", "app", "delete", appName, "--project", commonVar.Project, "-f")
 		})

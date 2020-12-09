@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -92,9 +93,10 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
-				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"%s","port":3000,"secure": false,"path": "/", "kind":"ingress"},"status":{"state":"Pushed"}}]}`, url1, url1+"."+host)
 				if strings.Contains(output, url1) {
-					Expect(desiredURLListJSON).Should(MatchJSON(output))
+					values := gjson.GetMany(output, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.host", "items.0.status.state")
+					expected := []string{"List", "url", url1, url1, "Pushed"}
+					Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 					return true
 				}
 				return false
