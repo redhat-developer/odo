@@ -1,7 +1,6 @@
 package occlient
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,9 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
@@ -37,9 +34,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/klog"
 )
 
@@ -71,6 +66,9 @@ const (
 
 	// The length of the string to be generated for names of resources
 	nameLength = 5
+
+	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deploymentConfig
+	SupervisordVolumeName = "odo-supervisord-shared-data"
 
 	// EnvS2IScriptsURL is an env var exposed to https://github.com/openshift/odo-init-image/blob/master/assemble-and-restart to indicate location of s2i scripts in this case assemble script
 	EnvS2IScriptsURL = "ODO_S2I_SCRIPTS_URL"
@@ -807,7 +805,7 @@ func copyVolumesAndVolumeMounts(dc appsv1.DeploymentConfig, currentDC *appsv1.De
 			// Loop through all the volumes
 			for _, volume := range matchingContainer.VolumeMounts {
 				// If it's the supervisord volume, ignore it.
-				if volume.Name == common.SupervisordVolumeName {
+				if volume.Name == SupervisordVolumeName {
 					continue
 				} else {
 					// check if we are appending the same volume mount again or not
@@ -830,7 +828,7 @@ func copyVolumesAndVolumeMounts(dc appsv1.DeploymentConfig, currentDC *appsv1.De
 
 	// Now the same with Volumes, again, ignoring the supervisord volume.
 	for _, volume := range currentDC.Spec.Template.Spec.Volumes {
-		if volume.Name == common.SupervisordVolumeName {
+		if volume.Name == SupervisordVolumeName {
 			continue
 		} else {
 			// check if we are appending the same volume again or not
@@ -1223,77 +1221,6 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	return &info, nil
 }
 
-// ExecCMDInContainer execute command in the specified container of a pod. If `containerName` is blank, it execs in the first container.
-func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-	podExecOptions := corev1.PodExecOptions{
-		Command: cmd,
-		Stdin:   stdin != nil,
-		Stdout:  stdout != nil,
-		Stderr:  stderr != nil,
-		TTY:     tty,
-	}
-
-	// If a container name was passed in, set it in the exec options, otherwise leave it blank
-	if compInfo.ContainerName != "" {
-		podExecOptions.Container = compInfo.ContainerName
-	}
-
-	req := c.kubeClient.KubeClient.CoreV1().RESTClient().
-		Post().
-		Namespace(c.Namespace).
-		Resource("pods").
-		Name(compInfo.PodName).
-		SubResource("exec").
-		VersionedParams(&corev1.PodExecOptions{
-			Command: cmd,
-			Stdin:   stdin != nil,
-			Stdout:  stdout != nil,
-			Stderr:  stderr != nil,
-			TTY:     tty,
-		}, scheme.ParameterCodec)
-
-	config, err := c.KubeConfig.ClientConfig()
-	if err != nil {
-		return errors.Wrapf(err, "unable to get Kubernetes client config")
-	}
-
-	// Connect to url (constructed from req) using SPDY (HTTP/2) protocol which allows bidirectional streams.
-	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
-	if err != nil {
-		return errors.Wrapf(err, "unable execute command via SPDY")
-	}
-	// initialize the transport of the standard shell streams
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdin:  stdin,
-		Stdout: stdout,
-		Stderr: stderr,
-		Tty:    tty,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "error while streaming command")
-	}
-
-	return nil
-}
-
-// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
-	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	klog.V(3).Infof("Executing command %s", strings.Join(cmdArr, " "))
-	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
-	if err != nil {
-		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
-		log.Errorf("stdout: %s\n", stdout.String())
-		log.Errorf("stderr: %s\n", stderr.String())
-		log.Errorf("err: %s\n", err.Error())
-		return err
-	}
-	return nil
-}
-
 func (c *Client) GetKubeClient() *kclient.Client {
 	return c.kubeClient
 }
@@ -1339,11 +1266,8 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	klog.V(3).Infof("s2ipaths marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	cmdArr = append(cmdArr, rmPaths...)
-	compInfo := common.ComponentInfo{
-		PodName: targetPodName,
-	}
 
-	err := c.ExecCMDInContainer(compInfo, cmdArr, writer, writer, reader, false)
+	err := c.GetKubeClient().ExecCMDInContainer("", targetPodName, cmdArr, writer, writer, reader, false)
 	if err != nil {
 		return err
 	}

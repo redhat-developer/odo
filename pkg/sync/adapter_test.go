@@ -11,8 +11,9 @@ import (
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/golang/mock/gomock"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/lclient"
+	"github.com/openshift/odo/pkg/sync/mock"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
@@ -83,15 +84,24 @@ func TestSyncFiles(t *testing.T) {
 
 	testComponentName := "test"
 
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-	// fkclient, _ := kclient.FakeNew() TODO: test kube fake client, oc fake client and sync
-
 	// create a temp dir for the file indexer
 	directory, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Errorf("TestSyncFiles error: error creating temporary directory for the indexer: %v", err)
 	}
+
+	ctrl := gomock.NewController(t)
+
+	// Assert that Bar() is invoked.
+	defer ctrl.Finish()
+
+	syncClient := mock.NewMockSyncClient(ctrl)
+	syncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	errorSyncClient := mock.NewMockSyncClient(ctrl)
+	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
+	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
 
 	tests := []struct {
 		name               string
@@ -102,7 +112,7 @@ func TestSyncFiles(t *testing.T) {
 	}{
 		{
 			name:   "Case 1: Component does not exist",
-			client: fakeClient,
+			client: syncClient,
 			syncParameters: common.SyncParameters{
 				PushParams: common.PushParameters{
 					Path:              directory,
@@ -121,7 +131,7 @@ func TestSyncFiles(t *testing.T) {
 		},
 		{
 			name:   "Case 2: Component does exist",
-			client: fakeClient,
+			client: syncClient,
 			syncParameters: common.SyncParameters{
 				PushParams: common.PushParameters{
 					Path:              directory,
@@ -140,7 +150,7 @@ func TestSyncFiles(t *testing.T) {
 		},
 		{
 			name:   "Case 3: FakeErrorClient error",
-			client: fakeErrorClient,
+			client: errorSyncClient,
 			syncParameters: common.SyncParameters{
 				PushParams: common.PushParameters{
 					Path:              directory,
@@ -159,7 +169,7 @@ func TestSyncFiles(t *testing.T) {
 		},
 		{
 			name:   "Case 4: File change",
-			client: fakeClient,
+			client: syncClient,
 			syncParameters: common.SyncParameters{
 				PushParams: common.PushParameters{
 					Path:              directory,
@@ -222,9 +232,18 @@ func TestPushLocal(t *testing.T) {
 		t.Errorf("TestPushLocal error: the foobar.txt file was not created: %v", err)
 	}
 
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-	// fkclient, _ := kclient.FakeNew() TODO: test kube fake client, oc fake client and sync
+	ctrl := gomock.NewController(t)
+
+	// Assert that Bar() is invoked.
+	defer ctrl.Finish()
+
+	syncClient := mock.NewMockSyncClient(ctrl)
+	syncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	errorSyncClient := mock.NewMockSyncClient(ctrl)
+	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
+	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
 
 	tests := []struct {
 		name        string
@@ -238,7 +257,7 @@ func TestPushLocal(t *testing.T) {
 	}{
 		{
 			name:        "Case 1: File change",
-			client:      fakeClient,
+			client:      syncClient,
 			path:        directory,
 			files:       []string{path.Join(directory, "test.log")},
 			delFiles:    []string{},
@@ -250,7 +269,7 @@ func TestPushLocal(t *testing.T) {
 		},
 		{
 			name:        "Case 2: File change with fake error client",
-			client:      fakeErrorClient,
+			client:      errorSyncClient,
 			path:        directory,
 			files:       []string{path.Join(directory, "test.log")},
 			delFiles:    []string{},
@@ -262,7 +281,7 @@ func TestPushLocal(t *testing.T) {
 		},
 		{
 			name:        "Case 3: No file change",
-			client:      fakeClient,
+			client:      syncClient,
 			path:        directory,
 			files:       []string{},
 			delFiles:    []string{},
@@ -274,7 +293,7 @@ func TestPushLocal(t *testing.T) {
 		},
 		{
 			name:        "Case 4: Deleted file",
-			client:      fakeClient,
+			client:      syncClient,
 			path:        directory,
 			files:       []string{},
 			delFiles:    []string{path.Join(directory, "test.log")},
@@ -286,7 +305,7 @@ func TestPushLocal(t *testing.T) {
 		},
 		{
 			name:        "Case 5: Force push",
-			client:      fakeClient,
+			client:      syncClient,
 			path:        directory,
 			files:       []string{},
 			delFiles:    []string{},
@@ -298,7 +317,7 @@ func TestPushLocal(t *testing.T) {
 		},
 		{
 			name:        "Case 6: Source mapping folder set",
-			client:      fakeClient,
+			client:      syncClient,
 			path:        directory,
 			files:       []string{},
 			delFiles:    []string{},
@@ -323,7 +342,7 @@ func TestPushLocal(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			syncAdapter := New(adapterCtx, tt.client)
+			syncAdapter := New(adapterCtx, syncClient)
 			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)

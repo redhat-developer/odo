@@ -245,7 +245,7 @@ func getSupervisordStatusInContainer(containerID string, a Adapter) []supervisor
 	stdoutWriter, stdoutOutputChannel := common.CreateConsoleOutputWriterAndChannel()
 	stderrWriter, stderrOutputChannel := common.CreateConsoleOutputWriterAndChannel()
 
-	err := common.ExecuteCommand(&a.Client, compInfo, command, false, stdoutWriter, stderrWriter)
+	err := common.ExecuteCommand(&a, compInfo, command, false, stdoutWriter, stderrWriter)
 
 	// Close the writer and wait the console output
 	stdoutWriter.Close()

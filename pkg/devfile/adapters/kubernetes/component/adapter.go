@@ -35,7 +35,7 @@ import (
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 
 	adapter := Adapter{Client: client}
-	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext)
+	adapter.GenericAdapter = common.NewGenericAdapter(&adapter, adapterContext)
 	adapter.GenericAdapter.InitWith(adapter)
 	return adapter
 }
@@ -193,7 +193,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	log.Infof("\nSyncing to component %s", a.ComponentName)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(a.AdapterContext, &a.Client)
+	syncAdapter := sync.New(a.AdapterContext, &a)
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
@@ -580,4 +580,13 @@ func (a Adapter) Exec(command []string) error {
 	}
 
 	return a.ExecuteCommand(componentInfo, command, true, nil, nil)
+}
+
+func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	return a.Client.ExecCMDInContainer(componentInfo.ContainerName, componentInfo.PodName, cmd, stdout, stderr, stdin, tty)
+}
+
+// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
+func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
+	return a.Client.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
 }

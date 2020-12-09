@@ -55,6 +55,19 @@ var validSourceTypes = map[string]bool{
 	"binary": true,
 }
 
+type componentAdapter struct {
+	client occlient.Client
+}
+
+func (a componentAdapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	return a.client.GetKubeClient().ExecCMDInContainer(componentInfo.ContainerName, componentInfo.PodName, cmd, stdout, stderr, stdin, tty)
+}
+
+// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
+func (a componentAdapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
+	return a.client.GetKubeClient().ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
+}
+
 // GetComponentDir returns source repo name
 // Parameters:
 //		path: git url or source path or binary path
@@ -714,12 +727,16 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		}
 	}
 
+	adapter := componentAdapter{
+		client: *client,
+	}
+
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		compInfo := common.ComponentInfo{
 			PodName: pod.Name,
 		}
-		err = sync.CopyFile(client, path, compInfo, targetPath, files, globExps)
+		err = sync.CopyFile(adapter, path, compInfo, targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
@@ -735,10 +752,12 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// We will use the assemble-and-restart script located within the supervisord container we've created
 	cmdArr := []string{"/opt/odo/bin/assemble-and-restart"}
+
 	compInfo := common.ComponentInfo{
 		PodName: pod.Name,
 	}
-	err = common.ExecuteCommand(client, compInfo, cmdArr, show, nil, nil)
+
+	err = common.ExecuteCommand(adapter, compInfo, cmdArr, show, nil, nil)
 
 	if err != nil {
 		s.End(false)
