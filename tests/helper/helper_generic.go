@@ -17,6 +17,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/tidwall/gjson"
+	. "github.com/tidwall/gjson"
 )
 
 // RandString returns a random string of given length
