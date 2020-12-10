@@ -73,18 +73,21 @@ func (o *ServiceListOptions) Run() (err error) {
 		// if cluster supports Operators, we list only operator backed services
 		// and not service catalog ones
 		var list []unstructured.Unstructured
-		list, err = svc.ListOperatorServices(o.KClient)
+		list, failedListingCR, err := svc.ListOperatorServices(o.KClient)
 		if err != nil {
 			return err
 		}
 
 		if len(list) == 0 {
-			return fmt.Errorf("No operator backed services found in namespace: %s", o.KClient.Namespace)
+			if len(failedListingCR) > 0 {
+				fmt.Printf("Failed to list services for operator(s): %q\n\n", strings.Join(failedListingCR, ", "))
+			}
+			return fmt.Errorf("no operator backed services found in namespace: %s", o.KClient.Namespace)
 		}
 
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(list)
-			return
+			return nil
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
@@ -93,6 +96,10 @@ func (o *ServiceListOptions) Run() (err error) {
 			for _, item := range list {
 				duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Second).String()
 				fmt.Fprintln(w, strings.Join([]string{item.GetKind(), item.GetName()}, "/"), "\t", duration)
+			}
+
+			if len(failedListingCR) > 0 {
+				fmt.Fprintln(w, fmt.Sprintf("\nFailed to list services for Operator(s): %q", strings.Join(failedListingCR, " ")))
 			}
 
 			w.Flush()
