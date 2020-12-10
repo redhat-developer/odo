@@ -323,8 +323,9 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 
 			list, err := GetCRInstances(client, &customResource)
 			if err != nil {
-				klog.V(4).Infof("Failed to list instances of %q with error: %s", cr.Name, err.Error())
-				failedListingCR = append(failedListingCR, cr.Name)
+				crName := strings.Join([]string{csv.Name, cr.Kind}, "/")
+				klog.V(4).Infof("Failed to list instances of %q with error: %s", crName, err.Error())
+				failedListingCR = append(failedListingCR, crName)
 				break
 			}
 
