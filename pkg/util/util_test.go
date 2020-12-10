@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -158,71 +157,6 @@ func TestParseComponentImageName(t *testing.T) {
 			}
 			if tt.want4 != got4 {
 				t.Errorf("Expected component version to be: %s, got %s", tt.want4, got4)
-			}
-		})
-	}
-}
-
-func TestFilePathConversion(t *testing.T) {
-
-	tests := []struct {
-		testName  string
-		os        string
-		direction string
-		path      string
-		url       string
-	}{
-		{
-			testName:  "Test %q conversion for %q",
-			os:        "windows",
-			direction: "url to path",
-			path:      "c:\\file\\path\\windows\\test",
-			url:       "file:///c:/file/path/windows/test",
-		},
-		{
-			testName:  "Test %s conversion for %s",
-			os:        "windows",
-			direction: "path to url",
-			path:      "c:\\file\\path\\windows\\test",
-			url:       "file:///c:/file/path/windows/test",
-		},
-		{
-			testName:  "Test %q conversion for %q",
-			os:        "linux",
-			direction: "url to path",
-			path:      "/c/file/path/windows/test",
-			url:       "file:///c/file/path/windows/test",
-		},
-		{
-			testName:  "Test %q conversion for %q",
-			os:        "linux",
-			direction: "path to url",
-			path:      "/c/file/path/windows/test",
-			url:       "file:///c/file/path/windows/test",
-		},
-	}
-
-	for _, tt := range tests {
-		testName := fmt.Sprintf(tt.testName, tt.direction, tt.os)
-		t.Log("Running test: ", testName)
-		t.Run(testName, func(t *testing.T) {
-			if tt.direction == "url to path" {
-				url, err := url.Parse(tt.url)
-				if err == nil {
-					path := ReadFilePath(url, tt.os)
-					if path != tt.path {
-						t.Errorf(fmt.Sprintf("Expected an url '%s' to be converted to a path '%s", tt.url, tt.path))
-					}
-				} else {
-					t.Errorf(fmt.Sprintf("Error when parsing url '%s'", tt.url))
-				}
-			} else if tt.direction == "path to url" {
-				url := GenFileURL(tt.path, tt.os)
-				if url != tt.url {
-					t.Errorf(fmt.Sprintf("Expected a path to be '%s' converted to an url '%s", tt.path, tt.url))
-				}
-			} else {
-				t.Errorf(fmt.Sprintf("Unexpected direction '%s'", tt.direction))
 			}
 		})
 	}

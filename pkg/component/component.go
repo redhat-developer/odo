@@ -1003,12 +1003,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		sourceType := localConfig.GetSourceType()
 		component.Spec.Ports = localConfig.GetPorts()
 		component.Spec.SourceType = string(sourceType)
-		switch sourceType {
-		case config.LOCAL, config.BINARY:
-			component.Spec.Source = util.GenFileURL(location)
-		default:
-			component.Spec.Source = location
-		}
+		component.Spec.Source = location
 
 		for _, localEnv := range localConfig.GetEnvVars() {
 			component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: localEnv.Name, Value: localEnv.Value})
