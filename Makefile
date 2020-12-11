@@ -108,11 +108,6 @@ goget-ginkgo:
 	# https://go-review.googlesource.com/c/go/+/198438/
 	GOFLAGS='' go get github.com/onsi/ginkgo/ginkgo@v1.14.0
 
-.PHONY: goget-gjson
-goget-gjson:
-	# https://go-review.googlesource.com/c/go/+/198438/
-	GOFLAGS='' go get github.com/tidwall/gjson
-
 # Run unit tests and collect coverage
 .PHONY: test-coverage
 test-coverage:
