@@ -148,6 +148,11 @@ var _ = Describe("odo supported images e2e tests", func() {
 			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("ubi8", "openjdk-11:latest"), "java:8", "openjdk-11")
 			verifySupportedImage(filepath.Join("ubi8", "openjdk-11:latest"), "openjdk", "java:8", "openjdk-11", appName, commonVar.Context)
 		})
+
+		It("Should be able to verify the nodejs-14 image", func() {
+			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/nodejs-14:latest", "nodejs:latest", "nodejs-14")
+			verifySupportedImage("ubi8/nodejs-14:latest", "nodejs", "nodejs:latest", "nodejs-14", appName, commonVar.Context)
+		})
 	})
 
 })
