@@ -98,12 +98,12 @@ func (o *ServiceListOptions) Run() (err error) {
 				fmt.Fprintln(w, strings.Join([]string{item.GetKind(), item.GetName()}, "/"), "\t", duration)
 			}
 
-			if len(failedListingCR) > 0 {
-				fmt.Fprintln(w, fmt.Sprintf("\nFailed to list services for Operator(s): %q", strings.Join(failedListingCR, " ")))
-			}
-
 			w.Flush()
 
+		}
+
+		if len(failedListingCR) > 0 {
+			fmt.Printf("\nFailed to list services for operator(s): %q\n", strings.Join(failedListingCR, ", "))
 		}
 
 		return err
