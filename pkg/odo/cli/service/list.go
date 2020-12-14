@@ -99,7 +99,7 @@ func (o *ServiceListOptions) Run() (err error) {
 			}
 
 			if len(failedListingCR) > 0 {
-				fmt.Fprintf(w, fmt.Sprintf("\nFailed to list services for Operator(s): %q", strings.Join(failedListingCR, " ")))
+				fmt.Fprintln(w, fmt.Sprintf("\nFailed to list services for Operator(s): %q", strings.Join(failedListingCR, " ")))
 			}
 
 			w.Flush()
