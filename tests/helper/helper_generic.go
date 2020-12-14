@@ -325,8 +325,5 @@ func GjsonMatcher(values []gjson.Result, expected []string) bool {
 		}
 	}
 	numVars := len(expected)
-	if matched == numVars {
-		return true
-	}
-	return true
+	return matched == numVars
 }
