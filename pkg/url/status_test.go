@@ -1,6 +1,7 @@
 package url
 
 import (
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"reflect"
 	"testing"
 
@@ -52,21 +53,21 @@ func TestGetURLsForKubernetes(t *testing.T) {
 
 	componentName := "my-component"
 
-	testURL1 := envinfo.EnvInfoURL{Name: "example-1", Port: 9090, Host: "com", Kind: "ingress", Secure: true}
-	testURL2 := envinfo.EnvInfoURL{Name: "example-2", Port: 9090, Host: "com", Kind: "ingress", Secure: false}
-	testURL3 := envinfo.EnvInfoURL{Name: "routeurl2", Port: 8080, Kind: "route"}
-	testURL4 := envinfo.EnvInfoURL{Name: "example", Port: 8080, Kind: "route"}
+	testURL1 := localConfigProvider.LocalURL{Name: "example-1", Port: 9090, Host: "com", Kind: "ingress", Secure: true}
+	testURL2 := localConfigProvider.LocalURL{Name: "example-2", Port: 9090, Host: "com", Kind: "ingress", Secure: false}
+	testURL3 := localConfigProvider.LocalURL{Name: "routeurl2", Port: 8080, Kind: "route"}
+	testURL4 := localConfigProvider.LocalURL{Name: "example", Port: 8080, Kind: "route"}
 
 	tests := []struct {
 		name              string
-		envURLs           []envinfo.EnvInfoURL
+		envURLs           []localConfigProvider.LocalURL
 		routeList         *routev1.RouteList
 		ingressList       *extensionsv1.IngressList
 		expectedStatusURL statusURL
 	}{
 		{
 			name:    "1) Cluster with https URL defined in env info",
-			envURLs: []envinfo.EnvInfoURL{testURL1},
+			envURLs: []localConfigProvider.LocalURL{testURL1},
 			ingressList: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{},
 			},
@@ -80,7 +81,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 		},
 		{
 			name:    "2) Cluster with https URL defined in env info",
-			envURLs: []envinfo.EnvInfoURL{testURL2},
+			envURLs: []localConfigProvider.LocalURL{testURL2},
 			ingressList: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{},
 			},
@@ -94,7 +95,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 		},
 		{
 			name:    "3) Cluster with route defined in env info",
-			envURLs: []envinfo.EnvInfoURL{testURL3},
+			envURLs: []localConfigProvider.LocalURL{testURL3},
 			ingressList: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{},
 			},
@@ -113,7 +114,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 
 		{
 			name:    "4) Cluster with route defined",
-			envURLs: []envinfo.EnvInfoURL{},
+			envURLs: []localConfigProvider.LocalURL{},
 			ingressList: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{},
 			},
@@ -132,7 +133,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 		},
 		{
 			name:    "5) Cluster with ingress defined",
-			envURLs: []envinfo.EnvInfoURL{},
+			envURLs: []localConfigProvider.LocalURL{},
 
 			ingressList: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{

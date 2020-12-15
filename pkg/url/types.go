@@ -1,7 +1,7 @@
 package url
 
 import (
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,14 +15,14 @@ type URL struct {
 
 // URLSpec is
 type URLSpec struct {
-	Host         string          `json:"host,omitempty"`
-	Protocol     string          `json:"protocol,omitempty"`
-	Port         int             `json:"port,omitempty"`
-	Secure       bool            `json:"secure"`
-	Kind         envinfo.URLKind `json:"kind,omitempty"`
-	TLSSecret    string          `json:"tlssecret,omitempty"`
-	ExternalPort int             `json:"externalport,omitempty"`
-	Path         string          `json:"path,omitempty"`
+	Host         string                      `json:"host,omitempty"`
+	Protocol     string                      `json:"protocol,omitempty"`
+	Port         int                         `json:"port,omitempty"`
+	Secure       bool                        `json:"secure"`
+	Kind         localConfigProvider.URLKind `json:"kind,omitempty"`
+	TLSSecret    string                      `json:"tlssecret,omitempty"`
+	ExternalPort int                         `json:"externalport,omitempty"`
+	Path         string                      `json:"path,omitempty"`
 }
 
 // URLList is a list of applications

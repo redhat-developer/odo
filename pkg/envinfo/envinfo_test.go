@@ -2,11 +2,18 @@ package envinfo
 
 import (
 	"fmt"
+	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/pkg/testingutil"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
+	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 
@@ -18,7 +25,7 @@ func TestSetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL := localConfigProvider.LocalURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
 
 	tests := []struct {
@@ -86,7 +93,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL := localConfigProvider.LocalURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
 
 	tests := []struct {
@@ -100,7 +107,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 			parameter: URL,
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]EnvInfoURL{testURL},
+					URL: &[]localConfigProvider.LocalURL{testURL},
 				},
 			},
 			expectError: false,
@@ -110,7 +117,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 			parameter: invalidParam,
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]EnvInfoURL{testURL},
+					URL: &[]localConfigProvider.LocalURL{testURL},
 				},
 			},
 			expectError: true,
@@ -141,18 +148,20 @@ func TestUnsetEnvInfo(t *testing.T) {
 }
 
 func TestDeleteURLFromMultipleURLs(t *testing.T) {
+	fs := devfileFileSystem.NewFakeFs()
 	tempEnvFile, err := ioutil.TempFile("", "odoenvinfo")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL1 := EnvInfoURL{Name: "testURL1", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
-	testURL2 := EnvInfoURL{Name: "testURL2", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL1 := localConfigProvider.LocalURL{Name: "testURL1", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL2 := localConfigProvider.LocalURL{Name: "testURL2", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 
 	tests := []struct {
 		name            string
 		existingEnvInfo EnvInfo
+		existingDevfile parser.DevfileObj
 		deleteParam     string
 		remainingParam  string
 		singleURL       bool
@@ -161,7 +170,31 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 			name: fmt.Sprintf("Case 1: delete %s from multiple URLs", testURL1.Name),
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]EnvInfoURL{testURL1, testURL2},
+					URL: &[]localConfigProvider.LocalURL{testURL1, testURL2},
+				},
+			},
+			existingDevfile: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "runtime",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       testURL1.Name,
+											TargetPort: 3000,
+										},
+										{
+											Name:       testURL2.Name,
+											TargetPort: 8080,
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			deleteParam:    testURL1.Name,
@@ -172,7 +205,27 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 			name: fmt.Sprintf("Case 2: delete %s fro URL array with single element", testURL1.Name),
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]EnvInfoURL{testURL1},
+					URL: &[]localConfigProvider.LocalURL{testURL1},
+				},
+			},
+			existingDevfile: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "runtime",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       testURL1.Name,
+											TargetPort: 3000,
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			deleteParam: testURL1.Name,
@@ -186,12 +239,14 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 				t.Error(err)
 			}
 			esi.EnvInfo = tt.existingEnvInfo
-			oldURLLength := len(esi.GetURL())
+			esi.SetDevfile(tt.existingDevfile)
+
+			oldURLLength := len(esi.ListURLs())
 			err = esi.DeleteURL(tt.deleteParam)
 			if err != nil {
 				t.Error(err)
 			}
-			newURLLength := len(esi.GetURL())
+			newURLLength := len(esi.ListURLs())
 			if newURLLength+1 != oldURLLength {
 				t.Errorf("DeleteURL is expected to delete element %s from the URL array.", tt.deleteParam)
 			}
@@ -200,7 +255,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 					t.Errorf("Expect to have empty URL array if delete URL from URL array with only 1 element")
 				}
 			} else {
-				if esi.GetURL()[0].Name != tt.remainingParam {
+				if esi.ListURLs()[0].Name != tt.remainingParam {
 					t.Errorf("Expect to have element %s in the URL array", tt.remainingParam)
 				}
 			}
@@ -291,6 +346,457 @@ func TestDeleteEnvDirIfEmpty(t *testing.T) {
 			t.Error("wanted odo directory to exist after odo delete --all")
 			t.Errorf("Error in test %q", tt.name)
 		}
+	}
+}
+
+func TestAddEndpointInDevfile(t *testing.T) {
+	fs := devfileFileSystem.NewFakeFs()
+	urlName := "testURL"
+	urlName2 := "testURL2"
+	tests := []struct {
+		name           string
+		devObj         parser.DevfileObj
+		endpoint       devfilev1.Endpoint
+		container      string
+		wantComponents []devfilev1.Component
+	}{
+		{
+			name: "Case 1: devfile has single container with existing endpoint",
+			endpoint: devfilev1.Endpoint{
+				Name:       urlName,
+				TargetPort: 8080,
+				Secure:     false,
+			},
+			container: "testcontainer1",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "testcontainer1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										Image: "quay.io/nodejs-12",
+									},
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       "port-3030",
+											TargetPort: 3000,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []devfilev1.Component{
+				{
+					Name: "testcontainer1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       "port-3030",
+									TargetPort: 3000,
+								},
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Secure:     false,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Case 2: devfile has single container with no endpoint",
+			endpoint: devfilev1.Endpoint{
+				Name:       urlName,
+				TargetPort: 8080,
+				Secure:     false,
+			},
+			container: "testcontainer1",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "testcontainer1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										Image: "quay.io/nodejs-12",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []devfilev1.Component{
+				{
+					Name: "testcontainer1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Secure:     false,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Case 3: devfile has multiple containers",
+			endpoint: devfilev1.Endpoint{
+				Name:       urlName,
+				TargetPort: 8080,
+				Secure:     false,
+			},
+			container: "testcontainer1",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "testcontainer1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										Image: "quay.io/nodejs-12",
+									},
+								},
+							},
+						},
+						{
+							Name: "testcontainer2",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       urlName2,
+											TargetPort: 9090,
+											Secure:     true,
+											Path:       "/testpath",
+											Exposure:   devfilev1.InternalEndpointExposure,
+											Protocol:   devfilev1.HTTPSEndpointProtocol,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []devfilev1.Component{
+				{
+					Name: "testcontainer1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Secure:     false,
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "testcontainer2",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName2,
+									TargetPort: 9090,
+									Secure:     true,
+									Path:       "/testpath",
+									Exposure:   devfilev1.InternalEndpointExposure,
+									Protocol:   devfilev1.HTTPSEndpointProtocol,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := addEndpointInDevfile(tt.devObj, tt.endpoint, tt.container)
+			if err != nil {
+				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
+			}
+			if !reflect.DeepEqual(tt.devObj.Data.GetComponents(), tt.wantComponents) {
+				t.Errorf("Expected: %v, got %v", tt.wantComponents, tt.devObj.Data.GetComponents())
+			}
+
+		})
+	}
+}
+
+func TestRemoveEndpointInDevfile(t *testing.T) {
+	fs := devfileFileSystem.NewFakeFs()
+	urlName := "testURL"
+	urlName2 := "testURL2"
+	tests := []struct {
+		name           string
+		devObj         parser.DevfileObj
+		endpoint       devfilev1.Endpoint
+		urlName        string
+		wantComponents []devfilev1.Component
+		wantErr        bool
+	}{
+		{
+			name:    "Case 1: devfile has single container with multiple existing endpoint",
+			urlName: urlName,
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "testcontainer1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										Image: "quay.io/nodejs-12",
+									},
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       "port-3030",
+											TargetPort: 3000,
+										},
+										{
+											Name:       urlName,
+											TargetPort: 8080,
+											Secure:     false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []devfilev1.Component{
+				{
+					Name: "testcontainer1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       "port-3030",
+									TargetPort: 3000,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: devfile has single container with a single endpoint",
+			urlName: urlName,
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "testcontainer1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										Image: "quay.io/nodejs-12",
+									},
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       urlName,
+											TargetPort: 8080,
+											Secure:     false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []devfilev1.Component{
+				{
+					Name: "testcontainer1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Case 3: devfile has multiple containers",
+			urlName: urlName,
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "testcontainer1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										Image: "quay.io/nodejs-12",
+									},
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       urlName,
+											TargetPort: 8080,
+											Secure:     false,
+										},
+									},
+								},
+							},
+						},
+						{
+							Name: "testcontainer2",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       urlName2,
+											TargetPort: 9090,
+											Secure:     true,
+											Path:       "/testpath",
+											Exposure:   devfilev1.InternalEndpointExposure,
+											Protocol:   devfilev1.HTTPSEndpointProtocol,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []devfilev1.Component{
+				{
+					Name: "testcontainer1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{},
+						},
+					},
+				},
+				{
+					Name: "testcontainer2",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName2,
+									TargetPort: 9090,
+									Secure:     true,
+									Path:       "/testpath",
+									Exposure:   devfilev1.InternalEndpointExposure,
+									Protocol:   devfilev1.HTTPSEndpointProtocol,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Case 4: delete an invalid endpoint",
+			urlName: "invalidurl",
+			devObj: parser.DevfileObj{
+				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+				Data: &testingutil.TestDevfileData{
+					Components: []devfilev1.Component{
+						{
+							Name: "testcontainer1",
+							ComponentUnion: devfilev1.ComponentUnion{
+								Container: &devfilev1.ContainerComponent{
+									Container: devfilev1.Container{
+										Image: "quay.io/nodejs-12",
+									},
+									Endpoints: []devfilev1.Endpoint{
+										{
+											Name:       urlName,
+											TargetPort: 8080,
+											Secure:     false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantComponents: []devfilev1.Component{
+				{
+					Name: "testcontainer1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []devfilev1.Endpoint{
+								{
+									Name:       urlName,
+									TargetPort: 8080,
+									Secure:     false,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := removeEndpointInDevfile(tt.devObj, tt.urlName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			}
+			if !reflect.DeepEqual(tt.devObj.Data.GetComponents(), tt.wantComponents) {
+				t.Errorf("Expected: %v, got %v", tt.wantComponents, tt.devObj.Data.GetComponents())
+			}
+
+		})
 	}
 }
 

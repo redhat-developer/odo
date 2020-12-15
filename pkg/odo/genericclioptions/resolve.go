@@ -3,7 +3,7 @@ package genericclioptions
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +19,7 @@ func ResolveAppFlag(command *cobra.Command) string {
 }
 
 // resolveProject resolves project
-func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvider) {
+func (o *internalCxt) resolveProject(localConfiguration localConfigProvider.LocalConfigProvider) {
 	var namespace string
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
@@ -57,7 +57,7 @@ func (o *internalCxt) resolveProject(localConfiguration envinfo.LocalConfigProvi
 }
 
 // resolveNamespace resolves namespace for devfile component
-func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvider) {
+func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalConfigProvider) {
 	var namespace string
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
@@ -94,7 +94,7 @@ func (o *internalCxt) resolveNamespace(configProvider envinfo.LocalConfigProvide
 }
 
 // resolveApp resolves the app
-func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) {
+func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration localConfigProvider.LocalConfigProvider) {
 	var app string
 	command := o.command
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
@@ -112,7 +112,7 @@ func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration envi
 }
 
 // resolveComponent resolves component
-func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration envinfo.LocalConfigProvider) string {
+func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
 	var cmp string
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {

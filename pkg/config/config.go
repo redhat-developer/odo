@@ -9,9 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openshift/odo/pkg/envinfo"
-
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
@@ -80,7 +79,7 @@ type ComponentSettings struct {
 
 	Envs EnvVarList `yaml:"Envs,omitempty"`
 
-	URL *[]envinfo.EnvInfoURL `yaml:"Url,omitempty"`
+	URL *[]localConfigProvider.LocalURL `yaml:"Url,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
@@ -250,11 +249,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
 		case "url":
-			urlValue := value.(envinfo.EnvInfoURL)
+			urlValue := value.(localConfigProvider.LocalURL)
 			if lci.componentSettings.URL != nil {
 				*lci.componentSettings.URL = append(*lci.componentSettings.URL, urlValue)
 			} else {
-				lci.componentSettings.URL = &[]envinfo.EnvInfoURL{urlValue}
+				lci.componentSettings.URL = &[]localConfigProvider.LocalURL{urlValue}
 			}
 		}
 
@@ -339,18 +338,6 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 
 }
 
-// DeleteURL is used to delete config from local odo config
-func (lci *LocalConfigInfo) DeleteURL(parameter string) error {
-	for i, url := range *lci.componentSettings.URL {
-		if url.Name == parameter {
-			s := *lci.componentSettings.URL
-			s = append(s[:i], s[i+1:]...)
-			lci.componentSettings.URL = &s
-		}
-	}
-	return lci.writeToFile()
-}
-
 // DeleteFromConfigurationList is used to delete a value from a list from the local odo config
 // parameter is the name of the config parameter
 // value is the value to be deleted
@@ -422,14 +409,6 @@ func (lc *LocalConfig) GetSourceType() SrcType {
 	return *lc.componentSettings.SourceType
 }
 
-// GetPorts returns the ports, returns default if nil
-func (lc *LocalConfig) GetPorts() []string {
-	if lc.componentSettings.Ports == nil {
-		return nil
-	}
-	return *lc.componentSettings.Ports
-}
-
 // GetApplication returns the app, returns default if nil
 func (lc *LocalConfig) GetApplication() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Application)
@@ -478,14 +457,6 @@ func (lc *LocalConfig) GetMinCPU() string {
 // GetMaxCPU returns the MaxCPU, returns default if nil
 func (lc *LocalConfig) GetMaxCPU() string {
 	return util.GetStringOrEmpty(lc.componentSettings.MaxCPU)
-}
-
-// GetURL returns the ConfigURL, returns default if nil
-func (lc *LocalConfig) GetURL() []envinfo.EnvInfoURL {
-	if lc.componentSettings.URL == nil {
-		return []envinfo.EnvInfoURL{}
-	}
-	return *lc.componentSettings.URL
 }
 
 // GetStorage returns the Storage, returns empty if nil

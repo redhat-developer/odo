@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
@@ -26,8 +28,8 @@ type JSONEnvInfoRepr struct {
 type ComponentSettings struct {
 	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 
-	Project string        `yaml:"Project,omitempty" json:"project,omitempty"`
-	URL     *[]EnvInfoURL `yaml:"Url,omitempty" json:"url,omitempty"`
+	Project string                          `yaml:"Project,omitempty" json:"project,omitempty"`
+	URL     *[]localConfigProvider.LocalURL `yaml:"Url,omitempty" json:"url,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
 	// for grouping of components. A namespace can contain multiple applications
 	AppName string         `yaml:"AppName,omitempty" json:"appName,omitempty"`
@@ -47,15 +49,9 @@ const (
 	Debug RUNMode = "debug"
 )
 
-// URLKind is an enum to indicate the type of the URL i.e ingress/route
-type URLKind string
-
 const (
-	DOCKER          URLKind = "docker"
-	INGRESS         URLKind = "ingress"
-	ROUTE           URLKind = "route"
-	envInfoEnvName          = "ENVINFO"
-	envInfoFileName         = "env.yaml"
+	envInfoEnvName  = "ENVINFO"
+	envInfoFileName = "env.yaml"
 
 	// DefaultDebugPort is the default port used for debugging on remote pod
 	DefaultDebugPort = 5858
@@ -64,39 +60,9 @@ const (
 	DefaultRunMode = Run
 )
 
-// EnvInfoURL holds URL related information
-type EnvInfoURL struct {
-	// Name of the URL
-	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
-	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty" json:"port,omitempty"`
-	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty" json:"secure,omitempty"`
-	// Cluster host
-	Host string `yaml:"Host,omitempty" json:"host,omitempty"`
-	// TLS secret name to create ingress to provide a secure URL
-	TLSSecret string `yaml:"TLSSecret,omitempty" json:"tlsSecret,omitempty"`
-	// Exposed port number for docker container, required for local scenarios
-	ExposedPort int `yaml:"ExposedPort,omitempty" json:"exposedPort,omitempty"`
-	// Kind is the kind of the URL
-	Kind URLKind `yaml:"Kind,omitempty" json:"kind,omitempty"`
-}
-
-// LocalConfigProvider is an interface which all local config providers need to implement
-// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
-// The reason this interface is declared here instead of config package is because
-// some day local config would get deprecated and hence to keep the interfaces in the new package
-type LocalConfigProvider interface {
-	GetApplication() string
-	GetName() string
-	GetNamespace() string
-	GetDebugPort() int
-	GetURL() []EnvInfoURL
-	Exists() bool
-}
-
 // EnvInfo holds all the env specific information relevant to a specific Component.
 type EnvInfo struct {
+	devfileObj        parser.DevfileObj
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
@@ -238,11 +204,11 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 			}
 			esi.componentSettings.DebugPort = &val
 		case "url":
-			urlValue := value.(EnvInfoURL)
+			urlValue := value.(localConfigProvider.LocalURL)
 			if esi.componentSettings.URL != nil {
 				*esi.componentSettings.URL = append(*esi.componentSettings.URL, urlValue)
 			} else {
-				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
+				esi.componentSettings.URL = &[]localConfigProvider.LocalURL{urlValue}
 			}
 
 		case "link":
@@ -333,21 +299,6 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 
 }
 
-// DeleteURL is used to delete environment specific info for url from envinfo
-func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
-	if esi.componentSettings.URL == nil {
-		return nil
-	}
-	for i, url := range *esi.componentSettings.URL {
-		if url.Name == parameter {
-			s := *esi.componentSettings.URL
-			s = append(s[:i], s[i+1:]...)
-			esi.componentSettings.URL = &s
-		}
-	}
-	return esi.writeToFile()
-}
-
 func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
 	index := -1
 
@@ -384,14 +335,6 @@ func (esi *EnvSpecificInfo) writeToFile() error {
 	proxyei.ComponentSettings = esi.componentSettings
 
 	return util.WriteToFile(&proxyei, esi.Filename)
-}
-
-// GetURL returns the EnvInfoURL, returns default if nil
-func (ei *EnvInfo) GetURL() []EnvInfoURL {
-	if ei.componentSettings.URL == nil {
-		return []EnvInfoURL{}
-	}
-	return *ei.componentSettings.URL
 }
 
 // GetName returns the component name
@@ -434,6 +377,10 @@ func (ei *EnvInfo) GetApplication() string {
 // MatchComponent matches a component information provided by a devfile component with the local env info
 func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
 	return name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace()
+}
+
+func (ei *EnvInfo) SetDevfile(devfileObj parser.DevfileObj) {
+	ei.devfileObj = devfileObj
 }
 
 // GetLink returns the EnvInfoLink, returns default if nil

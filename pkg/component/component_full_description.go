@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"strings"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
@@ -156,7 +157,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		return cfd, e
 	}
 	var components []devfilev1.Component
-	var configProvider envinfo.LocalConfigProvider = localConfigInfo
+	var configProvider localConfigProvider.LocalConfigProvider = localConfigInfo
 	if envInfo != nil {
 		configProvider = envInfo
 		components = devfile.Data.GetDevfileContainerComponents()

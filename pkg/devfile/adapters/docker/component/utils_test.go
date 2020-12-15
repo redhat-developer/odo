@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"reflect"
 	"strings"
 	"testing"
@@ -335,21 +336,21 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		urlValue     []envinfo.EnvInfoURL
+		urlValue     []localConfigProvider.LocalURL
 		expectResult nat.PortMap
 		client       *lclient.Client
 		endpoints    []devfilev1.Endpoint
 	}{
 		{
 			name:         "Case 1: no port mappings",
-			urlValue:     []envinfo.EnvInfoURL{},
+			urlValue:     []localConfigProvider.LocalURL{},
 			expectResult: nil,
 			client:       fakeClient,
 			endpoints:    []devfilev1.Endpoint{},
 		},
 		{
 			name: "Case 2: only one port mapping",
-			urlValue: []envinfo.EnvInfoURL{
+			urlValue: []localConfigProvider.LocalURL{
 				{Name: "url1", Port: 8080, ExposedPort: 65432},
 			},
 			expectResult: nat.PortMap{
@@ -370,7 +371,7 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 		},
 		{
 			name: "Case 3: multiple port mappings",
-			urlValue: []envinfo.EnvInfoURL{
+			urlValue: []localConfigProvider.LocalURL{
 				{Name: "url1", Port: 8080, ExposedPort: 65432},
 				{Name: "url2", Port: 9090, ExposedPort: 54321},
 				{Name: "url3", Port: 9080, ExposedPort: 45678},

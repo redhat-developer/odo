@@ -17,6 +17,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 
 	"github.com/openshift/odo/pkg/envinfo"
 
@@ -638,8 +639,8 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
 		ComponentName:       componentName,
 		ApplicationName:     applicationName,
-		ConfigURLs:          componentConfig.GetURL(),
-		EnvURLS:             envSpecificInfo.GetURL(),
+		ConfigURLs:          componentConfig.ListURLs(),
+		EnvURLS:             envSpecificInfo.ListURLs(),
 		IsRouteSupported:    isRouteSupported,
 		ContainerComponents: containerComponents,
 		IsS2I:               isS2I,
@@ -1038,7 +1039,7 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 	return Component{}, parser.DevfileObj{}, nil
 }
 
-func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Component {
+func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) Component {
 	if info.Exists() {
 		component := getMachineReadableFormat(info.GetName(), componentType)
 
@@ -1050,7 +1051,7 @@ func getComponentFrom(info envinfo.LocalConfigProvider, componentType string) Co
 			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
 		}
 
-		urls := info.GetURL()
+		urls := info.ListURLs()
 		if len(urls) > 0 {
 			for _, url := range urls {
 				component.Spec.URL = append(component.Spec.URL, url.Name)

@@ -283,7 +283,7 @@ func getPortMap(context string, endpoints []devfilev1.Endpoint, show bool) (nat.
 		return nil, nil, err
 	}
 
-	urlArr := envInfo.GetURL()
+	urlArr := envInfo.ListURLs()
 
 	for _, url := range urlArr {
 		if url.ExposedPort > 0 && common.IsPortPresent(endpoints, url.Port) {
