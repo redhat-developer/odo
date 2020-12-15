@@ -80,7 +80,7 @@ func (o *ServiceListOptions) Run() (err error) {
 
 		if len(list) == 0 {
 			if len(failedListingCR) > 0 {
-				fmt.Printf("Failed to list services for operator(s): %q\n\n", strings.Join(failedListingCR, ", "))
+				fmt.Printf("Failed to fetch services for operator(s): %q\n\n", strings.Join(failedListingCR, ", "))
 			}
 			return fmt.Errorf("no operator backed services found in namespace: %s", o.KClient.Namespace)
 		}
@@ -103,7 +103,7 @@ func (o *ServiceListOptions) Run() (err error) {
 		}
 
 		if len(failedListingCR) > 0 {
-			fmt.Printf("\nFailed to list services for operator(s): %q\n", strings.Join(failedListingCR, ", "))
+			fmt.Printf("\nFailed to fetch services for operator(s): %q\n", strings.Join(failedListingCR, ", "))
 		}
 
 		return err
