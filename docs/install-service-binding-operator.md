@@ -14,7 +14,7 @@ micro_nav: true
 ---
 # Installing Service Binding Operator
 
-This document walks you through the steps to install [Service Binding Operator v0.3.0](https://github.com/redhat-developer/service-binding-operator/tree/v0.3.0) on OpenShift and Kubernetes clusters.
+This document walks you through the steps to install [Service Binding Operator v0.3.0](https://github.com/redhat-developer/service-binding-operator/tree/v0.3.0) on OpenShift cluster and [Service Binding Operator v0.4.0](https://operatorhub.io/operator/service-binding-operator) on Kubernetes cluster.
 
 ## Why do I need the Service Binding Operator?
 
@@ -26,30 +26,38 @@ To install Service Binding Operator on OpenShift, refer [this video](https://www
 
 ## Installing Service Binding Operator on Kubernetes
 
-Steps mentioned in this section were tested on [minikube](https://minikube.sigs.k8s.io/). We tested this on minikube v1.15.1 but it should work on v1.11.0 and above.
-
-For Kubernetes, Service Binding Operator is not yet available via the OLM. The team is [working on making it available](https://github.com/redhat-developer/service-binding-operator/issues/727).
-
-To install the Operator, execute the following `kubectl` command:
+To install the Operator, execute the following `kubectl` command provided on its [OperatorHub.io page](https://operatorhub.io/operator/service-binding-operator):
 
 ``` sh
-$ kubectl apply -f https://gist.githubusercontent.com/dharmit/0e05be20e98c9271b2117acea7908cc2/raw/1e45fc89fc576e184e41fcc23e88d35f0e08a7e9/install.yaml
+$ kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
 ```
 
-You should now see a `Deployment` for Service Binding Operator in the `default` namespace:
+### Making sure that Service Binding Operator installed successfully on Kubernetes
 
-``` sh
-$ kubectl get deploy -n default
-```
+1.  One way to make sure that the Operator installed properly is to verify that its [pod](https://kubernetes.io/docs/concepts/workloads/pods/) started and is in "Running" state (note that you will have to specify the namespace where you installed Service Binding Operator in earlier step, and the pod name will be different in your setup than what’s shown in below output):
+    
+    ``` sh
+    $ kubectl get pods --namespace operators
+    NAME                                        READY   STATUS     RESTARTS   AGE
+    service-binding-operator-6b7c654c89-rg9gq   1/1     Running    0          15m
+    ```
 
-If you would like to install the Service Binding Operator in a different namespace, edit [this line](https://gist.github.com/dharmit/0e05be20e98c9271b2117acea7908cc2#file-install-yaml-L464) by downloading the YAML mentioned in previous set to the namespace of your choice.
-
-### Making sure that Service Binding Operator got correctly installed
-
-One way to make sure that the Operator installed properly is to verify that its [pod](https://kubernetes.io/docs/concepts/workloads/pods/) started and is in "Running" state (note that you will have to specify the namespace where you installed Service Binding Operator in earlier step, and the pod name will be different in your setup than what’s shown in below output):
-
-``` sh
-$ kubectl get pods --namespace default
-NAME                                        READY   STATUS     RESTARTS   AGE
-service-binding-operator-6b7c654c89-rg9gq   1/1     Running    0          15m
-```
+2.  Another aspect to check is output of below command as suggested in the Operator’s installation instruction:
+    
+    ``` sh
+    $ kubectl get csv -n operators
+    ```
+    
+    If you see the value under `PHASE` column to be anything other than `Installing` or `Succeeded`, please take a look at the pods in `olm` namespace and ensure that the pod starting with the name `operatorhubio-catalog` is in `Running` state:
+    
+    ``` sh
+    $ kubectl get pods -n olm
+    NAME                                READY   STATUS             RESTARTS   AGE
+    operatorhubio-catalog-x24dq         0/1     CrashLoopBackOff   6          9m40s
+    ```
+    
+    If you see output like above where the pod is in `CrashLoopBackOff` state or any other state other than `Running`, delete the pod (note that exact name of the pod will be different on your cluster):
+    
+    ``` sh
+    $ kubectl delete pods -n olm operatorhubio-catalog-x24dq
+    ```
