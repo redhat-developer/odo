@@ -296,17 +296,19 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 	}, nil
 }
 
-// ListOperatorServices lists all operator backed services
-func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, error) {
+// ListOperatorServices lists all operator backed services.
+// It returns list of services, slice of services that it failed (if any) to list and error (if any)
+func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, []string, error) {
 	klog.V(4).Info("Getting list of services")
 
 	// First let's get the list of all the operators in the namespace
 	csvs, err := client.ListClusterServiceVersions()
 	if err != nil {
-		return nil, errors.Wrap(err, "Unable to list operator backed services")
+		return nil, nil, errors.Wrap(err, "Unable to list operator backed services")
 	}
 
 	var allCRInstances []unstructured.Unstructured
+	var failedListingCR []string
 
 	// let's get the Services a.k.a Custom Resources (CR) defined by each operator, one by one
 	for _, csv := range csvs.Items {
@@ -315,16 +317,28 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 		customResources := client.GetCustomResourcesFromCSV(&clusterServiceVersion)
 
 		// list and write active instances of each service/CR
-		instances, err := GetInstancesOfCustomResources(client, customResources)
-		if err != nil {
-			return nil, err
+		var instances []unstructured.Unstructured
+		for _, cr := range *customResources {
+			customResource := cr
+
+			list, err := GetCRInstances(client, &customResource)
+			if err != nil {
+				crName := strings.Join([]string{csv.Name, cr.Kind}, "/")
+				klog.V(4).Infof("Failed to list instances of %q with error: %s", crName, err.Error())
+				failedListingCR = append(failedListingCR, crName)
+				break
+			}
+
+			if len(list.Items) > 0 {
+				instances = append(instances, list.Items...)
+			}
 		}
 
 		// assuming there are more than one instances of a CR
 		allCRInstances = append(allCRInstances, instances...)
 	}
 
-	return allCRInstances, nil
+	return allCRInstances, failedListingCR, nil
 }
 
 // GetGVKRFromCR returns values for group, version, kind and resource for a
@@ -430,26 +444,8 @@ func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (
 	return nil, errors.Errorf("could not find example yaml definition for %q service in %q Operator's definition.", crd, operator)
 }
 
-// GetInstancesOfCustomResources returns active instances of given Custom Resource (service in
-// odo lingo) in the active namespace of the cluster
-func GetInstancesOfCustomResources(client *kclient.Client, customResources *[]olm.CRDDescription) ([]unstructured.Unstructured, error) {
-	var instances []unstructured.Unstructured
-
-	for _, cr := range *customResources {
-		customResource := cr
-
-		list, err := GetCRInstances(client, &customResource)
-		if err != nil {
-			return []unstructured.Unstructured{}, err
-		}
-
-		if len(list.Items) > 0 {
-			instances = append(instances, list.Items...)
-		}
-	}
-	return instances, nil
-}
-
+// GetCRInstances fetches and returns instances of the CR provided in the
+// "customResource" field. It also returns error (if any)
 func GetCRInstances(client *kclient.Client, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
