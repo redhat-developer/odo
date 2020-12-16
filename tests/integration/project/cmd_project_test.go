@@ -1,11 +1,12 @@
 package project
 
 import (
-	"fmt"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
-	"strings"
+	"github.com/tidwall/gjson"
 )
 
 var _ = Describe("odo project command tests", func() {
@@ -33,9 +34,10 @@ var _ = Describe("odo project command tests", func() {
 			projectGetJSON := helper.CmdShouldPass("odo", "project", "get", "-o", "json")
 			getOutputJSON, err := helper.Unindented(projectGetJSON)
 			Expect(err).Should(BeNil())
-			expectedJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + commonVar.Project + `","namespace":"` + commonVar.Project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
-			Expect(err).Should(BeNil())
-			Expect(getOutputJSON).Should(MatchJSON(expectedJSON))
+			valuesJSON := gjson.GetMany(getOutputJSON, "kind", "status.active")
+			expectedJSON := []string{"Project", "true"}
+			Expect(helper.GjsonMatcher(valuesJSON, expectedJSON)).To(Equal(true))
+
 		})
 
 	})
@@ -50,7 +52,7 @@ var _ = Describe("odo project command tests", func() {
 	Context("when running get command with -q flag", func() {
 		It("should display only the project name", func() {
 			projectName := helper.CmdShouldPass("odo", "project", "get", "-q")
-			Expect(projectName).Should(Equal(commonVar.Project))
+			Expect(projectName).Should(ContainSubstring(commonVar.Project))
 		})
 	})
 
@@ -96,8 +98,10 @@ var _ = Describe("odo project command tests", func() {
 			helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
 
 			actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
-			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Deleted project : %s"}`, projectName, projectName, projectName)
-			Expect(desired).Should(MatchJSON(actual))
+			values := gjson.GetMany(actual, "kind", "message")
+			expected := []string{"Project", "Deleted project :"}
+			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+
 		})
 	})
 

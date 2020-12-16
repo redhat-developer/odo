@@ -40,8 +40,8 @@ var _ = Describe("odo app command tests", func() {
 			appList := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appList).To(ContainSubstring("There are no applications deployed"))
 			actual := helper.CmdShouldPass("odo", "app", "list", "-o", "json", "--project", commonVar.Project)
-			values := gjson.GetMany(actual, "kind", "items.0.metadata.namespace")
-			expected := []string{"List", commonVar.Project}
+			values := gjson.GetMany(actual, "kind", "metadata", "items")
+			expected := []string{"List", "{}", "[]"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 
 			appDelete := helper.CmdShouldFail("odo", "app", "delete", "test", "--project", commonVar.Project, "-f")
