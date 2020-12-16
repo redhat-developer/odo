@@ -49,12 +49,12 @@ type UnlinkOptions struct {
 func NewUnlinkOptions() *UnlinkOptions {
 	options := UnlinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
-	options.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 	return &options
 }
 
 // Complete completes UnlinkOptions after they've been created
 func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 	err = o.complete(name, cmd, args)
 	if err != nil {
 		return err

@@ -88,7 +88,6 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
-	options.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 	options.commonLinkOptions.serviceBinding = &servicebinding.ServiceBinding{}
 	return &options
 }
@@ -96,6 +95,7 @@ func NewLinkOptions() *LinkOptions {
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.commonLinkOptions.devfilePath = filepath.Join(o.componentContext, DevfilePath)
+	o.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 
 	err = o.complete(name, cmd, args)
 	if err != nil {

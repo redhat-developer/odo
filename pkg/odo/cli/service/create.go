@@ -46,18 +46,9 @@ var (
 	# Create new EtcdCluster service from etcdoperator.v0.9.4 operator.
 	%[1]s etcdoperator.v0.9.4/EtcdCluster`)
 
-	createShortDesc = `Create a new service from service catalog using the plan defined and deploy it on OpenShift.`
+	createShortDesc = `Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.`
 
 	createLongDesc = ktemplates.LongDesc(`
-Create a new service from service catalog using the plan defined and deploy it on OpenShift.
-
-A --plan must be passed along with the service type. Parameters to configure the service are passed as key=value pairs.
-
-For a full list of service types, use: 'odo catalog list services'`)
-
-	createShortDescOperatorHub = `Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.`
-
-	createLongDescOperatorHub = ktemplates.LongDesc(`
 Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.
 
 When creating a service using Operator Hub, provide a service name along with Operator name.
@@ -518,18 +509,11 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	// we ignore the error because it doesn't matter at this place to deal with it and the function returns a *cobra.Command
-	csvSupport, _ := svc.IsCSVSupported()
-
-	if csvSupport {
-		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
-		serviceCreateCmd.Short = createShortDescOperatorHub
-		serviceCreateCmd.Long = createLongDescOperatorHub
-		serviceCreateCmd.Example += "\n\n" + fmt.Sprintf(createOperatorExample, fullName)
-		serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
-		// remove this feature after enabling service create interactive mode for operator backed services
-		serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
-	}
+	serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
+	serviceCreateCmd.Example += "\n\n" + fmt.Sprintf(createOperatorExample, fullName)
+	serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the operator backed service")
+	// remove this feature after enabling service create interactive mode for operator backed services
+	serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
 
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringArrayVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")

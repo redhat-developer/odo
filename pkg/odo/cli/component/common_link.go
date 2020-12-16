@@ -60,6 +60,7 @@ func newCommonLinkOptions() *commonLinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.csvSupport, _ = svc.IsCSVSupported()
 
 	o.operationName = name
 
