@@ -888,7 +888,7 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 		return ComponentList{}, errors.Wrapf(err, "unable to list components")
 	}
 
-	// extract the labels we care about from each component
+	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
 		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.Namespace)
 		if err != nil {
@@ -934,7 +934,7 @@ func ListS2IComponents(client *occlient.Client, applicationName string, localCon
 			return ComponentList{}, errors.Wrapf(err, "unable to list components")
 		}
 
-		// extract the labels we care about from each component
+		// create a list of object metadata based on the component and application name (extracted from DeploymentConfig labels)
 		for _, elem := range dcList {
 			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
 			if err != nil {
