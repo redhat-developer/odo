@@ -32,13 +32,11 @@ for arch in `ls -1 $BIN_DIR/`;do
     target_file=$RELEASE_DIR/odo-$arch$suffix
 
     # Create a tar.gz of the binary
-    # echo "gzipping binary $source_file as $target_file"
-    echo "sufix: $suffix"
     if [[ $suffix == .exe ]]; then
-        echo "zipping binary $source_file as $target_file"
+        echo "zipping binary $source_file as $target_file.zip"
         zip -9 -y -r -q $target_file.zip $source_dir/$source_filename
     else
-        echo "gzipping binary $source_file as $target_file"
+        echo "gzipping binary $source_file as $target_file.tar.gz"
         tar -czvf $target_file.tar.gz --directory=$source_dir $source_filename
     fi
 

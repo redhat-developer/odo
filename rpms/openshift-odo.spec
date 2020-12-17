@@ -93,6 +93,6 @@ Obsoletes:      %{package_name}-redistributable <= %{odo_version}
 %{_datadir}/%{name}-redistributable/odo-darwin-amd64
 %{_datadir}/%{name}-redistributable/odo-darwin-amd64.tar.gz
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
-%{_datadir}/%{name}-redistributable/odo-windows-amd64.zip
+%{_datadir}/%{name}-redistributable/odo-windows-amd64.exe.zip
 %{_datadir}/%{name}-redistributable/SHA256_SUM
 %{_datadir}/%{name}-redistributable/VERSION
