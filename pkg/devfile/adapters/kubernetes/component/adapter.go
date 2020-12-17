@@ -301,10 +301,16 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	initContainers = append(initContainers, supervisordInitContainer)
 
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
-
+	containerNameToVolumes["odosource"] = []common.DevfileVolume{
+		{
+			Name: utils.OdoSourceVolume,
+			Size: "2Gi",
+		},
+	}
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
+	var odoSourcePVCName string
 
 	// Get a list of all the unique volume names and generate their PVC names
 	// we do not use the volume components which are unique here because
@@ -332,6 +338,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 					generatedPVCName = existingPVCName
 				}
 
+				if vol.Name == utils.OdoSourceVolume {
+					odoSourcePVCName = generatedPVCName
+				}
+
 				pvc := common.Storage{
 					Name:   generatedPVCName,
 					Volume: vol,
@@ -347,13 +357,33 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
+	delete(volumeNameToPVCName, utils.OdoSourceVolume)
+	delete(containerNameToVolumes, "odosource")
 	// Get PVC volumes and Volume Mounts
 	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
 
-	odoMandatoryVolumes := utils.GetOdoContainerVolumes()
+	// (adi)Implementation for PVC as source volume.
+	// Add condition here for ephermeral
+	/*	odoSourcePVCName, err := storage.GeneratePVCNameFromDevfileVol(utils.OdoSourceVolume, componentName)
+		if err != nil {
+			return err
+		}
+
+		SourcePvc := common.Storage{
+			Name: odoSourcePVCName,
+			Volume: common.DevfileVolume{
+				Name: utils.OdoSourceVolume,
+				// TODO(adi): Add size constant here
+				Size: "2Gi",
+			},
+		}
+
+		uniqueStorages = append(uniqueStorages, SourcePvc) */
+
+	odoMandatoryVolumes := utils.GetOdoContainerVolumes(false, odoSourcePVCName)
 
 	selectorLabels := map[string]string{
 		"component": componentName,

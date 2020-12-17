@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/storage/labels"
@@ -9,6 +10,8 @@ import (
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	kutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
+
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
@@ -46,12 +49,17 @@ func CreateComponentStorage(Client *kclient.Client, storages []common.Storage, c
 // Create creates the pvc for the given pvc name, volume name, volume size and component name
 func Create(Client *kclient.Client, name, size, componentName, pvcName string) (*corev1.PersistentVolumeClaim, error) {
 
-	labels := map[string]string{
-		"component":                componentName,
-		labels.DevfileStorageLabel: name,
+	label := map[string]string{
+		"component": componentName,
 	}
 
-	objectMeta := generator.GetObjectMeta(pvcName, Client.Namespace, labels, nil)
+	if strings.Contains(pvcName, kutils.OdoSourceVolume) {
+		label[labels.SourcePVCLabel] = name
+	} else {
+		label[labels.DevfileStorageLabel] = name
+	}
+
+	objectMeta := generator.GetObjectMeta(pvcName, Client.Namespace, label, nil)
 
 	// Get the deployment
 	deployment, err := Client.GetDeploymentByName(componentName)
@@ -75,7 +83,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 	pvc := generator.GetPVC(pvcParams)
 
 	// Create PVC
-	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
+	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, label)
 	pvc, err = Client.CreatePVC(*pvc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")

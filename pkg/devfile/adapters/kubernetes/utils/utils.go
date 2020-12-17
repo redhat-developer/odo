@@ -26,11 +26,24 @@ const (
 )
 
 // GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
-func GetOdoContainerVolumes() []corev1.Volume {
-	return []corev1.Volume{
-		{
+func GetOdoContainerVolumes(ephemeral bool, sourcePVCName string) []corev1.Volume {
+	var sourceVolume corev1.Volume
+
+	if !ephemeral {
+		sourceVolume = corev1.Volume{
 			Name: OdoSourceVolume,
-		},
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: sourcePVCName},
+			},
+		}
+	} else {
+		sourceVolume = corev1.Volume{
+			Name: OdoSourceVolume,
+		}
+	}
+
+	return []corev1.Volume{
+		sourceVolume,
 		{
 			// Create a volume that will be shared betwen InitContainer and the applicationContainer
 			// in order to pass over the SupervisorD binary
