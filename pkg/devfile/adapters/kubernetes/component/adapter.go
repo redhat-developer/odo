@@ -20,6 +20,8 @@ import (
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/preference"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
@@ -301,16 +303,28 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	initContainers = append(initContainers, supervisordInitContainer)
 
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
-	containerNameToVolumes["odosource"] = []common.DevfileVolume{
-		{
-			Name: utils.OdoSourceVolume,
-			Size: "2Gi",
-		},
+
+	pref, err := preference.New()
+	if err != nil {
+		return err
 	}
+
+	if !pref.GetEphermeralSourceVolume() {
+
+		// If ephermeral volume is false, then we need to add to source volume in the map to create pvc.
+		containerNameToVolumes["odosource"] = []common.DevfileVolume{
+			{
+				Name: utils.OdoSourceVolume,
+				Size: utils.OdoSourceVolumeSize,
+			},
+		}
+	}
+
+	var odoSourcePVCName string
+
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
-	var odoSourcePVCName string
 
 	// Get a list of all the unique volume names and generate their PVC names
 	// we do not use the volume components which are unique here because
@@ -357,33 +371,18 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
+	// remove odo source volume from these maps as we do not want to pass source volume in GetPVCAndVolumeMount
+	// we are mounting odo source volume seperately
 	delete(volumeNameToPVCName, utils.OdoSourceVolume)
 	delete(containerNameToVolumes, "odosource")
+
 	// Get PVC volumes and Volume Mounts
 	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
 
-	// (adi)Implementation for PVC as source volume.
-	// Add condition here for ephermeral
-	/*	odoSourcePVCName, err := storage.GeneratePVCNameFromDevfileVol(utils.OdoSourceVolume, componentName)
-		if err != nil {
-			return err
-		}
-
-		SourcePvc := common.Storage{
-			Name: odoSourcePVCName,
-			Volume: common.DevfileVolume{
-				Name: utils.OdoSourceVolume,
-				// TODO(adi): Add size constant here
-				Size: "2Gi",
-			},
-		}
-
-		uniqueStorages = append(uniqueStorages, SourcePvc) */
-
-	odoMandatoryVolumes := utils.GetOdoContainerVolumes(false, odoSourcePVCName)
+	odoMandatoryVolumes := utils.GetOdoContainerVolumes(odoSourcePVCName)
 
 	selectorLabels := map[string]string{
 		"component": componentName,

@@ -23,13 +23,16 @@ const (
 
 	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
 	OdoSourceVolume = "odo-projects"
+
+	// OdoSourceVolumeSize specifies size for odo source volume.
+	OdoSourceVolumeSize = "2Gi"
 )
 
 // GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
-func GetOdoContainerVolumes(ephemeral bool, sourcePVCName string) []corev1.Volume {
+func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 	var sourceVolume corev1.Volume
 
-	if !ephemeral {
+	if sourcePVCName != "" {
 		sourceVolume = corev1.Volume{
 			Name: OdoSourceVolume,
 			VolumeSource: corev1.VolumeSource{

@@ -605,10 +605,8 @@ func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 		return StorageList{}, nil
 	}
 
-	var labels = make(map[string]string)
-	labels[storagelabels.SourcePVCLabel] = "odo-projects"
-	labels["component"] = componentName
-	selector := util.ConvertLabelsToSelector(labels)
+	selector := fmt.Sprintf("component=%s,%s!=odo-projects", componentName, storagelabels.SourcePVCLabel)
+
 	pvcs, err := kClient.ListPVCs(selector)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)

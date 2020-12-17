@@ -50,13 +50,13 @@ func CreateComponentStorage(Client *kclient.Client, storages []common.Storage, c
 func Create(Client *kclient.Client, name, size, componentName, pvcName string) (*corev1.PersistentVolumeClaim, error) {
 
 	label := map[string]string{
-		"component": componentName,
+		"component":                componentName,
+		labels.DevfileStorageLabel: name,
 	}
 
 	if strings.Contains(pvcName, kutils.OdoSourceVolume) {
+		// Add label for source pvc
 		label[labels.SourcePVCLabel] = name
-	} else {
-		label[labels.DevfileStorageLabel] = name
 	}
 
 	objectMeta := generator.GetObjectMeta(pvcName, Client.Namespace, label, nil)

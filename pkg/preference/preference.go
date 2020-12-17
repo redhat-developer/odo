@@ -84,6 +84,9 @@ const (
 
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
 	DefaultRegistryCacheTime = 15
+
+	// EphermeralSourceVolume specifies if ephermeral volumes needs to be used as source volume.
+	EphermeralSourceVolume = "ephermeral"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -154,6 +157,8 @@ type OdoSettings struct {
 
 	// RegistryCacheTime how long odo should cache information from registry
 	RegistryCacheTime *int `yaml:"RegistryCacheTime,omitempty"`
+
+	EphermeralSourceVolume *bool `yaml:"ephermeral,omitempty"`
 }
 
 // Registry includes the registry metadata
@@ -479,6 +484,12 @@ func (c *PreferenceInfo) GetRegistryCacheTime() int {
 // and if absent then returns default
 func (c *PreferenceInfo) GetUpdateNotification() bool {
 	return util.GetBoolOrDefault(c.OdoSettings.UpdateNotification, true)
+}
+
+// GetEphermeralSourceVolume returns the value of ephermeral from preferences
+// and if absent then returns default
+func (c *PreferenceInfo) GetEphermeralSourceVolume() bool {
+	return util.GetBoolOrDefault(c.OdoSettings.EphermeralSourceVolume, false)
 }
 
 // GetNamePrefix returns the value of Prefix from preferences
