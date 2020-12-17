@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 )
 
 func componentTests(args ...string) {
@@ -170,8 +171,10 @@ func componentTests(args ...string) {
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...)
-			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"s2iComponents":[{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"cmp-git","namespace":"%s","creationTimestamp":null},"spec":{"app":"testing","type":"nodejs","source":"https://github.com/openshift/nodejs-ex","sourceType":"git","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}],"devfileComponents":[]}`, commonVar.Project)
-			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
+			valuesCList := gjson.GetMany(actualCompListJSON, "kind", "s2iComponents.0.kind", "s2iComponents.0.metadata.name", "s2iComponents.0.spec.app", "s2iComponents.0.spec.env.0.name")
+			expectedCList := []string{"List", "Component", "cmp-git", "testing", "DEBUG_PORT"}
+			Expect(helper.GjsonMatcher(valuesCList, expectedCList)).To(Equal(true))
+
 			cmpAllList := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
 			Expect(cmpAllList).To(ContainSubstring("cmp-git"))
 			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
@@ -228,9 +231,9 @@ func componentTests(args ...string) {
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "describe", "-o", "json", "--context", commonVar.Context)...))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + commonVar.Project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false,  "kind": "route"}, "status": {"state": "Not Pushed"}}, {"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-2", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false,  "kind": "route"}, "status": {"state": "Not Pushed"}}]},"storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"size": "1Gi", "path": "/data1"}}]},"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
-			Expect(err).Should(BeNil())
-			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
+			valuesDesc := gjson.GetMany(cmpDescribeJSON, "kind", "metadata.name", "spec.urls.items.0.kind", "spec.urls.items.0.metadata.name", "spec.urls.items.0.status.state", "spec.urls.items.1.kind", "spec.urls.items.1.metadata.name", "spec.urls.items.1.status.state")
+			expectedDesc := []string{"Component", "cmp-git", "url", "url-1", "Not Pushed", "url", "url-2", "Not Pushed"}
+			Expect(helper.GjsonMatcher(valuesDesc, expectedDesc)).To(Equal(true))
 
 			// odo should describe not pushed component if component name is given.
 			helper.CmdShouldPass("odo", append(args, "describe", "cmp-git", "--context", commonVar.Context)...)
@@ -266,9 +269,10 @@ func componentTests(args ...string) {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing", "-o", "json", "--now")...))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + commonVar.Project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","sourceType": "local","env": [{"name": "DEBUG_PORT","value": "5858"}],"ports": ["8080/TCP"]}, "status": {"state": "Pushed"}}`)
-			Expect(err).Should(BeNil())
-			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
+			valuesDescJ := gjson.GetMany(cmpDescribeJSON, "kind", "metadata.name", "spec.app", "spec.type", "status.state")
+			expectedDescJ := []string{"Component", "cmp-git", "testing", "nodejs", "Pushed"}
+			Expect(helper.GjsonMatcher(valuesDescJ, expectedDescJ)).To(Equal(true))
+
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
 		})
 
@@ -635,9 +639,9 @@ func componentTests(args ...string) {
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
 
 			actualDesCompJSON := helper.CmdShouldPass("odo", append(args, "describe", cmpName, "--app", appName, "--project", commonVar.Project, "-o", "json")...)
-
-			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","sourceType": "local", "urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": null}, "storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": null}, "env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}`, commonVar.Project)
-			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
+			valuesDescCJ := gjson.GetMany(actualDesCompJSON, "kind", "metadata.name", "spec.app", "spec.type", "status.state")
+			expectedDescCJ := []string{"Component", "nodejs", "app", "nodejs", "Pushed"}
+			Expect(helper.GjsonMatcher(valuesDescCJ, expectedDescCJ)).To(Equal(true))
 
 			helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", commonVar.Project, "-f")...)
 		})

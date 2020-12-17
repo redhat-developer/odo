@@ -96,8 +96,8 @@ var _ = Describe("odo preference and config command tests", func() {
 		It("should show json output", func() {
 			prefJSONOutput, err := helper.Unindented(helper.CmdShouldPass("odo", "preference", "view", "-o", "json"))
 			Expect(err).Should(BeNil())
-			values := gjson.GetMany(prefJSONOutput, "kind", "items.0.name", "items.0.Description")
-			expected := []string{"PreferenceList", "UpdateNotification", "Flag to control if an update notification is shown or not (Default: true)"}
+			values := gjson.GetMany(prefJSONOutput, "kind", "items.0.Description")
+			expected := []string{"PreferenceList", "Flag to control if an update notification is shown or not (Default: true)"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 
 		})
