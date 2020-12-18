@@ -61,13 +61,15 @@ The following section describes how to install `odo` on different platforms via 
 
 ### Binary installation
 
-1.  Download the latest [`odo.exe`](https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe) file.
+1.  Download the latest [`odo-windows-amd64.exe`](https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe) file.
 
-2.  Add the location of your `odo.exe` to your `GOPATH/bin` directory.
+2.  Rename the downloaded file to `odo.exe` and move it to a folder of your choice, for example `C:\odo`
+
+3.  Add the location of your `odo.exe` to your `%PATH%`.
 
 ### Setting the `PATH` variable for Windows 10
 
-Edit `Environment Variables` using search:
+Edit `Environment Variables` using search: The following example demonstrates how to set up a path variable. Your binary can be located in any location, but this example uses C:\\odo as the location.
 
 1.  Click **Search** and type `env` or `environment`.
 
@@ -75,23 +77,21 @@ Edit `Environment Variables` using search:
 
 3.  Select **Path** from the **Variable** section and click **Edit**.
 
-4.  Click **New** and type `C:\go-bin` into the field or click **Browse** and select the directory, and click **OK**.
+4.  Click **New** and type `C:\odo` into the field or click **Browse** and select the directory, and click **OK**.
 
 ### Setting the `PATH` variable for Windows 7/8
 
-The following example demonstrates how to set up a path variable. Your binaries can be located in any location, but this example uses C:\\go-bin as the location.
+1.  Click **Start** and in the `Search` box types `Advance System Settings`.
 
-1.  Create a folder at `C:\go-bin`.
+2.  Select **Advanced systems settings** and click the **Environment Variables** button at the bottom.
 
-2.  Right click **Start** and click **Control Panel**.
+3.  Select the **Path** variable from the **System variable** section and click **Edit**.
 
-3.  Select **System and Security** and then click **System**.
+4.  Scroll to the end of the **Variable Value** and add `;C:\odo` and click **OK**.
 
-4.  From the menu on the left, select the **Advanced systems settings** and click the **Environment Variables** button at the bottom.
+5.  Click **OK** to close the **Environment Variable** dialog.
 
-5.  Select **Path** from the **Variable** section and click **Edit**.
-
-6.  Click **New** and type `C:\go-bin` into the field or click **Browse** and select the directory, and click **OK**.
+6.  Click **OK** to close the **Systems Properties** dialog.
 
 # Installing odo in Visual Studio Code (VSCode)
 
