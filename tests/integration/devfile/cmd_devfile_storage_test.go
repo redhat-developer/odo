@@ -161,7 +161,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			stdOut := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "secondvol", "/data", "/data2", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
+			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
 
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
