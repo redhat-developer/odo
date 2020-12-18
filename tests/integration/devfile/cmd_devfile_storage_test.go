@@ -28,7 +28,6 @@ var _ = Describe("odo devfile storage command tests", func() {
 	Context("When devfile storage create command is executed", func() {
 
 		It("should create the storage and mount it on the container", func() {
-			// args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
