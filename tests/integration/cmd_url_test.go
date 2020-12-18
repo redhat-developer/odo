@@ -37,8 +37,7 @@ var _ = Describe("odo url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", commonVar.Context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
-			// Looks like the next line is catching a bug, commenting it while I confirm if it is a real bug
-			//			helper.DontMatchAllInOutput(stdout, []string{"://"})
+			helper.DontMatchAllInOutput(stdout, []string{"://"})
 
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", commonVar.Context)
