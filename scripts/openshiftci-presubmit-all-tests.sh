@@ -49,14 +49,8 @@ elif  [ "${ARCH}" == "ppc64le" ]; then
     # E2e tests
     make test-e2e-all
 else
-    # Integration tests
-    make test-integration
-    make test-integration-devfile
-    make test-cmd-login-logout
-    make test-cmd-project
-    make test-operator-hub
-    # E2e tests
-    make test-e2e-all
+    # Integration and E2e tests
+    make test-integration || make test-integration-devfile || make test-cmd-login-logout || make test-cmd-project || make test-operator-hub || make test-e2e-all
 fi
 
 cp -r reports $ARTIFACTS_DIR 
