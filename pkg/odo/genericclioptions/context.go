@@ -92,12 +92,6 @@ func NewContextCompletion(command *cobra.Command) *Context {
 	return newContext(command, false, true)
 }
 
-// UpdatedContext returns a new context updated from config file
-func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error) {
-	localConfiguration, err := getValidConfig(context.command, false)
-	return newContext(context.command, true, false), localConfiguration, err
-}
-
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	// Create a new occlient

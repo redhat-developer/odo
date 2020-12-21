@@ -1059,11 +1059,6 @@ func (co *CreateOptions) s2iRun() (err error) {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	if co.now {
-		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
-
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve updated local config")
-		}
 		err = co.SetSourceInfo()
 		if err != nil {
 			return errors.Wrap(err, "unable to set source information")
@@ -1205,10 +1200,6 @@ func (co *CreateOptions) Run() (err error) {
 
 	if log.IsJSON() {
 		var componentDesc component.Component
-		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
-		if err != nil {
-			return err
-		}
 		state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
 
 		if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
