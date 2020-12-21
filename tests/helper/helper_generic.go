@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/tidwall/gjson"
 )
 
 // RandString returns a random string of given length
@@ -310,4 +311,19 @@ func CommonAfterEach(commonVar CommonVar) {
 	DeleteDir(commonVar.Context)
 
 	os.Unsetenv("GLOBALODOCONFIG")
+}
+
+// GjsonMatcher validates if []results from gjson.GetMany match the expected values for each json path requested
+// Values is an array of results returned by the gjson.GetMany function
+// Expected is an array of strings, defines the expected values for each of the paths requested in the gjson.GetMany function
+// For documentation about gjson see https://github.com/tidwall/gjson#get-multiple-values-at-once
+func GjsonMatcher(values []gjson.Result, expected []string) bool {
+	matched := 0
+	for i, v := range values {
+		if strings.Contains(v.String(), expected[i]) {
+			matched++
+		}
+	}
+	numVars := len(expected)
+	return matched == numVars
 }

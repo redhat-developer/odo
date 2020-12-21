@@ -1,12 +1,12 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/pkg/component"
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 )
 
 var _ = Describe("odo devfile describe command tests", func() {
@@ -43,10 +43,9 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", "describe", "-o", "json", "--context", commonVar.Context))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + commonVar.Project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"host": "url-1.example.com",
-            "kind": "ingress", "port": 3000, "secure": false}, "status": {"state": "` + string(component.StateTypeNotPushed) + `"}}, {"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-2", "creationTimestamp": null}, "spec": {"host": "url-2.example.com", "port": 4000, "secure": false, "kind": "ingress"}, "status": {"state": "` + string(component.StateTypeNotPushed) + `"}}]},"storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"containerName": "runtime","size": "1Gi", "path": "/data1"}}]},"ports": ["5858"]},"status": {"state": "` + string(component.StateTypeNotPushed) + `"}}`)
-			Expect(err).Should(BeNil())
-			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
+			valuesDes := gjson.GetMany(cmpDescribeJSON, "kind", "spec.urls.items.0.metadata.name", "spec.urls.items.0.spec.host", "spec.urls.items.1.metadata.name", "spec.urls.items.1.spec.host", "spec.storages.items.0.metadata.name", "spec.storages.items.0.spec.containerName")
+			expectedDes := []string{"Component", "url-1", "url-1.example.com", "url-2", "url-2.example.com", "storage-1", "runtime"}
+			Expect(helper.GjsonMatcher(valuesDes, expectedDes)).To(Equal(true))
 
 			// odo should describe not pushed component if component name is given.
 			helper.CmdShouldPass("odo", "describe", "cmp-git", "--context", commonVar.Context)
@@ -72,10 +71,9 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", "describe", "-o", "json", "--context", commonVar.Context))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + commonVar.Project + `","creationTimestamp": null},"spec":{"app": "testing", "env": [{"name": "PROJECTS_ROOT", "value": "/project"},{"name": "PROJECT_SOURCE", "value": "/project"}, {"name": "DEBUG_PORT","value": "5858"}],"type":"nodejs","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"host": "url-1.example.com", "path": "/",
-            "kind": "ingress", "port": 3000, "secure": false}, "status": {"state": "` + string(component.StateTypePushed) + `"}}, {"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-2", "creationTimestamp": null}, "spec": {"host": "url-2.example.com", "port": 4000, "path": "/", "secure": false, "kind": "ingress"}, "status": {"state": "` + string(component.StateTypePushed) + `"}}]},"storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"containerName": "runtime","size": "1Gi", "path": "/data1"}}]},"ports": ["5858"]},"status": {"state": "` + string(component.StateTypePushed) + `"}}`)
-			Expect(err).Should(BeNil())
-			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
+			values := gjson.GetMany(cmpDescribeJSON, "kind", "spec.urls.items.0.metadata.name", "spec.urls.items.0.spec.host", "spec.urls.items.1.metadata.name", "spec.urls.items.1.spec.host", "spec.storages.items.0.metadata.name", "spec.storages.items.0.spec.containerName")
+			expected := []string{"Component", "url-1", "url-1.example.com", "url-2", "url-2.example.com", "storage-1", "runtime"}
+			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 
 			// odo should describe not pushed component if component name is given.
 			helper.CmdShouldPass("odo", "describe", "cmp-git", "--context", commonVar.Context)

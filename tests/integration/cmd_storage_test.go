@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 )
 
 var _ = Describe("odo storage command tests", func() {
@@ -33,16 +34,17 @@ var _ = Describe("odo storage command tests", func() {
 
 	Context("when running storage command without required flag(s)", func() {
 		It("should fail", func() {
-			requiredFlags := []string{"size", "path", "required"}
+			requiredFlags := []string{"size", "path"}
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "nodejs", "--app", "nodeapp", "--project", commonVar.Project, "--context", commonVar.Context)
 			stdErr := helper.CmdShouldFail("odo", "storage", "create", "pv1", "--size", "1Gi", "--context", commonVar.Context)
 			helper.MatchAllInOutput(stdErr, requiredFlags)
+
+			requiredFlagsS := []string{"size"}
 			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--path", "/data", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdErr, requiredFlags)
+			helper.MatchAllInOutput(stdErr, requiredFlagsS)
 			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--context", commonVar.Context)
 			helper.MatchAllInOutput(stdErr, requiredFlags)
-			//helper.CmdShouldFail("odo", "storage", "create", "pv1", "-o", "json")
 		})
 	})
 
@@ -126,12 +128,16 @@ var _ = Describe("odo storage command tests", func() {
 			helper.CopyExample(filepath.Join("source", "wildfly"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "wildfly", "wildfly", "--app", "wildflyapp", "--project", commonVar.Project, "--context", commonVar.Context)
 			actualJSONStorage := helper.CmdShouldPass("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", commonVar.Context, "-o", "json")
-			desiredJSONStorage := `{"kind":"storage","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"}}`
-			Expect(desiredJSONStorage).Should(MatchJSON(actualJSONStorage))
+
+			valuesStoreC := gjson.GetMany(actualJSONStorage, "kind", "metadata.name", "spec.size", "spec.path")
+			expectedStoreC := []string{"storage", "mystorage", "1Gi", "/opt/app-root/src/storage/"}
+			Expect(helper.GjsonMatcher(valuesStoreC, expectedStoreC)).To(Equal(true))
 
 			actualStorageList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context, "-o", "json")
-			desiredStorageList := `{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"},"status":"Not Pushed"}]}`
-			Expect(desiredStorageList).Should(MatchJSON(actualStorageList))
+
+			valuesStoreL := gjson.GetMany(actualStorageList, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.size")
+			expectedStoreL := []string{"List", "storage", "mystorage", "1Gi"}
+			Expect(helper.GjsonMatcher(valuesStoreL, expectedStoreL)).To(Equal(true))
 
 			helper.CmdShouldPass("odo", "storage", "delete", "mystorage", "--context", commonVar.Context, "-f")
 		})

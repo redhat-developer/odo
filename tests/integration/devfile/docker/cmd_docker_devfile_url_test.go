@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -145,9 +145,11 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
-				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"127.0.0.1","port": 3000,"secure":false,"externalport":%s},"status":{"state":"Pushed"}}]}`, url1, freePort)
 				if strings.Contains(output, url1) {
-					Expect(desiredURLListJSON).Should(MatchJSON(output))
+					values := gjson.GetMany(output, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.externalport", "items.0.status.state")
+					expected := []string{"List", "url", url1, freePort, "Pushed"}
+					Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+
 					return true
 				}
 				return false
