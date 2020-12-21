@@ -93,11 +93,10 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 		return nil, err
 	}
 
-	appsClient, err := appsclientset.NewForConfig(client.KubeClientConfig)
+	client.appsClient, err = appsclientset.NewForConfig(client.KubeClientConfig)
 	if err != nil {
 		return nil, err
 	}
-	client.appsClient = appsClient
 
 	client.serviceCatalogClient, err = servicecatalogclienset.NewForConfig(client.KubeClientConfig)
 	if err != nil {
