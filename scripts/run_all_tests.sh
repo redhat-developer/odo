@@ -8,11 +8,16 @@ shout() {
 
 set -ex
 
-shout "Setting up"
+shout "Setting up some stuff"
 
+# Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
 mkdir bin
+# Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
+# for eg go get ginkgo later on will produce ginkgo binary in GOBIN
 GOBIN="`pwd`/bin"
+# Set kubeconfig to current dir. This ensures no clashes with other test runs
 KUBECONFIG="`pwd`/config"
+# This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 export SKIP_USER_LOGIN_TESTS="true"
 export GINKGO_TEST_ARGS="--noColor"
@@ -39,18 +44,21 @@ else
     fi
 fi
 
+# Add GOBIN which is the bin dir we created earlier to PATH so any binaries there are automatically available in PATH
 PATH=$PATH:$GOBIN
 
 #-----------------------------------------------------------------------------
 
-shout "Testing"
+shout "Running unit tests"
 
 # Run unit tests
 GOFLAGS='-mod=vendor' make test
 
-# Prep for int
-shout "Building"
+# Prep for integration/e2e
+shout "Building odo binaries"
 make bin
+
+# copy built odo to GOBIN
 cp -avrf ./odo $GOBIN/
 shout "getting ginkgo"
 GOBIN="$GOBIN" make goget-ginkgo
@@ -65,12 +73,14 @@ set -x
 
 shout "Doing some presetup"
 
+# Delete any projects with SCRIPT_IDENTITY PREFIX. This is GC from previous runs which fail before end of script cleanup
 for i in $(oc projects -q); do
     if [[ $i == "${SCRIPT_IDENTITY}"* ]]; then
         oc delete project $i
     fi
 done
 
+# Generate random project names to some tests
 export REDHAT_OPENJDK11_RHEL8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 export REDHAT_OPENJDK11_UBI8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 export REDHAT_NODEJS12_RHEL7_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
