@@ -44,9 +44,6 @@ var _ = Describe("odo app command tests", func() {
 			expected := []string{"List", "{}", "[]"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 
-			// intentionally failing the tests to verify the behavior of the pr
-			Expect(helper.GjsonMatcher(values, expected)).To(Equal(false))
-
 			appDelete := helper.CmdShouldFail("odo", "app", "delete", "test", "--project", commonVar.Project, "-f")
 			Expect(appDelete).To(ContainSubstring("test app does not exists"))
 			appDescribe := helper.CmdShouldFail("odo", "app", "describe", "test", "--project", commonVar.Project)
