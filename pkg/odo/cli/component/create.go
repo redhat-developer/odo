@@ -544,7 +544,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 			// Categorize the sections
-			log.Info("Validation")
+			log.Info("Devfile Object Validation")
 
 			var devfileAbsolutePath string
 			if util.CheckPathExists(co.DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
@@ -583,7 +583,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		hasComponent := false
 		var devfileExistSpinner *log.Status
 		if !co.forceS2i {
-			log.Info("Validation")
+			log.Info("Devfile Object Validation")
 			devfileExistSpinner = log.Spinner("Checking devfile existence")
 			defer devfileExistSpinner.End(false)
 		}
@@ -837,9 +837,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
 
+	log.Info("Devfile Component Name Validation")
+
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
-		// Validate if the devfile component that user wants to create already exists
-		spinner := log.Spinner("Validating devfile component")
+		// Validate if the devfile component name that user wants to create adheres to the k8s naming convention
+		spinner := log.Spinner("Validating if devfile name is correct")
 		defer spinner.End(false)
 
 		err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
@@ -860,7 +862,7 @@ func (co *CreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	log.Info("Validation")
+	log.Info("Supportability Validation")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
