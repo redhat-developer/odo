@@ -49,8 +49,20 @@ elif  [ "${ARCH}" == "ppc64le" ]; then
     # E2e tests
     make test-e2e-all
 else
-    # Integration and E2e tests
-    make test-integration || make test-integration-devfile || make test-cmd-login-logout || make test-cmd-project || make test-operator-hub || make test-e2e-all
+    # Integration tests
+    make test-integration || error=true
+    make test-integration-devfile || error=true
+    make test-cmd-login-logout || error=true
+    make test-cmd-project || error=true
+    make test-operator-hub || error=true
+
+    # E2e tests
+    make test-e2e-all || error=true
+
+    # Fail the build if there is any error while test execution
+    if [ $error ]; then 
+        exit -1
+    fi
 fi
 
 cp -r reports $ARTIFACTS_DIR 
