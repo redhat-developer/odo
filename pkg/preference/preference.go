@@ -101,6 +101,9 @@ var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for 
 // RegistryCacheTimeDescription adds a description for RegistryCacheTime
 var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo will cache information from Devfile registry (Default: %d)", DefaultRegistryCacheTime)
 
+// EphermeralSourceVolumeDescription adds a description for EphermeralSourceVolume
+var EphermeralSourceVolumeDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code(Default: %t)", false)
+
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
@@ -116,6 +119,7 @@ var (
 		ExperimentalSetting:       ExperimentalDescription,
 		PushTargetSetting:         PushTargetDescription,
 		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
+		EphermeralSourceVolume:    EphermeralSourceVolumeDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -412,6 +416,13 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
 			}
 			c.OdoSettings.Experimental = &val
+
+		case "ephermeral":
+			val, err := strconv.ParseBool(strings.ToLower(value))
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			c.OdoSettings.EphermeralSourceVolume = &val
 
 		case "pushtarget":
 			val := strings.ToLower(value)
