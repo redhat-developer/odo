@@ -239,7 +239,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 				t.Error(err)
 			}
 			esi.EnvInfo = tt.existingEnvInfo
-			esi.SetDevfile(tt.existingDevfile)
+			esi.SetDevfileObj(tt.existingDevfile)
 
 			oldURLLength := len(esi.ListURLs())
 			err = esi.DeleteURL(tt.deleteParam)

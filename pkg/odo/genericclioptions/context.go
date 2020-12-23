@@ -50,52 +50,54 @@ type internalCxt struct {
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
 
-type ContextOptions struct {
+// CreateParameters defines the options which can be provided while creating the context
+type CreateParameters struct {
 	Cmd              *cobra.Command
 	DevfilePath      string
 	ComponentContext string
 	IsNow            bool
 }
 
-func New(options ContextOptions, toggles ...bool) (*Context, error) {
-	options.DevfilePath = completeDevfilePath(options.ComponentContext, options.DevfilePath)
+// New creates a context based on the given parameters
+func New(parameters CreateParameters, toggles ...bool) (context *Context, err error) {
+	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
 
-	var context *Context
-	isDevfile := odoutil.CheckPathExists(options.DevfilePath)
+	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
 	if isDevfile {
-		context = NewDevfileContext(options.Cmd)
-		context.ComponentContext = options.ComponentContext
+		context = NewDevfileContext(parameters.Cmd)
+		context.ComponentContext = parameters.ComponentContext
 
-		err := context.InitEnvInfoFromContext()
+		err = context.InitEnvInfoFromContext()
 		if err != nil {
 			return nil, err
 		}
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidate(options.DevfilePath)
+		devObj, err := devfile.ParseAndValidate(parameters.DevfilePath)
 		if err != nil {
-			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", options.DevfilePath, err)
+			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}
 		err = validate.ValidateDevfileData(devObj.Data)
 		if err != nil {
 			return context, err
 		}
-		context.EnvSpecificInfo.SetDevfile(devObj)
-		context.LocalConfigProvider = context.EnvSpecificInfo
-	} else if options.IsNow {
-		context = NewContextCreatingAppIfNeeded(options.Cmd)
-		context.ComponentContext = options.ComponentContext
 
-		err := context.InitConfigFromContext()
+		context.EnvSpecificInfo.SetDevfileObj(devObj)
+		context.LocalConfigProvider = context.EnvSpecificInfo
+	} else if parameters.IsNow {
+		context = NewContextCreatingAppIfNeeded(parameters.Cmd)
+		context.ComponentContext = parameters.ComponentContext
+
+		err = context.InitConfigFromContext()
 		if err != nil {
 			return nil, err
 		}
 		context.LocalConfigProvider = context.LocalConfigInfo
 	} else {
-		context = NewContext(options.Cmd)
-		context.ComponentContext = options.ComponentContext
+		context = NewContext(parameters.Cmd)
+		context.ComponentContext = parameters.ComponentContext
 
-		err := context.InitConfigFromContext()
+		err = context.InitConfigFromContext()
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +125,7 @@ func (o *Context) InitEnvInfoFromContext() (err error) {
 	return nil
 }
 
-// CompleteDevfilePath completes the devfile path from context
+// completeDevfilePath completes the devfile path from context
 func completeDevfilePath(componentContext, devfilePath string) string {
 	if len(devfilePath) > 0 {
 		return filepath.Join(componentContext, devfilePath)

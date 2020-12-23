@@ -8,7 +8,8 @@ import (
 	"github.com/openshift/odo/pkg/util"
 )
 
-// GetPorts returns the ports, returns default if nil
+// GetPorts returns the ports stored in the config for the component
+// returns default i.e nil if nil
 func (lc *LocalConfig) GetPorts() []string {
 	if lc.componentSettings.Ports == nil {
 		return nil

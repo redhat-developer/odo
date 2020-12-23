@@ -379,7 +379,8 @@ func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
 	return name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace()
 }
 
-func (ei *EnvInfo) SetDevfile(devfileObj parser.DevfileObj) {
+// SetDevfileObj sets the devfileObj for the envinfo
+func (ei *EnvInfo) SetDevfileObj(devfileObj parser.DevfileObj) {
 	ei.devfileObj = devfileObj
 }
 

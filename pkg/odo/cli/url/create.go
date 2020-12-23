@@ -60,11 +60,11 @@ type URLCreateOptions struct {
 	urlPort     int
 	secureURL   bool
 	now         bool
-	host        string
-	tlsSecret   string
-	path        string
-	protocol    string
-	container   string
+	host        string // host of the URL
+	tlsSecret   string // tlsSecret is the secret to te used by the URL
+	path        string // path of the URL
+	protocol    string // protocol of the URL
+	container   string // container to which the URL belongs
 	wantIngress bool
 	url         localConfigProvider.LocalURL
 }
@@ -76,10 +76,11 @@ func NewURLCreateOptions() *URLCreateOptions {
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.ContextOptions{
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
 		DevfilePath:      o.DevfilePath,
 		ComponentContext: o.GetComponentContext(),
+		IsNow:            o.now,
 	})
 
 	if err != nil {

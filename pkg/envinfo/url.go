@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/odo/util/validation"
@@ -49,35 +48,7 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	// add leading / to path, if the path provided is empty, it will be set to / which is the default value of path
 	url.Path = "/" + url.Path
 
-	containerComponents := ei.devfileObj.Data.GetDevfileContainerComponents()
-	if len(containerComponents) == 0 {
-		return nil
-	}
-
-	if len(url.Container) > 0 {
-		return nil
-	}
-
-	containerPortMap := make(map[int]string)
-	portMap := make(map[string]bool)
-	for _, component := range containerComponents {
-		for _, endpoint := range component.Container.Endpoints {
-			containerPortMap[endpoint.TargetPort] = component.Name
-			portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
-		}
-	}
-	if containerName, exist := containerPortMap[url.Port]; exist {
-		if len(url.Container) == 0 {
-			url.Container = containerName
-		}
-	}
-
-	// container is not provided, or the specified port is not being used under any containers
-	// pick the first container to store the new endpoint
-	if len(url.Container) == 0 {
-		url.Container = containerComponents[0].Name
-	}
-
+	// get the port if not provided
 	if url.Port == -1 {
 		var err error
 		url.Port, err = util.GetValidPortNumber(ei.GetName(), url.Port, ei.GetPorts())
@@ -86,9 +57,40 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 		}
 	}
 
-	// get the name
+	// get the name for the URL if not provided
 	if len(url.Name) == 0 {
 		url.Name = util.GetURLName(ei.GetName(), url.Port)
+	}
+
+	containerComponents := ei.devfileObj.Data.GetDevfileContainerComponents()
+	if len(containerComponents) == 0 {
+		return fmt.Errorf("no valid components found in the devfile")
+	}
+
+	// if a container name is provided for the URL, return
+	if len(url.Container) > 0 {
+		return nil
+	}
+
+	containerPortMap := make(map[int]string)
+	portMap := make(map[string]bool)
+
+	// if a container name for the URL is not provided
+	// use a container which uses the given URL port in one of it's endpoints
+	for _, component := range containerComponents {
+		for _, endpoint := range component.Container.Endpoints {
+			containerPortMap[endpoint.TargetPort] = component.Name
+			portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
+		}
+	}
+	if containerName, exist := containerPortMap[url.Port]; exist {
+		url.Container = containerName
+	}
+
+	// container is not provided, or the specified port is not being used under any containers
+	// pick the first container to store the new endpoint
+	if len(url.Container) == 0 {
+		url.Container = containerComponents[0].Name
 	}
 
 	return nil
@@ -97,16 +99,12 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 // ValidateURL validates the given URL
 func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 
-	containers, err := generator.GetContainers(ei.devfileObj)
-	if err != nil {
-		return err
-	}
-	if len(containers) == 0 {
-		return fmt.Errorf("no valid components found in the devfile")
-	}
-
 	foundContainer := false
 	containerComponents := ei.devfileObj.Data.GetDevfileContainerComponents()
+
+	if len(containerComponents) == 0 {
+		return fmt.Errorf("no valid components found in the devfile")
+	}
 
 	// map TargetPort with containerName
 	containerPortMap := make(map[int]string)
@@ -137,6 +135,7 @@ func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 	if url.TLSSecret != "" && (url.Kind != localConfigProvider.INGRESS || !url.Secure) {
 		errorList = append(errorList, "TLS secret is only available for secure URLs of Ingress kind")
 	}
+
 	// check if a host is provided for route based URLs
 	if len(url.Host) > 0 {
 		if url.Kind == localConfigProvider.ROUTE {
@@ -148,10 +147,27 @@ func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 	} else if url.Kind == localConfigProvider.INGRESS {
 		errorList = append(errorList, "host must be provided in order to create URLS of Ingress Kind")
 	}
-	if len(url.Protocol) > 0 && (strings.ToLower(url.Protocol) != string(devfilev1.HTTPEndpointProtocol) && strings.ToLower(url.Protocol) != string(devfilev1.HTTPSEndpointProtocol) && strings.ToLower(url.Protocol) != string(devfilev1.WSEndpointProtocol) &&
-		strings.ToLower(url.Protocol) != string(devfilev1.WSSEndpointProtocol) && strings.ToLower(url.Protocol) != string(devfilev1.TCPEndpointProtocol) && strings.ToLower(url.Protocol) != string(devfilev1.UDPEndpointProtocol)) {
-		errorList = append(errorList, fmt.Sprintf("endpoint protocol only supports %v|%v|%v|%v|%v|%v", devfilev1.HTTPEndpointProtocol, devfilev1.HTTPSEndpointProtocol, devfilev1.WSSEndpointProtocol, devfilev1.WSEndpointProtocol, devfilev1.TCPEndpointProtocol, devfilev1.UDPEndpointProtocol))
+
+	// check the protocol of the URL
+	if len(url.Protocol) > 0 {
+		switch strings.ToLower(url.Protocol) {
+		case string(devfilev1.HTTPEndpointProtocol):
+			break
+		case string(devfilev1.HTTPSEndpointProtocol):
+			break
+		case string(devfilev1.WSEndpointProtocol):
+			break
+		case string(devfilev1.WSSEndpointProtocol):
+			break
+		case string(devfilev1.TCPEndpointProtocol):
+			break
+		case string(devfilev1.UDPEndpointProtocol):
+			break
+		default:
+			errorList = append(errorList, fmt.Sprintf("endpoint protocol only supports %v|%v|%v|%v|%v|%v", devfilev1.HTTPEndpointProtocol, devfilev1.HTTPSEndpointProtocol, devfilev1.WSSEndpointProtocol, devfilev1.WSEndpointProtocol, devfilev1.TCPEndpointProtocol, devfilev1.UDPEndpointProtocol))
+		}
 	}
+
 	for _, localURL := range ei.ListURLs() {
 		if url.Name == localURL.Name {
 			errorList = append(errorList, fmt.Sprintf("URL %s already exists", url.Name))

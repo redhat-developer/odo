@@ -181,6 +181,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Secure: false,
 				Path:   "/",
 			},
+			wantErr: true,
 		},
 		{
 			name: "case 9: complete the url name if not provided",
