@@ -309,9 +309,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	if !pref.GetEphermeralSourceVolume() {
+	if !pref.GetEphemeralSourceVolume() {
 
-		// If ephermeral volume is false, then we need to add to source volume in the map to create pvc.
+		// If ephemeral volume is false, then we need to add to source volume in the map to create pvc.
 		containerNameToVolumes["odosource"] = []common.DevfileVolume{
 			{
 				Name: utils.OdoSourceVolume,
