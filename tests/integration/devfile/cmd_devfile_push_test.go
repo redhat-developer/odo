@@ -669,7 +669,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			outputArr := strings.Split(output, "\n")
 			for _, line := range outputArr {
 
-				if !strings.HasPrefix(line, sourcePath+"/") {
+				if !strings.HasPrefix(line, sourcePath+"/") || strings.Contains(line, "lost+found") {
 					continue
 				}
 
