@@ -85,8 +85,8 @@ const (
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
 	DefaultRegistryCacheTime = 15
 
-	// EphemeralSourceVolume specifies if ephemeral volumes needs to be used as source volume.
-	EphemeralSourceVolume = "ephemeral"
+	// EphemeralSetting specifies if ephemeral volumes needs to be used as source volume.
+	EphemeralSetting = "Ephemeral"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -101,8 +101,8 @@ var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for 
 // RegistryCacheTimeDescription adds a description for RegistryCacheTime
 var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo will cache information from Devfile registry (Default: %d)", DefaultRegistryCacheTime)
 
-// EphemeralSourceVolumeDescription adds a description for EphemeralSourceVolume
-var EphemeralSourceVolumeDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code(Default: %t)", false)
+// EphemeralDescription adds a description for EphemeralSourceVolume
+var EphemeralDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code(Default: %t)", false)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -119,7 +119,7 @@ var (
 		ExperimentalSetting:       ExperimentalDescription,
 		PushTargetSetting:         PushTargetDescription,
 		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
-		EphemeralSourceVolume:     EphemeralSourceVolumeDescription,
+		EphemeralSetting:          EphemeralDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -162,7 +162,8 @@ type OdoSettings struct {
 	// RegistryCacheTime how long odo should cache information from registry
 	RegistryCacheTime *int `yaml:"RegistryCacheTime,omitempty"`
 
-	EphemeralSourceVolume *bool `yaml:"Ephemeral,omitempty"`
+	// Ephemeral if true creates odo emptyDir to store odo source code
+	Ephemeral *bool `yaml:"Ephemeral,omitempty"`
 }
 
 // Registry includes the registry metadata
@@ -422,7 +423,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			if err != nil {
 				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
 			}
-			c.OdoSettings.EphemeralSourceVolume = &val
+			c.OdoSettings.Ephemeral = &val
 
 		case "pushtarget":
 			val := strings.ToLower(value)
@@ -500,7 +501,7 @@ func (c *PreferenceInfo) GetUpdateNotification() bool {
 // GetEphemeralSourceVolume returns the value of ephemeral from preferences
 // and if absent then returns default
 func (c *PreferenceInfo) GetEphemeralSourceVolume() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.EphemeralSourceVolume, false)
+	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, false)
 }
 
 // GetNamePrefix returns the value of Prefix from preferences
