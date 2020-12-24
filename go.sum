@@ -804,6 +804,7 @@ github.com/openshift/custom-resource-status v0.0.0-20200602122900-c002fd1547ca/g
 github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b h1:it0YPE/evO6/m8t8wxis9KFI2F/aleOKsI6d9uz0cEk=
 github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b/go.mod h1:tNrEB5k8SI+g5kOlsCmL2ELASfpqEofI0+FLBgBdN08=
 github.com/openshift/kubernetes v1.17.0-alpha.0.0.20191216151305-079984b0a154/go.mod h1:ypOpFo7ff7y/tpC3zDdQ5NonHlPDTJ6iKnOChMPfloQ=
+github.com/openshift/kubernetes-apimachinery v0.0.0-20190820100751-ac02f8882ef6 h1:KRSXk0YTtZ5b8Wwg0H+Pleie6dKjRj6Qnwx6OW398cQ=
 github.com/openshift/kubernetes-apimachinery v0.0.0-20191211181342-5a804e65bdc1 h1:pBVMoJWgY4x5R3ZL7U8yXjnIXjUqfv0x21WUU2de3+4=
 github.com/openshift/kubernetes-apimachinery v0.0.0-20191211181342-5a804e65bdc1/go.mod h1:b9qmWdKlLuU9EBh+06BtLcSf/Mu89rWL33naRxs1uZg=
 github.com/openshift/kubernetes-cli-runtime v0.0.0-20200114162348-c8810ef308ee h1:Lq+Jnpe8ciNYRm1SyF50Uvk29zybO5g2IgpAi7XGBCI=

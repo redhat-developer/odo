@@ -589,6 +589,7 @@ func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 	var volumeMounts []Storage
 	for _, container := range pod.Spec.Containers {
 		for _, volumeMount := range container.VolumeMounts {
+
 			volumeMounts = append(volumeMounts, Storage{
 				ObjectMeta: metav1.ObjectMeta{Name: volumeMount.Name},
 				Spec: StorageSpec{
@@ -596,6 +597,7 @@ func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 					ContainerName: container.Name,
 				},
 			})
+
 		}
 	}
 
@@ -603,8 +605,9 @@ func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 		return StorageList{}, nil
 	}
 
-	label := fmt.Sprintf("component=%s", componentName)
-	pvcs, err := kClient.ListPVCs(label)
+	selector := fmt.Sprintf("component=%s,%s!=odo-projects", componentName, storagelabels.SourcePVCLabel)
+
+	pvcs, err := kClient.ListPVCs(selector)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}

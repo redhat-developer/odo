@@ -20,6 +20,8 @@ import (
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/preference"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
@@ -302,6 +304,24 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
+	pref, err := preference.New()
+	if err != nil {
+		return err
+	}
+
+	if !pref.GetEphemeralSourceVolume() {
+
+		// If ephemeral volume is false, then we need to add to source volume in the map to create pvc.
+		containerNameToVolumes["odosource"] = []common.DevfileVolume{
+			{
+				Name: utils.OdoSourceVolume,
+				Size: utils.OdoSourceVolumeSize,
+			},
+		}
+	}
+
+	var odoSourcePVCName string
+
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
@@ -332,6 +352,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 					generatedPVCName = existingPVCName
 				}
 
+				if vol.Name == utils.OdoSourceVolume {
+					odoSourcePVCName = generatedPVCName
+				}
+
 				pvc := common.Storage{
 					Name:   generatedPVCName,
 					Volume: vol,
@@ -347,13 +371,18 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
+	// remove odo source volume from these maps as we do not want to pass source volume in GetPVCAndVolumeMount
+	// we are mounting odo source volume seperately
+	delete(volumeNameToPVCName, utils.OdoSourceVolume)
+	delete(containerNameToVolumes, "odosource")
+
 	// Get PVC volumes and Volume Mounts
 	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}
 
-	odoMandatoryVolumes := utils.GetOdoContainerVolumes()
+	odoMandatoryVolumes := utils.GetOdoContainerVolumes(odoSourcePVCName)
 
 	selectorLabels := map[string]string{
 		"component": componentName,

@@ -99,7 +99,8 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			// Verify the pvc size
 			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-			Expect(len(PVCs)).To(Equal(1))
+			// additional source pvc the odo creates
+			Expect(len(PVCs)).To(Equal(2))
 		})
 
 		It("should create and output in json format", func() {
@@ -229,6 +230,25 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.CmdShouldFail("odo", "storage", "delete", helper.RandString(5), "--context", commonVar.Context, "-f")
+		})
+	})
+	Context("When ephemeral is set to true in preference.yaml", func() {
+		It("should not create a pvc to store source code", func() {
+
+			helper.CmdShouldPass("odo", "preference", "set", "ephemeral", "true")
+
+			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			// Verify the pvc size
+			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+
+			Expect(len(PVCs)).To(Equal(0))
 		})
 	})
 })
