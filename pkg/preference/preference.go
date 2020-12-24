@@ -162,7 +162,7 @@ type OdoSettings struct {
 	// RegistryCacheTime how long odo should cache information from registry
 	RegistryCacheTime *int `yaml:"RegistryCacheTime,omitempty"`
 
-	EphemeralSourceVolume *bool `yaml:"ephemeral,omitempty"`
+	EphemeralSourceVolume *bool `yaml:"Ephemeral,omitempty"`
 }
 
 // Registry includes the registry metadata
