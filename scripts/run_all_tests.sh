@@ -14,7 +14,7 @@ shout "Setting up some stuff"
 mkdir bin
 # Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
 # for eg go get ginkgo later on will produce ginkgo binary in GOBIN
-GOBIN="`pwd`/bin"
+export GOBIN="`pwd`/bin"
 # Set kubeconfig to current dir. This ensures no clashes with other test runs
 KUBECONFIG="`pwd`/config"
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
@@ -61,7 +61,7 @@ make bin
 # copy built odo to GOBIN
 cp -avrf ./odo $GOBIN/
 shout "getting ginkgo"
-GOBIN="$GOBIN" make goget-ginkgo
+make goget-ginkgo
 
 # Integration tests
 shout "Testing against 4x cluster"
@@ -101,17 +101,23 @@ set +x
 oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
 set -x
 
+# Integration tests
 shout "Running integration Tests"
-make test-integration
-make test-integration-devfile	
-make test-cmd-login-logout	
-make test-cmd-project	
-make test-operator-hub
+make test-integration || error=true
+make test-integration-devfile || error=true
+make test-cmd-login-logout || error=true
+make test-cmd-project || error=true
+make test-operator-hub || error=true
 
+# E2e tests
 shout "Running e2e tests"
-make test-e2e-all
+make test-e2e-all || error=true
+# Fail the build if there is any error while test execution
+if [ $error ]; then 
+    exit -1
+fi
 
-shout "cleanup"
+shout "cleaning up post tests"
 shout "Logging into 4x cluster for cleanup (logs hidden)"
 set +x
 oc login -u kubeadmin -p ${OCP4X_KUBEADMIN_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
