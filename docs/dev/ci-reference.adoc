@@ -43,7 +43,7 @@ If you need to run `odo` integration tests against a specific version of Openshi
 === Test on Kubernetes/ Openshift 3.11
 
 Under travis kubernetes and openshift 3.11 test are run.
-Openshift 3.11 tests service catalogue which is not tested in openshift 4.x version. 
+Openshift 3.11 tests service catalog which is not tested in openshift 4.x version. 
 
 == Tests on Prow
 
@@ -104,7 +104,7 @@ Note:
 PR jobs,kubernetes, openshift 3.11 are moving towards PSI.
 ```
 
-image::docs/dev/CI-reference-workflow.png[CI-workflow]
+image::https://github.com/anandrkskd/odo/blob/workflow-for-ci/docs/img/CI-reference-workflow.png[CI-workflow]
 
 Job dashboard is monitored at:
 
