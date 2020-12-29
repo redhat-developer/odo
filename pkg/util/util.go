@@ -314,11 +314,16 @@ func GetDNS1123Name(str string) string {
 	withReplacedChars := strings.Replace(
 		nonAllowedCharsRegex.ReplaceAllString(str, "-"),
 		"--", "-", -1)
-	return removeNonAlphaSuffix(removeNonAlphaPrefix(withReplacedChars))
+	name := strings.ToLower(removeNonAlphaSuffix(removeNonAlphaPrefix(withReplacedChars)))
+	// if the directory name is all numeric
+	if len(str) != 0 && len(name) == 0 {
+		name = strings.ToLower(removeNonAlphaSuffix(removeNonAlphaPrefix("x" + str)))
+	}
+	return name
 }
 
 func removeNonAlphaPrefix(input string) string {
-	regex := regexp.MustCompile("^[^a-zA-Z0-9]+(.*)$")
+	regex := regexp.MustCompile("^[^a-zA-Z]+(.*)$")
 	return regex.ReplaceAllString(input, "$1")
 }
 
@@ -329,10 +334,9 @@ func removeNonAlphaSuffix(input string) string {
 	if matchesLength == 0 {
 		// in this case the string does not contain a non-alphanumeric suffix
 		return input
-	} else {
-		// in this case we return the smallest match which in the last element in the array
-		return matches[matchesLength-1]
 	}
+	// in this case we return the smallest match which in the last element in the array
+	return matches[matchesLength-1]
 }
 
 // SliceDifference returns the values of s2 that do not exist in s1

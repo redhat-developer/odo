@@ -405,5 +405,5 @@ func gatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
 	klog.V(4).Infof("Source path: %s", sourcePath)
 	klog.V(4).Infof("devfile dir: %s", filepath.Dir(sourcePath))
 
-	return filepath.Base(filepath.Dir(sourcePath)), nil
+	return util.GetDNS1123Name(filepath.Base(filepath.Dir(sourcePath))), nil
 }

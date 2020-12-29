@@ -123,12 +123,14 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			// 1. Use args[0] if the user has supplied a name to be used
 			// 2. If the user did not provide a name, use gatherName to retrieve a name from the devfile.Metadata
 			// 3. Use the folder name that we are pushing from as a default name if none of the above exist
+			fmt.Println("HEHEEH")
 
 			var name string
 			if len(args) == 1 {
 				name = args[0]
 			} else {
 				name, err = gatherName(po.Devfile, po.DevfilePath)
+				log.Info(name)
 				if err != nil {
 					return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
 				}

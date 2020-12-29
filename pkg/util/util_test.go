@@ -251,6 +251,16 @@ func TestGetDNS1123Name(t *testing.T) {
 			param:    "myproject/$foo@@:3.5",
 			want:     "myproject-foo-3-5",
 		},
+		{
+			testName: "Case 9: Test get DNS-1123 should remove invalid chars with sufix and prefix",
+			param:    "54myproject/$foo@@:3.5",
+			want:     "myproject-foo-3-5",
+		},
+		{
+			testName: "Case 9: Test get DNS-1123 should add x as a prefix for all numerics",
+			param:    "54453443",
+			want:     "x54453443",
+		},
 	}
 
 	// Test that it "joins"
