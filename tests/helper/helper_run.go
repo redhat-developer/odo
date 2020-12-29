@@ -35,6 +35,15 @@ func CmdShouldPass(program string, args ...string) string {
 	return string(session.Wait().Out.Contents())
 }
 
+// CmdShouldPassIncludeErrStream returns stdout and stderr if command succeeds
+func CmdShouldPassIncludeErrStream(program string, args ...string) (string, string) {
+	session := CmdRunner(program, args...)
+	Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
+	stdout := string(session.Wait().Out.Contents())
+	stderr := string(session.Wait().Err.Contents())
+	return stdout, stderr
+}
+
 // CmdShouldRunWithTimeout waits for a certain duration and then returns stdout
 func CmdShouldRunWithTimeout(timeout time.Duration, program string, args ...string) string {
 	session := CmdRunner(program, args...)
