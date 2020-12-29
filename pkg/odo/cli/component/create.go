@@ -685,7 +685,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 	} else {
-		co.SetComponentSettings(args)
+		if err := co.SetComponentSettings(args); err != nil {
+			return err
+		}
 	}
 
 	if co.now {
