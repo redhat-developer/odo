@@ -1,6 +1,6 @@
-= ci-reference
+= CI-reference
 
-== Running integration test job in Travis CI
+== Running integration test job on Travis CI
 
 For default oc, use the configuration in `.travis.yaml`. For example:
 
@@ -40,7 +40,14 @@ If you need to run `odo` integration tests against a specific version of Openshi
         - odo logout
 ----
 
-== Running integration tests on Prow
+=== Test on Kubernetes/ Openshift 3.11
+
+Under travis kubernetes and openshift 3.11 test are run.
+Openshift 3.11 tests service catalogue which is not tested in openshift 4.x version. 
+
+== Tests on Prow
+
+=== Running integration tests on Prow
 
 Prow is the Kubernetes or OpenShift way of managing workflow, including tests. Odo integration and periodic test targets are passed through the script scripts/openshiftci-presubmit-all-tests.sh and scripts/openshiftci-periodic-tests.sh respectively available in the https://github.com/openshift/odo/tree/master/scripts[odo] repository. Prow uses the script through the command attribute of the odo job configuration file in https://github.com/openshift/release/tree/master/ci-operator/config/openshift/odo[openshift/release] repository.
 
@@ -87,6 +94,17 @@ Similarly for running periodic test on 4.x cluster, job configuration file will 
 ----
 
 To generate the odo job file, run `make jobs` in https://github.com/openshift/release[openshift/release] for the odo pr and periodic tests.
+
+=== Test running on PRs and Periodic Jobs
+
+Priodic jobs are trigered for openshift version 4.2 to 4.(x+1) for PRs, where `x` is current supported version of Openshift version. And PRs are run on latest openshift version(4.x). 
+
+Note:
+```
+PR jobs,kubernetes, openshift 3.11 are moving towards PSI.
+```
+
+image::docs/dev/CI-reference-workflow.png[CI-workflow]
 
 Job dashboard is monitored at:
 
