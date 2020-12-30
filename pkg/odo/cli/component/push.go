@@ -84,7 +84,7 @@ func (po *PushOptions) CompleteDevfilePath() {
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.CompleteDevfilePath()
 
-	// if experimental mode is enabled and devfile is present
+	// if devfile is present
 	if util.CheckPathExists(po.DevfilePath) {
 
 		po.Devfile, err = devfile.ParseAndValidate(po.DevfilePath)

@@ -78,18 +78,6 @@ func (po *PushOptions) DevfilePush() error {
 
 func (po *PushOptions) devfilePushInner() (err error) {
 
-	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
-
-	if err != nil {
-		return err
-	}
-
-	err = validate.ValidateDevfileData(devObj.Data)
-	if err != nil {
-		return err
-	}
-
 	componentName := po.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)
@@ -114,7 +102,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, po.Devfile, platformContext)
 	if err != nil {
 		return err
 	}
