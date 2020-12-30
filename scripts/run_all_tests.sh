@@ -103,8 +103,8 @@ set -x
 
 # Integration tests
 shout "Running integration Tests"
-make test-integration || error=true
 make test-operator-hub || error=true
+make test-integration || error=true
 make test-integration-devfile || error=true
 make test-cmd-login-logout || error=true
 make test-cmd-project || error=true
