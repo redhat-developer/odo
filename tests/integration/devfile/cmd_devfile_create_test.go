@@ -223,7 +223,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MatchAllInOutput(out, []string{
 				"Please use `odo push` command to create the component with source deployed"})
 			helper.MatchAllInOutput(outerr, []string{
-				"Found a dangling env file without a devfile, overriding it",
+				"Found a dangling env file without a devfile, overwriting it",
 			})
 		})
 	})

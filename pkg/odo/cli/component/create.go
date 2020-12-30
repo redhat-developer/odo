@@ -371,7 +371,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	if util.CheckPathExists(EnvFilePath) && !util.CheckPathExists(co.DevfilePath) {
-		log.Warningf("Found a dangling env file without a devfile, overriding it")
+		log.Warningf("Found a dangling env file without a devfile, overwriting it")
 		if err := util.DeletePath(EnvFilePath); err != nil {
 			return err
 		}
