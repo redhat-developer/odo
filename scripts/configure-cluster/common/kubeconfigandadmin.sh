@@ -24,10 +24,10 @@ setup_kubeconfig() {
         echo "Could not find kubeconfig file"
         exit 1
     fi
-    if [[ $CI == "openshift" ]]; then
+    if [[ $CI == "openshift" && ! -z $KUBECONFIG ]]; then
         # Copy kubeconfig to temporary kubeconfig file
         # Read and Write permission to temporary kubeconfig file
-        export TMP_DIR=$(mktemp -d)
+        TMP_DIR=$(mktemp -d)
         cp $KUBECONFIG $TMP_DIR/kubeconfig
         chmod 640 $TMP_DIR/kubeconfig
         export KUBECONFIG=$TMP_DIR/kubeconfig
