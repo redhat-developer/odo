@@ -2,15 +2,14 @@ package list
 
 import (
 	"fmt"
-
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
 )
@@ -20,94 +19,66 @@ const servicesRecommendedCommandName = "services"
 var servicesExample = `  # Get the supported services from service catalog
   %[1]s`
 
-// ListServicesOptions encapsulates the options for the odo catalog list services command
-type ListServicesOptions struct {
+// ServiceOptions encapsulates the options for the odo catalog list services command
+type ServiceOptions struct {
 	// list of known services
 	services catalog.ServiceTypeList
 	// list of clusterserviceversions (installed by Operators)
 	csvs *olm.ClusterServiceVersionList
 	// generic context options common to all commands
 	*genericclioptions.Context
-	// choose between Operator Hub and Service Catalog. If true, Operator Hub
-	csvSupport bool
 }
 
-// NewListServicesOptions creates a new ListServicesOptions instance
-func NewListServicesOptions() *ListServicesOptions {
-	return &ListServicesOptions{}
+// NewServiceOptions creates a new ListServicesOptions instance
+func NewServiceOptions() *ServiceOptions {
+	return &ServiceOptions{}
 }
 
 // Complete completes ListServicesOptions after they've been created
-func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
+func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context = genericclioptions.NewContext(cmd)
+	o.csvs, err = catalog.ListOperatorServices(o.KClient)
+	if err != nil {
+		if strings.Contains(err.Error(), "could not find specified operator") {
+			err = nil
+		}
 		return err
-	} else if o.csvSupport {
-		var noCsvs, noServices bool
-		o.Context = genericclioptions.NewContext(cmd)
-		o.csvs, err = catalog.ListOperatorServices(o.KClient)
-		if err != nil {
-			// Error only occurs when OperatorHub is not installed/enabled on the
-			// Kubernetes or OpenShift 4.x cluster. It doesn't occur when there are
-			// no operators installed.
-			noCsvs = true
-		}
-
-		o.services, err = catalog.ListServices(o.Client)
-		if err != nil {
-			// Error occurs if Service Catalog is not enabled on the OpenShift
-			// 3.x/4.x cluster
-			noServices = true
-			// But we don't care about the Service Catalog not being enabled if
-			// it's 4.x or k8s cluster
-			if !noCsvs {
-				err = nil
-			}
-		}
-
-		if noCsvs && noServices {
-			// Neither OperatorHub nor Service Catalog is enabled on the cluster
-			return fmt.Errorf("unable to list services because neither Service Catalog nor Operator Hub is enabled in your cluster: %v", err)
-		}
-		o.services = util.FilterHiddenServices(o.services)
-	} else {
-		o.Context = genericclioptions.NewContext(cmd)
-		o.services, err = catalog.ListServices(o.Client)
-		if err != nil {
-			return fmt.Errorf("unable to list services because neither Service Catalog nor Operator Hub is enabled in your cluster: %v", err)
-		}
-
-		o.services = util.FilterHiddenServices(o.services)
 	}
+
+	o.services, err = catalog.ListSvcCatServices(o.Client)
+	if err != nil {
+		if strings.Contains(err.Error(), "the server could not find the requested resource") {
+			err = nil
+		}
+		return err
+	}
+
+	o.services = util.FilterHiddenServices(o.services)
+
 	return
 }
 
 // Validate validates the ListServicesOptions based on completed values
-func (o *ListServicesOptions) Validate() (err error) {
+func (o *ServiceOptions) Validate() (err error) {
 	return
 }
 
 // Run contains the logic for the command associated with ListServicesOptions
-func (o *ListServicesOptions) Run() (err error) {
+func (o *ServiceOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(newCatalogListOutput(&o.services, o.csvs))
 	} else {
-		if o.csvSupport {
-			if len(o.csvs.Items) > 0 {
-				util.DisplayClusterServiceVersions(o.csvs)
-			}
-		}
-		if len(o.services.Items) > 0 {
-			util.DisplayServices(o.services)
+		if len(o.csvs.Items) == 0 && len(o.services.Items) == 0 {
+			log.Info("no deployable services/operators found")
+			return
 		}
 
-		if o.csvSupport {
-			if len(o.services.Items) == 0 && len(o.csvs.Items) == 0 {
-				log.Info("no deployable services/operators found")
-			}
-		} else {
-			if len(o.services.Items) == 0 {
-				log.Info("no deployable services found")
-			}
+		if len(o.csvs.Items) > 0 {
+			util.DisplayClusterServiceVersions(o.csvs)
+		}
+
+		if len(o.services.Items) > 0 {
+			util.DisplayServices(o.services)
 		}
 	}
 	return
@@ -115,7 +86,7 @@ func (o *ListServicesOptions) Run() (err error) {
 
 // NewCmdCatalogListServices implements the odo catalog list services command
 func NewCmdCatalogListServices(name, fullName string) *cobra.Command {
-	o := NewListServicesOptions()
+	o := NewServiceOptions()
 	return &cobra.Command{
 		Use:         name,
 		Short:       "Lists all available services",

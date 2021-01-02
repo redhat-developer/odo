@@ -272,8 +272,8 @@ func ComponentExists(client *occlient.Client, componentType string, componentVer
 	return true, nil
 }
 
-// ListServices lists all the available service types
-func ListServices(client *occlient.Client) (ServiceTypeList, error) {
+// ListSvcCatServices lists all the available services provided by Service Catalog
+func ListSvcCatServices(client *occlient.Client) (ServiceTypeList, error) {
 
 	clusterServiceClasses, err := getClusterCatalogServices(client)
 	if err != nil {
@@ -298,13 +298,14 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 // ListOperatorServices fetches a list of Operators from the cluster and
 // returns only those Operators which are successfully installed on the cluster
 func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
+	var csvList olm.ClusterServiceVersionList
+
 	allCsvs, err := client.ListClusterServiceVersions()
 	if err != nil {
-		return nil, err
+		return &csvList, err
 	}
 
 	// now let's filter only those csvs which are successfully installed
-	var csvList olm.ClusterServiceVersionList
 	csvList.TypeMeta = allCsvs.TypeMeta
 	csvList.ListMeta = allCsvs.ListMeta
 	for _, csv := range allCsvs.Items {
@@ -319,7 +320,7 @@ func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionLis
 // SearchService searches for the services
 func SearchService(client *occlient.Client, name string) (ServiceTypeList, error) {
 	var result []ServiceType
-	serviceList, err := ListServices(client)
+	serviceList, err := ListSvcCatServices(client)
 	if err != nil {
 		return ServiceTypeList{}, errors.Wrap(err, "unable to list services")
 	}
