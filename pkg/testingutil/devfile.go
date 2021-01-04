@@ -302,3 +302,44 @@ func GetTestDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
 		},
 	}
 }
+
+// GetTestDevfileObjWithMultipleEndpoints returns a devfile object with multiple endpoints for testing
+func GetTestDevfileObjWithMultipleEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
+	return parser.DevfileObj{
+		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: &TestDevfileData{
+			Components: []v1.Component{
+				{
+					Name: "runtime",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-3030",
+									TargetPort: 3030,
+								},
+								{
+									Name:       "port-3000",
+									TargetPort: 3000,
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "runtime-debug",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-8080",
+									TargetPort: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}

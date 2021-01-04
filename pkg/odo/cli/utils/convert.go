@@ -321,7 +321,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 
 	maxMemory := localConfig.GetMaxMemory()
 	volumes := localConfig.GetStorage()
-	urls := localConfig.GetURL()
+	urls := localConfig.ListURLs()
 	mountSources := true
 
 	var endpoints []devfilev1.Endpoint

@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"net"
 	"reflect"
 	"sort"
@@ -13,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
 	types "github.com/docker/docker/api/types"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -75,8 +75,8 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 		return URL{}, errors.Wrap(getRouteErr, "unable to get route")
 	}
 
-	envinfoURLs := envSpecificInfo.GetURL()
-	envURLMap := make(map[string]envinfo.EnvInfoURL)
+	envinfoURLs := envSpecificInfo.ListURLs()
+	envURLMap := make(map[string]localConfigProvider.LocalURL)
 	for _, url := range envinfoURLs {
 		envURLMap[url.Name] = url
 	}
@@ -90,19 +90,19 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 			if localEndpoint.Exposure == devfilev1.NoneEndpointExposure || localEndpoint.Exposure == devfilev1.InternalEndpointExposure {
 				return URL{}, errors.New(fmt.Sprintf("the url %v is defined in devfile, but is not exposed", urlName))
 			}
-			var devfileURL envinfo.EnvInfoURL
+			var devfileURL localConfigProvider.LocalURL
 			if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
-				if envinfoURL.Kind == envinfo.DOCKER {
+				if envinfoURL.Kind == localConfigProvider.DOCKER {
 					return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Docker", urlName))
 				}
-				if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
+				if !routeSupported && envinfoURL.Kind == localConfigProvider.ROUTE {
 					return URL{}, errors.New(fmt.Sprintf("the url %v is defined with type of Route, but Route is not support in current cluster", urlName))
 				}
 				devfileURL = envinfoURL
 				devfileURL.Port = int(localEndpoint.TargetPort)
 				devfileURL.Secure = localEndpoint.Secure
 			}
-			if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+			if reflect.DeepEqual(devfileURL, localConfigProvider.LocalURL{}) {
 				// Devfile endpoint by default should create a route if no host information is provided in env.yaml
 				// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
 				if !routeSupported {
@@ -111,7 +111,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 				devfileURL.Name = urlName
 				devfileURL.Port = int(localEndpoint.TargetPort)
 				devfileURL.Secure = localEndpoint.Secure
-				devfileURL.Kind = envinfo.ROUTE
+				devfileURL.Kind = localConfigProvider.ROUTE
 			}
 			localURL := ConvertEnvinfoURL(devfileURL, componentName)
 			if remoteExist {
@@ -150,10 +150,10 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 }
 
 // Delete deletes a URL
-func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string, urlType envinfo.URLKind, isS2i bool) error {
-	if urlType == envinfo.INGRESS {
+func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string, urlType localConfigProvider.URLKind, isS2i bool) error {
+	if urlType == localConfigProvider.INGRESS {
 		return kClient.DeleteIngress(urlName)
-	} else if urlType == envinfo.ROUTE {
+	} else if urlType == localConfigProvider.ROUTE {
 		if isS2i {
 			// Namespace the URL name
 			var err error
@@ -176,7 +176,7 @@ type CreateParameters struct {
 	applicationName string
 	host            string
 	secretName      string
-	urlKind         envinfo.URLKind
+	urlKind         localConfigProvider.URLKind
 	path            string
 }
 
@@ -184,7 +184,7 @@ type CreateParameters struct {
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
 func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateParameters, isRouteSupported bool, isS2I bool) (string, error) {
 
-	if parameters.urlKind != envinfo.INGRESS && parameters.urlKind != envinfo.ROUTE {
+	if parameters.urlKind != localConfigProvider.INGRESS && parameters.urlKind != localConfigProvider.ROUTE {
 		return "", fmt.Errorf("urlKind %s is not supported for URL creation", parameters.urlKind)
 	}
 
@@ -196,7 +196,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 
 	serviceName := ""
 
-	if !isS2I && parameters.urlKind == envinfo.INGRESS && kClient != nil {
+	if !isS2I && parameters.urlKind == localConfigProvider.INGRESS && kClient != nil {
 		if parameters.host == "" {
 			return "", errors.Errorf("the host cannot be empty")
 		}
@@ -384,7 +384,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
-	localConfigURLs := localConfig.GetURL()
+	localConfigURLs := localConfig.ListURLs()
 
 	var urls []URL
 
@@ -443,7 +443,7 @@ func (s sortableURLs) Swap(i, j int) {
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalConfigProvider, containerComponents []devfilev1.Component, componentName string, routeSupported bool) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, configProvider localConfigProvider.LocalConfigProvider, containerComponents []devfilev1.Component, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := oclient.GetKubeClient().ListIngresses(labelSelector)
@@ -458,14 +458,14 @@ func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalC
 		}
 	}
 
-	envURLMap := make(map[string]envinfo.EnvInfoURL)
+	envURLMap := make(map[string]localConfigProvider.LocalURL)
 	if configProvider != nil {
-		localEnvinfoURLs := configProvider.GetURL()
+		localEnvinfoURLs := configProvider.ListURLs()
 		for _, url := range localEnvinfoURLs {
-			if url.Kind == envinfo.DOCKER {
+			if url.Kind == localConfigProvider.DOCKER {
 				continue
 			}
-			if !routeSupported && url.Kind == envinfo.ROUTE {
+			if !routeSupported && url.Kind == localConfigProvider.ROUTE {
 				continue
 			}
 			envURLMap[url.Name] = url
@@ -495,13 +495,13 @@ func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalC
 				if localEndpoint.Exposure == devfilev1.NoneEndpointExposure || localEndpoint.Exposure == devfilev1.InternalEndpointExposure {
 					continue
 				}
-				var devfileURL envinfo.EnvInfoURL
+				var devfileURL localConfigProvider.LocalURL
 				if envinfoURL, exist := envURLMap[localEndpoint.Name]; exist {
 					devfileURL = envinfoURL
 					devfileURL.Port = int(localEndpoint.TargetPort)
 					devfileURL.Secure = localEndpoint.Secure
 				}
-				if reflect.DeepEqual(devfileURL, envinfo.EnvInfoURL{}) {
+				if reflect.DeepEqual(devfileURL, localConfigProvider.LocalURL{}) {
 					// Devfile endpoint by default should create a route if no host information is provided in env.yaml
 					// If it is not openshift cluster, should ignore the endpoint entry when executing url describe/list
 					if !routeSupported {
@@ -510,7 +510,7 @@ func ListIngressAndRoute(oclient *occlient.Client, configProvider envinfo.LocalC
 					devfileURL.Name = localEndpoint.Name
 					devfileURL.Port = int(localEndpoint.TargetPort)
 					devfileURL.Secure = localEndpoint.Secure
-					devfileURL.Kind = envinfo.ROUTE
+					devfileURL.Kind = localConfigProvider.ROUTE
 				}
 				localURL := ConvertEnvinfoURL(devfileURL, componentName)
 				// use the trimmed URL Name as the key since remote URLs' names are trimmed
@@ -562,7 +562,7 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 		return URLList{}, errors.Wrap(err, "unable to list component container")
 	}
 
-	localURLs := envSpecificInfo.GetURL()
+	localURLs := envSpecificInfo.ListURLs()
 
 	var urls []URL
 
@@ -587,7 +587,7 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 			dockerURL := getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, containerJSON.Config.Labels[internalPort.Port()])
 			for _, localurl := range localURLs {
 				// only checks for Docker URLs
-				if localurl.Kind != envinfo.DOCKER {
+				if localurl.Kind != localConfigProvider.DOCKER {
 					continue
 				}
 				if localurl.Port == dockerURL.Spec.Port && localurl.ExposedPort == dockerURL.Spec.ExternalPort {
@@ -611,7 +611,7 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 	// if the config does not exist in Docker container, then the URL is <Not Pushed>
 	for _, localurl := range localURLs {
 		// only checks for Docker URLs
-		if localurl.Kind != envinfo.DOCKER {
+		if localurl.Kind != localConfigProvider.DOCKER {
 			continue
 		}
 		var found = false
@@ -650,7 +650,7 @@ func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 }
 
 // ConvertConfigURL converts ConfigURL to URL
-func ConvertConfigURL(configURL envinfo.EnvInfoURL) URL {
+func ConvertConfigURL(configURL localConfigProvider.LocalURL) URL {
 	return URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
@@ -662,19 +662,19 @@ func ConvertConfigURL(configURL envinfo.EnvInfoURL) URL {
 		Spec: URLSpec{
 			Port:   configURL.Port,
 			Secure: configURL.Secure,
-			Kind:   envinfo.ROUTE,
+			Kind:   localConfigProvider.ROUTE,
 			Path:   "/",
 		},
 	}
 }
 
 // ConvertEnvinfoURL converts EnvinfoURL to URL
-func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
+func ConvertEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName string) URL {
 	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
 	// default to route kind if none is provided
 	kind := envinfoURL.Kind
 	if kind == "" {
-		kind = envinfo.ROUTE
+		kind = localConfigProvider.ROUTE
 	}
 	url := URL{
 		TypeMeta: metav1.TypeMeta{
@@ -690,7 +690,7 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 			Kind:   kind,
 		},
 	}
-	if kind == envinfo.INGRESS {
+	if kind == localConfigProvider.INGRESS {
 		url.Spec.Host = hostString
 		if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
 			url.Spec.TLSSecret = envinfoURL.TLSSecret
@@ -730,47 +730,6 @@ func Exists(client *occlient.Client, urlName string, componentName string, appli
 	return false, nil
 }
 
-// GetURLName returns a url name from the component name and the given port number
-func GetURLName(componentName string, componentPort int) string {
-	if componentPort == -1 {
-		return componentName
-	}
-	return fmt.Sprintf("%v-%v", componentName, componentPort)
-}
-
-// GetValidPortNumber checks if the given port number is a valid component port or not
-// if port number is not provided and the component is a single port component, the component port is returned
-// port number is -1 if the user does not specify any port
-func GetValidPortNumber(componentName string, portNumber int, portList []string) (int, error) {
-	var componentPorts []int
-	for _, p := range portList {
-		port, err := strconv.Atoi(strings.Split(p, "/")[0])
-		if err != nil {
-			return port, err
-		}
-		componentPorts = append(componentPorts, port)
-	}
-	// port number will be -1 if the user doesn't specify any port
-	if portNumber == -1 {
-		switch {
-		case len(componentPorts) > 1:
-			return portNumber, errors.Errorf("port for the component %s is required as it exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
-		case len(componentPorts) == 1:
-			return componentPorts[0], nil
-		default:
-			return portNumber, errors.Errorf("no port is exposed by the component %s", componentName)
-		}
-	} else {
-		for _, port := range componentPorts {
-			if portNumber == port {
-				return portNumber, nil
-			}
-		}
-	}
-
-	return portNumber, fmt.Errorf("given port %d is not exposed on given component, available ports are: %s", portNumber, strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
-}
-
 // GetValidExposedPortNumber checks if the given exposed port number is a valid port or not
 // if exposed port is not provided, a random free port will be generated and returned
 func GetValidExposedPortNumber(exposedPort int) (int, error) {
@@ -797,7 +756,7 @@ func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: envinfo.ROUTE},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: localConfigProvider.ROUTE},
 	}
 
 }
@@ -817,7 +776,7 @@ func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
 	url := URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: envinfo.INGRESS},
+		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: localConfigProvider.INGRESS},
 	}
 	if i.Spec.TLS != nil {
 		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
@@ -885,8 +844,8 @@ func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP s
 type PushParameters struct {
 	ComponentName             string
 	ApplicationName           string
-	ConfigURLs                []envinfo.EnvInfoURL
-	EnvURLS                   []envinfo.EnvInfoURL
+	ConfigURLs                []localConfigProvider.LocalURL
+	EnvURLS                   []localConfigProvider.LocalURL
 	IsRouteSupported          bool
 	IsExperimentalModeEnabled bool
 	ContainerComponents       []devfilev1.Component
@@ -900,9 +859,9 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	// in case the component is a s2i one
 	// kClient will be nil
 	if !parameters.IsS2I && kClient != nil {
-		envURLMap := make(map[string]envinfo.EnvInfoURL)
+		envURLMap := make(map[string]localConfigProvider.LocalURL)
 		for _, url := range parameters.EnvURLS {
-			if url.Kind == envinfo.DOCKER {
+			if url.Kind == localConfigProvider.DOCKER {
 				continue
 			}
 			envURLMap[url.Name] = url
@@ -945,7 +904,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 							Spec: URLSpec{
 								Port:   int(endpoint.TargetPort),
 								Secure: secure,
-								Kind:   envinfo.ROUTE,
+								Kind:   localConfigProvider.ROUTE,
 								Path:   path,
 							},
 						}
@@ -960,7 +919,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				Spec: URLSpec{
 					Port:   url.Port,
 					Secure: url.Secure,
-					Kind:   envinfo.ROUTE,
+					Kind:   localConfigProvider.ROUTE,
 					Path:   "/",
 				},
 			}
@@ -980,7 +939,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				Spec: URLSpec{
 					Host:   url.Spec.Host,
 					Port:   url.Spec.Port,
-					Kind:   envinfo.INGRESS,
+					Kind:   localConfigProvider.INGRESS,
 					Secure: url.Spec.Secure,
 					Path:   url.Spec.Path,
 				},
@@ -997,7 +956,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			urlCLUSTER[urlRoute.Name] = URL{
 				Spec: URLSpec{
 					Port:   urlRoute.Spec.Port,
-					Kind:   envinfo.ROUTE,
+					Kind:   localConfigProvider.ROUTE,
 					Secure: urlRoute.Spec.Secure,
 					Path:   urlRoute.Spec.Path,
 				},
@@ -1015,7 +974,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		if ok {
 			// since the host stored in an ingress
 			// is the combination of name and host of the url
-			if val.Spec.Kind == envinfo.INGRESS {
+			if val.Spec.Kind == localConfigProvider.INGRESS {
 				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
 			}
 			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
@@ -1025,7 +984,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		}
 
 		if !ok || configMismatch {
-			if urlSpec.Spec.Kind == envinfo.INGRESS && kClient == nil {
+			if urlSpec.Spec.Kind == localConfigProvider.INGRESS && kClient == nil {
 				continue
 			}
 			// delete the url
@@ -1050,7 +1009,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	for urlName, urlInfo := range urlLOCAL {
 		_, ok := urlCLUSTER[urlName]
 		if !ok {
-			if urlInfo.Spec.Kind == envinfo.INGRESS && kClient == nil {
+			if urlInfo.Spec.Kind == localConfigProvider.INGRESS && kClient == nil {
 				continue
 			}
 			createParameters := CreateParameters{
@@ -1078,41 +1037,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	return nil
-}
-
-// AddEndpointInDevfile writes the provided endpoint information into devfile
-func AddEndpointInDevfile(devObj parser.DevfileObj, endpoint devfilev1.Endpoint, container string) error {
-	components := devObj.Data.GetComponents()
-	for _, component := range components {
-		if component.Container != nil && component.Name == container {
-			component.Container.Endpoints = append(component.Container.Endpoints, endpoint)
-			devObj.Data.UpdateComponent(component)
-			break
-		}
-	}
-	return devObj.WriteYamlDevfile()
-}
-
-// RemoveEndpointInDevfile deletes the specific endpoint information from devfile
-func RemoveEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
-	found := false
-	for _, component := range devObj.Data.GetDevfileContainerComponents() {
-		for index, enpoint := range component.Container.Endpoints {
-			if enpoint.Name == urlName {
-				component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)
-				devObj.Data.UpdateComponent(component)
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("the URL %s does not exist", urlName)
-	}
-	return devObj.WriteYamlDevfile()
 }
 
 // getValidURLName returns valid URL resource name for Kubernetes based cluster

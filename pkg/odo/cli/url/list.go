@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -155,7 +156,7 @@ func (o *URLListOptions) Run() (err error) {
 				// are there changes between local and cluster states?
 				outOfSync := false
 				for _, u := range urls.Items {
-					if u.Spec.Kind == envinfo.ROUTE {
+					if u.Spec.Kind == localConfigProvider.ROUTE {
 						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 					} else {
 						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)

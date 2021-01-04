@@ -1,7 +1,13 @@
 package genericclioptions
 
 import (
+	"fmt"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/validate"
+	"github.com/openshift/odo/pkg/localConfigProvider"
+	odoutil "github.com/openshift/odo/pkg/util"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -31,15 +37,100 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	Client          *occlient.Client
-	command         *cobra.Command
-	Project         string
-	Application     string
-	cmp             string
-	OutputFlag      string
-	LocalConfigInfo *config.LocalConfigInfo
-	KClient         *kclient.Client
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
+	ComponentContext    string
+	Client              *occlient.Client
+	command             *cobra.Command
+	Project             string
+	Application         string
+	cmp                 string
+	OutputFlag          string
+	LocalConfigInfo     *config.LocalConfigInfo
+	KClient             *kclient.Client
+	EnvSpecificInfo     *envinfo.EnvSpecificInfo
+	LocalConfigProvider localConfigProvider.LocalConfigProvider
+}
+
+// CreateParameters defines the options which can be provided while creating the context
+type CreateParameters struct {
+	Cmd              *cobra.Command
+	DevfilePath      string
+	ComponentContext string
+	IsNow            bool
+}
+
+// New creates a context based on the given parameters
+func New(parameters CreateParameters, toggles ...bool) (context *Context, err error) {
+	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
+
+	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
+	if isDevfile {
+		context = NewDevfileContext(parameters.Cmd)
+		context.ComponentContext = parameters.ComponentContext
+
+		err = context.InitEnvInfoFromContext()
+		if err != nil {
+			return nil, err
+		}
+
+		// Parse devfile and validate
+		devObj, err := devfile.ParseAndValidate(parameters.DevfilePath)
+		if err != nil {
+			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
+		}
+		err = validate.ValidateDevfileData(devObj.Data)
+		if err != nil {
+			return context, err
+		}
+
+		context.EnvSpecificInfo.SetDevfileObj(devObj)
+		context.LocalConfigProvider = context.EnvSpecificInfo
+	} else {
+		if parameters.IsNow {
+			context = NewContextCreatingAppIfNeeded(parameters.Cmd)
+			context.ComponentContext = parameters.ComponentContext
+		} else {
+			context = NewContext(parameters.Cmd)
+			context.ComponentContext = parameters.ComponentContext
+		}
+
+		context = NewContext(parameters.Cmd)
+		context.ComponentContext = parameters.ComponentContext
+
+		err = context.InitConfigFromContext()
+		if err != nil {
+			return nil, err
+		}
+		context.LocalConfigProvider = context.LocalConfigInfo
+	}
+	return context, nil
+}
+
+//InitConfigFromContext initializes localconfiginfo from the context
+func (o *Context) InitConfigFromContext() error {
+	var err error
+	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.ComponentContext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//InitEnvInfoFromContext initializes envinfo from the context
+func (o *Context) InitEnvInfoFromContext() (err error) {
+	o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.ComponentContext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// completeDevfilePath completes the devfile path from context
+func completeDevfilePath(componentContext, devfilePath string) string {
+	if len(devfilePath) > 0 {
+		return filepath.Join(componentContext, devfilePath)
+	} else {
+		return filepath.Join(componentContext, "devfile.yaml")
+	}
 }
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command

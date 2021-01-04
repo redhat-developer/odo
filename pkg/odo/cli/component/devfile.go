@@ -8,6 +8,7 @@ import (
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
@@ -132,7 +133,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
-	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())
+	warnIfURLSInvalid(po.EnvSpecificInfo.ListURLs())
 
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
@@ -241,13 +242,13 @@ func (to *TestOptions) RunTestCommand() error {
 	return devfileHandler.Test(to.commandName, to.show)
 }
 
-func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
+func warnIfURLSInvalid(url []localConfigProvider.LocalURL) {
 	// warnIfURLSInvalid checks if env.yaml contains a valid URL for the current pushtarget
 	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
 	dockerURLExists := false
 	kubeURLExists := false
 	for _, element := range url {
-		if element.Kind == envinfo.DOCKER {
+		if element.Kind == localConfigProvider.DOCKER {
 			dockerURLExists = true
 		} else {
 			kubeURLExists = true

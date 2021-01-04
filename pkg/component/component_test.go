@@ -16,7 +16,7 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -40,7 +40,7 @@ func TestGetComponentFrom(t *testing.T) {
 		name          string
 		isEnvInfo     bool
 		componentType string
-		envURL        []envinfo.EnvInfoURL
+		envURL        []localConfigProvider.LocalURL
 		cmpSetting    cmpSetting
 		want          Component
 	}{
@@ -48,7 +48,7 @@ func TestGetComponentFrom(t *testing.T) {
 			name:          "Case 1: Get component when env info file exists",
 			isEnvInfo:     true,
 			componentType: "nodejs",
-			envURL: []envinfo.EnvInfoURL{
+			envURL: []localConfigProvider.LocalURL{
 				{
 					Name: "url1",
 				},
@@ -78,7 +78,7 @@ func TestGetComponentFrom(t *testing.T) {
 			name:          "Case 2: Get component when env info file does not exists",
 			isEnvInfo:     false,
 			componentType: "nodejs",
-			envURL: []envinfo.EnvInfoURL{
+			envURL: []localConfigProvider.LocalURL{
 				{
 					Name: "url2",
 				},
@@ -99,7 +99,7 @@ func TestGetComponentFrom(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockLocalConfigProvider := envinfo.NewMockLocalConfigProvider(ctrl)
+			mockLocalConfigProvider := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 
 			mockLocalConfigProvider.EXPECT().Exists().Return(tt.isEnvInfo)
 
@@ -120,7 +120,7 @@ func TestGetComponentFrom(t *testing.T) {
 					Ports: []string{fmt.Sprintf("%d", tt.cmpSetting.debugPort)},
 				}
 
-				mockLocalConfigProvider.EXPECT().GetURL().Return(tt.envURL)
+				mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.envURL)
 
 				if len(tt.envURL) > 0 {
 					for _, url := range tt.envURL {
@@ -867,7 +867,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 					Type:   localExistingConfigInfoValue.GetType(),
 					Source: localExistingConfigInfoValue.GetSourceLocation(),
 					URL: []string{
-						localExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, localExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
+						localExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, localExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
 					},
 					Storage: []string{
 						localExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,
@@ -903,7 +903,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 					Type:   gitExistingConfigInfoValue.GetType(),
 					Source: gitExistingConfigInfoValue.GetSourceLocation(),
 					URL: []string{
-						gitExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, gitExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
+						gitExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, gitExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
 					},
 					Storage: []string{
 						gitExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,
