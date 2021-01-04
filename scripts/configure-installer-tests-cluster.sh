@@ -40,5 +40,3 @@ done
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
 
 sh $AUTH_SCRIPT
-
-reset_kubeconfig
