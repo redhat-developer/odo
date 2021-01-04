@@ -53,8 +53,8 @@ var (
 	  `)
 )
 
-// URLCreateOptions encapsulates the options for the odo url create command
-type URLCreateOptions struct {
+// CreateOptions encapsulates the options for the odo url create command
+type CreateOptions struct {
 	*clicomponent.PushOptions
 	urlName     string
 	urlPort     int
@@ -69,13 +69,13 @@ type URLCreateOptions struct {
 	url         localConfigProvider.LocalURL
 }
 
-// NewURLCreateOptions creates a new URLCreateOptions instance
-func NewURLCreateOptions() *URLCreateOptions {
-	return &URLCreateOptions{PushOptions: clicomponent.NewPushOptions()}
+// NewURLCreateOptions creates a new CreateOptions instance
+func NewURLCreateOptions() *CreateOptions {
+	return &CreateOptions{PushOptions: clicomponent.NewPushOptions()}
 }
 
-// Complete completes URLCreateOptions after they've been Created
-func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
+// Complete completes CreateOptions after they've been Created
+func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
 		DevfilePath:      o.DevfilePath,
@@ -137,8 +137,8 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 	return
 }
 
-// Validate validates the URLCreateOptions based on completed values
-func (o *URLCreateOptions) Validate() (err error) {
+// Validate validates the CreateOptions based on completed values
+func (o *CreateOptions) Validate() (err error) {
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
@@ -173,7 +173,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url create command
-func (o *URLCreateOptions) Run() (err error) {
+func (o *CreateOptions) Run() (err error) {
 
 	// create the URL and write it to the local config
 	err = o.Context.LocalConfigProvider.CreateURL(o.url)

@@ -34,9 +34,7 @@ type LocalURL struct {
 }
 
 // LocalConfigProvider is an interface which all local config providers need to implement
-// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
-// The reason this interface is declared here instead of config package is because
-// some day local config would get deprecated and hence to keep the interfaces in the new package
+// currently for openshift there is localConfigInfo and for devfile its EnvInfo + devfile.yaml
 type LocalConfigProvider interface {
 	GetApplication() string
 	GetName() string

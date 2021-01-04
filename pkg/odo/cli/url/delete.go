@@ -23,21 +23,21 @@ var (
 	`)
 )
 
-// URLDeleteOptions encapsulates the options for the odo url delete command
-type URLDeleteOptions struct {
+// DeleteOptions encapsulates the options for the odo url delete command
+type DeleteOptions struct {
 	*clicomponent.PushOptions
 	urlName            string
 	urlForceDeleteFlag bool
 	now                bool
 }
 
-// NewURLDeleteOptions creates a new URLDeleteOptions instance
-func NewURLDeleteOptions() *URLDeleteOptions {
-	return &URLDeleteOptions{PushOptions: clicomponent.NewPushOptions()}
+// NewURLDeleteOptions creates a new DeleteOptions instance
+func NewURLDeleteOptions() *DeleteOptions {
+	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions()}
 }
 
-// Complete completes URLDeleteOptions after they've been Deleted
-func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+// Complete completes DeleteOptions after they've been Deleted
+func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
 		DevfilePath:      o.DevfilePath,
@@ -59,8 +59,8 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 }
 
-// Validate validates the URLDeleteOptions based on completed values
-func (o *URLDeleteOptions) Validate() (err error) {
+// Validate validates the DeleteOptions based on completed values
+func (o *DeleteOptions) Validate() (err error) {
 	url := o.Context.LocalConfigProvider.GetURL(o.urlName)
 	if url == nil {
 		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.LocalConfigProvider.GetName())
@@ -80,7 +80,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url delete command
-func (o *URLDeleteOptions) Run() (err error) {
+func (o *DeleteOptions) Run() (err error) {
 	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
 		err := o.LocalConfigProvider.DeleteURL(o.urlName)
 		if err != nil {

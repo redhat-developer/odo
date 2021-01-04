@@ -84,16 +84,15 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 
 		context.EnvSpecificInfo.SetDevfileObj(devObj)
 		context.LocalConfigProvider = context.EnvSpecificInfo
-	} else if parameters.IsNow {
-		context = NewContextCreatingAppIfNeeded(parameters.Cmd)
-		context.ComponentContext = parameters.ComponentContext
-
-		err = context.InitConfigFromContext()
-		if err != nil {
-			return nil, err
-		}
-		context.LocalConfigProvider = context.LocalConfigInfo
 	} else {
+		if parameters.IsNow {
+			context = NewContextCreatingAppIfNeeded(parameters.Cmd)
+			context.ComponentContext = parameters.ComponentContext
+		} else {
+			context = NewContext(parameters.Cmd)
+			context.ComponentContext = parameters.ComponentContext
+		}
+
 		context = NewContext(parameters.Cmd)
 		context.ComponentContext = parameters.ComponentContext
 
