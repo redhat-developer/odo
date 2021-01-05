@@ -14,6 +14,7 @@ import (
 // DisplayServices displays the specified services
 func DisplayServices(services catalog.ServiceTypeList) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(w) // this newline helps when cluster has both Operator and Service Catalog enabled
 	log.Info("Services available through Service Catalog")
 	fmt.Fprintln(w, "NAME", "\t", "PLANS")
 	for _, service := range services.Items {
@@ -71,7 +72,6 @@ func DisplayClusterServiceVersions(csvs *olm.ClusterServiceVersionList) {
 	for _, csv := range csvs.Items {
 		fmt.Fprintln(w, csv.ObjectMeta.Name, "\t", CsvOperators(csv.Spec.CustomResourceDefinitions))
 	}
-	fmt.Fprintln(w) // this newline helps when cluster has both Operator and Service Catalog enabled
 	w.Flush()
 }
 
