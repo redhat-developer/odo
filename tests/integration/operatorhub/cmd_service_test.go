@@ -444,9 +444,36 @@ spec:
 			// verify that sbr is deleted
 			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
+		})
 
-			// next, delete a link outside of odo (using oc) and ensure that it throws an error
-			helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
+		It("should fail if we delete a link outside of odo (using oc)", func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
+
+			componentName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", componentName)
+			helper.CmdShouldPass("odo", "push")
+
+			// start the Operator backed service first
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+
+			// now verify if the pods for the operator have started
+			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			// Look for pod with example name because that's the name etcd will give to the pods.
+			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
+
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+			})
+
+			stdOut := helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
+			helper.CmdShouldPass("odo", "push")
+
 			sbrName := strings.Join([]string{componentName, "etcdcluster", "example"}, "-")
 			helper.CmdShouldPass("oc", "delete", fmt.Sprintf("ServiceBinding/%s", sbrName))
 			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
