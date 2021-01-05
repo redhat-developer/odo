@@ -18,6 +18,7 @@ require (
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe
 	github.com/golang/mock v1.4.4
+	github.com/gosimple/slug v1.9.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/imdario/mergo v0.3.11 // indirect

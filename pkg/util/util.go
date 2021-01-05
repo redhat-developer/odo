@@ -317,7 +317,7 @@ func GetDNS1123Name(str string) string {
 	name := strings.ToLower(removeNonAlphaSuffix(removeNonAlphaPrefix(withReplacedChars)))
 	// if the name is all numeric
 	if len(str) != 0 && len(name) == 0 {
-		name = strings.ToLower(removeNonAlphaSuffix(removeNonAlphaPrefix("x" + str)))
+		name = strings.ToLower(removeNonAlphaSuffix(removeNonAlphaPrefix("x" + withReplacedChars)))
 	}
 	return name
 }

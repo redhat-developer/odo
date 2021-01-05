@@ -84,12 +84,15 @@ func componentTests(args ...string) {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", ".", "--app", "testing")...)
 			componentName := helper.GetConfigValueWithContext("Name", commonVar.Context)
-			Expect(componentName).To(ContainSubstring("nodejs-" + dir))
+			Expect(componentName).To(ContainSubstring("nodejs"))
+			Expect(componentName).To(ContainSubstring(dir))
+
 			helper.ValidateLocalCmpExist(commonVar.Context, "Type,nodejs", "Name,"+componentName, "Application,testing")
 			helper.DeleteDir(filepath.Join(commonVar.Context, ".odo"))
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
 			newComponentName := helper.GetConfigValueWithContext("Name", commonVar.Context)
-			Expect(newComponentName).To(ContainSubstring("nodejs-" + dir))
+			Expect(newComponentName).To(ContainSubstring("nodejs"))
+			Expect(newComponentName).To(ContainSubstring(dir))
 		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
