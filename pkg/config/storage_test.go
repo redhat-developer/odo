@@ -5,6 +5,8 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/localConfigProvider"
 )
 
 func TestLocalConfigInfo_StorageCreate(t *testing.T) {
@@ -38,7 +40,7 @@ func TestLocalConfigInfo_StorageCreate(t *testing.T) {
 			storagePath: "/data-1",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 							Path: "/data",
@@ -58,7 +60,12 @@ func TestLocalConfigInfo_StorageCreate(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			_, err = cfg.StorageCreate(tt.storageName, tt.storageSize, tt.storagePath)
+			err = cfg.CreateStorage(localConfigProvider.LocalStorage{
+				Name: tt.storageName,
+				Size: tt.storageSize,
+				Path: tt.storagePath,
+			})
+
 			if err != nil {
 				t.Error(err)
 			}
@@ -88,35 +95,39 @@ func TestLocalConfigInfo_StorageExists(t *testing.T) {
 		name           string
 		storageName    string
 		existingConfig LocalConfig
-		storageExists  bool
+		want           localConfigProvider.LocalStorage
 	}{
 		{
 			name:        "case 1: storage present",
 			storageName: "example-storage-1",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-1",
+							Size: "5Gi",
+							Path: "/data",
 						},
 					},
 				},
 			},
-			storageExists: true,
+			want: localConfigProvider.LocalStorage{
+				Name: "example-storage-1",
+			},
 		},
 		{
 			name:        "case 2: storage present",
 			storageName: "example-storage-1",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 						},
 					},
 				},
 			},
-			storageExists: false,
+			want: localConfigProvider.LocalStorage{},
 		},
 	}
 
@@ -128,9 +139,9 @@ func TestLocalConfigInfo_StorageExists(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			exists := cfg.StorageExists(tt.storageName)
-			if exists != tt.storageExists {
-				t.Errorf("wrong value of exists, expected: %v, unexpected: %v", tt.storageExists, exists)
+			gotStorage := cfg.GetStorage(tt.storageName)
+			if reflect.DeepEqual(gotStorage, tt.want) {
+				t.Errorf("wrong value of exists, expected: %v, unexpected: %v", tt.want, gotStorage)
 			}
 		})
 	}
@@ -152,7 +163,7 @@ func TestLocalConfigInfo_StorageList(t *testing.T) {
 			name: "case 1: one storage exists",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 							Path: "/data-0",
@@ -166,7 +177,7 @@ func TestLocalConfigInfo_StorageList(t *testing.T) {
 			name: "case 2: more than one storage exists",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 							Path: "/data-0",
@@ -185,7 +196,7 @@ func TestLocalConfigInfo_StorageList(t *testing.T) {
 			name: "case 3: no storage exists",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{},
+					Storage: &[]localConfigProvider.LocalStorage{},
 				},
 			},
 		},
@@ -199,10 +210,7 @@ func TestLocalConfigInfo_StorageList(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			storageList, err := cfg.StorageList()
-			if err != nil {
-				t.Error(err)
-			}
+			storageList := cfg.ListStorage()
 
 			if len(*tt.existingConfig.componentSettings.Storage) != len(storageList) {
 				t.Errorf("length mismatch, expected: %v, unexpected: %v", len(*tt.existingConfig.componentSettings.Storage), len(storageList))
@@ -233,31 +241,44 @@ func TestLocalConfigInfo_ValidateStorage(t *testing.T) {
 	defer tempConfigFile.Close()
 	os.Setenv(localConfigEnvName, tempConfigFile.Name())
 
+	type args struct {
+		storage localConfigProvider.LocalStorage
+	}
+
 	tests := []struct {
 		name           string
-		storageName    string
-		storagePath    string
+		args           args
 		existingConfig LocalConfig
 		wantError      bool
 	}{
 		{
-			name:        "case 1: no storage present in config",
-			storageName: "example-storage-0",
-			storagePath: "/data",
+			name: "case 1: no storage present in config",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+					Size: "1Gi",
+					Path: "/data",
+				},
+			},
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{},
+					Storage: &[]localConfigProvider.LocalStorage{},
 				},
 			},
 			wantError: false,
 		},
 		{
-			name:        "case 2: storage present in config with no conflict",
-			storageName: "example-storage-0",
-			storagePath: "/data",
+			name: "case 2: storage present in config with no conflict",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+					Path: "/data",
+					Size: "5Gi",
+				},
+			},
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-1",
 							Path: "/data-1",
@@ -269,12 +290,17 @@ func TestLocalConfigInfo_ValidateStorage(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:        "case 3: storage present in config and with path conflict",
-			storageName: "example-storage-0",
-			storagePath: "/data",
+			name: "case 3: storage present in config and with path conflict",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+					Path: "/data",
+					Size: "1Gi",
+				},
+			},
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-1",
 							Path: "/data",
@@ -286,12 +312,16 @@ func TestLocalConfigInfo_ValidateStorage(t *testing.T) {
 			wantError: true,
 		},
 		{
-			name:        "case 4: storage present in config and with name conflict",
-			storageName: "example-storage-0",
-			storagePath: "/data",
+			name: "case 4: storage present in config and with name conflict",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+					Path: "/data",
+				},
+			},
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 							Path: "/data-1",
@@ -303,18 +333,66 @@ func TestLocalConfigInfo_ValidateStorage(t *testing.T) {
 			wantError: true,
 		},
 		{
-			name:        "case 5: storage present in config and with name and path conflicts",
-			storageName: "example-storage-0",
-			storagePath: "/data",
+			name: "case 5: storage present in config and with name and path conflicts",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+					Path: "/data",
+				},
+			},
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 							Path: "/data",
 							Size: "100M",
 						},
 					},
+				},
+			},
+			wantError: true,
+		},
+		{
+			name: "case 6: No size provided in the storage",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+					Path: "/data",
+				},
+			},
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					Storage: &[]localConfigProvider.LocalStorage{},
+				},
+			},
+			wantError: true,
+		},
+		{
+			name: "case 7: No path provided in the storage",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+					Size: "1Gi",
+				},
+			},
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					Storage: &[]localConfigProvider.LocalStorage{},
+				},
+			},
+			wantError: true,
+		},
+		{
+			name: "case 8: No path and size provided in the storage",
+			args: args{
+				storage: localConfigProvider.LocalStorage{
+					Name: "example-storage-0",
+				},
+			},
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					Storage: &[]localConfigProvider.LocalStorage{},
 				},
 			},
 			wantError: true,
@@ -329,7 +407,7 @@ func TestLocalConfigInfo_ValidateStorage(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			err = cfg.ValidateStorage(tt.storageName, tt.storagePath)
+			err = cfg.ValidateStorage(tt.args.storage)
 
 			if !tt.wantError && err != nil {
 				t.Errorf("no error expected,but got error: %v", err)
@@ -361,7 +439,7 @@ func TestLocalConfigInfo_StorageDelete(t *testing.T) {
 			storageName: "example-storage-0",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 						},
@@ -375,7 +453,7 @@ func TestLocalConfigInfo_StorageDelete(t *testing.T) {
 			storageName: "example-storage-0",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-1",
 						},
@@ -394,7 +472,7 @@ func TestLocalConfigInfo_StorageDelete(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			err = cfg.StorageDelete(tt.storageName)
+			err = cfg.DeleteStorage(tt.storageName)
 
 			if !tt.wantError && err != nil {
 				t.Errorf("no error expected,but got error: %v", err)
@@ -417,7 +495,7 @@ func TestLocalConfigInfo_StorageDelete(t *testing.T) {
 	}
 }
 
-func TestLocalConfigInfo_GetMountPath(t *testing.T) {
+func TestLocalConfigInfo_GetStorageMountPath(t *testing.T) {
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
@@ -436,7 +514,7 @@ func TestLocalConfigInfo_GetMountPath(t *testing.T) {
 			storageName: "example-storage-0",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{},
+					Storage: &[]localConfigProvider.LocalStorage{},
 				},
 			},
 			wantPath: "",
@@ -446,7 +524,7 @@ func TestLocalConfigInfo_GetMountPath(t *testing.T) {
 			storageName: "example-storage-0",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 							Path: "/data",
@@ -461,7 +539,7 @@ func TestLocalConfigInfo_GetMountPath(t *testing.T) {
 			storageName: "example-storage-1",
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					Storage: &[]ComponentStorageSettings{
+					Storage: &[]localConfigProvider.LocalStorage{
 						{
 							Name: "example-storage-0",
 							Path: "/data",
@@ -485,7 +563,10 @@ func TestLocalConfigInfo_GetMountPath(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			path := cfg.GetMountPath(tt.storageName)
+			path, err := cfg.GetStorageMountPath(tt.storageName)
+			if err != nil {
+				t.Error(err)
+			}
 
 			if path != tt.wantPath {
 				t.Errorf("the value of returned path is different, expected: %v, got: %v", tt.wantPath, path)

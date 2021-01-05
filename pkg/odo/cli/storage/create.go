@@ -2,12 +2,7 @@ package storage
 
 import (
 	"fmt"
-	"path/filepath"
-
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile"
-	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/validate"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/component"
@@ -30,121 +25,69 @@ var (
 	`)
 )
 
-type StorageCreateOptions struct {
+type CreateOptions struct {
 	storageName      string
 	storageSize      string
 	storagePath      string
 	componentContext string
 
-	devfilePath   string
-	isDevfile     bool
-	componentName string
+	storage localConfigProvider.LocalStorage
 	*genericclioptions.Context
 }
 
-// NewStorageCreateOptions creates a new StorageCreateOptions instance
-func NewStorageCreateOptions() *StorageCreateOptions {
-	return &StorageCreateOptions{devfilePath: component.DevfilePath}
+// NewStorageCreateOptions creates a new CreateOptions instance
+func NewStorageCreateOptions() *CreateOptions {
+	return &CreateOptions{}
 }
 
-// Complete completes StorageCreateOptions after they've been created
-func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.devfilePath = filepath.Join(o.componentContext, o.devfilePath)
-	o.isDevfile = util.CheckPathExists(o.devfilePath)
+// Complete completes CreateOptions after they've been created
+func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+		Cmd:              cmd,
+		DevfilePath:      component.DevfilePath,
+		ComponentContext: o.componentContext,
+	})
 
-	if o.isDevfile {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
-		o.componentName = o.EnvSpecificInfo.GetName()
-	} else {
-		o.Context = genericclioptions.NewContext(cmd)
-		o.componentName = o.LocalConfigInfo.GetName()
-
-		if o.storageSize == "" || o.storagePath == "" {
-			return fmt.Errorf("\"size\" and \"path\" flags are required for s2i components")
-		}
+	if err != nil {
+		return err
 	}
 
 	if len(args) != 0 {
 		o.storageName = args[0]
 	} else {
-		o.storageName = fmt.Sprintf("%s-%s", o.componentName, util.GenerateRandomString(4))
+		o.storageName = fmt.Sprintf("%s-%s", o.Context.LocalConfigProvider.GetName(), util.GenerateRandomString(4))
 	}
 
-	o.applyDevfileStorageDefault()
+	o.storage = localConfigProvider.LocalStorage{
+		Name: o.storageName,
+		Size: o.storageSize,
+		Path: o.storagePath,
+	}
+
+	o.Context.LocalConfigProvider.CompleteStorage(&o.storage)
 
 	return
 }
 
-func (o *StorageCreateOptions) applyDevfileStorageDefault() {
-	if o.storageSize == "" {
-		o.storageSize = adapterCommon.DefaultVolumeSize
-	}
-	if o.storagePath == "" {
-		// acc to the devfile schema, if the mount path is absent; it will be mounted at the dir with the mount name
-		o.storagePath = "/" + o.storageName
-	}
-}
-
-// Validate validates the StorageCreateOptions based on completed values
-func (o *StorageCreateOptions) Validate() (err error) {
-	if o.isDevfile {
-		return
-	}
-	// validate storage path
-	return o.LocalConfigInfo.ValidateStorage(o.storageName, o.storagePath)
-}
-
-func (o *StorageCreateOptions) devfileRun() error {
-	devFile, err := devfile.ParseAndValidate(o.devfilePath)
-	if err != nil {
-		return err
-	}
-	err = validate.ValidateDevfileData(devFile.Data)
-	if err != nil {
-		return err
-	}
-
-	err = devFile.Data.AddVolume(devfilev1.Component{
-		Name: o.storageName,
-		ComponentUnion: devfilev1.ComponentUnion{
-			Volume: &devfilev1.VolumeComponent{
-				Volume: devfilev1.Volume{
-					Size: o.storageSize,
-				},
-			},
-		},
-	}, o.storagePath)
-
-	if err != nil {
-		return err
-	}
-	err = devFile.WriteYamlDevfile()
-	if err != nil {
-		return err
-	}
-	return nil
+// Validate validates the CreateOptions based on completed values
+func (o *CreateOptions) Validate() (err error) {
+	// validate the storage
+	return o.LocalConfigInfo.ValidateStorage(o.storage)
 }
 
 // Run contains the logic for the odo storage create command
-func (o *StorageCreateOptions) Run() (err error) {
-	if o.isDevfile {
-		err := o.devfileRun()
-		if err != nil {
-			return err
-		}
-	} else {
-		_, err := o.LocalConfigInfo.StorageCreate(o.storageName, o.storageSize, o.storagePath)
-		if err != nil {
-			return err
-		}
+func (o *CreateOptions) Run() (err error) {
+	err = o.Context.LocalConfigProvider.CreateStorage(o.storage)
+	if err != nil {
+		return err
 	}
 
-	storageResultMachineReadable := storage.GetMachineReadableFormat(o.storageName, o.storageSize, o.storagePath)
+	storageResultMachineReadable := storage.GetMachineReadableFormat(o.storage.Name, o.storage.Size, o.storage.Path)
 
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
-		log.Successf("Added storage %v to %v", o.storageName, o.componentName)
+		log.Successf("Added storage %v to %v", o.storageName, o.Context.LocalConfigProvider.GetName())
 
 		log.Italic("\nPlease use `odo push` command to make the storage accessible to the component")
 	}

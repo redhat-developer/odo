@@ -109,8 +109,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		} else {
 			localConfig, err := config.New()
 			LogErrorAndExit(err, "")
-			storageLocal, err := localConfig.StorageList()
-			LogErrorAndExit(err, "")
+			storageLocal := localConfig.ListStorage()
 			storages = storage.ConvertListLocalToMachine(storageLocal)
 
 		}

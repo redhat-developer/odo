@@ -12,7 +12,7 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 	componentType := "nodejs"
 	sourceLocation := "./"
 
-	storageValue := []ComponentStorageSettings{
+	storageValue := []localConfigProvider.LocalStorage{
 		{
 			Name: "example-storage-0",
 		},
@@ -64,7 +64,7 @@ func GetOneExistingConfigInfoStorage(componentName, applicationName, projectName
 	componentType := "nodejs"
 	sourceLocation := "./"
 
-	storageValue := []ComponentStorageSettings{
+	storageValue := []localConfigProvider.LocalStorage{
 		{
 			Name: storeName,
 			Size: storeSize,

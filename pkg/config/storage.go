@@ -1,72 +1,84 @@
 package config
 
 import (
+	"fmt"
+
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/pkg/errors"
 )
 
-// StorageCreate sets the storage related information in the local configuration
-func (lci *LocalConfigInfo) StorageCreate(name, size, path string) (ComponentStorageSettings, error) {
-	storage := ComponentStorageSettings{
-		Name: name,
-		Size: size,
-		Path: path,
-	}
-	err := lci.SetConfiguration("storage", storage)
-	if err != nil {
-		return ComponentStorageSettings{}, err
-	}
-	return storage, err
-}
-
-func (lci *LocalConfigInfo) StorageExists(storageName string) bool {
-	for _, storage := range lci.GetStorage() {
+// GetStorage gets the storage with the given name
+func (lci *LocalConfigInfo) GetStorage(storageName string) *localConfigProvider.LocalStorage {
+	for _, storage := range lci.ListStorage() {
 		if storageName == storage.Name {
-			return true
-		}
-	}
-	return false
-}
-
-func (lci *LocalConfigInfo) StorageList() ([]ComponentStorageSettings, error) {
-	storageConfigList := lci.GetStorage()
-	var storageList []ComponentStorageSettings
-	for _, storage := range storageConfigList {
-		storageList = append(storageList, ComponentStorageSettings{
-			Name: storage.Name,
-			Path: storage.Path,
-			Size: storage.Size,
-		})
-	}
-	return storageList, nil
-}
-
-func (lci *LocalConfigInfo) ValidateStorage(storageName, storagePath string) error {
-	for _, storage := range lci.GetStorage() {
-		if storage.Name == storageName {
-			return errors.Errorf("there already is a storage with the name %s", storageName)
-		}
-		if storage.Path == storagePath {
-			return errors.Errorf("there already is a storage mounted at %s", storagePath)
+			return &storage
 		}
 	}
 	return nil
 }
 
-func (lci *LocalConfigInfo) StorageDelete(name string) error {
-	exists := lci.StorageExists(name)
-	if !exists {
+// CreateStorage sets the storage related information in the local configuration
+func (lci *LocalConfigInfo) CreateStorage(storage localConfigProvider.LocalStorage) error {
+	err := lci.SetConfiguration("storage", storage)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// ListStorage gets all the storage from the config
+func (lci *LocalConfigInfo) ListStorage() []localConfigProvider.LocalStorage {
+	if lci.componentSettings.Storage == nil {
+		return []localConfigProvider.LocalStorage{}
+	}
+
+	var storageList []localConfigProvider.LocalStorage
+	for _, storage := range *lci.componentSettings.Storage {
+		storageList = append(storageList, localConfigProvider.LocalStorage{
+			Name: storage.Name,
+			Path: storage.Path,
+			Size: storage.Size,
+		})
+	}
+	return storageList
+}
+
+// DeleteStorage deletes the storage with the given name
+func (lci *LocalConfigInfo) DeleteStorage(name string) error {
+	storage := lci.GetStorage(name)
+	if storage == nil {
 		return errors.Errorf("storage named %s doesn't exists", name)
 	}
 	return lci.DeleteFromConfigurationList("storage", name)
 }
 
-func (lci *LocalConfigInfo) GetMountPath(storageName string) string {
+// CompleteStorage completes the given storage
+func (lci *LocalConfigInfo) CompleteStorage(storage *localConfigProvider.LocalStorage) {}
+
+// ValidateStorage validates the given storage
+func (lci *LocalConfigInfo) ValidateStorage(storage localConfigProvider.LocalStorage) error {
+	if storage.Size == "" || storage.Path == "" {
+		return fmt.Errorf("\"size\" and \"path\" flags are required for s2i components")
+	}
+
+	for _, store := range lci.ListStorage() {
+		if store.Name == storage.Name {
+			return errors.Errorf("there already is a storage with the name %s", storage.Name)
+		}
+		if store.Path == storage.Path {
+			return errors.Errorf("there already is a storage mounted at %s", storage.Path)
+		}
+	}
+	return nil
+}
+
+// GetStorageMountPath gets the mount path of the storage with the given storage name
+func (lci *LocalConfigInfo) GetStorageMountPath(storageName string) (string, error) {
 	var mPath string
-	storageList, _ := lci.StorageList()
-	for _, storage := range storageList {
+	for _, storage := range lci.ListStorage() {
 		if storage.Name == storageName {
 			mPath = storage.Path
 		}
 	}
-	return mPath
+	return mPath, nil
 }

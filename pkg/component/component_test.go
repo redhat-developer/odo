@@ -870,7 +870,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 						localExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, localExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
 					},
 					Storage: []string{
-						localExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,
+						localExistingConfigInfoValue.ListStorage()[0].Name, localExistingConfigInfoValue.ListStorage()[1].Name,
 					},
 					Env: []corev1.EnvVar{
 						{
@@ -906,7 +906,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 						gitExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, gitExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
 					},
 					Storage: []string{
-						gitExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,
+						gitExistingConfigInfoValue.ListStorage()[0].Name, localExistingConfigInfoValue.ListStorage()[1].Name,
 					},
 					Env: []corev1.EnvVar{
 						{

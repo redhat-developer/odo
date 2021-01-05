@@ -1010,7 +1010,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 			component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: localEnv.Name, Value: localEnv.Value})
 		}
 
-		for _, localStorage := range localConfig.GetStorage() {
+		for _, localStorage := range localConfig.ListStorage() {
 			component.Spec.Storage = append(component.Spec.Storage, localStorage.Name)
 		}
 		return component, nil
@@ -1653,7 +1653,7 @@ func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileCo
 // returns a list of storage in storage struct format
 func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageList {
 	storageList := storage.StorageList{}
-	for _, storageVar := range localConfig.GetStorage() {
+	for _, storageVar := range localConfig.ListStorage() {
 		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
 	}
 	return storageList

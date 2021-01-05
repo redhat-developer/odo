@@ -320,7 +320,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	klog.V(2).Info("Set devfile components from s2i data")
 
 	maxMemory := localConfig.GetMaxMemory()
-	volumes := localConfig.GetStorage()
+	volumes := localConfig.ListStorage()
 	urls := localConfig.ListURLs()
 	mountSources := true
 

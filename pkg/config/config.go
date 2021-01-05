@@ -30,12 +30,6 @@ const (
 	DefaultDebugPort = 5858
 )
 
-type ComponentStorageSettings struct {
-	Name string `yaml:"Name,omitempty"`
-	Size string `yaml:"Size,omitempty"`
-	Path string `yaml:"Path,omitempty"`
-}
-
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
 	// The builder image to use
@@ -68,7 +62,7 @@ type ComponentSettings struct {
 	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty"`
 
-	Storage *[]ComponentStorageSettings `yaml:"Storage,omitempty"`
+	Storage *[]localConfigProvider.LocalStorage `yaml:"Storage,omitempty"`
 
 	// Ignore if set to true then odoignore file should be considered
 	Ignore *bool `yaml:"Ignore,omitempty"`
@@ -239,11 +233,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "maxcpu":
 			lci.componentSettings.MaxCPU = &strValue
 		case "storage":
-			storageSetting, _ := value.(ComponentStorageSettings)
+			storageSetting, _ := value.(localConfigProvider.LocalStorage)
 			if lci.componentSettings.Storage != nil {
 				*lci.componentSettings.Storage = append(*lci.componentSettings.Storage, storageSetting)
 			} else {
-				lci.componentSettings.Storage = &[]ComponentStorageSettings{storageSetting}
+				lci.componentSettings.Storage = &[]localConfigProvider.LocalStorage{storageSetting}
 			}
 		case "cpu":
 			lci.componentSettings.MinCPU = &strValue
@@ -345,7 +339,7 @@ func (lci *LocalConfigInfo) DeleteFromConfigurationList(parameter string, value 
 	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "storage":
-			for i, storage := range lci.GetStorage() {
+			for i, storage := range lci.ListStorage() {
 				if storage.Name == value {
 					*lci.componentSettings.Storage = append((*lci.componentSettings.Storage)[:i], (*lci.componentSettings.Storage)[i+1:]...)
 				}
@@ -457,14 +451,6 @@ func (lc *LocalConfig) GetMinCPU() string {
 // GetMaxCPU returns the MaxCPU, returns default if nil
 func (lc *LocalConfig) GetMaxCPU() string {
 	return util.GetStringOrEmpty(lc.componentSettings.MaxCPU)
-}
-
-// GetStorage returns the Storage, returns empty if nil
-func (lc *LocalConfig) GetStorage() []ComponentStorageSettings {
-	if lc.componentSettings.Storage == nil {
-		return []ComponentStorageSettings{}
-	}
-	return *lc.componentSettings.Storage
 }
 
 // GetEnvs returns the Envs, returns empty if nil
