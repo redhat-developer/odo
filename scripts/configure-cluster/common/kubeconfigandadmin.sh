@@ -34,17 +34,6 @@ setup_kubeconfig() {
     fi
 }
 
-reset_kubeconfig() {
-    if [[ -z $ORIGINAL_KUBECONFIG || -z $ORIGINAL_KUBECONFIG ]]; then
-        echo "KUBECONFIG or ORIGINAL_KUBECONFIG not set"
-        exit 1
-    fi
-    if [[ $KUBECONFIG != $ORIGINAL_KUBECONFIG ]]; then
-        rm -rf $KUBECONFIG
-    fi
-    export KUBECONFIG=$ORIGINAL_KUBECONFIG
-}
-
 setup_kubeconfig
 setup_kubeadmin
-echo "Call `reset_kubeconfig` seperately if you want to reset the kubeconfig"
+echo "Call `scripts/configure-cluster/common/kubeconfigreset.sh` separately if you want to reset the kubeconfig"

@@ -75,4 +75,3 @@ oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/
 # Project list
 oc projects
 
-reset_kubeconfig
