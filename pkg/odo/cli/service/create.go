@@ -377,6 +377,13 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			// CRD is valid. We can use it further to create a service from it.
 			o.CustomResourceDefinition = d.OriginalCRD
 
+			if o.ServiceName == "" {
+				o.ServiceName, err = d.getServiceNameFromCRD()
+				if err != nil {
+					return err
+				}
+			}
+
 			return nil
 		} else {
 			// This block is executed only when user has neither provided a

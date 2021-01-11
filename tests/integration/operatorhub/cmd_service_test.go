@@ -77,7 +77,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		It("should be able to create, list and then delete EtcdCluster from its alm example", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+			Expect(stdOut).To(ContainSubstring("Service 'example' was created"))
 
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
@@ -90,7 +91,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			})
 
 			// now test listing of the service using odo
-			stdOut := helper.CmdShouldPass("odo", "service", "list")
+			stdOut = helper.CmdShouldPass("odo", "service", "list")
 			Expect(stdOut).To(ContainSubstring("EtcdCluster/example"))
 
 			// now test the deletion of the service using odo
