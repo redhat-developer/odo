@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+
+	"github.com/gosimple/slug"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 
@@ -1041,7 +1043,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 
 // getValidURLName returns valid URL resource name for Kubernetes based cluster
 func getValidURLName(name string) string {
-	trimmedName := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(name)))
+	trimmedName := strings.TrimSpace(slug.Make(name))
 	trimmedName = util.TruncateString(trimmedName, 15)
 	return trimmedName
 }
