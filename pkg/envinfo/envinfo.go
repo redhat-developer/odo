@@ -28,8 +28,11 @@ type JSONEnvInfoRepr struct {
 type ComponentSettings struct {
 	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
 
-	Project string                          `yaml:"Project,omitempty" json:"project,omitempty"`
-	URL     *[]localConfigProvider.LocalURL `yaml:"Url,omitempty" json:"url,omitempty"`
+	Project string `yaml:"Project,omitempty" json:"project,omitempty"`
+
+	UserCreatedDevfile bool `yaml:"UserCreatedDevfile,omitempty" json:"UserCreatedDevfile,omitempty"`
+
+	URL *[]localConfigProvider.LocalURL `yaml:"Url,omitempty" json:"url,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
 	// for grouping of components. A namespace can contain multiple applications
 	AppName string         `yaml:"AppName,omitempty" json:"appName,omitempty"`
@@ -348,6 +351,17 @@ func (ei *EnvInfo) GetDebugPort() int {
 		return DefaultDebugPort
 	}
 	return *ei.componentSettings.DebugPort
+}
+
+// GetUserCreatedDevfile returns the UserCreatedDevfile
+func (ei *EnvInfo) GetUserCreatedDevfile() bool {
+	return ei.componentSettings.UserCreatedDevfile
+}
+
+// SetUserCreatedDevfile sets the UserCreatedDevfile and writes to file
+func (esi *EnvSpecificInfo) SetUserCreatedDevfile(value bool) error {
+	esi.componentSettings.UserCreatedDevfile = value
+	return esi.writeToFile()
 }
 
 // GetRunMode returns the RunMode, returns default if nil

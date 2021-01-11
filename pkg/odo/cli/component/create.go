@@ -54,6 +54,7 @@ type CreateOptions struct {
 	now               bool
 	forceS2i          bool
 	*PushOptions
+
 	devfileMetadata DevfileMetadata
 }
 
@@ -65,16 +66,17 @@ type devfilePath struct {
 
 // DevfileMetadata includes devfile component metadata
 type DevfileMetadata struct {
-	componentType      string
-	componentName      string
-	componentNamespace string
-	devfileSupport     bool
-	devfileLink        string
-	devfileRegistry    catalog.Registry
-	devfilePath        devfilePath
-	starter            string
-	token              string
-	starterToken       string
+	componentType         string
+	componentName         string
+	componentNamespace    string
+	devfileSupport        bool
+	devfileLink           string
+	devfileRegistry       catalog.Registry
+	devfilePath           devfilePath
+	devfileAlreadyPresent bool
+	starter               string
+	token                 string
+	starterToken          string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -379,6 +381,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	if util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
 		return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
+	}
+
+	// we check if the devfile is already present or not
+	if util.CheckPathExists(co.DevfilePath) {
+		co.devfileMetadata.devfileAlreadyPresent = true
 	}
 
 	co.appName = genericclioptions.ResolveAppFlag(cmd)
@@ -1019,9 +1026,10 @@ func (co *CreateOptions) devfileRun() (err error) {
 
 	// Generate env file
 	err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
-		Name:    co.devfileMetadata.componentName,
-		Project: co.devfileMetadata.componentNamespace,
-		AppName: co.appName,
+		Name:               co.devfileMetadata.componentName,
+		Project:            co.devfileMetadata.componentNamespace,
+		AppName:            co.appName,
+		UserCreatedDevfile: co.devfileMetadata.devfileAlreadyPresent,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to create env file for devfile component")
