@@ -383,8 +383,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 	}
 
-	// we check if the devfile is already present or not
-	if util.CheckPathExists(co.DevfilePath) {
+	// we check if the devfile is already present or not, we also check if the envfile doesn't exist because someone could just have shared a zip of the component
+	// and the other developer runs odo create on it
+	if util.CheckPathExists(co.DevfilePath) && !util.CheckPathExists(EnvFilePath) {
 		co.devfileMetadata.devfileAlreadyPresent = true
 	}
 
