@@ -3,7 +3,6 @@
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 HTPASSWD_FILE="${SCRIPTPATH}/test-htpasswd"
 HTPASSWD_SECRET="htpasswd-secret"
-USERPASS="password@123"
 
 createclustersecret() {
     # Create secret in cluster, removing if it already exists
@@ -42,7 +41,7 @@ waitforstablelogin() {
     # Login as developer and check for stable server
     for i in {1..40}; do
         # Try logging in as developer
-        oc login -u developer -p $USERPASS &> /dev/null
+        oc login -u developer -p password@123 &> /dev/null
         if [ $? -eq 0 ]; then
             # If login succeeds, assume success
     	    OC_STABLE_LOGIN="true"
