@@ -414,7 +414,7 @@ spec:
 			}
 
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", componentName)
+			helper.CmdShouldPass("odo", "create", componentName, "--devfile", "devfile.yaml", "--starter")
 			helper.CmdShouldPass("odo", "push")
 
 			// start the Operator backed service first
