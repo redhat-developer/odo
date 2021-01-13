@@ -66,17 +66,17 @@ type devfilePath struct {
 
 // DevfileMetadata includes devfile component metadata
 type DevfileMetadata struct {
-	componentType         string
-	componentName         string
-	componentNamespace    string
-	devfileSupport        bool
-	devfileLink           string
-	devfileRegistry       catalog.Registry
-	devfilePath           devfilePath
-	devfileAlreadyPresent bool
-	starter               string
-	token                 string
-	starterToken          string
+	componentType      string
+	componentName      string
+	componentNamespace string
+	devfileSupport     bool
+	devfileLink        string
+	devfileRegistry    catalog.Registry
+	devfilePath        devfilePath
+	userCreatedDevfile bool
+	starter            string
+	token              string
+	starterToken       string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -385,7 +385,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// we check if the devfile is already present or not, this location is important - check should happen early
 	if util.CheckPathExists(co.DevfilePath) {
-		co.devfileMetadata.devfileAlreadyPresent = true
+		co.devfileMetadata.userCreatedDevfile = true
 	}
 
 	co.appName = genericclioptions.ResolveAppFlag(cmd)
@@ -1029,7 +1029,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 		Name:               co.devfileMetadata.componentName,
 		Project:            co.devfileMetadata.componentNamespace,
 		AppName:            co.appName,
-		UserCreatedDevfile: co.devfileMetadata.devfileAlreadyPresent,
+		UserCreatedDevfile: co.devfileMetadata.userCreatedDevfile,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to create env file for devfile component")
