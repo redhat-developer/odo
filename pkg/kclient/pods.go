@@ -24,7 +24,7 @@ import (
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
 // hideSpinner hides the spinner
-func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string, hideSpinner bool) (*corev1.Pod, error) {
+func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
 
 	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
 	pushTimeout := preference.DefaultPushTimeout * time.Second
@@ -37,11 +37,8 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 
 	klog.V(3).Infof("Waiting for %s pod", selector)
 
-	var spinner *log.Status
-	if !hideSpinner {
-		spinner = log.Spinner(waitMessage)
-		defer spinner.End(false)
-	}
+	spinner := log.Spinner(waitMessage)
+	defer spinner.End(false)
 
 	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
@@ -100,9 +97,7 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 
 	select {
 	case val := <-podChannel:
-		if spinner != nil {
-			spinner.End(true)
-		}
+		spinner.End(true)
 		return val, nil
 	case err := <-watchErrorChannel:
 		return nil, err
