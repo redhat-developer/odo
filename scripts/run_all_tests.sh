@@ -20,7 +20,6 @@ KUBECONFIG="`pwd`/config"
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 export SKIP_USER_LOGIN_TESTS="true"
-export GINKGO_TEST_ARGS="--noColor"
 
 shout "Getting oc binary"
 if [[ $BASE_OS == "linux"  ]]; then
