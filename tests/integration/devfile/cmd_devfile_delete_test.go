@@ -15,7 +15,6 @@ import (
 
 var _ = Describe("odo devfile delete command tests", func() {
 	const devfile = "devfile.yaml"
-	const envFile = ".odo/env/env.yaml"
 	var devfilePath string
 	var componentName, invalidNamespace string
 
