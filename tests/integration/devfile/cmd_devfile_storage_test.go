@@ -251,4 +251,44 @@ var _ = Describe("odo devfile storage command tests", func() {
 			Expect(len(PVCs)).To(Equal(0))
 		})
 	})
+
+	Context("When ephemeral is set to false in preference.yaml", func() {
+		It("should create a pvc to store source code", func() {
+
+			helper.CmdShouldPass("odo", "preference", "set", "ephemeral", "false")
+
+			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			// Verify the pvc size
+			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+
+			Expect(len(PVCs)).To(Not(Equal(0)))
+		})
+	})
+
+	Context("When ephemeral is not set in preference.yaml", func() {
+		It("should not create a pvc to store source code  (default is ephemeral=false)", func() {
+
+			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			helper.CmdShouldPass("odo", "preference", "view")
+
+			// Verify the pvc size
+			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+
+			Expect(len(PVCs)).To(Equal(0))
+		})
+	})
 })
