@@ -6,44 +6,15 @@ LIBDIR="./scripts/configure-cluster"
 LIBCOMMON="$LIBDIR/common"
 SETUP_OPERATORS="$LIBCOMMON/setup-operators.sh"
 AUTH_SCRIPT="$LIBCOMMON/auth.sh"
-# Overrideable information
-DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
-KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
-KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
+KUBEADMIN_SCRIPT="$LIBCOMMON/kubeconfigandadmin.sh"
 
 #CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 # Exported to current env
-export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
 # list of namespace to create
 IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12"
 
-# Attempt resolution of kubeadmin, only if a CI is not set
-if [ -z $CI ]; then
-    # Check if nessasary files exist
-    if [ ! -f $KUBEADMIN_PASSWORD_FILE ]; then
-        echo "Could not find kubeadmin password file"
-        exit 1
-    fi
-
-    if [ ! -f $KUBECONFIG ]; then
-        echo "Could not find kubeconfig file"
-        exit 1
-    fi
-
-    # Get kubeadmin password from file
-    KUBEADMIN_PASSWORD=`cat $KUBEADMIN_PASSWORD_FILE`
-
-    # Login as admin user
-    oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
-else
-    # Copy kubeconfig to temporary kubeconfig file
-    # Read and Write permission to temporary kubeconfig file
-    TMP_DIR=$(mktemp -d)
-    cp $KUBECONFIG $TMP_DIR/kubeconfig
-    chmod 640 $TMP_DIR/kubeconfig
-    export KUBECONFIG=$TMP_DIR/kubeconfig
-fi
+. $KUBEADMIN_SCRIPT
 
 # Setup the cluster for Operator tests
 
@@ -100,15 +71,9 @@ oc annotate istag/python:latest --namespace=openshift tags=builder --overwrite
 
 sh $AUTH_SCRIPT
 
-KUBEADMIN_PASSWORD=`cat $KUBEADMIN_PASSWORD_FILE`
-oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD &> /dev/null
+setup_kubeadmin
 oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/myproject/g" | oc apply -f -
 
 # Project list
 oc projects
 
-# KUBECONFIG cleanup only if CI is set
-if [ ! -f $CI ]; then
-    rm -rf $KUBECONFIG
-    export KUBECONFIG=$ORIGINAL_KUBECONFIG
-fi

@@ -1,29 +1,8 @@
 #!/usr/bin/env bash
 
-set -e
-
-HTPASSWD_FILE="./htpass"
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+HTPASSWD_FILE="${SCRIPTPATH}/test-htpasswd"
 HTPASSWD_SECRET="htpasswd-secret"
-USERPASS="password@123"
-
-createhtpasswd() {
-    echo "Creating htpasswd"
-    # List of users to create
-    USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
-    # Remove existing htpasswd file, if any
-    if [ -f $HTPASSWD_FILE ]; then
-        rm -rf $HTPASSWD_FILE
-    fi
-
-    # Set so first time -c parameter gets applied to htpasswd
-    HTPASSWD_CREATED=" -c "
-
-    # Create htpasswd entries for all listed users
-    for i in `echo $USERS`; do
-        htpasswd -b $HTPASSWD_CREATED $HTPASSWD_FILE $i $USERPASS
-        HTPASSWD_CREATED=""
-    done
-}
 
 createclustersecret() {
     # Create secret in cluster, removing if it already exists
@@ -62,7 +41,7 @@ waitforstablelogin() {
     # Login as developer and check for stable server
     for i in {1..40}; do
         # Try logging in as developer
-        oc login -u developer -p $USERPASS &> /dev/null
+        oc login -u developer -p password@123 &> /dev/null
         if [ $? -eq 0 ]; then
             # If login succeeds, assume success
     	    OC_STABLE_LOGIN="true"
@@ -99,8 +78,8 @@ setupfirstproject() {
     oc projects
 }
 
-createhtpasswd
 set +e
+set -x
 createclustersecret
 configureclusterauth
 waitforstablelogin
