@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -599,7 +598,7 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 //  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, containerComponents []devfilev1.Component, isS2I bool) (err error) {
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, isS2I bool) (err error) {
 
 	if client == nil {
 		var err error
@@ -611,6 +610,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		client.Namespace = kClient.Namespace
 	}
 
+	var localConfig localConfigProvider.LocalConfigProvider
 	if isS2I {
 		// if component exist then only call the update function
 		if cmpExist {
@@ -625,9 +625,11 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	if isS2I || kClient == nil {
 		componentName = componentConfig.GetName()
 		applicationName = componentConfig.GetApplication()
+		localConfig = &componentConfig
 	} else {
 		componentName = envSpecificInfo.GetName()
 		applicationName = envSpecificInfo.GetApplication()
+		localConfig = &envSpecificInfo
 	}
 
 	isRouteSupported := false
@@ -636,14 +638,19 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		isRouteSupported = false
 	}
 
-	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
-		ComponentName:       componentName,
-		ApplicationName:     applicationName,
-		ConfigURLs:          componentConfig.ListURLs(),
-		EnvURLS:             envSpecificInfo.ListURLs(),
+	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
+		OCClient:            *client,
 		IsRouteSupported:    isRouteSupported,
-		ContainerComponents: containerComponents,
-		IsS2I:               isS2I,
+		LocalConfigProvider: localConfig,
+	})
+
+	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
+		ComponentName:    componentName,
+		ApplicationName:  applicationName,
+		LocalConfig:      localConfig,
+		URLClient:        urlClient,
+		IsRouteSupported: isRouteSupported,
+		IsS2I:            isS2I,
 	})
 }
 

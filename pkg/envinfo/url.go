@@ -187,20 +187,6 @@ func (ei *EnvInfo) GetURL(name string) *localConfigProvider.LocalURL {
 			return &url
 		}
 	}
-
-	// since listURL currently only returns URLs from the env
-	// search in the devfile too and fill the data from the endpoint
-	for _, component := range ei.devfileObj.Data.GetDevfileContainerComponents() {
-		for _, endpoint := range component.Container.Endpoints {
-			return &localConfigProvider.LocalURL{
-				Name:      endpoint.Name,
-				Port:      endpoint.TargetPort,
-				Secure:    endpoint.Secure,
-				Path:      endpoint.Path,
-				Container: component.Name,
-			}
-		}
-	}
 	return nil
 }
 
@@ -226,13 +212,60 @@ func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
 	return nil
 }
 
-// TODO return URLs from the devfile too
 // ListURLs returns the urls from the env and devfile, returns default if nil
 func (ei *EnvInfo) ListURLs() []localConfigProvider.LocalURL {
-	if ei.componentSettings.URL == nil {
-		return []localConfigProvider.LocalURL{}
+
+	envMap := make(map[string]localConfigProvider.LocalURL)
+	if ei.componentSettings.URL != nil {
+		for _, url := range *ei.componentSettings.URL {
+			envMap[url.Name] = url
+		}
 	}
-	return *ei.componentSettings.URL
+
+	var urls []localConfigProvider.LocalURL
+
+	if ei.devfileObj.Data == nil {
+		return urls
+	}
+
+	for _, comp := range ei.devfileObj.Data.GetDevfileContainerComponents() {
+		for _, localEndpoint := range comp.Container.Endpoints {
+			// only exposed endpoint will be shown as a URL in `odo url list`
+			if localEndpoint.Exposure == devfilev1.NoneEndpointExposure || localEndpoint.Exposure == devfilev1.InternalEndpointExposure {
+				continue
+			}
+
+			path := "/"
+			if localEndpoint.Path != "" {
+				path = localEndpoint.Path
+			}
+
+			secure := false
+			if localEndpoint.Secure || localEndpoint.Protocol == "https" || localEndpoint.Protocol == "wss" {
+				secure = true
+			}
+
+			url := localConfigProvider.LocalURL{
+				Name:      localEndpoint.Name,
+				Port:      localEndpoint.TargetPort,
+				Secure:    secure,
+				Path:      path,
+				Container: comp.Name,
+			}
+
+			if envInfoURL, exist := envMap[localEndpoint.Name]; exist {
+				url.Host = envInfoURL.Host
+				url.TLSSecret = envInfoURL.TLSSecret
+				url.Kind = envInfoURL.Kind
+			} else {
+				url.Kind = localConfigProvider.ROUTE
+			}
+
+			urls = append(urls, url)
+		}
+	}
+
+	return urls
 }
 
 // DeleteURL is used to delete environment specific info for url from envinfo and devfile

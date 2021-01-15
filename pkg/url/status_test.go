@@ -1,17 +1,13 @@
 package url
 
 import (
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"reflect"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/golang/mock/gomock"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -49,8 +45,6 @@ var fakeDiscoveryWithProject = &fakeDiscovery{
 }
 
 func TestGetURLsForKubernetes(t *testing.T) {
-	fs := filesystem.NewFakeFs()
-
 	componentName := "my-component"
 
 	testURL1 := localConfigProvider.LocalURL{Name: "example-1", Port: 9090, Host: "com", Kind: "ingress", Secure: true}
@@ -78,6 +72,9 @@ func TestGetURLsForKubernetes(t *testing.T) {
 				secure: testURL1.Secure,
 				url:    "https://example-1.com",
 			},
+			routeList: &routev1.RouteList{
+				Items: []routev1.Route{},
+			},
 		},
 		{
 			name:    "2) Cluster with https URL defined in env info",
@@ -91,6 +88,9 @@ func TestGetURLsForKubernetes(t *testing.T) {
 				port:   testURL2.Port,
 				secure: testURL2.Secure,
 				url:    "http://example-2.com",
+			},
+			routeList: &routev1.RouteList{
+				Items: []routev1.Route{},
 			},
 		},
 		{
@@ -140,6 +140,9 @@ func TestGetURLsForKubernetes(t *testing.T) {
 					kclient_fake.GetIngressListWithMultiple(componentName, "app").Items[0],
 				},
 			},
+			routeList: &routev1.RouteList{
+				Items: []routev1.Route{},
+			},
 			expectedStatusURL: statusURL{
 				name:   "example-0",
 				kind:   "ingress",
@@ -151,6 +154,14 @@ func TestGetURLsForKubernetes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
+			mockLocalConfig.EXPECT().GetName().Return(componentName).AnyTimes()
+			mockLocalConfig.EXPECT().GetApplication().Return("")
+			mockLocalConfig.EXPECT().ListURLs().Return(tt.envURLs)
 
 			// Initialising the fakeclient
 			fkclient, fkclientset := kclient.FakeNew()
@@ -170,30 +181,10 @@ func TestGetURLsForKubernetes(t *testing.T) {
 
 			// Return the test's route list when requested
 			fakeoclientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return tt.routeList != nil, tt.routeList, nil
+				return true, tt.routeList, nil
 			})
 
-			esi := &envinfo.EnvSpecificInfo{}
-			if err := esi.SetComponentSettings(envinfo.ComponentSettings{Name: componentName}); err != nil {
-				t.Logf("ignoring error, since no physical file to write: %v", err)
-			}
-
-			for _, url := range tt.envURLs {
-				err := esi.SetConfiguration("url", url)
-				if err != nil {
-					t.Logf("ignoring error, since no physical file to write: %v", err)
-				}
-			}
-
-			devObj := parser.DevfileObj{
-				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{},
-				},
-			}
-			containerComponents := devObj.Data.GetDevfileContainerComponents()
-
-			statusUrls, err := getURLsForKubernetes(fkoclient, fkclient, esi, false, containerComponents)
+			statusUrls, err := getURLsForKubernetes(fkoclient, fkclient, mockLocalConfig, false)
 
 			if err != nil {
 				t.Fatalf("Error occurred: %v", err)
@@ -206,8 +197,6 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			if !reflect.DeepEqual(tt.expectedStatusURL, statusUrls[0]) {
 				t.Fatalf("Mismatching status URL - expected: %v,  actual: %v", tt.expectedStatusURL, statusUrls[0])
 			}
-
 		})
 	}
-
 }

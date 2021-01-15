@@ -1,12 +1,9 @@
 package component
 
 import (
+	"fmt"
 	"path/filepath"
 	"time"
-
-	"github.com/pkg/errors"
-
-	"fmt"
 
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -15,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
@@ -23,6 +21,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
@@ -53,6 +52,7 @@ type StatusOptions struct {
 
 	logFollow       bool
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
+	localConfig     localConfigProvider.LocalConfigProvider
 	*genericclioptions.Context
 	isDevfile bool
 }
@@ -70,18 +70,15 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// If devfile is present
 	if so.isDevfile {
-		envinfo, err := envinfo.NewEnvSpecificInfo(so.componentContext)
+		envSpecificInfo, err := envinfo.NewEnvSpecificInfo(so.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
-		so.EnvSpecificInfo = envinfo
+		so.EnvSpecificInfo = envSpecificInfo
 		so.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Get the component name
 		so.componentName = so.EnvSpecificInfo.GetName()
-		if err != nil {
-			return err
-		}
 
 		// Parse devfile
 		devObj, err := devfile.ParseAndValidate(so.devfilePath)
@@ -93,6 +90,9 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 		so.devObj = devObj
+		so.EnvSpecificInfo.SetDevfileObj(so.devObj)
+
+		so.localConfig = so.EnvSpecificInfo
 
 		var platformContext interface{}
 		if !pushtarget.IsPushTargetDocker() {
@@ -153,8 +153,7 @@ func (so *StatusOptions) Run() (err error) {
 			oclient.Namespace = so.KClient.Namespace
 		}
 
-		containerComponents := so.devObj.Data.GetDevfileContainerComponents()
-		url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, so.EnvSpecificInfo, loggingClient, containerComponents)
+		url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.localConfig, loggingClient)
 	}
 
 	// You can call Run() any time you like, but you can never leave.
