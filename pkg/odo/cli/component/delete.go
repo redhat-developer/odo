@@ -273,7 +273,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			if !util.CheckPathExists(DevfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
-			if !do.EnvSpecificInfo.GetUserCreatedDevfile() {
+			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
 				err = util.DeletePath(DevfilePath)
 				if err != nil {
 					return err

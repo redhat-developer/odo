@@ -353,8 +353,8 @@ func (ei *EnvInfo) GetDebugPort() int {
 	return *ei.componentSettings.DebugPort
 }
 
-// GetUserCreatedDevfile returns the UserCreatedDevfile
-func (ei *EnvInfo) GetUserCreatedDevfile() bool {
+// IsUserCreatedDevfile returns the UserCreatedDevfile
+func (ei *EnvInfo) IsUserCreatedDevfile() bool {
 	return ei.componentSettings.UserCreatedDevfile
 }
 
