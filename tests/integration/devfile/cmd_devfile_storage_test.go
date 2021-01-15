@@ -99,8 +99,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			// Verify the pvc size
 			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-			// additional source pvc the odo creates
-			Expect(len(PVCs)).To(Equal(2))
+			Expect(len(PVCs)).To(Equal(1))
 		})
 
 		It("should create and output in json format", func() {
