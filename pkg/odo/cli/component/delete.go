@@ -269,8 +269,23 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			log.Error("Aborting deletion of env folder")
 		}
 
-		// Prompt and delete devfile.yaml
-		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete devfile.yaml?") {
+		if do.componentForceDeleteFlag {
+			if !util.CheckPathExists(DevfilePath) {
+				return fmt.Errorf("devfile.yaml does not exist in the current directory")
+			}
+			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
+				err = util.DeletePath(DevfilePath)
+				if err != nil {
+					return err
+				}
+
+				log.Successf("Successfully deleted devfile.yaml file")
+
+			} else {
+				log.Info("Didn't delete the devfile as it was user provided")
+			}
+
+		} else if ui.Proceed("Are you sure you want to delete devfile.yaml?") {
 			if !util.CheckPathExists(DevfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}

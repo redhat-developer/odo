@@ -3,6 +3,7 @@ package devfile
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/openshift/odo/tests/helper"
@@ -13,6 +14,8 @@ import (
 )
 
 var _ = Describe("odo devfile delete command tests", func() {
+	const devfile = "devfile.yaml"
+	var devfilePath string
 	var componentName, invalidNamespace string
 
 	var commonVar helper.CommonVar
@@ -118,4 +121,32 @@ var _ = Describe("odo devfile delete command tests", func() {
 			utils.DeleteLocalConfig("delete", "--project", invalidNamespace)
 		})
 	})
+
+	Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {
+		JustBeforeEach(func() {
+			newContext := path.Join(commonVar.Context, "newContext")
+			devfilePath = filepath.Join(newContext, devfile)
+			helper.MakeDir(newContext)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
+		})
+
+		It("should successfully delete the devfile as its not present in root on delete", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", devfilePath)
+			// devfile was copied to top level
+			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
+			helper.CmdShouldPass("odo", "delete", "--all", "-f")
+			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeFalse())
+		})
+
+		It("should not delete the devfile if its already present", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), path.Join(commonVar.Context, devfile))
+			helper.CmdShouldPass("odo", "create", "nodejs")
+			// devfile was copied to top level
+			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
+			helper.CmdShouldPass("odo", "delete", "--all", "-f")
+			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
+		})
+
+	})
+
 })
