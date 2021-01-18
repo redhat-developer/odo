@@ -9,12 +9,13 @@ import (
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 )
 
 // SelectStarterProject allows user to select starter project in the prompt
@@ -202,7 +203,7 @@ func createComponentNameValidator(context *genericclioptions.Context) survey.Val
 				return err
 			}
 
-			exists, err := component.Exists(context.Client, s, context.Application)
+			exists, err := exists(context.Client, s, context.Application)
 			if err != nil {
 				klog.V(4).Info(err)
 				return fmt.Errorf("Unable to determine if component '%s' exists or not", s)
@@ -216,6 +217,22 @@ func createComponentNameValidator(context *genericclioptions.Context) survey.Val
 
 		return fmt.Errorf("can only validate strings, got %v", input)
 	}
+}
+
+// Exists checks whether a component with the given name exists in the current application or not
+// componentName is the component name to perform check for
+// The first returned parameter is a bool indicating if a component with the given name already exists or not
+// The second returned parameter is the error that might occurs while execution
+func exists(client *occlient.Client, componentName, applicationName string) (bool, error) {
+	deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to create namespaced name")
+	}
+	deployment, _ := client.GetDeploymentConfigFromName(deploymentName)
+	if deployment != nil {
+		return true, nil
+	}
+	return false, nil
 }
 
 // EnterComponentName allows the user to specify the component name in a prompt
