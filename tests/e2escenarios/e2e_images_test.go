@@ -94,12 +94,12 @@ var _ = Describe("odo supported images e2e tests", func() {
 		})
 
 		It("Should be able to verify the nodejs-10-centos7 image", func() {
-			oc.ImportImageFromRegistry("registry.centos.org", "centos7/nodejs-10-centos7:latest", "nodejs:latest", commonVar.Project)
+			oc.ImportImageFromRegistry("docker.io", "centos7/nodejs-10-centos7:latest", "nodejs:latest", commonVar.Project)
 			verifySupportedImage("centos7/nodejs-10-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12-centos7 image", func() {
-			oc.ImportImageFromRegistry("registry.centos.org", "centos7/nodejs-12-centos7:latest", "nodejs:latest", commonVar.Project)
+			oc.ImportImageFromRegistry("docker.io", "centos7/nodejs-12-centos7:latest", "nodejs:latest", commonVar.Project)
 			verifySupportedImage("centos7/nodejs-12-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 	})
