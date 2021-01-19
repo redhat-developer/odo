@@ -8,7 +8,6 @@ import (
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
-	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -74,7 +73,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 
 // Downloads first starter project from list of starter projects in devfile
 // Currently type git with a non github url is not supported
-func DownloadStarterProject(devObj parser.DevfileObj, starterProject *devfilev1.StarterProject, decryptedToken string) error {
+func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string) error {
 
 	// Retrieve the working directory in order to clone correctly
 	path, err := os.Getwd()

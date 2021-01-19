@@ -61,5 +61,5 @@ func DecideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 		return nil
 	}
 
-	return component.DownloadStarterProject(devObj, starterProject, token)
+	return component.DownloadStarterProject(starterProject, token)
 }
