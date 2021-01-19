@@ -38,7 +38,7 @@ func (co *CreateOptions) SetComponentSettings(args []string) error {
 	return nil
 }
 
-func DecideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed string, token string, registryName string, interactive bool) error {
+func DecideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed string, token string, interactive bool) error {
 	if projectPassed == "" && !interactive {
 		return nil
 	}
@@ -61,5 +61,5 @@ func DecideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 		return nil
 	}
 
-	return component.DownloadStarterProject(devObj, starterProject, token, registryName)
+	return component.DownloadStarterProject(devObj, starterProject, token)
 }
