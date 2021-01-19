@@ -87,6 +87,9 @@ const (
 
 	// EphemeralSetting specifies if ephemeral volumes needs to be used as source volume.
 	EphemeralSetting = "Ephemeral"
+
+	// DefaultEphemeralSettings is a default value for Ephemeral preference
+	DefaultEphemeralSettings = true
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -102,7 +105,7 @@ var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for 
 var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo will cache information from Devfile registry (Default: %d)", DefaultRegistryCacheTime)
 
 // EphemeralDescription adds a description for EphemeralSourceVolume
-var EphemeralDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code(Default: %t)", false)
+var EphemeralDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code (Default: %t)", DefaultEphemeralSettings)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -501,7 +504,7 @@ func (c *PreferenceInfo) GetUpdateNotification() bool {
 // GetEphemeralSourceVolume returns the value of ephemeral from preferences
 // and if absent then returns default
 func (c *PreferenceInfo) GetEphemeralSourceVolume() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, false)
+	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSettings)
 }
 
 // GetNamePrefix returns the value of Prefix from preferences
