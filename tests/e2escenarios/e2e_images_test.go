@@ -93,15 +93,14 @@ var _ = Describe("odo supported images e2e tests", func() {
 			verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 
-		// Changing docker.io/centos/nodejs-10-centos7 and docker.io/centos/nodejs-12-centos7 to older version till issue:https://github.com/openshift/odo/issues/4347/ gets fixed
 		It("Should be able to verify the nodejs-10-centos7 image", func() {
-			oc.ImportImageFromRegistry("docker.io", "centos/nodejs-10-centos7:20200930-19a850a", "nodejs:latest", commonVar.Project)
-			verifySupportedImage("centos/nodejs-10-centos7:20200930-19a850a", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-10-centos7:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("centos7/nodejs-10-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12-centos7 image", func() {
-			oc.ImportImageFromRegistry("docker.io", "centos/nodejs-12-centos7:20200930-19a850a", "nodejs:latest", commonVar.Project)
-			verifySupportedImage("centos/nodejs-12-centos7:20200930-19a850a", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-12-centos7:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("centos7/nodejs-12-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 	})
 

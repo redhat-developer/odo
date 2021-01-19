@@ -35,6 +35,8 @@ var supportedImages = map[string]bool{
 	"ubi8/openjdk-11:latest":                       true,
 	"centos/nodejs-10-centos7:latest":              true,
 	"centos/nodejs-12-centos7:latest":              true,
+	"centos7/nodejs-10-centos7:latest":             true,
+	"centos7/nodejs-12-centos7:latest":             true,
 	"rhscl/nodejs-10-rhel7:latest":                 true,
 	"rhscl/nodejs-12-rhel7:latest":                 true,
 	"rhoar-nodejs/nodejs-10:latest":                true,
