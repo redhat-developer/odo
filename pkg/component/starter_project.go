@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/pkg/errors"
-	"github.com/zalando/go-keyring"
 )
 
 const (
@@ -76,7 +74,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 
 // Downloads first starter project from list of starter projects in devfile
 // Currently type git with a non github url is not supported
-func DownloadStarterProject(devObj parser.DevfileObj, starterProject *devfilev1.StarterProject, token string, registryName string) error {
+func DownloadStarterProject(devObj parser.DevfileObj, starterProject *devfilev1.StarterProject, decryptedToken string, registryName string) error {
 
 	// Retrieve the working directory in order to clone correctly
 	path, err := os.Getwd()
@@ -90,19 +88,10 @@ func DownloadStarterProject(devObj parser.DevfileObj, starterProject *devfilev1.
 		return err
 	}
 
-	// TODO: move this out - who does this
-	if token == "" && registryUtil.IsSecure(registryName) {
-		token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registryName), registryUtil.RegistryUser)
-		if err != nil {
-			return errors.Wrap(err, "unable to get secure registry credential from keyring")
-		}
-		co.devfileMetadata.starterToken = token
-	}
-
 	log.Info("\nStarter Project")
 
 	if starterProject.Git != nil || starterProject.Github != nil {
-		err := downloadGitProject(starterProject, token, path)
+		err := downloadGitProject(starterProject, decryptedToken, path)
 
 		if err != nil {
 			return err
@@ -112,7 +101,7 @@ func DownloadStarterProject(devObj parser.DevfileObj, starterProject *devfilev1.
 		url := starterProject.Zip.Location
 		sparseDir := starterProject.SubDir
 		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, url)
-		err := checkoutProject(sparseDir, url, path, token)
+		err := checkoutProject(sparseDir, url, path, decryptedToken)
 		if err != nil {
 			downloadSpinner.End(false)
 			return err

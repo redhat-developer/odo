@@ -60,4 +60,6 @@ func DecideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 	if starterProject == nil {
 		return nil
 	}
+
+	return component.DownloadStarterProject(devObj, starterProject, token, registryName)
 }

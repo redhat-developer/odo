@@ -11,13 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -841,7 +835,15 @@ func (co *CreateOptions) devfileRun() (err error) {
 		return err
 	}
 
-	err = co.downloadStarterProject(devObj, co.devfileMetadata.starter, co.interactive)
+	if co.devfileMetadata.starterToken == "" && registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+		token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+		if err != nil {
+			return errors.Wrap(err, "unable to get secure registry credential from keyring")
+		}
+		co.devfileMetadata.starterToken = token
+	}
+
+	err = DecideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.devfileMetadata.devfileRegistry.Name, co.interactive)
 	if err != nil {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
