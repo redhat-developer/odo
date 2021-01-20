@@ -38,13 +38,13 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 
 	adapter := Adapter{Client: client}
 	adapter.GenericAdapter = common.NewGenericAdapter(&adapter, adapterContext)
-	adapter.GenericAdapter.InitWith(adapter)
+	adapter.GenericAdapter.InitWith(&adapter)
 	return adapter
 }
 
 // getPod lazily records and retrieves the pod associated with the component associated with this adapter. If refresh parameter
 // is true, then the pod is refreshed from the cluster regardless of its current local state
-func (a Adapter) getPod(refresh bool) (*corev1.Pod, error) {
+func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 	if refresh || a.pod == nil {
 		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 
@@ -58,7 +58,7 @@ func (a Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 	return a.pod, nil
 }
 
-func (a Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
+func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err
@@ -69,7 +69,7 @@ func (a Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo,
 	}, nil
 }
 
-func (a Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
+func (a *Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
 		return common.ComponentInfo{}, err

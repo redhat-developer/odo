@@ -27,7 +27,7 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	compAdapter := component.New(adapterContext, client)
 
 	return Adapter{
-		componentAdapter: compAdapter,
+		componentAdapter: &compAdapter,
 	}
 }
 
