@@ -483,7 +483,7 @@ Pushing devfile component myopenliberty
 
 ----
 
-. View your deployed application in a browser using the generated url
+. List the URLs of the component
 +
 [source,sh]
 ----
@@ -493,15 +493,21 @@ Pushing devfile component myopenliberty
   myopenliberty-9     Pushed     http://myopenliberty-9.192.168.99.100.nip.io        9080     false
 ----
 
-
-. Have odo watch for changes in the source code
+. View your deployed application using the generated URL (this example shows an ingress hostname URL, while an OpenShift route would look a bit different):
++
+[source,sh]
+----
+ $ curl http://myopenliberty-9.$(minikube ip).nip.io/api/resource
+----
++
+. Have odo watch for changes in the source code:
 +
 [source,sh]
 ----
  $ odo watch
 ----
 
-You can now continue developing your application. Just refreshing the browser will render the source code changes.
+You can now continue developing your application. Refreshing the browser or hitting the endpoint again will render the source code changes.
 
 Run `odo delete` to delete the application from cluster.
 
