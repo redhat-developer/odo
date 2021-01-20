@@ -72,7 +72,7 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 // Validate validates the CreateOptions based on completed values
 func (o *CreateOptions) Validate() (err error) {
 	// validate the storage
-	return o.LocalConfigInfo.ValidateStorage(o.storage)
+	return o.LocalConfigProvider.ValidateStorage(o.storage)
 }
 
 // Run contains the logic for the odo storage create command
@@ -82,9 +82,8 @@ func (o *CreateOptions) Run() (err error) {
 		return err
 	}
 
-	storageResultMachineReadable := storage.GetMachineReadableFormat(o.storage.Name, o.storage.Size, o.storage.Path)
-
 	if log.IsJSON() {
+		storageResultMachineReadable := storage.GetMachineReadableFormat(o.storage.Name, o.storage.Size, o.storage.Path)
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.Context.LocalConfigProvider.GetName())
