@@ -86,15 +86,6 @@ Similarly for running periodic test on 4.x cluster, job configuration file will 
 
 To generate the odo job file, run `make jobs` in https://github.com/openshift/release[openshift/release] for the odo pr and periodic tests.
 
-=== Test running on PRs and Periodic Jobs
-
-Priodic jobs are trigered for openshift version 4.2 to 4.(x+1) for PRs, where `x` is current supported version of Openshift version. And PRs are run on latest openshift version(4.x). 
-
-Note:
-```
-PR jobs,kubernetes, openshift 3.11 are moving towards PSI.
-```
-
 
 Job dashboard is monitored at:
 
