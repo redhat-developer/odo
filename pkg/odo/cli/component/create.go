@@ -837,7 +837,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
 
-	log.Info("Devfile Component Name Validation")
+	log.Info("Validation")
 
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
 		// Validate if the devfile component name that user wants to create adheres to the k8s naming convention
@@ -862,7 +862,7 @@ func (co *CreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	log.Info("Supportability Validation")
+	log.Info("Validation")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
