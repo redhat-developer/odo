@@ -41,8 +41,11 @@ func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string
 	if err != nil {
 		if strings.Contains(err.Error(), "could not find specified operator") {
 			err = nil
+		} else if csvSupport, _ := o.KClient.IsCSVSupported(); csvSupport == false {
+			err = nil
+		} else {
+			return err
 		}
-		return err
 	}
 
 	o.services, err = catalog.ListSvcCatServices(o.Client)
@@ -53,8 +56,9 @@ func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string
 		} else if strings.Contains(err.Error(), "cannot list resource \"clusterserviceclasses\" in API group \"servicecatalog.k8s.io\" at the cluster scope") {
 			// this error is thrown when Service Catalog is not enabled on OpenShift
 			err = nil
+		} else {
+			return err
 		}
-		return err
 	}
 
 	o.services = util.FilterHiddenServices(o.services)
