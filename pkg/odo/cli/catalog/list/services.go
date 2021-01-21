@@ -37,11 +37,10 @@ func NewServiceOptions() *ServiceOptions {
 // Complete completes ListServicesOptions after they've been created
 func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
+
 	o.csvs, err = catalog.ListOperatorServices(o.KClient)
 	if err != nil {
 		if strings.Contains(err.Error(), "could not find specified operator") {
-			err = nil
-		} else if csvSupport, _ := o.KClient.IsCSVSupported(); csvSupport == false {
 			err = nil
 		} else {
 			return err
