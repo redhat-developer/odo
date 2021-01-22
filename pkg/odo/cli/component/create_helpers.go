@@ -38,6 +38,8 @@ func (co *CreateOptions) SetComponentSettings(args []string) error {
 	return nil
 }
 
+// DecideAndDownloadStarterProject decides the starter project from the value passed by the user and
+// downloads it
 func DecideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed string, token string, interactive bool) error {
 	if projectPassed == "" && !interactive {
 		return nil

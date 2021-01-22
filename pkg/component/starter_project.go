@@ -71,8 +71,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 
 }
 
-// Downloads first starter project from list of starter projects in devfile
-// Currently type git with a non github url is not supported
+// DownloadStarterProject Downloads first starter project from list of starter projects in devfile
 func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string) error {
 
 	// Retrieve the working directory in order to clone correctly
