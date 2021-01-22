@@ -4,8 +4,9 @@
 # Setup Kubeconfig and login as kubeadmin #
 ###########################################
 
+export DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
+
 setup_kubeadmin() {
-    export DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
     export KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
     export KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
     if [[ -z $CI && ! -f $KUBEADMIN_PASSWORD_FILE ]]; then
