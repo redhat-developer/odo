@@ -29,7 +29,8 @@ First setup your fork of the odo project, following the steps below
 
  . Clone your fork:
 +
-NOTE: The following commands assume that you have the `$GOPATH` environment variable properly set. We highly recommend you place `odo` code into the $GOPATH.
+NOTE: odo uses `go modules` to manage dependencies which means you can clone the code anywhere you like but for backwards compatibility
+we would be cloning it under `$GOPATH`
 +
 
 ----
