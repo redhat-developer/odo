@@ -181,7 +181,9 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create using --starter with a devfile component that contains no projects", func() {
 		It("should fail with please run 'no starter project found in devfile.'", func() {
-			output := helper.CmdShouldFail("odo", "create", "java-maven", "--starter")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-starterProject.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter")
 			expectedString := "no starter project found in devfile."
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
