@@ -184,7 +184,15 @@ var _ = Describe("odo devfile watch command tests", func() {
 			// odo watch and validate if we can port forward successfully
 			utils.OdoWatchWithDebug(odoV2Watch, commonVar.Context, watchFlag)
 
+			// check the --debug-command flag
+			watchFlag = "--debug-command debug"
+			odoV2Watch.StringsToBeMatched = []string{"Executing debug command"}
+
+			// odo watch and validate if we can port forward successfully
+			utils.OdoWatchWithDebug(odoV2Watch, commonVar.Context, watchFlag)
+
 			// revert to normal odo push
+			watchFlag = ""
 			output = helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
@@ -194,6 +202,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
 			}
 			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
+
+			// check that the --debug-command fails when the component is not pushed using debug mode
+			output = helper.CmdShouldFailWithRetry(1, 1, "odo", "watch", "--context", commonVar.Context, "--debug-command", "debug")
+			Expect(output).To(ContainSubstring("please start the component in debug mode"))
 		})
 	})
 

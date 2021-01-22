@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/validate"
+	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/config"
@@ -63,6 +64,7 @@ type WatchOptions struct {
 	// devfile commands
 	devfileBuildCommand string
 	devfileRunCommand   string
+	devfileDebugCommand string
 
 	*genericclioptions.Context
 }
@@ -94,9 +96,6 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 		// Get the component name
 		wo.componentName = wo.EnvSpecificInfo.GetName()
-		if err != nil {
-			return err
-		}
 
 		// Parse devfile and validate
 		devObj, err := devfile.ParseAndValidate(wo.devfilePath)
@@ -161,6 +160,9 @@ func (wo *WatchOptions) Validate() (err error) {
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
 	if util.CheckPathExists(wo.devfilePath) {
+		if wo.devfileDebugCommand != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
+			return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
+		}
 		exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName)
 		if err != nil {
 			return err
@@ -218,6 +220,7 @@ func (wo *WatchOptions) Run() (err error) {
 				Show:                wo.show,
 				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
 				DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
+				DevfileDebugCmd:     strings.ToLower(wo.devfileDebugCommand),
 				EnvSpecificInfo:     wo.EnvSpecificInfo,
 			},
 		)
@@ -278,6 +281,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 	watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
+	watchCmd.Flags().StringVar(&wo.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
 
 	// Adding context flag
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)

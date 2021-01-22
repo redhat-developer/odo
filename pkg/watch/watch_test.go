@@ -103,6 +103,10 @@ type mockPushParameters struct {
 	show            bool
 	isDebug         bool
 	debugPort       int
+
+	devfileBuildCmd string
+	devfileRunCmd   string
+	devfileDebugCmd string
 }
 
 var mockPush mockPushParameters
@@ -116,6 +120,15 @@ func mockDevFilePush(parameters common.PushParameters, _ WatchParameters) error 
 			"show:" + strconv.FormatBool(parameters.Show),
 			"debug:" + strconv.FormatBool(parameters.Debug),
 			"debugPort:" + strconv.Itoa(parameters.DebugPort),
+		})
+		os.Exit(1)
+	}
+
+	if parameters.DevfileBuildCmd != mockPush.devfileBuildCmd || parameters.DevfileRunCmd != mockPush.devfileRunCmd || parameters.DevfileDebugCmd != mockPush.devfileDebugCmd {
+		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
+			"devfileBuildCmd:" + parameters.DevfileBuildCmd,
+			"devfileRunCmd:" + parameters.DevfileRunCmd,
+			"devfileDebugCmd:" + parameters.DevfileDebugCmd,
 		})
 		os.Exit(1)
 	}
@@ -203,6 +216,9 @@ func TestWatchAndPush(t *testing.T) {
 		setupEnv          func(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error)
 		isExperimental    bool
 		isDebug           bool
+		devfileBuildCmd   string
+		devfileRunCmd     string
+		devfileDebugCmd   string
 		debugPort         int
 	}{
 		{
@@ -410,9 +426,10 @@ func TestWatchAndPush(t *testing.T) {
 					ModificationType: testingutil.DELETE,
 				},
 			},
-			want:        []string{"__init__.py"},
-			wantDeleted: []string{"src/read_licenses.py"},
-			setupEnv:    setUpF8AnalyticsComponentSrc,
+			want:            []string{"__init__.py"},
+			wantDeleted:     []string{"src/read_licenses.py"},
+			setupEnv:        setUpF8AnalyticsComponentSrc,
+			devfileBuildCmd: "build-new",
 		},
 		{
 			name:            "Case 3: Valid watch with list of files to be ignored with a create and a delete event",
@@ -506,9 +523,10 @@ func TestWatchAndPush(t *testing.T) {
 					ModificationType: testingutil.DELETE,
 				},
 			},
-			want:        []string{"__init__.py"},
-			wantDeleted: []string{"src/read_licenses.py"},
-			setupEnv:    setUpF8AnalyticsComponentSrc,
+			want:          []string{"__init__.py"},
+			wantDeleted:   []string{"src/read_licenses.py"},
+			setupEnv:      setUpF8AnalyticsComponentSrc,
+			devfileRunCmd: "run-new",
 		},
 		{
 			name:            "Case 4: Valid watch with list of files to be ignored with a folder create event",
@@ -608,9 +626,10 @@ func TestWatchAndPush(t *testing.T) {
 					ModificationType: testingutil.CREATE,
 				},
 			},
-			want:        []string{"__init__.py"},
-			wantDeleted: []string{"src/read_licenses.py"},
-			setupEnv:    setUpF8AnalyticsComponentSrc,
+			want:            []string{"__init__.py"},
+			wantDeleted:     []string{"src/read_licenses.py"},
+			setupEnv:        setUpF8AnalyticsComponentSrc,
+			devfileDebugCmd: "debug-new",
 		},
 		{
 			name:            "Case 5: Valid watch with list of files to be ignored with a folder delete event",
@@ -740,8 +759,11 @@ func TestWatchAndPush(t *testing.T) {
 					isForcePush:     tt.forcePush,
 					globExps:        tt.ignores,
 					show:            tt.show,
-					debugPort:       tt.debugPort,
 					isDebug:         tt.isDebug,
+					debugPort:       tt.debugPort,
+					devfileBuildCmd: tt.devfileBuildCmd,
+					devfileRunCmd:   tt.devfileRunCmd,
+					devfileDebugCmd: tt.devfileDebugCmd,
 				}
 
 				ExpectedChangedFiles = tt.want
@@ -812,11 +834,14 @@ func TestWatchAndPush(t *testing.T) {
 					ComponentName: tt.componentName,
 					Path:          basePath,
 					// convert the glob expressions to absolute form for WatchAndPush to work properly
-					FileIgnores:   util.GetAbsGlobExps(basePath, tt.ignores),
-					PushDiffDelay: tt.delayInterval,
-					StartChan:     StartChan,
-					ExtChan:       ExtChan,
-					Show:          tt.show,
+					FileIgnores:     util.GetAbsGlobExps(basePath, tt.ignores),
+					StartChan:       StartChan,
+					ExtChan:         ExtChan,
+					PushDiffDelay:   tt.delayInterval,
+					Show:            tt.show,
+					DevfileBuildCmd: tt.devfileBuildCmd,
+					DevfileRunCmd:   tt.devfileRunCmd,
+					DevfileDebugCmd: tt.devfileDebugCmd,
 				}
 
 				if tt.isExperimental {
