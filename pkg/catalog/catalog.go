@@ -302,6 +302,12 @@ func ListSvcCatServices(client *occlient.Client) (ServiceTypeList, error) {
 func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
 	var csvList olm.ClusterServiceVersionList
 
+	// first check for CSV support
+	csvSupport, err := client.IsCSVSupported()
+	if !csvSupport || err != nil {
+		return &csvList, err
+	}
+
 	allCsvs, err := client.ListClusterServiceVersions()
 	if err != nil {
 		return &csvList, err
