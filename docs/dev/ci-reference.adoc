@@ -14,7 +14,7 @@ Jenkins build script
   curl -kJLO <kube-password>
   NDFILE="$(pwd)/jenkins-nodes.json"
   KUBEADMIN_PASSWORD_FILE="$(pwd)/kube-password"
-  ./ ci-firewall work --sshnodesfile ${NDFILE} --env "OCP4X_API_URL=https://<url-to-ocp-cluster>" --env "OCP4X_DOWNLOAD_URL=https://downloads-openshift-console.apps.testocp4x.psiodo.net" --env "OCP4X_KUBEADMIN_PASSWORD=$(cat ${KUBEADMIN_PASSWORD_FILE})" --env "CI=openshift"
+  ./ ci-firewall work --sshnodesfile ${NDFILE} --env "OCP4X_API_URL=https://<url-to-ocp-cluster>" --env "OCP4X_KUBEADMIN_PASSWORD=$(cat ${KUBEADMIN_PASSWORD_FILE})" --env "CI=openshift"
   rm -rf ./*
 ----
 
