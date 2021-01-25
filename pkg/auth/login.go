@@ -58,6 +58,15 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 		}
 	}
 
+	// if defaultNamespace is not defined, we will look for current namespace from kubeconfig file if defined
+	if len(a.DefaultNamespace) == 0 {
+		if defaultContext, defaultContextExists := a.StartingKubeConfig.Contexts[a.StartingKubeConfig.CurrentContext]; defaultContextExists {
+			if len(defaultContext.Namespace) > 0 {
+				a.DefaultNamespace = defaultContext.Namespace
+			}
+		}
+	}
+
 	// 1. Say we're connecting
 	odolog.Info("Connecting to the OpenShift cluster\n")
 
