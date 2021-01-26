@@ -62,8 +62,6 @@ oc annotate istag/python:latest --namespace=openshift tags=builder --overwrite
 
 sh $AUTH_SCRIPT
 
-oc get secret pull-secret -n openshift-config -o yaml | sed "s/openshift-config/myproject/g" | oc apply -f -
-
 # Project list
 oc projects
 
