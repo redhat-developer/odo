@@ -259,6 +259,7 @@ func TestGetRegistryDevfiles(t *testing.T) {
 						"Angular",
 						"Alpine"
 					],
+					"language": "nodejs",
 					"icon": "/images/angular.svg",
 					"globalMemoryLimit": "2686Mi",
 					"links": {
@@ -294,6 +295,8 @@ func TestGetRegistryDevfiles(t *testing.T) {
 						URL:  server.URL,
 					},
 					Link: "/devfiles/angular/devfile.yaml",
+					Language: "nodejs",
+					Tags: []string {"NodeJS","Angular","Alpine"},
 				},
 			},
 		},
