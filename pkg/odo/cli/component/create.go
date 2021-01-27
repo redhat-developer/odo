@@ -843,7 +843,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 		co.devfileMetadata.starterToken = token
 	}
 
-	err = DecideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive)
+	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive)
 	if err != nil {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
