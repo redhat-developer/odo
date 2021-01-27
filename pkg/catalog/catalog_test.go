@@ -296,7 +296,7 @@ func TestGetRegistryDevfiles(t *testing.T) {
 					},
 					Link:     "/devfiles/angular/devfile.yaml",
 					Language: "nodejs",
-					Tags:     []string {"NodeJS","Angular","Alpine"},
+					Tags:     []string{"NodeJS", "Angular", "Alpine"},
 				},
 			},
 		},
