@@ -164,6 +164,8 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 			Description: devfileIndexEntry.Description,
 			Link:        devfileIndexEntry.Links.Link,
 			Registry:    registry,
+			Language:    devfileIndexEntry.Language,
+			Tags:        devfileIndexEntry.Tags,
 		}
 		registryDevfiles = append(registryDevfiles, stackDevfile)
 	}
