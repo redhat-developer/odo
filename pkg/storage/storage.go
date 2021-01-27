@@ -5,6 +5,8 @@ import (
 	"reflect"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/config"
@@ -491,10 +493,7 @@ func GetMachineFormatWithContainer(storageName, storageSize, storagePath string,
 
 func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (StorageList, error) {
 
-	storageConfig, err := localConfig.StorageList()
-	if err != nil {
-		return StorageList{}, err
-	}
+	storageConfig := localConfig.ListStorage()
 
 	storageListConfig := ConvertListLocalToMachine(storageConfig)
 
@@ -546,7 +545,7 @@ func isPushed(storageName string, storageCluster StorageList) bool {
 }
 
 // It converts storage config list to StorageList type
-func ConvertListLocalToMachine(storageListConfig []config.ComponentStorageSettings) StorageList {
+func ConvertListLocalToMachine(storageListConfig []localConfigProvider.LocalStorage) StorageList {
 
 	var storageListLocal []Storage
 
@@ -652,7 +651,7 @@ func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
 		for _, volumeMount := range component.Container.VolumeMounts {
 			size, ok := volumeSizeMap[volumeMount.Name]
 			if ok {
-				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, common.GetVolumeMountPath(volumeMount), component.Name))
+				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, envinfo.GetVolumeMountPath(volumeMount), component.Name))
 			}
 		}
 	}

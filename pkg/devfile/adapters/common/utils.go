@@ -10,6 +10,7 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/envinfo"
 )
 
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
@@ -133,16 +134,6 @@ func getCommandsByGroup(data data.DevfileData, groupType devfilev1.CommandGroupK
 	return commands
 }
 
-// GetVolumeMountPath gets the volume mount's path
-func GetVolumeMountPath(volumeMount devfilev1.VolumeMount) string {
-	// if there is no volume mount path, default to volume mount name as per devfile schema
-	if volumeMount.Path == "" {
-		volumeMount.Path = "/" + volumeMount.Name
-	}
-
-	return volumeMount.Path
-}
-
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
 	containerComponents := devfileObj.Data.GetDevfileContainerComponents()
@@ -164,7 +155,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 
 			vol := DevfileVolume{
 				Name:          volumeMount.Name,
-				ContainerPath: GetVolumeMountPath(volumeMount),
+				ContainerPath: envinfo.GetVolumeMountPath(volumeMount),
 				Size:          size,
 			}
 			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)

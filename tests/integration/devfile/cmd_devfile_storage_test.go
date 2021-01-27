@@ -231,6 +231,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CmdShouldFail("odo", "storage", "delete", helper.RandString(5), "--context", commonVar.Context, "-f")
 		})
 	})
+
 	Context("When ephemeral is set to true in preference.yaml", func() {
 		It("should not create a pvc to store source code", func() {
 

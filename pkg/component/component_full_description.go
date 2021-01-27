@@ -80,10 +80,7 @@ func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client
 			storages = storage.GetLocalDevfileStorage(devfile.Data)
 			storages = storage.GetMachineReadableFormatForList(storages.Items)
 		} else {
-			storageLocal, err := localConfigInfo.StorageList()
-			if err != nil {
-				return err
-			}
+			storageLocal := localConfigInfo.ListStorage()
 			// convert to machine readable format
 			storages = storage.ConvertListLocalToMachine(storageLocal)
 		}

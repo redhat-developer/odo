@@ -2,18 +2,13 @@ package storage
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"github.com/devfile/library/pkg/devfile"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -29,48 +24,39 @@ var (
 `)
 )
 
-type StorageDeleteOptions struct {
+type DeleteOptions struct {
 	storageName            string
 	storageForceDeleteFlag bool
 	componentContext       string
 
-	isDevfile     bool
-	devfilePath   string
-	componentName string
 	*genericclioptions.Context
 }
 
-// NewStorageDeleteOptions creates a new StorageDeleteOptions instance
-func NewStorageDeleteOptions() *StorageDeleteOptions {
-	return &StorageDeleteOptions{devfilePath: component.DevfilePath}
+// NewStorageDeleteOptions creates a new DeleteOptions instance
+func NewStorageDeleteOptions() *DeleteOptions {
+	return &DeleteOptions{}
 }
 
-// Complete completes StorageDeleteOptions after they've been created
-func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.devfilePath = filepath.Join(o.componentContext, o.devfilePath)
-	o.isDevfile = util.CheckPathExists(o.devfilePath)
-	if o.isDevfile {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
+// Complete completes DeleteOptions after they've been created
+func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+		Cmd:              cmd,
+		DevfilePath:      component.DevfilePath,
+		ComponentContext: o.componentContext,
+	})
 
-		o.componentName = o.EnvSpecificInfo.GetName()
-	} else {
-		// This initializes the LocalConfigInfo as well
-		o.Context = genericclioptions.NewContext(cmd)
-
-		o.componentName = o.LocalConfigInfo.GetName()
+	if err != nil {
+		return err
 	}
+
 	o.storageName = args[0]
 	return
 }
 
-// Validate validates the StorageDeleteOptions based on completed values
-func (o *StorageDeleteOptions) Validate() (err error) {
-	if o.isDevfile {
-		return
-	}
-
-	exists := o.LocalConfigInfo.StorageExists(o.storageName)
-	if !exists {
+// Validate validates the DeleteOptions based on completed values
+func (o *DeleteOptions) Validate() (err error) {
+	gotStorage := o.LocalConfigProvider.GetStorage(o.storageName)
+	if gotStorage == nil {
 		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.Application, err)
 	}
 
@@ -78,48 +64,21 @@ func (o *StorageDeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo storage delete command
-func (o *StorageDeleteOptions) Run() (err error) {
-	var deleteMsg string
-
-	var devFile devfileParser.DevfileObj
-	mPath := ""
-	if o.isDevfile {
-		devFile, err = devfile.ParseAndValidate(o.devfilePath)
-		if err != nil {
-			return err
-		}
-		err = validate.ValidateDevfileData(devFile.Data)
-		if err != nil {
-			return err
-		}
-		mPath, err = devFile.Data.GetVolumeMountPath(o.storageName)
-		if err != nil {
-			return err
-		}
-	} else {
-		mPath = o.LocalConfigInfo.GetMountPath(o.storageName)
+func (o *DeleteOptions) Run() (err error) {
+	mPath, err := o.Context.LocalConfigProvider.GetStorageMountPath(o.storageName)
+	if err != nil {
+		return err
 	}
 
-	deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.componentName)
+	deleteMsg := fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.Context.LocalConfigProvider.GetName())
 
 	if log.IsJSON() || o.storageForceDeleteFlag || ui.Proceed(deleteMsg) {
-		if o.isDevfile {
-			err = devFile.Data.DeleteVolume(o.storageName)
-			if err != nil {
-				return err
-			}
-			err = devFile.WriteYamlDevfile()
-			if err != nil {
-				return err
-			}
-		} else {
-			err = o.LocalConfigInfo.StorageDelete(o.storageName)
-			if err != nil {
-				return fmt.Errorf("failed to delete storage, cause %v", err)
-			}
+		err := o.Context.LocalConfigProvider.DeleteStorage(o.storageName)
+		if err != nil {
+			return fmt.Errorf("failed to delete storage, cause %v", err)
 		}
 
-		successMessage := fmt.Sprintf("Deleted storage %v from %v", o.storageName, o.componentName)
+		successMessage := fmt.Sprintf("Deleted storage %v from %v", o.storageName, o.Context.LocalConfigProvider.GetName())
 
 		if log.IsJSON() {
 			storage.MachineReadableSuccessOutput(o.storageName, successMessage)

@@ -211,10 +211,7 @@ var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 		return completions
 	}
 
-	storageList, err := localConfig.StorageList()
-	if err != nil {
-		return completions
-	}
+	storageList := localConfig.ListStorage()
 
 	for _, storage := range storageList {
 		// we found the storage name in the list which means

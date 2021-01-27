@@ -266,41 +266,6 @@ func TestGetBootstrapperImage(t *testing.T) {
 
 }
 
-func TestGetVolumeMountPath(t *testing.T) {
-
-	tests := []struct {
-		name        string
-		volumeMount devfilev1.VolumeMount
-		wantPath    string
-	}{
-		{
-			name: "Case 1: Mount Path is present",
-			volumeMount: devfilev1.VolumeMount{
-				Name: "name1",
-				Path: "/path1",
-			},
-			wantPath: "/path1",
-		},
-		{
-			name: "Case 2: Mount Path is absent",
-			volumeMount: devfilev1.VolumeMount{
-				Name: "name1",
-			},
-			wantPath: "/name1",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			path := GetVolumeMountPath(tt.volumeMount)
-
-			if path != tt.wantPath {
-				t.Errorf("TestGetVolumeMountPath error: mount path mismatch, expected: %v got: %v", tt.wantPath, path)
-			}
-		})
-	}
-
-}
-
 func TestGetCommandsForGroup(t *testing.T) {
 
 	component := []devfilev1.Component{
