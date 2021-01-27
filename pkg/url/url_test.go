@@ -1374,10 +1374,12 @@ func TestPush(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockLocalConfigProvider := localConfigProvider.NewMockLocalConfigProvider(ctrl)
+			mockLocalConfigProvider.EXPECT().GetName().Return(tt.componentName).AnyTimes()
+			mockLocalConfigProvider.EXPECT().GetApplication().Return(tt.applicationName).AnyTimes()
 			mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.existingLocalURLs)
 
 			mockURLClient := NewMockClient(ctrl)
-			mockURLClient.EXPECT().ListCluster().Return(tt.existingClusterURLs, nil)
+			mockURLClient.EXPECT().ListFromCluster().Return(tt.existingClusterURLs, nil)
 
 			fakeClient, fakeClientSet := occlient.FakeNew()
 			fakeKClient, fakeKClientSet := kclient.FakeNew()
@@ -1406,8 +1408,6 @@ func TestPush(t *testing.T) {
 			})
 
 			if err := Push(fakeClient, fakeKClient, PushParameters{
-				ComponentName:    tt.componentName,
-				ApplicationName:  tt.applicationName,
 				LocalConfig:      mockLocalConfigProvider,
 				URLClient:        mockURLClient,
 				IsRouteSupported: tt.args.isRouteSupported,

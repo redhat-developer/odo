@@ -596,8 +596,6 @@ func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP s
 }
 
 type PushParameters struct {
-	ComponentName    string
-	ApplicationName  string
 	LocalConfig      localConfigProvider.LocalConfigProvider
 	URLClient        Client
 	IsRouteSupported bool
@@ -615,7 +613,14 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", url.Name)
 			continue
 		}
-		urlName := getValidURLName(url.Name)
+
+		// TODO remove once https://github.com/openshift/odo/issues/4060 is fixed
+		var urlName string
+		if parameters.IsS2I {
+			urlName = url.Name
+		} else {
+			urlName = getValidURLName(url.Name)
+		}
 		urlLOCAL[urlName] = ConvertLocalURL(url)
 	}
 
@@ -624,7 +629,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	urlCLUSTER := make(map[string]URL)
 
 	// get the URLs on the cluster
-	urlList, err := parameters.URLClient.ListCluster()
+	urlList, err := parameters.URLClient.ListFromCluster()
 	if err != nil {
 		return err
 	}
@@ -646,6 +651,10 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if val.Spec.Kind == localConfigProvider.INGRESS {
 				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
 			} else if val.Spec.Kind == localConfigProvider.ROUTE {
+				// we don't allow the host input for route based URLs
+				// based removing it for the urls from the cluster to avoid config mismatch
+				urlSpec.Spec.Host = ""
+
 				if val.Spec.Secure {
 					val.Spec.Protocol = "https"
 				} else {
@@ -667,9 +676,9 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if !parameters.IsS2I && kClient != nil {
 				// route/ingress name is defined as <urlName>-<componentName>
 				// to avoid error due to duplicate ingress name defined in different devfile components
-				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.ComponentName)
+				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.LocalConfig.GetName())
 			}
-			err := Delete(client, kClient, deleteURLName, parameters.ApplicationName, urlSpec.Spec.Kind, parameters.IsS2I)
+			err := Delete(client, kClient, deleteURLName, parameters.LocalConfig.GetApplication(), urlSpec.Spec.Kind, parameters.IsS2I)
 			if err != nil {
 				return err
 			}
@@ -691,8 +700,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				urlName:         urlName,
 				portNumber:      urlInfo.Spec.Port,
 				secureURL:       urlInfo.Spec.Secure,
-				componentName:   parameters.ComponentName,
-				applicationName: parameters.ApplicationName,
+				componentName:   parameters.LocalConfig.GetName(),
+				applicationName: parameters.LocalConfig.GetApplication(),
 				host:            urlInfo.Spec.Host,
 				secretName:      urlInfo.Spec.TLSSecret,
 				urlKind:         urlInfo.Spec.Kind,
@@ -728,10 +737,11 @@ type ClientOptions struct {
 }
 
 type Client interface {
-	ListCluster() (URLList, error)
+	ListFromCluster() (URLList, error)
 	List() (URLList, error)
 }
 
+// NewClient gets the appropriate URL client based on the parameters
 func NewClient(options ClientOptions) Client {
 	genericInfo := generic{
 		appName:       options.LocalConfigProvider.GetApplication(),
@@ -753,6 +763,7 @@ func NewClient(options ClientOptions) Client {
 	}
 }
 
+// generic contains information required for all the URL clients
 type generic struct {
 	appName       string
 	componentName string

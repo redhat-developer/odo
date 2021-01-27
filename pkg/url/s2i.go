@@ -10,12 +10,14 @@ import (
 	"k8s.io/klog"
 )
 
+// s2iClient contains information required for s2i based URL based operations
 type s2iClient struct {
 	generic
 	client occlient.Client
 }
 
-func (s s2iClient) ListCluster() (URLList, error) {
+// ListCluster lists route based URLs from the cluster
+func (s s2iClient) ListFromCluster() (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, s.localConfig.GetApplication())
 
 	if s.localConfig.GetName() != "" {
@@ -31,9 +33,6 @@ func (s s2iClient) ListCluster() (URLList, error) {
 
 	var urls []URL
 	for _, r := range routes {
-		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
-			continue
-		}
 		a := getMachineReadableFormat(r)
 		urls = append(urls, a)
 	}
@@ -42,16 +41,17 @@ func (s s2iClient) ListCluster() (URLList, error) {
 	return urlList, nil
 }
 
+// List lists both route based URLs and local URLs with respective states
 func (s s2iClient) List() (URLList, error) {
 	var urls []URL
 
-	clusterUrls, err := s.ListCluster()
+	clusterUrls, err := s.ListFromCluster()
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
 	for _, clusterURL := range clusterUrls.Items {
-		var found bool = false
+		var found = false
 		for _, configURL := range s.localConfig.ListURLs() {
 			localURL := ConvertConfigURL(configURL)
 			if localURL.Name == clusterURL.Name {

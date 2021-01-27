@@ -32,19 +32,19 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// ListCluster mocks base method
-func (m *MockClient) ListCluster() (URLList, error) {
+// ListFromCluster mocks base method
+func (m *MockClient) ListFromCluster() (URLList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListCluster")
+	ret := m.ctrl.Call(m, "ListFromCluster")
 	ret0, _ := ret[0].(URLList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListCluster indicates an expected call of ListCluster
-func (mr *MockClientMockRecorder) ListCluster() *gomock.Call {
+// ListFromCluster indicates an expected call of ListFromCluster
+func (mr *MockClientMockRecorder) ListFromCluster() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCluster", reflect.TypeOf((*MockClient)(nil).ListCluster))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFromCluster", reflect.TypeOf((*MockClient)(nil).ListFromCluster))
 }
 
 // List mocks base method

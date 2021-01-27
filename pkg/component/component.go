@@ -589,12 +589,9 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 // Parameters:
 //	client: occlient instance
 //	kClient: kclient instance
-//	appName: Name of application of which the component is a part
-//	componentName: Name of the component which is being patched with config
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
-//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each endpoint entry
 //  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
@@ -610,7 +607,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		client.Namespace = kClient.Namespace
 	}
 
-	var localConfig localConfigProvider.LocalConfigProvider
+	var configProvider localConfigProvider.LocalConfigProvider
 	if isS2I {
 		// if component exist then only call the update function
 		if cmpExist {
@@ -620,16 +617,10 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		}
 	}
 
-	var componentName string
-	var applicationName string
 	if isS2I || kClient == nil {
-		componentName = componentConfig.GetName()
-		applicationName = componentConfig.GetApplication()
-		localConfig = &componentConfig
+		configProvider = &componentConfig
 	} else {
-		componentName = envSpecificInfo.GetName()
-		applicationName = envSpecificInfo.GetApplication()
-		localConfig = &envSpecificInfo
+		configProvider = &envSpecificInfo
 	}
 
 	isRouteSupported := false
@@ -641,13 +632,11 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
 		OCClient:            *client,
 		IsRouteSupported:    isRouteSupported,
-		LocalConfigProvider: localConfig,
+		LocalConfigProvider: configProvider,
 	})
 
 	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
-		ComponentName:    componentName,
-		ApplicationName:  applicationName,
-		LocalConfig:      localConfig,
+		LocalConfig:      configProvider,
 		URLClient:        urlClient,
 		IsRouteSupported: isRouteSupported,
 		IsS2I:            isS2I,

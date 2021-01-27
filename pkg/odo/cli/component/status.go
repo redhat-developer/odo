@@ -70,11 +70,10 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// If devfile is present
 	if so.isDevfile {
-		envSpecificInfo, err := envinfo.NewEnvSpecificInfo(so.componentContext)
+		so.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(so.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
-		so.EnvSpecificInfo = envSpecificInfo
 		so.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Get the component name

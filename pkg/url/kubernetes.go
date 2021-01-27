@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog"
 )
 
+// kubernetesClient contains information required for devfile based URL based operations
 type kubernetesClient struct {
 	generic
 	isRouteSupported bool
@@ -19,7 +20,7 @@ type kubernetesClient struct {
 }
 
 // ListCluster lists both route and ingress based URLs from the cluster
-func (k kubernetesClient) ListCluster() (URLList, error) {
+func (k kubernetesClient) ListFromCluster() (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, k.componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := k.client.GetKubeClient().ListIngresses(labelSelector)
@@ -54,8 +55,9 @@ func (k kubernetesClient) ListCluster() (URLList, error) {
 
 // List lists both route/ingress based URLs and local URLs with respective states
 func (k kubernetesClient) List() (URLList, error) {
+	// get the URLs present on the cluster
 	clusterURLMap := make(map[string]URL)
-	clusterURLs, err := k.ListCluster()
+	clusterURLs, err := k.ListFromCluster()
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list routes")
 	}
@@ -66,6 +68,7 @@ func (k kubernetesClient) List() (URLList, error) {
 
 	localMap := make(map[string]URL)
 	if k.localConfig != nil {
+		// get the URLs present on the localConfigProvider
 		localURLS := k.localConfig.ListURLs()
 		for _, url := range localURLS {
 			if !k.isRouteSupported && url.Kind == localConfigProvider.ROUTE {
@@ -78,6 +81,9 @@ func (k kubernetesClient) List() (URLList, error) {
 		}
 	}
 
+	// find the URLs which are present on the cluster but not on the localConfigProvider
+	// if not found on the localConfigProvider, mark them as 'StateTypeLocallyDeleted'
+	// else mark them as 'StateTypePushed'
 	var urls sortableURLs
 	for URLName, clusterURL := range clusterURLMap {
 		_, found := localMap[URLName]
@@ -92,6 +98,8 @@ func (k kubernetesClient) List() (URLList, error) {
 		}
 	}
 
+	// find the URLs which are present on the localConfigProvider but not on the cluster
+	// if not found on the cluster, mark them as 'StateTypeNotPushed'
 	for localName, localURL := range localMap {
 		_, remoteURLFound := clusterURLMap[localName]
 		if !remoteURLFound {

@@ -187,13 +187,13 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 				isRouteSupported: tt.fields.isRouteSupported,
 				client:           *fkocclient,
 			}
-			got, err := k.ListCluster()
+			got, err := k.ListFromCluster()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListCluster() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListFromCluster() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListCluster() error: %v", pretty.Compare(got, tt.want))
+				t.Errorf("ListFromCluster() error: %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}
