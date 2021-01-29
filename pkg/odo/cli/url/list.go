@@ -60,7 +60,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 	o.client = url.NewClient(url.ClientOptions{
 		LocalConfigProvider: o.Context.LocalConfigProvider,
-		OCClient:            *genericclioptions.Client(cmd),
+		OCClient:            *o.Context.Client,
 		IsRouteSupported:    routeSupported,
 	})
 	return

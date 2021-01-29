@@ -93,9 +93,6 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 			context.ComponentContext = parameters.ComponentContext
 		}
 
-		context = NewContext(parameters.Cmd)
-		context.ComponentContext = parameters.ComponentContext
-
 		err = context.InitConfigFromContext()
 		if err != nil {
 			return nil, err
