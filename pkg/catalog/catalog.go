@@ -41,6 +41,7 @@ var supportedImages = map[string]bool{
 	"rhscl/nodejs-12-rhel7:latest":                 true,
 	"rhoar-nodejs/nodejs-10:latest":                true,
 	"ubi8/nodejs-12:latest":                        true,
+	"ubi8/nodejs-14:latest":                        true,
 }
 
 // GetDevfileRegistries gets devfile registries from preference file,
