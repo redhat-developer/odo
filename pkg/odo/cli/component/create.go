@@ -547,8 +547,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		projectSupported, err := co.Client.IsProjectSupported()
 
 		if err != nil {
-			// we don't need to return (fail) if this happens
-			log.Warning("Project resource supportability check failed.")
+			return errors.Wrap(err, "Resource project validation check failed.")
 		}
 
 		if projectSupported && componentNamespace == "default" {
