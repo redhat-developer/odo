@@ -353,6 +353,22 @@ func (ei *EnvInfo) GetDebugPort() int {
 	return *ei.componentSettings.DebugPort
 }
 
+// GetContainers returns the Container components from the devfile
+// returns empty list if nil
+func (ei *EnvInfo) GetContainers() []localConfigProvider.LocalContainer {
+	var localContainers []localConfigProvider.LocalContainer
+
+	for _, component := range ei.devfileObj.Data.GetComponents() {
+		if component.Container == nil {
+			continue
+		}
+		localContainers = append(localContainers, localConfigProvider.LocalContainer{
+			Name: component.Name,
+		})
+	}
+	return localContainers
+}
+
 // IsUserCreatedDevfile returns the UserCreatedDevfile
 func (ei *EnvInfo) IsUserCreatedDevfile() bool {
 	return ei.componentSettings.UserCreatedDevfile

@@ -45,6 +45,11 @@ type LocalStorage struct {
 	Container string `yaml:"-" json:"-"`
 }
 
+// LocalContainer holds the container related information
+type LocalContainer struct {
+	Name string `yaml:"Name" json:"Name"`
+}
+
 // LocalConfigProvider is an interface which all local config providers need to implement
 // currently for openshift there is localConfigInfo and for devfile its EnvInfo + devfile.yaml
 type LocalConfigProvider interface {
@@ -52,6 +57,7 @@ type LocalConfigProvider interface {
 	GetName() string
 	GetNamespace() string
 	GetDebugPort() int
+	GetContainers() []LocalContainer
 
 	GetURL(name string) *LocalURL
 	CompleteURL(url *LocalURL) error

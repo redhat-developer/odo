@@ -3,9 +3,8 @@ package storage
 import (
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/testingutil"
 )
 
 func Test_isContainerDisplay(t *testing.T) {
@@ -17,7 +16,7 @@ func Test_isContainerDisplay(t *testing.T) {
 
 	type args struct {
 		storageList storage.StorageList
-		obj         []devfilev1.Component
+		obj         []localConfigProvider.LocalContainer
 	}
 	tests := []struct {
 		name string
@@ -33,9 +32,13 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
 					},
 				},
-				obj: []devfilev1.Component{
-					testingutil.GetFakeContainerComponent("container-0"),
-					testingutil.GetFakeContainerComponent("container-1"),
+				obj: []localConfigProvider.LocalContainer{
+					{
+						Name: "container-0",
+					},
+					{
+						Name: "container-1",
+					},
 				},
 			},
 			want: false,
@@ -49,9 +52,13 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/path"), storage.StateTypePushed, "container-1"),
 					},
 				},
-				obj: []devfilev1.Component{
-					testingutil.GetFakeContainerComponent("container-0"),
-					testingutil.GetFakeContainerComponent("container-1"),
+				obj: []localConfigProvider.LocalContainer{
+					{
+						Name: "container-0",
+					},
+					{
+						Name: "container-1",
+					},
 				},
 			},
 			want: true,
@@ -65,9 +72,13 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypeNotPushed, "container-1"),
 					},
 				},
-				obj: []devfilev1.Component{
-					testingutil.GetFakeContainerComponent("container-0"),
-					testingutil.GetFakeContainerComponent("container-1"),
+				obj: []localConfigProvider.LocalContainer{
+					{
+						Name: "container-0",
+					},
+					{
+						Name: "container-1",
+					},
 				},
 			},
 			want: true,
@@ -80,9 +91,13 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
 					},
 				},
-				obj: []devfilev1.Component{
-					testingutil.GetFakeContainerComponent("container-0"),
-					testingutil.GetFakeContainerComponent("container-1"),
+				obj: []localConfigProvider.LocalContainer{
+					{
+						Name: "container-0",
+					},
+					{
+						Name: "container-1",
+					},
 				},
 			},
 			want: true,
@@ -96,8 +111,10 @@ func Test_isContainerDisplay(t *testing.T) {
 						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
 					},
 				},
-				obj: []devfilev1.Component{
-					testingutil.GetFakeContainerComponent("container-0"),
+				obj: []localConfigProvider.LocalContainer{
+					{
+						Name: "container-0",
+					},
 				},
 			},
 			want: true,

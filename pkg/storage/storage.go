@@ -2,14 +2,9 @@ package storage
 
 import (
 	"fmt"
-	"reflect"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 
@@ -491,39 +486,6 @@ func GetMachineFormatWithContainer(storageName, storageSize, storagePath string,
 	return storage
 }
 
-func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (StorageList, error) {
-
-	storageConfig := localConfig.ListStorage()
-
-	storageListConfig := ConvertListLocalToMachine(storageConfig)
-
-	storageCluster, err := List(client, componentName, applicationName)
-	if err != nil {
-		klog.V(4).Infof("Storage list from cluster error: %v", err)
-	}
-
-	var storageList []Storage
-
-	// Iterate over local storage list, to add State PUSHED/NOT PUSHED
-	for _, storeLocal := range storageListConfig.Items {
-		storeLocal.Status = StateTypeNotPushed
-		if isPushed(storeLocal.Name, storageCluster) {
-			storeLocal.Status = StateTypePushed
-		}
-		storageList = append(storageList, storeLocal)
-	}
-
-	// Iterate over cluster storage list, to add State Locally Deleted
-	for _, storeCluster := range storageCluster.Items {
-		if isLocallyDeleted(storeCluster.Name, storageListConfig) {
-			storeCluster.Status = StateTypeLocallyDeleted
-			storageList = append(storageList, storeCluster)
-		}
-	}
-
-	return GetMachineReadableFormatForList(storageList), nil
-}
-
 func isLocallyDeleted(storageName string, storageLocal StorageList) bool {
 	for _, storage := range storageLocal.Items {
 		if storageName == storage.Name {
@@ -551,6 +513,7 @@ func ConvertListLocalToMachine(storageListConfig []localConfigProvider.LocalStor
 
 	for _, storeLocal := range storageListConfig {
 		s := GetMachineReadableFormat(storeLocal.Name, storeLocal.Size, storeLocal.Path)
+		s.Spec.ContainerName = storeLocal.Container
 		storageListLocal = append(storageListLocal, s)
 	}
 
@@ -628,76 +591,40 @@ func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageL
 	return StorageList{Items: storage}, nil
 }
 
-// GetLocalDevfileStorage lists the storage from the devfile
-func GetLocalDevfileStorage(devfileData data.DevfileData) StorageList {
-	volumeSizeMap := make(map[string]string)
-	components := devfileData.GetComponents()
-
-	for _, component := range components {
-		if component.Volume == nil {
-			continue
-		}
-		if component.Volume.Size == "" {
-			component.Volume.Size = common.DefaultVolumeSize
-		}
-		volumeSizeMap[component.Name] = component.Volume.Size
-	}
-
-	var storage []Storage
-	for _, component := range components {
-		if component.Container == nil {
-			continue
-		}
-		for _, volumeMount := range component.Container.VolumeMounts {
-			size, ok := volumeSizeMap[volumeMount.Name]
-			if ok {
-				storage = append(storage, GetMachineFormatWithContainer(volumeMount.Name, size, envinfo.GetVolumeMountPath(volumeMount), component.Name))
-			}
-		}
-	}
-
-	return StorageList{Items: storage}
+type ClientOptions struct {
+	OCClient            occlient.Client
+	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
 
-// DevfileList lists the storage from the local devfile and cluster with their respective state
-func DevfileList(kClient *kclient.Client, devfileData data.DevfileData, componentName string) (StorageList, error) {
-	localStorage := GetLocalDevfileStorage(devfileData)
+type Client interface {
+	ListFromCluster() (StorageList, error)
+	List() (StorageList, error)
+}
 
-	clusterStorage, err := DevfileListMounted(kClient, componentName)
-	if err != nil {
-		return StorageList{}, err
+// NewClient gets the appropriate Storage client based on the parameters
+func NewClient(options ClientOptions) Client {
+	genericInfo := generic{
+		appName:       options.LocalConfigProvider.GetApplication(),
+		componentName: options.LocalConfigProvider.GetName(),
+		localConfig:   options.LocalConfigProvider,
 	}
 
-	var storageList []Storage
-
-	// find the local storage which are in a pushed and not pushed state
-	for _, localStore := range localStorage.Items {
-		found := false
-		for _, clusterStore := range clusterStorage.Items {
-			if reflect.DeepEqual(localStore, clusterStore) {
-				found = true
-			}
+	if _, ok := options.LocalConfigProvider.(*config.LocalConfigInfo); ok {
+		return s2iClient{
+			generic: genericInfo,
+			client:  options.OCClient,
 		}
-		if found {
-			localStore.Status = StateTypePushed
-		} else {
-			localStore.Status = StateTypeNotPushed
-		}
-		storageList = append(storageList, localStore)
-	}
-
-	// find the cluster storage which have been deleted locally
-	for _, clusterStore := range clusterStorage.Items {
-		found := false
-		for _, localStore := range localStorage.Items {
-			if reflect.DeepEqual(localStore, clusterStore) {
-				found = true
-			}
-		}
-		if !found {
-			clusterStore.Status = StateTypeLocallyDeleted
-			storageList = append(storageList, clusterStore)
+	} else {
+		return kubernetesClient{
+			generic: genericInfo,
+			client:  options.OCClient,
 		}
 	}
-	return GetMachineReadableFormatForList(storageList), nil
+}
+
+// generic contains information required for all the Storage clients
+type generic struct {
+	appName       string
+	componentName string
+	localConfig   localConfigProvider.LocalConfigProvider
 }

@@ -438,6 +438,19 @@ func (lc *LocalConfig) GetDebugPort() int {
 	return util.GetIntOrDefault(lc.componentSettings.DebugPort, DefaultDebugPort)
 }
 
+// GetContainers returns the Container components from the config
+// returns empty list if nil
+func (lc *LocalConfig) GetContainers() []localConfigProvider.LocalContainer {
+	if lc.GetName() == "" {
+		return []localConfigProvider.LocalContainer{}
+	}
+	return []localConfigProvider.LocalContainer{
+		{
+			Name: lc.GetName(),
+		},
+	}
+}
+
 // GetIgnore returns the Ignore, returns default if nil
 func (lc *LocalConfig) GetIgnore() bool {
 	return util.GetBoolOrDefault(lc.componentSettings.Ignore, false)

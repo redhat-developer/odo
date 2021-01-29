@@ -3,18 +3,12 @@ package storage
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"text/tabwriter"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/odo/cli/component"
-	odoutil "github.com/openshift/odo/pkg/util"
-
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
 
@@ -36,70 +30,56 @@ var (
 	`)
 )
 
-type StorageListOptions struct {
+type ListOptions struct {
 	componentContext string
 	*genericclioptions.Context
 
-	isDevfile bool
-	parser.DevfileObj
+	client storage.Client
 }
 
-// NewStorageListOptions creates a new StorageListOptions instance
-func NewStorageListOptions() *StorageListOptions {
-	return &StorageListOptions{}
+// NewStorageListOptions creates a new ListOptions instance
+func NewStorageListOptions() *ListOptions {
+	return &ListOptions{}
 }
 
-// Complete completes StorageListOptions after they've been created
-func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	devFilePath := filepath.Join(o.componentContext, component.DevfilePath)
-	o.isDevfile = odoutil.CheckPathExists(devFilePath)
-	if o.isDevfile {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
+// Complete completes ListOptions after they've been created
+func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+		Cmd:              cmd,
+		DevfilePath:      component.DevfilePath,
+		ComponentContext: o.componentContext,
+	})
 
-		o.DevfileObj, err = devfile.ParseAndValidate(devFilePath)
-		if err != nil {
-			return err
-		}
-		err = validate.ValidateDevfileData(o.DevfileObj.Data)
-		if err != nil {
-			return err
-		}
-	} else {
-		// this also initializes the context as well
-		o.Context = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
 	}
+
+	o.client = storage.NewClient(storage.ClientOptions{
+		LocalConfigProvider: o.Context.LocalConfigProvider,
+		OCClient:            *o.Context.Client,
+	})
+
 	return
 }
 
-// Validate validates the StorageListOptions based on completed values
-func (o *StorageListOptions) Validate() (err error) {
+// Validate validates the ListOptions based on completed values
+func (o *ListOptions) Validate() (err error) {
 	return nil
 }
 
-func (o *StorageListOptions) Run() (err error) {
-	var storageList storage.StorageList
-	var componentName string
-	if o.isDevfile {
-		componentName = o.EnvSpecificInfo.GetName()
-		storageList, err = storage.DevfileList(o.KClient, o.DevfileObj.Data, o.EnvSpecificInfo.GetName())
-		if err != nil {
-			return err
-		}
-	} else {
-		componentName = o.LocalConfigInfo.GetName()
-		storageList, err = storage.ListStorageWithState(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
-		if err != nil {
-			return err
-		}
+func (o *ListOptions) Run() (err error) {
+	storageList, err := o.client.List()
+	if err != nil {
+		return err
 	}
 
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(storageList)
 	} else {
-		if o.isDevfile && isContainerDisplay(storageList, o.DevfileObj.Data.GetComponents()) {
-			printStorageWithContainer(storageList, componentName)
+		if !o.Context.LocalConfigInfo.Exists() && isContainerDisplay(storageList, o.Context.LocalConfigProvider.GetContainers()) {
+			printStorageWithContainer(storageList, o.Context.LocalConfigProvider.GetName())
 		} else {
-			printStorage(storageList, componentName)
+			printStorage(storageList, o.Context.LocalConfigProvider.GetName())
 		}
 	}
 
@@ -161,14 +141,12 @@ func printStorageWithContainer(storageList storage.StorageList, compName string)
 }
 
 // isContainerDisplay checks whether the container name should be included in the output
-func isContainerDisplay(storageList storage.StorageList, components []devfilev1.Component) bool {
+func isContainerDisplay(storageList storage.StorageList, components []localConfigProvider.LocalContainer) bool {
 
 	// get all the container names
 	componentsMap := make(map[string]bool)
 	for _, comp := range components {
-		if comp.Container != nil {
-			componentsMap[comp.Name] = true
-		}
+		componentsMap[comp.Name] = true
 	}
 
 	storageCompMap := make(map[string][]string)
