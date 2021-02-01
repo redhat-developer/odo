@@ -4,7 +4,7 @@
 ## Abstract
 This proposal is about improving the experience for a user of the operator backed services. Currently a user doesn't know exaustively which fields are available in a CR as we depend on optional metadata present in CRDs, to improve this we are considering using the metadata available from the cluster about the CRDs.
 Getting that metadata from the cluster is challenging because a normal cluster user ( plain vanilla ) doesn't have access to that metadata and so we are going to implement two workflows - one for the user that has the privileges and one that doesn't.
-This change would affect multiple service commands so that metadata could be exposed using the service command - 
+This change would affect multiple service commands and the changes are described briefly below -
 - `odo catalog describe service` should include the metadata fields with description so the users can provide then when doing `odo service create`
 - `odo catalog list service` shouldn't change much other then listing CRDs per operator
 - `odo service create` should take flags and dynamically fill the CRD structs - metadata would be used for validation
