@@ -21,33 +21,10 @@ func (union *CommandUnion) Simplify() {
 
 // +k8s:deepcopy-gen=false
 type CommandUnionVisitor struct {
-	Exec         func(*ExecCommand) error
-	Apply        func(*ApplyCommand) error
-	VscodeTask   func(*VscodeConfigurationCommand) error
-	VscodeLaunch func(*VscodeConfigurationCommand) error
-	Composite    func(*CompositeCommand) error
-	Custom       func(*CustomCommand) error
-}
-
-var vscodeConfigurationCommandLocation reflect.Type = reflect.TypeOf(VscodeConfigurationCommandLocationVisitor{})
-
-func (union VscodeConfigurationCommandLocation) Visit(visitor VscodeConfigurationCommandLocationVisitor) error {
-	return visitUnion(union, visitor)
-}
-func (union *VscodeConfigurationCommandLocation) discriminator() *string {
-	return (*string)(&union.LocationType)
-}
-func (union *VscodeConfigurationCommandLocation) Normalize() error {
-	return normalizeUnion(union, vscodeConfigurationCommandLocation)
-}
-func (union *VscodeConfigurationCommandLocation) Simplify() {
-	simplifyUnion(union, vscodeConfigurationCommandLocation)
-}
-
-// +k8s:deepcopy-gen=false
-type VscodeConfigurationCommandLocationVisitor struct {
-	Uri     func(string) error
-	Inlined func(string) error
+	Exec      func(*ExecCommand) error
+	Apply     func(*ApplyCommand) error
+	Composite func(*CompositeCommand) error
+	Custom    func(*CustomCommand) error
 }
 
 var componentUnion reflect.Type = reflect.TypeOf(ComponentUnionVisitor{})
@@ -204,32 +181,9 @@ func (union *CommandUnionParentOverride) Simplify() {
 
 // +k8s:deepcopy-gen=false
 type CommandUnionParentOverrideVisitor struct {
-	Exec         func(*ExecCommandParentOverride) error
-	Apply        func(*ApplyCommandParentOverride) error
-	VscodeTask   func(*VscodeConfigurationCommandParentOverride) error
-	VscodeLaunch func(*VscodeConfigurationCommandParentOverride) error
-	Composite    func(*CompositeCommandParentOverride) error
-}
-
-var vscodeConfigurationCommandLocationParentOverride reflect.Type = reflect.TypeOf(VscodeConfigurationCommandLocationParentOverrideVisitor{})
-
-func (union VscodeConfigurationCommandLocationParentOverride) Visit(visitor VscodeConfigurationCommandLocationParentOverrideVisitor) error {
-	return visitUnion(union, visitor)
-}
-func (union *VscodeConfigurationCommandLocationParentOverride) discriminator() *string {
-	return (*string)(&union.LocationType)
-}
-func (union *VscodeConfigurationCommandLocationParentOverride) Normalize() error {
-	return normalizeUnion(union, vscodeConfigurationCommandLocationParentOverride)
-}
-func (union *VscodeConfigurationCommandLocationParentOverride) Simplify() {
-	simplifyUnion(union, vscodeConfigurationCommandLocationParentOverride)
-}
-
-// +k8s:deepcopy-gen=false
-type VscodeConfigurationCommandLocationParentOverrideVisitor struct {
-	Uri     func(string) error
-	Inlined func(string) error
+	Exec      func(*ExecCommandParentOverride) error
+	Apply     func(*ApplyCommandParentOverride) error
+	Composite func(*CompositeCommandParentOverride) error
 }
 
 var k8sLikeComponentLocationParentOverride reflect.Type = reflect.TypeOf(K8sLikeComponentLocationParentOverrideVisitor{})
@@ -315,32 +269,9 @@ func (union *CommandUnionPluginOverrideParentOverride) Simplify() {
 
 // +k8s:deepcopy-gen=false
 type CommandUnionPluginOverrideParentOverrideVisitor struct {
-	Exec         func(*ExecCommandPluginOverrideParentOverride) error
-	Apply        func(*ApplyCommandPluginOverrideParentOverride) error
-	VscodeTask   func(*VscodeConfigurationCommandPluginOverrideParentOverride) error
-	VscodeLaunch func(*VscodeConfigurationCommandPluginOverrideParentOverride) error
-	Composite    func(*CompositeCommandPluginOverrideParentOverride) error
-}
-
-var vscodeConfigurationCommandLocationPluginOverrideParentOverride reflect.Type = reflect.TypeOf(VscodeConfigurationCommandLocationPluginOverrideParentOverrideVisitor{})
-
-func (union VscodeConfigurationCommandLocationPluginOverrideParentOverride) Visit(visitor VscodeConfigurationCommandLocationPluginOverrideParentOverrideVisitor) error {
-	return visitUnion(union, visitor)
-}
-func (union *VscodeConfigurationCommandLocationPluginOverrideParentOverride) discriminator() *string {
-	return (*string)(&union.LocationType)
-}
-func (union *VscodeConfigurationCommandLocationPluginOverrideParentOverride) Normalize() error {
-	return normalizeUnion(union, vscodeConfigurationCommandLocationPluginOverrideParentOverride)
-}
-func (union *VscodeConfigurationCommandLocationPluginOverrideParentOverride) Simplify() {
-	simplifyUnion(union, vscodeConfigurationCommandLocationPluginOverrideParentOverride)
-}
-
-// +k8s:deepcopy-gen=false
-type VscodeConfigurationCommandLocationPluginOverrideParentOverrideVisitor struct {
-	Uri     func(string) error
-	Inlined func(string) error
+	Exec      func(*ExecCommandPluginOverrideParentOverride) error
+	Apply     func(*ApplyCommandPluginOverrideParentOverride) error
+	Composite func(*CompositeCommandPluginOverrideParentOverride) error
 }
 
 var k8sLikeComponentLocationPluginOverrideParentOverride reflect.Type = reflect.TypeOf(K8sLikeComponentLocationPluginOverrideParentOverrideVisitor{})
@@ -404,32 +335,9 @@ func (union *CommandUnionPluginOverride) Simplify() {
 
 // +k8s:deepcopy-gen=false
 type CommandUnionPluginOverrideVisitor struct {
-	Exec         func(*ExecCommandPluginOverride) error
-	Apply        func(*ApplyCommandPluginOverride) error
-	VscodeTask   func(*VscodeConfigurationCommandPluginOverride) error
-	VscodeLaunch func(*VscodeConfigurationCommandPluginOverride) error
-	Composite    func(*CompositeCommandPluginOverride) error
-}
-
-var vscodeConfigurationCommandLocationPluginOverride reflect.Type = reflect.TypeOf(VscodeConfigurationCommandLocationPluginOverrideVisitor{})
-
-func (union VscodeConfigurationCommandLocationPluginOverride) Visit(visitor VscodeConfigurationCommandLocationPluginOverrideVisitor) error {
-	return visitUnion(union, visitor)
-}
-func (union *VscodeConfigurationCommandLocationPluginOverride) discriminator() *string {
-	return (*string)(&union.LocationType)
-}
-func (union *VscodeConfigurationCommandLocationPluginOverride) Normalize() error {
-	return normalizeUnion(union, vscodeConfigurationCommandLocationPluginOverride)
-}
-func (union *VscodeConfigurationCommandLocationPluginOverride) Simplify() {
-	simplifyUnion(union, vscodeConfigurationCommandLocationPluginOverride)
-}
-
-// +k8s:deepcopy-gen=false
-type VscodeConfigurationCommandLocationPluginOverrideVisitor struct {
-	Uri     func(string) error
-	Inlined func(string) error
+	Exec      func(*ExecCommandPluginOverride) error
+	Apply     func(*ApplyCommandPluginOverride) error
+	Composite func(*CompositeCommandPluginOverride) error
 }
 
 var k8sLikeComponentLocationPluginOverride reflect.Type = reflect.TypeOf(K8sLikeComponentLocationPluginOverrideVisitor{})

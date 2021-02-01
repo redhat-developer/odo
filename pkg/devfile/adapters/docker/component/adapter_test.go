@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -104,10 +105,12 @@ func TestPush(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.components,
-					Commands:   execCommands,
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents(tt.components)
+					_ = devfileData.AddCommands(execCommands)
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -289,10 +292,12 @@ func TestDockerTest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.components,
-					Commands:   tt.execCommands,
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents(tt.components)
+					_ = devfileData.AddCommands(tt.execCommands)
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -378,9 +383,12 @@ func TestDoesComponentExist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.components,
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents(tt.components)
+
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -454,9 +462,11 @@ func TestAdapterDelete(t *testing.T) {
 			defer ctrl.Finish()
 
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{},
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{})
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -828,9 +838,12 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 			defer ctrl.Finish()
 
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{},
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{})
+
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{

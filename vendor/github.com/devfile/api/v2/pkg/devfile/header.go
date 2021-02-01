@@ -50,4 +50,16 @@ type DevfileMetadata struct {
 	// Optional devfile global memory limit
 	// +optional
 	GlobalMemoryLimit string `json:"globalMemoryLimit,omitempty"`
+
+	// Optional devfile project type
+	// +optional
+	ProjectType string `json:"projectType,omitempty"`
+
+	// Optional devfile language
+	// +optional
+	Language string `json:"language,omitempty"`
+
+	// Optional devfile website
+	// +optional
+	Website string `json:"website,omitempty"`
 }

@@ -60,17 +60,13 @@ func (d *DevfileV2) GetDevfileVolumeComponents(options common.DevfileOptions) ([
 // if a component is already defined, error out
 func (d *DevfileV2) AddComponents(components []v1.Component) error {
 
-	componentMap := make(map[string]bool)
-
-	for _, component := range d.Components {
-		componentMap[component.Name] = true
-	}
 	for _, component := range components {
-		if _, ok := componentMap[component.Name]; !ok {
-			d.Components = append(d.Components, component)
-		} else {
-			return &common.FieldAlreadyExistError{Name: component.Name, Field: "component"}
+		for _, devfileComponent := range d.Components {
+			if component.Name == devfileComponent.Name {
+				return &common.FieldAlreadyExistError{Name: component.Name, Field: "component"}
+			}
 		}
+		d.Components = append(d.Components, component)
 	}
 	return nil
 }
@@ -86,5 +82,21 @@ func (d *DevfileV2) UpdateComponent(component v1.Component) {
 	}
 	if index != -1 {
 		d.Components[index] = component
+	}
+}
+
+// DeleteComponent removes the specified component
+func (d *DevfileV2) DeleteComponent(name string) error {
+
+	for i := range d.Components {
+		if d.Components[i].Name == name {
+			d.Components = append(d.Components[:i], d.Components[i+1:]...)
+			return nil
+		}
+	}
+
+	return &common.FieldNotFoundError{
+		Field: "component",
+		Name:  name,
 	}
 }

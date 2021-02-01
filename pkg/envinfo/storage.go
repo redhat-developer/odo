@@ -55,16 +55,12 @@ func (ei *EnvInfo) GetStorage(name string) (*localConfigProvider.LocalStorage, e
 
 // CreateStorage sets the storage related information in the local configuration
 func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error {
-	err := ei.devfileObj.Data.AddVolume(devfilev1.Component{
-		Name: storage.Name,
-		ComponentUnion: devfilev1.ComponentUnion{
-			Volume: &devfilev1.VolumeComponent{
-				Volume: devfilev1.Volume{
-					Size: storage.Size,
-				},
-			},
+	err := ei.devfileObj.Data.AddVolumeMounts(ei.componentSettings.Name, []devfilev1.VolumeMount{
+		{
+			Name: storage.Name,
+			Path: storage.Path,
 		},
-	}, storage.Path)
+	})
 
 	if err != nil {
 		return err
@@ -119,7 +115,7 @@ func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 
 // DeleteStorage deletes the storage with the given name
 func (ei *EnvInfo) DeleteStorage(name string) error {
-	err := ei.devfileObj.Data.DeleteVolume(name)
+	err := ei.devfileObj.Data.DeleteVolumeMount(name)
 	if err != nil {
 		return err
 	}
@@ -133,7 +129,7 @@ func (ei *EnvInfo) DeleteStorage(name string) error {
 
 // GetStorageMountPath gets the mount path of the storage with the given storage name
 func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
-	return ei.devfileObj.Data.GetVolumeMountPath(storageName)
+	return ei.devfileObj.Data.GetVolumeMountPath(storageName, ei.componentSettings.Name)
 }
 
 // GetVolumeMountPath gets the volume mount's path

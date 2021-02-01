@@ -14,12 +14,12 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		options  ServiceCreateOptions
+		options  CreateOptions
 		expected string
 	}{
 		{
 			name: "when output is not requested, should return empty string",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context: genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 
 				CmdFullName: RecommendedCommandName,
@@ -30,7 +30,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		},
 		{
 			name: "just service class",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context: genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 
 				CmdFullName: RecommendedCommandName,
@@ -41,7 +41,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		},
 		{
 			name: "just service class and name",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context: genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 
 				CmdFullName: RecommendedCommandName,
@@ -53,7 +53,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		},
 		{
 			name: "service class, name and plan",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context: genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 
 				CmdFullName: RecommendedCommandName,
@@ -66,7 +66,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		},
 		{
 			name: "service class and plan",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context:     genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 				CmdFullName: RecommendedCommandName,
 				outputCLI:   true,
@@ -77,7 +77,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		},
 		{
 			name: "service class and empty params",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context:       genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 				CmdFullName:   RecommendedCommandName,
 				outputCLI:     true,
@@ -88,7 +88,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		},
 		{
 			name: "service class and params",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context:       genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 				CmdFullName:   RecommendedCommandName,
 				outputCLI:     true,
@@ -99,7 +99,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		},
 		{
 			name: "all",
-			options: ServiceCreateOptions{
+			options: CreateOptions{
 				Context:       genericclioptions.NewFakeContext("testproject", "app", "", client, nil),
 				CmdFullName:   RecommendedCommandName,
 				outputCLI:     true,

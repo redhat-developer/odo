@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"os"
 	"reflect"
 	"testing"
@@ -88,9 +89,11 @@ func TestComponentExists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.components,
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents(tt.components)
+					return devfileData
+				}(),
 			}
 			cmpExists, err := ComponentExists(*tt.client, devObj.Data, tt.componentName)
 			if !tt.wantErr && err != nil {

@@ -1,11 +1,11 @@
 package envinfo
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -168,7 +168,11 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			name: "case 8: no container is present in the devfile and none is provided in the url",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{}},
+					Data: func() data.DevfileData {
+						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						return devfileData
+					}(),
+				},
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -383,7 +387,10 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 			name: "case 10: no container found in devfile",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{},
+					Data: func() data.DevfileData {
+						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						return devfileData
+					}(),
 				},
 			},
 			args: args{

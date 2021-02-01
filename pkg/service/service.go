@@ -3,6 +3,8 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ghodss/yaml"
+	"github.com/openshift/odo/pkg/envinfo"
 	"strings"
 
 	"github.com/openshift/odo/pkg/kclient"
@@ -53,14 +55,18 @@ func (params servicePlanParameters) Swap(i, j int) {
 }
 
 // CreateService creates new service from serviceCatalog
-func CreateService(client *occlient.Client, serviceName string, serviceType string, servicePlan string, parameters map[string]string, applicationName string) error {
+func CreateService(client *occlient.Client, esi *envinfo.EnvSpecificInfo, serviceName, serviceType, servicePlan string, parameters map[string]string, applicationName string) error {
 	labels := componentlabels.GetLabels(serviceName, applicationName, true)
 	// save service type as label
 	labels[componentlabels.ComponentTypeLabel] = serviceType
-	err := client.GetKubeClient().CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
+	serviceInstance, err := client.GetKubeClient().CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
 	if err != nil {
 		return errors.Wrap(err, "unable to create service instance")
+	}
 
+	err = esi.AddServiceToDevfile(serviceInstance, serviceName)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -97,10 +103,20 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 }
 
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
-func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
+func CreateOperatorService(client *kclient.Client, esi *envinfo.EnvSpecificInfo, serviceName, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
 	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
 	if err != nil {
 		return errors.Wrap(err, "unable to create operator backed service")
+	}
+
+	crdString, err := yaml.Marshal(CustomResourceDefinition)
+	if err != nil {
+		return err
+	}
+
+	err = esi.AddServiceToDevfile(string(crdString), serviceName)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -162,7 +178,7 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 	}
 
 	if csv == nil {
-		return fmt.Errorf("Unable to find any Operator providing the service %q", kind)
+		return fmt.Errorf("unable to find any Operator providing the service %q", kind)
 	}
 
 	crs := client.GetCustomResourcesFromCSV(csv)
@@ -353,7 +369,7 @@ func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
+		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	resource = gr[0]
@@ -400,7 +416,7 @@ func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err erro
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
+		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	group = gr[1]
@@ -423,7 +439,7 @@ func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almEx
 	} else {
 		// There's no alm examples in the CSV's definition
 		return nil,
-			fmt.Errorf("could not find alm-examples in %q Operator's definition.", cr)
+			fmt.Errorf("could not find alm-examples in %q Operator's definition", cr)
 	}
 
 	almExample, err = getAlmExample(almExamples, cr, serviceType)
@@ -487,7 +503,7 @@ func IsOperatorServiceNameValid(name string) (string, string, error) {
 	checkName := strings.SplitN(name, "/", 2)
 
 	if len(checkName) != 2 || checkName[0] == "" || checkName[1] == "" {
-		return "", "", fmt.Errorf("Invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services.", "EtcdCluster/example", "odo service list")
+		return "", "", fmt.Errorf("invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services", "EtcdCluster/example", "odo service list")
 	}
 	return checkName[0], checkName[1], nil
 }
@@ -679,10 +695,10 @@ func isRequired(required []string, name string) bool {
 
 // IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
 func IsCSVSupported() (bool, error) {
-	occlient, err := occlient.New()
+	client, err := occlient.New()
 	if err != nil {
 		return false, err
 	}
 
-	return occlient.GetKubeClient().IsCSVSupported()
+	return client.GetKubeClient().IsCSVSupported()
 }

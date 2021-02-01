@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,7 +12,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/testingutil"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/kylelemons/godebug/pretty"
 	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
@@ -525,18 +525,9 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			currentDevfile: odoTestingUtil.GetTestDevfileObj(fs),
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				Data: &testingutil.TestDevfileData{
-					Commands: []devfilev1.Command{
-						{
-							Id: "devbuild",
-							CommandUnion: devfilev1.CommandUnion{
-								Exec: &devfilev1.ExecCommand{
-									WorkingDir: "/projects/nodejs-starter",
-								},
-							},
-						},
-					},
-					Components: []devfilev1.Component{
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "runtime",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -565,8 +556,19 @@ func TestSetDevfileConfiguration(t *testing.T) {
 								},
 							},
 						},
-					},
-				},
+					})
+					_ = devfileData.AddCommands([]devfilev1.Command{
+						{
+							Id: "devbuild",
+							CommandUnion: devfilev1.CommandUnion{
+								Exec: &devfilev1.ExecCommand{
+									WorkingDir: "/projects/nodejs-starter",
+								},
+							},
+						},
+					})
+					return devfileData
+				}(),
 			},
 		},
 		{
@@ -577,8 +579,9 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			currentDevfile: odoTestingUtil.GetTestDevfileObj(fs),
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				Data: &testingutil.TestDevfileData{
-					Commands: []devfilev1.Command{
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddCommands([]devfilev1.Command{
 						{
 							Id: "devbuild",
 							CommandUnion: devfilev1.CommandUnion{
@@ -587,8 +590,8 @@ func TestSetDevfileConfiguration(t *testing.T) {
 								},
 							},
 						},
-					},
-					Components: []devfilev1.Component{
+					})
+					_ = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "runtime",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -635,8 +638,9 @@ func TestSetDevfileConfiguration(t *testing.T) {
 								},
 							},
 						},
-					},
-				},
+					})
+					return devfileData
+				}(),
 			},
 		},
 		{

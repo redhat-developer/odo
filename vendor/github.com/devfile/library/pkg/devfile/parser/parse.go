@@ -48,9 +48,7 @@ func parseDevfile(d DevfileObj, flattenedDevfile bool) (DevfileObj, error) {
 			return DevfileObj{}, err
 		}
 	}
-	for uri := range devfileCtx.URIMap {
-		delete(devfileCtx.URIMap, uri)
-	}
+
 	// Successful
 	return d, nil
 }
@@ -113,12 +111,12 @@ func ParseFromData(data []byte) (d DevfileObj, err error) {
 
 func parseParentAndPlugin(d DevfileObj) (err error) {
 	flattenedParent := &v1.DevWorkspaceTemplateSpecContent{}
-	if d.Data.GetParent() != nil {
-		if !reflect.DeepEqual(d.Data.GetParent(), &v1.Parent{}) {
+	parent := d.Data.GetParent()
+	if parent != nil {
+		if !reflect.DeepEqual(parent, &v1.Parent{}) {
 
-			parent := d.Data.GetParent()
 			var parentDevfileObj DevfileObj
-			if d.Data.GetParent().Uri != "" {
+			if parent.Uri != "" {
 				parentDevfileObj, err = parseFromURI(parent.Uri, d.Ctx)
 				if err != nil {
 					return err
@@ -185,27 +183,40 @@ func parseFromURI(uri string, curDevfileCtx devfileCtx.DevfileCtx) (DevfileObj, 
 	if err != nil {
 		return DevfileObj{}, err
 	}
-
-	// absolute URL address
-	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
-		return ParseFromURL(uri)
-	}
+	// NewDevfileCtx
+	var d DevfileObj
+	absoluteURL := strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://")
 
 	// relative path on disk
-	if curDevfileCtx.GetAbsPath() != "" {
-		return Parse(path.Join(path.Dir(curDevfileCtx.GetAbsPath()), uri))
+	if !absoluteURL && curDevfileCtx.GetAbsPath() != "" {
+		d.Ctx = devfileCtx.NewDevfileCtx(path.Join(path.Dir(curDevfileCtx.GetAbsPath()), uri))
+		d.Ctx.SetURIMap(curDevfileCtx.GetURIMap())
+
+		// Fill the fields of DevfileCtx struct
+		err = d.Ctx.Populate()
+		if err != nil {
+			return DevfileObj{}, err
+		}
+		return parseDevfile(d, true)
 	}
 
-	if curDevfileCtx.GetURL() != "" {
+	// absolute URL address
+	if absoluteURL {
+		d.Ctx = devfileCtx.NewURLDevfileCtx(uri)
+	} else if curDevfileCtx.GetURL() != "" {
 		u, err := url.Parse(curDevfileCtx.GetURL())
 		if err != nil {
 			return DevfileObj{}, err
 		}
-
 		u.Path = path.Join(path.Dir(u.Path), uri)
-		// u.String() is the joint absolute URL path
-		return ParseFromURL(u.String())
+		d.Ctx = devfileCtx.NewURLDevfileCtx(u.String())
 	}
+	d.Ctx.SetURIMap(curDevfileCtx.GetURIMap())
+	// Fill the fields of DevfileCtx struct
+	err = d.Ctx.PopulateFromURL()
+	if err != nil {
+		return DevfileObj{}, err
+	}
+	return parseDevfile(d, true)
 
-	return DevfileObj{}, fmt.Errorf("fail to parse from uri: %s", uri)
 }

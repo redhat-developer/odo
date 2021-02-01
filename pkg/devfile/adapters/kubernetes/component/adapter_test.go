@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -82,10 +83,12 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{comp},
-					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{comp})
+					_ = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -260,10 +263,12 @@ func TestDoesComponentExist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
-					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
+					_ = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -342,9 +347,11 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -465,9 +472,10 @@ func TestAdapterDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					// ComponentType: "nodejs",
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{

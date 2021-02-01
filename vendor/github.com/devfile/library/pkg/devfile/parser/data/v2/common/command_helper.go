@@ -13,10 +13,6 @@ func GetGroup(dc v1.Command) *v1.CommandGroup {
 		return dc.Exec.Group
 	case dc.Apply != nil:
 		return dc.Apply.Group
-	case dc.VscodeLaunch != nil:
-		return dc.VscodeLaunch.Group
-	case dc.VscodeTask != nil:
-		return dc.VscodeTask.Group
 	case dc.Custom != nil:
 		return dc.Custom.Group
 

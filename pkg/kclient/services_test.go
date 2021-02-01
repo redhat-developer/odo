@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
 
@@ -21,11 +22,13 @@ import (
 func TestCreateService(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
-		Data: &testingutil.TestDevfileData{
-			Components: []devfilev1.Component{
+		Data: func() data.DevfileData {
+			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+			_ = devfileData.AddComponents([]devfilev1.Component{
 				testingutil.GetFakeContainerComponent("container1"),
-			},
-		},
+			})
+			return devfileData
+		}(),
 	}
 
 	tests := []struct {
@@ -102,11 +105,13 @@ func TestCreateService(t *testing.T) {
 func TestUpdateService(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
-		Data: &testingutil.TestDevfileData{
-			Components: []devfilev1.Component{
+		Data: func() data.DevfileData {
+			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+			_ = devfileData.AddComponents([]devfilev1.Component{
 				testingutil.GetFakeContainerComponent("container1"),
-			},
-		},
+			})
+			return devfileData
+		}(),
 	}
 
 	tests := []struct {

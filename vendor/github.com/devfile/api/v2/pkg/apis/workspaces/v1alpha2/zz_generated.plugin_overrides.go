@@ -93,7 +93,7 @@ type ComponentUnionPluginOverride struct {
 // +union
 type CommandUnionPluginOverride struct {
 
-	// +kubebuilder:validation:Enum=Exec;Apply;VscodeTask;VscodeLaunch;Composite
+	// +kubebuilder:validation:Enum=Exec;Apply;Composite
 	// Type of workspace command
 	// +unionDiscriminator
 	// +optional
@@ -116,14 +116,6 @@ type CommandUnionPluginOverride struct {
 	// by default.
 	// +optional
 	Apply *ApplyCommandPluginOverride `json:"apply,omitempty"`
-
-	// Command providing the definition of a VsCode Task
-	// +optional
-	VscodeTask *VscodeConfigurationCommandPluginOverride `json:"vscodeTask,omitempty"`
-
-	// Command providing the definition of a VsCode launch action
-	// +optional
-	VscodeLaunch *VscodeConfigurationCommandPluginOverride `json:"vscodeLaunch,omitempty"`
 
 	// Composite command that allows executing several sub-commands
 	// either sequentially or concurrently
@@ -212,11 +204,6 @@ type ApplyCommandPluginOverride struct {
 	// Describes component that will be applied
 	//
 	Component string `json:"component,omitempty"`
-}
-
-type VscodeConfigurationCommandPluginOverride struct {
-	BaseCommandPluginOverride                        `json:",inline"`
-	VscodeConfigurationCommandLocationPluginOverride `json:",inline"`
 }
 
 type CompositeCommandPluginOverride struct {
@@ -377,6 +364,11 @@ type VolumePluginOverride struct {
 	// +optional
 	// Size of the volume
 	Size string `json:"size,omitempty"`
+
+	// +optional
+	// Ephemeral volumes are not stored persistently across restarts. Defaults
+	// to false
+	Ephemeral bool `json:"ephemeral,omitempty"`
 }
 
 type LabeledCommandPluginOverride struct {
@@ -392,33 +384,6 @@ type EnvVarPluginOverride struct {
 	Name string `json:"name" yaml:"name"`
 	//  +optional
 	Value string `json:"value,omitempty" yaml:"value"`
-}
-
-type BaseCommandPluginOverride struct {
-
-	// +optional
-	// Defines the group this command is part of
-	Group *CommandGroupPluginOverride `json:"group,omitempty"`
-}
-
-// +union
-type VscodeConfigurationCommandLocationPluginOverride struct {
-
-	// +kubebuilder:validation:Enum=Uri;Inlined
-	// Type of Vscode configuration command location
-	// +
-	// +unionDiscriminator
-	// +optional
-	LocationType VscodeConfigurationCommandLocationTypePluginOverride `json:"locationType,omitempty"`
-
-	// Location as an absolute of relative URI
-	// the VsCode configuration will be fetched from
-	// +optional
-	Uri string `json:"uri,omitempty"`
-
-	// Inlined content of the VsCode configuration
-	// +optional
-	Inlined string `json:"inlined,omitempty"`
 }
 
 // Volume that should be mounted to a component container
@@ -466,6 +431,18 @@ type K8sLikeComponentLocationPluginOverride struct {
 	Inlined string `json:"inlined,omitempty"`
 }
 
+type BaseCommandPluginOverride struct {
+
+	// +optional
+	// Defines the group this command is part of
+	Group *CommandGroupPluginOverride `json:"group,omitempty"`
+}
+
+// K8sLikeComponentLocationType describes the type of
+// the location the configuration is fetched from.
+// Only one of the following component type may be specified.
+type K8sLikeComponentLocationTypePluginOverride string
+
 type CommandGroupPluginOverride struct {
 
 	//  +optional
@@ -476,16 +453,6 @@ type CommandGroupPluginOverride struct {
 	// Identifies the default command for a given group kind
 	IsDefault bool `json:"isDefault,omitempty"`
 }
-
-// VscodeConfigurationCommandLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-type VscodeConfigurationCommandLocationTypePluginOverride string
-
-// K8sLikeComponentLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-type K8sLikeComponentLocationTypePluginOverride string
 
 // CommandGroupKind describes the kind of command group.
 // +kubebuilder:validation:Enum=build;run;test;debug

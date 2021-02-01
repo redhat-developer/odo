@@ -218,10 +218,17 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/daviddengcn/go-colortext v0.0.0-20160507010035-511bcaf42ccd/go.mod h1:dv4zxwHi5C/8AeI+4gX4dCWOIvNi7I6JCSX0HvlKPgE=
 github.com/deislabs/oras v0.7.0/go.mod h1:sqMKPG3tMyIX9xwXUBRLhZ24o+uT4y6jgBD2RzUTKDM=
 github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3/go.mod h1:zAg7JM8CkOJ43xKXIj7eRO9kmWm/TW578qo+oDO6tuM=
+
 github.com/devfile/api/v2 v2.0.0-20210211160219-33a78aec06af h1:egbFAAS/CWJMAqa4zIm8Cik3+iCqTAfLPfCj6PLEG5Y=
 github.com/devfile/api/v2 v2.0.0-20210211160219-33a78aec06af/go.mod h1:Cot4snybn3qhIh48oIFi9McocnIx7zY5fFbjfrIpPvg=
 github.com/devfile/library v0.0.0-20210216162950-3066a892876c h1:NL9EpuPuFVxCqE00Bh1Uw3YsEqoMdwq4vx0OXSZRVnU=
 github.com/devfile/library v0.0.0-20210216162950-3066a892876c/go.mod h1:aGJSpcGrRiYwsQQJMQH1ChHuOptUf49n+j0RDBYyTIQ=
+
+github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b h1:r6Z2rXRA60eQQTdh1cJBBrj3vp9/c1rNbX42kyw2WpA=
+github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b/go.mod h1:Cot4snybn3qhIh48oIFi9McocnIx7zY5fFbjfrIpPvg=
+github.com/devfile/library v1.0.0-alpha.2.0.20210311210521-3ea632c8a3d0 h1:eVw2OYh+LZCNkR3R6F9PI212uDKkSmzy7ZzwD5AcBwY=
+github.com/devfile/library v1.0.0-alpha.2.0.20210311210521-3ea632c8a3d0/go.mod h1:6WF7h4BVqUyAULCa3bCjHgFueeOPc2qIipVmtDbWkNY=
+
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=

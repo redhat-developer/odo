@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/storage"
 	"reflect"
 	"strconv"
@@ -726,8 +727,9 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: component,
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -748,9 +750,10 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 								},
 							},
 						},
-					},
-					Commands: tt.execCommands,
-				},
+					})
+					_ = devfileData.AddCommands(tt.execCommands)
+					return devfileData
+				}(),
 			}
 
 			containers, err := UpdateContainersWithSupervisord(devObj, tt.containers, tt.runCommand, tt.debugCommand, tt.debugPort)
@@ -947,14 +950,17 @@ func TestGetPreStartInitContainers(t *testing.T) {
 			}
 
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Commands: append(execCommands, compCommands...),
-					Events: devfilev1.Events{
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddCommands(execCommands)
+					_ = devfileData.AddCommands(compCommands)
+					_ = devfileData.AddEvents(devfilev1.Events{
 						WorkspaceEvents: devfilev1.WorkspaceEvents{
 							PreStart: tt.eventCommands,
 						},
-					},
-				},
+					})
+					return devfileData
+				}(),
 			}
 
 			initContainers, err := GetPreStartInitContainers(devObj, containers)

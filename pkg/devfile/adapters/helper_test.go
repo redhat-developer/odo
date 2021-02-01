@@ -1,12 +1,12 @@
 package adapters
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/occlient"
 )
@@ -30,9 +30,11 @@ func TestNewPlatformAdapter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("get platform adapter", func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{},
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents([]devfilev1.Component{})
+					return devfileData
+				}(),
 			}
 
 			adapterContext := adaptersCommon.AdapterContext{

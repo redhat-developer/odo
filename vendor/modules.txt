@@ -46,14 +46,14 @@ github.com/containerd/containerd/errdefs
 github.com/danieljoos/wincred
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/devfile/api/v2 v2.0.0-20210211160219-33a78aec06af
+# github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b
 github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2
 github.com/devfile/api/v2/pkg/attributes
 github.com/devfile/api/v2/pkg/devfile
 github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
-# github.com/devfile/library v0.0.0-20210216162950-3066a892876c
+# github.com/devfile/library v1.0.0-alpha.2.0.20210311210521-3ea632c8a3d0
 github.com/devfile/library/pkg/devfile
 github.com/devfile/library/pkg/devfile/generator
 github.com/devfile/library/pkg/devfile/parser

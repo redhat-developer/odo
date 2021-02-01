@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -26,11 +27,13 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 	fakeUID := types.UID("12345")
 
 	devObj := devfileParser.DevfileObj{
-		Data: &testingutil.TestDevfileData{
-			Components: []devfilev1.Component{
+		Data: func() data.DevfileData {
+			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+			_ = devfileData.AddComponents([]devfilev1.Component{
 				testingutil.GetFakeContainerComponent("container1"),
-			},
-		},
+			})
+			return devfileData
+		}(),
 	}
 
 	containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
@@ -185,11 +188,13 @@ func TestUpdateDeployment(t *testing.T) {
 	}
 
 	devObj := devfileParser.DevfileObj{
-		Data: &testingutil.TestDevfileData{
-			Components: []devfilev1.Component{
+		Data: func() data.DevfileData {
+			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+			_ = devfileData.AddComponents([]devfilev1.Component{
 				testingutil.GetFakeContainerComponent("container1"),
-			},
-		},
+			})
+			return devfileData
+		}(),
 	}
 
 	containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})

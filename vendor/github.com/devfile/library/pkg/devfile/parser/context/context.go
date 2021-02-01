@@ -9,8 +9,6 @@ import (
 	"k8s.io/klog"
 )
 
-var URIMap = make(map[string]bool)
-
 // DevfileCtx stores context info regarding devfile
 type DevfileCtx struct {
 
@@ -34,6 +32,9 @@ type DevfileCtx struct {
 
 	// filesystem for devfile
 	fs filesystem.Filesystem
+
+	// trace of all url referenced
+	uriMap map[string]bool
 }
 
 // NewDevfileCtx returns a new DevfileCtx type object
@@ -70,10 +71,13 @@ func (d *DevfileCtx) Populate() (err error) {
 		return err
 	}
 	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
-	if URIMap[d.absPath] {
+	if d.uriMap == nil {
+		d.uriMap = make(map[string]bool)
+	}
+	if d.uriMap[d.absPath] {
 		return fmt.Errorf("URI %v is recursively referenced", d.absPath)
 	}
-	URIMap[d.absPath] = true
+	d.uriMap[d.absPath] = true
 	// Read and save devfile content
 	if err := d.SetDevfileContent(); err != nil {
 		return err
@@ -88,10 +92,13 @@ func (d *DevfileCtx) PopulateFromURL() (err error) {
 	if err != nil {
 		return err
 	}
-	if URIMap[d.url] {
+	if d.uriMap == nil {
+		d.uriMap = make(map[string]bool)
+	}
+	if d.uriMap[d.url] {
 		return fmt.Errorf("URI %v is recursively referenced", d.url)
 	}
-	URIMap[d.url] = true
+	d.uriMap[d.url] = true
 	// Read and save devfile content
 	if err := d.SetDevfileContent(); err != nil {
 		return err
@@ -131,4 +138,14 @@ func (d *DevfileCtx) SetAbsPath() (err error) {
 
 	return nil
 
+}
+
+// GetURIMap func returns current devfile uri map
+func (d *DevfileCtx) GetURIMap() map[string]bool {
+	return d.uriMap
+}
+
+// SetURIMap set uri map in the devfile ctx
+func (d *DevfileCtx) SetURIMap(uriMap map[string]bool) {
+	d.uriMap = uriMap
 }

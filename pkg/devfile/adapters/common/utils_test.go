@@ -1,6 +1,7 @@
 package common
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"os"
 	"reflect"
 	"testing"
@@ -140,9 +141,11 @@ func TestGetVolumes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.component,
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents(tt.component)
+					return devfileData
+				}(),
 			}
 
 			containerNameToVolumes, err := GetVolumes(devObj)
@@ -361,10 +364,12 @@ func TestGetCommandsForGroup(t *testing.T) {
 	}
 
 	devObj := devfileParser.DevfileObj{
-		Data: &testingutil.TestDevfileData{
-			Components: component,
-			Commands:   execCommands,
-		},
+		Data: func() data.DevfileData {
+			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+			_ = devfileData.AddComponents(component)
+			_ = devfileData.AddCommands(execCommands)
+			return devfileData
+		}(),
 	}
 
 	tests := []struct {
@@ -511,10 +516,13 @@ func TestGetCommands(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: component,
-					Commands:   append(tt.execCommands, tt.compCommands...),
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddComponents(component)
+					_ = devfileData.AddCommands(tt.execCommands)
+					_ = devfileData.AddCommands(tt.compCommands)
+					return devfileData
+				}(),
 			}
 
 			commands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
@@ -664,9 +672,12 @@ func TestGetCommandsFromEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Commands: append(compCommands, execCommands...),
-				},
+				Data: func() data.DevfileData {
+					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					_ = devfileData.AddCommands(compCommands)
+					_ = devfileData.AddCommands(execCommands)
+					return devfileData
+				}(),
 			}
 
 			devfileCommands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
