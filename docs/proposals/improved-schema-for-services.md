@@ -305,11 +305,12 @@ spec:
 ### Sample used for all explaination below
 
 <details open>
-<summary> Below is extract of an example `openAPIV3Schema` which would be used for explaination </summary>
+<summary> Below is an extract of an example `openAPIV3Schema` which would be used for explaination </summary>
+
 ```
+
 {
   "application": {
-    "description": "Application is used to identify the application connecting to the backing service operator.",
     "type": "object",
     "required": [
       "group",
@@ -318,15 +319,12 @@ spec:
     ],
     "properties": {
       "bindingPath": {
-        "description": "BindingPath refers to the paths in the application workload's schema where the binding workload would be referenced. If BindingPath is not specified the default path locations is going to be used.  The default location for ContainersPath is going to be: \"spec.template.spec.containers\" and if SecretPath is not specified, the name of the secret object is not going to be specified.",
         "type": "object",
         "properties": {
           "containersPath": {
-            "description": "ContainersPath defines the path to the corev1.Containers reference If BindingPath is not specified, the default location is going to be: \"spec.template.spec.containers\"",
             "type": "string"
           },
           "secretPath": {
-            "description": "SecretPath defines the path to a string field where the name of the secret object is going to be assigned. Note: The name of the secret object is same as that of the name of SBR CR (metadata.name)",
             "type": "string"
           }
         }
@@ -335,14 +333,11 @@ spec:
         "type": "string"
       },
       "labelSelector": {
-        "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
         "type": "object",
         "properties": {
           "matchExpressions": {
-            "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
             "type": "array",
             "items": {
-              "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
               "type": "object",
               "required": [
                 "key",
@@ -350,15 +345,12 @@ spec:
               ],
               "properties": {
                 "key": {
-                  "description": "key is the label key that the selector applies to.",
                   "type": "string"
                 },
                 "operator": {
-                  "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
                   "type": "string"
                 },
                 "values": {
-                  "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
                   "type": "array",
                   "items": {
                     "type": "string"
@@ -368,7 +360,6 @@ spec:
             }
           },
           "matchLabels": {
-            "description": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is \"key\", the operator is \"In\", and the values array contains only \"value\". The requirements are ANDed.",
             "type": "object",
             "additionalProperties": {
               "type": "string"
@@ -377,7 +368,6 @@ spec:
         }
       },
       "name": {
-        "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
         "type": "string"
       },
       "resource": {
@@ -389,103 +379,83 @@ spec:
     }
   },
   "customEnvVar": {
-    "description": "Custom env variables",
     "type": "array",
     "items": {
-      "description": "EnvVar represents an environment variable present in a Container.",
       "type": "object",
       "required": [
         "name"
       ],
       "properties": {
         "name": {
-          "description": "Name of the environment variable. Must be a C_IDENTIFIER.",
           "type": "string"
         },
         "value": {
-          "description": "Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
           "type": "string"
         },
         "valueFrom": {
-          "description": "Source for the environment variable's value. Cannot be used if value is not empty.",
           "type": "object",
           "properties": {
             "configMapKeyRef": {
-              "description": "Selects a key of a ConfigMap.",
               "type": "object",
               "required": [
                 "key"
               ],
               "properties": {
                 "key": {
-                  "description": "The key to select.",
                   "type": "string"
                 },
                 "name": {
-                  "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                   "type": "string"
                 },
                 "optional": {
-                  "description": "Specify whether the ConfigMap or its key must be defined",
                   "type": "boolean"
                 }
               }
             },
             "fieldRef": {
-              "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP.",
               "type": "object",
               "required": [
                 "fieldPath"
               ],
               "properties": {
                 "apiVersion": {
-                  "description": "Version of the schema the FieldPath is written in terms of, defaults to \"v1\".",
                   "type": "string"
                 },
                 "fieldPath": {
-                  "description": "Path of the field to select in the specified API version.",
                   "type": "string"
                 }
               }
             },
             "resourceFieldRef": {
-              "description": "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.",
               "type": "object",
               "required": [
                 "resource"
               ],
               "properties": {
                 "containerName": {
-                  "description": "Container name: required for volumes, optional for env vars",
                   "type": "string"
                 },
                 "divisor": {
-                  "description": "Specifies the output format of the exposed resources, defaults to \"1\"",
                   "type": "string"
                 },
                 "resource": {
-                  "description": "Required: resource to select",
                   "type": "string"
                 }
               }
             },
             "secretKeyRef": {
-              "description": "Selects a key of a secret in the pod's namespace",
               "type": "object",
               "required": [
                 "key"
               ],
               "properties": {
                 "key": {
-                  "description": "The key of the secret to select from.  Must be a valid secret key.",
                   "type": "string"
                 },
                 "name": {
-                  "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                   "type": "string"
                 },
                 "optional": {
-                  "description": "Specify whether the Secret or its key must be defined",
                   "type": "boolean"
                 }
               }
@@ -496,22 +466,17 @@ spec:
     }
   },
   "detectBindingResources": {
-    "description": "DetectBindingResources is flag used to bind all non-bindable variables from different subresources owned by backing operator CR.",
     "type": "boolean"
   },
   "envVarPrefix": {
-    "description": "EnvVarPrefix is the prefix for environment variables",
     "type": "string"
   },
   "mountPathPrefix": {
-    "description": "MountPathPrefix is the prefix for volume mount",
     "type": "string"
   },
   "services": {
-    "description": "Services is used to identify multiple backing services.",
     "type": "array",
     "items": {
-      "description": "Service defines the selector based on resource name, version, and resource kind",
       "type": "object",
       "required": [
         "group",
@@ -532,7 +497,6 @@ spec:
           "type": "string"
         },
         "name": {
-          "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
           "type": "string"
         },
         "namespace": {
@@ -545,8 +509,12 @@ spec:
     }
   }
 }
+
 ```
+
+Note - removed `description` fields to make the sample concise. 
 </details>
+
 
 - There are 5 top level fields in the metadata -
     - `application`
