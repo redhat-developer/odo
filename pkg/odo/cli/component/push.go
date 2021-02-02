@@ -80,11 +80,6 @@ func (po *PushOptions) CompleteDevfilePath() {
 	}
 }
 
-// GetComponentContext gets the component context
-func (po *PushOptions) GetComponentContext() string {
-	return po.componentContext
-}
-
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.CompleteDevfilePath()

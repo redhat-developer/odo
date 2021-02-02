@@ -6,10 +6,12 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
+	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -41,7 +43,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
 		DevfilePath:      o.DevfilePath,
-		ComponentContext: o.GetComponentContext(),
+		ComponentContext: utils.GetComponentContext(o.PushOptions),
 	})
 
 	o.urlName = args[0]

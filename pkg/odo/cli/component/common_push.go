@@ -31,7 +31,7 @@ type CommonPushOptions struct {
 
 	sourceType       config.SrcType
 	sourcePath       string
-	componentContext string
+	ComponentContext string
 
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 

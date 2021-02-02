@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/pkg/errors"
@@ -79,7 +80,7 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
 		DevfilePath:      o.DevfilePath,
-		ComponentContext: o.GetComponentContext(),
+		ComponentContext: utils.GetComponentContext(o.PushOptions),
 		IsNow:            o.now,
 	})
 

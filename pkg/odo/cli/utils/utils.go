@@ -5,6 +5,8 @@ import (
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
+	"github.com/openshift/odo/pkg/odo/cli/component"
+
 	"github.com/spf13/cobra"
 )
 
@@ -28,4 +30,9 @@ func NewCmdUtils(name, fullName string) *cobra.Command {
 	utilsCmd.AddCommand(terminalCmd)
 	utilsCmd.AddCommand(convertCmd)
 	return utilsCmd
+}
+
+// GetComponentContext gets the component context
+func GetComponentContext(po *component.PushOptions) string {
+	return po.ComponentContext
 }
