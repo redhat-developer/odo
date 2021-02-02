@@ -5,8 +5,7 @@ set -e
 # show commands
 set -x
 
-export ARTIFACTS_DIR="/tmp/artifacts"
-export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
+export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 export PATH=$PATH:$GOPATH/bin
 # set location for golangci-lint cache
 # otherwise /.cache is used, and it fails on permission denied
@@ -18,7 +17,7 @@ make test
 
 # crosscompile and publish artifacts
 make cross
-cp -r dist $ARTIFACTS_DIR
+cp -r dist $ARTIFACT_DIR
 
 # RPM Tests
 scripts/rpm-x86_64-test.sh
