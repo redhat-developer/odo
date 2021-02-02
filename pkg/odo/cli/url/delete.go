@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 

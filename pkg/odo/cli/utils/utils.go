@@ -6,7 +6,6 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/openshift/odo/pkg/odo/cli/component"
-
 	"github.com/spf13/cobra"
 )
 
