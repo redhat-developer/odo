@@ -5,7 +5,7 @@ set -e
 # show commands
 set -x
 
-export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
+export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 export PATH=$PATH:$GOPATH/bin
 # set location for golangci-lint cache
 # otherwise /.cache is used, and it fails on permission denied
