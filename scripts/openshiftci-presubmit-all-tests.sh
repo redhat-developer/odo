@@ -64,6 +64,6 @@ else
     fi
 fi
 
-cp -r reports $ARTIFACTS_DIR 
+cp -r reports $ARTIFACT_DIR 
 
 odo logout

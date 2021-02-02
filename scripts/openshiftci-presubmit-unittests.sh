@@ -17,7 +17,7 @@ make test
 
 # crosscompile and publish artifacts
 make cross
-cp -r dist $ARTIFACTS_DIR
+cp -r dist $ARTIFACT_DIR
 
 # RPM Tests
 scripts/rpm-x86_64-test.sh
