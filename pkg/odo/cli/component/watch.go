@@ -38,8 +38,8 @@ var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on 
 var watchExampleWithDevfile = ktemplates.Examples(`  # Watch for changes in directory for current component
 %[1]s
 
-# Watch source code changes with custom devfile commands using --build-command and --run-command for experimental mode
-%[1]s --build-command="mybuild" --run-command="myrun"
+# Watch source code changes with custom devfile commands using --build-command, --run-command and --debug-command for devfile based components
+%[1]s --build-command="mybuild" --run-command="myrun" --debug-command="mydebug"
   `)
 
 // WatchOptions contains attributes of the watch command
