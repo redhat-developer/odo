@@ -38,3 +38,11 @@ type CompositeRunKindError struct {
 func (e *CompositeRunKindError) Error() string {
 	return "composite commands of run kind are not supported currently"
 }
+
+type UnsupportedFieldError struct {
+	fieldName string
+}
+
+func (e *UnsupportedFieldError) Error() string {
+	return fmt.Sprintf("%s is not supported in odo", e.fieldName)
+}
