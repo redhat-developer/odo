@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/fatih/color"
 	"github.com/openshift/odo/pkg/component"
@@ -128,7 +127,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		}
 	}
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, []devfilev1.Component{}, true)
+	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, true)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}

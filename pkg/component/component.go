@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -590,16 +589,13 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 // Parameters:
 //	client: occlient instance
 //	kClient: kclient instance
-//	appName: Name of application of which the component is a part
-//	componentName: Name of the component which is being patched with config
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
-//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each endpoint entry
 //  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, containerComponents []devfilev1.Component, isS2I bool) (err error) {
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, isS2I bool) (err error) {
 
 	if client == nil {
 		var err error
@@ -611,6 +607,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		client.Namespace = kClient.Namespace
 	}
 
+	var configProvider localConfigProvider.LocalConfigProvider
 	if isS2I {
 		// if component exist then only call the update function
 		if cmpExist {
@@ -620,14 +617,10 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		}
 	}
 
-	var componentName string
-	var applicationName string
 	if isS2I || kClient == nil {
-		componentName = componentConfig.GetName()
-		applicationName = componentConfig.GetApplication()
+		configProvider = &componentConfig
 	} else {
-		componentName = envSpecificInfo.GetName()
-		applicationName = envSpecificInfo.GetApplication()
+		configProvider = &envSpecificInfo
 	}
 
 	isRouteSupported := false
@@ -636,14 +629,17 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		isRouteSupported = false
 	}
 
-	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
-		ComponentName:       componentName,
-		ApplicationName:     applicationName,
-		ConfigURLs:          componentConfig.ListURLs(),
-		EnvURLS:             envSpecificInfo.ListURLs(),
+	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
+		OCClient:            *client,
 		IsRouteSupported:    isRouteSupported,
-		ContainerComponents: containerComponents,
-		IsS2I:               isS2I,
+		LocalConfigProvider: configProvider,
+	})
+
+	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
+		LocalConfig:      configProvider,
+		URLClient:        urlClient,
+		IsRouteSupported: isRouteSupported,
+		IsS2I:            isS2I,
 	})
 }
 

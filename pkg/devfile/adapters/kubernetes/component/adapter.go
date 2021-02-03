@@ -159,7 +159,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if currentMode != previousMode {
 		parameters.RunModeChanged = true
 	}
-	containerComponents := a.Devfile.Data.GetDevfileContainerComponents()
 
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
@@ -177,7 +176,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, containerComponents, false)
+	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, false)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}

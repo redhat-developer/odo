@@ -2,23 +2,20 @@ package url
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"reflect"
 	"strings"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/fake"
-	"github.com/openshift/odo/pkg/lclient"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/url/labels"
@@ -28,7 +25,6 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	//"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -680,11 +676,8 @@ func TestPush(t *testing.T) {
 		args                args
 		componentName       string
 		applicationName     string
-		existingConfigURLs  []localConfigProvider.LocalURL
-		existingEnvInfoURLs []localConfigProvider.LocalURL
-		returnedRoutes      *routev1.RouteList
-		returnedIngress     *extensionsv1.IngressList
-		containerComponents []devfilev1.Component
+		existingLocalURLs   []localConfigProvider.LocalURL
+		existingClusterURLs URLList
 		deletedURLs         []URL
 		createdURLs         []URL
 		wantErr             bool
@@ -697,7 +690,6 @@ func TestPush(t *testing.T) {
 			},
 			componentName:   "nodejs",
 			applicationName: "app",
-			returnedRoutes:  &routev1.RouteList{},
 		},
 		{
 			name:            "2 urls on local config and 0 on openshift cluster",
@@ -707,19 +699,20 @@ func TestPush(t *testing.T) {
 				isRouteSupported: true,
 				isS2I:            true,
 			},
-			existingConfigURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
 					Port:   8080,
 					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
 				},
 				{
 					Name:   "example-1",
 					Port:   9090,
 					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			returnedRoutes: &routev1.RouteList{},
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -748,7 +741,10 @@ func TestPush(t *testing.T) {
 			componentName:   "wildfly",
 			applicationName: "app",
 			args:            args{isRouteSupported: true, isS2I: true},
-			returnedRoutes:  testingutil.GetRouteListWithMultiple("wildfly", "app"),
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
+				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
+			}),
 			deletedURLs: []URL{
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-app", 8080, "nodejs", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1-app", 9100, "nodejs", "app")),
@@ -759,19 +755,24 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true, isS2I: true},
-			existingConfigURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example-local-0",
 					Port:   8080,
 					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
 				},
 				{
 					Name:   "example-local-1",
 					Port:   9090,
 					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			returnedRoutes: testingutil.GetRouteListWithMultiple("nodejs", "app"),
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
+				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
+			}),
 			deletedURLs: []URL{
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-app", 8080, "nodejs", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1-app", 9100, "nodejs", "app")),
@@ -804,71 +805,55 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true, isS2I: true},
-			existingConfigURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
 					Port:   8080,
 					Secure: false,
+					Path:   "/",
+					Kind:   localConfigProvider.ROUTE,
 				},
 				{
 					Name:   "example-1",
 					Port:   9100,
 					Secure: false,
+					Path:   "/",
+					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			returnedRoutes: testingutil.GetRouteListWithMultiple("nodejs", "app"),
-			deletedURLs:    []URL{},
-			createdURLs:    []URL{},
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
+				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
+			}),
+			deletedURLs: []URL{},
+			createdURLs: []URL{},
 		},
 		{
-			name:                "0 urls on env file and cluster",
-			componentName:       "nodejs",
-			applicationName:     "app",
-			args:                args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{},
-			returnedRoutes:      &routev1.RouteList{},
-			returnedIngress:     &extensionsv1.IngressList{},
+			name:              "0 urls on env file and cluster",
+			componentName:     "nodejs",
+			applicationName:   "app",
+			args:              args{isRouteSupported: true},
+			existingLocalURLs: []localConfigProvider.LocalURL{},
 		},
 		{
 			name:            "2 urls on env file and 0 on openshift cluster",
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example",
 					Host: "com",
+					Port: 8080,
 					Kind: localConfigProvider.INGRESS,
 				},
 				{
 					Name: "example-1",
 					Host: "com",
+					Port: 9090,
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-								{
-									Name:       "example-1",
-									TargetPort: 9090,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -895,13 +880,15 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:                "0 urls on env file and 2 on openshift cluster",
-			componentName:       "nodejs",
-			applicationName:     "app",
-			args:                args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{},
-			returnedRoutes:      &routev1.RouteList{},
-			returnedIngress:     fake.GetIngressListWithMultiple("nodejs", "app"),
+			name:              "0 urls on env file and 2 on openshift cluster",
+			componentName:     "nodejs",
+			applicationName:   "app",
+			args:              args{isRouteSupported: true},
+			existingLocalURLs: []localConfigProvider.LocalURL{},
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
+			}),
 			deletedURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -920,41 +907,24 @@ func TestPush(t *testing.T) {
 			componentName:   "wildfly",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example-local-0",
 					Host: "com",
+					Port: 8080,
 					Kind: localConfigProvider.INGRESS,
 				},
 				{
 					Name: "example-local-1",
 					Host: "com",
+					Port: 9090,
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example-local-0",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-								{
-									Name:       "example-local-1",
-									TargetPort: 9090,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: fake.GetIngressListWithMultiple("wildfly", "app"),
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
+			}),
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -997,83 +967,49 @@ func TestPush(t *testing.T) {
 			componentName:   "wildfly",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example-0",
 					Host: "com",
+					Port: 8080,
 					Kind: localConfigProvider.INGRESS,
 				},
 				{
 					Name: "example-1",
 					Host: "com",
+					Port: 9090,
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example-0",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-								{
-									Name:       "example-1",
-									TargetPort: 9090,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: fake.GetIngressListWithMultiple("wildfly", "app"),
-			createdURLs:     []URL{},
-			deletedURLs:     []URL{},
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "wildfly", "app")),
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "wildfly", "app")),
+			}),
+			createdURLs: []URL{},
+			deletedURLs: []URL{},
 		},
 		{
 			name:            "2 (1 ingress,1 route) urls on env file and 2 on openshift cluster (1 ingress,1 route), but they are different",
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example-local-0",
+					Port: 8080,
 					Kind: localConfigProvider.ROUTE,
 				},
 				{
 					Name: "example-local-1",
 					Host: "com",
+					Port: 9090,
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example-local-0",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-								{
-									Name:       "example-local-1",
-									TargetPort: 9090,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: fake.GetIngressListWithMultiple("nodejs", "app"),
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
+			}),
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1115,32 +1051,16 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: false},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:      "example",
 					Host:      "com",
 					TLSSecret: "secret",
+					Port:      8080,
+					Secure:    true,
 					Kind:      localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1163,34 +1083,16 @@ func TestPush(t *testing.T) {
 			args: args{
 				isRouteSupported: true,
 			},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example-local-0",
+					Port: 8080,
 					Kind: localConfigProvider.ROUTE,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example-local-0",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes: &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{
-					*fake.GetSingleIngress("example-local-0", "nodejs", "app"),
-				},
-			},
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-local-0", "nodejs", "app")),
+			}),
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1217,19 +1119,17 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true, isS2I: true},
-			existingConfigURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example-local-0",
 					Port:   8080,
 					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			returnedRoutes: &routev1.RouteList{
-				Items: []routev1.Route{
-					testingutil.GetSingleRoute("example-local-0", 9090, "nodejs", "app"),
-				},
-			},
-			returnedIngress: &extensionsv1.IngressList{},
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
+				getMachineReadableFormat(testingutil.GetSingleRoute("example-local-0", 9090, "nodejs", "app")),
+			}),
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1256,30 +1156,14 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
-					Name: "example",
-					Kind: localConfigProvider.ROUTE,
+					Name:   "example",
+					Port:   8080,
+					Secure: true,
+					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1298,31 +1182,15 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
-					Name: "example",
-					Host: "com",
-					Kind: localConfigProvider.INGRESS,
+					Name:   "example",
+					Host:   "com",
+					Secure: true,
+					Port:   8080,
+					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1342,32 +1210,16 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:      "example",
 					Host:      "com",
 					TLSSecret: "secret",
+					Port:      8080,
+					Secure:    true,
 					Kind:      localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-								},
-							},
-						},
-					},
-				},
-			},
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1384,186 +1236,33 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:          "env has ingress defined with same port, but endpoint port defined in devfile is internally exposed",
+			name:          "no host defined for ingress should not create any URL",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			args:          args{isRouteSupported: false},
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example",
-					Host: "com",
-					Kind: localConfigProvider.INGRESS,
-				},
-			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-									Exposure:   devfilev1.InternalEndpointExposure,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs:     []URL{},
-		},
-		{
-			name:          "env has ingress defined with same port, endpoint port defined in devfile is not exposed",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
-				{
-					Name: "example",
-					Host: "com",
-					Kind: localConfigProvider.INGRESS,
-				},
-			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-									Exposure:   devfilev1.NoneEndpointExposure,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs:     []URL{},
-		},
-		{
-			name:          "env has route defined with same port, but endpoint port defined in devfile is internally exposed",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
-				{
-					Name: "example",
+					Port: 8080,
 					Kind: localConfigProvider.ROUTE,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-									Exposure:   devfilev1.InternalEndpointExposure,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs:     []URL{},
+			wantErr:     false,
+			createdURLs: []URL{},
 		},
 		{
-			name:          "env has route defined with same port, but endpoint port defined in devfile is not exposed",
-			componentName: "nodejs",
-			args:          args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			name:            "should create route in openshift cluster if endpoint is defined in devfile",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
-					Name: "example",
-					Kind: localConfigProvider.ROUTE,
+					Name:   "example",
+					Port:   8080,
+					Kind:   localConfigProvider.ROUTE,
+					Secure: false,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     true,
-									Exposure:   devfilev1.NoneEndpointExposure,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs:     []URL{},
-		},
-		{
-			name:                "no host defined for ingress should not create any URL",
-			componentName:       "nodejs",
-			args:                args{isRouteSupported: false},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs:     []URL{},
-		},
-		{
-			name:                "should create route in openshift cluster if endpoint is defined in devfile",
-			componentName:       "nodejs",
-			applicationName:     "app",
-			args:                args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
+			wantErr: false,
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1583,32 +1282,15 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example",
 					Host: "com",
+					Port: 8080,
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     false,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
+			wantErr: false,
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1625,31 +1307,20 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:                "should create route in openshift cluster with path defined in devfile",
-			componentName:       "nodejs",
-			applicationName:     "app",
-			args:                args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{},
-			containerComponents: []devfilev1.Component{
+			name:            "should create route in openshift cluster with path defined in devfile",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     false,
-									Path:       "/testpath",
-								},
-							},
-						},
-					},
+					Name:   "example",
+					Port:   8080,
+					Secure: false,
+					Path:   "/testpath",
+					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
+			wantErr: false,
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1669,33 +1340,17 @@ func TestPush(t *testing.T) {
 			componentName:   "nodejs",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingEnvInfoURLs: []localConfigProvider.LocalURL{
+			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
-					Name: "example",
-					Host: "com",
-					Kind: localConfigProvider.INGRESS,
+					Name:   "example",
+					Host:   "com",
+					Port:   8080,
+					Secure: false,
+					Path:   "/testpath",
+					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: "container1",
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								{
-									Name:       "example",
-									TargetPort: 8080,
-									Secure:     false,
-									Path:       "/testpath",
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr:         false,
-			returnedRoutes:  &routev1.RouteList{},
-			returnedIngress: &extensionsv1.IngressList{},
+			wantErr: false,
 			createdURLs: []URL{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1715,19 +1370,22 @@ func TestPush(t *testing.T) {
 	for testNum, tt := range tests {
 		tt.name = fmt.Sprintf("case %d: ", testNum+1) + tt.name
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockLocalConfigProvider := localConfigProvider.NewMockLocalConfigProvider(ctrl)
+			mockLocalConfigProvider.EXPECT().GetName().Return(tt.componentName).AnyTimes()
+			mockLocalConfigProvider.EXPECT().GetApplication().Return(tt.applicationName).AnyTimes()
+			mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.existingLocalURLs)
+
+			mockURLClient := NewMockClient(ctrl)
+			mockURLClient.EXPECT().ListFromCluster().Return(tt.existingClusterURLs, nil)
+
 			fakeClient, fakeClientSet := occlient.FakeNew()
 			fakeKClient, fakeKClientSet := kclient.FakeNew()
 
-			fakeKClientSet.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, tt.returnedIngress, nil
-			})
-
 			fakeKClientSet.Kubernetes.PrependReactor("delete", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, nil, nil
-			})
-
-			fakeClientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, tt.returnedRoutes, nil
 			})
 
 			fakeClientSet.RouteClientset.PrependReactor("delete", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -1735,8 +1393,8 @@ func TestPush(t *testing.T) {
 			})
 
 			fakeKClientSet.Kubernetes.PrependReactor("get", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if tt.existingEnvInfoURLs[0].TLSSecret != "" {
-					return true, fake.GetSecret(tt.existingEnvInfoURLs[0].TLSSecret), nil
+				if tt.existingLocalURLs[0].TLSSecret != "" {
+					return true, fake.GetSecret(tt.existingLocalURLs[0].TLSSecret), nil
 				}
 				return true, fake.GetSecret(tt.componentName + "-tlssecret"), nil
 			})
@@ -1750,13 +1408,10 @@ func TestPush(t *testing.T) {
 			})
 
 			if err := Push(fakeClient, fakeKClient, PushParameters{
-				ComponentName:       tt.componentName,
-				ApplicationName:     tt.applicationName,
-				ConfigURLs:          tt.existingConfigURLs,
-				EnvURLS:             tt.existingEnvInfoURLs,
-				IsRouteSupported:    tt.args.isRouteSupported,
-				ContainerComponents: tt.containerComponents,
-				IsS2I:               tt.args.isS2I,
+				LocalConfig:      mockLocalConfigProvider,
+				URLClient:        mockURLClient,
+				IsRouteSupported: tt.args.isRouteSupported,
+				IsS2I:            tt.args.isS2I,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
@@ -1867,686 +1522,6 @@ func TestPush(t *testing.T) {
 						t.Errorf("when urls are in snyc, total action for kubernetes client set should be less than 1")
 					}
 				}
-			}
-		})
-	}
-}
-
-func TestListDockerURL(t *testing.T) {
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-	testURL1 := localConfigProvider.LocalURL{Name: "testurl1", Port: 8080, ExposedPort: 56789, Kind: "docker"}
-	testURL2 := localConfigProvider.LocalURL{Name: "testurl2", Port: 8080, ExposedPort: 54321, Kind: "docker"}
-	testURL3 := localConfigProvider.LocalURL{Name: "testurl3", Port: 8080, ExposedPort: 65432, Kind: "docker"}
-	esi := &envinfo.EnvSpecificInfo{}
-	err := esi.SetConfiguration("url", testURL1)
-	if err != nil {
-		// discard the error, since no physical file to write
-		t.Log("Expected error since no physical env file to write")
-	}
-	err = esi.SetConfiguration("url", testURL2)
-	if err != nil {
-		// discard the error, since no physical file to write
-		t.Log("Expected error since no physical env file to write")
-	}
-
-	tests := []struct {
-		name      string
-		client    *lclient.Client
-		component string
-		wantURLs  []URL
-		wantErr   bool
-	}{
-		{
-			name:      "Case 1: Successfully retrieve the URL list",
-			client:    fakeClient,
-			component: "golang",
-			wantURLs: []URL{
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL1.Port, ExternalPort: testURL1.ExposedPort},
-					Status: URLStatus{
-						State: StateTypeNotPushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL2.Port, ExternalPort: testURL2.ExposedPort},
-					Status: URLStatus{
-						State: StateTypePushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL3.Port, ExternalPort: testURL3.ExposedPort},
-					Status: URLStatus{
-						State: StateTypeLocallyDeleted,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:      "Case 2: Error retrieving the URL list",
-			client:    fakeErrorClient,
-			component: "golang",
-			wantURLs:  nil,
-			wantErr:   true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			urls, err := ListDockerURL(tt.client, tt.component, esi)
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("expected %v, got %v", tt.wantErr, err)
-			}
-
-			if len(urls.Items) != len(tt.wantURLs) {
-				t.Errorf("numbers of url listed does not match, expected %v, got %v", len(tt.wantURLs), len(urls.Items))
-			}
-			actualURLMap := make(map[string]URL)
-			for _, actualURL := range urls.Items {
-				actualURLMap[actualURL.Name] = actualURL
-			}
-			for _, wantURL := range tt.wantURLs {
-				if !reflect.DeepEqual(actualURLMap[wantURL.Name], wantURL) {
-					t.Errorf("Expected %v, got %v", wantURL, actualURLMap[wantURL.Name])
-				}
-			}
-		})
-	}
-}
-
-func TestListIngressAndRoute(t *testing.T) {
-	componentName := "testcomponent"
-	containerName := "testcontainer"
-
-	// testURL1 and testURL6 not exist in local
-	testURL1 := localConfigProvider.LocalURL{Name: "example-0", Port: 8080, Host: "com", Kind: "ingress"}
-	testURL2 := localConfigProvider.LocalURL{Name: "example-1", Host: "com", Kind: "ingress"}
-	testURL3 := localConfigProvider.LocalURL{Name: "ingressurl3", Host: "com", Kind: "ingress"}
-	testURL4 := localConfigProvider.LocalURL{Name: "example", Kind: "route"}
-	testURL5 := localConfigProvider.LocalURL{Name: "routeurl2", Kind: "route"}
-	testURL6 := localConfigProvider.LocalURL{Name: "routeurl3", Port: 8080, Kind: "route"}
-
-	example1Endpoint := devfilev1.Endpoint{
-		Name:       "example-1",
-		Exposure:   devfilev1.PublicEndpointExposure,
-		TargetPort: 9090,
-		Protocol:   devfilev1.HTTPEndpointProtocol,
-	}
-
-	ingressurl3Endpoint := devfilev1.Endpoint{
-		Name:       "ingressurl3",
-		Exposure:   devfilev1.PublicEndpointExposure,
-		TargetPort: 8080,
-		Protocol:   devfilev1.HTTPSEndpointProtocol,
-		Secure:     true,
-	}
-
-	exampleEndpoint := devfilev1.Endpoint{
-		Name:       "example",
-		Exposure:   devfilev1.PublicEndpointExposure,
-		TargetPort: 8080,
-		Protocol:   devfilev1.HTTPEndpointProtocol,
-	}
-
-	routeurl2Endpoint := devfilev1.Endpoint{
-		Name:       "routeurl2",
-		Exposure:   devfilev1.PublicEndpointExposure,
-		TargetPort: 8080,
-		Protocol:   devfilev1.HTTPEndpointProtocol,
-	}
-	tests := []struct {
-		name                string
-		component           string
-		envURLs             []localConfigProvider.LocalURL
-		containerComponents []devfilev1.Component
-		routeSupported      bool
-		routeList           *routev1.RouteList
-		ingressList         *extensionsv1.IngressList
-		wantURLs            []URL
-	}{
-		{
-			name:      "Should retrieve the URL list with both ingress and routes",
-			component: componentName,
-			envURLs:   []localConfigProvider.LocalURL{testURL2, testURL3, testURL4, testURL5},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: containerName,
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								example1Endpoint, ingressurl3Endpoint, exampleEndpoint, routeurl2Endpoint,
-							},
-						},
-					},
-				},
-			},
-			routeSupported: true,
-			ingressList:    fake.GetIngressListWithMultiple(componentName, "app"),
-			routeList: &routev1.RouteList{
-				Items: []routev1.Route{
-					testingutil.GetSingleRoute(testURL4.Name, int(exampleEndpoint.TargetPort), componentName, ""),
-					testingutil.GetSingleRoute(testURL6.Name, testURL6.Port, componentName, ""),
-				},
-			},
-			wantURLs: []URL{
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: testURL1.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypeLocallyDeleted,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: fmt.Sprintf("%v.%v", example1Endpoint.Name, testURL2.Host), Port: int(example1Endpoint.TargetPort), Secure: example1Endpoint.Secure, Kind: testURL2.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypePushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-					Spec:       URLSpec{Host: fmt.Sprintf("%v.%v", ingressurl3Endpoint.Name, testURL3.Host), Port: int(ingressurl3Endpoint.TargetPort), Secure: ingressurl3Endpoint.Secure, TLSSecret: componentName + "-tlssecret", Kind: testURL3.Kind},
-					Status: URLStatus{
-						State: StateTypeNotPushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
-					Spec:       URLSpec{Protocol: "http", Port: int(exampleEndpoint.TargetPort), Secure: exampleEndpoint.Secure, Kind: testURL4.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypePushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL5.Name},
-					Spec:       URLSpec{Port: int(routeurl2Endpoint.TargetPort), Secure: routeurl2Endpoint.Secure, Kind: testURL5.Kind},
-					Status: URLStatus{
-						State: StateTypeNotPushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
-					Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: testURL6.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypeLocallyDeleted,
-					},
-				},
-			},
-		},
-		{
-			name:      "Should retrieve only ingress URLs with routeSupported equals to false",
-			component: componentName,
-			envURLs:   []localConfigProvider.LocalURL{testURL2, testURL3, testURL4, testURL5},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: containerName,
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								example1Endpoint, ingressurl3Endpoint, exampleEndpoint, routeurl2Endpoint,
-							},
-						},
-					},
-				},
-			},
-			routeList:      &routev1.RouteList{},
-			ingressList:    fake.GetIngressListWithMultiple(componentName, "app"),
-			routeSupported: false,
-			wantURLs: []URL{
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: testURL1.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypeLocallyDeleted,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: fmt.Sprintf("%v.%v", example1Endpoint.Name, testURL2.Host), Port: int(example1Endpoint.TargetPort), Secure: example1Endpoint.Secure, Kind: testURL2.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypePushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-					Spec:       URLSpec{Host: fmt.Sprintf("%v.%v", ingressurl3Endpoint.Name, testURL3.Host), Port: int(ingressurl3Endpoint.TargetPort), Secure: ingressurl3Endpoint.Secure, TLSSecret: componentName + "-tlssecret", Kind: testURL3.Kind},
-					Status: URLStatus{
-						State: StateTypeNotPushed,
-					},
-				},
-			},
-		},
-		{
-			name:      "Should retrieve only ingress URLs",
-			component: componentName,
-			envURLs:   []localConfigProvider.LocalURL{testURL2, testURL3},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: containerName,
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								example1Endpoint, ingressurl3Endpoint,
-							},
-						},
-					},
-				},
-			},
-			routeSupported: true,
-			routeList:      &routev1.RouteList{},
-			ingressList:    fake.GetIngressListWithMultiple(componentName, "app"),
-			wantURLs: []URL{
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: localConfigProvider.INGRESS, Path: "/"},
-					Status: URLStatus{
-						State: StateTypeLocallyDeleted,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: fmt.Sprintf("%v.%v", example1Endpoint.Name, testURL2.Host), Port: int(example1Endpoint.TargetPort), Secure: example1Endpoint.Secure, Kind: testURL2.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypePushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-					Spec:       URLSpec{Host: fmt.Sprintf("%v.%v", ingressurl3Endpoint.Name, testURL3.Host), Port: int(ingressurl3Endpoint.TargetPort), Secure: ingressurl3Endpoint.Secure, TLSSecret: componentName + "-tlssecret", Kind: testURL3.Kind},
-					Status: URLStatus{
-						State: StateTypeNotPushed,
-					},
-				},
-			},
-		},
-		{
-			name:      "Should retrieve only route URLs",
-			component: componentName,
-			envURLs:   []localConfigProvider.LocalURL{testURL4, testURL5},
-			containerComponents: []devfilev1.Component{
-				{
-					Name: containerName,
-					ComponentUnion: devfilev1.ComponentUnion{
-						Container: &devfilev1.ContainerComponent{
-							Endpoints: []devfilev1.Endpoint{
-								exampleEndpoint, routeurl2Endpoint,
-							},
-						},
-					},
-				},
-			},
-			routeSupported: true,
-			routeList: &routev1.RouteList{
-				Items: []routev1.Route{
-					testingutil.GetSingleRoute(testURL4.Name, int(exampleEndpoint.TargetPort), componentName, ""),
-					testingutil.GetSingleRoute(testURL6.Name, testURL6.Port, componentName, ""),
-				},
-			},
-			ingressList: &extensionsv1.IngressList{},
-			wantURLs: []URL{
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
-					Spec:       URLSpec{Protocol: "http", Port: int(exampleEndpoint.TargetPort), Secure: exampleEndpoint.Secure, Kind: testURL4.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypePushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL5.Name},
-					Spec:       URLSpec{Port: int(routeurl2Endpoint.TargetPort), Secure: routeurl2Endpoint.Secure, Kind: testURL5.Kind},
-					Status: URLStatus{
-						State: StateTypeNotPushed,
-					},
-				},
-				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-					ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
-					Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: testURL6.Kind, Path: "/"},
-					Status: URLStatus{
-						State: StateTypeLocallyDeleted,
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// initialising virtual envinfo
-			esi := &envinfo.EnvSpecificInfo{}
-			for _, url := range tt.envURLs {
-				err := esi.SetConfiguration("url", url)
-				if err != nil {
-					// discard the error, since no physical file to write
-					t.Log("Expected error since no physical env file to write")
-				}
-			}
-			// initialising the fakeclient
-			fkclient, fkclientset := kclient.FakeNew()
-			fkclient.Namespace = "default"
-			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, tt.ingressList, nil
-			})
-			fakeoclient, fakeoclientSet := occlient.FakeNew()
-			fakeoclientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, tt.routeList, nil
-			})
-			fakeoclient.SetKubeClient(fkclient)
-
-			urls, err := ListIngressAndRoute(fakeoclient, esi, tt.containerComponents, componentName, tt.routeSupported)
-			if err != nil {
-				t.Errorf("unexpected error %v", err)
-			}
-
-			if len(urls.Items) != len(tt.wantURLs) {
-				t.Errorf("numbers of url listed does not match, expected %v, got %v", len(tt.wantURLs), len(urls.Items))
-			}
-			actualURLMap := make(map[string]URL)
-			for _, actualURL := range urls.Items {
-				actualURLMap[actualURL.Name] = actualURL
-			}
-			for _, wantURL := range tt.wantURLs {
-				if !reflect.DeepEqual(actualURLMap[wantURL.Name], wantURL) {
-					t.Errorf("Expected %v, got %v", wantURL, actualURLMap[wantURL.Name])
-				}
-			}
-		})
-	}
-
-}
-
-func TestGetIngressOrRoute(t *testing.T) {
-	componentName := "testcomponent"
-	containerName := "testcontainer"
-
-	// testURL1 and testURL6 not exist in local
-	testURL1 := localConfigProvider.LocalURL{Name: "ingressurl1", Port: 8080, Host: "com", Kind: "ingress"}
-	testURL2 := localConfigProvider.LocalURL{Name: "ingressurl2", Host: "com", Kind: "ingress"}
-	testURL3 := localConfigProvider.LocalURL{Name: "ingressurl3", Host: "com", Kind: "ingress"}
-	testURL4 := localConfigProvider.LocalURL{Name: "example", Kind: "route"}
-	testURL5 := localConfigProvider.LocalURL{Name: "routeurl2", Kind: "route"}
-	testURL6 := localConfigProvider.LocalURL{Name: "routeurl3", Port: 8080, Kind: "route"}
-
-	esi := &envinfo.EnvSpecificInfo{}
-	err := esi.SetConfiguration("url", testURL2)
-	if err != nil {
-		// discard the error, since no physical file to write
-		t.Log("Expected error since no physical env file to write")
-	}
-	err = esi.SetConfiguration("url", testURL3)
-	if err != nil {
-		// discard the error, since no physical file to write
-		t.Log("Expected error since no physical env file to write")
-	}
-	err = esi.SetConfiguration("url", testURL4)
-	if err != nil {
-		// discard the error, since no physical file to write
-		t.Log("Expected error since no physical env file to write")
-	}
-	err = esi.SetConfiguration("url", testURL5)
-	if err != nil {
-		// discard the error, since no physical file to write
-		t.Log("Expected error since no physical env file to write")
-	}
-	fakecomponent := testingutil.GetFakeContainerComponent(containerName)
-	fakecomponent.Container.Endpoints = []devfilev1.Endpoint{
-		{
-			Name:       "ingressurl2",
-			Exposure:   devfilev1.PublicEndpointExposure,
-			TargetPort: 8080,
-			Protocol:   devfilev1.HTTPEndpointProtocol,
-			Path:       "/",
-		},
-		{
-			Name:       "ingressurl3",
-			Exposure:   devfilev1.PublicEndpointExposure,
-			TargetPort: 8080,
-			Protocol:   devfilev1.HTTPEndpointProtocol,
-			Secure:     true,
-			Path:       "/",
-		},
-		{
-			Name:       "example",
-			Exposure:   devfilev1.PublicEndpointExposure,
-			TargetPort: 8080,
-			Protocol:   devfilev1.HTTPEndpointProtocol,
-			Path:       "/",
-		},
-		{
-			Name:       "routeurl2",
-			Exposure:   devfilev1.PublicEndpointExposure,
-			TargetPort: 8080,
-			Protocol:   devfilev1.HTTPEndpointProtocol,
-			Path:       "/",
-		},
-	}
-	containerComponents := []devfilev1.Component{
-		fakecomponent,
-	}
-
-	tests := []struct {
-		name           string
-		component      string
-		urlName        string
-		routeSupported bool
-		pushedIngress  *extensionsv1.Ingress
-		pushedRoute    routev1.Route
-		wantURL        URL
-		wantErr        bool
-	}{
-		{
-			name:           "Case 1: Successfully retrieve the locally deleted Ingress URL object",
-			component:      componentName,
-			urlName:        testURL1.Name,
-			routeSupported: true,
-			pushedIngress:  fake.GetSingleIngress(testURL1.Name, componentName, "app"),
-			pushedRoute:    routev1.Route{},
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: localConfigProvider.INGRESS, Path: "/"},
-				Status: URLStatus{
-					State: StateTypeLocallyDeleted,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 2: Successfully retrieve the pushed Ingress URL object",
-			component:      componentName,
-			urlName:        testURL2.Name,
-			routeSupported: true,
-			pushedIngress:  fake.GetSingleIngress(testURL2.Name, componentName, "app"),
-			pushedRoute:    routev1.Route{},
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-				Spec:       URLSpec{Host: "ingressurl2.com", Port: 8080, Secure: false, Kind: localConfigProvider.INGRESS, Path: "/"},
-				Status: URLStatus{
-					State: StateTypePushed,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 3: Successfully retrieve the not pushed Ingress URL object",
-			component:      componentName,
-			urlName:        testURL3.Name,
-			routeSupported: true,
-			pushedIngress:  nil,
-			pushedRoute:    routev1.Route{},
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-				Spec:       URLSpec{Host: "ingressurl3.com", Port: 8080, Secure: true, TLSSecret: componentName + "-tlssecret", Kind: localConfigProvider.INGRESS},
-				Status: URLStatus{
-					State: StateTypeNotPushed,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 4: Should show error if the url does not exist",
-			component:      componentName,
-			urlName:        "notExistURL",
-			routeSupported: true,
-			pushedIngress:  nil,
-			pushedRoute:    routev1.Route{},
-			wantErr:        true,
-		},
-		{
-			name:           "Case 5: Successfully retrieve the pushed Route URL object",
-			component:      componentName,
-			urlName:        testURL4.Name,
-			routeSupported: true,
-			pushedIngress:  nil,
-			pushedRoute:    testingutil.GetSingleRoute(testURL4.Name, 8080, componentName, ""),
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
-				Spec:       URLSpec{Protocol: "http", Port: 8080, Secure: false, Kind: localConfigProvider.ROUTE, Path: "/"},
-				Status: URLStatus{
-					State: StateTypePushed,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 6 Successfully retrieve the not pushed Route URL object",
-			component:      componentName,
-			urlName:        testURL5.Name,
-			routeSupported: true,
-			pushedIngress:  nil,
-			pushedRoute:    routev1.Route{},
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL5.Name},
-				Spec:       URLSpec{Port: 8080, Secure: false, Kind: localConfigProvider.ROUTE},
-				Status: URLStatus{
-					State: StateTypeNotPushed,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 7: Successfully retrieve the locally deleted Route URL object",
-			component:      componentName,
-			urlName:        testURL6.Name,
-			routeSupported: true,
-			pushedIngress:  nil,
-			pushedRoute:    testingutil.GetSingleRoute(testURL6.Name, testURL6.Port, componentName, ""),
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
-				Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: localConfigProvider.ROUTE, Path: "/"},
-				Status: URLStatus{
-					State: StateTypeLocallyDeleted,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 8: If route is not supported, should show error and empty URL when describing a route",
-			component:      componentName,
-			urlName:        testURL5.Name,
-			routeSupported: false,
-			pushedIngress:  nil,
-			pushedRoute:    routev1.Route{},
-			wantURL:        URL{},
-			wantErr:        true,
-		},
-		{
-			name:           "Case 9: If route is not supported, should retrieve not pushed ingress",
-			component:      componentName,
-			urlName:        testURL3.Name,
-			routeSupported: false,
-			pushedIngress:  nil,
-			pushedRoute:    routev1.Route{},
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-				Spec:       URLSpec{Host: "ingressurl3.com", Port: 8080, Secure: true, TLSSecret: componentName + "-tlssecret", Kind: localConfigProvider.INGRESS},
-				Status: URLStatus{
-					State: StateTypeNotPushed,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 10: If route is not supported, should retrieve pushed ingress",
-			component:      componentName,
-			urlName:        testURL2.Name,
-			routeSupported: false,
-			pushedIngress:  fake.GetSingleIngress(testURL2.Name, componentName, "app"),
-			pushedRoute:    routev1.Route{},
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-				Spec:       URLSpec{Host: "ingressurl2.com", Port: 8080, Secure: false, Kind: localConfigProvider.INGRESS, Path: "/"},
-				Status: URLStatus{
-					State: StateTypePushed,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:           "Case 11: If route is not supported, should retrieve locally deleted ingress",
-			component:      componentName,
-			urlName:        testURL1.Name,
-			routeSupported: false,
-			pushedIngress:  fake.GetSingleIngress(testURL1.Name, componentName, "app"),
-			pushedRoute:    routev1.Route{},
-			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
-				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: localConfigProvider.INGRESS, Path: "/"},
-				Status: URLStatus{
-					State: StateTypeLocallyDeleted,
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fkclient, fkclientset := kclient.FakeNew()
-			fkclient.Namespace = "default"
-			if tt.pushedIngress != nil {
-				fkclientset.Kubernetes.PrependReactor("get", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
-					return true, tt.pushedIngress, nil
-				})
-			}
-			client, fakeClientSet := occlient.FakeNew()
-			if !reflect.DeepEqual(tt.pushedRoute, routev1.Route{}) {
-				fakeClientSet.RouteClientset.PrependReactor("get", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-					return true, &tt.pushedRoute, nil
-				})
-			}
-			url, err := GetIngressOrRoute(client, fkclient, esi, tt.urlName, containerComponents, tt.component, tt.routeSupported)
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("unexpected error %v", err)
-			}
-			if !reflect.DeepEqual(url, tt.wantURL) {
-				t.Errorf("Expected %v, got %v", tt.wantURL, url)
 			}
 		})
 	}
