@@ -88,6 +88,20 @@ func (mr *MockLocalConfigProviderMockRecorder) GetDebugPort() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDebugPort", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetDebugPort))
 }
 
+// GetContainers mocks base method
+func (m *MockLocalConfigProvider) GetContainers() []LocalContainer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContainers")
+	ret0, _ := ret[0].([]LocalContainer)
+	return ret0
+}
+
+// GetContainers indicates an expected call of GetContainers
+func (mr *MockLocalConfigProviderMockRecorder) GetContainers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainers", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetContainers))
+}
+
 // GetURL mocks base method
 func (m *MockLocalConfigProvider) GetURL(name string) *LocalURL {
 	m.ctrl.T.Helper()

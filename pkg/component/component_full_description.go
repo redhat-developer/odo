@@ -50,40 +50,27 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 }
 
 // loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
-func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, envinfo *envinfo.EnvSpecificInfo, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, componentDesc *Component) error {
+func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
 	var storages storage.StorageList
 	var err error
-
-	isDevfile := envinfo != nil
-	var devfile devfileParser.DevfileObj
-	if isDevfile {
-		devfile, err = devfileParser.Parse(envinfo.GetDevfilePath())
-		if err != nil {
-			return err
-		}
-	}
 
 	// if component is pushed call ListWithState which gets storages from localconfig and cluster
 	// this result is already in mc readable form
 	if componentDesc.Status.State == StateTypePushed {
-		if isDevfile {
-			storages, err = storage.DevfileList(kClient, devfile.Data, envinfo.GetName())
-		} else {
-			storages, err = storage.ListStorageWithState(client, localConfigInfo, componentName, applicationName)
-		}
+		storageClient := storage.NewClient(storage.ClientOptions{
+			OCClient:            *client,
+			LocalConfigProvider: configProvider,
+		})
+
+		storages, err = storageClient.List()
 		if err != nil {
 			return err
 		}
 	} else {
 		// otherwise simply fetch storagelist locally
-		if isDevfile {
-			storages = storage.GetLocalDevfileStorage(devfile.Data)
-			storages = storage.GetMachineReadableFormatForList(storages.Items)
-		} else {
-			storageLocal := localConfigInfo.ListStorage()
-			// convert to machine readable format
-			storages = storage.ConvertListLocalToMachine(storageLocal)
-		}
+		storageLocal := configProvider.ListStorage()
+		// convert to machine readable format
+		storages = storage.ConvertListLocalToMachine(storageLocal)
 	}
 	cfd.Spec.Storage = storages
 	return nil
@@ -154,18 +141,23 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		return cfd, e
 	}
 	var components []devfilev1.Component
-	var configProvider localConfigProvider.LocalConfigProvider = localConfigInfo
+
+	var configProvider localConfigProvider.LocalConfigProvider
 	if envInfo != nil {
+		envInfo.SetDevfileObj(devfile)
 		configProvider = envInfo
 		components = devfile.Data.GetDevfileContainerComponents()
+	} else {
+		configProvider = localConfigInfo
 	}
+
 	urls, err = urlpkg.ListIngressAndRoute(client, configProvider, components, componentName, routeSupported)
 	if err != nil {
 		log.Warningf("URLs couldn't not be retrieved: %v", err)
 	}
 	cfd.Spec.URL = urls
 
-	err = cfd.loadStoragesFromClientAndLocalConfig(client, kClient, envInfo, localConfigInfo, componentName, applicationName, &componentDesc)
+	err = cfd.loadStoragesFromClientAndLocalConfig(client, kClient, configProvider, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
 	}
