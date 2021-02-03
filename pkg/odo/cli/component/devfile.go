@@ -94,7 +94,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	componentName := po.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)
-	po.sourcePath, err = util.GetAbsPath(po.componentContext)
+	po.sourcePath, err = util.GetAbsPath(po.ComponentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
@@ -115,7 +115,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.ComponentContext, po.Application, devObj, platformContext)
 	if err != nil {
 		return err
 	}

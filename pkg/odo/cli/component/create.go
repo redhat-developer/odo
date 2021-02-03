@@ -358,7 +358,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		DevfilePath = filepath.Join(co.componentContext, devFile)
 		EnvFilePath = filepath.Join(co.componentContext, envFile)
 		ConfigFilePath = filepath.Join(co.componentContext, configFile)
-		co.PushOptions.componentContext = co.componentContext
+		co.PushOptions.ComponentContext = co.componentContext
 	}
 	co.DevfilePath = DevfilePath
 

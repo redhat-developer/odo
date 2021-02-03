@@ -53,7 +53,7 @@ func NewCommonPushOptions() *CommonPushOptions {
 //InitConfigFromContext initializes localconfiginfo from the context
 func (cpo *CommonPushOptions) InitConfigFromContext() error {
 	var err error
-	cpo.LocalConfigInfo, err = config.NewLocalConfigInfo(cpo.componentContext)
+	cpo.LocalConfigInfo, err = config.NewLocalConfigInfo(cpo.ComponentContext)
 	if err != nil {
 		return err
 	}
@@ -62,16 +62,16 @@ func (cpo *CommonPushOptions) InitConfigFromContext() error {
 
 //InitEnvInfoFromContext initializes envinfo from the context
 func (cpo *CommonPushOptions) InitEnvInfoFromContext() (err error) {
-	cpo.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(cpo.componentContext)
+	cpo.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(cpo.ComponentContext)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-//AddContextFlag adds the context flag to specified command storing value of flag in options.componentContext
+//AddContextFlag adds the context flag to specified command storing value of flag in options.ComponentContext
 func (cpo *CommonPushOptions) AddContextFlag(cmd *cobra.Command) {
-	genericclioptions.AddContextFlag(cmd, &cpo.componentContext)
+	genericclioptions.AddContextFlag(cmd, &cpo.ComponentContext)
 }
 
 // ResolveSrcAndConfigFlags sets all pushes if none is asked
@@ -93,7 +93,7 @@ func (cpo *CommonPushOptions) ValidateComponentCreate() error {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
 	}
 
-	if err = component.ValidateComponentCreateRequest(cpo.Context.Client, cpo.LocalConfigInfo.GetComponentSettings(), cpo.componentContext); err != nil {
+	if err = component.ValidateComponentCreateRequest(cpo.Context.Client, cpo.LocalConfigInfo.GetComponentSettings(), cpo.ComponentContext); err != nil {
 		s.End(false)
 		log.Italic("\nRun 'odo catalog list components' for a list of supported component types")
 		return fmt.Errorf("Invalid component type %s, %v", *cpo.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
@@ -118,7 +118,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	if !cpo.doesComponentExist {
 
 		// Classic case of component creation
-		if err := component.CreateComponent(cpo.Context.Client, *cpo.LocalConfigInfo, cpo.componentContext, stdout); err != nil {
+		if err := component.CreateComponent(cpo.Context.Client, *cpo.LocalConfigInfo, cpo.ComponentContext, stdout); err != nil {
 			log.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %v",
 				cmpName,
@@ -191,8 +191,8 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	// force write the content to resolvePath
 	forceWrite := false
 
-	if cpo.componentContext == "" {
-		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")
+	if cpo.ComponentContext == "" {
+		cpo.ComponentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")
 	}
 
 	err = cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)
@@ -221,7 +221,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		ret, err = util.RunIndexer(cpo.componentContext, absIgnoreRules)
+		ret, err = util.RunIndexer(cpo.ComponentContext, absIgnoreRules)
 		spinner.End(true)
 
 		if err != nil {

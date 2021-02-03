@@ -74,9 +74,9 @@ func NewPushOptions() *PushOptions {
 // CompleteDevfilePath completes the devfile path from context
 func (po *PushOptions) CompleteDevfilePath() {
 	if len(po.DevfilePath) > 0 {
-		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
+		po.DevfilePath = filepath.Join(po.ComponentContext, po.DevfilePath)
 	} else {
-		po.DevfilePath = filepath.Join(po.componentContext, "devfile.yaml")
+		po.DevfilePath = filepath.Join(po.ComponentContext, "devfile.yaml")
 	}
 }
 
@@ -97,7 +97,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 
 		// We retrieve the configuration information. If this does not exist, then BLANK is returned (important!).
-		envFileInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
+		envFileInfo, err := envinfo.NewEnvSpecificInfo(po.ComponentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
@@ -195,7 +195,7 @@ func (po *PushOptions) Validate() (err error) {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
 	}
 
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.LocalConfigInfo.GetComponentSettings(), po.componentContext); err != nil {
+	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.LocalConfigInfo.GetComponentSettings(), po.ComponentContext); err != nil {
 		s.End(false)
 		log.Italic("\nRun 'odo catalog list components' for a list of supported component types")
 		return fmt.Errorf("Invalid component type %s, %v", *po.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
@@ -243,7 +243,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
+	genericclioptions.AddContextFlag(pushCmd, &po.ComponentContext)
 	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	pushCmd.Flags().BoolVar(&po.pushConfig, "config", false, "Use config flag to only apply config on to cluster")

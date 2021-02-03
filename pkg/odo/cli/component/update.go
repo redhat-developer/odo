@@ -75,7 +75,7 @@ func NewUpdateOptions() *UpdateOptions {
 
 // Complete completes update args
 func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	uo.devfilePath = filepath.Join(uo.componentContext, DevfilePath)
+	uo.devfilePath = filepath.Join(uo.ComponentContext, DevfilePath)
 
 	if util.CheckPathExists(uo.devfilePath) {
 		// Configure the devfile context
@@ -83,7 +83,7 @@ func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return
 	}
 	uo.Context = genericclioptions.NewContext(cmd)
-	uo.LocalConfigInfo, err = config.NewLocalConfigInfo(uo.componentContext)
+	uo.LocalConfigInfo, err = config.NewLocalConfigInfo(uo.ComponentContext)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update component")
 	}
@@ -133,14 +133,14 @@ func (uo *UpdateOptions) Validate() (err error) {
 		}
 	}
 
-	if len(uo.componentContext) == 0 {
+	if len(uo.ComponentContext) == 0 {
 		dir, err := os.Getwd()
 		if err != nil {
 			return errors.Wrapf(err, "failed to update component %s", uo.LocalConfigInfo.GetName())
 		}
-		uo.componentContext = dir
+		uo.ComponentContext = dir
 	}
-	fileInfo, err := os.Stat(uo.componentContext)
+	fileInfo, err := os.Stat(uo.ComponentContext)
 	if err != nil {
 		return err
 	}
@@ -210,7 +210,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(uo, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(updateCmd, &uo.componentContext)
+	genericclioptions.AddContextFlag(updateCmd, &uo.ComponentContext)
 	updateCmd.Flags().BoolVar(&uo.show, "show-log", false, "If enabled, logs will be shown when built")
 	updateCmd.Flags().StringVarP(&uo.git, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&uo.local, "local", "l", "", "Use local directory as a source for component.")
