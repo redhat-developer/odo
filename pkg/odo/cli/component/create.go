@@ -547,11 +547,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		projectSupported, err := co.Client.IsProjectSupported()
 
 		if err != nil {
-			return errors.Wrap(err, "Resource project validation check failed.")
+			return errors.Wrap(err, "resource project validation check failed.")
 		}
 
 		if projectSupported && componentNamespace == "default" {
-			return errors.New("odo may not work as expected in a default project, please run the odo component in a non-default project")
+			return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
 		}
 
 		// Set devfileMetadata struct
