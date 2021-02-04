@@ -44,5 +44,5 @@ type UnsupportedFieldError struct {
 }
 
 func (e *UnsupportedFieldError) Error() string {
-	return fmt.Sprintf("%s is not supported in odo", e.fieldName)
+	return fmt.Sprintf("%q is not supported in odo", e.fieldName)
 }
