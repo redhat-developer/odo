@@ -9,7 +9,6 @@ executing() {
 set -ex
 
 #Export GitHub token to avoid 
-export MINISHIFT_GITHUB_API_TOKEN="03d362b0f2a7ecf02b30bfbdd40fe720a4d6b8b3"
 executing "Setting up environment..."
 
 export PATH="$PATH:/usr/local/go/bin/"
@@ -38,6 +37,9 @@ minishift openshift component add automation-service-broker
 minishift openshift component add template-service-broker
 sleep 3m
 eval $(minishift oc-env)
+
+executing "Logging in to minishift..."
+oc login -u developer -p developer --insecure-skip-tls-verify $(minishift ip):8443
 
 executing "Executing tests..."
 make test-cmd-project
