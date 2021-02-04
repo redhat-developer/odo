@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/openshift/odo/pkg/storage"
 	"reflect"
 	"strconv"
 	"strings"
@@ -140,7 +141,7 @@ func TestAddOdoProjectVolume(t *testing.T) {
 				for _, container := range tt.containers {
 					if container.Name == wantContainerName {
 						for _, volMount := range container.VolumeMounts {
-							if volMount.Name == OdoSourceVolume && volMount.MountPath == wantMountPath {
+							if volMount.Name == storage.OdoSourceVolume && volMount.MountPath == wantMountPath {
 								matched = true
 							}
 						}

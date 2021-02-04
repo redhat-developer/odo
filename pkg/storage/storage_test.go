@@ -780,7 +780,7 @@ func TestPush(t *testing.T) {
 				return false, nil, nil
 			})
 
-			storageToMount, storageToUnmount, err := Push(fakeClient, tt.args.storageList, tt.args.componentName, tt.args.applicationName, tt.args.isComponentExists)
+			storageToMount, storageToUnmount, err := S2iPush(fakeClient, tt.args.storageList, tt.args.componentName, tt.args.applicationName, tt.args.isComponentExists)
 
 			if err == nil && !tt.wantErr {
 				// check if the len of the storageToMount values are the same as the required ones

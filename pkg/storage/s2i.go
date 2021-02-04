@@ -19,6 +19,14 @@ type s2iClient struct {
 	client occlient.Client
 }
 
+func (s s2iClient) Create(storage Storage) error {
+	panic("implement me")
+}
+
+func (s s2iClient) Delete(s2 string) error {
+	panic("implement me")
+}
+
 // ListFromCluster lists pvc based Storage from the cluster for s2i components
 func (s s2iClient) ListFromCluster() (StorageList, error) {
 	componentLabels := componentlabels.GetLabels(s.localConfig.GetName(), s.localConfig.GetApplication(), false)

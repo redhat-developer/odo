@@ -10,9 +10,8 @@ import (
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	kutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -54,7 +53,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 		labels.DevfileStorageLabel: name,
 	}
 
-	if strings.Contains(pvcName, kutils.OdoSourceVolume) {
+	if strings.Contains(pvcName, storage.OdoSourceVolume) {
 		// Add label for source pvc
 		label[labels.SourcePVCLabel] = name
 	}
@@ -89,20 +88,6 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}
 	return pvc, nil
-}
-
-// GeneratePVCNameFromDevfileVol generates a PVC name from the Devfile volume name and component name
-func GeneratePVCNameFromDevfileVol(volName, componentName string) (string, error) {
-
-	pvcName := fmt.Sprintf("%s-%s", volName, componentName)
-	pvcName = util.TruncateString(pvcName, pvcNameMaxLen)
-	randomChars := util.GenerateRandomString(4)
-	pvcName, err := util.NamespaceOpenShiftObject(pvcName, randomChars)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
-	}
-
-	return pvcName, nil
 }
 
 // GetExistingPVC checks if a PVC is present and return the name if it exists

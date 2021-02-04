@@ -68,3 +68,23 @@ func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[s
 	}
 	return nil
 }
+
+// UpdateStorageOwnerReference updates the given storage with the given owner references
+func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
+	if len(ownerReference) <= 0 {
+		return errors.New("owner references are empty")
+	}
+	// get the latest version of the PVC to avoid conflict errors
+	latestPVC, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvc.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	for _, owRf := range ownerReference {
+		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
+	}
+	_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(latestPVC)
+	if err != nil {
+		return err
+	}
+	return nil
+}

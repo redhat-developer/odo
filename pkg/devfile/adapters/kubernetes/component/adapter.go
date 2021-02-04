@@ -21,15 +21,16 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/preference"
-
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	storagepkg "github.com/openshift/odo/pkg/storage"
+	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/openshift/odo/pkg/sync"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -267,6 +268,23 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 }
 
 func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
+	ei.SetDevfileObj(a.Devfile)
+	ocClient, err := occlient.New()
+	if err != nil {
+		return err
+	}
+	ocClient.SetKubeClient(&a.Client)
+
+	storageClient := storagepkg.NewClient(storagepkg.ClientOptions{
+		OCClient:            *ocClient,
+		LocalConfigProvider: &ei,
+	})
+
+	err = storagepkg.Push(storageClient, &ei)
+	if err != nil {
+		return err
+	}
+
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -311,77 +329,29 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	pref, err := preference.New()
-	if err != nil {
-		return err
-	}
-
-	if !pref.GetEphemeralSourceVolume() {
-
-		// If ephemeral volume is false, then we need to add to source volume in the map to create pvc.
-		containerNameToVolumes["odosource"] = []common.DevfileVolume{
-			{
-				Name: utils.OdoSourceVolume,
-				Size: utils.OdoSourceVolumeSize,
-			},
-		}
-	}
-
 	var odoSourcePVCName string
 
-	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
-	processedVolumes := make(map[string]bool)
 
-	// Get a list of all the unique volume names and generate their PVC names
-	// we do not use the volume components which are unique here because
-	// not all volume components maybe referenced by a container component.
-	// We only want to create PVCs which are going to be used by a container
-	for _, volumes := range containerNameToVolumes {
-		for _, vol := range volumes {
-			if _, ok := processedVolumes[vol.Name]; !ok {
-				processedVolumes[vol.Name] = true
-
-				// Generate the PVC Names
-				klog.V(2).Infof("Generating PVC name for %v", vol.Name)
-				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
-				if err != nil {
-					return err
-				}
-
-				// Check if we have an existing PVC with the labels, overwrite the generated name with the existing name if present
-				existingPVCName, err := storage.GetExistingPVC(&a.Client, vol.Name, componentName)
-				if err != nil {
-					return err
-				}
-				if len(existingPVCName) > 0 {
-					klog.V(2).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
-					generatedPVCName = existingPVCName
-				}
-
-				if vol.Name == utils.OdoSourceVolume {
-					odoSourcePVCName = generatedPVCName
-				}
-
-				pvc := common.Storage{
-					Name:   generatedPVCName,
-					Volume: vol,
-				}
-				uniqueStorages = append(uniqueStorages, pvc)
-				volumeNameToPVCName[vol.Name] = generatedPVCName
-			}
-		}
-	}
-
-	err = storage.DeleteOldPVCs(&a.Client, componentName, processedVolumes)
+	// handle the ephemeral storage
+	err = utils.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName)
 	if err != nil {
 		return err
 	}
 
-	// remove odo source volume from these maps as we do not want to pass source volume in GetPVCAndVolumeMount
-	// we are mounting odo source volume seperately
-	delete(volumeNameToPVCName, utils.OdoSourceVolume)
-	delete(containerNameToVolumes, "odosource")
+	// list all the pvcs for the component
+	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, a.ComponentName))
+	if err != nil {
+		return err
+	}
+
+	for _, pvc := range pvcs {
+		// check if the pvc is in the terminating state
+		if pvc.DeletionTimestamp != nil {
+			continue
+		}
+		volumeNameToPVCName[pvc.Labels[storagelabels.DevfileStorageLabel]] = pvc.Name
+	}
 
 	// Get PVC volumes and Volume Mounts
 	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
@@ -420,7 +390,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err := a.Client.UpdateDeployment(*deployment)
+		deployment, err = a.Client.UpdateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
@@ -454,7 +424,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			}
 		}
 	} else {
-		deployment, err := a.Client.CreateDeployment(*deployment)
+		deployment, err = a.Client.CreateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
@@ -471,11 +441,15 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	}
 
-	// Get the storage adapter and create the volumes if it does not exist
-	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	err = stoAdapter.Create(uniqueStorages)
-	if err != nil {
-		return err
+	// update the owner reference of the PVCs with the deployment
+	for _, pvc := range pvcs {
+		if pvc.OwnerReferences != nil || pvc.DeletionTimestamp != nil {
+			continue
+		}
+		err = a.Client.UpdateStorageOwnerReference(&pvc, generator.GetOwnerReference(deployment))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
