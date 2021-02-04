@@ -482,6 +482,13 @@ Pushing devfile component myopenliberty
 
 You can now continue developing your application. Just refreshing the browser will render the source code changes.
 
+You can also trigger `odo watch` with custom devfile build, run and debug commands.
+
+[source,sh]
+-----
+$ odo watch --build-command="mybuild" --run-command="myrun" --debug-command="mydebug"
+----
+
 Run `odo delete` to delete the application from cluster.
 
 . To delete your deployed application:
