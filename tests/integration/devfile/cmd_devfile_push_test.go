@@ -368,7 +368,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-preStart.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			output := helper.CmdShouldFail("odo", "push", "--project", commonVar.Project)
 			// This is expected to fail for now.
