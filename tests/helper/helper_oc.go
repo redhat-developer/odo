@@ -593,3 +593,35 @@ func (oc OcRunner) GetAllPVCNames(namespace string) []string {
 func (oc OcRunner) DeletePod(podName string, namespace string) {
 	CmdShouldPass(oc.path, "delete", "pod", "--namespace", namespace, podName)
 }
+
+//GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
+func (oc OcRunner) GetAllPodsInNs(namespace string) string {
+	ocArgs := []string{"get", "pods", "-n", namespace}
+	noResourcesMsg := fmt.Sprintf("No resources found in %s namespace", namespace)
+	WaitForCmdOut(oc.path, ocArgs, 1, true, func(output string) bool {
+		return !strings.Contains(output, noResourcesMsg)
+	}, true)
+	return CmdShouldPass(oc.path, ocArgs...)
+}
+
+//StatFileInPod returns stat result of filepath in pod of given component, in a given app, in a given project.
+//It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
+//in it anyway
+func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) string {
+	var result string
+	oc.CheckCmdOpInRemoteCmpPod(
+		cmpName,
+		appName,
+		project,
+		[]string{"stat", filepath},
+		func(cmdOp string, err error) bool {
+			//strip out access info as
+			// 1. Touching a file (such as running it in a script) modifies access times. This gives wrong value on mounts without noatime
+			// 2. We are not interested in Access info anyway.
+			re := regexp.MustCompile("(?m)[\r\n]+^.*Access.*$")
+			result = re.ReplaceAllString(cmdOp, "")
+			return true
+		},
+	)
+	return result
+}

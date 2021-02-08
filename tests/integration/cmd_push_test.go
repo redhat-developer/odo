@@ -279,56 +279,20 @@ var _ = Describe("odo push command tests", func() {
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 
 			earlierCatServerFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
-				func(cmdOp string, err error) bool {
-					earlierCatServerFile = cmdOp
-					return true
-				},
-			)
+			earlierCatServerFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "server.js")))
 
 			earlierCatViewFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html"))},
-				func(cmdOp string, err error) bool {
-					earlierCatViewFile = cmdOp
-					return true
-				},
-			)
+			earlierCatViewFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html")))
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "nodejs-ex", "views", "index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 
 			modifiedCatViewFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html"))},
-				func(cmdOp string, err error) bool {
-					modifiedCatViewFile = cmdOp
-					return true
-				},
-			)
+			modifiedCatViewFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html")))
 
 			modifiedCatServerFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
-				func(cmdOp string, err error) bool {
-					modifiedCatServerFile = cmdOp
-					return true
-				},
-			)
+			modifiedCatServerFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "server.js")))
 
 			Expect(modifiedCatViewFile).NotTo(Equal(earlierCatViewFile))
 			Expect(modifiedCatServerFile).To(Equal(earlierCatServerFile))
