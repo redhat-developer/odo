@@ -54,7 +54,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-openliberty", "--project", componentNamespace)
 		})
 
-		It("should fail tocreate the devfile component if --project value is 'default'", func() {
+		It("should fail to create the devfile component if --project value is 'default'", func() {
 			output := helper.CmdShouldFail("odo", "create", "java", "--project", "default")
 			expectedString := "odo may not work as expected in the default project, please run the odo component in a non-default project"
 			helper.MatchAllInOutput(output, []string{expectedString})
