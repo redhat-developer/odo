@@ -80,7 +80,7 @@ Read the Makefile itself for more information.
 
 . Once you submit a PR, the @openshift-ci-robot automatically requests two reviews from reviewers and suggests an approver based on `OWNERS` files.
 . Each PR requires *one* code review (lgtm label) and *one* approve (approved label).
-. After a code reviewer is satisfied with the changes he adds `/lgtm` (looks good to me) as a comment to the PR. Which applies the *lgtm* label.
+. After a code reviewer is satisfied with the changes s/he adds `/lgtm` (looks good to me) as a comment to the PR. Which applies the *lgtm* label.
 . The approver reviews the PR and if satisfied, adds `/approve` as a comment to the PR. Which applies the *approve* label.
 * After the PR has *lgtm* and *approve* labels and the required tests pass, the bot automatically merges the PR.
 +
@@ -136,14 +136,14 @@ unset ODO_BOOTSTRAPPER_IMAGE
 
 `odo` uses `go mod` with vendor directory.
 This means that you should use `-mod=vendor` flag with all `go` commands. Or use `GOFLAGS` to set it permanently (`export GOFLAGS=-mod=vendor`).
-Vendor is important to make sure that odo can alway be build even offline.
+Vendor is important to make sure that odo can always be build even offline.
 
 
 === Adding a new dependency
 
 . Just add new `import` to your code
 +
-NOTE:  If you want to use specific version of a module you can do `go get <pkg>@<version>`, for example (`go get golang.org/x/text@v0.3.2`)
+NOTE:  If you want to use a specific version of a module you can do `go get <pkg>@<version>`, for example (`go get golang.org/x/text@v0.3.2`)
 +
 . Run `go mod tidy` and `go mod vendor`.
 . Commit the updated `go.mod`, `go.sum` and `vendor` files to git.
@@ -164,7 +164,7 @@ To release a new version on GitHub:
 ** link:/Dockerfile.rhel[`Dockerfile.rhel`]
 ** link:/scripts/rpm-prepare.sh[`scripts/rpm-prepare.sh`]
 
-There is a helper script link:../scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (except `odo.rb`).
+There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (except `odo.rb`).
 
 . Merge the above PR.
 . Once the PR is merged create and push the new git tag for the version.
