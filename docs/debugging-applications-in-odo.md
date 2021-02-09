@@ -17,15 +17,92 @@ Components created with `odo` run in the debug mode by default. A debugger agent
 
 # Debugging an application
 
-You can debug your application on in `odo` with the `odo debug` command.
+You can debug your application in `odo` with the `odo debug` command.
 
-1.  After an application is deployed, start the port forwarding for your component to debug the application:
+1.  Download the sample application that contains the necessary `debugrun` step within its devfile:
+    
+    ``` terminal
+    $ odo create nodejs --starter
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    Validation
+     ✓  Checking devfile existence [11498ns]
+     ✓  Checking devfile compatibility [15714ns]
+     ✓  Creating a devfile component from registry: DefaultDevfileRegistry [17565ns]
+     ✓  Validating devfile component [113876ns]
+    
+    Starter Project
+     ✓  Downloading starter project nodejs-starter from https://github.com/odo-devfiles/nodejs-ex.git [428ms]
+    
+    Please use `odo push` command to create the component with source deployed
+    ```
+
+2.  Push the application with the `--debug` flag, which is required for all debugging deployments:
+    
+    ``` terminal
+    $ odo push --debug
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    Validation
+     ✓  Validating the devfile [29916ns]
+    
+    Creating Kubernetes resources for component nodejs
+     ✓  Waiting for component to start [38ms]
+    
+    Applying URL changes
+     ✓  URLs are synced with the cluster, no changes are required.
+    
+    Syncing to component nodejs
+     ✓  Checking file changes for pushing [1ms]
+     ✓  Syncing files to the component [778ms]
+    
+    Executing devfile commands for component nodejs
+     ✓  Executing install command "npm install" [2s]
+     ✓  Executing debug command "npm run debug" [1s]
+    
+    Pushing devfile component nodejs
+     ✓  Changes successfully pushed to component
+    ```
+    
+    > **Note**
+    > 
+    > You can specify a custom debug command by using the `--debug-command="custom-step"` flag.
+
+3.  Port forward to the local port to access the debugging interface:
     
     ``` terminal
     $ odo debug port-forward
     ```
+    
+    **Example output.**
+    
+    ``` terminal
+    Started port forwarding at ports - 5858:5858
+    ```
+    
+    > **Note**
+    > 
+    > You can specify a port by using the `--local-port` flag.
 
-2.  Attach the debugger bundled in your IDE to the component. Instructions vary depending on your IDE.
+4.  Check that the debug session is running in a separate terminal window:
+    
+    ``` terminal
+    $ odo debug info
+    ```
+    
+    **Example output.**
+    
+    ``` terminal
+    Debug is running for the component on the local port : 5858
+    ```
+
+5.  Attach the debugger that is bundled in your IDE of choice. Instructions vary depending on your IDE, for example: [VSCode debugging interface](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging).
 
 # Configuring debugging parameters
 
