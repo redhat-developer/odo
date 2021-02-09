@@ -2,12 +2,13 @@ package genericclioptions
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	odoutil "github.com/openshift/odo/pkg/util"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -97,7 +98,6 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 		if err != nil {
 			return nil, err
 		}
-		context.LocalConfigProvider = context.LocalConfigInfo
 	}
 	return context, nil
 }

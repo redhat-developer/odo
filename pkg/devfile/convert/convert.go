@@ -1,28 +1,20 @@
-package utils
+package convert
 
 import (
-	"fmt"
 	"path/filepath"
 
-	"github.com/fatih/color"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/pkg/errors"
+	"k8s.io/klog"
+
 	imagev1 "github.com/openshift/api/image/v1"
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/convert"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"k8s.io/klog"
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const (
@@ -46,132 +38,21 @@ const (
 	envS2iConvertedDevfile = "ODO_S2I_CONVERTED_DEVFILE"
 )
 
-var convertLongDesc = ktemplates.LongDesc(`Converts odo specific configuration from s2i to devfile. 
-It generates devfile.yaml and .odo/env/env.yaml for s2i components`)
-
-//var convertExample = ktemplates.Examples(`odo utils convert-to-devfile`)
-
-var convertExample = ktemplates.Examples(`  # Convert s2i component to devfile component
-
-Note: Run all commands from  s2i component context directory
-
-1. Generate devfile.yaml and env.yaml for s2i component.
-%[1]s  
-
-2. Push the devfile component to the cluster.
-odo push
-
-3. Verify if devfile component is deployed sucessfully.
-odo list
-
-4. Jump to 'rolling back conversion', if devfile component deployment failed.
-
-5. Delete the s2i component.
-odo delete --s2i -a
-
-Congratulations, you have successfully converted s2i component to devfile component.
-
-# Rolling back the conversion
-
-1. If devfile component deployment failed, delete the devfile component with 'odo delete -a'. 
-   It would delete only devfile component, your s2i component should still be running.
- 
-   To complete the migration seek help from odo dev community.
-
-`)
-
-// ConvertOptions encapsulates the options for the command
-type ConvertOptions struct {
-	context          *genericclioptions.Context
-	componentContext string
-	componentName    string
-}
-
-// NewConvertOptions creates a new ConvertOptions instance
-func NewConvertOptions() *ConvertOptions {
-	return &ConvertOptions{}
-}
-
-// Complete completes ConvertOptions after they've been created
-func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-
-	if !util.CheckPathExists(filepath.Join(co.componentContext, component.ConfigFilePath)) {
-		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to convert s2i component to devfile")
-	}
-
-	co.context = genericclioptions.NewContext(cmd)
-	co.componentName = co.context.LocalConfigInfo.GetName()
-	return nil
-
-}
-
-// Validate validates the ConvertOptions based on completed values
-func (co *ConvertOptions) Validate() (err error) {
-	if co.context.LocalConfigInfo.GetSourceType() == config.GIT {
-		return errors.New("migration of git type s2i components to devfile is not supported by odo")
-	}
-
-	return nil
-}
-
-// Run contains the logic for the command
-func (co *ConvertOptions) Run() (err error) {
-
-	/* NOTE: This data is not used in devfile currently so cannot be converted
-	   minMemory := context.LocalConfigInfo.GetMinMemory()
-	   minCPU := context.LocalConfigInfo.GetMinCPU()
-	   maxCPU := context.LocalConfigInfo.GetMaxCPU()
-	*/
-
-	err = convert.GenerateDevfileYaml(co.context.Client, co.context.LocalConfigInfo, co.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "Error in generating devfile.yaml")
-	}
-
-	co.context.EnvSpecificInfo, err = convert.GenerateEnvYaml(co.context.Client, co.context.LocalConfigInfo, co.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "Error in generating env.yaml")
-	}
-
-	printOutput()
-
-	return nil
-}
-
-// NewCmdConvert implements the odo utils convert-to-devfile command
-func NewCmdConvert(name, fullName string) *cobra.Command {
-	o := NewConvertOptions()
-	convertCmd := &cobra.Command{
-		Use:     name,
-		Short:   "converts s2i based components to devfile based components",
-		Long:    convertLongDesc,
-		Example: fmt.Sprintf(convertExample, fullName),
-		Args:    cobra.ExactArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
-		},
-	}
-
-	genericclioptions.AddContextFlag(convertCmd, &o.componentContext)
-
-	return convertCmd
-}
-
-// generateDevfileYaml generates a devfile.yaml from s2i data.
-func generateDevfileYaml(co *ConvertOptions) error {
+// GenerateDevfileYaml generates a devfile.yaml from s2i data.
+func GenerateDevfileYaml(client *occlient.Client, co *config.LocalConfigInfo, context string) error {
 	klog.V(2).Info("Generating devfile.yaml")
 
 	// builder image to use
-	componentType := co.context.LocalConfigInfo.GetType()
+	componentType := co.GetType()
 	// git, local, binary, none
-	sourceType := co.context.LocalConfigInfo.GetSourceType()
+	sourceType := co.GetSourceType()
 
-	imageStream, imageforDevfile, err := getImageforDevfile(co.context.Client, componentType)
+	imageStream, imageforDevfile, err := getImageforDevfile(client, componentType)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get image details")
 	}
 
-	envVarList := co.context.LocalConfigInfo.GetEnvVars()
+	envVarList := co.GetEnvVars()
 	s2iEnv, err := occlient.GetS2IEnvForDevfile(string(sourceType), envVarList, *imageStream)
 	if err != nil {
 		return err
@@ -186,16 +67,16 @@ func generateDevfileYaml(co *ConvertOptions) error {
 	s2iDevfile.SetSchemaVersion(devfileVersion)
 
 	// set metadata
-	s2iDevfile.SetMetadata(co.componentName, "1.0.0")
+	s2iDevfile.SetMetadata(co.GetName(), "1.0.0")
 	// set commponents
-	err = setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, co.context.LocalConfigInfo, s2iEnv)
+	err = setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, co, s2iEnv)
 	if err != nil {
 		return err
 	}
 	// set commands
 	setDevfileCommandsForS2I(s2iDevfile)
 
-	ctx := devfileCtx.NewDevfileCtx(filepath.Join(co.componentContext, "devfile.yaml"))
+	ctx := devfileCtx.NewDevfileCtx(filepath.Join(context, "devfile.yaml"))
 	err = ctx.SetAbsPath()
 	if err != nil {
 		return err
@@ -216,23 +97,23 @@ func generateDevfileYaml(co *ConvertOptions) error {
 	return nil
 }
 
-// generateEnvYaml generates .odo/env.yaml from s2i data.
-func generateEnvYaml(co *ConvertOptions) (err error) {
+// GenerateEnvYaml generates .odo/env.yaml from s2i data.
+func GenerateEnvYaml(client *occlient.Client, co *config.LocalConfigInfo, context string) (*envinfo.EnvSpecificInfo, error) {
 	klog.V(2).Info("Generating env.yaml")
 
-	debugPort := co.context.LocalConfigInfo.GetDebugPort()
+	debugPort := co.GetDebugPort()
 
-	application := co.context.LocalConfigInfo.GetApplication()
+	application := co.GetApplication()
 
 	// Generate env.yaml
-	co.context.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(co.componentContext)
+	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(context)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	componentSettings := envinfo.ComponentSettings{
-		Name:    co.componentName,
-		Project: co.context.Project,
+		Name:    co.GetName(),
+		Project: co.GetProject(),
 		AppName: application,
 	}
 
@@ -240,13 +121,13 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 		componentSettings.DebugPort = &debugPort
 	}
 
-	err = co.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
+	err = envSpecificInfo.SetComponentSettings(componentSettings)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	klog.V(2).Info("Generated env.yaml successfully")
 
-	return
+	return envSpecificInfo, nil
 }
 
 // getImageforDevfile gets image details from s2i component type.
@@ -402,33 +283,4 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 
 	return nil
 
-}
-
-func printOutput() {
-
-	infoMessage := "devfile.yaml is available in the current directory."
-
-	nextSteps := `
-To complete the conversion, run the following steps:
-
-NOTE: At all steps your s2i component is running, It would not be deleted until you do 'odo delete --s2i -a'
-
-1. Deploy devfile component.
-$ odo push
-
-2. Verify if the component gets deployed successfully. 
-$ odo list
-
-3. If the devfile component was deployed successfully, your application is up, you can safely delete the s2i component. 
-$ odo delete --s2i -a
-
-congratulations you have successfully converted s2i component to devfile component :).
-`
-
-	rollBackMessage := ` If you see an error or your application not coming up, delete the devfile component with 'odo delete -a' and report this to odo dev community.`
-
-	log.Infof(infoMessage)
-	log.Italicf(nextSteps)
-	yellow := color.New(color.FgYellow).SprintFunc()
-	log.Warning(yellow(rollBackMessage))
 }

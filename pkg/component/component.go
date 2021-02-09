@@ -369,116 +369,6 @@ func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 	return retVal
 }
 
-// CreateComponent creates component as per the passed component settings
-//	Parameters:
-//		client: occlient instance
-//		componentConfig: the component configuration that holds all details of component
-//		context: the component context indicating the location of component config and hence its source as well
-//		stdout: io.Writer instance to write output to
-//	Returns:
-//		err: errors if any
-func CreateComponent(client *occlient.Client, componentConfig config.LocalConfigInfo, context string, stdout io.Writer) (err error) {
-
-	cmpName := componentConfig.GetName()
-	cmpType := componentConfig.GetType()
-	cmpSrcType := componentConfig.GetSourceType()
-	cmpPorts := componentConfig.GetPorts()
-	cmpSrcRef := componentConfig.GetRef()
-	appName := componentConfig.GetApplication()
-	envVarsList := componentConfig.GetEnvVars()
-	addDebugPortToEnv(&envVarsList, componentConfig)
-
-	// create and get the storage to be created/mounted during the component creation
-	storageList := getStorageFromConfig(&componentConfig)
-	storageToBeMounted, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
-	if err != nil {
-		return err
-	}
-
-	log.Successf("Initializing component")
-	createArgs := occlient.CreateArgs{
-		Name:               cmpName,
-		ImageName:          cmpType,
-		ApplicationName:    appName,
-		EnvVars:            envVarsList.ToStringSlice(),
-		StorageToBeMounted: storageToBeMounted,
-	}
-	createArgs.SourceType = cmpSrcType
-	createArgs.SourcePath = componentConfig.GetSourceLocation()
-
-	if len(cmpPorts) > 0 {
-		createArgs.Ports = cmpPorts
-	}
-
-	createArgs.Resources, err = occlient.GetResourceRequirementsFromCmpSettings(componentConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to create component")
-	}
-
-	s := log.Spinner("Creating component")
-	defer s.End(false)
-
-	switch cmpSrcType {
-	case config.GIT:
-		// Use Git
-		if cmpSrcRef != "" {
-			createArgs.SourceRef = cmpSrcRef
-		}
-
-		createArgs.Wait = true
-		createArgs.StdOut = stdout
-
-		if err = CreateFromGit(
-			client,
-			createArgs,
-		); err != nil {
-			return errors.Wrapf(err, "failed to create component with args %+v", createArgs)
-		}
-
-		s.End(true)
-
-		// Trigger build
-		if err = Build(client, createArgs.Name, createArgs.ApplicationName, createArgs.Wait, createArgs.StdOut, false); err != nil {
-			return errors.Wrapf(err, "failed to build component with args %+v", createArgs)
-		}
-
-		// deploy the component and wait for it to complete
-		// desiredRevision is 1 as this is the first push
-		if err = Deploy(client, createArgs, 1); err != nil {
-			return errors.Wrapf(err, "failed to deploy component with args %+v", createArgs)
-		}
-	case config.LOCAL:
-		fileInfo, err := os.Stat(createArgs.SourcePath)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get info of path %+v of component %+v", createArgs.SourcePath, createArgs.Name)
-		}
-		if !fileInfo.IsDir() {
-			return fmt.Errorf("component creation with args %+v as path needs to be a directory", createArgs)
-		}
-		// Create
-		if err = CreateFromPath(client, createArgs); err != nil {
-			return errors.Wrapf(err, "failed to create component with args %+v", createArgs)
-		}
-	case config.BINARY:
-		if err = CreateFromPath(client, createArgs); err != nil {
-			return errors.Wrapf(err, "failed to create component with args %+v", createArgs)
-		}
-	default:
-		// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
-		createArgs.SourceType = config.LOCAL
-		dir, err := os.Getwd()
-		if err != nil {
-			return errors.Wrap(err, "failed to create component with current directory as source for the component")
-		}
-		createArgs.SourcePath = dir
-		if err = CreateFromPath(client, createArgs); err != nil {
-			return errors.Wrapf(err, "")
-		}
-	}
-	s.End(true)
-	return
-}
-
 // CheckComponentMandatoryParams checks mandatory parammeters for component
 func CheckComponentMandatoryParams(componentSettings config.ComponentSettings) error {
 	var req_fields string
@@ -608,20 +498,8 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	}
 
 	var configProvider localConfigProvider.LocalConfigProvider
-	if isS2I {
-		// if component exist then only call the update function
-		if cmpExist {
-			if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
-				return err
-			}
-		}
-	}
 
-	if isS2I || kClient == nil {
-		configProvider = &componentConfig
-	} else {
-		configProvider = &envSpecificInfo
-	}
+	configProvider = &envSpecificInfo
 
 	isRouteSupported := false
 	isRouteSupported, err = client.IsRouteSupported()
@@ -903,73 +781,6 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 	return compoList, nil
 }
 
-// ListS2IComponents lists s2i components in active application
-func ListS2IComponents(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
-
-	var applicationSelector string
-	if applicationName != "" {
-		applicationSelector = applabels.GetSelector(applicationName)
-	}
-
-	deploymentConfigSupported := false
-	var err error
-
-	var components []Component
-	componentNamesMap := make(map[string]bool)
-
-	if client != nil {
-		deploymentConfigSupported, err = client.IsDeploymentConfigSupported()
-		if err != nil {
-			return ComponentList{}, err
-		}
-	}
-
-	if deploymentConfigSupported && client != nil {
-		// retrieve all the deployment configs that are associated with this application
-		dcList, err := client.ListDeploymentConfigs(applicationSelector)
-		if err != nil {
-			return ComponentList{}, errors.Wrapf(err, "unable to list components")
-		}
-
-		// create a list of object metadata based on the component and application name (extracted from DeploymentConfig labels)
-		for _, elem := range dcList {
-			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
-			if err != nil {
-				return ComponentList{}, errors.Wrap(err, "Unable to get component")
-			}
-			if !reflect.ValueOf(component).IsZero() {
-				components = append(components, component)
-				componentNamesMap[component.Name] = true
-			}
-		}
-	}
-
-	// this adds the local s2i component if there is one
-	if localConfigInfo != nil {
-		component, err := GetComponentFromConfig(localConfigInfo)
-
-		if err != nil {
-			return GetMachineReadableFormatForList(components), err
-		}
-
-		if client != nil {
-			_, ok := componentNamesMap[component.Name]
-			if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
-				component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
-				components = append(components, component)
-			}
-		} else {
-			component.Status.State = StateTypeUnknown
-			components = append(components, component)
-
-		}
-
-	}
-
-	compoList := GetMachineReadableFormatForList(components)
-	return compoList, nil
-}
-
 // List lists all s2i and devfile components in active application
 func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 	var applicationSelector string
@@ -983,35 +794,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 	}
 	components = append(components, devfileList.Items...)
 
-	s2iList, err := ListS2IComponents(client, applicationName, localConfigInfo)
-	if err != nil {
-		return ComponentList{}, err
-	}
-	components = append(components, s2iList.Items...)
-
 	return GetMachineReadableFormatForList(components), nil
-}
-
-// GetComponentFromConfig returns the component on the config if it exists
-func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, error) {
-	component := getComponentFrom(localConfig, localConfig.GetType())
-	if len(component.Name) > 0 {
-		location := localConfig.GetSourceLocation()
-		sourceType := localConfig.GetSourceType()
-		component.Spec.Ports = localConfig.GetPorts()
-		component.Spec.SourceType = string(sourceType)
-		component.Spec.Source = location
-
-		for _, localEnv := range localConfig.GetEnvVars() {
-			component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: localEnv.Name, Value: localEnv.Value})
-		}
-
-		for _, localStorage := range localConfig.ListStorage() {
-			component.Spec.Storage = append(component.Spec.Storage, localStorage.Name)
-		}
-		return component, nil
-	}
-	return Component{}, nil
 }
 
 // GetComponentFromDevfile extracts component's metadata from the specified env info if it exists

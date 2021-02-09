@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -180,83 +179,6 @@ func newProxyLocalConfig() proxyLocalConfig {
 	}
 }
 
-// SetConfiguration sets the common config settings like component type, min memory
-// max memory etc.
-// TODO: Use reflect to set parameters
-func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
-	// getting the second arg makes sure that this never panics
-	strValue, _ := value.(string)
-	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
-		switch parameter {
-		case "type":
-			lci.componentSettings.Type = &strValue
-		case "application":
-			lci.componentSettings.Application = &strValue
-		case "project":
-			lci.componentSettings.Project = &strValue
-		case "sourcetype":
-			cmpSourceType, err := GetSrcType(strValue)
-			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
-			}
-			lci.componentSettings.SourceType = &cmpSourceType
-		case "ref":
-			lci.componentSettings.Ref = &strValue
-		case "sourcelocation":
-			lci.componentSettings.SourceLocation = &strValue
-		case "ports":
-			arrValue := strings.Split(strValue, ",")
-			lci.componentSettings.Ports = &arrValue
-		case "name":
-			lci.componentSettings.Name = &strValue
-		case "minmemory":
-			lci.componentSettings.MinMemory = &strValue
-		case "maxmemory":
-			lci.componentSettings.MaxMemory = &strValue
-		case "memory":
-			lci.componentSettings.MaxMemory = &strValue
-			lci.componentSettings.MinMemory = &strValue
-		case "debugport":
-			dbgPort, err := strconv.Atoi(strValue)
-			if err != nil {
-				return err
-			}
-			lci.componentSettings.DebugPort = &dbgPort
-		case "ignore":
-			val, err := strconv.ParseBool(strings.ToLower(strValue))
-			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
-			}
-			lci.componentSettings.Ignore = &val
-		case "mincpu":
-			lci.componentSettings.MinCPU = &strValue
-		case "maxcpu":
-			lci.componentSettings.MaxCPU = &strValue
-		case "storage":
-			storageSetting, _ := value.(localConfigProvider.LocalStorage)
-			if lci.componentSettings.Storage != nil {
-				*lci.componentSettings.Storage = append(*lci.componentSettings.Storage, storageSetting)
-			} else {
-				lci.componentSettings.Storage = &[]localConfigProvider.LocalStorage{storageSetting}
-			}
-		case "cpu":
-			lci.componentSettings.MinCPU = &strValue
-			lci.componentSettings.MaxCPU = &strValue
-		case "url":
-			urlValue := value.(localConfigProvider.LocalURL)
-			if lci.componentSettings.URL != nil {
-				*lci.componentSettings.URL = append(*lci.componentSettings.URL, urlValue)
-			} else {
-				lci.componentSettings.URL = &[]localConfigProvider.LocalURL{urlValue}
-			}
-		}
-
-		return lci.writeToFile()
-	}
-	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
-
-}
-
 // DeleteConfigDirIfEmpty Deletes the config directory if its empty
 func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 	configDir := filepath.Dir(lci.Filename)
@@ -332,24 +254,6 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 
 }
 
-// DeleteFromConfigurationList is used to delete a value from a list from the local odo config
-// parameter is the name of the config parameter
-// value is the value to be deleted
-func (lci *LocalConfigInfo) DeleteFromConfigurationList(parameter string, value string) error {
-	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
-		switch parameter {
-		case "storage":
-			for i, storage := range lci.ListStorage() {
-				if storage.Name == value {
-					*lci.componentSettings.Storage = append((*lci.componentSettings.Storage)[:i], (*lci.componentSettings.Storage)[i+1:]...)
-				}
-			}
-			return lci.writeToFile()
-		}
-	}
-	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
-}
-
 // GetComponentSettings returns the componentSettings from local config
 func (lci *LocalConfigInfo) GetComponentSettings() ComponentSettings {
 	return lci.componentSettings
@@ -359,6 +263,11 @@ func (lci *LocalConfigInfo) GetComponentSettings() ComponentSettings {
 func (lci *LocalConfigInfo) SetComponentSettings(cs ComponentSettings) error {
 	lci.componentSettings = cs
 	return lci.writeToFile()
+}
+
+// SetComponentSettingsWithoutFileWrite sets the componentSetting but doesn't write to file
+func (lci *LocalConfigInfo) SetComponentSettingsWithoutFileWrite(cs ComponentSettings) {
+	lci.componentSettings = cs
 }
 
 // SetEnvVars sets the env variables on the component settings

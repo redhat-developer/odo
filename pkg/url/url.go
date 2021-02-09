@@ -17,7 +17,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/config"
 	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/kclient"
@@ -749,17 +748,10 @@ func NewClient(options ClientOptions) Client {
 		localConfig:   options.LocalConfigProvider,
 	}
 
-	if _, ok := options.LocalConfigProvider.(*config.LocalConfigInfo); ok {
-		return s2iClient{
-			generic: genericInfo,
-			client:  options.OCClient,
-		}
-	} else {
-		return kubernetesClient{
-			generic:          genericInfo,
-			isRouteSupported: options.IsRouteSupported,
-			client:           options.OCClient,
-		}
+	return kubernetesClient{
+		generic:          genericInfo,
+		isRouteSupported: options.IsRouteSupported,
+		client:           options.OCClient,
 	}
 }
 

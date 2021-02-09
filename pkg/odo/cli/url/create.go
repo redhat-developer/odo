@@ -184,14 +184,9 @@ func (o *CreateOptions) Run() (err error) {
 
 	if o.now {
 		// if the now flag is specified, push the changes
-		if o.Context.LocalConfigInfo.Exists() {
-			o.LocalConfigInfo = o.Context.LocalConfigInfo
-			err = o.Push()
-		} else {
-			o.CompleteDevfilePath()
-			o.EnvSpecificInfo = o.Context.EnvSpecificInfo
-			err = o.DevfilePush()
-		}
+		o.CompleteDevfilePath()
+		o.EnvSpecificInfo = o.Context.EnvSpecificInfo
+		err = o.DevfilePush()
 		if err != nil {
 			return errors.Wrap(err, "failed to push changes")
 		}

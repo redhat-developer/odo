@@ -19,7 +19,7 @@ func ResolveAppFlag(command *cobra.Command) string {
 }
 
 // resolveProject resolves project
-func (o *internalCxt) resolveProject(localConfiguration localConfigProvider.LocalConfigProvider) {
+func (o *internalCxt) resolveProject(localConfiguration localConfigProvider.BasicConfigProvider) {
 	var namespace string
 	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
@@ -94,7 +94,7 @@ func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalC
 }
 
 // resolveApp resolves the app
-func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration localConfigProvider.LocalConfigProvider) {
+func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration localConfigProvider.BasicConfigProvider) {
 	var app string
 	command := o.command
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
@@ -112,7 +112,7 @@ func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration loca
 }
 
 // resolveComponent resolves component
-func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
+func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration localConfigProvider.BasicConfigProvider) string {
 	var cmp string
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {

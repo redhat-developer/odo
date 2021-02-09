@@ -223,7 +223,7 @@ func (po *PushOptions) Run() (err error) {
 	}
 
 	// Legacy odo push
-	return po.Push()
+	return fmt.Errorf("Cannot file devfile locally")
 }
 
 // NewCmdPush implements the push odo command

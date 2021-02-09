@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -609,16 +608,9 @@ func NewClient(options ClientOptions) Client {
 		localConfig:   options.LocalConfigProvider,
 	}
 
-	if _, ok := options.LocalConfigProvider.(*config.LocalConfigInfo); ok {
-		return s2iClient{
-			generic: genericInfo,
-			client:  options.OCClient,
-		}
-	} else {
-		return kubernetesClient{
-			generic: genericInfo,
-			client:  options.OCClient,
-		}
+	return kubernetesClient{
+		generic: genericInfo,
+		client:  options.OCClient,
 	}
 }
 

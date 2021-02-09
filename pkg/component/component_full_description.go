@@ -3,8 +3,9 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"strings"
+
+	"github.com/openshift/odo/pkg/localConfigProvider"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -107,11 +108,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	var componentDesc Component
 	var devfile devfileParser.DevfileObj
 	var err error
-	if envInfo != nil {
-		componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
-	} else {
-		componentDesc, err = GetComponentFromConfig(localConfigInfo)
-	}
+	componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
 	if err != nil {
 		return cfd, err
 	}
@@ -141,12 +138,8 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	}
 
 	var configProvider localConfigProvider.LocalConfigProvider
-	if envInfo != nil {
-		envInfo.SetDevfileObj(devfile)
-		configProvider = envInfo
-	} else {
-		configProvider = localConfigInfo
-	}
+	envInfo.SetDevfileObj(devfile)
+	configProvider = envInfo
 
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
 		LocalConfigProvider: configProvider,

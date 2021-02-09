@@ -6,13 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -172,27 +170,6 @@ func (uo *UpdateOptions) Run() (err error) {
 		return errors.New(devfileErrorString)
 	}
 
-	yellow := color.New(color.FgYellow).SprintFunc()
-	log.Warning(yellow(deprecationWarning))
-
-	compSettings := uo.LocalConfigInfo.GetComponentSettings()
-	compSettings.SourceLocation = &uo.sourcePath
-	compSettings.SourceType = &uo.sourceType
-	if len(uo.ref) != 0 {
-		compSettings.Ref = &uo.ref
-	}
-
-	err = uo.LocalConfigInfo.SetComponentSettings(compSettings)
-	if err != nil {
-		return err
-	}
-
-	if err = uo.Push(); err != nil {
-		return errors.Wrap(err, "error while updating")
-	}
-
-	cmpName := uo.LocalConfigInfo.GetName()
-	log.Successf("The component %s was updated successfully", cmpName)
 	return
 }
 
