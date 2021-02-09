@@ -55,6 +55,9 @@ func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string
 		} else if strings.Contains(err.Error(), "cannot list resource \"clusterserviceclasses\" in API group \"servicecatalog.k8s.io\" at the cluster scope") {
 			// this error is thrown when Service Catalog is not enabled on OpenShift
 			err = nil
+		} else if strings.Contains(err.Error(), "cannot list clusterserviceclasses.servicecatalog.k8s.io at the cluster scope") {
+			// this error is also thrown when Service Catalog is not enabled on OpenShift
+			err = nil
 		} else {
 			return err
 		}
