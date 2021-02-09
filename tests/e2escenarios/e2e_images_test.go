@@ -155,7 +155,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 		})
 
 		It("Should be able to verify the nodejs-14 image", func() {
-			redhatNodeJS14UBI8Project := util.GetEnvWithDefault("REDHAT_NODEJS14_UBI8_PROJECT", "openjdk-14")
+			redhatNodeJS14UBI8Project := util.GetEnvWithDefault("REDHAT_NODEJS14_UBI8_PROJECT", "nodejs-14")
 			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/nodejs-14:latest", "nodejs:latest", redhatNodeJS14UBI8Project)
 			verifySupportedImage("ubi8/nodejs-14:latest", "nodejs", "nodejs:latest", redhatNodeJS14UBI8Project, appName, commonVar.Context)
 		})
