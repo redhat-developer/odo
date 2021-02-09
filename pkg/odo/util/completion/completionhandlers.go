@@ -395,7 +395,7 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 // ComponentNameCompletionHandler provides component name completion
 var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	components, err := component.List(context.Client, context.Application, nil)
+	components, err := component.List(context.Client, context.Application)
 
 	if err != nil {
 		return completions

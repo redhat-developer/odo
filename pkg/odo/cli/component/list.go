@@ -139,15 +139,11 @@ func (lo *ListOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		s2iComps, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
-		if err != nil {
-			return err
-		}
 
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps)
+		components := component.GetMachineReadableFormatForList(devfileComps)
 
 		if log.IsJSON() {
-			machineoutput.OutputSuccess(combinedComponents)
+			machineoutput.OutputSuccess(components)
 		} else {
 
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -164,18 +160,8 @@ func (lo *ListOptions) Run() (err error) {
 				fmt.Fprintln(w)
 			}
 
-			if len(s2iComps) != 0 {
-				lo.hasS2IComponents = true
-				fmt.Fprintln(w, "S2I Components: ")
-				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE", "\t", "CONTEXT")
-				for _, comp := range s2iComps {
-					fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State, "\t", comp.Status.Context)
-
-				}
-			}
-
 			// if we dont have any then
-			if !lo.hasDevfileComponents && !lo.hasS2IComponents {
+			if !lo.hasDevfileComponents {
 				fmt.Fprintln(w, "No components found")
 			}
 
@@ -237,8 +223,6 @@ func (lo *ListOptions) Run() (err error) {
 		}
 	}
 
-	var s2iComponents []component.Component
-
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
 	if !log.IsJSON() {
@@ -257,13 +241,13 @@ func (lo *ListOptions) Run() (err error) {
 			fmt.Fprintln(w)
 		}
 
-		if !lo.hasDevfileComponents && !lo.hasS2IComponents {
+		if !lo.hasDevfileComponents {
 			log.Info("There are no components deployed.")
 			return
 		}
 	} else {
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComponents, devfileComponents)
-		machineoutput.OutputSuccess(combinedComponents)
+		components := component.GetMachineReadableFormatForList(devfileComponents)
+		machineoutput.OutputSuccess(components)
 	}
 
 	return

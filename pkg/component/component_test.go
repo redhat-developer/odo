@@ -2,15 +2,12 @@ package component
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
 	"testing"
-
-	v1 "k8s.io/api/apps/v1"
 
 	"github.com/golang/mock/gomock"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -22,10 +19,8 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -359,217 +354,6 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 	}
 }
 
-func TestList(t *testing.T) {
-	mockConfig := config.GetOneExistingConfigInfo("comp", "app", "test")
-	componentConfig, err := GetComponentFromConfig(&mockConfig)
-	if err != nil {
-		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
-	}
-	componentConfig.Status.State = StateTypeNotPushed
-	componentConfig2, err := GetComponentFromConfig(&mockConfig)
-	if err != nil {
-		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
-	}
-	componentConfig2.Status.State = StateTypeUnknown
-
-	existingSampleLocalConfig := config.GetOneExistingConfigInfo("comp", "app", "test")
-
-	dcList := appsv1.DeploymentConfigList{Items: []appsv1.DeploymentConfig{
-		getFakeDC("frontend", "test", "app", "nodejs"),
-		getFakeDC("backend", "test", "app", "java"),
-		getFakeDC("test", "test", "otherApp", "python"),
-	}}
-
-	deploymentList := v1.DeploymentList{Items: []v1.Deployment{
-		*testingutil.CreateFakeDeployment("comp0"),
-		*testingutil.CreateFakeDeployment("comp1"),
-	}}
-
-	deploymentList.Items[0].Labels[componentlabels.ComponentTypeLabel] = "nodejs"
-	deploymentList.Items[0].Annotations = map[string]string{
-		ComponentSourceTypeAnnotation: "local",
-	}
-	deploymentList.Items[1].Labels[componentlabels.ComponentTypeLabel] = "wildfly"
-	deploymentList.Items[1].Annotations = map[string]string{
-		ComponentSourceTypeAnnotation: "local",
-	}
-
-	const caseName = "Case 4: List component when openshift cluster not reachable"
-	tests := []struct {
-		name                      string
-		dcList                    appsv1.DeploymentConfigList
-		deploymentConfigSupported bool
-		deploymentList            v1.DeploymentList
-		projectExists             bool
-		wantErr                   bool
-		existingLocalConfigInfo   *config.LocalConfigInfo
-		output                    ComponentList
-	}{
-		{
-			name:                      "Case 1: Components are returned",
-			dcList:                    dcList,
-			deploymentConfigSupported: true,
-			wantErr:                   false,
-			projectExists:             true,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
-				},
-			},
-		},
-		{
-			name:          "Case 2: no component and no config exists",
-			wantErr:       false,
-			projectExists: true,
-			output:        GetMachineReadableFormatForList([]Component{}),
-		},
-		{
-			name:                      "Case 3: Components are returned from the config plus and cluster",
-			dcList:                    dcList,
-			deploymentConfigSupported: true,
-			wantErr:                   false,
-			projectExists:             true,
-			existingLocalConfigInfo:   &existingSampleLocalConfig,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
-					componentConfig,
-				},
-			},
-		},
-		{
-			name:                    caseName,
-			wantErr:                 false,
-			projectExists:           false,
-			existingLocalConfigInfo: &existingSampleLocalConfig,
-			output:                  GetMachineReadableFormatForList([]Component{componentConfig2}),
-		},
-		{
-			name:                      "Case 5: Components are returned from deployments on a kubernetes cluster",
-			dcList:                    dcList,
-			deploymentList:            deploymentList,
-			wantErr:                   false,
-			projectExists:             true,
-			deploymentConfigSupported: false,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("comp0", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("comp1", "test", "app", "wildfly", StateTypePushed),
-				},
-			},
-		},
-		{
-			name:                      "Case 6: Components are returned from both",
-			dcList:                    dcList,
-			deploymentList:            deploymentList,
-			wantErr:                   false,
-			projectExists:             true,
-			deploymentConfigSupported: true,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("comp0", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("comp1", "test", "app", "wildfly", StateTypePushed),
-					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if !tt.deploymentConfigSupported {
-				os.Setenv("KUBERNETES", "true")
-				defer os.Unsetenv("KUBERNETES")
-			}
-
-			client, fakeClientSet := occlient.FakeNew()
-			client.Namespace = "test"
-
-			//fake the dcs
-			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &tt.dcList, nil
-			})
-
-			//fake the deployments
-			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &tt.deploymentList, nil
-			})
-
-			// Prepend reactor returns the last matched reactor added
-			// We need to return errorNotFound for localconfig only component
-			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if tt.name == caseName {
-					return true, nil, errors.NewUnauthorized("user unauthorized")
-				}
-				getAction, ok := action.(ktesting.GetAction)
-				if !ok {
-					return false, nil, fmt.Errorf("expected a GetAction, got %v", action)
-				}
-				switch getAction.GetName() {
-				case "frontend-app":
-					return true, &tt.dcList.Items[0], nil
-				case "backend-app":
-					return true, &tt.dcList.Items[1], nil
-				default:
-					return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deploymentconfigs"}, "")
-				}
-			})
-
-			fakeClientSet.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if tt.name == caseName {
-					// simulate unavailable cluster
-					return true, nil, errors.NewUnauthorized("user unauthorized")
-				}
-				getAction, ok := action.(ktesting.GetAction)
-				if !ok {
-					return false, nil, fmt.Errorf("expected a GetAction, got %v", action)
-				}
-				switch getAction.GetName() {
-				case "comp0":
-					return true, &tt.deploymentList.Items[0], nil
-				case "comp1":
-					return true, &tt.deploymentList.Items[1], nil
-				default:
-					return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deploymentconfigs"}, "")
-				}
-			})
-
-			results, err := List(client, "app", tt.existingLocalConfigInfo)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
-			}
-
-			if !reflect.DeepEqual(tt.output, results) {
-				t.Errorf("expected output:\n%#v\n\ngot:\n%#v", tt.output, results)
-			}
-		})
-	}
-}
-
 func TestGetDefaultComponentName(t *testing.T) {
 	tests := []struct {
 		testName           string
@@ -837,111 +621,6 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetComponentFromConfig(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	os.Setenv("LOCALODOCONFIG", tempConfigFile.Name())
-
-	localExistingConfigInfoValue := config.GetOneExistingConfigInfo("comp", "app", "project")
-	localNonExistingConfigInfoValue := config.GetOneNonExistingConfigInfo()
-	gitExistingConfigInfoValue := config.GetOneGitExistingConfigInfo("comp", "app", "project")
-
-	tests := []struct {
-		name           string
-		isConfigExists bool
-		existingConfig config.LocalConfigInfo
-		wantSpec       Component
-	}{
-		{
-			name:           "case 1: config file exists",
-			isConfigExists: true,
-			existingConfig: localExistingConfigInfoValue,
-			wantSpec: Component{
-				Spec: ComponentSpec{
-					App:    localExistingConfigInfoValue.GetApplication(),
-					Type:   localExistingConfigInfoValue.GetType(),
-					Source: localExistingConfigInfoValue.GetSourceLocation(),
-					URL: []string{
-						localExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, localExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
-					},
-					Storage: []string{
-						localExistingConfigInfoValue.ListStorage()[0].Name, localExistingConfigInfoValue.ListStorage()[1].Name,
-					},
-					Env: []corev1.EnvVar{
-						{
-							Name:  localExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Name,
-							Value: localExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Value,
-						},
-						{
-							Name:  localExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Name,
-							Value: localExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
-						},
-					},
-					SourceType: "local",
-					Ports:      localExistingConfigInfoValue.LocalConfig.GetPorts(),
-				},
-			},
-		},
-		{
-			name:           "case 2: config file doesn't exists",
-			isConfigExists: false,
-			existingConfig: localNonExistingConfigInfoValue,
-			wantSpec:       Component{},
-		},
-		{
-			name:           "case 3: config file exists",
-			isConfigExists: true,
-			existingConfig: gitExistingConfigInfoValue,
-			wantSpec: Component{
-				Spec: ComponentSpec{
-					App:    gitExistingConfigInfoValue.GetApplication(),
-					Type:   gitExistingConfigInfoValue.GetType(),
-					Source: gitExistingConfigInfoValue.GetSourceLocation(),
-					URL: []string{
-						gitExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, gitExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
-					},
-					Storage: []string{
-						gitExistingConfigInfoValue.ListStorage()[0].Name, localExistingConfigInfoValue.ListStorage()[1].Name,
-					},
-					Env: []corev1.EnvVar{
-						{
-							Name:  gitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Name,
-							Value: gitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Value,
-						},
-						{
-							Name:  gitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Name,
-							Value: gitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
-						},
-					},
-					SourceType: "git",
-					Ports:      gitExistingConfigInfoValue.LocalConfig.GetPorts(),
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := config.NewLocalConfigInfo("")
-			if err != nil {
-				t.Error(err)
-			}
-			cfg := &tt.existingConfig
-
-			got, _ := GetComponentFromConfig(cfg)
-
-			if !reflect.DeepEqual(got.Spec, tt.wantSpec.Spec) {
-				t.Errorf("the component spec is different, want: %v,\n got: %v", tt.wantSpec.Spec, got.Spec)
-			}
-
-		})
-	}
-
 }
 
 func TestUnlinkComponents(t *testing.T) {

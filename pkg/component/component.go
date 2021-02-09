@@ -781,8 +781,8 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 	return compoList, nil
 }
 
-// List lists all s2i and devfile components in active application
-func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
+// List lists devfile components in active application
+func List(client *occlient.Client, applicationName string) (ComponentList, error) {
 	var applicationSelector string
 	if applicationName != "" {
 		applicationSelector = applabels.GetSelector(applicationName)
@@ -840,49 +840,6 @@ func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentTyp
 		return component
 	}
 	return Component{}
-}
-
-// ListIfPathGiven lists all available component in given path directory
-func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, error) {
-	var components []Component
-	var err error
-	for _, path := range paths {
-		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-			if f != nil && strings.Contains(f.Name(), ".odo") {
-				data, err := config.NewLocalConfigInfo(filepath.Dir(path))
-				if err != nil {
-					return err
-				}
-
-				// if the .odo folder doesn't contain a proper config file
-				if data.GetName() == "" || data.GetApplication() == "" || data.GetProject() == "" {
-					return nil
-				}
-
-				// since the config file maybe belong to a component of a different project
-				if client != nil {
-					client.Namespace = data.GetProject()
-				}
-
-				con, _ := filepath.Abs(filepath.Dir(path))
-				a := getMachineReadableFormat(data.GetName(), data.GetType())
-				a.Namespace = data.GetProject()
-				a.Spec.App = data.GetApplication()
-				a.Spec.Ports = data.GetPorts()
-				a.Spec.SourceType = string(data.GetSourceType())
-				a.Status.Context = con
-				if client != nil {
-					a.Status.State = GetComponentState(client, data.GetName(), data.GetApplication())
-				} else {
-					a.Status.State = StateTypeUnknown
-				}
-				components = append(components, a)
-			}
-			return nil
-		})
-
-	}
-	return components, err
 }
 
 func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Component, error) {
@@ -1405,26 +1362,6 @@ func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    s2iComps,
-	}
-}
-
-// GetMachineReadableFormatForCombinedCompList returns list of devfile and s2i components in machine readable format
-func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []Component) CombinedComponentList {
-	if len(s2iComps) == 0 {
-		s2iComps = []Component{}
-	}
-	if len(devfileComps) == 0 {
-		devfileComps = []Component{}
-	}
-
-	return CombinedComponentList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		ListMeta:          metav1.ListMeta{},
-		S2IComponents:     s2iComps,
-		DevfileComponents: devfileComps,
 	}
 }
 

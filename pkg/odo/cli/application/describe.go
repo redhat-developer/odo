@@ -2,8 +2,9 @@ package application
 
 import (
 	"fmt"
-	odoutil "github.com/openshift/odo/pkg/util"
 	"path/filepath"
+
+	odoutil "github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
@@ -77,7 +78,7 @@ func (o *DescribeOptions) Run() (err error) {
 		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
 		machineoutput.OutputSuccess(appDef)
 	} else {
-		componentList, err := component.List(o.Client, o.appName, nil)
+		componentList, err := component.List(o.Client, o.appName)
 		if err != nil {
 			return err
 		}

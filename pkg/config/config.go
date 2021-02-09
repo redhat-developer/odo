@@ -211,47 +211,9 @@ func (lci *LocalConfigInfo) DeleteConfigFile() error {
 	return util.DeletePath(lci.Filename)
 }
 
-// IsSet uses reflection to get the parameter from the localconfig struct, currently
-// it only searches the componentSettings
-func (lci *LocalConfigInfo) IsSet(parameter string) bool {
-
-	switch strings.ToLower(parameter) {
-	case "cpu":
-		return (lci.componentSettings.MinCPU != nil && lci.componentSettings.MaxCPU != nil) &&
-			(*lci.componentSettings.MinCPU == *lci.componentSettings.MaxCPU)
-	case "memory":
-		return (lci.componentSettings.MinMemory != nil && lci.componentSettings.MaxMemory != nil) &&
-			(*lci.componentSettings.MinMemory == *lci.componentSettings.MaxMemory)
-	}
-
-	return util.IsSet(lci.componentSettings, parameter)
-}
-
 // Exists returns whether the config file exists or not
 func (lci *LocalConfigInfo) Exists() bool {
 	return lci.configFileExists
-}
-
-// DeleteConfiguration is used to delete config from local odo config
-func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
-	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
-
-		switch parameter {
-		case "cpu":
-			lci.componentSettings.MinCPU = nil
-			lci.componentSettings.MaxCPU = nil
-		case "memory":
-			lci.componentSettings.MinMemory = nil
-			lci.componentSettings.MaxMemory = nil
-		default:
-			if err := util.DeleteConfiguration(&lci.componentSettings, parameter); err != nil {
-				return err
-			}
-		}
-		return lci.writeToFile()
-	}
-	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
-
 }
 
 // GetComponentSettings returns the componentSettings from local config
