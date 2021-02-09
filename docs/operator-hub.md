@@ -107,7 +107,7 @@ In this example, we will be deploying `EtcdCluster` service from [etcd Operator]
     $ odo service list
     ```
 
-It is important to note that `EtcdBackup` and `EtcdRestore` cannot be deploymeed the same way as we deployed `EtcdCluster` as they require configuring other parameters in their YAML definition.
+It is important to note that `EtcdBackup` and `EtcdRestore` cannot be deployed the same way as we deployed `EtcdCluster` as they require configuring other parameters in their YAML definition.
 
 ## Deploying Operator backed service to a cluster via YAML
 

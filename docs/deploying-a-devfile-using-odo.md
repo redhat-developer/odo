@@ -58,33 +58,53 @@ An example deployment scenario:
 
 # Deploying your first devfile
 
-## Prerequisites for a Kubernetes Cluster
+## Ingress Setup
 
-  - Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
+You will need to provide an ingress domain name for the services you create with odo, which you will specify via the `--host` argument with `odo url create`.
+
+An easy way to do this is to use the [nip.io](https://nip.io/) service to create host names mapping to the external IP of your ingress controller service.
+
+In the commands below we assume you are using the [nip.io](https://nip.io/) service and [minikube](https://minikube.sigs.k8s.io/docs/), e.g.:
+
+``` sh
+  $ odo url create --host $(minikube ip).nip.io
+```
+
+### Minikube Cluster Ingress Setup
+
+Enable the ingress addon in minikube.
+
+``` sh
+  $ minikube addons enable ingress
+```
+
+With Minikube running in a virtual machine, the ingress controller IP address is obtained via `minikube ip` (the value is `192.168.99.100` in the sample output shown below).
+
+### OpenShift Cluster Ingress Setup
+
+For [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview) running in a virtual machine, for example, you can get it by `crc ip`. Note you might not need to use the ingress in OpenShift, where you can use routes instead.
+
+### Ingress Notes
+
+Of course there are other options but this approach avoids the need to edit the `/etc/hosts/` file with each created service URL.
+
+Checkout this [document](https://kubernetes.io/docs/concepts/services-networking/ingress/) to know more about ingress.
+
+## First Steps
+
+  - Login to your cluster (unnecessary if you’ve used other standard methods, e.g. kubectl to establish the current context)
     
-    Ingress IP is usually the external IP of ingress controller service. For example, for Minikube running in a virtual machine you can get it by `minikube ip`. Checkout this [document](https://kubernetes.io/docs/concepts/services-networking/ingress/) to know more about ingress.
-
-## Prerequisites for an OpenShift Cluster
+    ``` sh
+      $ odo login -u developer -p developer
+    ```
 
   - Create a project to keep your source code, tests, and libraries organized in a separate single unit.
-
-  - You must also know your ingress domain name or ingress IP to specify `--host` for `odo url create`. This can be found using `crc ip`.
     
-    Ingress IP is usually the external IP of ingress controller service. For example, for [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview) running in a virtual machine you can get it by `crc ip`. Checkout this [document](https://kubernetes.io/docs/concepts/services-networking/ingress/) to know more about ingress.
-    
-    1.  Log in to an OpenShift cluster:
-        
-        ``` sh
-          $ odo login -u developer -p developer
-        ```
-    
-    2.  Create a project:
-        
-        ``` sh
-          $ odo project create myproject
-           ✓  Project 'myproject' is ready for use
-           ✓  New project created and now using project : myproject
-        ```
+    ``` sh
+      $ odo project create myproject
+       ✓  Project 'myproject' is ready for use
+       ✓  New project created and now using project : myproject
+    ```
 
 # Listing all available devfile components
 
@@ -162,8 +182,8 @@ In this example we will be deploying an [example Spring Boot® component](https:
     > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
     
     ``` sh
-     $ odo url create  --host example.com
-      ✓  URL myspring-8080.example.com created for component: myspring
+     $ odo url create  --host $(minikube ip).nip.io
+      ✓  URL myspring-8080.192.168.99.100.nip.io created for component: myspring
     
      To apply the URL configuration changes, please use odo push
     ```
@@ -180,7 +200,7 @@ In this example we will be deploying an [example Spring Boot® component](https:
        ✓  Waiting for component to start [5s]
     
       Applying URL changes
-       ✓  URL myspring-8080: http://myspring-8080.example.com created
+       ✓  URL myspring-8080: http://myspring-8080.192.168.99.100.nip.io created
     
       Syncing to component myspring
        ✓  Checking files for pushing [2ms]
@@ -200,13 +220,13 @@ In this example we will be deploying an [example Spring Boot® component](https:
      $ odo url list
      Found the following URLs for component myspring
      NAME              URL                                       PORT     SECURE
-     myspring-8080     http://myspring-8080.example.com     8080     false
+     myspring-8080     http://myspring-8080.192.168.99.100.nip.io     8080     false
     ```
 
 8.  View your deployed application using the generated URL:
     
     ``` sh
-      $ curl http://myspring-8080.example.com
+      $ curl http://myspring-8080.$(minikube ip).nip.io
     ```
 
 9.  To delete your deployed application:
@@ -261,8 +281,8 @@ In this example we will be deploying an [example Node.js® component](https://gi
     > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
     
     ``` sh
-     $ odo url create --host example.com
-      ✓  URL mynodejs-8080.example.com created for component: mynodejs
+     $ odo url create --host $(minikube ip).nip.io
+      ✓  URL mynodejs-8080.192.168.99.100.nip.io created for component: mynodejs
     
      To apply the URL configuration changes, please use odo push
     ```
@@ -279,7 +299,7 @@ In this example we will be deploying an [example Node.js® component](https://gi
        ✓  Waiting for component to start [3s]
     
       Applying URL changes
-       ✓  URL mynodejs-3000: http://mynodejs-3000.example.com created
+       ✓  URL mynodejs-3000: http://mynodejs-3000.192.168.99.100.nip.io created
     
       Syncing to component mynodejs
        ✓  Checking files for pushing [2ms]
@@ -298,14 +318,14 @@ In this example we will be deploying an [example Node.js® component](https://gi
     ``` sh
      $ odo url list
          Found the following URLs for component mynodejs
-         NAME              URL                                       PORT     SECURE
-         mynodejs-8080     http://mynodejs-8080.example.com     8080     false
+         NAME              URL                                            PORT     SECURE
+         mynodejs-8080     http://mynodejs-8080.192.168.99.100.nip.io     8080     false
     ```
 
 8.  View your deployed application using the generated URL:
     
     ``` sh
-       $ curl http://mynodejs-8080.example.com
+       $ curl http://mynodejs-8080.$(minikube ip).nip.io
     ```
 
 9.  To delete your deployed application:
@@ -347,8 +367,8 @@ In this example we will be deploying a [Quarkus component](https://github.com/od
     > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
     
     ``` sh
-     $ odo url create  --host example.com
-      ✓  URL myquarkus-8080.example.com created for component: myquarkus
+     $ odo url create  --host $(minikube ip).nip.io
+      ✓  URL myquarkus-8080.192.168.99.100.nip.io created for component: myquarkus
     
      To apply the URL configuration changes, please use odo push
     ```
@@ -384,8 +404,8 @@ In this example we will be deploying a [Quarkus component](https://github.com/od
     ``` sh
      $ odo url list
      Found the following URLs for component myspring
-     NAME              URL                                       PORT     SECURE
-     myquarkus-8080     http://myquarkus-8080.example.com     8080     false
+     NAME              URL                                              PORT     SECURE
+     myquarkus-8080     http://myquarkus-8080.192.168.99.100.nip.io     8080     false
     ```
 
 You can now continue developing your application. Just run `odo push` and refresh your browser to view the latest changes.
@@ -432,7 +452,7 @@ In this example we will be deploying a [Open Liberty component](https://github.c
     > If deploying on OpenShift, you can skip this step and a Route will be created for you automatically. On Kubernetes, you need to pass ingress domain name via `--host` flag.
     
     ``` sh
-     $ odo url create --host example.com
+     $ odo url create --host $(minikube ip).nip.io
       ✓  URL myopenliberty-9080 created for component: myopenliberty
     
      To apply the URL configuration changes, please use odo push
@@ -461,35 +481,50 @@ In this example we will be deploying a [Open Liberty component](https://github.c
      ✓  Changes successfully pushed to component
     ```
 
-5.  View your deployed application in a browser using the generated url
+5.  List the URLs of the component
     
     ``` sh
      $ odo url list
       Found the following URLs for component myopenliberty
-      NAME                STATE      URL                                       PORT     SECURE
-      myopenliberty-9     Pushed     http://myopenliberty-9.example.com        9080     false
+      NAME                STATE      URL                                                 PORT     SECURE
+      myopenliberty-9     Pushed     http://myopenliberty-9.192.168.99.100.nip.io        9080     false
     ```
 
-6.  Have odo watch for changes in the source code
+6.  View your deployed application using the generated URL (this example shows an ingress hostname URL, while an OpenShift route would look a bit different):
+    
+    ``` sh
+     $ curl http://myopenliberty-9.$(minikube ip).nip.io/api/resource
+    ```
+
+7.  Have odo watch for changes in the source code:
     
     ``` sh
      $ odo watch
     ```
 
-You can now continue developing your application. Just refreshing the browser will render the source code changes.
+You can now continue developing your application. Refreshing the browser or hitting the endpoint again will render the source code changes.
+
+You can also trigger `odo watch` with custom devfile build, run and debug commands.
+
+``` sh
+$ odo watch --build-command="mybuild" --run-command="myrun" --debug-command="mydebug"
+----
 
 Run `odo delete` to delete the application from cluster.
 
-1.  To delete your deployed application:
-    
-    ``` sh
-       $ odo delete
-       Are you sure you want to delete the devfile component: myopenliberty? Yes
-    
-       Gathering information for component myopenliberty
-        ✓  Checking status for component [99ms]
-    
-       Deleting component myopenliberty
-        ✓  Deleting Kubernetes resources for component [107ms]
-        ✓  Successfully deleted component
-    ```
+. To delete your deployed application:
++
+[source,sh]
+----
+   $ odo delete
+   Are you sure you want to delete the devfile component: myopenliberty? Yes
+
+   Gathering information for component myopenliberty
+    ✓  Checking status for component [99ms]
+
+   Deleting component myopenliberty
+    ✓  Deleting Kubernetes resources for component [107ms]
+    ✓  Successfully deleted component
+
+----
+```
