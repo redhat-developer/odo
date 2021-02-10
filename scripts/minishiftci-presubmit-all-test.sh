@@ -28,4 +28,4 @@ set -x
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-./ci-firewall request --runscript scripts/kubernestes-all-test.sh --timeout 2h15m
+./ci-firewall request --runscript scripts/minishift-all-test.sh --timeout 2h15m
