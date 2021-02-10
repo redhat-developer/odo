@@ -40,7 +40,7 @@ func (co *CreateOptions) SetComponentSettings(args []string) error {
 
 // decideAndDownloadStarterProject decides the starter project from the value passed by the user and
 // downloads it
-func decideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed string, token string, interactive bool) error {
+func decideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed string, token string, interactive bool, contextDir string) error {
 	if projectPassed == "" && !interactive {
 		return nil
 	}
@@ -63,5 +63,5 @@ func decideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 		return nil
 	}
 
-	return component.DownloadStarterProject(starterProject, token)
+	return component.DownloadStarterProject(starterProject, token, contextDir)
 }
