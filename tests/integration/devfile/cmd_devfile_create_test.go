@@ -53,6 +53,13 @@ var _ = Describe("odo devfile create command tests", func() {
 			componentNamespace := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "java-openliberty", "--project", componentNamespace)
 		})
+
+		It("should fail to create the devfile component if --project value is 'default'", func() {
+			output := helper.CmdShouldFail("odo", "create", "java", "--project", "default")
+			expectedString := "odo may not work as expected in the default project, please run the odo component in a non-default project"
+			helper.MatchAllInOutput(output, []string{expectedString})
+		})
+
 	})
 
 	Context("When executing odo create with devfile component type argument and --registry flag", func() {
