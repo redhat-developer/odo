@@ -8,7 +8,7 @@ This change would affect multiple service commands and the changes are described
 - `odo catalog describe service` should include the metadata fields with description so the users can provide then when doing `odo service create`
 - `odo catalog list service` shouldn't change much other then listing CRDs per operator
 - `odo service create` should take flags and dynamically fill the CRD structs - metadata would be used for validation
-- `odo service create --input-file` would be used by adapter team or whoever wants to provide the whole CRD themselves as a file
+- `odo service create --from-file` would be used by adapter team or whoever wants to provide the whole CRD themselves as a file. this feature is already present and working.
 
 ## Implementation plan
 
@@ -524,21 +524,15 @@ Note - removed `description` fields to make the sample concise.
     - `mountPathPrefix`
     - `services`
 
-### Conversion of openAPIV3Schema to json schema
-
-We after discussions with adapters team have decided to convert the openAPIV3Schema to json schema so that it would be easy to consume and hence we would be working on the converted json schema version to derive information from it.
-
-TODO: find a good enough library to convert openAPIV3Schema to json schema reliably 
-
 ### cobra flags to golang map conversion
 
-We need to finalise a mechanism/syntax so that a user can set any property for a CR using the command line, for e.g. if we considered `jsonpath` something like this `odo service create servicebinding.coreos.io/Servicebinding -services[0].envVarPrefix "SVC" -services[0].namespace "openshift"`. 
+We need to finalise a mechanism/syntax so that a user can set any property for a CR using the command line, for e.g. if we considered `jsonpath` something like this `odo service create servicebinding.coreos.io/Servicebinding/<version> -services[0].envVarPrefix "SVC" -services[0].namespace "openshift"`.
 
 Currently the decision is to use cobra's syntax for passing flags but we need to finalise and consider all if cobra's syntax will support all scenerios.
 
 ### "odo catalog list services"
 
-- No changes needed to `odo catalog list services` as it already shows the `Operators` and the respective CRs they provide for the user to `describe` on.
+- We need to show the different versions for the service when you execute `odo catalog list services`. it already shows the `Operators` and the respective CRs they provide for the user to `describe` on.
 
 ### "odo catalog describe service"
 
