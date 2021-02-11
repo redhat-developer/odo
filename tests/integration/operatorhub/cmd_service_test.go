@@ -449,7 +449,9 @@ spec:
 			stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("already linked with the service"))
 
-			stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
+			// Running unlink command with timeout because at times unlink happens (which deletes underlying Kubernetes
+			// Secret) too fast and (seems to) mess the Pod created as a part of earlier odo push
+			stdOut = helper.CmdShouldRunWithTimeout(1*time.Minute, "odo", "unlink", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))
 			helper.CmdShouldPass("odo", "push")
 
