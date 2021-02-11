@@ -550,6 +550,8 @@ this would yield into a map that looks like this
 
 ```
 
+- odo also needs to have smart auto-complete which auto selects the version if the CR only has one version.
+
 ### "odo catalog list services"
 
 - We need to show the different versions for the service when you execute `odo catalog list services`. it already shows the `Operators` and the respective CRs they provide for the user to `describe` on.
