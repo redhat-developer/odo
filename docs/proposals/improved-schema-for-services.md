@@ -526,9 +526,29 @@ Note - removed `description` fields to make the sample concise.
 
 ### cobra flags to golang map conversion
 
-We need to finalise a mechanism/syntax so that a user can set any property for a CR using the command line, for e.g. if we considered `jsonpath` something like this `odo service create servicebinding.coreos.io/Servicebinding/<version> -services[0].envVarPrefix "SVC" -services[0].namespace "openshift"`.
+The current approach of sending map values via cli are as follows - 
 
-Currently the decision is to use cobra's syntax for passing flags but we need to finalise and consider all if cobra's syntax will support all scenerios.
+- we would add a `-p` cobra param as a list
+- each of the parameter would represent the key in a map and value in a map `e.g. -p "key"="value"`
+- we would allow json path in the key for the user to specific any field in the map that they want to set e.g. `services[0].namespace`.
+- we will pass all values as string. 
+
+Sample - `odo service create servicebinding.coreos.io/Servicebinding/<version> -p  "services[0].envVarPrefix"="SVC" -p "services[0].namespace"="openshift"`
+
+this would yield into a map that looks like this
+
+```
+
+{
+  "services":[
+    {
+      "envVarPrefix": "SVC",
+      "namespace": "openshift"
+    }
+  ]
+}
+
+```
 
 ### "odo catalog list services"
 
