@@ -7,6 +7,7 @@ import (
 
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 )
@@ -977,6 +978,12 @@ func TestValidateCommandsForGroup(t *testing.T) {
 			groupType: buildGroup,
 			wantErr:   false,
 		},
+		{
+			name:         "Case 6: No build command found",
+			execCommands: []devfilev1.Command{},
+			groupType:    buildGroup,
+			wantErr:      true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1011,6 +1018,7 @@ func TestGetBuildCommand(t *testing.T) {
 		name         string
 		commandName  string
 		execCommands []devfilev1.Command
+		wantCommand  devfilev1.Command
 		wantErr      bool
 	}{
 		{
@@ -1029,6 +1037,20 @@ func TestGetBuildCommand(t *testing.T) {
 							Component:   component,
 							WorkingDir:  workDir,
 						},
+					},
+				},
+			},
+			wantCommand: devfilev1.Command{
+				CommandUnion: devfilev1.CommandUnion{
+					Exec: &devfilev1.ExecCommand{
+						LabeledCommand: devfilev1.LabeledCommand{
+							BaseCommand: devfilev1.BaseCommand{
+								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+							},
+						},
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
 					},
 				},
 			},
@@ -1069,10 +1091,25 @@ func TestGetBuildCommand(t *testing.T) {
 					},
 				},
 			},
+			wantCommand: devfilev1.Command{
+				Id: "flagcommand",
+				CommandUnion: devfilev1.CommandUnion{
+					Exec: &devfilev1.ExecCommand{
+						LabeledCommand: devfilev1.LabeledCommand{
+							BaseCommand: devfilev1.BaseCommand{
+								Group: &devfilev1.CommandGroup{Kind: buildGroup},
+							},
+						},
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
 			wantErr: false,
 		},
 		{
-			name:        "Case 3: Missing Build Command",
+			name:        "Case 3: Build Command not found",
 			commandName: "customcommand123",
 			execCommands: []devfilev1.Command{
 				{
@@ -1093,6 +1130,28 @@ func TestGetBuildCommand(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Case 4: No build command",
+			execCommands: []devfilev1.Command{
+				{
+					Id: "run command",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &devfilev1.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantCommand: emptyCommand,
+			wantErr:     false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1108,8 +1167,8 @@ func TestGetBuildCommand(t *testing.T) {
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestGetBuildCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
-			} else if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
-				t.Errorf("TestGetBuildCommand: unexpected empty command returned for command: %v", tt.commandName)
+			} else if !tt.wantErr && !reflect.DeepEqual(tt.wantCommand, command) {
+				t.Errorf("TestGetBuildCommand: unexpected command returned: %v", pretty.Compare(tt.wantCommand, command))
 			}
 
 		})

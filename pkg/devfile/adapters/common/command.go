@@ -147,15 +147,15 @@ func validateCommandsForGroup(data data.DevfileData, groupType devfilev1.Command
 				defaultCommandCount++
 			}
 		}
-	} else {
+	} else if len(commands) == 1 {
 		// if there is only one command, it is the default command for the group
 		defaultCommandCount = 1
 	}
 
 	if defaultCommandCount == 0 {
-		return fmt.Errorf("there should be exactly one default command for command group %v, currently there is no default command", groupType)
+		return NoDefaultForGroup{Group: groupType}
 	} else if defaultCommandCount > 1 {
-		return fmt.Errorf("there should be exactly one default command for command group %v, currently there is more than one default command", groupType)
+		return MoreDefaultForGroup{Group: groupType}
 	}
 
 	return nil
@@ -163,13 +163,26 @@ func validateCommandsForGroup(data data.DevfileData, groupType devfilev1.Command
 
 // GetBuildCommand iterates through the components in the devfile and returns the build command
 func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand devfilev1.Command, err error) {
+	supportedCommand, err := getCommand(data, devfileBuildCmd, devfilev1.BuildCommandGroupKind)
+	// since build command is not necessary
+	// check if we can ignore it
+	if _, ok := err.(NoDefaultForGroup); ok {
+		return devfilev1.Command{}, nil
+	}
 
-	return getCommand(data, devfileBuildCmd, devfilev1.BuildCommandGroupKind)
+	return supportedCommand, err
 }
 
 // GetDebugCommand iterates through the components in the devfile and returns the debug command
 func GetDebugCommand(data data.DevfileData, devfileDebugCmd string) (debugCommand devfilev1.Command, err error) {
-	return getCommand(data, devfileDebugCmd, devfilev1.DebugCommandGroupKind)
+	supportedCommand, err := getCommand(data, devfileDebugCmd, devfilev1.DebugCommandGroupKind)
+	// since debug command is not necessary
+	// check if we can ignore it
+	if _, ok := err.(NoDefaultForGroup); ok {
+		return devfilev1.Command{}, nil
+	}
+
+	return supportedCommand, err
 }
 
 // GetRunCommand iterates through the components in the devfile and returns the run command
@@ -180,8 +193,14 @@ func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand devf
 
 // GetTestCommand iterates through the components in the devfile and returns the test command
 func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand devfilev1.Command, err error) {
+	supportedCommand, err := getCommand(data, devfileTestCmd, devfilev1.TestCommandGroupKind)
+	// since test command is not necessary
+	// check if we can ignore it
+	if _, ok := err.(NoDefaultForGroup); ok {
+		return devfilev1.Command{}, nil
+	}
 
-	return getCommand(data, devfileTestCmd, devfilev1.TestCommandGroupKind)
+	return supportedCommand, err
 }
 
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
