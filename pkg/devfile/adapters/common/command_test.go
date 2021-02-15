@@ -423,6 +423,26 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			requestedType:  []devfilev1.CommandGroupKind{buildGroup},
 			wantErr:        false,
 		},
+		{
+			name: "Case 7: no build and debug commands",
+			execCommands: []devfilev1.Command{
+				getExecCommand("", runGroup),
+			},
+			requestedType: []devfilev1.CommandGroupKind{buildGroup, debugGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 8: no default build and debug commands",
+			execCommands: []devfilev1.Command{
+				getExecCommand("build-0", buildGroup),
+				getExecCommand("build-1", buildGroup),
+				getExecCommand("debug-0", debugGroup),
+				getExecCommand("debug-1", debugGroup),
+				getExecCommand("", runGroup),
+			},
+			requestedType: []devfilev1.CommandGroupKind{buildGroup, debugGroup},
+			wantErr:       false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -979,7 +999,7 @@ func TestValidateCommandsForGroup(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name:         "Case 6: No build command found",
+			name:         "Case 6: No command found",
 			execCommands: []devfilev1.Command{},
 			groupType:    buildGroup,
 			wantErr:      true,
@@ -1011,8 +1031,6 @@ func TestGetBuildCommand(t *testing.T) {
 	component := "alias1"
 	workDir := "/"
 	emptyString := ""
-
-	var emptyCommand devfilev1.Command
 
 	tests := []struct {
 		name         string
@@ -1129,28 +1147,6 @@ func TestGetBuildCommand(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		},
-		{
-			name: "Case 4: No build command",
-			execCommands: []devfilev1.Command{
-				{
-					Id: "run command",
-					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{
-							LabeledCommand: devfilev1.LabeledCommand{
-								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: runGroup},
-								},
-							},
-							CommandLine: command,
-							Component:   component,
-							WorkingDir:  workDir,
-						},
-					},
-				},
-			},
-			wantCommand: emptyCommand,
-			wantErr:     false,
 		},
 	}
 
