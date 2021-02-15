@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-// following command will tests in Describe section below in parallel (in 2 nodes)
+// following command will run tests in Describe section below in parallel (in 2 nodes)
 // ginkgo -nodes=2 -focus="Example of a clean test" slowSpecThreshold=120 -randomizeAllSpecs  tests/e2e/
 var _ = Describe("Example of a clean test", func() {
 	// new clean project and context for each test

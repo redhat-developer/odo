@@ -72,12 +72,17 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 }
 
 // DownloadStarterProject Downloads first starter project from list of starter projects in devfile
-func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string) error {
-
+func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string) error {
+	var path string
+	var err error
 	// Retrieve the working directory in order to clone correctly
-	path, err := os.Getwd()
-	if err != nil {
-		return errors.Wrapf(err, "Could not get the current working directory.")
+	if contextDir == "" {
+		path, err = os.Getwd()
+		if err != nil {
+			return errors.Wrapf(err, "Could not get the current working directory.")
+		}
+	} else {
+		path = contextDir
 	}
 
 	// We will check to see if the project has a valid directory

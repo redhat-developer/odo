@@ -76,18 +76,31 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with devfile component type argument and --context flag", func() {
-		It("should successfully create the devfile component in the context", func() {
-			newContext := path.Join(commonVar.Context, "newContext")
+		var newContext, envFilePath string
+		JustBeforeEach(func() {
+			newContext = path.Join(commonVar.Context, "newContext")
 			devfilePath = filepath.Join(newContext, devfile)
-			envFilePath := filepath.Join(newContext, envFile)
 			helper.MakeDir(newContext)
+		})
 
+		JustAfterEach(func() {
+			helper.DeleteDir(newContext)
+		})
+
+		It("should successfully create the devfile component in the context", func() {
+			envFilePath = filepath.Join(newContext, envFile)
 			helper.CmdShouldPass("odo", "create", "java-openliberty", "--context", newContext)
 			output := util.CheckPathExists(devfilePath)
 			Expect(output).Should(BeTrue())
 			output = util.CheckPathExists(envFilePath)
 			Expect(output).Should(BeTrue())
-			helper.DeleteDir(newContext)
+		})
+
+		It("should successfully create the devfile component and download the source when used with --starter flag", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext)
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 		})
 	})
 

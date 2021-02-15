@@ -111,7 +111,7 @@ func Getwd() string {
 	return dir
 }
 
-// CopyExample copies an example from tests/e2e/examples/<exampleName> into targetDir
+// CopyExample copies an example from tests/examples/<binaryOrSource>/<componentName>/<exampleName> into targetDir
 func CopyExample(exampleName string, targetDir string) {
 	// filename of this file
 	_, filename, _, _ := runtime.Caller(0)
@@ -126,7 +126,8 @@ func CopyExample(exampleName string, targetDir string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-// CopyExampleDevFile copies an example devfile from tests/e2e/examples/<exampleName>/devfile.yaml into targetDst
+// CopyExampleDevFile copies an example devfile from tests/examples/source/devfiles/<componentName>/devfile.yaml
+// into targetDst
 func CopyExampleDevFile(devfilePath, targetDst string) {
 	// filename of this file
 	_, filename, _, _ := runtime.Caller(0)
