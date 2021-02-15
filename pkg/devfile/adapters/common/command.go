@@ -8,6 +8,7 @@ import (
 	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
@@ -69,6 +70,18 @@ func getCommandFromDevfile(data data.DevfileData, groupType devfilev1.CommandGro
 	// since we know the command kind from the push flags
 	err = validateCommandsForGroup(data, groupType)
 	if err != nil {
+		if groupType == devfilev1.BuildCommandGroupKind || groupType == devfilev1.DebugCommandGroupKind {
+			if _, ok := err.(NoDefaultForGroup); ok {
+				log.Warning(err.Error())
+				return devfilev1.Command{}, nil
+			}
+
+			if _, ok := err.(NoCommandForGroup); ok {
+				klog.V(2).Info(err.Error())
+				return devfilev1.Command{}, nil
+			}
+		}
+
 		return devfilev1.Command{}, err
 	}
 
@@ -90,12 +103,12 @@ func getCommandFromDevfile(data data.DevfileData, groupType devfilev1.CommandGro
 		return onlyCommand, nil
 	}
 
-	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
+	notFoundError := NoCommandForGroup{Group: groupType}
 	// if run command or test command is not found in devfile then it is an error
 	if groupType == devfilev1.RunCommandGroupKind || groupType == devfilev1.TestCommandGroupKind {
-		err = fmt.Errorf(msg)
+		err = notFoundError
 	} else {
-		klog.V(2).Info(msg)
+		klog.V(2).Info(notFoundError)
 	}
 
 	return
@@ -139,6 +152,10 @@ func validateCommandsForGroup(data data.DevfileData, groupType devfilev1.Command
 
 	commands := getCommandsByGroup(data, groupType)
 
+	if len(commands) == 0 {
+		return NoCommandForGroup{Group: groupType}
+	}
+
 	defaultCommandCount := 0
 
 	if len(commands) > 1 {
@@ -147,15 +164,15 @@ func validateCommandsForGroup(data data.DevfileData, groupType devfilev1.Command
 				defaultCommandCount++
 			}
 		}
-	} else {
+	} else if len(commands) == 1 {
 		// if there is only one command, it is the default command for the group
 		defaultCommandCount = 1
 	}
 
 	if defaultCommandCount == 0 {
-		return fmt.Errorf("there should be exactly one default command for command group %v, currently there is no default command", groupType)
+		return NoDefaultForGroup{Group: groupType}
 	} else if defaultCommandCount > 1 {
-		return fmt.Errorf("there should be exactly one default command for command group %v, currently there is more than one default command", groupType)
+		return MoreDefaultForGroup{Group: groupType}
 	}
 
 	return nil
@@ -163,7 +180,6 @@ func validateCommandsForGroup(data data.DevfileData, groupType devfilev1.Command
 
 // GetBuildCommand iterates through the components in the devfile and returns the build command
 func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand devfilev1.Command, err error) {
-
 	return getCommand(data, devfileBuildCmd, devfilev1.BuildCommandGroupKind)
 }
 
@@ -174,13 +190,11 @@ func GetDebugCommand(data data.DevfileData, devfileDebugCmd string) (debugComman
 
 // GetRunCommand iterates through the components in the devfile and returns the run command
 func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand devfilev1.Command, err error) {
-
 	return getCommand(data, devfileRunCmd, devfilev1.RunCommandGroupKind)
 }
 
 // GetTestCommand iterates through the components in the devfile and returns the test command
 func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand devfilev1.Command, err error) {
-
 	return getCommand(data, devfileTestCmd, devfilev1.TestCommandGroupKind)
 }
 
