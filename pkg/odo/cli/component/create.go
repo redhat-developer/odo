@@ -15,11 +15,11 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/convert"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -346,6 +346,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	var catalogList catalog.ComponentTypeList
 	if co.forceS2i {
+		log.Info("Due to deprecation of S2I component, using --s2i flag would yield into a converted devfile component")
 		client := co.Client
 		catalogList, err = catalog.ListComponents(client)
 		if err != nil {
@@ -537,15 +538,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		// Check whether resource "Project" is supported
-		projectSupported, err := co.Client.IsProjectSupported()
-
-		if err != nil {
-			return errors.Wrap(err, "resource project validation check failed.")
-		}
-
-		if projectSupported && componentNamespace == "default" {
-			return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
+		if componentNamespace == "default" {
+			log.Warning("odo may not work as expected in a default project, please run the odo component in a non-default project. To create a new project, use `odo project create`.")
 		}
 
 		// Set devfileMetadata struct
@@ -661,12 +655,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
-	var openshiftCluster bool
-	if !pushtarget.IsPushTargetDocker() {
-		openshiftCluster, _ = co.Client.IsImageStreamSupported()
-	} else {
-		openshiftCluster = false
-	}
+	var openshiftCluster, _ = co.Client.IsImageStreamSupported()
 	if !openshiftCluster {
 		return errors.New("component type not found")
 	}
@@ -736,8 +725,6 @@ func (co *CreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	log.Info("Validation")
-
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
 		return err
@@ -754,31 +741,6 @@ func (co *CreateOptions) Validate() (err error) {
 	}
 
 	s.End(true)
-	return nil
-}
-
-func (co *CreateOptions) s2iRun() (err error) {
-	err = co.LocalConfigInfo.SetComponentSettings(co.componentSettings)
-	if err != nil {
-		return errors.Wrapf(err, "failed to persist the component settings to config file")
-	}
-	if co.now {
-		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
-
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve updated local config")
-		}
-		err = co.SetSourceInfo()
-		if err != nil {
-			return errors.Wrap(err, "unable to set source information")
-		}
-		err = co.Push()
-		if err != nil {
-			return errors.Wrapf(err, "failed to push the changes")
-		}
-	} else {
-		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
-	}
 	return nil
 }
 
@@ -909,36 +871,47 @@ func (co *CreateOptions) Run() (err error) {
 		return co.devfileRun()
 	}
 
-	// If not, we run s2i (if the --s2i parameter has been passed in).
-	// It's implied that we have passed it in if Devfile did not run above
-	err = co.s2iRun()
-	if err != nil {
-		return err
+	if co.forceS2i {
+		log.Info("Conversion")
+		// do the conversion
+		// lets fill the localConfigInfo as we are using that as an adapter
+		co.LocalConfigInfo.SetComponentSettingsWithoutFileWrite(co.componentSettings)
+		if err := convert.GenerateDevfileYaml(co.Client, co.LocalConfigInfo, co.componentContext); err != nil {
+			return err
+		}
+
+		if _, err := convert.GenerateEnvYaml(co.Client, co.LocalConfigInfo, co.componentContext); err != nil {
+			return err
+		}
+		log.Success("Successfully generated devfile.yaml and env.yaml for provided S2I component")
 	}
 
 	if log.IsJSON() {
-		var componentDesc component.Component
-		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
-		if err != nil {
-			return err
-		}
-		state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
+		// TODO: Needs to be thought
 
-		if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
-			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
-			componentDesc.Status.State = state
-			if err != nil {
-				return err
-			}
-		} else {
-			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
-			if err != nil {
-				return err
-			}
-		}
+		// 	var componentDesc component.Component
+		// 	co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
 
-		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
-		machineoutput.OutputSuccess(componentDesc)
+		// 	if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
+		// 		componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+		// 		componentDesc.Status.State = state
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		// 	} else {
+		// 		componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		// 	}
+
+		// 	componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
+		// 	machineoutput.OutputSuccess(componentDesc)
+
 	}
 	return
 }

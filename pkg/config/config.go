@@ -451,6 +451,11 @@ func (lc *LocalConfig) GetContainers() []localConfigProvider.LocalContainer {
 	}
 }
 
+// SetComponentSettingsWithoutFileWrite sets the componentSetting but doesn't write to file
+func (lci *LocalConfigInfo) SetComponentSettingsWithoutFileWrite(cs ComponentSettings) {
+	lci.componentSettings = cs
+}
+
 // GetIgnore returns the Ignore, returns default if nil
 func (lc *LocalConfig) GetIgnore() bool {
 	return util.GetBoolOrDefault(lc.componentSettings.Ignore, false)
