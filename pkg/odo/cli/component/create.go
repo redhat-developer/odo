@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -336,8 +335,12 @@ func (co *CreateOptions) checkConflictingDevfileFlags() error {
 
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	// this populates the LocalConfigInfo as well
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	if co.forceS2i || co.now {
+		// this populates the LocalConfigInfo as well
+		co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	} else {
+		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+	}
 
 	err = co.checkConflictingFlags()
 	if err != nil {
@@ -426,15 +429,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Configure the default namespace
 		var defaultComponentNamespace string
-		// If the push target is set to Docker, we can't assume we have an active Kube context
-		if !pushtarget.IsPushTargetDocker() {
-			// Get current active namespace
-			client, err := kclient.New()
-			if err != nil {
-				return err
-			}
-			defaultComponentNamespace = client.Namespace
-		}
 
 		var componentType string
 		var componentName string
@@ -523,29 +517,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			}
 
-			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
-			if co.devfileMetadata.componentNamespace == "" && !pushtarget.IsPushTargetDocker() {
-
-				// Check to see if we've passed in "project", if not, default to the standard Kubernetes namespace
-				componentNamespace, err = retrieveCmdNamespace(cmd)
-				if err != nil {
-					return err
-				}
-
-			} else {
-				componentNamespace = defaultComponentNamespace
-			}
-		}
-
-		// Check whether resource "Project" is supported
-		projectSupported, err := co.Client.IsProjectSupported()
-
-		if err != nil {
-			return errors.Wrap(err, "resource project validation check failed.")
-		}
-
-		if projectSupported && componentNamespace == "default" {
-			return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
+			componentNamespace = co.Context.Project
 		}
 
 		// Set devfileMetadata struct
@@ -659,6 +631,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.interactive = true
 	}
 
+	// the component type was not found for devfile components
+	// fallback to s2i
+	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
 	var openshiftCluster bool
@@ -721,14 +697,6 @@ func (co *CreateOptions) Validate() (err error) {
 		err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
 		if err != nil {
 			return err
-		}
-		// Only validate namespace if pushtarget isn't docker
-		if !pushtarget.IsPushTargetDocker() {
-			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
-			if err != nil {
-				return err
-			}
-
 		}
 
 		spinner.End(true)

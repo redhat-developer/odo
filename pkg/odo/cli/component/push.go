@@ -140,6 +140,19 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 				return errors.Wrap(err, "failed to create env.yaml for devfile component")
 			}
 
+		} else if envFileInfo.GetNamespace() == "" {
+			// Since the project name doesn't exist in the environment file, we will retrieve a correct namespace from
+			// either cmd commands or the current default kubernetes namespace
+			// and write it to the env.yaml
+			namespace, err := retrieveCmdNamespace(cmd)
+			if err != nil {
+				return errors.Wrap(err, "unable to determine target namespace for devfile")
+			}
+
+			err = envFileInfo.SetConfiguration("project", namespace)
+			if err != nil {
+				return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
+			}
 		}
 
 		po.EnvSpecificInfo = envFileInfo
