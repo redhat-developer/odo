@@ -93,6 +93,7 @@ var _ = Describe("odo app command tests", func() {
 	})
 
 	Context("when running app command app parameter in directory that doesn't contain .odo config directory", func() {
+		// Works
 		It("should successfully execute list, describe and delete along with machine readable output", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)

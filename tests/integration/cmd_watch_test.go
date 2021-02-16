@@ -31,7 +31,7 @@ var _ = Describe("odo watch command tests", func() {
 	})
 
 	Context("when executing watch without pushing the component", func() {
-		It("should fail", func() {
+		FIt("should fail", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
 			output := helper.CmdShouldFail("odo", "watch", "--context", commonVar.Context)
@@ -43,7 +43,7 @@ var _ = Describe("odo watch command tests", func() {
 		JustBeforeEach(func() {
 			helper.Chdir(commonVar.Context)
 		})
-		It("should fail with proper error", func() {
+		FIt("should fail with proper error", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project)
 			output := helper.CmdShouldFail("odo", "watch", "--app", "dummy")
@@ -52,7 +52,7 @@ var _ = Describe("odo watch command tests", func() {
 	})
 
 	Context("when executing watch on a git source type component", func() {
-		It("should fail", func() {
+		FIt("should fail", func() {
 			helper.CmdShouldPass("odo", "create", "--s2i", "--context", commonVar.Context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
 			output := helper.CmdShouldFail("odo", "watch", "--context", commonVar.Context)
 			Expect(output).To(ContainSubstring("Watch is supported by binary and local components only"))
