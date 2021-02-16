@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -886,33 +887,32 @@ func (co *CreateOptions) Run() (err error) {
 		log.Success("Successfully generated devfile.yaml and env.yaml for provided S2I component")
 	}
 
-	// if log.IsJSON() {
-	// TODO: Needs to be thought
+	if log.IsJSON() {
 
-	// 	var componentDesc component.Component
-	// 	co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
+		var componentDesc component.Component
+		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
+		if err != nil {
+			return err
+		}
+		state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
 
-	// 	if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
-	// 		componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
-	// 		componentDesc.Status.State = state
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	} else {
-	// 		componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
+		if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
+			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			componentDesc.Status.State = state
+			if err != nil {
+				return err
+			}
+		} else {
+			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+			if err != nil {
+				return err
+			}
+		}
 
-	// 	componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
-	// 	machineoutput.OutputSuccess(componentDesc)
+		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
+		machineoutput.OutputSuccess(componentDesc)
 
-	// }
+	}
 	return
 }
 
