@@ -174,7 +174,7 @@ func componentTests(args ...string) {
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...)
-			valuesCList := gjson.GetMany(actualCompListJSON, "kind", "s2iComponents.0.kind", "s2iComponents.0.metadata.name", "s2iComponents.0.spec.app", "s2iComponents.0.spec.env.0.name")
+			valuesCList := gjson.GetMany(actualCompListJSON, "kind", "devfileComponents.0.kind", "devfileComponents.0.metadata.name", "devfileComponents.0.spec.app", "devfileComponents.0.spec.env.0.name")
 			expectedCList := []string{"List", "Component", "cmp-git", "testing", "DEBUG_PORT"}
 			Expect(helper.GjsonMatcher(valuesCList, expectedCList)).To(Equal(true))
 

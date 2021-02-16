@@ -52,6 +52,7 @@ var _ = Describe("odo app command tests", func() {
 	})
 
 	Context("when running app command without app parameter in directory that contains .odo config directory", func() {
+		// Works
 		It("should successfully execute list, describe and delete along with machine readable output", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
@@ -63,7 +64,7 @@ var _ = Describe("odo app command tests", func() {
 			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appListOutput).To(ContainSubstring(appName))
 			actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json", "--project", commonVar.Project)
-			valuesL := gjson.GetMany(actualCompListJSON, "kind", "s2iComponents.0.metadata.name", "s2iComponents.0.metadata.namespace")
+			valuesL := gjson.GetMany(actualCompListJSON, "kind", "devfileComponents.0.metadata.name", "devfileComponents.0.metadata.namespace")
 			expectedL := []string{"List", "nodejs", commonVar.Project}
 			Expect(helper.GjsonMatcher(valuesL, expectedL)).To(Equal(true))
 			helper.CmdShouldPass("odo", "app", "describe", "--project", commonVar.Project)
@@ -77,6 +78,7 @@ var _ = Describe("odo app command tests", func() {
 	})
 
 	Context("when running app command without app parameter in directory that doesn't contain .odo config directory", func() {
+		// Works
 		It("should fail without app parameter (except the list command)", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
