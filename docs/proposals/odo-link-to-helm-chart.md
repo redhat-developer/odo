@@ -14,38 +14,54 @@ As a developer consuming services deployed using Helm I want to be able to list 
 
 ## Design overview
 ###  Changes in `odo link` 
-To cover [User Story 1](#user-story-1) `odo link` command needs to be able to generate ServiceBinding pointing to Service that belongs to deployed Helm Chart.
+To cover [User Story 1](#user-story-1) `odo link` command needs to be able to generate ServiceBinding that can bind odo component to deployed Helm Chart.
 
 
+#### Notes/Challenges/Questions/Problems:
+- What should be target (`sepc.services`) in `ServiceBinding` CR? How can SBO detect correct binding information?
+- When I used `Deployment` or `StatefullSet` in `spec.services` SBO did not detected any binding information (`Secret` was empty). Reason for this is that the Charts that I tested this with don't specify OwnersReference.
+    - What about binding directly to a `Secret` that  is usually created by Helm?
+        - How to find correct secret?
+        - Does this mean that every "connectable" Helm Chart will require `Secret`?
+        - Does `Secret` includes hostname? - **NO**
+            - It doesn't, usually just passwords are stored  there.
+                - this is case of https://artifacthub.io/packages/helm/t3n/mysql
+                - also https://artifacthub.io/packages/helm/bitnami/mysql (https://github.com/bitnami/charts/blob/master/bitnami/mysql/templates/secrets.yaml)
+                - https://artifacthub.io/packages/helm/bitnami/mongodb (https://github.com/bitnami/charts/blob/master/bitnami/mongodb/templates/secrets.yaml)
+            - How to add user information to binding?
+            - How to add hostname and port information to binding?
 
+One approach that I tried was creating SB with all `Secrets` and `Services` that were created by given Helm Chart.
+This should theoretically be enough to provide application with hostname and  passwords.
 
 ```yaml
 apiVersion: operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
-  name: example-servicebinding
+  name: mysql-binding
   namespace: tkral-test
 spec:
+  detectBindingResources: true
   application:
     group: apps
-    name: python-mysql
-    resource: deployments
     version: v1
+    resource: deployments
+    name: python-mysql
+
   services:
-    - group: apps
-      name: my-mysql
+    - group: ""
       version: v1
-      kind: Deployments
+      kind: Service
+      name: my-mysql
+    - group: ""
+      version: v1
+      kind: Secret
+      name: my-mysql
+
 ```
 
 
-#### Challenges/Blockers:
-##### What should be target (`sepc.services`) in `ServiceBinding` CR?
-##### When I used `Deployment` in `spec.services` SBO did not detected any binding information (`Secret` was empty).
-This issue might be related to this https://github.com/redhat-developer/service-binding-operator/issues/722
-##### How to make  SBO detect correct binding information?
-
-
+**This currently doesn't work as SBO doesn't support direct binding. https://github.com/redhat-developer/service-binding-operator/issues/872#issuecomment-779363582**
 
 
 ### Changes in  `odo service`
@@ -59,10 +75,6 @@ One approach could be to list `Service`s defined in Helm charts
 ```bash
 kubectl get svc -l app.kubernetes.io/managed-by=Helm -o jsonpath="Service.name | Helm.release-name{'\n'}{range .items[*]}{.metadata.name}  |  {.metadata.annotations.meta\.helm\.sh\/release-name}{'\n'}{end}"
 ```
+If odo will use `Secrets` as a binding information for SBO, we should probably use `Secrets` instead of `Services` for listing
 
-```
-Service.name | Helm.release-name
-mongodb  |  mongodb
-my-mysql  |  my-mysql
-my-mysql-slave  |  my-mysql
-```
+
