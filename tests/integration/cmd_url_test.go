@@ -29,7 +29,8 @@ var _ = Describe("odo url command tests", func() {
 			url1 := helper.RandString(5)
 			url2 := helper.RandString(5)
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", commonVar.Context, "--project", commonVar.Project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", commonVar.Context, "--project", commonVar.Project, componentName, "--port", "8080,8000")
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			stdout = helper.CmdShouldFail("odo", "url", "list", "--context", commonVar.Context)
 			Expect(stdout).To(ContainSubstring("no URLs found"))
@@ -86,7 +87,8 @@ var _ = Describe("odo url command tests", func() {
 			helper.Chdir(commonVar.Context)
 		})
 		It("should be able to list url in machine readable json format", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--app", "myapp", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex")
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--app", "myapp", "--project", commonVar.Project)
 			helper.CmdShouldPass("odo", "url", "create", "myurl")
 			helper.CmdShouldPass("odo", "push")
 
@@ -99,7 +101,8 @@ var _ = Describe("odo url command tests", func() {
 		})
 
 		It("should be able to list url in machine readable json format for a secure url", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--app", "myapp", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex")
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--app", "myapp", "--project", commonVar.Project)
 			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure")
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
 			valuesURLLJ := gjson.GetMany(actualURLListJSON, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.port", "items.0.status.state")
@@ -122,7 +125,7 @@ var _ = Describe("odo url command tests", func() {
 			url1 := helper.RandString(5)
 			componentName := helper.RandString(6)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", commonVar.Context, "--project", commonVar.Project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", commonVar.Context, "--project", commonVar.Project, componentName, "--port", "8080,8000")
 			helper.CmdShouldPass("odo", "url", "create", url1, "--context", commonVar.Context, "--port", "8080", "--now")
 			out1 := helper.CmdShouldPass("odo", "url", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(out1, []string{url1, "Pushed", url1})

@@ -12,8 +12,8 @@ import (
 )
 
 var _ = Describe("odo generic", func() {
-	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
-	var testNodejsGitURL = "https://github.com/sclorg/nodejs-ex"
+	// var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
+	// var testNodejsGitURL = "https://github.com/sclorg/nodejs-ex"
 	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
 
 	// TODO: A neater way to provide odo path. Currently we assume \
@@ -133,14 +133,7 @@ var _ = Describe("odo generic", func() {
 		JustBeforeEach(func() {
 			helper.Chdir(commonVar.Context)
 		})
-		It("should create the component in default application", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "php", "testcmp", "--app", "e2e-xyzk", "--project", commonVar.Project, "--git", testPHPGitURL)
-			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP", "-f")
-			helper.CmdShouldPass("odo", "push")
-			oc.VerifyCmpName("testcmp", commonVar.Project)
-			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", commonVar.Project)
-			helper.CmdShouldPass("odo", "app", "delete", "e2e-xyzk", "-f")
-		})
+
 	})
 
 	Context("Overwriting build timeout for git component", func() {
@@ -148,36 +141,36 @@ var _ = Describe("odo generic", func() {
 			helper.Chdir(commonVar.Context)
 		})
 
-		It("should pass to build component if the given build timeout is more than the default(300s) value", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL)
-			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "600")
-			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
-			helper.MatchAllInOutput(buildTimeout, []string{"600"})
-			helper.CmdShouldPass("odo", "push")
-		})
+		// It("should pass to build component if the given build timeout is more than the default(300s) value", func() {
+		// 	helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL)
+		// 	helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "600")
+		// 	buildTimeout := helper.GetPreferenceValue("BuildTimeout")
+		// 	helper.MatchAllInOutput(buildTimeout, []string{"600"})
+		// 	helper.CmdShouldPass("odo", "push")
+		// })
 
-		It("should fail to build component if the given build timeout is pretty less(2s)", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL)
-			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "2")
-			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
-			helper.MatchAllInOutput(buildTimeout, []string{"2"})
-			stdOut := helper.CmdShouldFail("odo", "push")
-			helper.MatchAllInOutput(stdOut, []string{"Failed to create component", "timeout waiting for build"})
-		})
+		// It("should fail to build component if the given build timeout is pretty less(2s)", func() {
+		// 	helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL)
+		// 	helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "2")
+		// 	buildTimeout := helper.GetPreferenceValue("BuildTimeout")
+		// 	helper.MatchAllInOutput(buildTimeout, []string{"2"})
+		// 	stdOut := helper.CmdShouldFail("odo", "push")
+		// 	helper.MatchAllInOutput(stdOut, []string{"Failed to create component", "timeout waiting for build"})
+		// })
 	})
 
-	Context("should list applications in other project", func() {
-		It("should be able to create a php component with application created", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "php", "testcmp", "--app", "testing", "--project", commonVar.Project, "--ref", "master", "--git", testPHPGitURL, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			currentProject := helper.CreateRandProject()
-			currentAppNames := helper.CmdShouldPass("odo", "app", "list", "--project", currentProject)
-			Expect(currentAppNames).To(ContainSubstring("There are no applications deployed in the project '" + currentProject + "'"))
-			appNames := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
-			Expect(appNames).To(ContainSubstring("testing"))
-			helper.DeleteProject(currentProject)
-		})
-	})
+	// Context("should list applications in other project", func() {
+	// It("should be able to create a php component with application created", func() {
+	// 	helper.CmdShouldPass("odo", "create", "--s2i", "php", "testcmp", "--app", "testing", "--project", commonVar.Project, "--ref", "master", "--git", testPHPGitURL, "--context", commonVar.Context)
+	// 	helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+	// 	currentProject := helper.CreateRandProject()
+	// 	currentAppNames := helper.CmdShouldPass("odo", "app", "list", "--project", currentProject)
+	// 	Expect(currentAppNames).To(ContainSubstring("There are no applications deployed in the project '" + currentProject + "'"))
+	// 	appNames := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
+	// 	Expect(appNames).To(ContainSubstring("testing"))
+	// 	helper.DeleteProject(currentProject)
+	// })
+	// })
 
 	Context("when running odo push with flag --show-log", func() {
 		It("should be able to push changes", func() {
@@ -186,7 +179,7 @@ var _ = Describe("odo generic", func() {
 
 			// Push the changes with --show-log
 			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context)
-			Expect(getLogging).To(ContainSubstring("Building component"))
+			Expect(getLogging).To(ContainSubstring("Creating Kubernetes resources for component"))
 		})
 	})
 

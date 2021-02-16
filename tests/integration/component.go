@@ -52,7 +52,9 @@ func componentTests(args ...string) {
 		})
 
 		It("should create but not list component even in new project with --project and --context at the same time", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
@@ -64,7 +66,9 @@ func componentTests(args ...string) {
 
 		It("Without an application should create one", func() {
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")...)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", componentName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", "app")...)
+
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "app")
 			Expect(info.GetName(), componentName)
@@ -178,7 +182,8 @@ func componentTests(args ...string) {
 		})
 
 		It("should list the component", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")...)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
@@ -197,7 +202,9 @@ func componentTests(args ...string) {
 		})
 
 		It("should list the component when it is not pushed", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")...)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
@@ -206,7 +213,8 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
 		})
 		It("should list the state as unknown for disconnected cluster", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")...)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
@@ -234,7 +242,8 @@ func componentTests(args ...string) {
 		})
 
 		It("should describe the component when it is not pushed", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")...)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "url", "create", "url-1", "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "url", "create", "url-2", "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
@@ -300,15 +309,19 @@ func componentTests(args ...string) {
 
 		It("should list the component in the same app when one is pushed and the other one is not pushed", func() {
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")...)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
 			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
 
 			context2 := helper.CreateNewContext()
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git-2", "--project", commonVar.Project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context2, "--app", "testing")...)
-			helper.ValidateLocalCmpExist(context2, "Type,nodejs", "Name,cmp-git-2", "Application,testing")
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git-2", "--project", commonVar.Project, "--context", context2, "--app", "testing")...)
+			info = helper.LocalEnvInfo(context2)
+			Expect(info.GetApplication(), "testing")
+			Expect(info.GetName(), "cmp-git-2")
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context2)...)
 			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "cmp-git-2", "Not Pushed", "Pushed"})
 
