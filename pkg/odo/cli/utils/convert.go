@@ -19,23 +19,6 @@ import (
 
 const (
 	convertCommandName = "convert-to-devfile"
-	//build command id to be used in s2i devfile
-	buildCommandID = "s2i-assemble"
-	// build command to be used in s2i devfile
-	buildCommandS2i = "/opt/odo/bin/s2i-setup && /opt/odo/bin/assemble-and-restart"
-	// run command id to be used in devfile
-	runCommandID = "s2i-run"
-	// run command to be used in s2i devfile
-	runCommandS2i = "/opt/odo/bin/run"
-	// container component name to be used in devfile
-	containerName = "s2i-builder"
-	// directory to sync s2i source code
-	sourceMappingS2i = "/tmp/projects"
-	// devfile version
-	devfileVersion = "2.0.0"
-	// environment variable set for s2i assemble and restart scripts
-	// some change in script if scripts is executed for a s2i component converted to devfile
-	envS2iConvertedDevfile = "ODO_S2I_CONVERTED_DEVFILE"
 )
 
 var convertLongDesc = ktemplates.LongDesc(`Converts odo specific configuration from s2i to devfile. 

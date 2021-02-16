@@ -18,8 +18,6 @@ import (
 )
 
 const (
-	convertCommandName = "convert-to-devfile"
-	//build command id to be used in s2i devfile
 	buildCommandID = "s2i-assemble"
 	// build command to be used in s2i devfile
 	buildCommandS2i = "/opt/odo/bin/s2i-setup && /opt/odo/bin/assemble-and-restart"
