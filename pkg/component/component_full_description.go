@@ -67,7 +67,10 @@ func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client
 		}
 	} else {
 		// otherwise simply fetch storagelist locally
-		storageLocal := configProvider.ListStorage()
+		storageLocal, err := configProvider.ListStorage()
+		if err != nil {
+			return err
+		}
 		// convert to machine readable format
 		storages = storage.ConvertListLocalToMachine(storageLocal)
 	}

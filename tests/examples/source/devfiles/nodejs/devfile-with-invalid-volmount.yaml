@@ -11,7 +11,7 @@ components:
     container:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       endpoints:
-        - name: "3000/tcp"
+        - name: "3000-tcp"
           targetPort: 3000
       mountSources: true
       volumeMounts:

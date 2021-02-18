@@ -1,8 +1,9 @@
 package component
 
 import (
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 )
@@ -46,10 +47,12 @@ func decideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 	}
 
 	// Retrieve starter projects
-	starterProjects := devObj.Data.GetStarterProjects()
+	starterProjects, err := devObj.Data.GetStarterProjects(parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 
 	var starterProject *devfilev1.StarterProject
-	var err error
 	if interactive {
 		starterProject = getStarterProjectInteractiveMode(starterProjects)
 	} else {

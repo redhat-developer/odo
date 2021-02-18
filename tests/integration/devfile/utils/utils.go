@@ -202,7 +202,7 @@ func ExecPushToTestParent(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	args = append(args, "--build-command", "devBuild", "-f")
+	args = append(args, "--build-command", "devbuild", "-f")
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{"Executing devbuild command", "touch blah.js"})
 }

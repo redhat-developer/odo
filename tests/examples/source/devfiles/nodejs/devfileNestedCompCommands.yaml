@@ -45,13 +45,13 @@ commands:
     composite:
          label: Build and Echo
          commands:
-           - buildAndMkdir
+           - buildandmkdir
            - install
          parallel: true
          group: 
             kind: build
             isDefault: true
-  - id: buildAndMkdir
+  - id: buildandmkdir
     composite:
          label: Build and Mkdir
          commands:

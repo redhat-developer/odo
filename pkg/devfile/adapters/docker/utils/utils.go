@@ -10,8 +10,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/util"
@@ -37,7 +38,10 @@ func ComponentExists(client lclient.Client, data data.DevfileData, name string) 
 		return false, errors.Wrapf(err, "unable to get the containers for component %s", name)
 	}
 
-	containerComponents := data.GetDevfileContainerComponents()
+	containerComponents, err := data.GetDevfileContainerComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return false, err
+	}
 
 	var componentExists bool
 	if len(containers) == 0 {

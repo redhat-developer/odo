@@ -1,12 +1,14 @@
 package generic
 
 import (
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"strings"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/devfile/library/pkg/testingutil"
 )
 
 func TestIsEventValid(t *testing.T) {
@@ -114,9 +116,14 @@ func TestIsEventValid(t *testing.T) {
 				},
 			}
 
-			commands := devObj.Data.GetCommands()
+			commands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
 
-			err := isEventValid(tt.eventNames, tt.eventType, commands)
+			commandMap := common.GetCommandsMap(commands)
+
+			err = isEventValid(tt.eventNames, tt.eventType, commandMap)
 			if err != nil && !tt.wantErr {
 				t.Errorf("TestIsEventValid error: %v", err)
 			} else if err != nil && tt.wantErr {

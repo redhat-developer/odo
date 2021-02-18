@@ -12,7 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
@@ -30,7 +31,10 @@ func (a Adapter) createComponent() (err error) {
 
 	log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 
-	containerComponents := a.Devfile.Data.GetDevfileContainerComponents()
+	containerComponents, err := a.Devfile.Data.GetDevfileContainerComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 	if len(containerComponents) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
@@ -73,7 +77,10 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
 	err = stoAdapter.Create(a.uniqueStorage)
 
-	containerComponents := a.Devfile.Data.GetDevfileContainerComponents()
+	containerComponents, err := a.Devfile.Data.GetDevfileContainerComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return false, err
+	}
 	if len(containerComponents) == 0 {
 		return componentExists, fmt.Errorf("no valid components found in the devfile")
 	}
@@ -283,7 +290,10 @@ func getPortMap(context string, endpoints []devfilev1.Endpoint, show bool) (nat.
 		return nil, nil, err
 	}
 
-	urlArr := envInfo.ListURLs()
+	urlArr, err := envInfo.ListURLs()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	for _, url := range urlArr {
 		if url.ExposedPort > 0 && common.IsPortPresent(endpoints, url.Port) {

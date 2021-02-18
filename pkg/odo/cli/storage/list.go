@@ -76,7 +76,11 @@ func (o *ListOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(storageList)
 	} else {
-		if !o.Context.LocalConfigInfo.Exists() && isContainerDisplay(storageList, o.Context.LocalConfigProvider.GetContainers()) {
+		localContaieners, err := o.Context.LocalConfigProvider.GetContainers()
+		if err != nil {
+			return err
+		}
+		if !o.Context.LocalConfigInfo.Exists() && isContainerDisplay(storageList, localContaieners) {
 			printStorageWithContainer(storageList, o.Context.LocalConfigProvider.GetName())
 		} else {
 			printStorage(storageList, o.Context.LocalConfigProvider.GetName())

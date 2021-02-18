@@ -2,12 +2,13 @@ package describe
 
 import (
 	"fmt"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"os"
 	"text/tabwriter"
 
 	"github.com/devfile/library/pkg/devfile"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/devfile/validate"
@@ -128,7 +129,10 @@ func (o *DescribeComponentOptions) Run() (err error) {
 					return err
 				}
 
-				projects := devObj.Data.GetStarterProjects()
+				projects, err := devObj.Data.GetStarterProjects(parsercommon.DevfileOptions{})
+				if err != nil {
+					return err
+				}
 				// only print project info if there is at least one project in the devfile
 				err = o.PrintDevfileStarterProjects(w, projects, devObj)
 				if err != nil {

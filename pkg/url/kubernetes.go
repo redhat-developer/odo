@@ -69,7 +69,10 @@ func (k kubernetesClient) List() (URLList, error) {
 	localMap := make(map[string]URL)
 	if k.localConfig != nil {
 		// get the URLs present on the localConfigProvider
-		localURLS := k.localConfig.ListURLs()
+		localURLS, err := k.localConfig.ListURLs()
+		if err != nil {
+			return URLList{}, err
+		}
 		for _, url := range localURLS {
 			if !k.isRouteSupported && url.Kind == localConfigProvider.ROUTE {
 				continue

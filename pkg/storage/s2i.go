@@ -103,7 +103,10 @@ func (s s2iClient) ListFromCluster() (StorageList, error) {
 // List lists pvc based Storage and local Storage with respective states for s2i components
 func (s s2iClient) List() (StorageList, error) {
 
-	storageConfig := s.localConfig.ListStorage()
+	storageConfig, err := s.localConfig.ListStorage()
+	if err != nil {
+		return StorageList{}, err
+	}
 
 	storageListConfig := ConvertListLocalToMachine(storageConfig)
 

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Client returns an oc client configured for this command's options
+// Client returns an oc client "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"d for this command's options
 func Client(command *cobra.Command) *occlient.Client {
 	return client(command)
 }

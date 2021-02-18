@@ -61,7 +61,10 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	url := o.Context.LocalConfigProvider.GetURL(o.urlName)
+	url, err := o.Context.LocalConfigProvider.GetURL(o.urlName)
+	if err != nil {
+		return err
+	}
 	if url == nil {
 		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.LocalConfigProvider.GetName())
 	}

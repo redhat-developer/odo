@@ -937,7 +937,10 @@ func (co *CreateOptions) Run() (err error) {
 			}
 		}
 
-		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
+		componentDesc.Spec.Ports, err = co.LocalConfigInfo.GetPorts()
+		if err != nil {
+			return err
+		}
 		machineoutput.OutputSuccess(componentDesc)
 	}
 	return

@@ -6,9 +6,8 @@ import (
 
 	"k8s.io/klog"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/envinfo"
 )
@@ -121,23 +120,28 @@ func GetBootstrapperImage() string {
 }
 
 // getCommandsByGroup gets commands by the group kind
-func getCommandsByGroup(data data.DevfileData, groupType devfilev1.CommandGroupKind) []devfilev1.Command {
-	var commands []devfilev1.Command
-
-	for _, command := range data.GetCommands() {
+func getCommandsByGroup(commands []devfilev1.Command, groupType devfilev1.CommandGroupKind) []devfilev1.Command {
+	var filteredCommands []devfilev1.Command
+	for _, command := range commands {
 		commandGroup := parsercommon.GetGroup(command)
 		if commandGroup != nil && commandGroup.Kind == groupType {
-			commands = append(commands, command)
+			filteredCommands = append(filteredCommands, command)
 		}
 	}
 
-	return commands
+	return filteredCommands
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
-func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
-	containerComponents := devfileObj.Data.GetDevfileContainerComponents()
-	volumeComponents := devfileObj.Data.GetDevfileVolumeComponents()
+func GetVolumes(devfileObj devfileParser.DevfileObj) (map[string][]DevfileVolume, error) {
+	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return nil, err
+	}
+	volumeComponents, err := devfileObj.Data.GetDevfileVolumeComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return nil, err
+	}
 
 	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
 	containerNameToVolumes := make(map[string][]DevfileVolume)
@@ -161,7 +165,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)
 		}
 	}
-	return containerNameToVolumes
+	return containerNameToVolumes, nil
 }
 
 // IsRestartRequired checks if restart required for run command
@@ -226,4 +230,14 @@ func GetCommandsFromEvent(commandsMap map[string]devfilev1.Command, eventName st
 	}
 
 	return commands
+}
+
+// GetCommandsMap returns a map of the command Id to the command
+func GetCommandsMap(commands []devfilev1.Command) map[string]devfilev1.Command {
+	commandMap := make(map[string]devfilev1.Command, len(commands))
+	for _, command := range commands {
+		command.Id = strings.ToLower(command.Id)
+		commandMap[command.Id] = command
+	}
+	return commandMap
 }

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"

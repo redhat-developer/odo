@@ -5,7 +5,7 @@ metadata:
 parent:
   uri: https://raw.githubusercontent.com/openshift/odo/master/tests/examples/source/devfiles/nodejs/devfileCompositeCommands.yaml
   commands:
-  - id: buildAndMkdir
+  - id: buildandmkdir
     composite:
          label: Build and Mkdir
          commands:

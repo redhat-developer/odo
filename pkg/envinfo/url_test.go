@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/testingutil"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/testingutil"
+	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 )
 
 func TestEnvInfo_CompleteURL(t *testing.T) {
@@ -31,7 +32,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 1: remove \\ from a path with length > 0 and complete the container with the first component container",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -50,7 +51,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 2: remove \\ from the path",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -69,7 +70,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 3: use the given path",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -88,7 +89,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 4: complete the path when none is provided",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -106,7 +107,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 5: complete the port when -1 is provided",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -127,7 +128,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 6: complete the container based on the matching port in the devfile",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -146,7 +147,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 7: do not change the container name given",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -186,7 +187,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		{
 			name: "case 9: complete the url name if not provided",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 				componentSettings: ComponentSettings{
 					Name: "nodejs",
 				},
@@ -251,7 +252,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 1: container not found",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -264,7 +265,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 2: port occupied by another container",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -279,7 +280,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 3: tls secret used for non secure url",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -292,7 +293,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 4: tls secret used for secure non ingress url",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -307,7 +308,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 5: host used for Route based URL",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -321,7 +322,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 6: host not provided for ingress URL",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -334,7 +335,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 7: protocol not supported",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -347,7 +348,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 8: url already exists",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{
 						{
@@ -366,7 +367,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 9: url already exists in a devfile endpoint",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{},
 				},
@@ -395,7 +396,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 11: host is not valid",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -409,7 +410,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		{
 			name: "case 12: no error in the url",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			args: args{
 				url: localConfigProvider.LocalURL{
@@ -444,21 +445,22 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 		componentSettings ComponentSettings
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   []string
+		name    string
+		fields  fields
+		want    []string
+		wantErr bool
 	}{
 		{
 			name: "case 1: multiple ports from multiple containers",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
 			},
 			want: []string{"3000", "3030", "8080"},
 		},
 		{
 			name: "case 2: single port from a container",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			want: []string{"3000"},
 		},
@@ -470,8 +472,10 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 				componentSettings: tt.fields.componentSettings,
 			}
 
-			got := ei.GetPorts()
-
+			got, err := ei.GetPorts()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetPorts() error = %v, wantErr %v", err, tt.wantErr)
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetPorts() = %v, want %v", got, tt.want)
 			}
@@ -487,14 +491,15 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 		componentSettings ComponentSettings
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   []localConfigProvider.LocalURL
+		name    string
+		fields  fields
+		want    []localConfigProvider.LocalURL
+		wantErr bool
 	}{
 		{
 			name: "case 1: url present in devfile.yaml and env.yaml",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{
 						{
@@ -539,7 +544,7 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 		{
 			name: "case 2: ignore URLs with none and internal endpoint",
 			fields: fields{
-				devfileObj: testingutil.DevfileObjWithInternalNoneEndpoints(fs),
+				devfileObj: odoTestingUtil.DevfileObjWithInternalNoneEndpoints(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{
 						{
@@ -562,7 +567,7 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 		{
 			name: "case 3: secure urls present in devfile.yaml with various protocols",
 			fields: fields{
-				devfileObj: testingutil.DevfileObjWithSecureEndpoints(fs),
+				devfileObj: odoTestingUtil.DevfileObjWithSecureEndpoints(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{
 						{
@@ -610,7 +615,7 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 		{
 			name: "case 4: get the host, tlsSecret and kind from the env.yaml",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{
 						{
@@ -637,7 +642,7 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 		{
 			name: "case 5: ignore the url present in the devfile.yaml but not in env.yaml",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{
 						{
@@ -669,7 +674,7 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 		{
 			name: "case 6: mark urls as route when present in devfile.yaml but not in env.yaml",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObj(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{},
 				},
@@ -687,7 +692,7 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 		{
 			name: "case 7: use the path defined in the devfile.yaml",
 			fields: fields{
-				devfileObj: testingutil.GetTestDevfileObjWithPath(fs),
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithPath(fs),
 				componentSettings: ComponentSettings{
 					URL: &[]localConfigProvider.LocalURL{
 						{
@@ -714,7 +719,13 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 				devfileObj:        tt.fields.devfileObj,
 				componentSettings: tt.fields.componentSettings,
 			}
-			if got := ei.ListURLs(); !reflect.DeepEqual(got, tt.want) {
+
+			got, err := ei.ListURLs()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListURLs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListURLs() error: %v", pretty.Compare(got, tt.want))
 			}
 		})

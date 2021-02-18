@@ -267,14 +267,19 @@ func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
 }
 
 // GetPreStartInitContainers gets the init container for every preStart devfile event
-func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []corev1.Container) []corev1.Container {
+func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []corev1.Container) ([]corev1.Container, error) {
 
 	// if there are preStart events, add them as init containers to the podTemplateSpec
 	preStartEvents := devfile.Data.GetEvents().PreStart
 	var initContainers []corev1.Container
 	if len(preStartEvents) > 0 {
 		var eventCommands []string
-		commandsMap := devfile.Data.GetCommands()
+		commands, err := devfile.Data.GetCommands(parsercommon.DevfileOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		commandsMap := adaptersCommon.GetCommandsMap(commands)
 
 		for _, event := range preStartEvents {
 			eventSubCommands := adaptersCommon.GetCommandsFromEvent(commandsMap, strings.ToLower(event))
@@ -326,5 +331,5 @@ func GetPreStartInitContainers(devfile devfileParser.DevfileObj, containers []co
 		}
 	}
 
-	return initContainers
+	return initContainers, nil
 }

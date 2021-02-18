@@ -43,6 +43,7 @@ func TestGetComponentFrom(t *testing.T) {
 		envURL        []localConfigProvider.LocalURL
 		cmpSetting    cmpSetting
 		want          Component
+		wantErr       bool
 	}{
 		{
 			name:          "Case 1: Get component when env info file exists",
@@ -120,7 +121,7 @@ func TestGetComponentFrom(t *testing.T) {
 					Ports: []string{fmt.Sprintf("%d", tt.cmpSetting.debugPort)},
 				}
 
-				mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.envURL)
+				mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.envURL, nil)
 
 				if len(tt.envURL) > 0 {
 					for _, url := range tt.envURL {
@@ -132,7 +133,10 @@ func TestGetComponentFrom(t *testing.T) {
 
 			}
 
-			got := getComponentFrom(mockLocalConfigProvider, tt.componentType)
+			got, err := getComponentFrom(mockLocalConfigProvider, tt.componentType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getComponentFrom() error = %v, wantErr %v", err, tt.wantErr)
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getComponentFrom() = %v, want %v", got, tt.want)
 			}
@@ -848,8 +852,32 @@ func TestGetComponentFromConfig(t *testing.T) {
 	os.Setenv("LOCALODOCONFIG", tempConfigFile.Name())
 
 	localExistingConfigInfoValue := config.GetOneExistingConfigInfo("comp", "app", "project")
+	localExistingConfigInfoUrls, err := localExistingConfigInfoValue.LocalConfig.ListURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	localExistingConfigInfoStorage, err := localExistingConfigInfoValue.ListStorage()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	localExistingConfigInfoPorts, err := localExistingConfigInfoValue.GetPorts()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 	localNonExistingConfigInfoValue := config.GetOneNonExistingConfigInfo()
 	gitExistingConfigInfoValue := config.GetOneGitExistingConfigInfo("comp", "app", "project")
+	gitExistingConfigInfoUrls, err := gitExistingConfigInfoValue.LocalConfig.ListURLs()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	gitExistingConfigInfoStorage, err := gitExistingConfigInfoValue.ListStorage()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	gitExistingConfigInfoPorts, err := gitExistingConfigInfoValue.GetPorts()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	tests := []struct {
 		name           string
@@ -867,10 +895,10 @@ func TestGetComponentFromConfig(t *testing.T) {
 					Type:   localExistingConfigInfoValue.GetType(),
 					Source: localExistingConfigInfoValue.GetSourceLocation(),
 					URL: []string{
-						localExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, localExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
+						localExistingConfigInfoUrls[0].Name, localExistingConfigInfoUrls[1].Name,
 					},
 					Storage: []string{
-						localExistingConfigInfoValue.ListStorage()[0].Name, localExistingConfigInfoValue.ListStorage()[1].Name,
+						localExistingConfigInfoStorage[0].Name, localExistingConfigInfoStorage[1].Name,
 					},
 					Env: []corev1.EnvVar{
 						{
@@ -883,7 +911,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 						},
 					},
 					SourceType: "local",
-					Ports:      localExistingConfigInfoValue.LocalConfig.GetPorts(),
+					Ports:      localExistingConfigInfoPorts,
 				},
 			},
 		},
@@ -903,10 +931,10 @@ func TestGetComponentFromConfig(t *testing.T) {
 					Type:   gitExistingConfigInfoValue.GetType(),
 					Source: gitExistingConfigInfoValue.GetSourceLocation(),
 					URL: []string{
-						gitExistingConfigInfoValue.LocalConfig.ListURLs()[0].Name, gitExistingConfigInfoValue.LocalConfig.ListURLs()[1].Name,
+						gitExistingConfigInfoUrls[0].Name, gitExistingConfigInfoUrls[1].Name,
 					},
 					Storage: []string{
-						gitExistingConfigInfoValue.ListStorage()[0].Name, localExistingConfigInfoValue.ListStorage()[1].Name,
+						gitExistingConfigInfoStorage[0].Name, gitExistingConfigInfoStorage[1].Name,
 					},
 					Env: []corev1.EnvVar{
 						{
@@ -919,7 +947,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 						},
 					},
 					SourceType: "git",
-					Ports:      gitExistingConfigInfoValue.LocalConfig.GetPorts(),
+					Ports:      gitExistingConfigInfoPorts,
 				},
 			},
 		},

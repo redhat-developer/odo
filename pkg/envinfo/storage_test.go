@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/testingutil"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/testingutil"
 )
 
 func TestGetVolumeMountPath(t *testing.T) {
@@ -115,9 +115,10 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 		devfileObj parser.DevfileObj
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   []localConfigProvider.LocalStorage
+		name    string
+		fields  fields
+		want    []localConfigProvider.LocalStorage
+		wantErr bool
 	}{
 		{
 			name: "case 1: list all the volumes in the devfile along with their respective size and containers",
@@ -294,7 +295,11 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			ei := &EnvInfo{
 				devfileObj: tt.fields.devfileObj,
 			}
-			if got := ei.ListStorage(); !reflect.DeepEqual(got, tt.want) {
+			got, err := ei.ListStorage()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListStorage() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListStorage() = %v, want %v", got, tt.want)
 			}
 		})
@@ -413,10 +418,11 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 		name string
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *localConfigProvider.LocalStorage
+		name    string
+		fields  fields
+		args    args
+		want    *localConfigProvider.LocalStorage
+		wantErr bool
 	}{
 		{
 			name: "case 1: storage with the given name doesn't exist",
@@ -503,7 +509,12 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			ei := &EnvInfo{
 				devfileObj: tt.fields.devfileObj,
 			}
-			if got := ei.GetStorage(tt.args.name); !reflect.DeepEqual(got, tt.want) {
+
+			got, err := ei.GetStorage(tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetStorage() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetStorage() = %v, want %v", got, tt.want)
 			}
 		})

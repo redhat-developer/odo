@@ -13,7 +13,7 @@ parent:
           - name: ODO_TEST_ENV_3
             value: ENV_VALUE_3
   commands:
-    - id: devBuild
+    - id: devbuild
       exec:
         commandLine: touch blah.js
 commands:

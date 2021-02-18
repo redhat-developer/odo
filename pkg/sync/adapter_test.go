@@ -8,13 +8,13 @@ import (
 	"reflect"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/testingutil"
 	"github.com/golang/mock/gomock"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/sync/mock"
-	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 )

@@ -57,22 +57,22 @@ type LocalConfigProvider interface {
 	GetName() string
 	GetNamespace() string
 	GetDebugPort() int
-	GetContainers() []LocalContainer
+	GetContainers() ([]LocalContainer, error)
 
-	GetURL(name string) *LocalURL
+	GetURL(name string) (*LocalURL, error)
 	CompleteURL(url *LocalURL) error
 	ValidateURL(url LocalURL) error
 	CreateURL(url LocalURL) error
 	DeleteURL(name string) error
-	GetPorts() []string
-	ListURLs() []LocalURL
+	GetPorts() ([]string, error)
+	ListURLs() ([]LocalURL, error)
 
-	GetStorage(name string) *LocalStorage
+	GetStorage(name string) (*LocalStorage, error)
 	CompleteStorage(storage *LocalStorage)
 	ValidateStorage(storage LocalStorage) error
 	CreateStorage(storage LocalStorage) error
 	DeleteStorage(name string) error
-	ListStorage() []LocalStorage
+	ListStorage() ([]LocalStorage, error)
 	GetStorageMountPath(storageName string) (string, error)
 
 	Exists() bool

@@ -128,7 +128,7 @@ func Test_s2iClient_List(t *testing.T) {
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 			mockLocalConfig.EXPECT().GetName().Return(componentName).AnyTimes()
 			mockLocalConfig.EXPECT().GetApplication().Return(appName).AnyTimes()
-			mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage)
+			mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage, nil)
 
 			tt.fields.generic.localConfig = mockLocalConfig
 			s := s2iClient{

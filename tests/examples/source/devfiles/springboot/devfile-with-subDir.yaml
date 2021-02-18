@@ -24,7 +24,7 @@ components:
       image: quay.io/eclipse/che-java11-maven:nightly
       memoryLimit: 768Mi
       endpoints:
-        - name: "8080/tcp"
+        - name: "8080-tcp"
           targetPort: 8080
       volumeMounts:
         - name: springbootpvc

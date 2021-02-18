@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
@@ -89,7 +89,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Process the volumes defined in the devfile
-	a.containerNameToVolumes = common.GetVolumes(a.Devfile)
+	a.containerNameToVolumes, err = common.GetVolumes(a.Devfile)
+	if err != nil {
+		return err
+	}
 	a.uniqueStorage, a.volumeNameToDockerVolName, err = storage.ProcessVolumes(&a.Client, a.ComponentName, a.containerNameToVolumes)
 	if err != nil {
 		return errors.Wrapf(err, "unable to process volumes for component %s", a.ComponentName)

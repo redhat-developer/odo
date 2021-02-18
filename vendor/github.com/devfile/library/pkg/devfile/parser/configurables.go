@@ -5,7 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	v1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -27,7 +28,10 @@ func (d DevfileObj) SetMetadataName(name string) error {
 
 // AddEnvVars adds environment variables to all the components in a devfile
 func (d DevfileObj) AddEnvVars(otherList []v1.EnvVar) error {
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 	for _, component := range components {
 		if component.Container != nil {
 			component.Container.Env = Merge(component.Container.Env, otherList)
@@ -39,7 +43,10 @@ func (d DevfileObj) AddEnvVars(otherList []v1.EnvVar) error {
 
 // RemoveEnvVars removes the environment variables which have the keys from all the components in a devfile
 func (d DevfileObj) RemoveEnvVars(keys []string) (err error) {
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 	for _, component := range components {
 		if component.Container != nil {
 			component.Container.Env, err = RemoveEnvVarsFromList(component.Container.Env, keys)
@@ -54,7 +61,10 @@ func (d DevfileObj) RemoveEnvVars(keys []string) (err error) {
 
 // SetPorts converts ports to endpoints, adds to a devfile
 func (d DevfileObj) SetPorts(ports ...string) error {
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 	endpoints, err := portsToEndpoints(ports...)
 	if err != nil {
 		return err
@@ -70,7 +80,10 @@ func (d DevfileObj) SetPorts(ports ...string) error {
 
 // RemovePorts removes all container endpoints from a devfile
 func (d DevfileObj) RemovePorts() error {
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 	for _, component := range components {
 		if component.Container != nil {
 			component.Container.Endpoints = []v1.Endpoint{}
@@ -82,7 +95,10 @@ func (d DevfileObj) RemovePorts() error {
 
 // HasPorts checks if a devfile contains container endpoints
 func (d DevfileObj) HasPorts() bool {
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return false
+	}
 	for _, component := range components {
 		if component.Container != nil {
 			if len(component.Container.Endpoints) > 0 {
@@ -95,7 +111,10 @@ func (d DevfileObj) HasPorts() bool {
 
 // SetMemory sets memoryLimit in devfile container
 func (d DevfileObj) SetMemory(memory string) error {
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 	for _, component := range components {
 		if component.Container != nil {
 			component.Container.MemoryLimit = memory
@@ -107,7 +126,10 @@ func (d DevfileObj) SetMemory(memory string) error {
 
 // GetMemory gets memoryLimit from devfile container
 func (d DevfileObj) GetMemory() string {
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return ""
+	}
 	for _, component := range components {
 		if component.Container != nil {
 			if component.Container.MemoryLimit != "" {

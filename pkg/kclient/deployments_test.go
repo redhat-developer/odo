@@ -3,10 +3,12 @@ package kclient
 import (
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/testingutil"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/pkg/testingutil"
+	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/pkg/errors"
@@ -31,7 +33,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		},
 	}
 
-	containers, err := generator.GetContainers(devObj)
+	containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -153,10 +155,10 @@ func TestGetDeploymentByName(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "mydeploy2" {
-					emptyDeployment := testingutil.CreateFakeDeployment("")
+					emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
 					return true, emptyDeployment, nil
 				} else if tt.deploymentName == "mydeploy1" {
-					deployment := testingutil.CreateFakeDeployment(tt.deploymentName)
+					deployment := odoTestingUtil.CreateFakeDeployment(tt.deploymentName)
 					return true, deployment, nil
 				} else {
 					return true, nil, errors.Errorf("deployment get error")
@@ -190,7 +192,7 @@ func TestUpdateDeployment(t *testing.T) {
 		},
 	}
 
-	containers, err := generator.GetContainers(devObj)
+	containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
 	if err != nil {
 		t.Errorf("generator.GetContainers unexpected error %v", err)
 	}

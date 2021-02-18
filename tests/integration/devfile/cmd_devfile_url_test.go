@@ -87,7 +87,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			// remove the endpoint came with the devfile
 			// need to create an ingress to be more general for openshift/non-openshift cluster to run
-			helper.CmdShouldPass("odo", "url", "delete", "3000/tcp", "-f")
+			helper.CmdShouldPass("odo", "url", "delete", "3000-tcp", "-f")
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 
@@ -212,8 +212,8 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			stdOut := helper.CmdShouldFail("odo", "url", "create", "3000/tcp", "--host", "com", "--port", "3000", "--ingress")
-			Expect(stdOut).To(ContainSubstring("url 3000/tcp already exist in devfile endpoint entry"))
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress")
+			Expect(stdOut).To(ContainSubstring("url 3000-tcp already exist in devfile endpoint entry"))
 		})
 
 		It("should create URL with path defined in Endpoint", func() {

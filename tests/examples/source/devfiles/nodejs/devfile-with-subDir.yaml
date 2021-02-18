@@ -11,7 +11,7 @@ components:
   - type: dockerimage
     image: registry.access.redhat.com/ubi8/nodejs-12:1-36
     endpoints:
-      - name: "3000/tcp"
+      - name: "3000-tcp"
         port: 3000
     alias: runtime
     env:

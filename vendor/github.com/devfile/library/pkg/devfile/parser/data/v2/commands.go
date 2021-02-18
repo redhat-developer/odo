@@ -3,34 +3,47 @@ package v2
 import (
 	"strings"
 
-	v1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
 // GetCommands returns the slice of Command objects parsed from the Devfile
-func (d *DevfileV2) GetCommands() map[string]v1.Command {
-
-	commands := make(map[string]v1.Command, len(d.Commands))
-
-	for _, command := range d.Commands {
-		command.Id = strings.ToLower(command.Id)
-		commands[command.Id] = command
+func (d *DevfileV2) GetCommands(options common.DevfileOptions) ([]v1.Command, error) {
+	if len(options.Filter) == 0 {
+		return d.Commands, nil
 	}
 
-	return commands
+	var commands []v1.Command
+	for _, command := range d.Commands {
+		filterIn, err := common.FilterDevfileObject(command.Attributes, options)
+		if err != nil {
+			return nil, err
+		}
+
+		if filterIn {
+			command.Id = strings.ToLower(command.Id)
+			commands = append(commands, command)
+		}
+	}
+
+	return commands, nil
 }
 
 // AddCommands adds the slice of Command objects to the Devfile's commands
 // if a command is already defined, error out
 func (d *DevfileV2) AddCommands(commands ...v1.Command) error {
-	commandsMap := d.GetCommands()
+	devfileCommands, err := d.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 
 	for _, command := range commands {
-		if _, ok := commandsMap[command.Id]; !ok {
-			d.Commands = append(d.Commands, command)
-		} else {
-			return &common.FieldAlreadyExistError{Name: command.Id, Field: "command"}
+		for _, devfileCommand := range devfileCommands {
+			if command.Id == devfileCommand.Id {
+				return &common.FieldAlreadyExistError{Name: command.Id, Field: "command"}
+			}
 		}
+		d.Commands = append(d.Commands, command)
 	}
 	return nil
 }

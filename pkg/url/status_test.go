@@ -161,7 +161,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 			mockLocalConfig.EXPECT().GetName().Return(componentName).AnyTimes()
 			mockLocalConfig.EXPECT().GetApplication().Return("")
-			mockLocalConfig.EXPECT().ListURLs().Return(tt.envURLs)
+			mockLocalConfig.EXPECT().ListURLs().Return(tt.envURLs, nil)
 
 			// Initialising the fakeclient
 			fkclient, fkclientset := kclient.FakeNew()

@@ -31,23 +31,23 @@ commands:
       group:
         kind: run
         isDefault: true
-  - id: buildAndEcho
+  - id: buildandecho
     composite:
          label: Build and Echo
          commands:
            - echo1
            - install
-           - NestedCommand
+           - nestedcommand
            - echo3
          parallel: false
          group:
            kind: build
            isDefault: true
-  - id: NestedCommand
+  - id: nestedcommand
     composite:
          label: Build and Echo
          commands:
-           - buildAndEcho
+           - buildandecho
            - install
            - echo2
            - echo3
