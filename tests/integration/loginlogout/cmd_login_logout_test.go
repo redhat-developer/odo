@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -39,6 +40,11 @@ var _ = Describe("odo login and logout command tests", func() {
 
 	Context("when running login tests", func() {
 		It("should successful with correct credentials and fails with incorrect token", func() {
+			// skip if requested
+			skipLogin := os.Getenv("SKIP_USER_LOGIN_TESTS")
+			if skipLogin == "true" {
+				Skip("Skipping login command tests as SKIP_USER_LOGIN_TESTS is true")
+			}
 			// Current user login token
 			currentUserToken = oc.GetToken()
 

@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -26,7 +25,7 @@ const (
 )
 
 // StartURLHttpRequestStatusWatchForK8S begins testing URLs for responses, outputting the result to console
-func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, loggingClient machineoutput.MachineEventLoggingClient, containerComponents []devfilev1.Component) {
+func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kclient.Client, localConfigProvider *localConfigProvider.LocalConfigProvider, loggingClient machineoutput.MachineEventLoggingClient) {
 
 	// This is a non-blocking function so that other status watchers may start as needed
 	go func() {
@@ -35,7 +34,7 @@ func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kcl
 
 		for {
 			var err error
-			urlList, err = getURLsForKubernetes(occlient, client, envInfo, true, containerComponents)
+			urlList, err = getURLsForKubernetes(occlient, client, *localConfigProvider, true)
 
 			if err == nil {
 				// Success!
@@ -95,8 +94,8 @@ func startURLTester(urlsToTest [][]statusURL, loggingClient machineoutput.Machin
 	}
 }
 
-func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envInfo *envinfo.EnvSpecificInfo, ignoreUnpushed bool, containerComponents []devfilev1.Component) ([]statusURL, error) {
-	componentName := envInfo.GetName()
+func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, localConfig localConfigProvider.LocalConfigProvider, ignoreUnpushed bool) ([]statusURL, error) {
+	componentName := localConfig.GetName()
 
 	routesSupported := false
 
@@ -106,12 +105,18 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, envI
 		if routesSupported, err = oclient.IsRouteSupported(); err != nil {
 			// Fallback to Kubernetes client on error
 			routesSupported = false
-			oclient = nil
 		}
 
+	} else {
+		return []statusURL{}, fmt.Errorf("the client is nil")
 	}
 
-	urls, err := ListIngressAndRoute(oclient, envInfo, containerComponents, componentName, routesSupported)
+	urlClient := NewClient(ClientOptions{
+		LocalConfigProvider: localConfig,
+		OCClient:            *oclient,
+		IsRouteSupported:    routesSupported,
+	})
+	urls, err := urlClient.List()
 
 	if err != nil {
 		return nil, err

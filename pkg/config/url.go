@@ -70,7 +70,18 @@ func (lc *LocalConfig) ListURLs() []localConfigProvider.LocalURL {
 	if lc.componentSettings.URL == nil {
 		return []localConfigProvider.LocalURL{}
 	}
-	return *lc.componentSettings.URL
+	var resultURLs []localConfigProvider.LocalURL
+	for _, url := range *lc.componentSettings.URL {
+		resultURLs = append(resultURLs, localConfigProvider.LocalURL{
+			Name:   url.Name,
+			Port:   url.Port,
+			Secure: url.Secure,
+			Host:   url.Host,
+			Path:   "/",
+			Kind:   localConfigProvider.ROUTE,
+		})
+	}
+	return resultURLs
 }
 
 // DeleteURL is used to delete config from local odo config

@@ -18,7 +18,7 @@ import (
 //    - java-springboot
 //    - java-quarkus
 //    - java-openliberty
-//    - java-maven, no starter project available at the time this script was developed, so skiping this component for now
+//    - java-maven
 
 var _ = Describe("odo devfile supported tests", func() {
 	var componentName, projectDirPath string
@@ -74,6 +74,9 @@ var _ = Describe("odo devfile supported tests", func() {
 		})
 		It("Verify output debug information for java-quarkus debug works", func() {
 			createStarterProjAndSetDebug("java-quarkus")
+		})
+		It("Verify output debug information for java-maven debug works", func() {
+			createStarterProjAndSetDebug("java-maven")
 		})
 	})
 

@@ -112,6 +112,9 @@ commands:
       group:
         kind: run
 events:
+  preStart:
+    - "myPreStart" 
+    - "preStartComp"
   postStart:
     - "myPostStart" 
     - "secondpoststart"

@@ -1436,3 +1436,12 @@ func GetCommandStringFromEnvs(envVars []v1alpha2.EnvVar) string {
 	}
 	return setEnvVariable
 }
+
+//GetEnvWithDefault gets value of specified env if it is set, otherwise, it returns default value
+func GetEnvWithDefault(key string, defaultval string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultval
+	}
+	return val
+}

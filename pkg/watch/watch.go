@@ -52,6 +52,8 @@ type WatchParameters struct {
 	DevfileBuildCmd string
 	// DevfileRunCmd takes the run command through the command line and overwrites devfile run command
 	DevfileRunCmd string
+	// DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
+	DevfileDebugCmd string
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided
@@ -347,6 +349,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							ForceBuild:               false,
 							DevfileBuildCmd:          parameters.DevfileBuildCmd,
 							DevfileRunCmd:            parameters.DevfileRunCmd,
+							DevfileDebugCmd:          parameters.DevfileDebugCmd,
 							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
 							EnvSpecificInfo:          *parameters.EnvSpecificInfo,
 							Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
@@ -373,6 +376,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							ForceBuild:               false,
 							DevfileBuildCmd:          parameters.DevfileBuildCmd,
 							DevfileRunCmd:            parameters.DevfileRunCmd,
+							DevfileDebugCmd:          parameters.DevfileDebugCmd,
 							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
 							EnvSpecificInfo:          *parameters.EnvSpecificInfo,
 							Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,

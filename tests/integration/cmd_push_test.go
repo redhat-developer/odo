@@ -277,6 +277,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			url := oc.GetFirstURL(cmpName, appName, commonVar.Project)
+
 			// Wait for running app before getting info about files.
 			// During the startup sequence there is something that will modify the access time of a source file.
 			helper.HttpWaitFor("http://"+url, "Hello world from node.js!", 30, 1)
@@ -285,56 +286,20 @@ var _ = Describe("odo push command tests", func() {
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 
 			earlierCatServerFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
-				func(cmdOp string, err error) bool {
-					earlierCatServerFile = cmdOp
-					return true
-				},
-			)
+			earlierCatServerFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "server.js")))
 
 			earlierCatPackageFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "package.json"))},
-				func(cmdOp string, err error) bool {
-					earlierCatPackageFile = cmdOp
-					return true
-				},
-			)
+			earlierCatPackageFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "package.json")))
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello world from node.js!", "UPDATED!")
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 
 			modifiedCatPackageFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "package.json"))},
-				func(cmdOp string, err error) bool {
-					modifiedCatPackageFile = cmdOp
-					return true
-				},
-			)
+			modifiedCatPackageFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "package.json")))
 
 			modifiedCatServerFile := ""
-			oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
-				func(cmdOp string, err error) bool {
-					modifiedCatServerFile = cmdOp
-					return true
-				},
-			)
+			modifiedCatServerFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "server.js")))
 
 			Expect(modifiedCatPackageFile).To(Equal(earlierCatPackageFile))
 			Expect(modifiedCatServerFile).NotTo(Equal(earlierCatServerFile))

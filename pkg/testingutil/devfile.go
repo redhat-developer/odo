@@ -343,3 +343,138 @@ func GetTestDevfileObjWithMultipleEndpoints(fs devfilefs.Filesystem) parser.Devf
 		},
 	}
 }
+
+// DevfileObjWithInternalNoneEndpoints returns a devfile object with internal endpoints for testing
+func DevfileObjWithInternalNoneEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
+	return parser.DevfileObj{
+		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: &TestDevfileData{
+			Components: []v1.Component{
+				{
+					Name: "runtime",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-3030",
+									TargetPort: 3030,
+									Exposure:   v1.NoneEndpointExposure,
+								},
+								{
+									Name:       "port-3000",
+									TargetPort: 3000,
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "runtime-debug",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-8080",
+									TargetPort: 8080,
+									Exposure:   v1.InternalEndpointExposure,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// DevfileObjWithSecureEndpoints returns a devfile object with internal endpoints for testing
+func DevfileObjWithSecureEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
+	return parser.DevfileObj{
+		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: &TestDevfileData{
+			Components: []v1.Component{
+				{
+					Name: "runtime",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-3030",
+									TargetPort: 3030,
+									Protocol:   v1.WSSEndpointProtocol,
+								},
+								{
+									Name:       "port-3000",
+									TargetPort: 3000,
+									Protocol:   v1.HTTPSEndpointProtocol,
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "runtime-debug",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-8080",
+									TargetPort: 8080,
+									Secure:     true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// GetTestDevfileObjWithPath returns a devfile object for testing
+func GetTestDevfileObjWithPath(fs devfilefs.Filesystem) parser.DevfileObj {
+	return parser.DevfileObj{
+		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: &TestDevfileData{
+			Commands: []v1.Command{
+				{
+					Id: "devbuild",
+					CommandUnion: v1.CommandUnion{
+						Exec: &v1.ExecCommand{
+							WorkingDir: "/projects/nodejs-starter",
+						},
+					},
+				},
+			},
+			Components: []v1.Component{
+				{
+					Name: "runtime",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Container: v1.Container{
+								Image: "quay.io/nodejs-12",
+							},
+							Endpoints: []v1.Endpoint{
+								{
+									Name:       "port-3030",
+									TargetPort: 3000,
+									Path:       "/test",
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "loadbalancer",
+					ComponentUnion: v1.ComponentUnion{
+						Container: &v1.ContainerComponent{
+							Container: v1.Container{
+								Image: "quay.io/nginx",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}

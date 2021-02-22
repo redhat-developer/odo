@@ -221,6 +221,7 @@ Below is a roadmap for odo where 2.1, 2.2 and 2.3 are odo versions.
 These are some of the IDE plugins which use odo:
 
 * link:https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector[VS Code Openshift Connector]
+* link:https://open-vsx.org/extension/redhat/vscode-openshift-connector[Open VSX Openshift Connector]
 * link:http://plugins.jetbrains.com/plugin/12030-openshift-connector-by-red-hat[Openshift Connector for Intellij]
 * link:https://www.eclipse.org/codewind[Codewind for Eclipse Che]
 

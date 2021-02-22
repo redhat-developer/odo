@@ -15,6 +15,7 @@ import (
 func ValidateDevfileData(data interface{}) error {
 	var components []devfilev1.Component
 	var commandsMap map[string]devfilev1.Command
+	var events devfilev1.Events
 
 	// Validate the generic devfile data before validating odo specific logic
 	if err := generic.ValidateDevfileData(data); err != nil {
@@ -25,6 +26,7 @@ func ValidateDevfileData(data interface{}) error {
 	case *v2.DevfileV2:
 		components = d.GetComponents()
 		commandsMap = d.GetCommands()
+		events = d.GetEvents()
 
 		// Validate all the devfile components before validating commands
 		if err := validateComponents(components); err != nil {
@@ -33,6 +35,10 @@ func ValidateDevfileData(data interface{}) error {
 
 		// Validate all the devfile commands before validating events
 		if err := validateCommands(commandsMap); err != nil {
+			return err
+		}
+
+		if err := validateEvents(events); err != nil {
 			return err
 		}
 	default:

@@ -6,7 +6,6 @@ import (
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"strings"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -140,18 +139,22 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	if e != nil {
 		return cfd, e
 	}
-	var components []devfilev1.Component
 
 	var configProvider localConfigProvider.LocalConfigProvider
 	if envInfo != nil {
 		envInfo.SetDevfileObj(devfile)
 		configProvider = envInfo
-		components = devfile.Data.GetDevfileContainerComponents()
 	} else {
 		configProvider = localConfigInfo
 	}
 
-	urls, err = urlpkg.ListIngressAndRoute(client, configProvider, components, componentName, routeSupported)
+	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
+		LocalConfigProvider: configProvider,
+		OCClient:            *client,
+		IsRouteSupported:    routeSupported,
+	})
+
+	urls, err = urlClient.List()
 	if err != nil {
 		log.Warningf("URLs couldn't not be retrieved: %v", err)
 	}

@@ -537,8 +537,15 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		if componentNamespace == "default" {
-			log.Warning("odo may not work as expected in a default project, please run the odo component in a non-default project. To create a new project, use `odo project create`.")
+		// Check whether resource "Project" is supported
+		projectSupported, err := co.Client.IsProjectSupported()
+
+		if err != nil {
+			return errors.Wrap(err, "resource project validation check failed.")
+		}
+
+		if projectSupported && componentNamespace == "default" {
+			return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
 		}
 
 		// Set devfileMetadata struct
@@ -845,7 +852,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 		co.devfileMetadata.starterToken = token
 	}
 
-	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive)
+	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive, co.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
