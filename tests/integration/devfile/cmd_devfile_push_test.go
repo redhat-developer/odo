@@ -498,10 +498,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecWithMultipleOrNoDefaults(commonVar.Context, cmpName, commonVar.Project)
 		})
 
-		It("should execute commands with flags if there are more than one default command", func() {
-			utils.ExecMultipleDefaultsWithFlags(commonVar.Context, cmpName, commonVar.Project)
-		})
-
 		It("should execute commands with flags if the command has no group kind", func() {
 			utils.ExecCommandWithoutGroupUsingFlags(commonVar.Context, cmpName, commonVar.Project)
 		})

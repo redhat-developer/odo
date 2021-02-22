@@ -148,24 +148,6 @@ func ExecWithMultipleOrNoDefaults(projectDirPath, cmpName, namespace string) {
 	})
 }
 
-// ExecMultipleDefaultsWithFlags executes odo push with multiple default commands using flags
-func ExecMultipleDefaultsWithFlags(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "nodejs", cmpName}
-	args = useProjectIfAvailable(args, namespace)
-	helper.CmdShouldPass("odo", args...)
-
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
-
-	args = []string{"push", "--build-command", "firstbuild", "--run-command", "secondrun"}
-	args = useProjectIfAvailable(args, namespace)
-	output := helper.CmdShouldPass("odo", args...)
-	helper.MatchAllInOutput(output, []string{
-		"Executing firstbuild command \"npm install\"",
-		"Executing secondrun command \"npm start\"",
-	})
-}
-
 // ExecCommandWithoutGroupUsingFlags executes odo push with no command group using flags
 func ExecCommandWithoutGroupUsingFlags(projectDirPath, cmpName, namespace string) {
 	args := []string{"create", "nodejs", cmpName}
