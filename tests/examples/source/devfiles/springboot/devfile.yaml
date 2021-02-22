@@ -33,14 +33,14 @@ components:
     volume:
       size: 3Gi
 commands:
-  - id: defaultBuild
+  - id: defaultbuild
     exec:
       component: tools
       commandLine: "mvn clean -Dmaven.repo.local=/data/cache/.m2/repository package -Dmaven.test.skip=true"
       workingDir: /projects
       group:
         kind: build
-  - id: defaultRun
+  - id: defaultrun
     exec:
       component: runtime
       commandLine: "mvn -Dmaven.repo.local=/data/cache/.m2/repository spring-boot:run"

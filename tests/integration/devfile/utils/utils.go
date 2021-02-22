@@ -131,8 +131,20 @@ func ExecWithMultipleOrNoDefaults(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"there should be exactly one default command for command group build, currently there is more than one default command",
-		"there should be exactly one default command for command group run, currently there is no default command",
+		"group test error",
+		"currently there is more than one default command",
+	})
+
+	helper.DeleteFile(filepath.Join(projectDirPath, "devfile.yaml"))
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-default.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	output = helper.CmdShouldFail("odo", args...)
+	helper.MatchAllInOutput(output, []string{
+		"group run error",
+		"currently there is no default command",
 	})
 }
 
@@ -161,14 +173,14 @@ func ExecCommandWithoutGroupUsingFlags(projectDirPath, cmpName, namespace string
 	helper.CmdShouldPass("odo", args...)
 
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-group-kind.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--build-command", "thirdbuild", "--run-command", "secondrun"}
+	args = []string{"push", "--build-command", "devbuild", "--run-command", "devrun"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"Executing thirdbuild command \"npm install\"",
-		"Executing secondrun command \"npm start\"",
+		"Executing devbuild command \"npm install\"",
+		"Executing devrun command \"npm start\"",
 	})
 }
 
@@ -223,13 +235,16 @@ func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string, freeP
 	helper.CmdShouldPass("odo", args...)
 }
 
-func ExecPushWithCompositeOverride(projectDirPath, cmpName, namespace string) {
+func ExecPushWithCompositeOverride(projectDirPath, cmpName, namespace string, freePort int) {
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "parentSupport", "devfile-with-parent-composite.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	// update the devfile with the free port
+	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "(-1)", strconv.Itoa(freePort))
 
 	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)

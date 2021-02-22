@@ -13,7 +13,7 @@ components:
       memoryLimit: 1024Mi
       endpoints:
         - name: "3000-tcp"
-          targetPort: 3000 
+          targetPort: 3000
       mountSources: true
   - name: "tools"
     container:
@@ -114,7 +114,7 @@ commands:
 events:
   postStart:
     - "mypoststart"
-    - "secondpoststart"
+    - "secondpoststart12345"
   preStop:
     - "mycompcmd"
     - "myprestop"

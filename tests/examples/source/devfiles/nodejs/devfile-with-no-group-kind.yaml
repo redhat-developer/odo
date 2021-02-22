@@ -1,36 +1,28 @@
 schemaVersion: 2.0.0
 metadata:
   name: nodejs
-  version: 1.0.0
 starterProjects:
-  - name: nodejs-web-app
+  - name: nodejs-starter
     git:
       remotes:
         origin: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
   - name: runtime
     container:
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
-      mountSources: true
-      sourceMapping: /test
       endpoints:
-        - name: "nodejs"
+        - name: "3000-tcp"
           targetPort: 3000
+      mountSources: true
 commands:
   - id: devbuild
     exec:
       component: runtime
       commandLine: npm install
-      workingDir: /test
-      group:
-        kind: build
-        isDefault: true
+      workingDir: ${PROJECTS_ROOT}
   - id: devrun
     exec:
       component: runtime
       commandLine: npm start
-      workingDir: /test
-      group:
-        kind: run
-        isDefault: true
+      workingDir: ${PROJECTS_ROOT}

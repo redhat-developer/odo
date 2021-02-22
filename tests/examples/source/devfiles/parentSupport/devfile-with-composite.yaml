@@ -24,7 +24,7 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-        isDefault: true
+        isDefault: false
   - id: mkdir
     exec:
       component: runtime
@@ -43,8 +43,11 @@ commands:
         isDefault: true
   - id: buildandmkdir
     composite:
-         label: Build and Mkdir
-         commands:
-           - mkdir
-           - install
-         parallel: true
+      label: Build and Mkdir
+      commands:
+        - mkdir
+        - install
+      parallel: false
+      group:
+        kind: build
+        isDefault: true
