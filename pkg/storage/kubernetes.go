@@ -74,7 +74,12 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 // List lists pvc based Storage and local Storage with respective states
 func (k kubernetesClient) List() (StorageList, error) {
-	localStorage := ConvertListLocalToMachine(k.localConfig.ListStorage())
+	localConfigStorage, err := k.localConfig.ListStorage()
+	if err != nil {
+		return StorageList{}, err
+	}
+
+	localStorage := ConvertListLocalToMachine(localConfigStorage)
 
 	clusterStorage, err := k.ListFromCluster()
 	if err != nil {

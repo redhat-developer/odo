@@ -8,12 +8,13 @@ import (
 	"reflect"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/devfile/library/pkg/testingutil"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/openshift/odo/pkg/testingutil"
+	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 
@@ -521,7 +522,7 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			args: map[string]string{
 				"memory": "500Mi",
 			},
-			currentDevfile: testingutil.GetTestDevfileObj(fs),
+			currentDevfile: odoTestingUtil.GetTestDevfileObj(fs),
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
@@ -573,7 +574,7 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			args: map[string]string{
 				"ports": "8080,8081/UDP,8080/TCP",
 			},
-			currentDevfile: testingutil.GetTestDevfileObj(fs),
+			currentDevfile: odoTestingUtil.GetTestDevfileObj(fs),
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: &testingutil.TestDevfileData{
@@ -643,7 +644,7 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			args: map[string]string{
 				"ports": "8080,8081/UDP,8083/",
 			},
-			currentDevfile: testingutil.GetTestDevfileObj(fs),
+			currentDevfile: odoTestingUtil.GetTestDevfileObj(fs),
 			wantErr:        true,
 		},
 	}

@@ -389,7 +389,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
-			mockLocalConfig.EXPECT().ListURLs().Return(tt.returnedLocalURLs)
+			mockLocalConfig.EXPECT().ListURLs().Return(tt.returnedLocalURLs, nil)
 
 			fkclient, fkclientset := kclient.FakeNew()
 			fkclient.Namespace = "default"

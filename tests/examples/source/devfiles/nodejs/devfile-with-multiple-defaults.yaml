@@ -12,7 +12,7 @@ components:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       endpoints:
-        - name: "3000/tcp"
+        - name: "3000-tcp"
           targetPort: 3000
       mountSources: true
 commands:
@@ -31,13 +31,12 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-        isDefault: true
   - id: thirdbuild
     exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
-  - id: buildWithEnv
+  - id: buildwithenv
     exec:
       component: runtime
       commandLine: npm install && mkdir $BUILD_ENV1
@@ -45,7 +44,7 @@ commands:
       env:
         - name: BUILD_ENV1
           value: "test_build_env_variable"
-  - id: buildWithMultipleEnv
+  - id: buildwithmultipleenv
     exec:
       component: runtime
       commandLine: "sh -c 'mkdir $BUILD_ENV1 $BUILD_ENV2' && npm install"
@@ -55,7 +54,7 @@ commands:
           value: "test_build_env_variable1"
         - name: BUILD_ENV2
           value: "test_build_env_variable2"
-  - id: buildEnvWithSpace
+  - id: buildenvwithspace
     exec:
       component: runtime
       commandLine: npm install && mkdir "$BUILD_ENV1"
@@ -70,6 +69,7 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
+        isDefault: true
   - id: secondrun
     exec:
       component: runtime

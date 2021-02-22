@@ -213,10 +213,6 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			utils.ExecWithMultipleOrNoDefaults(context, cmpName, "")
 		})
 
-		It("should execute commands with flags if there are more than one default command", func() {
-			utils.ExecMultipleDefaultsWithFlags(context, cmpName, "")
-		})
-
 		It("should execute commands with flags if the command has no group kind", func() {
 			utils.ExecCommandWithoutGroupUsingFlags(context, cmpName, "")
 		})

@@ -55,7 +55,10 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	gotStorage := o.LocalConfigProvider.GetStorage(o.storageName)
+	gotStorage, err := o.LocalConfigProvider.GetStorage(o.storageName)
+	if err != nil {
+		return err
+	}
 	if gotStorage == nil {
 		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.Application, err)
 	}

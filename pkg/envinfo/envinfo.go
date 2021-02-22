@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
@@ -355,10 +356,14 @@ func (ei *EnvInfo) GetDebugPort() int {
 
 // GetContainers returns the Container components from the devfile
 // returns empty list if nil
-func (ei *EnvInfo) GetContainers() []localConfigProvider.LocalContainer {
+func (ei *EnvInfo) GetContainers() ([]localConfigProvider.LocalContainer, error) {
 	var localContainers []localConfigProvider.LocalContainer
 
-	for _, component := range ei.devfileObj.Data.GetComponents() {
+	devfileComponents, err := ei.devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return localContainers, err
+	}
+	for _, component := range devfileComponents {
 		if component.Container == nil {
 			continue
 		}
@@ -366,7 +371,7 @@ func (ei *EnvInfo) GetContainers() []localConfigProvider.LocalContainer {
 			Name: component.Name,
 		})
 	}
-	return localContainers
+	return localContainers, nil
 }
 
 // IsUserCreatedDevfile returns the UserCreatedDevfile

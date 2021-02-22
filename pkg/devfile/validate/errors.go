@@ -3,7 +3,7 @@ package validate
 import (
 	"fmt"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
 // NoComponentsError returns an error if no component is found

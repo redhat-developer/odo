@@ -89,11 +89,12 @@ func (mr *MockLocalConfigProviderMockRecorder) GetDebugPort() *gomock.Call {
 }
 
 // GetContainers mocks base method
-func (m *MockLocalConfigProvider) GetContainers() []LocalContainer {
+func (m *MockLocalConfigProvider) GetContainers() ([]LocalContainer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContainers")
 	ret0, _ := ret[0].([]LocalContainer)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetContainers indicates an expected call of GetContainers
@@ -103,11 +104,12 @@ func (mr *MockLocalConfigProviderMockRecorder) GetContainers() *gomock.Call {
 }
 
 // GetURL mocks base method
-func (m *MockLocalConfigProvider) GetURL(name string) *LocalURL {
+func (m *MockLocalConfigProvider) GetURL(name string) (*LocalURL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetURL", name)
 	ret0, _ := ret[0].(*LocalURL)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetURL indicates an expected call of GetURL
@@ -173,11 +175,12 @@ func (mr *MockLocalConfigProviderMockRecorder) DeleteURL(name interface{}) *gomo
 }
 
 // GetPorts mocks base method
-func (m *MockLocalConfigProvider) GetPorts() []string {
+func (m *MockLocalConfigProvider) GetPorts() ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPorts")
 	ret0, _ := ret[0].([]string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetPorts indicates an expected call of GetPorts
@@ -187,11 +190,12 @@ func (mr *MockLocalConfigProviderMockRecorder) GetPorts() *gomock.Call {
 }
 
 // ListURLs mocks base method
-func (m *MockLocalConfigProvider) ListURLs() []LocalURL {
+func (m *MockLocalConfigProvider) ListURLs() ([]LocalURL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListURLs")
 	ret0, _ := ret[0].([]LocalURL)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ListURLs indicates an expected call of ListURLs
@@ -201,11 +205,12 @@ func (mr *MockLocalConfigProviderMockRecorder) ListURLs() *gomock.Call {
 }
 
 // GetStorage mocks base method
-func (m *MockLocalConfigProvider) GetStorage(name string) *LocalStorage {
+func (m *MockLocalConfigProvider) GetStorage(name string) (*LocalStorage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetStorage", name)
 	ret0, _ := ret[0].(*LocalStorage)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetStorage indicates an expected call of GetStorage
@@ -269,11 +274,12 @@ func (mr *MockLocalConfigProviderMockRecorder) DeleteStorage(name interface{}) *
 }
 
 // ListStorage mocks base method
-func (m *MockLocalConfigProvider) ListStorage() []LocalStorage {
+func (m *MockLocalConfigProvider) ListStorage() ([]LocalStorage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListStorage")
 	ret0, _ := ret[0].([]LocalStorage)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ListStorage indicates an expected call of ListStorage

@@ -1376,7 +1376,7 @@ func TestPush(t *testing.T) {
 			mockLocalConfigProvider := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 			mockLocalConfigProvider.EXPECT().GetName().Return(tt.componentName).AnyTimes()
 			mockLocalConfigProvider.EXPECT().GetApplication().Return(tt.applicationName).AnyTimes()
-			mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.existingLocalURLs)
+			mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.existingLocalURLs, nil)
 
 			mockURLClient := NewMockClient(ctrl)
 			mockURLClient.EXPECT().ListFromCluster().Return(tt.existingClusterURLs, nil)

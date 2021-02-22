@@ -5,9 +5,9 @@ import (
 	"io"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/devfile/library/pkg/testingutil"
 )
 
 // Create a simple mock client for the ExecClient interface for the devfile exec unit tests.

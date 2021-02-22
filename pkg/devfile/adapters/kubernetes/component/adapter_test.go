@@ -8,11 +8,12 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/testingutil"
+	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -286,8 +287,8 @@ func TestDoesComponentExist(t *testing.T) {
 			}
 
 			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				emptyDeployment := testingutil.CreateFakeDeployment("")
-				deployment := testingutil.CreateFakeDeployment(tt.getComponentName)
+				emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
+				deployment := odoTestingUtil.CreateFakeDeployment(tt.getComponentName)
 
 				if tt.wantErr {
 					return true, emptyDeployment, errors.Errorf("deployment get error")
@@ -398,7 +399,7 @@ func TestAdapterDelete(t *testing.T) {
 			}},
 			existingPod: &corev1.PodList{
 				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("component", "component"),
+					*odoTestingUtil.CreateFakePod("component", "component"),
 				},
 			},
 			componentName:   "component",
@@ -410,7 +411,7 @@ func TestAdapterDelete(t *testing.T) {
 			args: args{labels: nil},
 			existingPod: &corev1.PodList{
 				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("component", "component"),
+					*odoTestingUtil.CreateFakePod("component", "component"),
 				},
 			},
 			componentName:   "component",
@@ -424,7 +425,7 @@ func TestAdapterDelete(t *testing.T) {
 			}},
 			existingPod: &corev1.PodList{
 				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("component", "component"),
+					*odoTestingUtil.CreateFakePod("component", "component"),
 				},
 			},
 			componentName:   "nocomponent",
@@ -438,7 +439,7 @@ func TestAdapterDelete(t *testing.T) {
 			}},
 			existingPod: &corev1.PodList{
 				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("component", "component"),
+					*odoTestingUtil.CreateFakePod("component", "component"),
 				},
 			},
 			componentName:   "resourceforbidden",
@@ -452,7 +453,7 @@ func TestAdapterDelete(t *testing.T) {
 			}},
 			existingPod: &corev1.PodList{
 				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("component", "component"),
+					*odoTestingUtil.CreateFakePod("component", "component"),
 				},
 			},
 			componentName:   "componenterror",

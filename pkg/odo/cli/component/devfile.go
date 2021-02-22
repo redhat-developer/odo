@@ -133,7 +133,11 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
-	warnIfURLSInvalid(po.EnvSpecificInfo.ListURLs())
+	localURLs, err := po.EnvSpecificInfo.ListURLs()
+	if err != nil {
+		return err
+	}
+	warnIfURLSInvalid(localURLs)
 
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)

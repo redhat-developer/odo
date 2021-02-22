@@ -18,7 +18,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/preference"
 
@@ -274,7 +275,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	labels["component"] = componentName
 	labels[componentlabels.ComponentTypeLabel] = componentType
 
-	containers, err := generator.GetContainers(a.Devfile)
+	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}
@@ -299,10 +300,16 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
-	initContainers := utils.GetPreStartInitContainers(a.Devfile, containers)
+	initContainers, err := utils.GetPreStartInitContainers(a.Devfile, containers)
+	if err != nil {
+		return err
+	}
 	initContainers = append(initContainers, supervisordInitContainer)
 
-	containerNameToVolumes := common.GetVolumes(a.Devfile)
+	containerNameToVolumes, err := common.GetVolumes(a.Devfile)
+	if err != nil {
+		return err
+	}
 
 	pref, err := preference.New()
 	if err != nil {
@@ -403,7 +410,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		ObjectMeta:     objectMeta,
 		SelectorLabels: selectorLabels,
 	}
-	service, err := generator.GetService(a.Devfile, serviceParams)
+	service, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}

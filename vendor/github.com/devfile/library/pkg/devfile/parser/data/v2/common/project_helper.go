@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	v1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
 // GetDefaultSource get information about primary source

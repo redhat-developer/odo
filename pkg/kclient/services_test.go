@@ -4,10 +4,12 @@ import (
 	"reflect"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/testingutil"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/pkg/testingutil"
+	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +73,7 @@ func TestCreateService(t *testing.T) {
 				SelectorLabels: labels,
 			}
 
-			service, err := generator.GetService(devObj, serviceParams)
+			service, err := generator.GetService(devObj, serviceParams, parsercommon.DevfileOptions{})
 			if err != nil {
 				t.Errorf("generator.GetService unexpected error %v", err)
 			}
@@ -152,7 +154,7 @@ func TestUpdateService(t *testing.T) {
 				SelectorLabels: labels,
 			}
 
-			service, err := generator.GetService(devObj, serviceParams)
+			service, err := generator.GetService(devObj, serviceParams, parsercommon.DevfileOptions{})
 			if err != nil {
 				t.Errorf("generator.GetService unexpected error %v", err)
 			}
@@ -197,9 +199,9 @@ func TestListServices(t *testing.T) {
 				selector: "component-name=nodejs",
 			},
 			returnedServices: corev1.ServiceList{
-				Items: testingutil.FakeKubeServices("nodejs"),
+				Items: odoTestingUtil.FakeKubeServices("nodejs"),
 			},
-			want: testingutil.FakeKubeServices("nodejs"),
+			want: odoTestingUtil.FakeKubeServices("nodejs"),
 		},
 		{
 			name: "case 2: no service retuned",

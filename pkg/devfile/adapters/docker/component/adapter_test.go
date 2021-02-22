@@ -5,15 +5,15 @@ import (
 	"os"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/testingutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 	volumeTypes "github.com/docker/docker/api/types/volume"
 	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/lclient"
-	"github.com/openshift/odo/pkg/testingutil"
 )
 
 func TestPush(t *testing.T) {
@@ -47,7 +47,8 @@ func TestPush(t *testing.T) {
 					LabeledCommand: devfilev1.LabeledCommand{
 						BaseCommand: devfilev1.BaseCommand{
 							Group: &devfilev1.CommandGroup{
-								Kind: devfilev1.RunCommandGroupKind,
+								Kind:      devfilev1.RunCommandGroupKind,
+								IsDefault: true,
 							},
 						},
 					},

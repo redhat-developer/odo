@@ -12,7 +12,7 @@ components:
       image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       endpoints:
-        - name: "3000/tcp"
+        - name: "3000-tcp"
           targetPort: 3000 
       mountSources: true
   - name: "tools"
@@ -21,65 +21,65 @@ components:
       mountSources: true
       memoryLimit: 1024Mi
 commands:
-  - id: myPreStart
+  - id: myprestart
     exec:
       commandLine: echo hello test2 >> $PROJECTS_ROOT/test.txt
       component: tools
-  - id: secondPreStart
+  - id: secondprestart
     exec:
       commandLine: echo hello test >> $PROJECTS_ROOT/test.txt
       component: runtime
       workingDir: /
-  - id: preStartComp
+  - id: prestartcomp
     composite:
       label: pre start composite
       commands:
-        - myPreStart
-        - secondPreStart
+        - mypreStart
+        - secondpreStart
       parallel: true
-  - id: myPostStart
+  - id: mypoststart
     exec:
       commandLine: echo I am a PostStart
       component: tools
       workingDir: /
-  - id: secondPostStart
+  - id: secondpoststart
     exec:
       commandLine: echo I am also a PostStart
       component: runtime
       workingDir: /
-  - id: wrongPostStart
+  - id: wrongpoststart
     exec:
       commandLine: echo I am also a PostStart
       component: runtime #wrongruntime #do not delete comment, tests rely on it for search & replace
       workingDir: /
-  - id: myPreStop
+  - id: myprestop
     exec:
       commandLine: echo I am a PreStop
       component: tools
       workingDir: /
-  - id: secondPreStop
+  - id: secondprestop
     exec:
       commandLine: echo I am also a PreStop
       component: runtime
       workingDir: /
-  - id: thirdPreStop
+  - id: thirdprestop
     exec:
       commandLine: echo I am a third PreStop
       component: runtime
       workingDir: /
-  - id: myCompCmd
+  - id: mycompcmd
     composite:
       label: Build and Mkdir
       commands:
-        - secondPreStop
-        - thirdPreStop
+        - secondpreStop
+        - thirdpreStop
       parallel: true
-  - id: myWrongCompCmd
+  - id: mywrongcompcmd
     composite:
       label: Build and Mkdir
       commands:
-        - secondPreStop #secondPreStopisWrong #do not delete comment, tests rely on it for search & replace
-        - thirdPreStop
+        - secondprestop #secondprestopiswrong #do not delete comment, tests rely on it for search & replace
+        - thirdprestop
       parallel: true
   - id: devbuild
     exec:
@@ -113,8 +113,8 @@ commands:
         kind: run
 events:
   postStart:
-    - "myPostStart" 
+    - "mypoststart"
     - "secondpoststart"
   preStop:
-    - "myCompCmd" 
-    - "myPreStop"
+    - "mycompcmd"
+    - "myprestop"

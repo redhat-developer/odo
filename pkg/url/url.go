@@ -290,7 +290,10 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 		return URLList{}, errors.Wrap(err, "unable to list component container")
 	}
 
-	localURLs := envSpecificInfo.ListURLs()
+	localURLs, err := envSpecificInfo.ListURLs()
+	if err != nil {
+		return URLList{}, err
+	}
 
 	var urls []URL
 
@@ -606,8 +609,13 @@ type PushParameters struct {
 func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParameters) error {
 	urlLOCAL := make(map[string]URL)
 
+	localConfigURLs, err := parameters.LocalConfig.ListURLs()
+	if err != nil {
+		return err
+	}
+
 	// get the local URLs
-	for _, url := range parameters.LocalConfig.ListURLs() {
+	for _, url := range localConfigURLs {
 		if !parameters.IsRouteSupported && url.Kind == localConfigProvider.ROUTE {
 			// display warning since Host info is missing
 			log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", url.Name)

@@ -8,13 +8,17 @@ import (
 )
 
 // GetStorage gets the storage with the given name
-func (lci *LocalConfigInfo) GetStorage(storageName string) *localConfigProvider.LocalStorage {
-	for _, storage := range lci.ListStorage() {
+func (lci *LocalConfigInfo) GetStorage(storageName string) (*localConfigProvider.LocalStorage, error) {
+	configStorage, err := lci.ListStorage()
+	if err != nil {
+		return nil, err
+	}
+	for _, storage := range configStorage {
 		if storageName == storage.Name {
-			return &storage
+			return &storage, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // CreateStorage sets the storage related information in the local configuration
@@ -27,9 +31,9 @@ func (lci *LocalConfigInfo) CreateStorage(storage localConfigProvider.LocalStora
 }
 
 // ListStorage gets all the storage from the config
-func (lci *LocalConfigInfo) ListStorage() []localConfigProvider.LocalStorage {
+func (lci *LocalConfigInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 	if lci.componentSettings.Storage == nil {
-		return []localConfigProvider.LocalStorage{}
+		return []localConfigProvider.LocalStorage{}, nil
 	}
 
 	var storageList []localConfigProvider.LocalStorage
@@ -40,12 +44,15 @@ func (lci *LocalConfigInfo) ListStorage() []localConfigProvider.LocalStorage {
 			Size: storage.Size,
 		})
 	}
-	return storageList
+	return storageList, nil
 }
 
 // DeleteStorage deletes the storage with the given name
 func (lci *LocalConfigInfo) DeleteStorage(name string) error {
-	storage := lci.GetStorage(name)
+	storage, err := lci.GetStorage(name)
+	if err != nil {
+		return err
+	}
 	if storage == nil {
 		return errors.Errorf("storage named %s doesn't exists", name)
 	}
@@ -61,7 +68,11 @@ func (lci *LocalConfigInfo) ValidateStorage(storage localConfigProvider.LocalSto
 		return fmt.Errorf("\"size\" and \"path\" flags are required for s2i components")
 	}
 
-	for _, store := range lci.ListStorage() {
+	configStorage, err := lci.ListStorage()
+	if err != nil {
+		return err
+	}
+	for _, store := range configStorage {
 		if store.Name == storage.Name {
 			return errors.Errorf("there already is a storage with the name %s", storage.Name)
 		}
@@ -74,8 +85,13 @@ func (lci *LocalConfigInfo) ValidateStorage(storage localConfigProvider.LocalSto
 
 // GetStorageMountPath gets the mount path of the storage with the given storage name
 func (lci *LocalConfigInfo) GetStorageMountPath(storageName string) (string, error) {
+	configStorage, err := lci.ListStorage()
+	if err != nil {
+		return "", err
+	}
+
 	var mPath string
-	for _, storage := range lci.ListStorage() {
+	for _, storage := range configStorage {
 		if storage.Name == storageName {
 			mPath = storage.Path
 		}

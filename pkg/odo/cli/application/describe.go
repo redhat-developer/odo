@@ -92,7 +92,10 @@ func (o *DescribeOptions) Run() (err error) {
 				o.appName, len(componentList.Items), len(serviceList.Items))
 			if len(componentList.Items) > 0 {
 				for _, currentComponent := range componentList.Items {
-					util.PrintComponentInfo(o.Client, currentComponent.Name, currentComponent, o.appName, o.Project)
+					err := util.PrintComponentInfo(o.Client, currentComponent.Name, currentComponent, o.appName, o.Project)
+					if err != nil {
+						return err
+					}
 					fmt.Println("--------------------------------------")
 				}
 			}

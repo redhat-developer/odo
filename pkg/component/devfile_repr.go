@@ -2,17 +2,21 @@ package component
 
 import (
 	"github.com/devfile/library/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ToDevfileRepresentation(d parser.DevfileObj) ConfigurableRepr {
+func ToDevfileRepresentation(d parser.DevfileObj) (ConfigurableRepr, error) {
 	confRepr := ConfigurableRepr{
 		Name:   d.GetMetadataName(),
 		Memory: d.GetMemory(),
 	}
 	var contReprs []ContainerRepr
-	components := d.Data.GetComponents()
+	components, err := d.Data.GetComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return ConfigurableRepr{}, err
+	}
 	for _, component := range components {
 
 		if component.Container != nil {
@@ -36,7 +40,7 @@ func ToDevfileRepresentation(d parser.DevfileObj) ConfigurableRepr {
 		}
 	}
 	confRepr.Configs = contReprs
-	return confRepr
+	return confRepr, nil
 }
 
 func WrapFromJSONOutput(confRepr ConfigurableRepr) JSONConfigRepr {

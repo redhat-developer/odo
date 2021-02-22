@@ -79,7 +79,10 @@ func (o *ViewOptions) Validate() (err error) {
 // DevfileRun is ran when the context detects a devfile locally
 func (o *ViewOptions) DevfileRun() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	repr := component.ToDevfileRepresentation(o.devfileObj)
+	repr, err := component.ToDevfileRepresentation(o.devfileObj)
+	if err != nil {
+		return err
+	}
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(component.WrapFromJSONOutput(repr))
 		return

@@ -3,9 +3,9 @@ metadata:
   name: nodejs
   version: 1.0.0
 parent:
-  uri: https://raw.githubusercontent.com/openshift/odo/master/tests/examples/source/devfiles/nodejs/devfileCompositeCommands.yaml
+  uri:  http://localhost:(-1)/devfile-with-composite.yaml
   commands:
-  - id: buildAndMkdir
+  - id: buildandmkdir
     composite:
          label: Build and Mkdir
          commands:

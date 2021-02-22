@@ -26,7 +26,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/gregjones/httpcache"
