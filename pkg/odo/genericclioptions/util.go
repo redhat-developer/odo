@@ -46,7 +46,7 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, er
 // compare to checkProjectCreateOrDeleteOnlyOnInvalidNamespace, no %s is needed
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Command, errFormatForCommand string) {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
+	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "push" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand)
 		util.LogErrorAndExit(err, "")
 	}
