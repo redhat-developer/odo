@@ -5,14 +5,11 @@ import (
 	"net"
 	"reflect"
 	"strconv"
-	"strings"
 
-	"github.com/devfile/library/pkg/devfile/generator"
-
-	"github.com/gosimple/slug"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	types "github.com/docker/docker/api/types"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -622,14 +619,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			continue
 		}
 
-		// TODO remove once https://github.com/openshift/odo/issues/4060 is fixed
-		var urlName string
-		if parameters.IsS2I {
-			urlName = url.Name
-		} else {
-			urlName = getValidURLName(url.Name)
-		}
-		urlLOCAL[urlName] = ConvertLocalURL(url)
+		urlLOCAL[url.Name] = ConvertLocalURL(url)
 	}
 
 	log.Info("\nApplying URL changes")
@@ -729,13 +719,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	return nil
-}
-
-// getValidURLName returns valid URL resource name for Kubernetes based cluster
-func getValidURLName(name string) string {
-	trimmedName := strings.TrimSpace(slug.Make(name))
-	trimmedName = util.TruncateString(trimmedName, 15)
-	return trimmedName
 }
 
 type ClientOptions struct {
