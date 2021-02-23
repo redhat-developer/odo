@@ -193,10 +193,10 @@ var _ = Describe("odo generic", func() {
 
 	Context("deploying a component with a specific image name", func() {
 		It("should deploy the component", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", commonVar.Context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs:latest", "testversioncmp", "--project", commonVar.Project, "--context", commonVar.Context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context+"/nodejs-ex")
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs:latest", "testversioncmp", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
 		})
 	})
 
