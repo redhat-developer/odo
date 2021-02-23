@@ -28,4 +28,4 @@ set -x
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-./ci-firewall request --sendqueue amqp.ci.queue.minikube.send --sendtopic amqp.ci.topic.minikube.send --runscript scripts/kubernestes-all-test.sh  --timeout 2h15m
+./ci-firewall request --sendqueue amqp.ci.queue.minikube.send --sendtopic amqp.ci.topic.minikube.send --runscript scripts/kubernetes-all-test.sh  --timeout 2h15m
