@@ -20,11 +20,11 @@ type s2iClient struct {
 }
 
 func (s s2iClient) Create(storage Storage) error {
-	panic("implement me")
+	return nil
 }
 
 func (s s2iClient) Delete(s2 string) error {
-	panic("implement me")
+	return nil
 }
 
 // ListFromCluster lists pvc based Storage from the cluster for s2i components
