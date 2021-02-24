@@ -365,7 +365,7 @@ func TestUpdateStorageOwnerReference(t *testing.T) {
 			args: args{
 				pvc: testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
 				ownerReference: []metav1.OwnerReference{
-					GenerateOwnerReference(*fakeDeployment),
+					generator.GetOwnerReference(fakeDeployment),
 				},
 			},
 			wantErr: false,

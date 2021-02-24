@@ -442,11 +442,11 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	// update the owner reference of the PVCs with the deployment
-	for _, pvc := range pvcs {
-		if pvc.OwnerReferences != nil || pvc.DeletionTimestamp != nil {
+	for i := range pvcs {
+		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
 			continue
 		}
-		err = a.Client.UpdateStorageOwnerReference(&pvc, generator.GetOwnerReference(deployment))
+		err = a.Client.UpdateStorageOwnerReference(&pvcs[i], generator.GetOwnerReference(deployment))
 		if err != nil {
 			return err
 		}

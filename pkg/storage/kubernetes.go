@@ -32,7 +32,6 @@ func (k kubernetesClient) Create(storage Storage) error {
 	}
 
 	labels := storagelabels.GetLabels(storage.Name, k.componentName, k.appName, true)
-	labels[storagelabels.DevfileStorageLabel] = storage.Name
 
 	if strings.Contains(storage.Name, OdoSourceVolume) {
 		// Add label for source pvc
@@ -54,7 +53,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 
 	// Create PVC
 	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
-	pvc, err = k.client.GetKubeClient().CreatePVC(*pvc)
+	_, err = k.client.GetKubeClient().CreatePVC(*pvc)
 	if err != nil {
 		return errors.Wrap(err, "unable to create PVC")
 	}

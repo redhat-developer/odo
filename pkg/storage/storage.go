@@ -680,8 +680,8 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 	}
 
 	// find storage to delete
-	for _, storage := range storageClusterList.Items {
-		val, ok := storageConfigNames[storage.Name]
+	for storageName, storage := range storageClusterNames {
+		val, ok := storageConfigNames[storageName]
 		if !ok {
 			// delete the pvc
 			err = client.Delete(storage.Name)
@@ -691,15 +691,15 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 			log.Successf("Deleted storage %v from %v", storage.Name, configProvider.GetName())
 			continue
 		} else if storage.Name == val.Name {
-			if val.Spec.Size != storage.Spec.Size || val.Spec.Path != storage.Spec.Path {
+			if val.Spec.Size != storage.Spec.Size {
 				return errors.Errorf("config mismatch for storage with the same name %s", storage.Name)
 			}
 		}
 	}
 
 	// find storage to create
-	for _, storage := range ConvertListLocalToMachine(localStorage).Items {
-		_, ok := storageClusterNames[storage.Name]
+	for storageName, storage := range storageConfigNames {
+		_, ok := storageClusterNames[storageName]
 		if !ok {
 			err := client.Create(storage)
 			if err != nil {

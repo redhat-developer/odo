@@ -18,8 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const pvcNameMaxLen = 45
-
 // CreateComponentStorage creates PVCs with the given list of storages if it does not exist, else it uses the existing PVC
 func CreateComponentStorage(Client *kclient.Client, storages []common.Storage, componentName string) (err error) {
 

@@ -531,7 +531,6 @@ func Test_kubernetesClient_List(t *testing.T) {
 func Test_kubernetesClient_Create(t *testing.T) {
 	type fields struct {
 		generic generic
-		client  occlient.Client
 	}
 	type args struct {
 		storage Storage
@@ -612,7 +611,6 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			}
 
 			wantLabels := storageLabels.GetLabels(tt.args.storage.Name, tt.fields.generic.componentName, tt.fields.generic.appName, true)
-			wantLabels[storageLabels.DevfileStorageLabel] = tt.args.storage.Name
 
 			if strings.Contains(tt.args.storage.Name, OdoSourceVolume) {
 				// Add label for source pvc
@@ -621,7 +619,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 
 			// created PVC should be labeled with labels passed to CreatePVC
 			if !reflect.DeepEqual(createdPVC.Labels, wantLabels) {
-				t.Errorf("labels in created route is not matching expected labels, expected: %v, got: %v", wantLabels, createdPVC.Labels)
+				t.Errorf("labels in created pvc is not matching expected labels, expected: %v, got: %v", wantLabels, createdPVC.Labels)
 			}
 			// name, size of createdPVC should be matching to size, name passed to CreatePVC
 			if !reflect.DeepEqual(createdPVC.Spec.Resources.Requests["storage"], quantity) {
@@ -641,7 +639,6 @@ func Test_kubernetesClient_Delete(t *testing.T) {
 
 	type fields struct {
 		generic generic
-		client  occlient.Client
 	}
 	type args struct {
 		name string

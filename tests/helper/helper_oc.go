@@ -383,7 +383,7 @@ func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace strin
 
 // GetPVCSize executes oc command and returns the bound storage size
 func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
-	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
 	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
 	return strings.TrimSpace(stdOut)
 }

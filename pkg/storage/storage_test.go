@@ -1053,13 +1053,8 @@ func TestPush(t *testing.T) {
 	clusterStorage0 := GetMachineFormatWithContainer("storage-0", "1Gi", "/data", "runtime-0")
 	clusterStorage1 := GetMachineFormatWithContainer("storage-1", "5Gi", "/path", "runtime-1")
 
-	type args struct {
-		client         Client
-		configProvider localConfigProvider.LocalConfigProvider
-	}
 	tests := []struct {
 		name                string
-		args                args
 		returnedFromLocal   []localConfigProvider.LocalStorage
 		returnedFromCluster StorageList
 		createdItems        []localConfigProvider.LocalStorage
@@ -1136,7 +1131,7 @@ func TestPush(t *testing.T) {
 		},
 		{
 			name: "case 6: spec mismatch",
-			returnedFromLocal: []localConfigProvider.LocalStorage{localStorage0,
+			returnedFromLocal: []localConfigProvider.LocalStorage{
 				{
 					Name:      "storage-1",
 					Size:      "3Gi",
@@ -1146,13 +1141,65 @@ func TestPush(t *testing.T) {
 			},
 			returnedFromCluster: StorageList{
 				Items: []Storage{
-					clusterStorage0,
 					clusterStorage1,
 				},
 			},
 			createdItems: []localConfigProvider.LocalStorage{},
 			deletedItems: []string{},
 			wantErr:      true,
+		},
+		{
+			name: "case 7: only one PVC created for two storage with same name but on different containers",
+			returnedFromLocal: []localConfigProvider.LocalStorage{
+				{
+					Name:      "storage-0",
+					Size:      "1Gi",
+					Path:      "/data",
+					Container: "runtime-0",
+				},
+				{
+					Name:      "storage-0",
+					Size:      "1Gi",
+					Path:      "/path",
+					Container: "runtime-1",
+				},
+			},
+			returnedFromCluster: StorageList{},
+			createdItems: []localConfigProvider.LocalStorage{
+				{
+					Name:      "storage-0",
+					Size:      "1Gi",
+					Path:      "/path",
+					Container: "runtime-1",
+				},
+			},
+		},
+		{
+			name: "case 8: only path spec mismatch",
+			returnedFromLocal: []localConfigProvider.LocalStorage{
+				{
+					Name:      "storage-1",
+					Size:      "5Gi",
+					Path:      "/data",
+					Container: "runtime-1",
+				},
+			},
+			returnedFromCluster: StorageList{
+				Items: []Storage{
+					clusterStorage1,
+				},
+			},
+		},
+		{
+			name:              "case 9: only one PVC deleted for two storage with same name but on different containers",
+			returnedFromLocal: []localConfigProvider.LocalStorage{},
+			returnedFromCluster: StorageList{
+				Items: []Storage{
+					GetMachineFormatWithContainer("storage-0", "1Gi", "/data", "runtime-0"),
+					GetMachineFormatWithContainer("storage-0", "1Gi", "/data", "runtime-1"),
+				},
+			},
+			deletedItems: []string{"storage-0"},
 		},
 	}
 	for _, tt := range tests {

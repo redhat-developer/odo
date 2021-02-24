@@ -369,7 +369,7 @@ func HandleEphemeralStorage(client kclient.Client, storageClient storage.Client,
 			for _, pvc := range pvcs {
 				err := client.DeletePVC(pvc.Name)
 				if err != nil {
-
+					return err
 				}
 			}
 		}
