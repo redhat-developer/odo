@@ -63,7 +63,7 @@ func (k kubernetesClient) List() (URLList, error) {
 	}
 
 	for _, url := range clusterURLs.Items {
-		clusterURLMap[getValidURLName(url.Name)] = url
+		clusterURLMap[url.Name] = url
 	}
 
 	localMap := make(map[string]URL)
@@ -78,9 +78,7 @@ func (k kubernetesClient) List() (URLList, error) {
 				continue
 			}
 			localURL := ConvertEnvinfoURL(url, k.componentName)
-			// use the trimmed URL Name as the key since remote URLs' names are trimmed
-			trimmedURLName := getValidURLName(url.Name)
-			localMap[trimmedURLName] = localURL
+			localMap[url.Name] = localURL
 		}
 	}
 
