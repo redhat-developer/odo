@@ -9,6 +9,10 @@ if [[ -f $ODO_RABBITMQ_AMQP_URL ]]; then
     export AMQP_URI=$(cat $ODO_RABBITMQ_AMQP_URL)
 fi
 export AMQP_URI=${AMQP_URI:?"Please set AMQP_URI env with amqp uri or provide path of file containing it as ODO_RABBITMQ_AMQP_URL env"}
+export SENDQUEUE=${SENDQUEUE:-"amqp.ci.queue.send"}
+export SENDTOPIC=${SENDTOPIC:-"amqp.ci.topic.send"}
+export SETUPSCRIPT=${SETUPSCRIPT:-"scripts/setup_script_e2e.sh"}
+export RUNSCRIPT=${RUNSCRIPT:-"scripts/run_script_e2e.sh"}
 
 # show commands
 set -x
@@ -26,4 +30,4 @@ export CI_FIREWALL_VERSION="valpha"
 echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
-./ci-firewall request --runscript scripts/run_all_tests.sh --timeout 2h15m
+./ci-firewall request --sendQName $SENDQUEUE --sendTopic $SENDTOPIC --setupscript $SETUPSCRIPT  --runscript $RUNSCRIPT  --timeout 2h15m
