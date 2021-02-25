@@ -114,7 +114,7 @@ var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo wi
 var EphemeralDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code (Default: %t)", DefaultEphemeralSettings)
 
 //TelemetryConsentDescription adds a description for TelemetryConsentSetting
-var ConsentTelemetryDescription = fmt.Sprintf("If true odo will collect telemetry for the user's odo usage (Default: %t)", DefaultConsentTelemetrySetting)
+var ConsentTelemetryDescription = fmt.Sprintf("If true odo will collect telemetry for the user's odo usage (Default: %t)\n\t\t    For more information: https://developers.redhat.com/article/tool-data-collection", DefaultConsentTelemetrySetting)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -424,6 +424,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			}
 			c.OdoSettings.UpdateNotification = &val
 
+		//	TODO: should we add a validator here? What is the use of nameprefix?
 		case "nameprefix":
 			c.OdoSettings.NamePrefix = &value
 

@@ -55,42 +55,54 @@ var _ = Describe("odo preference and config command tests", func() {
 	Context("When viewing global config", func() {
 		It("should get the default global config keys", func() {
 			configOutput := helper.CmdShouldPass("odo", "preference", "view")
-			helper.MatchAllInOutput(configOutput, []string{"UpdateNotification", "NamePrefix", "Timeout", "PushTarget"})
-			updateNotificationValue := helper.GetPreferenceValue("UpdateNotification")
-			Expect(updateNotificationValue).To(BeEmpty())
-			namePrefixValue := helper.GetPreferenceValue("NamePrefix")
-			Expect(namePrefixValue).To(BeEmpty())
-			timeoutValue := helper.GetPreferenceValue("Timeout")
-			Expect(timeoutValue).To(BeEmpty())
+			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "PushTarget", "BuildTimeout", "PushTimeout", "Experimental", "Ephemeral", "ConsentTelemetry"}
+			helper.MatchAllInOutput(configOutput, preferences)
+			for _, key := range preferences {
+				value := helper.GetPreferenceValue(key)
+				Expect(value).To(BeEmpty())
+			}
 		})
 	})
 
 	Context("When configuring global config values", func() {
+		preferences := []struct {
+			name, value, updateValue, invalidValue string
+		}{
+			{"UpdateNotification", "false", "true", "foo"},
+			{"Timeout", "5", "6", "foo"},
+			{"PushTarget", "docker", "kube", "smh"},
+			{"NamePrefix", "foo", "bar", ""},
+			{"BuildTimeout", "5", "7", "foo"},
+			{"Experimental", "false", "true", "foo"},
+			{"ConsentTelemetry", "false", "true", "foo"},
+			{"PushTimeout", "4", "6", "f00"},
+		}
+
 		It("should successfully updated", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "updatenotification", "false")
-			helper.CmdShouldPass("odo", "preference", "set", "timeout", "5")
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker")
-			UpdateNotificationValue := helper.GetPreferenceValue("UpdateNotification")
-			Expect(UpdateNotificationValue).To(ContainSubstring("false"))
-			TimeoutValue := helper.GetPreferenceValue("Timeout")
-			Expect(TimeoutValue).To(ContainSubstring("5"))
-			PushTargetValue := helper.GetPreferenceValue("PushTarget")
-			Expect(PushTargetValue).To(ContainSubstring("docker"))
-			helper.CmdShouldPass("odo", "preference", "set", "-f", "pushtarget", "kube")
-			PushTargetValue = helper.GetPreferenceValue("PushTarget")
-			Expect(PushTargetValue).To(ContainSubstring("kube"))
-			helper.CmdShouldPass("odo", "preference", "unset", "-f", "timeout")
-			timeoutValue := helper.GetPreferenceValue("Timeout")
-			Expect(timeoutValue).To(BeEmpty())
-			helper.CmdShouldPass("odo", "preference", "unset", "-f", "pushtarget")
-			PushTargetValue = helper.GetPreferenceValue("PushTarget")
-			Expect(PushTargetValue).To(BeEmpty())
+			for _, pref := range preferences {
+				helper.CmdShouldPass("odo", "preference", "set", pref.name, pref.value)
+				value := helper.GetPreferenceValue(pref.name)
+				Expect(value).To(ContainSubstring(pref.value))
+
+				helper.CmdShouldPass("odo", "preference", "set", "-f", pref.name, pref.updateValue)
+				value = helper.GetPreferenceValue(pref.name)
+				Expect(value).To(ContainSubstring(pref.updateValue))
+
+				helper.CmdShouldPass("odo", "preference", "unset", "-f", pref.name)
+				value = helper.GetPreferenceValue(pref.name)
+				Expect(value).To(BeEmpty())
+			}
 			globalConfPath := os.Getenv("HOME")
 			os.RemoveAll(filepath.Join(globalConfPath, ".odo"))
 		})
+
 		It("should unsuccessfully update", func() {
-			helper.CmdShouldFail("odo", "preference", "set", "-f", "pushtarget", "invalid-value")
-			helper.CmdShouldFail("odo", "preference", "set", "-f", "updatenotification", "invalid-value")
+			for _, pref := range preferences {
+				// TODO: Remove this once we decide something on checking NamePrefix
+				if pref.name != "NamePrefix" {
+					helper.CmdShouldFail("odo", "preference", "set", "-f", pref.name, pref.invalidValue)
+				}
+			}
 		})
 
 		It("should show json output", func() {
@@ -99,9 +111,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			values := gjson.GetMany(prefJSONOutput, "kind", "items.0.Description")
 			expected := []string{"PreferenceList", "Flag to control if an update notification is shown or not (Default: true)"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-
 		})
-
 	})
 
 	Context("when creating odo local config in the same config dir", func() {

@@ -69,6 +69,7 @@ func (o *SetOptions) Run() (err error) {
 
 	if !o.configForceFlag {
 		if isSet := cfg.IsSet(o.paramName); isSet {
+			// TODO: could add a logic to check if the new value set by the user is not same as the current value
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
 				log.Info("Aborted by the user")
 				return nil
