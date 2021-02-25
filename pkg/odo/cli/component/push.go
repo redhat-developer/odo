@@ -13,6 +13,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -119,6 +120,10 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 				return errors.Wrap(err, "unable to determine target namespace for devfile")
 			}
 
+			if err := checkDefaultProject(genericclioptions.Client(cmd), namespace); err != nil {
+				return err
+			}
+
 			// Retrieve a default name
 			// 1. Use args[0] if the user has supplied a name to be used
 			// 2. If the user did not provide a name, use gatherName to retrieve a name from the devfile.Metadata
@@ -140,6 +145,27 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 				return errors.Wrap(err, "failed to create env.yaml for devfile component")
 			}
 
+		} else if envFileInfo.GetNamespace() == "" {
+			// Since the project name doesn't exist in the environment file, we will retrieve a correct namespace from
+			// either cmd commands or the current default kubernetes namespace
+			// and write it to the env.yaml
+			namespace, err := retrieveCmdNamespace(cmd)
+			if err != nil {
+				return errors.Wrap(err, "unable to determine target namespace for devfile")
+			}
+
+			if err := checkDefaultProject(genericclioptions.Client(cmd), namespace); err != nil {
+				return err
+			}
+
+			err = envFileInfo.SetConfiguration("project", namespace)
+			if err != nil {
+				return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
+			}
+		} else if envFileInfo.GetNamespace() == "default" {
+			if err := checkDefaultProject(genericclioptions.Client(cmd), envFileInfo.GetNamespace()); err != nil {
+				return err
+			}
 		}
 
 		po.EnvSpecificInfo = envFileInfo
@@ -269,4 +295,19 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	completion.RegisterCommandFlagHandler(pushCmd, "context", completion.FileCompletionHandler)
 
 	return pushCmd
+}
+
+// checkDefaultProject errors out if the project resource is supported and the value is "default"
+func checkDefaultProject(client *occlient.Client, name string) error {
+	// Check whether resource "Project" is supported
+	projectSupported, err := client.IsProjectSupported()
+
+	if err != nil {
+		return errors.Wrap(err, "resource project validation check failed.")
+	}
+
+	if projectSupported && name == "default" {
+		return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
+	}
+	return nil
 }

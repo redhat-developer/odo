@@ -1083,4 +1083,43 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
+	Context("Testing Push for OpenShift specific scenarios", func() {
+		JustBeforeEach(func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
+		})
+
+		It("throw an error when the project value is default", func() {
+			componentName := helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context, "--project", "default", componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			stdout := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
+			helper.MatchAllInOutput(stdout, []string{"odo may not work as expected in the default project, please run the odo component in a non-default project"})
+		})
+	})
+
+	Context("Testing Push for Kubernetes specific scenarios", func() {
+		JustBeforeEach(func() {
+			if os.Getenv("KUBERNETES") != "true" {
+				Skip("This is a Kubernetes specific scenario, skipping")
+			}
+		})
+
+		It("should push successfully project value is default", func() {
+			componentName := helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context, "--project", "default", componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			stdout := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.DontMatchAllInOutput(stdout, []string{"odo may not work as expected in the default project"})
+		})
+	})
 })
