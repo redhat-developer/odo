@@ -25,7 +25,7 @@ export PATH="$PATH:$(pwd):$GOPATH/bin"
 shout "Start minikube"
 # Delete minikube instance, if in anycase already exists
 minikube delete
-minikube start --vm-driver=none --container-runtime=docker
+minikube start --vm-driver=docker --container-runtime=docker
 set +x
 # Get kubectl cluster info
 kubectl cluster-info
