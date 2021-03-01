@@ -874,7 +874,23 @@ func (co *CreateOptions) Run() (err error) {
 
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
-		return co.devfileRun()
+		err := co.devfileRun()
+		if err != nil {
+			return err
+		}
+		if log.IsJSON() {
+			envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
+			if err != nil {
+				return err
+			}
+
+			cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.KClient, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
+			if err != nil {
+				return err
+			}
+			machineoutput.OutputSuccess(cfd)
+		}
+		return nil
 	}
 
 	// If not, we run s2i (if the --s2i parameter has been passed in).
