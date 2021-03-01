@@ -80,10 +80,12 @@ func (k kubernetesClient) List() (StorageList, error) {
 	}
 
 	localStorage := ConvertListLocalToMachine(localConfigStorage)
-
-	clusterStorage, err := k.ListFromCluster()
-	if err != nil {
-		return StorageList{}, err
+	var clusterStorage StorageList
+	if k.client.GetKubeClient() != nil {
+		clusterStorage, err = k.ListFromCluster()
+		if err != nil {
+			return StorageList{}, err
+		}
 	}
 
 	var storageList []Storage
