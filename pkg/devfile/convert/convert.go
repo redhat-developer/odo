@@ -14,7 +14,6 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 )
 
