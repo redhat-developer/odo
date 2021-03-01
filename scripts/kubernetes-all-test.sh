@@ -10,8 +10,6 @@ set -ex
 
 shout "Setting up some stuff"
 
-# sudo -i
-
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
 mkdir bin artifacts
 # Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
@@ -23,15 +21,8 @@ export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
-# # Set the default location of go's bin directory. This is where compiled binaries will end up by default
-# export GOPATH=$HOME/go
-
-# # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
-# mkdir -p $GOPATH/bin
-# shout "getting ginkgo"
-# make goget-ginkgo
-# # Add GOPATH which is the bin dir we created earlier to PATH so any binaries there are automatically available in PATH
-# export PATH="$PATH:$(pwd):$GOPATH/bin"
+# This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
+SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
 # Add GOBIN which is the bin dir we created earlier to PATH so any binaries there are automatically available in PATH
 export PATH=$PATH:$GOBIN
@@ -54,10 +45,10 @@ set +x
 kubectl cluster-info
 
 set -x
-# # Prep for integration tests
-# shout "Building odo binaries"
-# make bin
-# cp odo /usr/bin
+# Set kubernetes env var as true, to distinguish the platform inside the tests
 export KUBERNETES=true
+
+# Integration tests
+shout "Running integration Tests"
 make test-cmd-project
 make test-integration-devfile
