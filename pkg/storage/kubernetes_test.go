@@ -94,8 +94,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", getStorageLabels("volume-0", "nodejs", "app")),
-					*testingutil.FakePVC("volume-1", "10Gi", getStorageLabels("volume-1", "nodejs", "app")),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
 				},
 			},
 			want: StorageList{
@@ -129,8 +129,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", getStorageLabels("volume-0", "nodejs", "app")),
-					*testingutil.FakePVC("volume-1", "10Gi", getStorageLabels("volume-1", "nodejs", "app")),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
 				},
 			},
 			want: StorageList{
@@ -162,8 +162,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", getStorageLabels("volume-0", "nodejs", "app")),
-					*testingutil.FakePVC("volume-1", "10Gi", getStorageLabels("volume-1", "nodejs", "app")),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
 				},
 			},
 			wantErr: true,
@@ -187,7 +187,7 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0-nodejs", "5Gi", getStorageLabels("volume-0", "nodejs", "app")),
+					*testingutil.FakePVC("volume-0-nodejs", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
 				},
 			},
 			want: StorageList{
@@ -322,8 +322,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", getStorageLabels("volume-0", "nodejs", "app")),
-					*testingutil.FakePVC("volume-1", "10Gi", getStorageLabels("volume-1", "nodejs", "app")),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
 				},
 			},
 			want: GetMachineReadableFormatForList([]Storage{
@@ -366,8 +366,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-00", "5Gi", getStorageLabels("volume-00", "nodejs", "app")),
-					*testingutil.FakePVC("volume-11", "10Gi", getStorageLabels("volume-11", "nodejs", "app")),
+					*testingutil.FakePVC("volume-00", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-00"}),
+					*testingutil.FakePVC("volume-11", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-11"}),
 				},
 			},
 			want: GetMachineReadableFormatForList([]Storage{
@@ -412,7 +412,6 @@ func Test_kubernetesClient_List(t *testing.T) {
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
 					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
-					*testingutil.FakePVC("volume-0", "5Gi", getStorageLabels("volume-0", "nodejs", "app")),
 				},
 			},
 			want: GetMachineReadableFormatForList([]Storage{
@@ -452,7 +451,6 @@ func Test_kubernetesClient_List(t *testing.T) {
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
 					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
-					*testingutil.FakePVC("volume-0", "5Gi", getStorageLabels("volume-0", "nodejs", "app")),
 				},
 			},
 			want: GetMachineReadableFormatForList([]Storage{
@@ -611,6 +609,8 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			}
 
 			wantLabels := storageLabels.GetLabels(tt.args.storage.Name, tt.fields.generic.componentName, tt.fields.generic.appName, true)
+			wantLabels["component"] = tt.fields.generic.componentName
+			wantLabels[storageLabels.DevfileStorageLabel] = tt.args.storage.Name
 
 			if strings.Contains(tt.args.storage.Name, OdoSourceVolume) {
 				// Add label for source pvc

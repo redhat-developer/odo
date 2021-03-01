@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	storagelabels "github.com/openshift/odo/pkg/storage/labels"
@@ -32,6 +31,9 @@ func (k kubernetesClient) Create(storage Storage) error {
 	}
 
 	labels := storagelabels.GetLabels(storage.Name, k.componentName, k.appName, true)
+
+	labels["component"] = k.componentName
+	labels[storagelabels.DevfileStorageLabel] = storage.Name
 
 	if strings.Contains(storage.Name, OdoSourceVolume) {
 		// Add label for source pvc
@@ -106,7 +108,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, nil
 	}
 
-	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", componentlabels.ComponentLabel, k.localConfig.GetName(), storagelabels.SourcePVCLabel)
+	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", "component", k.localConfig.GetName(), storagelabels.SourcePVCLabel)
 
 	pvcs, err := k.client.GetKubeClient().ListPVCs(selector)
 	if err != nil {
@@ -119,7 +121,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 			if volumeMount.Name == pvc.Name+"-vol" {
 				found = true
 				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-				storage = append(storage, GetMachineFormatWithContainer(pvc.Labels[storagelabels.StorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
+				storage = append(storage, GetMachineFormatWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
 			}
 		}
 		if !found {

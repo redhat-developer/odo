@@ -446,7 +446,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 
 	// update the owner references for the new storage
 	for _, storage := range params.StorageToBeMounted {
-		err := c.GetKubeClient().UpdateStorageOwnerReference(storage, ownerReference)
+		err := c.GetKubeClient().GetAndUpdateStorageOwnerReference(storage, ownerReference)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update owner reference of storage")
 		}
@@ -641,7 +641,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	// update the owner references for the new storage
 	for _, storage := range params.StorageToBeMounted {
-		err := c.GetKubeClient().UpdateStorageOwnerReference(storage, ownerReference)
+		err := c.GetKubeClient().GetAndUpdateStorageOwnerReference(storage, ownerReference)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update owner reference of storage")
 		}
@@ -779,7 +779,7 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 
 	// update the owner references for the new storage
 	for _, storage := range ucp.StorageToBeMounted {
-		err := c.GetKubeClient().UpdateStorageOwnerReference(storage, GenerateOwnerReference(updatedDc))
+		err := c.GetKubeClient().GetAndUpdateStorageOwnerReference(storage, GenerateOwnerReference(updatedDc))
 		if err != nil {
 			return errors.Wrapf(err, "unable to update owner reference of storage")
 		}

@@ -1,8 +1,8 @@
 package kclient
 
 import (
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -69,8 +69,8 @@ func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[s
 	return nil
 }
 
-// UpdateStorageOwnerReference updates the given storage with the given owner references
-func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
+// GetAndUpdateStorageOwnerReference updates the given storage with the given owner references
+func (c *Client) GetAndUpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
 	if len(ownerReference) <= 0 {
 		return errors.New("owner references are empty")
 	}
@@ -83,6 +83,27 @@ func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, 
 		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 	_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(latestPVC)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateStorageOwnerReference updates the given storage with the given owner references
+func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
+	if len(ownerReference) <= 0 {
+		return errors.New("owner references are empty")
+	}
+
+	updatedPVC := generator.GetPVC(generator.PVCParams{
+		ObjectMeta: pvc.ObjectMeta,
+		TypeMeta:   pvc.TypeMeta,
+	})
+
+	updatedPVC.OwnerReferences = ownerReference
+	updatedPVC.Spec = pvc.Spec
+
+	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(updatedPVC)
 	if err != nil {
 		return err
 	}

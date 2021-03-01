@@ -396,7 +396,7 @@ func TestUpdateStorageOwnerReference(t *testing.T) {
 				return true, pvc, nil
 			})
 
-			if err := fakeClient.UpdateStorageOwnerReference(tt.args.pvc, tt.args.ownerReference...); (err != nil) != tt.wantErr {
+			if err := fakeClient.GetAndUpdateStorageOwnerReference(tt.args.pvc, tt.args.ownerReference...); (err != nil) != tt.wantErr {
 				t.Errorf("updateStorageOwnerReference() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

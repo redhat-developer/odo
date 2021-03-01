@@ -167,7 +167,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "unable to create or update component")
 	}
 
-	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
+	deployment, err := a.Client.WaitForDeploymentRollout(a.ComponentName)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
@@ -176,6 +176,23 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	pod, err := a.getPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	// list the latest state of the PVCs
+	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	if err != nil {
+		return err
+	}
+
+	// update the owner reference of the PVCs with the deployment
+	for i := range pvcs {
+		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
+			continue
+		}
+		err = a.Client.UpdateStorageOwnerReference(&pvcs[i], generator.GetOwnerReference(deployment))
+		if err != nil {
+			return err
+		}
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
@@ -280,6 +297,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		LocalConfigProvider: &ei,
 	})
 
+	// handle the ephemeral storage
+	err = utils.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName)
+	if err != nil {
+		return err
+	}
+
 	err = storagepkg.Push(storageClient, &ei)
 	if err != nil {
 		return err
@@ -333,14 +356,8 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	volumeNameToPVCName := make(map[string]string)
 
-	// handle the ephemeral storage
-	err = utils.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName)
-	if err != nil {
-		return err
-	}
-
 	// list all the pvcs for the component
-	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, a.ComponentName))
+	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
 	if err != nil {
 		return err
 	}
@@ -350,7 +367,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		if pvc.DeletionTimestamp != nil {
 			continue
 		}
-		volumeNameToPVCName[pvc.Labels[storagelabels.DevfileStorageLabel]] = pvc.Name
+		volumeNameToPVCName[pvc.Labels[storagelabels.StorageLabel]] = pvc.Name
 	}
 
 	// Get PVC volumes and Volume Mounts
@@ -439,17 +456,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			klog.V(2).Infof("Successfully created Service for component %s", componentName)
 		}
 
-	}
-
-	// update the owner reference of the PVCs with the deployment
-	for i := range pvcs {
-		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
-			continue
-		}
-		err = a.Client.UpdateStorageOwnerReference(&pvcs[i], generator.GetOwnerReference(deployment))
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
