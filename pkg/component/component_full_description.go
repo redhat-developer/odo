@@ -325,7 +325,7 @@ func (cfd *ComponentFullDescription) GetComponent() Component {
 	cmp.Spec.App = cfd.Spec.App
 	cmp.Spec.Ports = cfd.Spec.Ports
 	cmp.Spec.Type = cfd.Spec.Type
-	cmp.Spec.SourceType = cfd.Spec.SourceType
+	cmp.Spec.SourceType = string(config.LOCAL)
 	cmp.Spec.StorageSpec = cfd.Spec.Storage.Items
 	cmp.Spec.URLSpec = cfd.Spec.URL.Items
 	for _, url := range cfd.Spec.URL.Items {
@@ -334,7 +334,7 @@ func (cfd *ComponentFullDescription) GetComponent() Component {
 	for _, storage := range cfd.Spec.Storage.Items {
 		cmp.Spec.Storage = append(cmp.Spec.URL, storage.Name)
 	}
-	cmp.Namespace = cfd.Namespace
+	cmp.ObjectMeta.Namespace = cfd.ObjectMeta.Namespace
 	cmp.Status = cfd.Status
 	cmp.Spec.Env = cfd.Spec.Env
 	return cmp
