@@ -6,6 +6,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/tidwall/gjson"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/pkg/util"
@@ -98,6 +100,15 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext)
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
+		})
+
+		It("should successfully create the devfile component and show json output", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
+			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
 		})
 	})
 

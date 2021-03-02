@@ -1033,7 +1033,6 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 
 // GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
 func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
-	fmt.Println(info.Exists())
 	if info.Exists() {
 		devfile, err := parser.Parse(info.GetDevfilePath())
 		if err != nil {
