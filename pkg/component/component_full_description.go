@@ -187,7 +187,6 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	}
 	cfd.Spec.URL = urls
 
-	fmt.Printf("\n %+v\n", cfd.Spec.URL)
 	err = cfd.loadStoragesFromClientAndLocalConfig(client, kClient, configProvider, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
