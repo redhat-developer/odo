@@ -888,7 +888,7 @@ func (co *CreateOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			machineoutput.OutputSuccess(cfd)
+			machineoutput.OutputSuccess(cfd.GetComponent())
 		}
 		return nil
 	}

@@ -187,6 +187,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	}
 	cfd.Spec.URL = urls
 
+	fmt.Printf("\n %+v\n", cfd.Spec.URL)
 	err = cfd.loadStoragesFromClientAndLocalConfig(client, kClient, configProvider, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
@@ -318,4 +319,24 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 
 	}
 	return nil
+}
+
+func (cfd *ComponentFullDescription) GetComponent() Component {
+	cmp := NewComponent(cfd.Name)
+	cmp.Spec.App = cfd.Spec.App
+	cmp.Spec.Ports = cfd.Spec.Ports
+	cmp.Spec.Type = cfd.Spec.Type
+	cmp.Spec.SourceType = cfd.Spec.SourceType
+	cmp.Spec.StorageSpec = cfd.Spec.Storage.Items
+	cmp.Spec.URLSpec = cfd.Spec.URL.Items
+	for _, url := range cfd.Spec.URL.Items {
+		cmp.Spec.URL = append(cmp.Spec.URL, url.Name)
+	}
+	for _, storage := range cfd.Spec.Storage.Items {
+		cmp.Spec.Storage = append(cmp.Spec.URL, storage.Name)
+	}
+	cmp.Namespace = cfd.Namespace
+	cmp.Status = cfd.Status
+	cmp.Spec.Env = cfd.Spec.Env
+	return cmp
 }
