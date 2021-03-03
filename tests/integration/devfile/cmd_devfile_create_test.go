@@ -108,7 +108,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
-			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
 		})
 	})
 
