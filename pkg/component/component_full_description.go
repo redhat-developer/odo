@@ -114,7 +114,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	cfd := &ComponentFullDescription{}
 	var state State
 	if client == nil {
-		state = StateTypeNotPushed
+		state = StateTypeUnknown
 	} else {
 		state = GetComponentState(client, componentName, applicationName)
 	}
