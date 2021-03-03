@@ -7,7 +7,7 @@ shout() {
 }
 
 set -ex
-
+export MINISHIFT_GITHUB_API_TOKEN=$MINISHIFT_GITHUB_API_TOKEN_VALUE
 msStatus=$(minishift status)
 shout "| Checking if Minishift needs to be started..."
 if [[ "$msStatus" == *"Does Not Exist"* ]] || [[ "$msStatus" == *"Minishift:  Stopped"* ]]
