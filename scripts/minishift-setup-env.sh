@@ -20,6 +20,6 @@ make goget-ginkgo
 
 executing "| Building ODO..."
 make bin
-sudo cp odo /usr/bin
+sudo cp odo $GOPATH/bin
 
 export MINISHIFT_ENABLE_EXPERIMENTAL=y 
