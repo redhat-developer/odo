@@ -21,7 +21,7 @@ const (
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
-	return c.IsResourceSupported("operators.coreos.com", "v1alpha1", "servicebindings")
+	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
 }
 
 // IsCSVSupported checks if resource of type service binding request present on the cluster

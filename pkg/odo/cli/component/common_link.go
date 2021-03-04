@@ -25,7 +25,7 @@ import (
 var (
 	// Hardcoded variables since we can't install SBO on k8s using OLM
 	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
-	serviceBindingGroup    = "operators.coreos.com"
+	serviceBindingGroup    = "binding.operators.coreos.com"
 	serviceBindingVersion  = "v1alpha1"
 	serviceBindingKind     = "ServiceBinding"
 	serviceBindingResource = "servicebindings"

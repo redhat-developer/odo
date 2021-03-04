@@ -34,7 +34,7 @@ install_service_binding_operator(){
     name: rh-service-binding-operator
     source: redhat-operators
     sourceNamespace: openshift-marketplace
-    startingCSV: service-binding-operator.v0.3.0
+    startingCSV: service-binding-operator.v0.5.0
 EOF
 }
 
