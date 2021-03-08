@@ -140,9 +140,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
 			kubeconfigOld := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
-			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json")
-			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
-			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", newContext, "-o", "json")
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
 			os.Setenv("KUBECONFIG", kubeconfigOld)
