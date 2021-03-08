@@ -2,8 +2,9 @@ package list
 
 import (
 	"fmt"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
@@ -36,8 +37,10 @@ func NewServiceOptions() *ServiceOptions {
 
 // Complete completes ListServicesOptions after they've been created
 func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
-
+	o.Context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
 	o.csvs, err = catalog.ListOperatorServices(o.KClient)
 	if err != nil {
 		if strings.Contains(err.Error(), "could not find specified operator") {

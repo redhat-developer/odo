@@ -45,7 +45,10 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	tasks := util.NewConcurrentTasks(2)
 
 	if !pushtarget.IsPushTargetDocker() {
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.NewContext(cmd)
+		if err != nil {
+			return err
+		}
 		supported, err := o.Client.IsImageStreamSupported()
 		if err != nil {
 			klog.V(4).Info("ignoring error while checking imagestream support:", err.Error())

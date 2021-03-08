@@ -2,9 +2,10 @@ package describe
 
 import (
 	"fmt"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"os"
 	"text/tabwriter"
+
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/devfile/library/pkg/devfile"
 
@@ -58,8 +59,10 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 	tasks := util.NewConcurrentTasks(2)
 
 	if !pushtarget.IsPushTargetDocker() {
-		o.Context = genericclioptions.NewContext(cmd, true)
-
+		o.Context, err = genericclioptions.NewContext(cmd, true)
+		if err != nil {
+			return err
+		}
 		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			catalogList, err := catalog.ListComponents(o.Client)
 			if err != nil {

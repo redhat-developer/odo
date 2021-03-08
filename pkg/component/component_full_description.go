@@ -157,7 +157,8 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	} else {
 		routeSupported, e = client.IsRouteSupported()
 		if e != nil {
-			return cfd, e
+			// we assume if there was an error then the cluster is not connected
+			routeSupported = false
 		}
 	}
 

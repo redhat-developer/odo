@@ -2,12 +2,13 @@ package genericclioptions
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	odoutil "github.com/openshift/odo/pkg/util"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -64,7 +65,10 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 
 	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
 	if isDevfile {
-		context = NewDevfileContext(parameters.Cmd)
+		context, err = NewDevfileContext(parameters.Cmd)
+		if err != nil {
+			return context, err
+		}
 		context.ComponentContext = parameters.ComponentContext
 
 		err = context.InitEnvInfoFromContext()
@@ -86,10 +90,16 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 		context.LocalConfigProvider = context.EnvSpecificInfo
 	} else {
 		if parameters.IsNow {
-			context = NewContextCreatingAppIfNeeded(parameters.Cmd)
+			context, err = NewContextCreatingAppIfNeeded(parameters.Cmd)
+			if err != nil {
+				return nil, err
+			}
 			context.ComponentContext = parameters.ComponentContext
 		} else {
-			context = NewContext(parameters.Cmd)
+			context, err = NewContext(parameters.Cmd)
+			if err != nil {
+				return nil, err
+			}
 			context.ComponentContext = parameters.ComponentContext
 		}
 
@@ -131,7 +141,7 @@ func completeDevfilePath(componentContext, devfilePath string) string {
 }
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewContext(command *cobra.Command, toggles ...bool) *Context {
+func NewContext(command *cobra.Command, toggles ...bool) (*Context, error) {
 	ignoreMissingConfig := false
 	createApp := false
 	if len(toggles) == 1 {
@@ -144,13 +154,13 @@ func NewContext(command *cobra.Command, toggles ...bool) *Context {
 }
 
 // NewDevfileContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewDevfileContext(command *cobra.Command) *Context {
+func NewDevfileContext(command *cobra.Command) (*Context, error) {
 	return newDevfileContext(command, false)
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
 // provided command, creating the application if none already exists
-func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
+func NewContextCreatingAppIfNeeded(command *cobra.Command) (*Context, error) {
 	return newContext(command, true, false)
 }
 
@@ -177,24 +187,38 @@ func NewConfigContext(command *cobra.Command) *Context {
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
-	return newContext(command, false, true)
+	ctx, err := newContext(command, false, true)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	return ctx
 }
 
 // UpdatedContext returns a new context updated from config file
 func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error) {
 	localConfiguration, err := getValidConfig(context.command, false)
-	return newContext(context.command, true, false), localConfiguration, err
+	if err != nil {
+		return nil, nil, err
+	}
+	ctx, err := newContext(context.command, true, false)
+	if err != nil {
+		return nil, localConfiguration, err
+	}
+	return ctx, localConfiguration, err
 }
 
 // newContext creates a new context based on the command flags, creating missing app when requested
-func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
+func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) (*Context, error) {
 	// Create a new occlient
-	client := client(command)
+	client, err := client(command)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a new kclient
 	KClient, err := kclient.New()
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return nil, err
 	}
 
 	// Check for valid config
@@ -226,11 +250,11 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		internalCxt: internalCxt,
 	}
 
-	return context
+	return context, nil
 }
 
 // newDevfileContext creates a new context based on command flags for devfile components
-func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) *Context {
+func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error) {
 
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -256,8 +280,14 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) *Context 
 	if !pushtarget.IsPushTargetDocker() {
 
 		// Create a new kubernetes client
-		internalCxt.KClient = kClient(command)
-		internalCxt.Client = client(command)
+		internalCxt.KClient, err = kClient(command)
+		if err != nil {
+			return nil, err
+		}
+		internalCxt.Client, err = client(command)
+		if err != nil {
+			return nil, err
+		}
 
 		// Gather the environment information
 		internalCxt.EnvSpecificInfo = envInfo
@@ -272,7 +302,7 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) *Context 
 	context := &Context{
 		internalCxt: internalCxt,
 	}
-	return context
+	return context, nil
 }
 
 // NewOfflineDevfileContext initializes a context for devfile components without any cluster calls
