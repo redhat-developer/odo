@@ -89,7 +89,10 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	if !o.IsDevfile {
 		if o.now {
-			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			o.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			if err != nil {
+				return err
+			}
 			prjName := o.LocalConfigInfo.GetProject()
 			o.ResolveSrcAndConfigFlags()
 			err = o.ResolveProject(prjName)

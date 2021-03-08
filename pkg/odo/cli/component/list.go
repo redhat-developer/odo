@@ -61,7 +61,10 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	if util.CheckPathExists(lo.devfilePath) {
 
-		lo.Context = genericclioptions.NewDevfileContext(cmd)
+		lo.Context, err = genericclioptions.NewDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 		if err != nil {
 			return err
@@ -82,7 +85,10 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
-			lo.Context = genericclioptions.NewContext(cmd, false, true)
+			lo.Context, err = genericclioptions.NewContext(cmd, false, true)
+			if err != nil {
+				return err
+			}
 			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 			if err != nil {
 				return err

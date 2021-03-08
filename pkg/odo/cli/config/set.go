@@ -96,7 +96,10 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 
 		// we initialize the context irrespective of --now flag being provided
 		if o.now {
-			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			o.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			if err != nil {
+				return err
+			}
 			prjName := o.LocalConfigInfo.GetProject()
 			o.ResolveSrcAndConfigFlags()
 			err = o.ResolveProject(prjName)

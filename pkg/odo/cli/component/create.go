@@ -337,9 +337,12 @@ func (co *CreateOptions) checkConflictingDevfileFlags() error {
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if co.forceS2i || co.now {
 		// this populates the LocalConfigInfo as well
-		co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	} else {
 		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+	}
+	if err != nil {
+		return err
 	}
 
 	err = co.checkConflictingFlags()
@@ -633,7 +636,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// the component type was not found for devfile components
 	// fallback to s2i
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	if err != nil {
+		return err
+	}
 
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
