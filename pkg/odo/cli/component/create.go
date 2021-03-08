@@ -338,11 +338,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if co.forceS2i || co.now {
 		// this populates the LocalConfigInfo as well
 		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		if err != nil {
+			return err
+		}
 	} else {
-		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
-	}
-	if err != nil {
-		return err
+		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		if err != nil {
+			co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+		}
 	}
 
 	err = co.checkConflictingFlags()
