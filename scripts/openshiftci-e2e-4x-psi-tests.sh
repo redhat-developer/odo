@@ -17,7 +17,7 @@ export RUNSCRIPT=${RUNSCRIPT:-"scripts/run_script_e2e.sh"}
 # show commands
 set -x
 
-export JOB_NAME="odo-pr-build"
+export JOB_NAME=${JOB_NAME:-"odo-pr-build"}
 export REPO_URL="https://github.com/openshift/odo"
 # Extract PR NUMBER from prow job spec, which is injected by prow.
 export TARGET="$(jq .refs.pulls[0].number <<< $(echo $JOB_SPEC))"
