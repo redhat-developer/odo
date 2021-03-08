@@ -36,7 +36,7 @@ func NewProjectListOptions() *ProjectListOptions {
 
 // Complete completes ProjectListOptions after they've been created
 func (plo *ProjectListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	plo.Context = genericclioptions.NewContext(cmd)
+	plo.Context, err = genericclioptions.NewContext(cmd)
 	return
 }
 

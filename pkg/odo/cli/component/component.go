@@ -38,6 +38,7 @@ func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []str
 	} else {
 		co.Context = genericclioptions.NewContext(cmd)
 	}
+
 	co.componentName = co.Context.Component(args...)
 	return
 }

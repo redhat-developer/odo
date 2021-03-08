@@ -32,7 +32,10 @@ func NewSearchServiceOptions() *SearchServiceOptions {
 // Complete completes SearchServiceOptions after they've been created
 func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	var noCsvs, noServices bool
-	o.Context = genericclioptions.NewContext(cmd)
+	o.Context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
 	o.searchTerm = args[0]
 	o.csvs, err = o.KClient.SearchClusterServiceVersionList(o.searchTerm)
 	if err != nil {
