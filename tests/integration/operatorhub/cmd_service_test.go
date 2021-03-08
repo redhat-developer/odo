@@ -457,7 +457,6 @@ spec:
 				return strings.Contains(output, "Running")
 			})
 
-			// stdOut = helper.CmdShouldRunWithTimeout(1*time.Minute, "odo", "unlink", "EtcdCluster/example")
 			stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))
 			helper.CmdShouldPass("odo", "push")
