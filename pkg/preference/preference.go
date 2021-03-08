@@ -90,6 +90,12 @@ const (
 
 	// DefaultEphemeralSettings is a default value for Ephemeral preference
 	DefaultEphemeralSettings = true
+
+	// ConsentTelemetrySettings specifies if the user consents to telemetry
+	ConsentTelemetrySetting = "ConsentTelemetry"
+
+	// DefaultConsentTelemetry is a default value for ConsentTelemetry preference
+	DefaultConsentTelemetrySetting = false
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -107,6 +113,9 @@ var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo wi
 // EphemeralDescription adds a description for EphemeralSourceVolume
 var EphemeralDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code (Default: %t)", DefaultEphemeralSettings)
 
+//TelemetryConsentDescription adds a description for TelemetryConsentSetting
+var ConsentTelemetryDescription = fmt.Sprintf("If true odo will collect telemetry for the user's odo usage (Default: %t)\n\t\t    For more information: https://developers.redhat.com/article/tool-data-collection", DefaultConsentTelemetrySetting)
+
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
@@ -123,6 +132,7 @@ var (
 		PushTargetSetting:         PushTargetDescription,
 		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
 		EphemeralSetting:          EphemeralDescription,
+		ConsentTelemetrySetting:   ConsentTelemetryDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -167,6 +177,9 @@ type OdoSettings struct {
 
 	// Ephemeral if true creates odo emptyDir to store odo source code
 	Ephemeral *bool `yaml:"Ephemeral,omitempty"`
+
+	// ConsentTelemetry if true collects telemetry for odo
+	ConsentTelemetry *bool `yaml:"ConsentTelemetry,omitempty"`
 }
 
 // Registry includes the registry metadata
@@ -411,6 +424,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			}
 			c.OdoSettings.UpdateNotification = &val
 
+		//	TODO: should we add a validator here? What is the use of nameprefix?
 		case "nameprefix":
 			c.OdoSettings.NamePrefix = &value
 
@@ -434,6 +448,13 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 				return errors.Errorf("cannot set pushtarget to values other than '%s' or '%s'", DockerPushTarget, KubePushTarget)
 			}
 			c.OdoSettings.PushTarget = &val
+
+		case "consenttelemetry":
+			val, err := strconv.ParseBool(strings.ToLower(value))
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			c.OdoSettings.ConsentTelemetry = &val
 		}
 	} else {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo preference", parameter)
@@ -521,10 +542,17 @@ func (c *PreferenceInfo) GetExperimental() bool {
 }
 
 // GetPushTarget returns the value of PushTarget from preferences
-// and if absent then returns defualt
+// and if absent then returns default
 // default value: kube, docker push target needs to be manually enabled
 func (c *PreferenceInfo) GetPushTarget() string {
 	return util.GetStringOrDefault(c.OdoSettings.PushTarget, KubePushTarget)
+}
+
+// GetConsentTelemetry returns the value of ConsentTelemetry from preferences
+// and if absent then returns default
+// default value: false, consent telemetry is disabled by default
+func (c *PreferenceInfo) GetConsentTelemetry() bool {
+	return util.GetBoolOrDefault(c.OdoSettings.ConsentTelemetry, DefaultConsentTelemetrySetting)
 }
 
 // FormatSupportedParameters outputs supported parameters and their description

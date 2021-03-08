@@ -86,6 +86,13 @@ func toPreferenceItems(prefInfo PreferenceInfo) []PreferenceItem {
 			Type:        getType(prefInfo.GetPushTarget()),
 			Description: PushTargetDescription,
 		},
+		{
+			Name:        ConsentTelemetrySetting,
+			Value:       odoSettings.ConsentTelemetry,
+			Default:     DefaultConsentTelemetrySetting,
+			Type:        getType(prefInfo.GetConsentTelemetry()),
+			Description: ConsentTelemetryDescription,
+		},
 	}
 }
 

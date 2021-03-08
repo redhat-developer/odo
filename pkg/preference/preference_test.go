@@ -919,3 +919,57 @@ func TestHandleWithRegistryExist(t *testing.T) {
 		}
 	}
 }
+
+func TestGetConsentTelemetry(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	trueValue := true
+	falseValue := false
+
+	tests := []struct {
+		name           string
+		existingConfig Preference
+		want           bool
+	}{{
+		name:           fmt.Sprintf("Case 1: %s nil", ConsentTelemetrySetting),
+		existingConfig: Preference{},
+		want:           false,
+	},
+		{
+			name: fmt.Sprintf("Case 2: %s true", ConsentTelemetrySetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					ConsentTelemetry: &trueValue,
+				},
+			},
+			want: true,
+		},
+		{
+			name: fmt.Sprintf("Case 3: %s false", ConsentTelemetrySetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					ConsentTelemetry: &falseValue,
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := PreferenceInfo{
+				Preference: tt.existingConfig,
+			}
+			output := cfg.GetConsentTelemetry()
+
+			if output != tt.want {
+				t.Errorf("GetConsentTelemetry returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
+			}
+
+		})
+	}
+}

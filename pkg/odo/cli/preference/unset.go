@@ -31,6 +31,7 @@ var (
    %[1]s %[6]s
    %[1]s %[7]s
    %[1]s %[8]s
+   %[1]s %[9]s
 	`)
 )
 
@@ -97,7 +98,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
 			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
 			preference.TimeoutSetting, preference.BuildTimeoutSetting, preference.PushTimeoutSetting,
-			preference.ExperimentalSetting, preference.PushTargetSetting),
+			preference.ExperimentalSetting, preference.PushTargetSetting, preference.ConsentTelemetrySetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")
