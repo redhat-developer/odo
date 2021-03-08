@@ -321,6 +321,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 	return nil
 }
 
+// GetComponent returns a Component
 func (cfd *ComponentFullDescription) GetComponent() Component {
 	cmp := NewComponent(cfd.Name)
 	cmp.Spec.App = cfd.Spec.App
