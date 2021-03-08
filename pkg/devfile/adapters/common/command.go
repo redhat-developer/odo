@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/log"
@@ -61,7 +61,10 @@ func getCommand(data data.DevfileData, commandName string, groupType devfilev1.C
 
 // getCommandFromDevfile iterates through the devfile commands and returns the command associated with the group
 func getCommandFromDevfile(data data.DevfileData, groupType devfilev1.CommandGroupKind) (supportedCommand devfilev1.Command, err error) {
-	commands := data.GetCommands()
+	commands, err := data.GetCommands(parsercommon.DevfileOptions{})
+	if err != nil {
+		return devfilev1.Command{}, err
+	}
 	var onlyCommand devfilev1.Command
 
 	// validate the command groups before searching for a command match
@@ -116,7 +119,10 @@ func getCommandFromDevfile(data data.DevfileData, groupType devfilev1.CommandGro
 
 // getCommandFromFlag iterates through the devfile commands and returns the command specified associated with the group
 func getCommandFromFlag(data data.DevfileData, groupType devfilev1.CommandGroupKind, commandName string) (supportedCommand devfilev1.Command, err error) {
-	commands := data.GetCommands()
+	commands, err := data.GetCommands(parsercommon.DevfileOptions{})
+	if err != nil {
+		return devfilev1.Command{}, err
+	}
 
 	for _, command := range commands {
 		if command.Id == commandName {
@@ -150,7 +156,12 @@ func getCommandFromFlag(data data.DevfileData, groupType devfilev1.CommandGroupK
 // 2. multiple commands belonging to a single group cannot have more than one default
 func validateCommandsForGroup(data data.DevfileData, groupType devfilev1.CommandGroupKind) error {
 
-	commands := getCommandsByGroup(data, groupType)
+	devfileCommands, err := data.GetCommands(parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	commands := getCommandsByGroup(devfileCommands, groupType)
 
 	if len(commands) == 0 {
 		return NoCommandForGroup{Group: groupType}

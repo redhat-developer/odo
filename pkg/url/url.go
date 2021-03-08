@@ -5,14 +5,11 @@ import (
 	"net"
 	"reflect"
 	"strconv"
-	"strings"
 
-	"github.com/devfile/library/pkg/devfile/generator"
-
-	"github.com/gosimple/slug"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	types "github.com/docker/docker/api/types"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -290,7 +287,10 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 		return URLList{}, errors.Wrap(err, "unable to list component container")
 	}
 
-	localURLs := envSpecificInfo.ListURLs()
+	localURLs, err := envSpecificInfo.ListURLs()
+	if err != nil {
+		return URLList{}, err
+	}
 
 	var urls []URL
 
@@ -606,22 +606,20 @@ type PushParameters struct {
 func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParameters) error {
 	urlLOCAL := make(map[string]URL)
 
+	localConfigURLs, err := parameters.LocalConfig.ListURLs()
+	if err != nil {
+		return err
+	}
+
 	// get the local URLs
-	for _, url := range parameters.LocalConfig.ListURLs() {
+	for _, url := range localConfigURLs {
 		if !parameters.IsRouteSupported && url.Kind == localConfigProvider.ROUTE {
 			// display warning since Host info is missing
 			log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", url.Name)
 			continue
 		}
 
-		// TODO remove once https://github.com/openshift/odo/issues/4060 is fixed
-		var urlName string
-		if parameters.IsS2I {
-			urlName = url.Name
-		} else {
-			urlName = getValidURLName(url.Name)
-		}
-		urlLOCAL[urlName] = ConvertLocalURL(url)
+		urlLOCAL[url.Name] = ConvertLocalURL(url)
 	}
 
 	log.Info("\nApplying URL changes")
@@ -721,13 +719,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	return nil
-}
-
-// getValidURLName returns valid URL resource name for Kubernetes based cluster
-func getValidURLName(name string) string {
-	trimmedName := strings.TrimSpace(slug.Make(name))
-	trimmedName = util.TruncateString(trimmedName, 15)
-	return trimmedName
 }
 
 type ClientOptions struct {

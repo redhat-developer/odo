@@ -3,9 +3,11 @@ package generic
 import (
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/testingutil"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/pkg/testingutil"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 )
 
 var buildGroup = devfilev1.BuildCommandGroupKind
@@ -172,11 +174,20 @@ func TestValidateCommands(t *testing.T) {
 			Data: &devfileData,
 		}
 
-		commands := devObj.Data.GetCommands()
-		components := devObj.Data.GetComponents()
+		commands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
+		if err != nil {
+			t.Errorf("unexpected error occured: %v", err)
+		}
+
+		components, err := devObj.Data.GetComponents(parsercommon.DevfileOptions{})
+		if err != nil {
+			t.Errorf("unexpected error occured: %v", err)
+		}
+
+		commandsMap := common.GetCommandsMap(commands)
 
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateCommands(devfileData.Commands, commands, components)
+			err := validateCommands(devfileData.Commands, commandsMap, components)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return
@@ -297,7 +308,10 @@ func TestValidateExecCommand(t *testing.T) {
 			Data: &devfileData,
 		}
 
-		components := devObj.Data.GetComponents()
+		components, err := devObj.Data.GetComponents(parsercommon.DevfileOptions{})
+		if err != nil {
+			t.Errorf("unexpected error occured: %v", err)
+		}
 
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateExecCommand(tt.exec, components)
@@ -660,14 +674,21 @@ func TestValidateCompositeCommand(t *testing.T) {
 			},
 		}
 
-		commands := devObj.Data.GetCommands()
-		components := devObj.Data.GetComponents()
+		commands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
+		if err != nil {
+			t.Errorf("unexpected error occured: %v", err)
+		}
+		components, err := devObj.Data.GetComponents(parsercommon.DevfileOptions{})
+		if err != nil {
+			t.Errorf("unexpected error occured: %v", err)
+		}
 
+		commandsMap := common.GetCommandsMap(commands)
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := tt.compositeCommands[0]
 			parentCommands := make(map[string]string)
 
-			err := validateCompositeCommand(&cmd, parentCommands, commands, components)
+			err := validateCompositeCommand(&cmd, parentCommands, commandsMap, components)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return

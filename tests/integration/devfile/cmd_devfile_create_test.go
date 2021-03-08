@@ -52,12 +52,9 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should successfully create the devfile component", func() {
 			componentNamespace := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "java-openliberty", "--project", componentNamespace)
-		})
-
-		It("should fail to create the devfile component if --project value is 'default'", func() {
-			output := helper.CmdShouldFail("odo", "create", "java", "--project", "default")
-			expectedString := "odo may not work as expected in the default project, please run the odo component in a non-default project"
-			helper.MatchAllInOutput(output, []string{expectedString})
+			fileContents, err := helper.ReadFile(filepath.Join(commonVar.Context, ".odo/env/env.yaml"))
+			Expect(err).To(BeNil())
+			Expect(fileContents).To(ContainSubstring(componentNamespace))
 		})
 
 	})

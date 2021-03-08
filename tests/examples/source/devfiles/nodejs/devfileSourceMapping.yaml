@@ -18,7 +18,7 @@ components:
         - name: "nodejs"
           targetPort: 3000
 commands:
-  - id: devBuild
+  - id: devbuild
     exec:
       component: runtime
       commandLine: npm install
@@ -26,7 +26,7 @@ commands:
       group:
         kind: build
         isDefault: true
-  - id: devRun
+  - id: devrun
     exec:
       component: runtime
       commandLine: npm start

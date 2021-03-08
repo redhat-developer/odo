@@ -2,16 +2,18 @@ package envinfo
 
 import (
 	"fmt"
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/testingutil"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/pkg/testingutil"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -165,6 +167,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 		deleteParam     string
 		remainingParam  string
 		singleURL       bool
+		wantErr         bool
 	}{
 		{
 			name: fmt.Sprintf("Case 1: delete %s from multiple URLs", testURL1.Name),
@@ -241,12 +244,21 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 			esi.EnvInfo = tt.existingEnvInfo
 			esi.SetDevfileObj(tt.existingDevfile)
 
-			oldURLLength := len(esi.ListURLs())
+			urls, err := esi.ListURLs()
+			if err != nil {
+				t.Error(err)
+			}
+			oldURLLength := len(urls)
 			err = esi.DeleteURL(tt.deleteParam)
 			if err != nil {
 				t.Error(err)
 			}
-			newURLLength := len(esi.ListURLs())
+
+			urls, err = esi.ListURLs()
+			if err != nil {
+				t.Error(err)
+			}
+			newURLLength := len(urls)
 			if newURLLength+1 != oldURLLength {
 				t.Errorf("DeleteURL is expected to delete element %s from the URL array.", tt.deleteParam)
 			}
@@ -255,7 +267,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 					t.Errorf("Expect to have empty URL array if delete URL from URL array with only 1 element")
 				}
 			} else {
-				if esi.ListURLs()[0].Name != tt.remainingParam {
+				if urls[0].Name != tt.remainingParam {
 					t.Errorf("Expect to have element %s in the URL array", tt.remainingParam)
 				}
 			}
@@ -546,8 +558,12 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
 			}
-			if !reflect.DeepEqual(tt.devObj.Data.GetComponents(), tt.wantComponents) {
-				t.Errorf("Expected: %v, got %v", tt.wantComponents, tt.devObj.Data.GetComponents())
+			components, err := tt.devObj.Data.GetComponents(common.DevfileOptions{})
+			if err != nil {
+				t.Errorf("Unexpected err from addEndpointInDevfile: %v", err)
+			}
+			if !reflect.DeepEqual(components, tt.wantComponents) {
+				t.Errorf("Expected: %v, got %v", tt.wantComponents, components)
 			}
 
 		})
@@ -788,12 +804,16 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := removeEndpointInDevfile(tt.devObj, tt.urlName)
 			if !tt.wantErr && err != nil {
-				t.Errorf("Unexpected err from UpdateEndpointsInDevfile: %v", err)
+				t.Errorf("Unexpected err from removeEndpointInDevfile: %v", err)
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
 			}
-			if !reflect.DeepEqual(tt.devObj.Data.GetComponents(), tt.wantComponents) {
-				t.Errorf("Expected: %v, got %v", tt.wantComponents, tt.devObj.Data.GetComponents())
+			components, err := tt.devObj.Data.GetComponents(common.DevfileOptions{})
+			if err != nil {
+				t.Errorf("Unexpected err from removeEndpointInDevfile: %v", err)
+			}
+			if !reflect.DeepEqual(components, tt.wantComponents) {
+				t.Errorf("Expected: %v, got %v", tt.wantComponents, components)
 			}
 
 		})

@@ -275,6 +275,45 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) *Context 
 	return context
 }
 
+// NewOfflineDevfileContext initializes a context for devfile components without any cluster calls
+func NewOfflineDevfileContext(command *cobra.Command) *Context {
+	// Resolve output flag
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
+
+	// Create the internal context representation based on calculated values
+	internalCxt := internalCxt{
+		OutputFlag: outputFlag,
+		command:    command,
+		// this is only so we can make devfile and s2i work together for certain cases
+		LocalConfigInfo: &config.LocalConfigInfo{},
+	}
+
+	// Get valid env information
+	envInfo, err := getValidEnvInfo(command)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+
+	internalCxt.EnvSpecificInfo = envInfo
+	internalCxt.resolveApp(false, envInfo)
+
+	// resolve the component
+	internalCxt.resolveAndSetComponent(command, envInfo)
+
+	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+	if projectFlag != "" {
+		internalCxt.Project = projectFlag
+	} else {
+		envInfo.GetNamespace()
+	}
+
+	// Create a context from the internal representation
+	context := &Context{
+		internalCxt: internalCxt,
+	}
+	return context
+}
+
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
 // an error
 func (o *Context) Component(optionalComponent ...string) string {

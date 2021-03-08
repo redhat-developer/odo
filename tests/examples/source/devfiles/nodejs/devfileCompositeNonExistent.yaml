@@ -41,7 +41,7 @@ commands:
       group:
         kind: run
         isDefault: true
-  - id: buildAndMkdir
+  - id: buildandmkdir
     composite:
          label: Build and Mkdir
          commands:

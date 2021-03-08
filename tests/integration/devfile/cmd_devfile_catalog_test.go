@@ -79,4 +79,10 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: " + registryName})
 		})
 	})
+
+	Context("When checking catalog for installed services", func() {
+		It("should succeed", func() {
+			helper.CmdShouldPass("odo", "catalog", "list", "services")
+		})
+	})
 })

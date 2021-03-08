@@ -5,7 +5,7 @@ metadata:
 parent:
   uri: https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml
 commands:
-  - id: devBuild
+  - id: devbuild
     exec:
       component: runtime
       commandLine: touch blah.js

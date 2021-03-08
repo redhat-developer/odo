@@ -15,6 +15,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -382,14 +383,20 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	cmpName := componentConfig.GetName()
 	cmpType := componentConfig.GetType()
 	cmpSrcType := componentConfig.GetSourceType()
-	cmpPorts := componentConfig.GetPorts()
+	cmpPorts, err := componentConfig.GetPorts()
+	if err != nil {
+		return err
+	}
 	cmpSrcRef := componentConfig.GetRef()
 	appName := componentConfig.GetApplication()
 	envVarsList := componentConfig.GetEnvVars()
 	addDebugPortToEnv(&envVarsList, componentConfig)
 
 	// create and get the storage to be created/mounted during the component creation
-	storageList := getStorageFromConfig(&componentConfig)
+	storageList, err := getStorageFromConfig(&componentConfig)
+	if err != nil {
+		return err
+	}
 	storageToBeMounted, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
 	if err != nil {
 		return err
@@ -994,11 +1001,17 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 
 // GetComponentFromConfig returns the component on the config if it exists
 func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, error) {
-	component := getComponentFrom(localConfig, localConfig.GetType())
+	component, err := getComponentFrom(localConfig, localConfig.GetType())
+	if err != nil {
+		return Component{}, err
+	}
 	if len(component.Name) > 0 {
 		location := localConfig.GetSourceLocation()
 		sourceType := localConfig.GetSourceType()
-		component.Spec.Ports = localConfig.GetPorts()
+		component.Spec.Ports, err = localConfig.GetPorts()
+		if err != nil {
+			return Component{}, err
+		}
 		component.Spec.SourceType = string(sourceType)
 		component.Spec.Source = location
 
@@ -1006,7 +1019,11 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 			component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: localEnv.Name, Value: localEnv.Value})
 		}
 
-		for _, localStorage := range localConfig.ListStorage() {
+		configStorage, err := localConfig.ListStorage()
+		if err != nil {
+			return Component{}, err
+		}
+		for _, localStorage := range configStorage {
 			component.Spec.Storage = append(component.Spec.Storage, localStorage.Name)
 		}
 		return component, nil
@@ -1021,8 +1038,15 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 		if err != nil {
 			return Component{}, parser.DevfileObj{}, err
 		}
-		component := getComponentFrom(info, devfile.Data.GetMetadata().Name)
-		for _, cmp := range devfile.Data.GetComponents() {
+		component, err := getComponentFrom(info, devfile.Data.GetMetadata().Name)
+		if err != nil {
+			return Component{}, parser.DevfileObj{}, err
+		}
+		components, err := devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+		if err != nil {
+			return Component{}, parser.DevfileObj{}, err
+		}
+		for _, cmp := range components {
 			if cmp.Container != nil {
 				for _, env := range cmp.Container.Env {
 					component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
@@ -1035,7 +1059,7 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 	return Component{}, parser.DevfileObj{}, nil
 }
 
-func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) Component {
+func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
 	if info.Exists() {
 		component := getMachineReadableFormat(info.GetName(), componentType)
 
@@ -1047,16 +1071,19 @@ func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentTyp
 			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
 		}
 
-		urls := info.ListURLs()
+		urls, err := info.ListURLs()
+		if err != nil {
+			return Component{}, err
+		}
 		if len(urls) > 0 {
 			for _, url := range urls {
 				component.Spec.URL = append(component.Spec.URL, url.Name)
 			}
 		}
 
-		return component
+		return component, nil
 	}
-	return Component{}
+	return Component{}, nil
 }
 
 // ListIfPathGiven lists all available component in given path directory
@@ -1085,7 +1112,10 @@ func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, erro
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
 				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
-				a.Spec.Ports = data.GetPorts()
+				a.Spec.Ports, err = data.GetPorts()
+				if err != nil {
+					return err
+				}
 				a.Spec.SourceType = string(data.GetSourceType())
 				a.Status.Context = con
 				if client != nil {
@@ -1189,12 +1219,18 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 	newSourceType := componentConfig.GetSourceType()
 	newSourceRef := componentConfig.GetRef()
 	componentImageType := componentConfig.GetType()
-	cmpPorts := componentConfig.GetPorts()
+	cmpPorts, err := componentConfig.GetPorts()
+	if err != nil {
+		return err
+	}
 	envVarsList := componentConfig.GetEnvVars()
 	addDebugPortToEnv(&envVarsList, componentConfig)
 
 	// retrieve the list of storages to create/mount and unmount
-	storageList := getStorageFromConfig(&componentConfig)
+	storageList, err := getStorageFromConfig(&componentConfig)
+	if err != nil {
+		return err
+	}
 	storageToMount, storageToUnMount, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get storage to mount and unmount")
@@ -1647,12 +1683,17 @@ func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileCo
 
 // getStorageFromConfig gets all the storage from the config
 // returns a list of storage in storage struct format
-func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageList {
+func getStorageFromConfig(localConfig *config.LocalConfigInfo) (storage.StorageList, error) {
 	storageList := storage.StorageList{}
-	for _, storageVar := range localConfig.ListStorage() {
+
+	configStorage, err := localConfig.ListStorage()
+	if err != nil {
+		return storage.StorageList{}, err
+	}
+	for _, storageVar := range configStorage {
 		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
 	}
-	return storageList
+	return storageList, nil
 }
 
 func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.LocalConfigInfo) {

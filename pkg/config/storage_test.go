@@ -96,6 +96,7 @@ func TestLocalConfigInfo_StorageExists(t *testing.T) {
 		storageName    string
 		existingConfig LocalConfig
 		want           localConfigProvider.LocalStorage
+		wantErr        bool
 	}{
 		{
 			name:        "case 1: storage present",
@@ -139,7 +140,11 @@ func TestLocalConfigInfo_StorageExists(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			gotStorage := cfg.GetStorage(tt.storageName)
+			gotStorage, err := cfg.GetStorage(tt.storageName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetStorage() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
 			if reflect.DeepEqual(gotStorage, tt.want) {
 				t.Errorf("wrong value of exists, expected: %v, unexpected: %v", tt.want, gotStorage)
 			}
@@ -158,6 +163,7 @@ func TestLocalConfigInfo_StorageList(t *testing.T) {
 	tests := []struct {
 		name           string
 		existingConfig LocalConfig
+		wantErr        bool
 	}{
 		{
 			name: "case 1: one storage exists",
@@ -210,7 +216,10 @@ func TestLocalConfigInfo_StorageList(t *testing.T) {
 			}
 			cfg.LocalConfig = tt.existingConfig
 
-			storageList := cfg.ListStorage()
+			storageList, err := cfg.ListStorage()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListStorage() error = %v, wantErr %v", err, tt.wantErr)
+			}
 
 			if len(*tt.existingConfig.componentSettings.Storage) != len(storageList) {
 				t.Errorf("length mismatch, expected: %v, unexpected: %v", len(*tt.existingConfig.componentSettings.Storage), len(storageList))

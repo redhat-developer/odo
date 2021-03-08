@@ -10,17 +10,22 @@ import (
 
 // GetPorts returns the ports stored in the config for the component
 // returns default i.e nil if nil
-func (lc *LocalConfig) GetPorts() []string {
+func (lc *LocalConfig) GetPorts() ([]string, error) {
 	if lc.componentSettings.Ports == nil {
-		return nil
+		return nil, nil
 	}
-	return *lc.componentSettings.Ports
+	return *lc.componentSettings.Ports, nil
 }
 
 // CompleteURL completes the given URL with default values
 func (lc *LocalConfig) CompleteURL(url *localConfigProvider.LocalURL) error {
 	var err error
-	url.Port, err = util.GetValidPortNumber(lc.GetName(), url.Port, lc.GetPorts())
+
+	ports, err := lc.GetPorts()
+	if err != nil {
+		return err
+	}
+	url.Port, err = util.GetValidPortNumber(lc.GetName(), url.Port, ports)
 	if err != nil {
 		return err
 	}
@@ -37,7 +42,11 @@ func (lc *LocalConfig) CompleteURL(url *localConfigProvider.LocalURL) error {
 func (lc *LocalConfig) ValidateURL(url localConfigProvider.LocalURL) error {
 	errorList := make([]string, 0)
 
-	for _, localURL := range lc.ListURLs() {
+	urls, err := lc.ListURLs()
+	if err != nil {
+		return err
+	}
+	for _, localURL := range urls {
 		if url.Name == localURL.Name {
 			errorList = append(errorList, fmt.Sprintf("URL %s already exists in application: %s", url.Name, lc.GetApplication()))
 		}
@@ -51,13 +60,17 @@ func (lc *LocalConfig) ValidateURL(url localConfigProvider.LocalURL) error {
 }
 
 // GetURL gets the given url localConfig
-func (lc *LocalConfig) GetURL(name string) *localConfigProvider.LocalURL {
-	for _, url := range lc.ListURLs() {
+func (lc *LocalConfig) GetURL(name string) (*localConfigProvider.LocalURL, error) {
+	urls, err := lc.ListURLs()
+	if err != nil {
+		return nil, err
+	}
+	for _, url := range urls {
 		if name == url.Name {
-			return &url
+			return &url, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // CreateURL writes the given url to the localConfig
@@ -66,9 +79,9 @@ func (lci *LocalConfigInfo) CreateURL(url localConfigProvider.LocalURL) error {
 }
 
 // ListURLs returns the ConfigURL, returns default if nil
-func (lc *LocalConfig) ListURLs() []localConfigProvider.LocalURL {
+func (lc *LocalConfig) ListURLs() ([]localConfigProvider.LocalURL, error) {
 	if lc.componentSettings.URL == nil {
-		return []localConfigProvider.LocalURL{}
+		return []localConfigProvider.LocalURL{}, nil
 	}
 	var resultURLs []localConfigProvider.LocalURL
 	for _, url := range *lc.componentSettings.URL {
@@ -81,7 +94,7 @@ func (lc *LocalConfig) ListURLs() []localConfigProvider.LocalURL {
 			Kind:   localConfigProvider.ROUTE,
 		})
 	}
-	return resultURLs
+	return resultURLs, nil
 }
 
 // DeleteURL is used to delete config from local odo config

@@ -36,6 +36,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.MakeDir(subFolderContext)
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
+			url2 := "nodejs-project-3000-" + helper.RandString(5)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, "--context", subFolderContext, componentName)
 
@@ -48,11 +49,12 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			Expect(stdout).To(ContainSubstring("The current directory does not represent an odo component"))
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext)
+			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext)
 			stdout = helper.CmdShouldPass("odo", "push", "--context", subFolderContext)
-			Expect(stdout).Should(ContainSubstring(url1 + "." + host))
+			helper.MatchAllInOutput(stdout, []string{url1 + "." + host, url2})
 
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", subFolderContext)
-			helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "false", "ingress"})
+			helper.MatchAllInOutput(stdout, []string{url1, url2, "Pushed", "false", "ingress"})
 		})
 
 		It("should list ingress url with appropriate state", func() {
@@ -87,7 +89,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			// remove the endpoint came with the devfile
 			// need to create an ingress to be more general for openshift/non-openshift cluster to run
-			helper.CmdShouldPass("odo", "url", "delete", "3000/tcp", "-f")
+			helper.CmdShouldPass("odo", "url", "delete", "3000-tcp", "-f")
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 
@@ -212,8 +214,8 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			stdOut := helper.CmdShouldFail("odo", "url", "create", "3000/tcp", "--host", "com", "--port", "3000", "--ingress")
-			Expect(stdOut).To(ContainSubstring("url 3000/tcp already exist in devfile endpoint entry"))
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress")
+			Expect(stdOut).To(ContainSubstring("url 3000-tcp already exist in devfile endpoint entry"))
 		})
 
 		It("should create URL with path defined in Endpoint", func() {

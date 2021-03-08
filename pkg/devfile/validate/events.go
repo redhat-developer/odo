@@ -1,6 +1,6 @@
 package validate
 
-import "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+import "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
 func validatePreStart(preStart []string) (err error) {
 	// This is odo specific validation. There is still discussion about how PreStart should be implemented.

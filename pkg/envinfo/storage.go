@@ -2,8 +2,9 @@ package envinfo
 
 import (
 	"fmt"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 )
 
@@ -25,7 +26,12 @@ func (ei *EnvInfo) CompleteStorage(storage *localConfigProvider.LocalStorage) {
 
 // ValidateStorage validates the given storage
 func (ei *EnvInfo) ValidateStorage(storage localConfigProvider.LocalStorage) error {
-	for _, store := range ei.ListStorage() {
+	storageList, err := ei.ListStorage()
+	if err != nil {
+		return err
+	}
+
+	for _, store := range storageList {
 		if store.Name == storage.Name {
 			return fmt.Errorf("storage with name %s already exists", storage.Name)
 		}
@@ -34,13 +40,17 @@ func (ei *EnvInfo) ValidateStorage(storage localConfigProvider.LocalStorage) err
 }
 
 // GetStorage gets the storage with the given name
-func (ei *EnvInfo) GetStorage(name string) *localConfigProvider.LocalStorage {
-	for _, storage := range ei.ListStorage() {
+func (ei *EnvInfo) GetStorage(name string) (*localConfigProvider.LocalStorage, error) {
+	storageList, err := ei.ListStorage()
+	if err != nil {
+		return nil, err
+	}
+	for _, storage := range storageList {
 		if name == storage.Name {
-			return &storage
+			return &storage, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // CreateStorage sets the storage related information in the local configuration
@@ -68,9 +78,14 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 }
 
 // ListStorage gets all the storage from the devfile.yaml
-func (ei *EnvInfo) ListStorage() []localConfigProvider.LocalStorage {
+func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
+	var storageList []localConfigProvider.LocalStorage
+
 	volumeSizeMap := make(map[string]string)
-	components := ei.devfileObj.Data.GetComponents()
+	components, err := ei.devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return storageList, err
+	}
 
 	for _, component := range components {
 		if component.Volume == nil {
@@ -82,7 +97,6 @@ func (ei *EnvInfo) ListStorage() []localConfigProvider.LocalStorage {
 		volumeSizeMap[component.Name] = component.Volume.Size
 	}
 
-	var storageList []localConfigProvider.LocalStorage
 	for _, component := range components {
 		if component.Container == nil {
 			continue
@@ -100,7 +114,7 @@ func (ei *EnvInfo) ListStorage() []localConfigProvider.LocalStorage {
 		}
 	}
 
-	return storageList
+	return storageList, nil
 }
 
 // DeleteStorage deletes the storage with the given name

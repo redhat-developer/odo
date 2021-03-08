@@ -336,10 +336,14 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 // parameter is the name of the config parameter
 // value is the value to be deleted
 func (lci *LocalConfigInfo) DeleteFromConfigurationList(parameter string, value string) error {
+	configStorage, err := lci.ListStorage()
+	if err != nil {
+		return err
+	}
 	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "storage":
-			for i, storage := range lci.ListStorage() {
+			for i, storage := range configStorage {
 				if storage.Name == value {
 					*lci.componentSettings.Storage = append((*lci.componentSettings.Storage)[:i], (*lci.componentSettings.Storage)[i+1:]...)
 				}
@@ -440,15 +444,15 @@ func (lc *LocalConfig) GetDebugPort() int {
 
 // GetContainers returns the Container components from the config
 // returns empty list if nil
-func (lc *LocalConfig) GetContainers() []localConfigProvider.LocalContainer {
+func (lc *LocalConfig) GetContainers() ([]localConfigProvider.LocalContainer, error) {
 	if lc.GetName() == "" {
-		return []localConfigProvider.LocalContainer{}
+		return []localConfigProvider.LocalContainer{}, nil
 	}
 	return []localConfigProvider.LocalContainer{
 		{
 			Name: lc.GetName(),
 		},
-	}
+	}, nil
 }
 
 // GetIgnore returns the Ignore, returns default if nil

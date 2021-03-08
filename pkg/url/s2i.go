@@ -50,9 +50,14 @@ func (s s2iClient) List() (URLList, error) {
 		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
+	localConfigURLs, err := s.localConfig.ListURLs()
+	if err != nil {
+		return URLList{}, err
+	}
+
 	for _, clusterURL := range clusterUrls.Items {
 		var found = false
-		for _, configURL := range s.localConfig.ListURLs() {
+		for _, configURL := range localConfigURLs {
 			localURL := ConvertConfigURL(configURL)
 			if localURL.Name == clusterURL.Name {
 				// URL is in both local config and cluster
@@ -69,7 +74,7 @@ func (s s2iClient) List() (URLList, error) {
 		}
 	}
 
-	for _, configURL := range s.localConfig.ListURLs() {
+	for _, configURL := range localConfigURLs {
 		localURL := ConvertConfigURL(configURL)
 		var found = false
 		for _, clusterURL := range clusterUrls.Items {

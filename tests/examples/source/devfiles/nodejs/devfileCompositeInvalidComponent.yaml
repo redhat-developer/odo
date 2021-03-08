@@ -17,7 +17,7 @@ components:
         - name: http-3000
           targetPort: 3000
 commands:
-  - id: buildAndMkdir
+  - id: buildandmkdir
     composite:
          label: Build and Mkdir
          commands:

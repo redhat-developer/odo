@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
 // NoDefaultForGroup indicates a error when no default command was found for the given Group

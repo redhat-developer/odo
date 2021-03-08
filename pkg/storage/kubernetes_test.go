@@ -504,7 +504,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 			mockLocalConfig.EXPECT().GetName().Return(tt.fields.generic.componentName).AnyTimes()
-			mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage)
+			mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage, nil)
 
 			tt.fields.generic.localConfig = mockLocalConfig
 

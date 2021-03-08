@@ -4,7 +4,8 @@ import (
 	"io"
 	"strings"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
@@ -68,7 +69,12 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 
 // ExecuteDevfileCommand executes the devfile init, build and test command actions synchronously
 func (a GenericAdapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) error {
-	c, err := New(command, a.Devfile.Data.GetCommands(), a)
+	commands, err := a.Devfile.Data.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	c, err := New(command, GetCommandsMap(commands), a)
 	if err != nil {
 		return err
 	}
@@ -99,7 +105,12 @@ func convertGroupKindToString(exec *devfilev1.ExecCommand) string {
 // Init only runs once when the component is created.
 func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists bool, params PushParameters) (err error) {
 	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-	devfileCommandMap := a.Devfile.Data.GetCommands()
+	devfileCommands, err := a.Devfile.Data.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	devfileCommandMap := GetCommandsMap(devfileCommands)
 
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
@@ -186,7 +197,12 @@ func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType de
 func (a GenericAdapter) ExecDevfileEvent(events []string, eventType DevfileEventType, show bool) error {
 	if len(events) > 0 {
 		log.Infof("\nExecuting %s event commands for component %s", string(eventType), a.ComponentName)
-		commandMap := a.Devfile.Data.GetCommands()
+		commands, err := a.Devfile.Data.GetCommands(common.DevfileOptions{})
+		if err != nil {
+			return err
+		}
+
+		commandMap := GetCommandsMap(commands)
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
 			command, ok := commandMap[strings.ToLower(commandName)]

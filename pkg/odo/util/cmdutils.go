@@ -71,7 +71,7 @@ func CheckOutputFlag(outputFlag string) error {
 }
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string, project string) {
+func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string, project string) error {
 
 	log.Describef("Component Name: ", currentComponentName)
 	log.Describef("Type: ", componentDesc.Spec.Type)
@@ -109,7 +109,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		} else {
 			localConfig, err := config.New()
 			LogErrorAndExit(err, "")
-			storageLocal := localConfig.ListStorage()
+			storageLocal, err := localConfig.ListStorage()
+			if err != nil {
+				return err
+			}
 			storages = storage.ConvertListLocalToMachine(storageLocal)
 
 		}
@@ -218,7 +221,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		}
 
 	}
-
+	return nil
 }
 
 // GetFullName generates a command's full name based on its parent's full name and its own name

@@ -63,21 +63,22 @@ func (k kubernetesClient) List() (URLList, error) {
 	}
 
 	for _, url := range clusterURLs.Items {
-		clusterURLMap[getValidURLName(url.Name)] = url
+		clusterURLMap[url.Name] = url
 	}
 
 	localMap := make(map[string]URL)
 	if k.localConfig != nil {
 		// get the URLs present on the localConfigProvider
-		localURLS := k.localConfig.ListURLs()
+		localURLS, err := k.localConfig.ListURLs()
+		if err != nil {
+			return URLList{}, err
+		}
 		for _, url := range localURLS {
 			if !k.isRouteSupported && url.Kind == localConfigProvider.ROUTE {
 				continue
 			}
 			localURL := ConvertEnvinfoURL(url, k.componentName)
-			// use the trimmed URL Name as the key since remote URLs' names are trimmed
-			trimmedURLName := getValidURLName(url.Name)
-			localMap[trimmedURLName] = localURL
+			localMap[url.Name] = localURL
 		}
 	}
 

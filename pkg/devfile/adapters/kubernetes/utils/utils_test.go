@@ -6,11 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/testingutil"
+	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -58,8 +59,8 @@ func TestComponentExists(t *testing.T) {
 
 			fkclient, fkclientset := kclient.FakeNew()
 			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				emptyDeployment := testingutil.CreateFakeDeployment("")
-				deployment := testingutil.CreateFakeDeployment(tt.getComponentName)
+				emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
+				deployment := odoTestingUtil.CreateFakeDeployment(tt.getComponentName)
 
 				if tt.wantErr {
 					return true, emptyDeployment, errors.Errorf("deployment get error")
@@ -902,6 +903,7 @@ func TestGetPreStartInitContainers(t *testing.T) {
 		eventCommands     []string
 		wantInitContainer map[string]corev1.Container
 		longName          bool
+		wantErr           bool
 	}{
 		{
 			name: "Case 1: Composite and Exec events",
@@ -954,7 +956,10 @@ func TestGetPreStartInitContainers(t *testing.T) {
 				},
 			}
 
-			initContainers := GetPreStartInitContainers(devObj, containers)
+			initContainers, err := GetPreStartInitContainers(devObj, containers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetPreStartInitContainers() error = %v, wantErr %v", err, tt.wantErr)
+			}
 
 			if len(tt.wantInitContainer) != len(initContainers) {
 				t.Errorf("TestGetPreStartInitContainers error: init container length mismatch, wanted %v got %v", len(tt.wantInitContainer), len(initContainers))

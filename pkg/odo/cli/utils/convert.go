@@ -7,7 +7,7 @@ import (
 	"github.com/fatih/color"
 	imagev1 "github.com/openshift/api/image/v1"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -320,8 +320,14 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	klog.V(2).Info("Set devfile components from s2i data")
 
 	maxMemory := localConfig.GetMaxMemory()
-	volumes := localConfig.ListStorage()
-	urls := localConfig.ListURLs()
+	volumes, err := localConfig.ListStorage()
+	if err != nil {
+		return err
+	}
+	urls, err := localConfig.ListURLs()
+	if err != nil {
+		return err
+	}
 	mountSources := true
 
 	var endpoints []devfilev1.Endpoint

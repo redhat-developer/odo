@@ -19,7 +19,7 @@ components:
       memoryLimit: 1024Mi
       sourceMapping: /apps
       endpoints:
-        - name: "3000/tcp"
+        - name: "3000-tcp"
           targetPort: 3000
       mountSources: true
 commands:

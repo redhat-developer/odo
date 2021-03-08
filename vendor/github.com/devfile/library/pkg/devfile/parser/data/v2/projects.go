@@ -3,13 +3,29 @@ package v2
 import (
 	"strings"
 
-	v1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
 // GetProjects returns the Project Object parsed from devfile
-func (d *DevfileV2) GetProjects() []v1.Project {
-	return d.Projects
+func (d *DevfileV2) GetProjects(options common.DevfileOptions) ([]v1.Project, error) {
+	if len(options.Filter) == 0 {
+		return d.Projects, nil
+	}
+
+	var projects []v1.Project
+	for _, proj := range d.Projects {
+		filterIn, err := common.FilterDevfileObject(proj.Attributes, options)
+		if err != nil {
+			return nil, err
+		}
+
+		if filterIn {
+			projects = append(projects, proj)
+		}
+	}
+
+	return projects, nil
 }
 
 // AddProjects adss the slice of Devfile projects to the Devfile's project list
@@ -40,8 +56,24 @@ func (d *DevfileV2) UpdateProject(project v1.Project) {
 }
 
 //GetStarterProjects returns the DevfileStarterProject parsed from devfile
-func (d *DevfileV2) GetStarterProjects() []v1.StarterProject {
-	return d.StarterProjects
+func (d *DevfileV2) GetStarterProjects(options common.DevfileOptions) ([]v1.StarterProject, error) {
+	if len(options.Filter) == 0 {
+		return d.StarterProjects, nil
+	}
+
+	var starterProjects []v1.StarterProject
+	for _, starterProj := range d.StarterProjects {
+		filterIn, err := common.FilterDevfileObject(starterProj.Attributes, options)
+		if err != nil {
+			return nil, err
+		}
+
+		if filterIn {
+			starterProjects = append(starterProjects, starterProj)
+		}
+	}
+
+	return starterProjects, nil
 }
 
 // AddStarterProjects adds the slice of Devfile starter projects to the Devfile's starter project list

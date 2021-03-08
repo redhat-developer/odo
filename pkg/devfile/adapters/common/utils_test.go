@@ -5,9 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/testingutil"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/pkg/testingutil"
 )
 
 func TestGetVolumes(t *testing.T) {
@@ -18,6 +19,7 @@ func TestGetVolumes(t *testing.T) {
 		name                       string
 		component                  []devfilev1.Component
 		wantContainerNameToVolumes map[string][]DevfileVolume
+		wantErr                    bool
 	}{
 		{
 			name:      "Case 1: Valid devfile with container referencing a volume component",
@@ -143,7 +145,10 @@ func TestGetVolumes(t *testing.T) {
 				},
 			}
 
-			containerNameToVolumes := GetVolumes(devObj)
+			containerNameToVolumes, err := GetVolumes(devObj)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetVolumes() error = %v, wantErr %v", err, tt.wantErr)
+			}
 
 			if !reflect.DeepEqual(containerNameToVolumes, tt.wantContainerNameToVolumes) {
 				t.Errorf("TestGetVolumes error - got %v wanted %v", containerNameToVolumes, tt.wantContainerNameToVolumes)
@@ -390,7 +395,11 @@ func TestGetCommandsForGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			commands := getCommandsByGroup(devObj.Data, tt.groupType)
+			devfileCommands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
+			if err != nil {
+				t.Errorf("unexpected error occured: %v", err)
+			}
+			commands := getCommandsByGroup(devfileCommands, tt.groupType)
 
 			if len(commands) != tt.numberOfCommands {
 				t.Errorf("TestGetCommandsForGroup error: number of commands mismatch for group %v, expected: %v got: %v", string(tt.groupType), tt.numberOfCommands, len(commands))
@@ -508,7 +517,12 @@ func TestGetCommands(t *testing.T) {
 				},
 			}
 
-			commandsMap := devObj.Data.GetCommands()
+			commands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			commandsMap := GetCommandsMap(commands)
 			if len(commandsMap) != len(tt.expectedCommands) {
 				t.Errorf("TestGetCommands error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}
@@ -655,7 +669,12 @@ func TestGetCommandsFromEvent(t *testing.T) {
 				},
 			}
 
-			commandsMap := devObj.Data.GetCommands()
+			devfileCommands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{})
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			commandsMap := GetCommandsMap(devfileCommands)
 			commands := GetCommandsFromEvent(commandsMap, tt.eventName)
 			if !reflect.DeepEqual(tt.wantCommands, commands) {
 				t.Errorf("TestGetCommandsFromEvent error - got %v expected %v", commands, tt.wantCommands)

@@ -47,18 +47,7 @@ func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 	}
 
-	o.services, err = catalog.ListSvcCatServices(o.Client)
-	if err != nil {
-		if strings.Contains(err.Error(), "the server could not find the requested resource") {
-			// this error is thrown when Service Catalog is not enabled on Kubernetes
-			err = nil
-		} else if strings.Contains(err.Error(), "cannot list resource \"clusterserviceclasses\" in API group \"servicecatalog.k8s.io\" at the cluster scope") {
-			// this error is thrown when Service Catalog is not enabled on OpenShift
-			err = nil
-		} else {
-			return err
-		}
-	}
+	o.services, _ = catalog.ListSvcCatServices(o.Client)
 
 	o.services = util.FilterHiddenServices(o.services)
 

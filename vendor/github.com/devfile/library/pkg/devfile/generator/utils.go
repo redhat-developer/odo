@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	v1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/util"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	buildv1 "github.com/openshift/api/build/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,14 +33,25 @@ func convertEnvs(vars []v1.EnvVar) []corev1.EnvVar {
 // convertPorts converts endpoint variables from the devfile structure to kubernetes ContainerPort
 func convertPorts(endpoints []v1.Endpoint) []corev1.ContainerPort {
 	containerPorts := []corev1.ContainerPort{}
+	portMap := make(map[string]bool)
 	for _, endpoint := range endpoints {
-		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
-		name = util.TruncateString(name, 15)
+		var portProtocol corev1.Protocol
+		portNumber := int32(endpoint.TargetPort)
 
-		containerPorts = append(containerPorts, corev1.ContainerPort{
-			Name:          name,
-			ContainerPort: int32(endpoint.TargetPort),
-		})
+		if endpoint.Protocol == v1.UDPEndpointProtocol {
+			portProtocol = corev1.ProtocolUDP
+		} else {
+			portProtocol = corev1.ProtocolTCP
+		}
+		name := fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProtocol)))
+		if _, exist := portMap[name]; !exist {
+			portMap[name] = true
+			containerPorts = append(containerPorts, corev1.ContainerPort{
+				Name:          name,
+				ContainerPort: portNumber,
+				Protocol:      portProtocol,
+			})
+		}
 	}
 	return containerPorts
 }
@@ -193,11 +204,14 @@ func getDeploymentSpec(deploySpecParams deploymentSpecParams) *appsv1.Deployment
 }
 
 // getServiceSpec iterates through the devfile components and returns a ServiceSpec
-func getServiceSpec(devfileObj parser.DevfileObj, selectorLabels map[string]string) (*corev1.ServiceSpec, error) {
+func getServiceSpec(devfileObj parser.DevfileObj, selectorLabels map[string]string, options common.DevfileOptions) (*corev1.ServiceSpec, error) {
 
 	var containerPorts []corev1.ContainerPort
-	portExposureMap := getPortExposure(devfileObj)
-	containers, err := GetContainers(devfileObj)
+	portExposureMap, err := getPortExposure(devfileObj, options)
+	if err != nil {
+		return nil, err
+	}
+	containers, err := GetContainers(devfileObj, options)
 	if err != nil {
 		return nil, err
 	}
@@ -238,9 +252,12 @@ func getServiceSpec(devfileObj parser.DevfileObj, selectorLabels map[string]stri
 
 // getPortExposure iterates through all endpoints and returns the highest exposure level of all TargetPort.
 // exposure level: public > internal > none
-func getPortExposure(devfileObj parser.DevfileObj) map[int]v1.EndpointExposure {
+func getPortExposure(devfileObj parser.DevfileObj, options common.DevfileOptions) (map[int]v1.EndpointExposure, error) {
 	portExposureMap := make(map[int]v1.EndpointExposure)
-	containerComponents := devfileObj.Data.GetDevfileContainerComponents()
+	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
+	if err != nil {
+		return portExposureMap, err
+	}
 	for _, comp := range containerComponents {
 		for _, endpoint := range comp.Container.Endpoints {
 			// if exposure=public, no need to check for existence
@@ -257,7 +274,7 @@ func getPortExposure(devfileObj parser.DevfileObj) map[int]v1.EndpointExposure {
 		}
 
 	}
-	return portExposureMap
+	return portExposureMap, nil
 }
 
 // IngressSpecParams struct for function GenerateIngressSpec
@@ -375,6 +392,7 @@ type BuildConfigSpecParams struct {
 	ImageStreamTagName string
 	GitURL             string
 	GitRef             string
+	ContextDir         string
 	BuildStrategy      buildv1.BuildStrategy
 }
 
@@ -394,7 +412,8 @@ func getBuildConfigSpec(buildConfigSpecParams BuildConfigSpecParams) *buildv1.Bu
 					URI: buildConfigSpecParams.GitURL,
 					Ref: buildConfigSpecParams.GitRef,
 				},
-				Type: buildv1.BuildSourceGit,
+				ContextDir: buildConfigSpecParams.ContextDir,
+				Type:       buildv1.BuildSourceGit,
 			},
 			Strategy: buildConfigSpecParams.BuildStrategy,
 		},

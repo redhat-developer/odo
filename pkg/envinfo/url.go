@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	devfilev1 "github.com/devfile/api/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/util"
@@ -15,12 +16,16 @@ import (
 )
 
 // GetPorts returns the ports, returns default if nil
-func (ei *EnvInfo) GetPorts() []string {
+func (ei *EnvInfo) GetPorts() ([]string, error) {
+	var portList []string
 
-	containerComponents := ei.devfileObj.Data.GetDevfileContainerComponents()
+	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
+	if err != nil {
+		return portList, err
+	}
+
 	portMap := make(map[string]bool)
 
-	var portList []string
 	for _, component := range containerComponents {
 		for _, endpoint := range component.Container.Endpoints {
 			portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
@@ -32,7 +37,7 @@ func (ei *EnvInfo) GetPorts() []string {
 	}
 
 	sort.Strings(portList)
-	return portList
+	return portList, nil
 }
 
 // CompleteURL completes the given URL with default values
@@ -49,9 +54,13 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	url.Path = "/" + url.Path
 
 	// get the port if not provided
+	ports, err := ei.GetPorts()
+	if err != nil {
+		return err
+	}
 	if url.Port == -1 {
 		var err error
-		url.Port, err = util.GetValidPortNumber(ei.GetName(), url.Port, ei.GetPorts())
+		url.Port, err = util.GetValidPortNumber(ei.GetName(), url.Port, ports)
 		if err != nil {
 			return err
 		}
@@ -62,7 +71,11 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 		url.Name = util.GetURLName(ei.GetName(), url.Port)
 	}
 
-	containerComponents := ei.devfileObj.Data.GetDevfileContainerComponents()
+	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
 	if len(containerComponents) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
@@ -100,7 +113,10 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 
 	foundContainer := false
-	containerComponents := ei.devfileObj.Data.GetDevfileContainerComponents()
+	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 
 	if len(containerComponents) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
@@ -168,7 +184,11 @@ func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 		}
 	}
 
-	for _, localURL := range ei.ListURLs() {
+	urls, err := ei.ListURLs()
+	if err != nil {
+		return err
+	}
+	for _, localURL := range urls {
 		if url.Name == localURL.Name {
 			errorList = append(errorList, fmt.Sprintf("URL %s already exists", url.Name))
 		}
@@ -181,13 +201,17 @@ func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 }
 
 // GetURL gets the given url from the env.yaml and devfile
-func (ei *EnvInfo) GetURL(name string) *localConfigProvider.LocalURL {
-	for _, url := range ei.ListURLs() {
+func (ei *EnvInfo) GetURL(name string) (*localConfigProvider.LocalURL, error) {
+	urls, err := ei.ListURLs()
+	if err != nil {
+		return nil, err
+	}
+	for _, url := range urls {
 		if name == url.Name {
-			return &url
+			return &url, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // CreateURL write the given url to the env.yaml and devfile
@@ -213,7 +237,7 @@ func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
 }
 
 // ListURLs returns the urls from the env and devfile, returns default if nil
-func (ei *EnvInfo) ListURLs() []localConfigProvider.LocalURL {
+func (ei *EnvInfo) ListURLs() ([]localConfigProvider.LocalURL, error) {
 
 	envMap := make(map[string]localConfigProvider.LocalURL)
 	if ei.componentSettings.URL != nil {
@@ -225,10 +249,14 @@ func (ei *EnvInfo) ListURLs() []localConfigProvider.LocalURL {
 	var urls []localConfigProvider.LocalURL
 
 	if ei.devfileObj.Data == nil {
-		return urls
+		return urls, nil
 	}
 
-	for _, comp := range ei.devfileObj.Data.GetDevfileContainerComponents() {
+	devfileComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
+	if err != nil {
+		return urls, err
+	}
+	for _, comp := range devfileComponents {
 		for _, localEndpoint := range comp.Container.Endpoints {
 			// only exposed endpoint will be shown as a URL in `odo url list`
 			if localEndpoint.Exposure == devfilev1.NoneEndpointExposure || localEndpoint.Exposure == devfilev1.InternalEndpointExposure {
@@ -265,7 +293,7 @@ func (ei *EnvInfo) ListURLs() []localConfigProvider.LocalURL {
 		}
 	}
 
-	return urls
+	return urls, nil
 }
 
 // DeleteURL is used to delete environment specific info for url from envinfo and devfile
@@ -290,7 +318,10 @@ func (esi *EnvSpecificInfo) DeleteURL(name string) error {
 
 // addEndpointInDevfile writes the provided endpoint information into devfile
 func addEndpointInDevfile(devObj parser.DevfileObj, endpoint devfilev1.Endpoint, container string) error {
-	components := devObj.Data.GetComponents()
+	components, err := devObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
 	for _, component := range components {
 		if component.Container != nil && component.Name == container {
 			component.Container.Endpoints = append(component.Container.Endpoints, endpoint)
@@ -304,7 +335,12 @@ func addEndpointInDevfile(devObj parser.DevfileObj, endpoint devfilev1.Endpoint,
 // removeEndpointInDevfile deletes the specific endpoint information from devfile
 func removeEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
 	found := false
-	for _, component := range devObj.Data.GetDevfileContainerComponents() {
+	devfileComponents, err := devObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, component := range devfileComponents {
 		for index, enpoint := range component.Container.Endpoints {
 			if enpoint.Name == urlName {
 				component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)
