@@ -345,9 +345,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 		if err != nil {
 			co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+			err = nil
 		}
 	}
-
 	err = co.checkConflictingFlags()
 	if err != nil {
 		return
