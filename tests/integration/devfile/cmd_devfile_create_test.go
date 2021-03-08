@@ -102,13 +102,35 @@ var _ = Describe("odo devfile create command tests", func() {
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 		})
 
-		It("should successfully create the devfile component and show json output", func() {
+		It("should successfully create the devfile component and show json output for working cluster", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
 			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
+		})
+
+		It("should successfully create and push the devfile component and show json output for working cluster", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json", "--now")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
+			Expect(output).To(ContainSubstring("Pushed"))
+			Expect(output).To(ContainSubstring("nodejs"))
+			Expect(output).To(ContainSubstring("Component"))
+		})
+
+		It("should successfully create the devfile component and show json output for non connected cluster", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			kubeconfigOld := os.Getenv("KUBECONFIG")
+			os.Setenv("KUBECONFIG", "/no/such/path")
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
+			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
+			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
 
