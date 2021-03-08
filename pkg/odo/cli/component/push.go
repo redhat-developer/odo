@@ -119,8 +119,11 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			if err != nil {
 				return errors.Wrap(err, "unable to determine target namespace for devfile")
 			}
-
-			if err := checkDefaultProject(genericclioptions.Client(cmd), namespace); err != nil {
+			client, err := genericclioptions.Client(cmd)
+			if err != nil {
+				return err
+			}
+			if err := checkDefaultProject(client, namespace); err != nil {
 				return err
 			}
 
@@ -153,8 +156,12 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			if err != nil {
 				return errors.Wrap(err, "unable to determine target namespace for devfile")
 			}
+			client, err := genericclioptions.Client(cmd)
+			if err != nil {
+				return err
+			}
 
-			if err := checkDefaultProject(genericclioptions.Client(cmd), namespace); err != nil {
+			if err := checkDefaultProject(client, namespace); err != nil {
 				return err
 			}
 
@@ -163,14 +170,21 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 				return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
 			}
 		} else if envFileInfo.GetNamespace() == "default" {
-			if err := checkDefaultProject(genericclioptions.Client(cmd), envFileInfo.GetNamespace()); err != nil {
+			client, err := genericclioptions.Client(cmd)
+			if err != nil {
+				return err
+			}
+			if err := checkDefaultProject(client, envFileInfo.GetNamespace()); err != nil {
 				return err
 			}
 		}
 
 		po.EnvSpecificInfo = envFileInfo
 
-		po.Context = genericclioptions.NewDevfileContext(cmd)
+		po.Context, err = genericclioptions.NewDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 
 		// If the push target has been set to Docker, we will have to change the current namespace.
 		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
@@ -182,7 +196,10 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	}
 
 	// Set the correct context, which also sets the LocalConfigInfo
-	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	po.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	if err != nil {
+		return err
+	}
 	err = po.SetSourceInfo()
 	if err != nil {
 		return errors.Wrap(err, "unable to set source information")

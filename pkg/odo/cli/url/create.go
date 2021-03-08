@@ -87,7 +87,10 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 		return err
 	}
 
-	o.Client = genericclioptions.Client(cmd)
+	o.Client, err = genericclioptions.Client(cmd)
+	if err != nil {
+		return err
+	}
 
 	isRouteSupported, err := o.Client.IsRouteSupported()
 	if err != nil {

@@ -98,7 +98,10 @@ func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []strin
 		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to convert s2i component to devfile")
 	}
 
-	co.context = genericclioptions.NewContext(cmd)
+	co.context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
 	co.componentName = co.context.LocalConfigInfo.GetName()
 	return nil
 

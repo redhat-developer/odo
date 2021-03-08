@@ -2,8 +2,9 @@ package application
 
 import (
 	"fmt"
-	odoutil "github.com/openshift/odo/pkg/util"
 	"path/filepath"
+
+	odoutil "github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
@@ -40,9 +41,12 @@ func NewDescribeOptions() *DescribeOptions {
 // Complete completes DescribeOptions after they've been created
 func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if odoutil.CheckPathExists(filepath.Join(".odo", "config.yaml")) {
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.NewContext(cmd)
 	} else {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.Context, err = genericclioptions.NewDevfileContext(cmd)
+	}
+	if err != nil {
+		return err
 	}
 	o.appName = o.Application
 	if len(args) == 1 {

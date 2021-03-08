@@ -48,8 +48,8 @@ func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 	// if experimental mode is enabled and devfile is present
 	if util.CheckPathExists(lo.devfilePath) {
-		lo.ComponentOptions.Context = genericclioptions.NewDevfileContext(cmd)
-		return nil
+		lo.ComponentOptions.Context, err = genericclioptions.NewDevfileContext(cmd)
+		return err
 	}
 
 	return lo.ComponentOptions.Complete(name, cmd, args)
