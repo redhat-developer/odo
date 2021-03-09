@@ -1,4 +1,5 @@
 #!/bin/sh
+# yaml file must call this script with parameter values minikube or minishift
 # fail if some commands fails
 set -e
 # Hide command that deals with secrets
