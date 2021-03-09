@@ -11,12 +11,11 @@ import (
 )
 
 type CmdWrapper struct {
-	Cmd                *exec.Cmd
-	program            string
-	args               []string
-	includeErrorStream bool
-	writer             *gexec.PrefixedWriter
-	session            *gexec.Session
+	Cmd     *exec.Cmd
+	program string
+	args    []string
+	writer  *gexec.PrefixedWriter
+	session *gexec.Session
 }
 
 func Cmd(program string, args ...string) *CmdWrapper {
