@@ -2,12 +2,13 @@ package genericclioptions
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	odoutil "github.com/openshift/odo/pkg/util"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -304,7 +305,7 @@ func NewOfflineDevfileContext(command *cobra.Command) *Context {
 	if projectFlag != "" {
 		internalCxt.Project = projectFlag
 	} else {
-		envInfo.GetNamespace()
+		internalCxt.Project = envInfo.GetNamespace()
 	}
 
 	// Create a context from the internal representation
