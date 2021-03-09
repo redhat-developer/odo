@@ -47,12 +47,16 @@ func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 // Validate validates the describe parameters
 func (do *DescribeOptions) Validate() (err error) {
-	fmt.Println(do.Context.Project)
-	fmt.Println(do.Application)
-	if do.Context.Project == "" || do.Application == "" {
+	if do.Application == "" {
 		return odoutil.ThrowContextError()
 	}
-	if (len(do.componentName) <= 0 || len(do.Application) <= 0 || len(do.Project) <= 0) && !do.LocalConfigInfo.Exists() {
+
+	if (len(do.componentName) <= 0 || len(do.Application) <= 0) && !do.LocalConfigInfo.Exists() {
+		return fmt.Errorf("Component %v does not exist", do.componentName)
+	}
+
+	// read: if env info and local info both dont exist then
+	if !do.EnvSpecificInfo.Exists() && !do.LocalConfigInfo.Exists() {
 		return fmt.Errorf("Component %v does not exist", do.componentName)
 	}
 
