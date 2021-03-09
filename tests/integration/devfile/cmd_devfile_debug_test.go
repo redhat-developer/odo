@@ -175,4 +175,25 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 		})
 	})
+
+	Context("when the debug command throws an error during push", func() {
+		It("should wait and error out with some log", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm run debug", "npm run debugs")
+
+			output := helper.CmdShouldFail("odo", "push", "--debug", "--context", commonVar.Context)
+			helper.MatchAllInOutput(output, []string{
+				"exited with error status within 1 sec",
+				"Did you mean this?",
+			})
+
+			output = helper.CmdShouldFail("odo", "push", "--debug", "--context", commonVar.Context, "--debug-command", "debug")
+			helper.MatchAllInOutput(output, []string{
+				"exited with error status within 1 sec",
+				"Did you mean this?",
+			})
+		})
+	})
 })

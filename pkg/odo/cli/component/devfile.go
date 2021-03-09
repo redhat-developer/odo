@@ -3,8 +3,10 @@ package component
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -183,8 +185,25 @@ func (lo LogOptions) DevfileComponentLog() error {
 		return err
 	}
 
+	var command devfilev1.Command
+	if lo.debug {
+		command, err = common.GetDebugCommand(devObj.Data, "")
+		if err != nil {
+			return err
+		}
+		if reflect.DeepEqual(devfilev1.Command{}, command) {
+			return errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
+		}
+
+	} else {
+		command, err = common.GetRunCommand(devObj.Data, "")
+		if err != nil {
+			return err
+		}
+	}
+
 	// Start or update the component
-	rd, err := devfileHandler.Log(lo.logFollow, lo.debug)
+	rd, err := devfileHandler.Log(lo.logFollow, command)
 	if err != nil {
 		log.Errorf(
 			"Failed to log component with name %s.\nError: %v",
@@ -194,7 +213,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 		os.Exit(1)
 	}
 
-	return util.DisplayLog(lo.logFollow, rd, componentName)
+	return util.DisplayLog(lo.logFollow, rd, os.Stdout, componentName, -1)
 }
 
 // DevfileComponentDelete deletes the devfile component

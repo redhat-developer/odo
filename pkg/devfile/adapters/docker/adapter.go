@@ -38,6 +38,10 @@ func (d Adapter) Push(parameters common.PushParameters) error {
 	return nil
 }
 
+func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists
 func (d Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return d.componentAdapter.DoesComponentExist(cmpName)
@@ -54,8 +58,8 @@ func (d Adapter) Test(testCmd string, show bool) error {
 }
 
 // Log shows logs from component
-func (d Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
-	return d.componentAdapter.Log(follow, debug)
+func (d Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
+	return d.componentAdapter.Log(follow, command)
 }
 
 // Exec executes a command in the component
