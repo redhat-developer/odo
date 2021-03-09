@@ -23,3 +23,5 @@ make bin
 sudo cp odo $GOPATH/bin
 
 export MINISHIFT_ENABLE_EXPERIMENTAL=y 
+
+sh ./minishift-start-if-required.sh
