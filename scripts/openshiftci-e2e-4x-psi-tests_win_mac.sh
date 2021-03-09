@@ -15,4 +15,4 @@ case $1 in
     ;;
 esac
 
-. scripts/openshift-e2e-4x-psi-tests.sh
+. scripts/openshiftci-e2e-4x-psi-tests.sh

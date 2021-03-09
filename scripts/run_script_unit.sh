@@ -8,4 +8,8 @@ shout() {
 shout "Running unit tests"
 
 # Run unit tests
-GOFLAGS='-mod=vendor' make test
+if [[ $BASE_OS == "windows" ]]; then
+  GOFLAGS='-mod=vendor' powershell -Command "make test"
+else
+  GOFLAGS='-mod=vendor' make test
+fi

@@ -26,6 +26,7 @@ SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 shout "Setting PATH"
 
 if [[ $BASE_OS == "windows" ]]; then
+    shout "Setting GOBIN for windows"
     GOBIN="$(cygpath -pw $GOBIN)"
     CURRDIR="$(cygpath -pw $WORKDIR)"
 fi
