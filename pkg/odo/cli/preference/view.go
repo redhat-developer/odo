@@ -17,11 +17,8 @@ import (
 
 const viewCommandName = "view"
 
-var viewExample = ktemplates.Examples(`# For viewing the current local preference
+var viewExample = ktemplates.Examples(`# For viewing the current preference value
    %[1]s
-
-   # For viewing the current global preference
-   %[1]s 
   `)
 
 // ViewOptions encapsulates the options for the command
