@@ -107,7 +107,7 @@ var _ = Describe("odo devfile create command tests", func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(commonVar.Context, devfile))
 			})
 
-			It("should successfully create the devfile componet", func() {
+			It("should successfully create the devfile component", func() {
 				helper.CmdShouldPass("odo", "create", "nodejs")
 			})
 
@@ -124,6 +124,15 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should fail to create the devfile component with --devfile points to different devfile", func() {
 				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "/path/to/file")
+			})
+
+			It("should fail when we create the devfile component multiple times", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs")
+				output := helper.CmdShouldFail("odo", "create", "nodejs")
+				Expect(output).To(ContainSubstring("this directory already contains a component"))
+				output = helper.CmdShouldFail("odo", "create", "nodejs", "--s2i")
+				Expect(output).To(ContainSubstring("this directory already contains a component"))
+
 			})
 		})
 

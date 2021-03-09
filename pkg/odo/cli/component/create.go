@@ -369,6 +369,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return errors.New("this directory already contains a component")
 	}
 
+	if util.CheckPathExists(EnvFilePath) && util.CheckPathExists(co.DevfilePath) {
+		return errors.New("this directory already contains a component")
+	}
+
 	if util.CheckPathExists(EnvFilePath) && !util.CheckPathExists(co.DevfilePath) {
 		log.Warningf("Found a dangling env file without a devfile, overwriting it")
 		if err := util.DeletePath(EnvFilePath); err != nil {
@@ -452,7 +456,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				// Component type: We provide devfile component list to let user choose
 				componentType = ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
-				// Component name: User needs to specify the componet name, by default it is component type that user chooses
+				// Component name: User needs to specify the component name, by default it is component type that user chooses
 				componentName = ui.EnterDevfileComponentName(componentType)
 
 				// Component namespace: User needs to specify component namespace, by default it is the current active namespace
