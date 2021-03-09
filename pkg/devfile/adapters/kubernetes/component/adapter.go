@@ -287,8 +287,8 @@ func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 	}
 
 	for _, status := range statusInContainer {
-		if strings.ToLower(status.program) == strings.ToLower(supervisordProgramName) {
-			if strings.ToLower(status.status) == strings.ToLower("running") {
+		if strings.EqualFold(status.program, supervisordProgramName) {
+			if strings.EqualFold(status.status, "running") {
 				return nil
 			} else {
 				numberOfLines := 20
