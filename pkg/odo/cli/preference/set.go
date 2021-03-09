@@ -64,7 +64,7 @@ func (o *SetOptions) Run() (err error) {
 	cfg, err := preference.New()
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to set preference")
+		return errors.Errorf("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md")
 	}
 
 	if !o.configForceFlag {

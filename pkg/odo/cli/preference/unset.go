@@ -63,7 +63,7 @@ func (o *UnsetOptions) Run() (err error) {
 	cfg, err := preference.New()
 
 	if err != nil {
-		return errors.Wrapf(err, "")
+		return errors.Errorf("something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md")
 	}
 
 	if !o.preferenceForceFlag {

@@ -234,7 +234,7 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	preferenceFile, err := getPreferenceFile()
 	klog.V(4).Infof("The path for preference file is %+v", preferenceFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get odo preference file")
+		return nil, errors.Errorf("unable to get odo preference file, run the command with more verbosity to check if the preference path is correct")
 	}
 
 	c := PreferenceInfo{
@@ -307,7 +307,7 @@ func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, 
 	c.OdoSettings.RegistryList = &registryList
 	err = util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to write the configuration of %s operation to preference file", operation)
+		return errors.Errorf("unable to write the configuration of %s operation to preference file", operation)
 	}
 
 	return nil
@@ -380,7 +380,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "timeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %s to %s", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -390,7 +390,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "buildtimeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %s to %s, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -400,7 +400,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "pushtimeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %s to %s, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -410,7 +410,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "registrycachetime":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %s to %s, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -420,7 +420,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "updatenotification":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %s to %s, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.UpdateNotification = &val
 
@@ -431,14 +431,14 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "experimental":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %s to %s, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.Experimental = &val
 
 		case "ephemeral":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %s to %s, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.Ephemeral = &val
 
@@ -457,12 +457,12 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			c.OdoSettings.ConsentTelemetry = &val
 		}
 	} else {
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo preference", parameter)
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo preference, run help to see list of available parameters", parameter)
 	}
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to set %s", parameter)
+		return errors.Errorf("unable to set %s, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }
@@ -482,7 +482,7 @@ func (c *PreferenceInfo) DeleteConfiguration(parameter string) error {
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to set %s", parameter)
+		return errors.Errorf("unable to set %s, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }
