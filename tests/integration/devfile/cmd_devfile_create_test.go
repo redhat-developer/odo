@@ -103,13 +103,6 @@ var _ = Describe("odo devfile create command tests", func() {
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 		})
 
-		It("should successfully create the devfile component and show json output for working cluster", func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
-			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", newContext, "-o", "json")
-			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
-			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
-		})
-
 		It("should successfully create and push the devfile component and show json output for working cluster", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
 			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json", "--now")
@@ -118,22 +111,12 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MatchAllInOutput(output, []string{"Pushed", "nodejs", "Component"})
 		})
 
-		It("should successfully create the devfile component and show json output for non connected cluster", func() {
+		It("should successfully create the devfile component and show json output for connected cluster", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
 			cmd := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json")
 			output := cmd.WithEnv("KUBECONFIG=/no/such/path").ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
-		})
-
-		It("should successfully create and push the devfile component and show json output for working cluster", func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
-			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json", "--now")
-			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
-			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
-			Expect(output).To(ContainSubstring("Pushed"))
-			Expect(output).To(ContainSubstring("nodejs"))
-			Expect(output).To(ContainSubstring("Component"))
 		})
 
 		It("should successfully create the devfile component and show json output for non connected cluster", func() {
