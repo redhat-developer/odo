@@ -14,9 +14,19 @@ export AMQP_URI=${AMQP_URI:?"Please set AMQP_URI env with amqp uri or provide pa
 case $1 in
     minikube)
         export JOB_NAME="odo-minikube-pr-build"
+        export SENDQUEUE="amqp.ci.queue.minikube.send"
+        export SENDTOPIC="amqp.ci.topic.minikube.send"
+        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minikube"
+        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minikube"
+        export TIMEOUT="2h15m"
         ;;
     minishift)
         export JOB_NAME="odo-minishift-pr-tests"
+        export SENDQUEUE="amqp.ci.queue.minishift.send"
+        export SENDTOPIC="amqp.ci.topic.minishift.send"
+        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minishift"
+        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minishift"
+        export TIMEOUT="4h00m"
         ;;
     *)
         echo "Must pass minikube or minishift as paramater"
@@ -39,11 +49,4 @@ set -x
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-case $1 in
-    minikube)
-        ./ci-firewall request --sendqueue amqp.ci.queue.minikube.send --sendtopic amqp.ci.topic.minikube.send --runscript scripts/kubernetes-all-test.sh  --timeout 2h15m
-        ;;
-    minishift)
-        ./ci-firewall request --sendqueue amqp.ci.queue.minishift.send --sendtopic amqp.ci.topic.minishift.send --setupscript minishift-setup-env.sh --runscript scripts/minishift-execute-test.sh  --timeout 4h00m
-        ;;
-esac
+./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --setupscript $SETUP_SCRIPT --runscript $RUN_SCRIPT --timeout $TIMEOUT
