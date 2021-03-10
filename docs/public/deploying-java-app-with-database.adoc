@@ -2,126 +2,10 @@
 
 This scenario illustrates binding an `odo` managed Java MicroServices JPA application to an in-cluster Operator managed PostgreSQL Database in the minikube environment.
 
-== Installation and Configuration of the minikube environment
-[NOTE]
-====
-The guide only works with minikube configured with kubernetes 1.19.x or lower. `odo link` cannot link services successfully in a Kubernetes 1.20.x or newer environment.
-====
+.Prerequisites
 
-It is recommended that users of this guide obtain a suitable system for running minikube with kubernetes. In practice this should be a 4 core system minimum. Before proceeding to the sample application, please follow the instructions for establishing a minikube environment:
-
-=== Installing and starting docker 
-To install docker follow link:https://docs.docker.com/engine/install/[the Docker documentation].
-
-=== Installing, starting and configuring minikube
-
-==== Installing minikube
-To install minikube follow link:https://minikube.sigs.k8s.io/docs/start/[minikube installation instructions] for your operating system.
-
-==== Starting minikube
-
-* If you are trying to run minikube as a root user, minikube throws an error that docker should not be run as root as a matter of practice and aborts the start up. To proceed, start minikube in a manner which will override this protection mechanism:
-+
-[source,sh]
-----
-$ minikube start --force --driver=docker --kubernetes-version=v1.19.8
-----
-
-* If you are a non-root user, start minikube as usual:
-+
-[source,sh]
-----
-$ minikube start --kubernetes-version=v1.19.8
-----
-
-==== Configuring minikube
-The application requires an ingress add-on to allow the routes to be created easily. Configure minikube for ingress by adding ingress as a minikube add-on:
-[source,sh]
-----
-> minikube addons enable ingress
-----
-
-It is possible that you face the Dockerhub pull rate limit if you do not have a pull secret for your personal free Dockerhub account. During ingress initialization two of the job pods used by ingress may fail to initialize due to pull rate limits. If this happens, and ingress fails to enable, you add a secret for the pulls for the following service accounts:
-
-* ingress-nginx-admission
-* ingress-nginx
-
-to add a pull secret for these service accounts: 
-
-. Switch to the kube-system context:
-+
-[source,sh]
-----
-$ kubectl config set-context --current --namespace=kube-system
-----
-
-. Create a pull secret:
-+
-[source,sh]
-----
-$ kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
-----
-+
-where:
-* <your-registry-server> is the DockerHub Registry FQDN. (https://index.docker.io/v1/)
-* your-name> is your Docker username.
-* <your-pword> is your Docker password.
-* <your-email> is your Docker email.
-
-. Add this new cred (`regcred` in the example above) to the default service account in minikube:
-+
-[source,sh]
-----
-$ kubectl patch serviceaccount ingress-nginx-admission -p '{"imagePullSecrets": [{"name": "regcred"}]}'
-$ kubectl patch serviceaccount ingress-nginx -p '{"imagePullSecrets": [{"name": "regcred"}]}'
-----
-
- Default Service Account Pull Secret patch:
- Much like the ingress service accounts, the default service account will need to be patched with a pull secret configured for your personal docker account. 
-
-* switch to the default context:
-+
-[source,sh]
-----
-$ kubectl config set-context --current --namespace=default
-----
-
-* create the same docker-registry secret configured for your docker , now for the default minikube context:
-+
-[source,sh]
-----
-$ kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
-----
-+
-where:
-+
-** <your-registry-server> is the DockerHub Registry FQDN. (https://index.docker.io/v1/)
-** <your-name> is your Docker username.
-** <your-pword> is your Docker password.
-** <your-email> is your Docker email.
-
-* Add this new cred ('regcred' in the example above) to the default service account in minikube:
-+
-[source,sh]
-----
-$ kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "regcred"}]}'
-----
-
-Kubernetes Dashboard graphical UI config:<br>
-It is helpful to make use of the basic kubernetes dashboard UI to interact with the various kubernetes entities in a graphical way. Refer to the directions [here](https://minikube.sigs.k8s.io/docs/handbook/dashboard/) for enabling and starting the dashboard. Please note, this require the installation of and access to a desktop environment in order to make use of the dashboard. (GNOME + xrdb for example)
-
-Operator Lifecycle Manager (OLM) config:
-Enabling OLM on your minikube instance simplifies installation and upgrades of Operators available from [OperatorHub](https://operatorhub.io). 
-
-* Enable OLM with the command below:
-+
-[source,sh]
-----
-$ minikube addons enable olm
-----
-
-=== Installing `odo`
-Follow link:https://odo.dev/docs/installing-odo/[`odo` installation instructions].
+* `odo` is installed. See link:https://odo.dev/docs/installing-odo/[Installing `odo`].
+* minikube is installed and configured. See link:https://odo.dev/docs/installing-and-configuring-minikube-environment/[Installing and configuring minikube environment].
 
 == Actions to perform by a cluster admin and application developer
 
@@ -173,10 +57,10 @@ You can use the default configurations of the PostgreSQL Operator to start a Pos
 +
 [source,sh]
 ----
-$ odo service create postgresql-operator.v0.1.1/Database --dry-run $ db.yaml
+$ odo service create postgresql-operator.v0.1.1/Database --dry-run > db.yaml
 ----
 
-. Modify and add following values under `metadata:`section in the `db.yaml` file:
+. Modify and add following values under `metadata:` section in the `db.yaml` file:
 +
 [source,yaml]
 ----
@@ -333,16 +217,6 @@ Operators available in the cluster
 NAME                                             CRDs
 postgresql-operator.v0.1.1                       Backup, Database
 ----
-+
-// (This following block is commented out for now, it will not be included)
-// (use odo to create an odo service for the PostgreSQL Database Operator by entering the previous result in the following format: `<NAME>/<CRDs>`)
-//: <> (```shell)
-//: <> (>  odo service create postgresql-operator.v0.1.1/Database)
-//: <> (```)
-//: <> (push this service instance to the cluster)
-//: <> (```shell)
-//: <> (> odo push)
-//: <> (```)
 
 . List the service associated with the database created via the PostgreSQL Operator:
 +
@@ -389,15 +263,13 @@ declare -x DATABASE_DB_PASSWORD="samplepwd"
 declare -x DATABASE_DB_USER="sampleuser"
 ----
 +
-Once the new version is up (there will be a slight delay until application is available), navigate to the CreatePerson.xhtml using the URL created in a previous step. Enter requested data and click the *Save* button
-//![Create Person xhtml page](../../assets/createPersonDB.png)
+Once the new version is up (there will be a slight delay until application is available), navigate to the CreatePerson.xhtml using the URL created in a previous step. Enter requested data and click the *Save* button.
 +
 Notice you are re-directed to the `PersonList.xhtml` page, where your data is displayed having been input to the postgreSQL database and retrieved for display purposes.
-//![Create Person xhtml page](../../assets/displayPeople.png)
 +
 You may inspect the database instance itself and query the table to see the data in place by using the postgreSQL command line tool, psql.
 
-. Navigate to the pod containing your db from the Openshift Console
+. Navigate to the pod containing your db from the Kubernetes Dashboard
 
 . Click on the terminal tab.
 
