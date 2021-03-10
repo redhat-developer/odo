@@ -337,11 +337,17 @@ func (co *CreateOptions) checkConflictingDevfileFlags() error {
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if co.forceS2i || co.now {
 		// this populates the LocalConfigInfo as well
-		co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		if err != nil {
+			return err
+		}
 	} else {
-		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		if err != nil {
+			co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+			err = nil
+		}
 	}
-
 	err = co.checkConflictingFlags()
 	if err != nil {
 		return
@@ -637,7 +643,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// the component type was not found for devfile components
 	// fallback to s2i
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	if err != nil {
+		return err
+	}
 
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
@@ -878,7 +887,23 @@ func (co *CreateOptions) Run() (err error) {
 
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
-		return co.devfileRun()
+		err := co.devfileRun()
+		if err != nil {
+			return err
+		}
+		if log.IsJSON() {
+			envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
+			if err != nil {
+				return err
+			}
+
+			cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.KClient, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
+			if err != nil {
+				return err
+			}
+			machineoutput.OutputSuccess(cfd.GetComponent())
+		}
+		return nil
 	}
 
 	// If not, we run s2i (if the --s2i parameter has been passed in).

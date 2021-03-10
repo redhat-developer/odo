@@ -3,8 +3,9 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"strings"
+
+	"github.com/openshift/odo/pkg/localConfigProvider"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -52,12 +53,17 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
 	var storages storage.StorageList
 	var err error
+	var derefClient occlient.Client
+
+	if client != nil {
+		derefClient = *client
+	}
 
 	// if component is pushed call ListWithState which gets storages from localconfig and cluster
 	// this result is already in mc readable form
 	if componentDesc.Status.State == StateTypePushed {
 		storageClient := storage.NewClient(storage.ClientOptions{
-			OCClient:            *client,
+			OCClient:            derefClient,
 			LocalConfigProvider: configProvider,
 		})
 
@@ -106,7 +112,12 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 // NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
 func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, localConfigInfo *config.LocalConfigInfo, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
-	state := GetComponentState(client, componentName, applicationName)
+	var state State
+	if client == nil {
+		state = StateTypeUnknown
+	} else {
+		state = GetComponentState(client, componentName, applicationName)
+	}
 	var componentDesc Component
 	var devfile devfileParser.DevfileObj
 	var err error
@@ -138,9 +149,17 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
 
 	var urls urlpkg.URLList
-	routeSupported, e := client.IsRouteSupported()
-	if e != nil {
-		return cfd, e
+
+	var routeSupported bool
+	var e error
+	if client == nil {
+		routeSupported = false
+	} else {
+		routeSupported, e = client.IsRouteSupported()
+		if e != nil {
+			// we assume if there was an error then the cluster is not connected
+			routeSupported = false
+		}
 	}
 
 	var configProvider localConfigProvider.LocalConfigProvider
@@ -151,9 +170,15 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		configProvider = localConfigInfo
 	}
 
+	var derefClient occlient.Client
+
+	if client != nil {
+		derefClient = *client
+	}
+
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
 		LocalConfigProvider: configProvider,
-		OCClient:            *client,
+		OCClient:            derefClient,
 		IsRouteSupported:    routeSupported,
 	})
 
@@ -294,4 +319,25 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 
 	}
 	return nil
+}
+
+// GetComponent returns a component representation
+func (cfd *ComponentFullDescription) GetComponent() Component {
+	cmp := NewComponent(cfd.Name)
+	cmp.Spec.App = cfd.Spec.App
+	cmp.Spec.Ports = cfd.Spec.Ports
+	cmp.Spec.Type = cfd.Spec.Type
+	cmp.Spec.SourceType = string(config.LOCAL)
+	cmp.Spec.StorageSpec = cfd.Spec.Storage.Items
+	cmp.Spec.URLSpec = cfd.Spec.URL.Items
+	for _, url := range cfd.Spec.URL.Items {
+		cmp.Spec.URL = append(cmp.Spec.URL, url.Name)
+	}
+	for _, storage := range cfd.Spec.Storage.Items {
+		cmp.Spec.Storage = append(cmp.Spec.URL, storage.Name)
+	}
+	cmp.ObjectMeta.Namespace = cfd.ObjectMeta.Namespace
+	cmp.Status = cfd.Status
+	cmp.Spec.Env = cfd.Spec.Env
+	return cmp
 }

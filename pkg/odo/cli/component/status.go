@@ -74,8 +74,10 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
-		so.Context = genericclioptions.NewDevfileContext(cmd)
-
+		so.Context, err = genericclioptions.NewDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 		// Get the component name
 		so.componentName = so.EnvSpecificInfo.GetName()
 
@@ -109,7 +111,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	// Set the correct context
-	so.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	so.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	return
 }

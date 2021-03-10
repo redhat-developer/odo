@@ -34,7 +34,10 @@ func NewGetOptions() *GetOptions {
 
 // Complete completes get args
 func (gto *GetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	gto.Context = genericclioptions.NewContext(cmd)
+	gto.Context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
 	gto.componentName = gto.Context.ComponentAllowingEmpty(true)
 	return
 }

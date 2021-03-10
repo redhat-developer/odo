@@ -2,13 +2,14 @@ package describe
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"os"
-	"strings"
 )
 
 const serviceRecommendedCommandName = "service"
@@ -41,7 +42,7 @@ func NewDescribeServiceOptions() *DescribeServiceOptions {
 
 // Complete completes DescribeServiceOptions after they've been created
 func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd, true)
+	o.Context, err = genericclioptions.NewContext(cmd, true)
 	o.serviceName = args[0]
 
 	return

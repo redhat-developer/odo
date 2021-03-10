@@ -2,11 +2,12 @@ package logout
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
-	"os"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -28,7 +29,7 @@ func NewLogoutOptions() *LogoutOptions {
 
 // Complete completes LogoutOptions after they've been created
 func (o *LogoutOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	o.Context, err = genericclioptions.NewContext(cmd)
 	return
 }
 

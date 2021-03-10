@@ -41,7 +41,7 @@ func NewStorageUnMountOptions() *StorageUnMountOptions {
 
 // Complete completes StorageUnMountOptions after they've been created
 func (o *StorageUnMountOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	o.Context, err = genericclioptions.NewContext(cmd)
 	// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
 	if strings.HasPrefix(args[0], "/") {
 		o.storagePath = args[0]

@@ -74,7 +74,10 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	var remotePort int
 
 	if util.CheckPathExists(o.devfilePath) {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.Context, err = genericclioptions.NewDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 
 		// a small shortcut
 		env := o.Context.EnvSpecificInfo
@@ -85,7 +88,10 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 	} else {
 		// this populates the LocalConfigInfo
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.NewContext(cmd)
+		if err != nil {
+			return err
+		}
 
 		// a small shortcut
 		cfg := o.Context.LocalConfigInfo

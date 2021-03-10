@@ -29,7 +29,10 @@ func NewSearchComponentOptions() *SearchComponentOptions {
 
 // Complete completes SearchComponentOptions after they've been created
 func (o *SearchComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	o.Context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
 	o.searchTerm = args[0]
 
 	o.components, err = catalog.SearchComponent(o.Client, o.searchTerm)

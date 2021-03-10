@@ -47,7 +47,10 @@ func NewInfoOptions() *InfoOptions {
 // Complete completes all the required options for port-forward cmd.
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.Context, err = genericclioptions.NewDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 
 		// a small shortcut
 		env := o.Context.EnvSpecificInfo
@@ -55,7 +58,10 @@ func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		o.componentName = env.GetName()
 		o.Namespace = env.GetNamespace()
 	} else {
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.NewContext(cmd)
+		if err != nil {
+			return err
+		}
 		cfg := o.Context.LocalConfigInfo
 		o.LocalConfigInfo = cfg
 

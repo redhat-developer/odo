@@ -42,7 +42,7 @@ func NewProjectCreateOptions() *ProjectCreateOptions {
 // Complete completes ProjectCreateOptions after they've been created
 func (pco *ProjectCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pco.projectName = args[0]
-	pco.Context = genericclioptions.NewContext(cmd)
+	pco.Context, err = genericclioptions.NewContext(cmd)
 	return
 }
 
