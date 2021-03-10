@@ -15,6 +15,9 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
+		if os.Getenv("KUBERNETES") != "true" {
+			Skip("Plain Kubernetes scenario only, skipping")
+		}
 
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
