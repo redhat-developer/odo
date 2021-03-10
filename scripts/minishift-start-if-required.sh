@@ -27,7 +27,26 @@ if [[ "$msStatus" == *"Does Not Exist"* ]] || [[ "$msStatus" == *"Minishift:  St
       fi
 fi
 
-shout "| Adding required components ..."
-minishift openshift component add service-catalog
-minishift openshift component add automation-service-broker
-minishift openshift component add template-service-broker
+compList=$(minishift openshift component list)
+shout "| Checking if required components need to be installed..."
+if [[ "$compList" == *"service-catalog"* ]] 
+   then 
+      shout "| service-catalog already installed "
+   else 
+         shout "| Installing service-catalog ..."
+         (minishift openshift component add service-catalog)
+fi
+if [[ "$compList" == *"automation-service-broker"* ]] 
+   then 
+      shout "| automation-service-broker already installed "
+   else 
+         shout "| Installing automation-service-broker ..."
+         (minishift openshift component add automation-service-broker)
+fi
+if [[ "$compList" == *"template-service-broker"* ]] 
+   then 
+      shout "| template-service-broker already installed "
+   else 
+         shout "| Installing template-service-broker ..."
+         (minishift openshift component add template-service-broker)
+fi
