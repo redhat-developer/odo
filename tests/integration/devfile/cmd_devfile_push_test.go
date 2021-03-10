@@ -1090,13 +1090,13 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
 
-			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
+			_, output := helper.CmdShouldPassIncludeErrStream("odo", "push", "--context", commonVar.Context)
 			helper.MatchAllInOutput(output, []string{
 				"exited with error status within 1 sec",
 				"Did you mean one of these?",
 			})
 
-			output = helper.CmdShouldFail("odo", "push", "--context", commonVar.Context, "-f", "--run-command", "run")
+			_, output = helper.CmdShouldPassIncludeErrStream("odo", "push", "--context", commonVar.Context, "-f", "--run-command", "run")
 			helper.MatchAllInOutput(output, []string{
 				"exited with error status within 1 sec",
 				"Did you mean one of these?",

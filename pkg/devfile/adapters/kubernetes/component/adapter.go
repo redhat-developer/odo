@@ -292,7 +292,7 @@ func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 				return nil
 			} else {
 				numberOfLines := 20
-				log.Errorf("devfile command \"%s\" exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
+				log.Warningf("devfile command \"%s\" exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
 				log.Infof("Last %d lines of the component's log:", numberOfLines)
 
 				rd, err := a.Log(false, command)
@@ -307,7 +307,7 @@ func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 
 				log.Info("To get the full log output, please run 'odo log'")
 
-				return fmt.Errorf("error during component startup")
+				return nil
 			}
 		}
 	}
