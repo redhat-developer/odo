@@ -5,12 +5,10 @@ import (
 	"os"
 	"text/tabwriter"
 
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 
-	"github.com/devfile/library/pkg/devfile"
-
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
@@ -18,9 +16,13 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -103,19 +105,28 @@ func (o *DescribeComponentOptions) Validate() (err error) {
 	return nil
 }
 
+// DevfileComponentDescription represents the JSON output of Devfile compoent description
+// used in odo catalog describe component <name> -o json
+type DevfileComponentDescription struct {
+	RegistryName string           `json:"RegistryName"`
+	Devfile      data.DevfileData `json:"Devfile"`
+}
+
 // Run contains the logic for the command associated with DescribeComponentOptions
 func (o *DescribeComponentOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	if log.IsJSON() {
 		if len(o.devfileComponents) > 0 {
+			out := []DevfileComponentDescription{}
+
 			for _, devfileComponent := range o.devfileComponents {
 				devObj, err := GetDevfile(devfileComponent)
 				if err != nil {
 					return err
 				}
-
-				machineoutput.OutputSuccess(devObj)
+				out = append(out, DevfileComponentDescription{RegistryName: devfileComponent.Registry.Name, Devfile: devObj.Data})
 			}
+			machineoutput.OutputSuccess(out)
 		}
 	} else {
 		if len(o.devfileComponents) > 1 {
