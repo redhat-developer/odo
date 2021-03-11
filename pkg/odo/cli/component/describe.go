@@ -51,10 +51,6 @@ func (do *DescribeOptions) Validate() (err error) {
 		return odoutil.ThrowContextError()
 	}
 
-	if (len(do.componentName) <= 0 || len(do.Application) <= 0) && !do.LocalConfigInfo.Exists() {
-		return fmt.Errorf("Component %v does not exist", do.componentName)
-	}
-
 	// read: if env info and local info both dont exist then
 	if !do.EnvSpecificInfo.Exists() && !do.LocalConfigInfo.Exists() {
 		return fmt.Errorf("Component %v does not exist", do.componentName)

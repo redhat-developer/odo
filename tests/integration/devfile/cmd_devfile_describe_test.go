@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"os"
 	"path"
 
 	. "github.com/onsi/ginkgo"
@@ -15,9 +14,9 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		if os.Getenv("KUBERNETES") != "true" {
-			Skip("Plain Kubernetes scenario only, skipping")
-		}
+		// if os.Getenv("KUBERNETES") != "true" {
+		// 	Skip("Plain Kubernetes scenario only, skipping")
+		// }
 
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
@@ -105,13 +104,10 @@ var _ = Describe("odo devfile describe command tests", func() {
 		})
 
 		It("should show json output for non connected cluster", func() {
-			kubeconfigOld := os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", "/no/such/path")
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
-			output := helper.CmdShouldPass("odo", "describe", "--context", commonVar.Context, "-o", "json")
+			output := helper.Cmd("odo", "describe", "--context", commonVar.Context, "-o", "json").WithEnv("KUBECONFIG=/no/path").ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
-			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
 
