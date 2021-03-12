@@ -8,10 +8,8 @@ import (
 	"github.com/openshift/odo/pkg/localConfigProvider"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
-
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/storage"
@@ -50,7 +48,7 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 }
 
 // loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
-func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
+func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
 	var storages storage.StorageList
 	var err error
 	var derefClient occlient.Client
@@ -110,7 +108,7 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 }
 
 // NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
-func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, kClient *kclient.Client, localConfigInfo *config.LocalConfigInfo, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
+func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	var state State
 	if client == nil {
@@ -188,7 +186,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	}
 	cfd.Spec.URL = urls
 
-	err = cfd.loadStoragesFromClientAndLocalConfig(client, kClient, configProvider, componentName, applicationName, &componentDesc)
+	err = cfd.loadStoragesFromClientAndLocalConfig(client, configProvider, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
 	}

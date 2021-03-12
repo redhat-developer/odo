@@ -60,7 +60,7 @@ func (do *DescribeOptions) Run() (err error) {
 		return fmt.Errorf("Component %v does not exist", do.componentName)
 	}
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.Context.KClient, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, do.Context.Project)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, do.Context.Project)
 	if err != nil {
 		return err
 	}

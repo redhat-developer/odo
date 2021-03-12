@@ -119,7 +119,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			if err != nil {
 				return errors.Wrap(err, "unable to determine target namespace for devfile")
 			}
-			client, err := genericclioptions.Client(cmd)
+			client, err := genericclioptions.Client()
 			if err != nil {
 				return err
 			}
@@ -156,7 +156,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			if err != nil {
 				return errors.Wrap(err, "unable to determine target namespace for devfile")
 			}
-			client, err := genericclioptions.Client(cmd)
+			client, err := genericclioptions.Client()
 			if err != nil {
 				return err
 			}
@@ -170,7 +170,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 				return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
 			}
 		} else if envFileInfo.GetNamespace() == "default" {
-			client, err := genericclioptions.Client(cmd)
+			client, err := genericclioptions.Client()
 			if err != nil {
 				return err
 			}

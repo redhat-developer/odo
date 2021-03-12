@@ -210,7 +210,7 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) (*Context, error) {
 	// Create a new occlient
-	client, err := client(command)
+	client, err := client()
 	if err != nil {
 		return nil, err
 	}
@@ -280,11 +280,11 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 	if !pushtarget.IsPushTargetDocker() {
 
 		// Create a new kubernetes client
-		internalCxt.KClient, err = kClient(command)
+		internalCxt.KClient, err = kClient()
 		if err != nil {
 			return nil, err
 		}
-		internalCxt.Client, err = client(command)
+		internalCxt.Client, err = client()
 		if err != nil {
 			return nil, err
 		}

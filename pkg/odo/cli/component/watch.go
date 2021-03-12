@@ -129,7 +129,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	if err != nil {
 		return err
 	}
-	wo.client, err = genericclioptions.Client(cmd)
+	wo.client, err = genericclioptions.Client()
 	if err != nil {
 		return err
 	}
