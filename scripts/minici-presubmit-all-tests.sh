@@ -11,7 +11,6 @@ fi
 ##### These are varialbes used by ci-firewall as one of the ways to get its parameters
 # If AMQP_URI is not set by the time we reach here, show error message and exit.
 export AMQP_URI=${AMQP_URI:?"Please set AMQP_URI env with amqp uri or provide path of file containing it as ODO_RABBITMQ_AMQP_URL env"}
-export CI_FIREWALL_VERSION="valpha"
 
 case $1 in
     minikube)
