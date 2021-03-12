@@ -11,6 +11,8 @@ fi
 ##### These are varialbes used by ci-firewall as one of the ways to get its parameters
 # If AMQP_URI is not set by the time we reach here, show error message and exit.
 export AMQP_URI=${AMQP_URI:?"Please set AMQP_URI env with amqp uri or provide path of file containing it as ODO_RABBITMQ_AMQP_URL env"}
+export CI_FIREWALL_VERSION="valpha"
+
 case $1 in
     minikube)
         export JOB_NAME="odo-minikube-pr-build"
@@ -46,7 +48,7 @@ echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 # show commands
 set -x
 
-curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
+curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
 ./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --setupscript $SETUP_SCRIPT --runscript $RUN_SCRIPT --timeout $TIMEOUT
