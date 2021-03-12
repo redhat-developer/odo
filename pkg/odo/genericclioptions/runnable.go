@@ -3,12 +3,21 @@ package genericclioptions
 import (
 	"flag"
 	"fmt"
+	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/segment"
+	"k8s.io/klog"
 	"os"
+	"time"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+)
+
+var (
+	segmentClient *segment.Client
+	//ctx context.Context
 )
 
 type Runnable interface {
@@ -18,6 +27,15 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
+	//ctx = telemetry.NewContext(context.Background())
+	startTime := time.Now()
+	cfg, _ := preference.New()
+	var err error
+	// Initiate the segment client
+	if segmentClient, err = segment.NewClient(cfg); err != nil {
+		klog.Fatal(err.Error())
+	}
+	defer segmentClient.Close()
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions
@@ -26,9 +44,28 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// LogErrorAndExit is used so that we get -o (jsonoutput) for cmds which have json output implemented
 	util.LogErrorAndExit(checkConflictingFlags(cmd), "")
 	// Run completion, validation and run.
-	util.LogErrorAndExit(o.Complete(cmd.Name(), cmd, args), "")
-	util.LogErrorAndExit(o.Validate(), "")
-	util.LogErrorAndExit(o.Run(), "")
+	// Only upload data to segment for completion and validation if a non-nil error is returned.
+	err = o.Complete(cmd.Name(), cmd, args)
+	if err!=nil {
+		uploadToSegmentAndLog(cmd.Name(), args, err, startTime)
+	}
+	err = o.Validate()
+	if err!=nil {
+		uploadToSegmentAndLog(cmd.Name(), args, err, startTime)
+	}
+	uploadToSegmentAndLog(cmd.Name(), args, o.Run(), startTime)
+}
+
+// uploadToSegmentAndLog uploads the data to segment
+func uploadToSegmentAndLog(cmd string, args []string, err error, startTime time.Time) {
+	if serr := segmentClient.Upload(fmt.Sprintf("odo %v %v", cmd, args), time.Since(startTime), err); serr != nil {
+		klog.Errorf("Cannot send data to telemetry: %v", serr)
+	}
+	// If the error is not nil, client will be closed so that data can be sent before the program exits.
+	if err != nil {
+		segmentClient.Close()
+	}
+	util.LogErrorAndExit(err, "")
 }
 
 // checkConflictingFlags checks for conflicting flags. Currently --context cannot be provided
