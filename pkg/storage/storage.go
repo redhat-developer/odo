@@ -654,12 +654,12 @@ type generic struct {
 }
 
 // Push creates and deletes the required Storage
+// it compares the local storage against the storage on the cluster
 func Push(client Client, configProvider localConfigProvider.LocalConfigProvider) error {
 	// list all the storage in the cluster
 	storageClusterList := StorageList{}
-	var err error
 
-	storageClusterList, err = client.ListFromCluster()
+	storageClusterList, err := client.ListFromCluster()
 	if err != nil {
 		return err
 	}

@@ -197,6 +197,37 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "case 8: no pvc found for mount path",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-0-vol", MountPath: "/data"},
+							{Name: "volume-1-vol", MountPath: "/path"},
+						}),
+						testingutil.CreateFakeContainerWithVolumeMounts("container-1", []corev1.VolumeMount{
+							{Name: "volume-1-vol", MountPath: "/path"},
+							{Name: "volume-vol", MountPath: "/path1"},
+						}),
+					}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
+				},
+			},
+			want:    StorageList{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

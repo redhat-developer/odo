@@ -19,11 +19,15 @@ type s2iClient struct {
 	client occlient.Client
 }
 
+// this method is currently not being used by s2i components
+// it is here to satisfy the interface
 func (s s2iClient) Create(storage Storage) error {
 	return nil
 }
 
-func (s s2iClient) Delete(s2 string) error {
+// this method is currently not being used by s2i components
+// it is here to satisfy the interface
+func (s s2iClient) Delete(name string) error {
 	return nil
 }
 

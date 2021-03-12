@@ -298,7 +298,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	})
 
 	// handle the ephemeral storage
-	err = utils.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName)
+	err = storage.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName)
 	if err != nil {
 		return err
 	}

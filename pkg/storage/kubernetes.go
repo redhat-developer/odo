@@ -115,10 +115,16 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
 
+	// to track volume mounts used by a PVC
+	validVolumeMounts := make(map[string]bool)
+
 	for _, pvc := range pvcs {
 		found := false
 		for _, volumeMount := range volumeMounts {
 			if volumeMount.Name == pvc.Name+"-vol" {
+				// this volume mount is used by a PVC
+				validVolumeMounts[volumeMount.Name] = true
+
 				found = true
 				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 				storage = append(storage, GetMachineFormatWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
@@ -126,6 +132,12 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		}
 		if !found {
 			return StorageList{}, fmt.Errorf("mount path for pvc %s not found", pvc.Name)
+		}
+	}
+
+	for _, volumeMount := range volumeMounts {
+		if _, ok := validVolumeMounts[volumeMount.Name]; !ok {
+			return StorageList{}, fmt.Errorf("pvc not found for mount path %s", volumeMount.Name)
 		}
 	}
 
