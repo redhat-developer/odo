@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"strconv"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -562,9 +563,11 @@ func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace s
 	Expect(output).NotTo(ContainSubstring(resourceName))
 }
 
-// CreateRandNamespaceProject create new project with random name in oc cluster (10 letters)
+// CreateRandNamespaceProject create new project with test file name, line number and 10 random letters
 func (oc OcRunner) CreateRandNamespaceProject() string {
-	projectName := RandString(10)
+	currGinkgoTestFileName := strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1)
+	currGinkgoTestLineNum := strconv.Itoa(CurrentGinkgoTestDescription().LineNumber)
+	projectName := currGinkgoTestFileName + "-lnum-" + currGinkgoTestLineNum + "-" + RandString(10)
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
 	Expect(session).To(ContainSubstring("New project created"))
