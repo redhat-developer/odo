@@ -10,7 +10,6 @@ description: Installing Service Binding Operator on OpenShift and Kubernetes
 
 # Micro navigation
 micro_nav: true
-
 ---
 # Installing Service Binding Operator
 
@@ -25,6 +24,16 @@ odo uses Service Binding Operator to provide the `odo link` feature which helps 
 To install Service Binding Operator on OpenShift, refer [this video](https://www.youtube.com/watch?v=8QmewscQwHg).
 
 ## Installing Service Binding Operator on Kubernetes
+
+Before installing an Operator, we first need to enable the Operator Lifecycle Manager (OLM).
+
+1.  If you are using [minikube](https://minikube.sigs.k8s.io/), please enable the OLM addon by doing:
+    
+    ``` sh
+    $ minikube addons enable olm
+    ```
+
+2.  To install OLM on a Kubernetes cluster setup other than minikube, please refer the [installation instructions on GitHub](https://github.com/operator-framework/operator-lifecycle-manager/#installation).
 
 To install the Operator, execute the following `kubectl` command provided on its [OperatorHub.io page](https://operatorhub.io/operator/service-binding-operator):
 
