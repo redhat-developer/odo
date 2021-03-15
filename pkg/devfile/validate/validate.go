@@ -7,8 +7,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/devfile/validate/generic"
-
 	"k8s.io/klog"
 )
 
@@ -16,11 +14,6 @@ import (
 // after invoking the generic devfile validation
 func ValidateDevfileData(data interface{}) error {
 	var events devfilev1.Events
-
-	// Validate the generic devfile data before validating odo specific logic
-	if err := generic.ValidateDevfileData(data); err != nil {
-		return err
-	}
 
 	switch d := data.(type) {
 	case *v2.DevfileV2:
