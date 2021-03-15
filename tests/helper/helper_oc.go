@@ -565,6 +565,7 @@ func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace s
 
 // CreateRandNamespaceProject create new project with test file name, line number and 10 random letters
 func (oc OcRunner) CreateRandNamespaceProject() string {
+	//Get current test filename and remove file path, file extension and replace undescores with hyphens
 	currGinkgoTestFileName := strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1)
 	currGinkgoTestLineNum := strconv.Itoa(CurrentGinkgoTestDescription().LineNumber)
 	projectName := currGinkgoTestFileName + "-lnum-" + currGinkgoTestLineNum + "-" + RandString(10)
