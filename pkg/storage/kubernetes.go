@@ -88,10 +88,24 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, err
 	}
 
+	initContainerVolumeMounts := make(map[string]bool)
+	for _, container := range pod.Spec.InitContainers {
+		for _, volumeMount := range container.VolumeMounts {
+			initContainerVolumeMounts[volumeMount.Name] = true
+		}
+	}
+
 	var storage []Storage
 	var volumeMounts []Storage
 	for _, container := range pod.Spec.Containers {
 		for _, volumeMount := range container.VolumeMounts {
+
+			// avoid the volume mounts from the init containers
+			// and the source volume volume mount
+			_, ok := initContainerVolumeMounts[volumeMount.Name]
+			if ok || volumeMount.Name == OdoSourceVolume {
+				continue
+			}
 
 			volumeMounts = append(volumeMounts, Storage{
 				ObjectMeta: metav1.ObjectMeta{Name: volumeMount.Name},

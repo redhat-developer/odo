@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -227,6 +228,85 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want:    StorageList{},
 			wantErr: true,
+		},
+		{
+			name: "case 9: avoid the source volume's mount",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-0-vol", MountPath: "/data"},
+							{Name: "volume-1-vol", MountPath: "/path"},
+						}),
+						testingutil.CreateFakeContainerWithVolumeMounts("container-1", []corev1.VolumeMount{
+							{Name: "volume-1-vol", MountPath: "/path"},
+							{Name: OdoSourceVolume, MountPath: "/path1"},
+						}),
+					}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
+				},
+			},
+			want: StorageList{
+				Items: []Storage{
+					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-1"),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 10: avoid the volume mounts used by the init containers",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "nodejs",
+							Labels: map[string]string{
+								"component": "nodejs",
+							},
+						},
+						Spec: corev1.PodSpec{
+							InitContainers: []corev1.Container{
+								{
+									Name: "supervisord",
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											Name:      "odo-shared-project",
+											MountPath: "/opt/",
+										},
+									},
+								},
+							},
+						},
+						Status: corev1.PodStatus{
+							Phase: corev1.PodRunning,
+						},
+					},
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{},
+			},
+			want:    StorageList{},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
