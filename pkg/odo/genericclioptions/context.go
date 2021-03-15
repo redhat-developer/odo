@@ -210,7 +210,7 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) (*Context, error) {
 	// Create a new occlient
-	client, err := client()
+	client, err := ocClient()
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +284,7 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 		if err != nil {
 			return nil, err
 		}
-		internalCxt.Client, err = client()
+		internalCxt.Client, err = ocClient()
 		if err != nil {
 			return nil, err
 		}
