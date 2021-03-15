@@ -74,7 +74,7 @@ func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, names
 
 // GetPVCSize executes kubectl command and returns the bound storage size
 func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string) string {
-	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
 	stdOut := CmdShouldPass(kubectl.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
 	return strings.TrimSpace(stdOut)
 }

@@ -3,19 +3,79 @@ package storage
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 // kubernetesClient contains information required for devfile based Storage operations
 type kubernetesClient struct {
 	generic
 	client occlient.Client
+}
+
+// Create creates a pvc from the given Storage
+func (k kubernetesClient) Create(storage Storage) error {
+
+	pvcName, err := GeneratePVCName(storage.Name, k.componentName)
+	if err != nil {
+		return err
+	}
+
+	labels := storagelabels.GetLabels(storage.Name, k.componentName, k.appName, true)
+
+	labels["component"] = k.componentName
+	labels[storagelabels.DevfileStorageLabel] = storage.Name
+
+	if strings.Contains(storage.Name, OdoSourceVolume) {
+		// Add label for source pvc
+		labels[storagelabels.SourcePVCLabel] = storage.Name
+	}
+
+	objectMeta := generator.GetObjectMeta(pvcName, k.client.GetKubeClient().Namespace, labels, nil)
+
+	quantity, err := resource.ParseQuantity(storage.Spec.Size)
+	if err != nil {
+		return errors.Wrapf(err, "unable to parse size: %v", storage.Spec.Size)
+	}
+
+	pvcParams := generator.PVCParams{
+		ObjectMeta: objectMeta,
+		Quantity:   quantity,
+	}
+	pvc := generator.GetPVC(pvcParams)
+
+	// Create PVC
+	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
+	_, err = k.client.GetKubeClient().CreatePVC(*pvc)
+	if err != nil {
+		return errors.Wrap(err, "unable to create PVC")
+	}
+	return nil
+}
+
+// Delete deletes the pvc belonging to the given Storage
+func (k kubernetesClient) Delete(name string) error {
+	pvcName, err := getPVCNameFromStorageName(&k.client, name)
+	if err != nil {
+		return err
+	}
+
+	// delete the associated PVC with the component
+	err = k.client.GetKubeClient().DeletePVC(pvcName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete PVC %v", pvcName)
+	}
+
+	return nil
 }
 
 // ListFromCluster lists pvc based Storage from the cluster
@@ -28,10 +88,24 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, err
 	}
 
+	initContainerVolumeMounts := make(map[string]bool)
+	for _, container := range pod.Spec.InitContainers {
+		for _, volumeMount := range container.VolumeMounts {
+			initContainerVolumeMounts[volumeMount.Name] = true
+		}
+	}
+
 	var storage []Storage
 	var volumeMounts []Storage
 	for _, container := range pod.Spec.Containers {
 		for _, volumeMount := range container.VolumeMounts {
+
+			// avoid the volume mounts from the init containers
+			// and the source volume volume mount
+			_, ok := initContainerVolumeMounts[volumeMount.Name]
+			if ok || volumeMount.Name == OdoSourceVolume {
+				continue
+			}
 
 			volumeMounts = append(volumeMounts, Storage{
 				ObjectMeta: metav1.ObjectMeta{Name: volumeMount.Name},
@@ -48,17 +122,23 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, nil
 	}
 
-	selector := fmt.Sprintf("component=%s,%s!=odo-projects", k.localConfig.GetName(), storagelabels.SourcePVCLabel)
+	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", "component", k.localConfig.GetName(), storagelabels.SourcePVCLabel)
 
 	pvcs, err := k.client.GetKubeClient().ListPVCs(selector)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
 
+	// to track volume mounts used by a PVC
+	validVolumeMounts := make(map[string]bool)
+
 	for _, pvc := range pvcs {
 		found := false
 		for _, volumeMount := range volumeMounts {
 			if volumeMount.Name == pvc.Name+"-vol" {
+				// this volume mount is used by a PVC
+				validVolumeMounts[volumeMount.Name] = true
+
 				found = true
 				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 				storage = append(storage, GetMachineFormatWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
@@ -66,6 +146,12 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		}
 		if !found {
 			return StorageList{}, fmt.Errorf("mount path for pvc %s not found", pvc.Name)
+		}
+	}
+
+	for _, volumeMount := range volumeMounts {
+		if _, ok := validVolumeMounts[volumeMount.Name]; !ok {
+			return StorageList{}, fmt.Errorf("pvc not found for mount path %s", volumeMount.Name)
 		}
 	}
 

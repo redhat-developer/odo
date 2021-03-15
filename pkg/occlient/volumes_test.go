@@ -1,8 +1,6 @@
 package occlient
 
 import (
-	"github.com/openshift/odo/pkg/testingutil"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"strings"
 	"testing"
@@ -208,60 +206,6 @@ func TestAddPVCToDeploymentConfig(t *testing.T) {
 
 			}
 
-		})
-	}
-}
-
-func Test_updateStorageOwnerReference(t *testing.T) {
-	fakeDC := fakeDeploymentConfig("dcName-1", "nodejs", nil, nil, t)
-	type args struct {
-		pvc            *corev1.PersistentVolumeClaim
-		ownerReference []v1.OwnerReference
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "case 1: valid pvc",
-			args: args{
-				pvc: testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
-				ownerReference: []v1.OwnerReference{
-					GenerateOwnerReference(fakeDC),
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "case 2: empty owner reference for pvc",
-			args: args{
-				pvc:            testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
-				ownerReference: []v1.OwnerReference{},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fakeClient, fakeClientSet := FakeNew()
-
-			fakeClientSet.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				returnedPVC := *tt.args.pvc
-				return true, &returnedPVC, nil
-			})
-
-			fakeClientSet.Kubernetes.PrependReactor("update", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				pvc := action.(ktesting.UpdateAction).GetObject().(*corev1.PersistentVolumeClaim)
-				if pvc.OwnerReferences == nil || pvc.OwnerReferences[0].Name != fakeDC.Name {
-					t.Errorf("owner reference not set for dc %s", tt.args.pvc.Name)
-				}
-				return true, pvc, nil
-			})
-
-			if err := updateStorageOwnerReference(fakeClient, tt.args.pvc, tt.args.ownerReference...); (err != nil) != tt.wantErr {
-				t.Errorf("updateStorageOwnerReference() error = %v, wantErr %v", err, tt.wantErr)
-			}
 		})
 	}
 }

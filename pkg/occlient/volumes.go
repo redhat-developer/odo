@@ -291,23 +291,3 @@ func addOrRemoveVolumeAndVolumeMount(client *Client, dc *appsv1.DeploymentConfig
 	}
 	return nil
 }
-
-// updateStorageOwnerReference updates the given storage with the given owner references
-func updateStorageOwnerReference(client *Client, pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
-	if len(ownerReference) <= 0 {
-		return errors.New("owner references are empty")
-	}
-	// get the latest version of the PVC to avoid conflict errors
-	latestPVC, err := client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Get(pvc.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	for _, owRf := range ownerReference {
-		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
-	}
-	_, err = client.kubeClient.KubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Update(latestPVC)
-	if err != nil {
-		return err
-	}
-	return nil
-}

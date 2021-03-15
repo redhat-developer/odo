@@ -16,8 +16,3 @@ type ComponentAdapter interface {
 	Log(follow, debug bool) (io.ReadCloser, error)
 	Exec(command []string) error
 }
-
-// StorageAdapter defines the storage functions that platform-specific adapters must implement
-type StorageAdapter interface {
-	Create([]Storage) error
-}

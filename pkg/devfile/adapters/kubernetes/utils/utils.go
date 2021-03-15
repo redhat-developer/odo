@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
+	"github.com/openshift/odo/pkg/storage"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
@@ -20,12 +21,6 @@ import (
 
 const (
 	containerNameMaxLen = 55
-
-	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
-	OdoSourceVolume = "odo-projects"
-
-	// OdoSourceVolumeSize specifies size for odo source volume.
-	OdoSourceVolumeSize = "2Gi"
 )
 
 // GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
@@ -34,21 +29,21 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 
 	if sourcePVCName != "" {
 		sourceVolume = corev1.Volume{
-			Name: OdoSourceVolume,
+			Name: storage.OdoSourceVolume,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: sourcePVCName},
 			},
 		}
 	} else {
 		sourceVolume = corev1.Volume{
-			Name: OdoSourceVolume,
+			Name: storage.OdoSourceVolume,
 		}
 	}
 
 	return []corev1.Volume{
 		sourceVolume,
 		{
-			// Create a volume that will be shared betwen InitContainer and the applicationContainer
+			// Create a volume that will be shared between InitContainer and the applicationContainer
 			// in order to pass over the SupervisorD binary
 			Name: adaptersCommon.SupervisordVolumeName,
 			VolumeSource: corev1.VolumeSource{
@@ -87,7 +82,7 @@ func AddOdoProjectVolume(containers *[]corev1.Container) {
 		for _, env := range container.Env {
 			if env.Name == adaptersCommon.EnvProjectsRoot {
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      OdoSourceVolume,
+					Name:      storage.OdoSourceVolume,
 					MountPath: env.Value,
 				})
 				(*containers)[i] = container

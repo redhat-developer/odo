@@ -397,7 +397,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	if err != nil {
 		return err
 	}
-	storageToBeMounted, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
+	storageToBeMounted, _, err := storage.S2iPush(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
 	if err != nil {
 		return err
 	}
@@ -1231,7 +1231,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 	if err != nil {
 		return err
 	}
-	storageToMount, storageToUnMount, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), true)
+	storageToMount, storageToUnMount, err := storage.S2iPush(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get storage to mount and unmount")
 	}
