@@ -84,7 +84,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 		})
 	})
 
-	Context("when running odo describe", func() {
+	Context("when running odo describe for machine readable output", func() {
 		It("should show json output for working cluster", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
 			output := helper.CmdShouldPass("odo", "describe", "--context", commonVar.Context, "-o", "json")
