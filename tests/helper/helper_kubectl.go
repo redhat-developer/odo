@@ -138,7 +138,7 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 	return output
 }
 
-// CreateRandNamespaceProject create new project with test file name, line number and 10 random letters
+// CreateRandNamespaceProject create new project
 func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
 	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
