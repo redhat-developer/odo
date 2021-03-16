@@ -6,6 +6,9 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 )
 
 func (co *CreateOptions) SetComponentSettings(args []string) error {
@@ -67,4 +70,23 @@ func decideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 	}
 
 	return component.DownloadStarterProject(starterProject, token, contextDir)
+}
+
+func (co *CreateOptions) DevfileJSON() error {
+	client, err := genericclioptions.Client()
+	if err == nil {
+		co.Client = client
+	}
+
+	envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
+	if err != nil {
+		return err
+	}
+
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
+	if err != nil {
+		return err
+	}
+	machineoutput.OutputSuccess(cfd.GetComponent())
+	return nil
 }

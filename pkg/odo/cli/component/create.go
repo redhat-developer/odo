@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/convert"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
@@ -913,27 +914,40 @@ func (co *CreateOptions) Run() (err error) {
 			return err
 		}
 		if log.IsJSON() {
-
-			client, err := genericclioptions.Client()
-			if err == nil {
-				co.Client = client
-			}
-
-			envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
-			if err != nil {
-				return err
-			}
-
-			cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
-			if err != nil {
-				return err
-			}
-			machineoutput.OutputSuccess(cfd.GetComponent())
+			co.DevfileJSON()
 		}
 		return nil
 	}
 
-	// If not, we run s2i (if the --s2i parameter has been passed in).
+	// we only do conversion if the --s2i is provided and the component is not of --git type
+	if co.forceS2i && len(co.componentGit) == 0 {
+		log.Info("Conversion")
+		// do the conversion
+		// lets fill the localConfigInfo as we are using that as an adapter
+		co.LocalConfigInfo.SetComponentSettingsWithoutFileWrite(co.componentSettings)
+		if err := convert.GenerateDevfileYaml(co.Client, co.LocalConfigInfo, co.componentContext); err != nil {
+			return err
+		}
+
+		if _, err := convert.GenerateEnvYaml(co.Client, co.LocalConfigInfo, co.componentContext); err != nil {
+			return err
+		}
+		log.Success("Successfully generated devfile.yaml and env.yaml for provided S2I component")
+
+		if co.now {
+			err = co.DevfilePush()
+			if err != nil {
+				return fmt.Errorf("failed to push changes: %w", err)
+			}
+		} else {
+			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
+		}
+		if log.IsJSON() {
+			co.DevfileJSON()
+		}
+	}
+
+	// If not, we run s2i (if /the --s2i parameter has been passed in).
 	// It's implied that we have passed it in if Devfile did not run above
 	err = co.s2iRun()
 	if err != nil {
