@@ -1,7 +1,7 @@
 package devfile
 
 import (
-	"path"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,9 +14,9 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		// if os.Getenv("KUBERNETES") != "true" {
-		// 	Skip("Plain Kubernetes scenario only, skipping")
-		// }
+		if os.Getenv("KUBERNETES") != "true" {
+			Skip("Plain Kubernetes scenario only, skipping")
+		}
 
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
@@ -90,17 +90,10 @@ var _ = Describe("odo devfile describe command tests", func() {
 			output := helper.CmdShouldPass("odo", "describe", "--context", commonVar.Context, "-o", "json")
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
-		})
-
-		It("should show json output for working cluster for a pushed component", func() {
-			newContext := path.Join(commonVar.Context, "newContext")
-			helper.MakeDir(newContext)
-			helper.Chdir(newContext)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "--now")
-			output := helper.CmdShouldPass("odo", "describe", "--context", newContext, "-o", "json")
-			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			output = helper.CmdShouldPass("odo", "describe", "--context", commonVar.Context, "-o", "json")
+			values = gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Pushed"})).To(Equal(true))
-			helper.Chdir(commonVar.OriginalWorkingDirectory)
 		})
 
 		It("should show json output for non connected cluster", func() {
