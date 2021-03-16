@@ -87,7 +87,7 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 		return err
 	}
 
-	o.Client, err = genericclioptions.Client(cmd)
+	o.Client, err = genericclioptions.Client()
 	if err != nil {
 		return err
 	}

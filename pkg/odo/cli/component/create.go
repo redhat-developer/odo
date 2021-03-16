@@ -342,11 +342,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 	} else {
-		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-		if err != nil {
-			co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
-			err = nil
-		}
+		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
 	}
 	err = co.checkConflictingFlags()
 	if err != nil {
@@ -892,12 +888,18 @@ func (co *CreateOptions) Run() (err error) {
 			return err
 		}
 		if log.IsJSON() {
+
+			client, err := genericclioptions.Client()
+			if err == nil {
+				co.Client = client
+			}
+
 			envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
 			if err != nil {
 				return err
 			}
 
-			cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.KClient, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
+			cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
 			if err != nil {
 				return err
 			}

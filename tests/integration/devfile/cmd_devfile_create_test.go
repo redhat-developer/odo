@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 
 	"github.com/tidwall/gjson"
 
@@ -123,6 +124,33 @@ var _ = Describe("odo devfile create command tests", func() {
 			output := cmd.WithEnv("KUBECONFIG=/no/such/path").ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
+		})
+
+		It("should successfully create the devfile component and show json output for a unreachable cluster", func() {
+
+			path := os.Getenv("KUBECONFIG")
+
+			// read the contents from the kubeconfig and replace the server entries
+			reg := regexp.MustCompile(`server: .*`)
+			kubeConfigContents, err := helper.ReadFile(path)
+			Expect(err).To(BeNil())
+			kubeConfigContents = reg.ReplaceAllString(kubeConfigContents, "server: https://not-reachable.com:443")
+
+			// write to a new file which will be used as the new kubeconfig
+			newKubeConfigPath := filepath.Join(commonVar.Context, "newKUBECONFIG")
+			newKubeConfig, err := os.Create(newKubeConfigPath)
+			Expect(err).To(BeNil())
+			_, err = newKubeConfig.WriteString(kubeConfigContents)
+			Expect(err).To(BeNil())
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			cmd := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json")
+			output := cmd.WithEnv("KUBECONFIG=" + newKubeConfigPath).ShouldPass().Out()
+			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
+
+			err = os.Remove(newKubeConfigPath)
+			Expect(err).To(BeNil())
 		})
 	})
 
