@@ -5,7 +5,7 @@ import (
 	"runtime"
 )
 
-func traits() analytics.Traits{
+func traits() analytics.Traits {
 	base := analytics.NewTraits().Set("os", runtime.GOOS)
 	return base
 }

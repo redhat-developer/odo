@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/version"
 	"github.com/pborman/uuid"
+	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"io/ioutil"
 	"net"
@@ -53,7 +55,7 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) Upload(action string, duration time.Duration, err error) error {
-	if !c.config.GetConsentTelemetry(){
+	if !c.config.GetConsentTelemetry() {
 		return nil
 	}
 	anonymousID, uerr := getUserIdentity(c.telemetryFilePath)
@@ -74,7 +76,10 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 	//	properties = properties.Set(k, v)
 	//}
 
-	properties = properties.Set("version", "<placeholder>").Set("success", err==nil).Set("duration(ms)", duration.Milliseconds())
+	properties = properties.Set("version", "odo "+version.VERSION+" ("+version.GITCOMMIT+")").
+		Set("success", err == nil).
+		Set("duration(ms)", duration.Milliseconds()).
+		Set("tty", RunningInTerminal())
 	if err != nil {
 		properties = properties.Set("error", SetError(err)).Set("error-type", errorType(err))
 	}
@@ -130,4 +135,8 @@ func errorType(err error) string {
 		return fmt.Sprintf("%T", wrappedErr)
 	}
 	return fmt.Sprintf("%T", err)
+}
+
+func RunningInTerminal() bool {
+	return term.IsTerminal(int(os.Stdin.Fd()))
 }
