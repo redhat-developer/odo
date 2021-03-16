@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"strconv"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -141,10 +140,7 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 
 // CreateRandNamespaceProject create new project with test file name, line number and 10 random letters
 func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
-	//Get current test filename and remove file path, file extension and replace undescores with hyphens  
-	currGinkgoTestFileName := strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1)
-	currGinkgoTestLineNum := strconv.Itoa(CurrentGinkgoTestDescription().LineNumber)
-	projectName := currGinkgoTestFileName + "-lnum-" + currGinkgoTestLineNum + "-" + RandString(10)
+	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	CmdShouldPass("kubectl", "create", "namespace", projectName)
 	CmdShouldPass("kubectl", "config", "set-context", "--current", "--namespace", projectName)
