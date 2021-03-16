@@ -351,6 +351,9 @@ Modify `odo` specific configuration settings within the global preference file.
 
   # Disable experimental mode
   odo preference set experimental false
+
+  # Use persistent volumes in the cluster
+  odo preference set ephemeral false
 ```
 
 > **Note**

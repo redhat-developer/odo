@@ -62,10 +62,20 @@ grid_navigation:
       cta: Read more
       url: 'docs/debugging-using-devfile'
 
+    - title: Setup the minikube environment
+      excerpt: Setup a Kubernetes cluster that odo can be used with
+      cta: Read more
+      url: 'docs/installing-and-onfiguring-minikube-environment'
+
     - title: Introduction to Operators
       excerpt: Deploying an Operator from Operator Hub using odo.
       cta: Read more
       url: 'docs/operator-hub'
+
+    - title: Java OpenLiberty with PostgreSQL
+      excerpt: Binding a Java microservices JPA application to an in-cluster Operator-managed PostgreSQL database on minikube
+      cta: Read more
+      url: 'docs/deploying-java-app-with-database'
 
     - title: Installing Operators on minikube
       excerpt: Installing etcd Operator on minikube

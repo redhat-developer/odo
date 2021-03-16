@@ -10,5 +10,4 @@ description: Installing Service Binding Operator on OpenShift and Kubernetes
 
 # Micro navigation
 micro_nav: true
-
 ---
