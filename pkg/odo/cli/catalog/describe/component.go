@@ -105,7 +105,7 @@ func (o *DescribeComponentOptions) Validate() (err error) {
 	return nil
 }
 
-// DevfileComponentDescription represents the JSON output of Devfile compoent description
+// DevfileComponentDescription represents the JSON output of Devfile component description
 // used in odo catalog describe component <name> -o json
 type DevfileComponentDescription struct {
 	RegistryName string           `json:"RegistryName"`
