@@ -484,16 +484,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 				// If user can use existing devfile directly, we generate the Default Component name if only 1 arg is provided
 				if len(args) == 1 {
-					var err error
-					componentName, err = createDefaultComponentName(
-						co.Context,
-						args[0],
-						config.LOCAL, // always local for devfile
-						co.componentContext,
-					)
-					if err != nil {
-						return err
-					}
+					componentName = args[0]
 
 				} else {
 					currentDirPath, err := os.Getwd()
