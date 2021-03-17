@@ -482,7 +482,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return errors.Errorf("accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
 				}
 
-				// If user can use existing devfile directly, we generate the Default Component name if only 1 arg is provided
+				// If user can use existing devfile directly, the first arg is component name instead of component type
 				if len(args) == 1 {
 					componentName = args[0]
 
