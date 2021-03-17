@@ -15,6 +15,7 @@ import (
 
 const configFileDirectory = ".odo"
 const configFileName = "config.yaml"
+const envInfoFile = "env.yaml"
 
 type config struct {
 	ComponentSettings struct {
