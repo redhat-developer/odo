@@ -600,11 +600,6 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 			stdOut = ocRunner.ExecListDir(podName, project, filepath.ToSlash(filepath.Join(dir, "src")))
 		}
-	case "docker":
-		dockerRunner := runner.(helper.DockerRunner)
-		containers := dockerRunner.GetRunningContainersByCompAlias(odoV2Watch.CmpName, "runtime")
-		Expect(len(containers)).To(Equal(1))
-		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la /projects")
 	default:
 		return fmt.Errorf("Platform %s is not supported", platform)
 	}

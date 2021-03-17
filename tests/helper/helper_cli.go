@@ -2,7 +2,7 @@ package helper
 
 import "github.com/onsi/gomega/gexec"
 
-// CliRunner requires functions which are common for oc, kubectl and docker
+// CliRunner requires functions which are common for oc and kubectl
 // By abstracting these functions into an interface, it handles the cli runner and calls the functions specified to particular cluster only
 type CliRunner interface {
 	Run(cmd string) *gexec.Session
