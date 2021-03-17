@@ -196,12 +196,9 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := oc.GetRunningPodNameOfComp(cmpName, commonVar.Project)
+			podName := oc.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
-			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
-			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
-
-			stdOut := oc.ExecListDir(podName, commonVar.Project, dir)
+			stdOut := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
 			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 
 			// Now we delete the file and dir and push
@@ -210,7 +207,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context, "-v4")
 
 			// Then check to see if it's truly been deleted
-			stdOut = oc.ExecListDir(podName, commonVar.Project, dir)
+			stdOut = oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 		})
 
@@ -234,13 +231,10 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// get the name of running pod
-			podName := oc.GetRunningPodNameOfComp(cmpName, commonVar.Project)
-
-			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
-			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
+			podName := oc.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
 			// verify that the new file was pushed
-			stdOut := oc.ExecListDir(podName, commonVar.Project, dir)
+			stdOut := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
 
 			Expect(stdOut).To(Not(ContainSubstring("README.md")))
 
@@ -252,7 +246,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// verify that the new file was pushed
-			stdOut = oc.ExecListDir(podName, commonVar.Project, dir)
+			stdOut = oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
 
 			Expect(stdOut).To(Not(ContainSubstring("tests")))
 

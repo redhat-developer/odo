@@ -32,22 +32,6 @@ var _ = Describe("odo storage command tests", func() {
 		})
 	})
 
-	Context("when running storage command without required flag(s)", func() {
-		It("should fail", func() {
-			requiredFlags := []string{"size", "path"}
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "nodejs", "--app", "nodeapp", "--project", commonVar.Project, "--context", commonVar.Context)
-			stdErr := helper.CmdShouldFail("odo", "storage", "create", "pv1", "--size", "1Gi", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdErr, requiredFlags)
-
-			requiredFlagsS := []string{"size"}
-			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--path", "/data", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdErr, requiredFlagsS)
-			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdErr, requiredFlags)
-		})
-	})
-
 	Context("when using storage command with default flag values", func() {
 		It("should add a storage, list and delete it", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
