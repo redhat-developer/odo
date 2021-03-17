@@ -71,7 +71,7 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//run a command, odo preference view
+	// run a command, odo preference view
 	if err := c.Upload("odo preference view", time.Second, errors.New("an error occured")); err != nil {
 		t.Fatal(err)
 	}

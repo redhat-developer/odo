@@ -17,6 +17,7 @@ import (
 	"time"
 )
 
+// Writekey will be the API key used to send data to the correct source on Segment
 var WriteKey = "CdhKrOlZ0YAtBz8OJXestPlp8CD2KkCc"
 
 type Client struct {
@@ -50,19 +51,25 @@ func newCustomClient(config *preference.PreferenceInfo, telemetryFilePath string
 	}, nil
 }
 
+// Close client connection and send the data
 func (c *Client) Close() error {
 	return c.segmentClient.Close()
 }
 
+// Upload prepares the data to be sent to segment and send it once the client connection closes
 func (c *Client) Upload(action string, duration time.Duration, err error) error {
+	// if the user has not consented for telemetry, return
 	if !c.config.GetConsentTelemetry() {
 		return nil
 	}
+
+	// obtain the anonymous ID
 	anonymousID, uerr := getUserIdentity(c.telemetryFilePath)
 	if uerr != nil {
 		return uerr
 	}
 
+	// queue the data that helps identify the user on segment
 	if err := c.segmentClient.Enqueue(analytics.Identify{
 		AnonymousId: anonymousID,
 		Traits:      addConfigTraits(c.config, traits()),
@@ -70,12 +77,9 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 		return err
 	}
 
+	// add information to the data
 	properties := analytics.NewProperties()
 	// TODO: add other properties when required
-	//for k, v := range telemetry.GetContextProperties(ctx){
-	//	properties = properties.Set(k, v)
-	//}
-
 	properties = properties.Set("version", "odo "+version.VERSION+" ("+version.GITCOMMIT+")").
 		Set("success", err == nil).
 		Set("duration(ms)", duration.Milliseconds()).
@@ -84,6 +88,7 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 		properties = properties.Set("error", SetError(err)).Set("error-type", errorType(err))
 	}
 
+	// queue the data that has telemetry information
 	return c.segmentClient.Enqueue(analytics.Track{
 		AnonymousId: anonymousID,
 		Event:       action,
@@ -91,11 +96,14 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 	})
 }
 
+// addConfigTraits add more information to be sent to segment
+// Note: This currently acts as a placeholder
 func addConfigTraits(c *preference.PreferenceInfo, in analytics.Traits) analytics.Traits {
-	// TODO: add traits later
+	// TODO: add more traits later
 	return in
 }
 
+// getUserIdentity returns the anonymous ID if it exists, else creates a new one
 func getUserIdentity(telemetryFilePath string) (string, error) {
 	var id []byte
 
@@ -120,6 +128,7 @@ func getUserIdentity(telemetryFilePath string) (string, error) {
 	return strings.TrimSpace(string(id)), nil
 }
 
+// SetError sanitizes any pii information from the error
 func SetError(err error) string {
 	// Sanitize user information
 	user1, err1 := user.Current()
@@ -129,6 +138,7 @@ func SetError(err error) string {
 	return strings.ReplaceAll(err.Error(), user1.Username, "XXXX")
 }
 
+// errorType returns the type of error
 func errorType(err error) string {
 	wrappedErr := errors.Unwrap(err)
 	if wrappedErr != nil {
@@ -137,6 +147,7 @@ func errorType(err error) string {
 	return fmt.Sprintf("%T", err)
 }
 
+// RunningInTerminal checks if odo was run from a terminal
 func RunningInTerminal() bool {
 	return term.IsTerminal(int(os.Stdin.Fd()))
 }
