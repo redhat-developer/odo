@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/envinfo"
 	"gopkg.in/yaml.v2"
 )
 
@@ -143,4 +144,12 @@ func ValidateLocalCmpExist(context string, args ...string) {
 
 	}
 
+}
+
+func LocalEnvInfo(context string) *envinfo.EnvSpecificInfo {
+	info, err := envinfo.NewEnvSpecificInfo(filepath.Join(context, configFileDirectory, envInfoFile))
+	if err != nil {
+		Expect(err).To(Equal(nil))
+	}
+	return info
 }

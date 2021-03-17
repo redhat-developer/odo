@@ -725,8 +725,6 @@ func (co *CreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	log.Info("Validation")
-
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
 		return err
