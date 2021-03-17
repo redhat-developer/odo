@@ -110,7 +110,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+commonVar.Project, "--project", commonVar.Project, "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp", "--project", commonVar.Project, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -130,7 +130,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
 			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", projectDirPath)
 			Expect(runningString).To(ContainSubstring(freePort))
-			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-" + commonVar.Project + "-odo-debug.json"))
+			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-odo-debug.json"))
 			stopChannel <- true
 		})
 
