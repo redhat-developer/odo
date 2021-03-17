@@ -54,7 +54,10 @@ var _ = Describe("Example of a clean test", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project)
 			// verify that config was properly created
-			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Project,"+project, "Application,app")
+			info := helper.LocalEnvInfo(context)
+			Expect(info.GetApplication(), "app")
+			Expect(info.GetName(), cmpName)
+
 			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
@@ -65,7 +68,9 @@ var _ = Describe("Example of a clean test", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 
 			// verify that config was properly created
-			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Project,"+project, "Application,"+appName)
+			info := helper.LocalEnvInfo(context)
+			Expect(info.GetApplication(), appName)
+			Expect(info.GetName(), cmpName)
 			helper.CmdShouldPass("odo", "push")
 
 			// list the component name

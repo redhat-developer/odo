@@ -154,7 +154,10 @@ func componentTests(args ...string) {
 			helper.Chdir(context2)
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "python", "python", "--project", project2)...)
-			helper.ValidateLocalCmpExist(context2, "Type,python", "Name,python", "Application,app")
+			info = helper.LocalEnvInfo(context2)
+			Expect(info.GetApplication(), "app")
+			Expect(info.GetName(), "python")
+
 			helper.CmdShouldPass("odo", append(args, "push")...)
 
 			if runtime.GOOS == "windows" {
@@ -371,7 +374,9 @@ func componentTests(args ...string) {
 				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
 					commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", relativeContext)...)
 			}
-			helper.ValidateLocalCmpExist(relativeContext, "Type,java:8", "Name,sb-jar-test")
+			info := helper.LocalEnvInfo(relativeContext)
+			Expect(info.GetApplication(), "app")
+			Expect(info.GetName(), "sb-jar-test")
 		})
 
 		It("should fail the create command as --git flag, which is specific to s2i component creation, is used without --s2i flag", func() {
@@ -625,7 +630,8 @@ func componentTests(args ...string) {
 		It("should create default named component in a directory with numeric name", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), contextNumeric)
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", contextNumeric, "--app", "testing")...)
-			helper.ValidateLocalCmpExist(contextNumeric, "Type,nodejs", "Application,testing")
+			info := helper.LocalEnvInfo(contextNumeric)
+			Expect(info.GetApplication(), "testing")
 			helper.CmdShouldPass("odo", append(args, "push", "--context", contextNumeric, "-v4")...)
 		})
 	})
@@ -659,7 +665,10 @@ func componentTests(args ...string) {
 
 			// Create a URL and push without using the symlink
 			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", symLinkPath)
-			helper.ValidateLocalCmpExist(symLinkPath, "Type,java:8", "Name,sb-jar-test", "Application,app", "URL,0,Name,uberjaropenjdk")
+			info := helper.LocalEnvInfo(symLinkPath)
+			Expect(info.GetApplication(), "app")
+			Expect(info.GetName(), "sb-jar-test")
+
 			helper.CmdShouldPass("odo", append(args, "push", "--context", symLinkPath)...)
 			routeURL := helper.DetermineRouteURL(symLinkPath)
 
