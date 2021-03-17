@@ -18,7 +18,7 @@ import (
 )
 
 // Writekey will be the API key used to send data to the correct source on Segment
-var WriteKey = "CdhKrOlZ0YAtBz8OJXestPlp8CD2KkCc"
+var WriteKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
 
 type Client struct {
 	segmentClient     analytics.Client
