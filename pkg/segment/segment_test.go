@@ -174,18 +174,18 @@ func TestClientUploadWithConsent(t *testing.T) {
 
 func TestSetError(t *testing.T) {
 	err := errors.New("this is an error string")
-	if SetError(err) != err.Error(){
+	if SetError(err) != err.Error() {
 		t.Errorf("got: %s, want: %s", SetError(err), err.Error())
 	}
 
 	user, err := user.Current()
-	if err!=nil{
+	if err != nil {
 		t.Error(err.Error())
 	}
 
 	err = fmt.Errorf("cannot access the preference file '/home/%s/.odo/preference.yaml'", user.Username)
 
-	if SetError(err) == err.Error() || strings.Contains(SetError(err), user.Username){
+	if SetError(err) == err.Error() || strings.Contains(SetError(err), user.Username) {
 		t.Error("User ID is not sanitized properly.")
 	}
 }
