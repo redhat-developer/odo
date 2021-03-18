@@ -20,7 +20,9 @@ var (
 	%[1]s myproject  
 	`)
 
-	deleteLongDesc = ktemplates.LongDesc(`Delete a project and all resources deployed in the project being deleted`)
+	deleteLongDesc = ktemplates.LongDesc(`Delete a project and all resources deployed in the project being deleted.
+	This command directly performs actions on the cluster and doesn't require a push.
+	`)
 
 	deleteShortDesc = `Delete a project`
 )
