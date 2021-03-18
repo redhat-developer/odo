@@ -32,7 +32,7 @@ cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
 
-case $1 in
+case ${CLUSTER} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
         export PATH="$PATH:/usr/local/go/bin/"
