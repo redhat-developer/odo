@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/tidwall/gjson"
 
@@ -101,6 +102,13 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext)
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
+		})
+
+		It("should successfully create the devfile component with auto generated name", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", newContext)
+			output := helper.Cmd("odo", "env", "view", "--context", newContext, "-o", "json").ShouldPass().Out()
+			value := gjson.Get(output, "spec.name")
+			Expect(strings.TrimSpace(value.String())).To(ContainSubstring(strings.TrimSpace("nodejs-" + filepath.Base(strings.ToLower(newContext)))))
 		})
 
 		It("should successfully create the devfile component and show json output for working cluster", func() {

@@ -451,7 +451,7 @@ spec:
 
 			// Before running "odo unlink" checks, wait for the pod to come up from "odo push" done after "odo link"
 			pods = oc.GetAllPodsInNs(project)
-			componentPod := regexp.MustCompile(fmt.Sprintf(`%s-.[a-z0-9]*-.[a-z0-9]*`, componentName)).FindString(pods)
+			componentPod := regexp.MustCompile(fmt.Sprintf(`%s-.[a-z0-9]*-.[a-z0-9\-]*`, componentName)).FindString(pods)
 			ocArgs = []string{"get", "pods", componentPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
