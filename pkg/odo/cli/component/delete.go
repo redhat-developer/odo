@@ -276,11 +276,11 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		}
 
 		if do.componentForceDeleteFlag {
-			if !util.CheckPathExists(DevfilePath) {
+			if !util.CheckPathExists(do.devfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
 			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
-				err = util.DeletePath(DevfilePath)
+				err = util.DeletePath(do.devfilePath)
 				if err != nil {
 					return err
 				}
@@ -292,11 +292,11 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			}
 
 		} else if ui.Proceed("Are you sure you want to delete devfile.yaml?") {
-			if !util.CheckPathExists(DevfilePath) {
+			if !util.CheckPathExists(do.devfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
 
-			err = util.DeletePath(DevfilePath)
+			err = util.DeletePath(do.devfilePath)
 			if err != nil {
 				return err
 			}

@@ -933,6 +933,10 @@ func (co *CreateOptions) Run() (err error) {
 		log.Success("Successfully generated devfile.yaml and env.yaml for provided S2I component")
 
 		if co.now {
+			err = co.InitEnvInfoFromContext()
+			if err != nil {
+				return err
+			}
 			err = co.DevfilePush()
 			if err != nil {
 				return fmt.Errorf("failed to push changes: %w", err)
