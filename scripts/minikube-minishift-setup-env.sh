@@ -83,7 +83,7 @@ case ${1} in
         sh $SETUP_OPERATORS
         ;;
     *)
-        echo "<<< Need parameter set to minikube or minishift >>>"
+        echo "<<< Need (parameter) CLUSTER env. variable set to minikube or minishift >>>"
         exit 1
         ;;
 esac
