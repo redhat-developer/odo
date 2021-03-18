@@ -57,7 +57,7 @@ case ${1} in
         export KUBERNETES=true
         ;;
     *)
-        echo "<<< Need parameter set to minikube or minishift >>>"
+        echo "<<< Need (parameter) CLUSTER env. variable set to minikube or minishift >>>"
         exit 1
         ;;
 esac
