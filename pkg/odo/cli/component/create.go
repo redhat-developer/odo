@@ -3,7 +3,9 @@ package component
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -790,16 +792,31 @@ func (co *CreateOptions) devfileRun() (err error) {
 			}
 		} else {
 			// Download devfile from registry
-			params := util.HTTPRequestParams{
-				URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
-			}
+			var params util.HTTPRequestParams
 
-			if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-				token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
-				if err != nil {
-					return errors.Wrap(err, "unable to get secure registry credential from keyring")
+			if strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
+				// Github-based registry
+				params = util.HTTPRequestParams{
+					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
 				}
-				params.Token = token
+				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+					token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+					if err != nil {
+						return errors.Wrap(err, "unable to get secure registry credential from keyring")
+					}
+					params.Token = token
+				}
+			} else {
+				// OCI-based registry
+				u, err := url.Parse(co.devfileMetadata.devfileRegistry.URL)
+				if err != nil {
+					return err
+				}
+				u.Path = path.Join(u.Path, "devfiles", co.devfileMetadata.componentName)
+				url := u.String()
+				params = util.HTTPRequestParams{
+					URL: url,
+				}
 			}
 
 			cfg, err := preference.New()

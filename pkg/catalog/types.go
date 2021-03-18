@@ -30,22 +30,6 @@ type DevfileComponentType struct {
 	Tags        []string
 }
 
-// DevfileIndexEntry is the main struct of index.json from devfile registry
-type DevfileIndexEntry struct {
-	Name              string   `json:"name"`
-	DisplayName       string   `json:"displayName"`
-	Description       string   `json:"description"`
-	Supported         bool     `json:"supported"`
-	Tags              []string `json:"tags"`
-	Language          string   `json:"language"`
-	Icon              string   `json:"icon"`
-	GlobalMemoryLimit string   `json:"globalMemoryLimit"`
-	Registry          Registry `json:"registry"`
-	Links             struct {
-		Link string `json:"self"`
-	} `json:"links"`
-}
-
 // ComponentSpec is the spec for ComponentType
 type ComponentSpec struct {
 	AllTags         []string               `json:"allTags"`

@@ -80,7 +80,7 @@ const (
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
+	DefaultDevfileRegistryURL = "https://registry.devfile.io"
 
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
 	DefaultRegistryCacheTime = 15

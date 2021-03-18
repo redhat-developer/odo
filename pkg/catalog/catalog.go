@@ -16,6 +16,8 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 
+	indexSchema "github.com/devfile/registry-support/index/generator/schema"
+	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -121,49 +123,56 @@ func convertURL(URL string) (string, error) {
 const indexPath = "/devfiles/index.json"
 
 // getRegistryDevfiles retrieves the registry's index devfile entries
-func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
-	var devfileIndex []DevfileIndexEntry
+func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponentType, err error) {
+	var devfileIndex []indexSchema.Schema
 
-	URL, err := convertURL(registry.URL)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to convert URL %s", registry.URL)
-	}
-	registry.URL = URL
-	indexLink := registry.URL + indexPath
-	request := util.HTTPRequestParams{
-		URL: indexLink,
-	}
-	if registryUtil.IsSecure(registry.Name) {
-		token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
+	if strings.Contains(registry.URL, "github") {
+		// Github-based registry
+		URL, err := convertURL(registry.URL)
 		if err != nil {
-			return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
+			return nil, errors.Wrapf(err, "Unable to convert URL %s", registry.URL)
 		}
-		request.Token = token
-	}
+		registry.URL = URL
+		indexLink := registry.URL + indexPath
+		request := util.HTTPRequestParams{
+			URL: indexLink,
+		}
+		if registryUtil.IsSecure(registry.Name) {
+			token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
+			if err != nil {
+				return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
+			}
+			request.Token = token
+		}
 
-	cfg, err := preference.New()
-	if err != nil {
-		return nil, err
-	}
+		cfg, err := preference.New()
+		if err != nil {
+			return nil, err
+		}
 
-	jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
-	}
+		jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
+		}
 
-	err = json.Unmarshal(jsonBytes, &devfileIndex)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
+		err = json.Unmarshal(jsonBytes, &devfileIndex)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
+		}
+	} else {
+		// OCI-based registry
+		devfileIndex, err = registryLibrary.GetRegistryStacks(registry.URL)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	var registryDevfiles []DevfileComponentType
 
 	for _, devfileIndexEntry := range devfileIndex {
 		stackDevfile := DevfileComponentType{
 			Name:        devfileIndexEntry.Name,
 			DisplayName: devfileIndexEntry.DisplayName,
 			Description: devfileIndexEntry.Description,
-			Link:        devfileIndexEntry.Links.Link,
+			Link:        devfileIndexEntry.Links["self"],
 			Registry:    registry,
 			Language:    devfileIndexEntry.Language,
 			Tags:        devfileIndexEntry.Tags,
