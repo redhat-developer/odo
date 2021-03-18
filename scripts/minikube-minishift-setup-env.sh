@@ -32,7 +32,8 @@ cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
 
-case $1 in
+#Workaround for https://github.com/openshift/odo/issues/4523 use env varibale CLUSTER instead of parameter
+case $CLUSTER in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
         export PATH="$PATH:/usr/local/go/bin/"
@@ -55,7 +56,7 @@ case $1 in
         export KUBERNETES=true
         ;;
     *)
-        echo "<<< Need parameter set to minikube or minishift >>>"
+        echo "<<< Need (parameter) CLUSTER env. variable set to minikube or minishift >>>"
         exit 1
         ;;
 esac

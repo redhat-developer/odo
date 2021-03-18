@@ -8,7 +8,8 @@ shout() {
 
 set -ex
 
-case $1 in
+#Workaround for https://github.com/openshift/odo/issues/4523 use env varibale CLUSTER instead of parameter
+case $CLUSTER in
     minikube)
         # Integration tests
         shout "| Running integration Tests on MiniKube"
