@@ -3,11 +3,12 @@ package genericclioptions
 import (
 	"flag"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/segment"
 	"k8s.io/klog"
-	"os"
-	"time"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -17,7 +18,6 @@ import (
 
 var (
 	segmentClient *segment.Client
-	//ctx context.Context
 )
 
 type Runnable interface {
@@ -27,15 +27,17 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
-	//ctx = telemetry.NewContext(context.Background())
-	startTime := time.Now()
-	cfg, _ := preference.New()
 	var err error
-	// Initiate the segment client
-	if segmentClient, err = segment.NewClient(cfg); err != nil {
-		klog.Fatal(err.Error())
+	var startTime time.Time
+	cfg, _ := preference.New()
+	// Initiate the segment client if ConsentTelemetry preference is set to true
+	if cfg.GetConsentTelemetry() {
+		if segmentClient, err = segment.NewClient(cfg); err != nil {
+			klog.V(4).Infof("Cannot create a segment client, will not send any data: %s", err.Error())
+		}
+		defer segmentClient.Close()
+		startTime = time.Now()
 	}
-	defer segmentClient.Close()
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions
@@ -56,14 +58,16 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	uploadToSegmentAndLog(cmd, o.Run(), startTime)
 }
 
-// uploadToSegmentAndLog uploads the data to segment
+// uploadToSegmentAndLog uploads the data to segment and logs the error
 func uploadToSegmentAndLog(cmd *cobra.Command, err error, startTime time.Time) {
-	if serr := segmentClient.Upload(cmd.CommandPath(), time.Since(startTime), err); serr != nil {
-		klog.Errorf("Cannot send data to telemetry: %v", serr)
-	}
-	// If the error is not nil, client will be closed so that data can be sent before the program exits.
-	if err != nil {
-		segmentClient.Close()
+	if segmentClient != nil {
+		if serr := segmentClient.Upload(cmd.CommandPath(), time.Since(startTime), err); serr != nil {
+			klog.Errorf("Cannot send data to telemetry: %v", serr)
+		}
+		// If the error is not nil, client will be closed so that data can be sent before the program exits.
+		if err != nil {
+			segmentClient.Close()
+		}
 	}
 	util.LogErrorAndExit(err, "")
 }

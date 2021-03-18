@@ -1,13 +1,7 @@
 package segment
 
 import (
-	"errors"
 	"fmt"
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/version"
-	"github.com/pborman/uuid"
-	"golang.org/x/term"
-	"gopkg.in/segmentio/analytics-go.v3"
 	"io/ioutil"
 	"net"
 	"os"
@@ -15,9 +9,17 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/version"
+	"github.com/pborman/uuid"
+	"github.com/pkg/errors"
+	"golang.org/x/term"
+	"gopkg.in/segmentio/analytics-go.v3"
 )
 
 // Writekey will be the API key used to send data to the correct source on Segment
+// This is the dev key, it will be replaced by the prod key when odo is released
 var WriteKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
 
 type Client struct {
@@ -80,10 +82,11 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 	// add information to the data
 	properties := analytics.NewProperties()
 	// TODO: add other properties when required
-	properties = properties.Set("version", "odo "+version.VERSION+" ("+version.GITCOMMIT+")").
+	properties = properties.Set("version", fmt.Sprintf("odo %v (%v)", version.VERSION, version.GITCOMMIT)).
 		Set("success", err == nil).
 		Set("duration(ms)", duration.Milliseconds()).
 		Set("tty", RunningInTerminal())
+	// in case the command executed unsuccessfully, add information about the error in the data
 	if err != nil {
 		properties = properties.Set("error", SetError(err)).Set("error-type", errorType(err))
 	}
@@ -133,7 +136,7 @@ func SetError(err error) string {
 	// Sanitize user information
 	user1, err1 := user.Current()
 	if err1 != nil {
-		return err1.Error()
+		return errors.Wrapf(err1, err1.Error()).Error()
 	}
 	return strings.ReplaceAll(err.Error(), user1.Username, "XXXX")
 }
