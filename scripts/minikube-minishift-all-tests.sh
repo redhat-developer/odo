@@ -8,7 +8,7 @@ shout() {
 
 set -ex
 
-case ${CLUSTER} in
+case ${CI_INFO} in
     minikube)
         # Integration tests
         shout "| Running integration Tests on MiniKube"
