@@ -2,6 +2,7 @@ package envinfo
 
 import (
 	"fmt"
+
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -61,10 +62,24 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 			Path: storage.Path,
 		},
 	})
-
 	if err != nil {
 		return err
 	}
+
+	err = ei.devfileObj.Data.AddComponents([]devfilev1.Component{{
+		Name: storage.Name,
+		ComponentUnion: devfilev1.ComponentUnion{
+			Volume: &devfilev1.VolumeComponent{
+				Volume: devfilev1.Volume{
+					Size: storage.Size,
+				},
+			},
+		},
+	}})
+	if err != nil {
+		return err
+	}
+
 	err = ei.devfileObj.WriteYamlDevfile()
 	if err != nil {
 		return err
@@ -119,6 +134,11 @@ func (ei *EnvInfo) DeleteStorage(name string) error {
 	if err != nil {
 		return err
 	}
+	err = ei.devfileObj.Data.DeleteComponent(name)
+	if err != nil {
+		return err
+	}
+
 	err = ei.devfileObj.WriteYamlDevfile()
 	if err != nil {
 		return err
