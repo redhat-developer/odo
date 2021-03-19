@@ -3,9 +3,11 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghodss/yaml"
-	"github.com/openshift/odo/pkg/envinfo"
 	"strings"
+
+	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
@@ -22,6 +24,8 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+
+	"github.com/devfile/library/pkg/devfile/parser"
 )
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"
@@ -55,20 +59,16 @@ func (params servicePlanParameters) Swap(i, j int) {
 }
 
 // CreateService creates new service from serviceCatalog
-func CreateService(client *occlient.Client, esi *envinfo.EnvSpecificInfo, serviceName, serviceType, servicePlan string, parameters map[string]string, applicationName string) error {
+// It returns string representation of service instance created on the cluster and error (if any).
+func CreateService(client *occlient.Client, esi *envinfo.EnvSpecificInfo, serviceName, serviceType, servicePlan string, parameters map[string]string, applicationName string) (string, error) {
 	labels := componentlabels.GetLabels(serviceName, applicationName, true)
 	// save service type as label
 	labels[componentlabels.ComponentTypeLabel] = serviceType
 	serviceInstance, err := client.GetKubeClient().CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
 	if err != nil {
-		return errors.Wrap(err, "unable to create service instance")
+		return "", errors.Wrap(err, "unable to create service instance")
 	}
-
-	err = esi.AddServiceToDevfile(serviceInstance, serviceName)
-	if err != nil {
-		return err
-	}
-	return nil
+	return serviceInstance, nil
 }
 
 // GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
@@ -107,16 +107,6 @@ func CreateOperatorService(client *kclient.Client, esi *envinfo.EnvSpecificInfo,
 	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
 	if err != nil {
 		return errors.Wrap(err, "unable to create operator backed service")
-	}
-
-	crdString, err := yaml.Marshal(CustomResourceDefinition)
-	if err != nil {
-		return err
-	}
-
-	err = esi.AddServiceToDevfile(string(crdString), serviceName)
-	if err != nil {
-		return err
 	}
 	return nil
 }
@@ -701,4 +691,52 @@ func IsCSVSupported() (bool, error) {
 	}
 
 	return client.GetKubeClient().IsCSVSupported()
+}
+
+// AddKubernetesComponentToDevfile adds service definition to devfile as an inlined Kubernetes component
+func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
+	err := devfileObj.Data.AddComponents([]devfile.Component{{
+		Name: name,
+		ComponentUnion: devfile.ComponentUnion{
+			Kubernetes: &devfile.KubernetesComponent{
+				K8sLikeComponent: devfile.K8sLikeComponent{
+					BaseComponent: devfile.BaseComponent{},
+					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
+						Inlined: crd,
+					},
+				},
+			},
+		},
+	}})
+	if err != nil {
+		return err
+	}
+
+	return devfileObj.WriteYamlDevfile()
+}
+
+// DeleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
+func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj) error {
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for _, c := range components {
+		if c.Name == name {
+			err = devfileObj.Data.DeleteComponent(c.Name)
+			if err != nil {
+				return err
+			}
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("could not find the service %q in devfile", name)
+	}
+
+	return devfileObj.WriteYamlDevfile()
 }

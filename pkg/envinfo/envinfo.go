@@ -419,6 +419,11 @@ func (ei *EnvInfo) SetDevfileObj(devfileObj parser.DevfileObj) {
 	ei.devfileObj = devfileObj
 }
 
+// GetDevfileObj returns devfileObj of the envinfo
+func (ei *EnvInfo) GetDevfileObj() parser.DevfileObj {
+	return ei.devfileObj
+}
+
 // GetLink returns the EnvInfoLink, returns default if nil
 func (ei *EnvInfo) GetLink() []EnvInfoLink {
 	if ei.componentSettings.Link == nil {

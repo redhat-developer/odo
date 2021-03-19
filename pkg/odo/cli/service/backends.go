@@ -222,6 +222,15 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 			log.Successf(`Service %q was created`, o.ServiceName)
 		}
 
+		crdYaml, err := yaml.Marshal(b.CustomResourceDefinition)
+		if err != nil {
+			return err
+		}
+
+		err = svc.AddKubernetesComponentToDevfile(string(crdYaml), o.ServiceName, o.EnvSpecificInfo.GetDevfileObj())
+		if err != nil {
+			return err
+		}
 	}
 	s.End(true)
 
@@ -246,7 +255,7 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 	// we ignore the error because the function used below is called in the call to "DeleteOperatorService" above.
 	_, instanceName, _ := svc.SplitServiceKindName(name)
 
-	err = o.EnvSpecificInfo.DeleteServiceFromDevfile(instanceName)
+	err = svc.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return errors.Wrap(err, "failed to delete service from the devfile")
 	}
@@ -368,7 +377,12 @@ func (b *ServiceCatalogBackend) RunServiceCreate(o *CreateOptions) (err error) {
 
 	log.Infof("Deploying service %q of type: %q", o.ServiceName, o.ServiceType)
 	// create a ServiceInstance
-	err = svc.CreateService(o.Client, o.EnvSpecificInfo, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
+	serviceInstance, err := svc.CreateService(o.Client, o.EnvSpecificInfo, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
+	if err != nil {
+		return err
+	}
+
+	err = svc.AddKubernetesComponentToDevfile(serviceInstance, o.ServiceName, o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}
@@ -394,5 +408,15 @@ func (b *ServiceCatalogBackend) ServiceExists(o *DeleteOptions) (bool, error) {
 }
 
 func (b *ServiceCatalogBackend) DeleteService(o *DeleteOptions, name string, application string) error {
-	return svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
+	err := svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
+	if err != nil {
+		return err
+	}
+
+	err = svc.DeleteKubernetesComponentFromDevfile(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
