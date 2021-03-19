@@ -19,7 +19,6 @@ import (
 	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -151,7 +150,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		// Populate the application selector field in service binding request
 		o.serviceBinding.Spec.Application = &servicebinding.Application{
-			GroupVersionResource: metav1.GroupVersionResource{
+			Ref: servicebinding.Ref{
 				Group:    deploymentSelfLinkSplit[2], // "apps" in above example output
 				Version:  deploymentSelfLinkSplit[3], // "v1" in above example output
 				Resource: deploymentSelfLinkSplit[6], // "deployments" in above example output
@@ -252,15 +251,18 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 		}
 
 		service := servicebinding.Service{
-			GroupVersionKind: metav1.GroupVersionKind{
-				Group:   group,
-				Version: version,
-				Kind:    kind,
+			NamespacedRef: servicebinding.NamespacedRef{
+				Ref: servicebinding.Ref{
+					Group:   group,
+					Version: version,
+					Kind:    kind,
+					Name:    o.serviceName,
+				},
+				Namespace: &o.KClient.Namespace,
 			},
-			Namespace: &o.KClient.Namespace,
 		}
-		service.Name = o.serviceName
-		o.serviceBinding.Spec.Services = &[]servicebinding.Service{service}
+
+		o.serviceBinding.Spec.Services = []servicebinding.Service{service}
 
 		return nil
 	}
