@@ -2,6 +2,7 @@ package component
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
-	servicebinding "github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +37,8 @@ const unlink = "unlink"
 type commonLinkOptions struct {
 	wait             bool
 	port             string
+	bindingName      string
+	bindAsFiles      bool
 	secretName       string
 	isTargetAService bool
 
@@ -83,6 +86,10 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return err
 	}
 
+	if o.bindAsFiles && o.bindingName == "" {
+		return errors.New(`--bindAsFiles option requires --bindingName to be specified`)
+	}
+
 	o.Client, err = occlient.New()
 	if err != nil {
 		return err
@@ -114,12 +121,18 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		o.serviceBinding.Kind = serviceBindingKind
 		o.serviceBinding.APIVersion = strings.Join([]string{serviceBindingGroup, serviceBindingVersion}, "/")
 
-		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
-		o.serviceBinding.Name = getServiceBindingName(componentName, o.serviceType, o.serviceName)
+		if o.bindingName != "" {
+			o.serviceBinding.Name = o.bindingName
+		} else {
+			// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
+			o.serviceBinding.Name = getServiceBindingName(componentName, o.serviceType, o.serviceName)
+		}
+
+		o.serviceBinding.Spec.BindAsFiles = o.bindAsFiles
+
 		o.serviceBinding.Namespace = o.EnvSpecificInfo.GetNamespace()
 		truePtr := true
 		o.serviceBinding.Spec.DetectBindingResources = &truePtr // because we want the operator what to bind from the service
-
 		deployment, err := o.KClient.GetDeploymentByName(componentName)
 		if err != nil {
 			return err

@@ -31,8 +31,8 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/olekukonko/tablewriter v0.0.0-20180506121414-d4647c9c7a84
-	github.com/onsi/ginkgo v1.14.0
-	github.com/onsi/gomega v1.10.1
+	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/gomega v1.10.2
 	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240 // indirect
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
@@ -42,9 +42,9 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200422144016-a6acf50218ed
 	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.2
-	github.com/redhat-developer/service-binding-operator v0.3.0
+	github.com/redhat-developer/service-binding-operator v0.5.0
 	github.com/spf13/afero v1.2.2
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.6.3
@@ -55,8 +55,8 @@ require (
 	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
 	gopkg.in/AlecAivazis/survey.v1 v1.8.0
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.19.0
-	k8s.io/apimachinery v0.19.0
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
 	k8s.io/cli-runtime v0.17.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0

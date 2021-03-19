@@ -5,14 +5,13 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	svc "github.com/openshift/odo/pkg/service"
-	servicebinding "github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1"
-
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	svc "github.com/openshift/odo/pkg/service"
+	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -160,6 +159,8 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	}
 
 	linkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to link")
+	linkCmd.PersistentFlags().StringVar(&o.bindingName, "bindingName", "", "Name of the service binding object")
+	linkCmd.PersistentFlags().BoolVarP(&o.bindAsFiles, "bindAsFiles", "", false, "If present will mount service binding as files in /bindings folder")
 	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 
