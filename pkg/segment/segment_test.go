@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/version"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +14,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/version"
 )
 
 type segmentResponse struct {
@@ -101,18 +102,21 @@ func TestClientUploadWithConsent(t *testing.T) {
 		},
 	}
 	tests := []struct {
+		cmd      string
 		testName string
 		err      error
 		success  bool
 		errType  string
 	}{
 		{
+			cmd:      "odo preference view",
 			testName: "command ran successfully",
 			err:      nil,
 			success:  true,
 			errType:  "",
 		},
 		{
+			cmd:      "odo prfnc view",
 			testName: "command failed",
 			err:      errors.New("some error occurred"),
 			success:  false,
@@ -127,7 +131,7 @@ func TestClientUploadWithConsent(t *testing.T) {
 				t.Error(err)
 			}
 			//run a command, odo preference view
-			if err := c.Upload("odo preference view", time.Second, tt.err); err != nil {
+			if err := c.Upload(tt.cmd, time.Second, tt.err); err != nil {
 				t.Error(err)
 			}
 			if err := c.Close(); err != nil {
