@@ -36,6 +36,7 @@ oc whoami
 if [ "${ARCH}" == "s390x" ]; then
     # Integration tests
     make test-integration
+    make test-integration-devfile
     make test-cmd-login-logout
     make test-cmd-project
     # E2e tests
