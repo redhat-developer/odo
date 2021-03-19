@@ -298,7 +298,7 @@ func CommonBeforeEach() CommonVar {
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "preference.yaml"))
 	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
 	cfg, _ := preference.New()
-	cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
+	_ = cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 
 	return commonVar
 }
