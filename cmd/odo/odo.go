@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 
@@ -66,7 +67,8 @@ func main() {
 		util.LogErrorAndExit(err, "")
 	}
 	// Prompt user to consent for telemetry if a value is not set already
-	if !cfg.IsSet(preference.ConsentTelemetrySetting) {
+	// Skip prompting if the preference command is called
+	if !cfg.IsSet(preference.ConsentTelemetrySetting) && strings.ToLower(args[0]) != "preference" {
 		var consentTelemetry bool
 		prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
 		err = survey.AskOne(prompt, &consentTelemetry, nil)
