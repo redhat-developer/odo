@@ -127,7 +127,7 @@ func TestClientUploadWithConsent(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			//run a command, odo preference view
+			// upload the data to Segment
 			if err := c.Upload("odo create", time.Second, tt.err); err != nil {
 				t.Error(err)
 			}
