@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -326,4 +327,13 @@ func GjsonMatcher(values []gjson.Result, expected []string) bool {
 	}
 	numVars := len(expected)
 	return matched == numVars
+}
+
+//SetProjectName sets projectNames based on the neame of the test file name (withouth path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
+func SetProjectName() string {
+	//Get current test filename and remove file path, file extension and replace undescores with hyphens
+	currGinkgoTestFileName := strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1)
+	currGinkgoTestLineNum := strconv.Itoa(CurrentGinkgoTestDescription().LineNumber)
+	projectName := currGinkgoTestFileName + currGinkgoTestLineNum + RandString(3)
+	return projectName
 }

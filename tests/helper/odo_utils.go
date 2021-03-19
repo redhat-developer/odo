@@ -74,7 +74,7 @@ func routeURL(context string) string {
 // CreateRandProject create new project with random name (10 letters)
 // without writing to the config file (without switching project)
 func CreateRandProject() string {
-	projectName := RandString(10)
+	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
 	Expect(session).To(ContainSubstring("New project created"))
