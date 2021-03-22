@@ -918,7 +918,7 @@ func (co *CreateOptions) Run() (err error) {
 	}
 
 	// we only do conversion if the --s2i is provided and the component is not of --git type
-	if co.forceS2i && len(co.componentGit) == 0 {
+	if co.forceS2i && len(co.componentGit) == 0 && len(co.componentBinary) == 0 {
 		log.Info("Conversion")
 		// do the conversion
 		// lets fill the localConfigInfo as we are using that as an adapter
@@ -950,7 +950,7 @@ func (co *CreateOptions) Run() (err error) {
 		return nil
 	}
 
-	// If not, we run s2i (if /the --s2i parameter has been passed in).
+	// If not, we run s2i (if the --s2i parameter has been passed in).
 	// It's implied that we have passed it in if Devfile did not run above
 	err = co.s2iRun()
 	if err != nil {
