@@ -7,13 +7,12 @@
 [[usage-data]]
 == Usage Data
 
-* when `ConsentTelemetry` preference is set to `true`
-* when a command contributed by extension is executed
+If the user has consented to `odo` collecting usage data, the following data is collected when a command is executed -
+
 * command's ID
 * command's duration time
 * command's error message and error type (in case of failure)
 * whether the command was run from a terminal
-* when `ConsentTelemetry` preference is set to `false`
 * system information such as OS type
 * `odo` version in use
 
@@ -26,3 +25,5 @@ Enable::
 
 Disable::
 `odo preference set ConsentTelemetry false`
+
+Note: If earlier the `ConsentTelemetry` preference was enabled, then the data will be collected about the disabling of the preference.
