@@ -19,7 +19,9 @@ var (
 	%[1]s myproject
 	`)
 
-	createLongDesc = ktemplates.LongDesc(`Create a new project`)
+	createLongDesc = ktemplates.LongDesc(`Create a new project.
+	This command directly performs actions on the cluster and doesn't require a push.
+	`)
 
 	createShortDesc = `Create a new project`
 )
