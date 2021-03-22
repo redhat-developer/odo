@@ -32,6 +32,9 @@ cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
 
+# Just checking the ${CI_INFO} value
+echo ${CI_INFO}
+
 case ${CI_INFO} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 

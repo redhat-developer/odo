@@ -8,6 +8,9 @@ shout() {
 
 set -ex
 
+# Just checking the ${CI_INFO} value
+echo ${CI_INFO}
+
 case ${CI_INFO} in
     minikube)
         # Integration tests
