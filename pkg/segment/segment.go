@@ -19,8 +19,7 @@ import (
 )
 
 // Writekey will be the API key used to send data to the correct source on Segment
-// This is the dev key, it will be replaced by the prod key when odo is released
-var WriteKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
+var WriteKey = "R1Z79HadJIrphLoeONZy5uqOjusljSwN"
 
 type Client struct {
 	segmentClient     analytics.Client
