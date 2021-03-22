@@ -40,7 +40,9 @@ case $CLUSTER in
         export GOPATH=$HOME/go
         mkdir -p $GOPATH/bin
         export PATH="$PATH:$(pwd):$GOPATH/bin"
-        sh .scripts/minishift-start-if-required.sh
+        curl -kJLO https://github.com/openshift/odo/blob/master/scripts/minishift-start-if-required.sh
+        chmod +x minishift-start-if-required.sh
+        sh ./minishift-start-if-required.sh
         ;;
     minikube)
         shout "| Start minikube"
