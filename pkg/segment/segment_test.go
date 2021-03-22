@@ -141,8 +141,11 @@ func TestClientUploadWithConsent(t *testing.T) {
 				if err := json.Unmarshal(x, &s); err != nil {
 					t.Error(err)
 				}
+				// Response returns 2 Batches in response - 1) identify - user's system information,
+				// and 2) track - information about the fired command
+				// This checks if both the responses were received
 				if s.Batch[0].Type != "identify" && s.Batch[1].Type != "track" {
-					t.Error("Missing Identify or Track information")
+					t.Errorf("Missing Identify or Track information.\nIdentify: %v\nTrack:%v", s.Batch[0].Type, s.Batch[1].Type)
 				}
 				if s.Batch[0].Traits.OS != runtime.GOOS {
 					t.Error("OS does not match")
