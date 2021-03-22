@@ -23,6 +23,11 @@ var _ = FDescribe("odo telemetry", func() {
 			// unset the preference in case it is already set
 			helper.CmdShouldPass("odo", "preference", "unset", "ConsentTelemetry", "-f")
 		})
+		It("prompt should not appear when user calls for help", func() {
+			output := helper.CmdShouldPass("odo", "create", "--help")
+			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+		})
+
 		It("prompt should not appear when preference command is run", func() {
 			output := helper.CmdShouldPass("odo", "preference", "view")
 			Expect(output).ToNot(ContainSubstring(promtMessageSubString))

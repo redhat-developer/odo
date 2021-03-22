@@ -4,7 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
+
+	"github.com/openshift/odo/pkg/odo/cli/ui"
+	"gopkg.in/AlecAivazis/survey.v1"
 
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/segment"
@@ -30,6 +34,22 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	var startTime time.Time
 	cfg, _ := preference.New()
+
+	// Prompt the user to consent for telemetry if a value is not set already
+	// Skip prompting if the preference command is called
+	// This prompt has been placed here so that it does not prompt the user when they call --help
+	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
+		var consentTelemetry bool
+		prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
+		err = survey.AskOne(prompt, &consentTelemetry, nil)
+		ui.HandleError(err)
+		if err == nil {
+			if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
+				klog.V(4).Info(err1.Error())
+			}
+		}
+
+	}
 	// Initiate the segment client if ConsentTelemetry preference is set to true
 	if cfg.GetConsentTelemetry() {
 		if segmentClient, err = segment.NewClient(cfg); err != nil {
