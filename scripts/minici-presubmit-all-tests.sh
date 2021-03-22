@@ -20,6 +20,7 @@ case $1 in
         export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh"
         export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh"
         export TIMEOUT="2h15m"
+        export CI_INFO="minikube"
         ;;
     minishift)
         export JOB_NAME="odo-minishift-pr-tests"
@@ -28,6 +29,7 @@ case $1 in
         export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh"
         export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh"
         export TIMEOUT="4h00m"
+        export CI_INFO="minishift"
         ;;
     *)
         echo "Must pass minikube or minishift as paramater"
