@@ -43,7 +43,12 @@ case ${1} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
         export PATH="$PATH:/usr/local/go/bin/"
-        sh .scripts/minishift-start-if-required.sh
+        export GOPATH=$HOME/go
+        mkdir -p $GOPATH/bin
+        export PATH="$PATH:$(pwd):$GOPATH/bin"
+        curl -kJLO https://github.com/openshift/odo/blob/master/scripts/minishift-start-if-required.sh
+        chmod +x minishift-start-if-required.sh
+        sh ./minishift-start-if-required.sh
         ;;
     minikube)
         mkStatus=$(minikube status)
