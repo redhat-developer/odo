@@ -31,7 +31,6 @@ case ${1} in
         odo logout
         ;;
     minishift)
-        cd $HOME/openshift/odo
         eval $(minishift oc-env)
 
         shout "| Logging in to minishift..."
