@@ -16,7 +16,6 @@ case ${1} in
         make test-integration-devfile
         ;;
     minishift)
-        cd $HOME/openshift/odo
         eval $(minishift oc-env)
 
         shout "| Logging in to minishift..."
