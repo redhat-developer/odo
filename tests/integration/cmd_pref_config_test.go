@@ -328,7 +328,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 	})
 
-	FContext("When no ConsentTelemetry preference value is set", func() {
+	Context("When no ConsentTelemetry preference value is set", func() {
 		var _ = JustBeforeEach(func() {
 			// unset the preference in case it is already set
 			helper.CmdShouldPass("odo", "preference", "unset", "ConsentTelemetry", "-f")
@@ -354,7 +354,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 	})
 
-	FContext("Prompt should not appear when", func() {
+	Context("Prompt should not appear when", func() {
 		It("ConsentTelemetry is set to true", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "true", "-f")
 			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)

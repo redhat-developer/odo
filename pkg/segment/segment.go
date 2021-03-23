@@ -27,7 +27,7 @@ type Client struct {
 	SegmentClient analytics.Client
 	// Preference points to the global odo config
 	Preference *preference.PreferenceInfo
-	// TelemetryFilePath points to the file containing anonymousID used for tracking users
+	// TelemetryFilePath points to the file containing anonymousID used for tracking odo commands executed by the user
 	TelemetryFilePath string
 }
 
