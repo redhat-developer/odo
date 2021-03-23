@@ -11,6 +11,8 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -119,6 +121,16 @@ func (o *LinkOptions) Validate() (err error) {
 
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		return
+	}
+	if o.bindingName != "" {
+		err = util.ValidateK8sResourceName("Binding Name", o.bindingName)
+		if err != nil {
+			return err
+		}
+	}
+
+	if o.bindAsFiles && o.bindingName == "" {
+		return errors.New(`--bindAsFiles option requires --bindingName to be specified`)
 	}
 
 	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, o.Component(), o.Application)

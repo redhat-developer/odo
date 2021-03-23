@@ -2,7 +2,6 @@ package component
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -83,10 +82,6 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 	if err != nil {
 		return err
-	}
-
-	if o.bindAsFiles && o.bindingName == "" {
-		return errors.New(`--bindAsFiles option requires --bindingName to be specified`)
 	}
 
 	o.Client, err = occlient.New()
