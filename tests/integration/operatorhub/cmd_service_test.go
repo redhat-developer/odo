@@ -406,6 +406,30 @@ spec:
 			Expect(stdOut).To(ContainSubstring("Invalid service name"))
 		})
 
+		It("should fail if binding name is not valid kubernetes name", func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
+
+			componentName := helper.RandString(90)
+			helper.CmdShouldPass("odo", "create", componentName)
+
+			stdOut := helper.CmdShouldFail("odo", "link", "--bindingName", componentName)
+			Expect(stdOut).To(ContainSubstring("is not valid"))
+		})
+
+		It("should fail if binding name is not provided for file based binding", func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
+
+			componentName := helper.RandString(90)
+			helper.CmdShouldPass("odo", "create", componentName)
+
+			stdOut := helper.CmdShouldFail("odo", "link", "--bindAsFiles", "--bindingName", componentName)
+			Expect(stdOut).To(ContainSubstring("--bindAsFiles option requires --bindingName to be specified"))
+		})
+
 		It("should fail if the provided service doesn't exist in the namespace", func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
@@ -417,6 +441,43 @@ spec:
 
 			stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Couldn't find service named %q", "EtcdCluster/example"))
+		})
+
+		It("should successfully connect and disconnect a component with an existing service using file based binding", func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
+
+			componentName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", componentName, "--devfile", "devfile.yaml", "--starter")
+			helper.CmdShouldPass("odo", "push")
+
+			// start the Operator backed service first
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+
+			// now verify if the pods for the operator have started
+			pods := oc.GetAllPodsInNs(project)
+			// Look for pod with example name because that's the name etcd will give to the pods.
+			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
+
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+			})
+
+			stdOut := helper.CmdShouldPass("odo", "link", "--bindAsFiles", "--bindingName", "test-binding", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
+			helper.CmdShouldPass("odo", "push")
+
+			// Before running "odo unlink" checks, wait for the pod to come up from "odo push" done after "odo link"
+			pods = oc.GetAllPodsInNs(project)
+			componentPod := regexp.MustCompile(fmt.Sprintf(`%s-.[a-z0-9]*-.[a-z0-9\-]*`, componentName)).FindString(pods)
+			ocArgs = []string{"get", "pods", componentPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+			})
 		})
 
 		It("should successfully connect and disconnect a component with an existing service", func() {
