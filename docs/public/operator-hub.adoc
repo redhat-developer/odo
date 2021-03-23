@@ -151,7 +151,7 @@ $ odo service list
 
 === Linking an odo component with an Operator backed service
 
-Linking a component to a service means, in simplest terms, to make a service usable from the component. odo uses link:https://github.com/redhat-developer/service-binding-operator/tree/v0.3.0[Service Binding Operator v0.3.0] to provide the linking feature. Please refer link:install-service-binding-operator.adoc[this document] to install it on OpenShift or Kubernetes.
+Linking a component to a service means, in simplest terms, to make a service usable from the component. odo uses link:https://github.com/redhat-developer/service-binding-operator/tree/v0.5.0[Service Binding Operator v0.5.0] to provide the linking feature. Please refer link:install-service-binding-operator.adoc[this document] to install it on OpenShift or Kubernetes.
 
 For example, once you link an EtcdCluster service with your Node.js application, you can use (or, interact with) the EtcdCluster from within your node app. The way odo facilitates linking is by making sure that specific environment variables from the pod in which the service is running are configured in the pod of the component as well.
 
@@ -178,6 +178,32 @@ $ odo push
 [IMPORTANT]
 ====
 For the link between a component and Operator Hub backed service to take effect, make sure you do `odo push`. The link won't be effective otherwise.
+====
+
+=== Linking services using files or environment variables
+
+Link command by default will inject environment variables into your application.
+Your application can reference environment variables directly in the codebase to connect to backing services.
+
+Many frameworks support more secure and reliable ways of sharing credentials using file system.
+link:https://github.com/redhat-developer/service-binding-operator/tree/v0.5.0[Service Binding Operator] provides ability to 
+create file structure containing files representing values from the secret.
+For example when executing `odo link` we can specifi
+
+[source,shell]
+----
+odo link --bindAsFiles --bindingName=db
+----
+
+After pushing changes we could see number of files created inside the bindings folder
+[source,shell]
+----
+ls /bindings/db
+user  password host port 
+----
+
+====
+Number of frameworks like Quarkus, Node.js supports this way of loading credentials for popular databases and tools.
 ====
 
 === Unlinking an odo component from an Operator backed service
