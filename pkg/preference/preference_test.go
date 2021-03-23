@@ -504,7 +504,7 @@ func TestSetConfiguration(t *testing.T) {
 			value:          "true",
 			existingConfig: Preference{},
 			wantErr:        false,
-			want:           "true",
+			want:           true,
 		},
 		{
 			name:      fmt.Sprintf("Case 29: set %s from true to false", ConsentTelemetrySetting),
@@ -516,7 +516,7 @@ func TestSetConfiguration(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			want:    "false",
+			want:    false,
 		},
 	}
 	for _, tt := range tests {
