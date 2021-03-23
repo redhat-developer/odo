@@ -39,6 +39,9 @@ var (
 # Link component 'nodejs' to the 'backend' component
 %[1]s backend --component nodejs
 
+# Link using filesystem instead of environment variables
+%[1]s --bindAsFiles --bindingName=mybinding EtcdCluster/myetcd
+
 # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
 %[1]s backend --port 8080`)
 
@@ -74,7 +77,9 @@ odo link dh-postgresql-apb
 
 Now backend has 2 ENV variables it can use:
 DB_USER=luke
-DB_PASSWORD=secret`
+DB_PASSWORD=secret
+
+`
 )
 
 // LinkOptions encapsulates the options for the odo link command
