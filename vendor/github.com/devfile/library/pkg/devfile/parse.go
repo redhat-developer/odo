@@ -9,6 +9,7 @@ import (
 // and validates the devfile integrity with the schema
 // and validates the devfile data.
 // Creates devfile context and runtime objects.
+// Deprecated, use ParseDevfileAndValidate() instead
 func ParseFromURLAndValidate(url string) (d parser.DevfileObj, err error) {
 
 	// read and parse devfile from the given URL
@@ -30,6 +31,7 @@ func ParseFromURLAndValidate(url string) (d parser.DevfileObj, err error) {
 // and validates the devfile integrity with the schema
 // and validates the devfile data.
 // Creates devfile context and runtime objects.
+// Deprecated, use ParseDevfileAndValidate() instead
 func ParseFromDataAndValidate(data []byte) (d parser.DevfileObj, err error) {
 	// read and parse devfile from the given bytes
 	d, err = parser.ParseFromData(data)
@@ -49,10 +51,30 @@ func ParseFromDataAndValidate(data []byte) (d parser.DevfileObj, err error) {
 // and validates the devfile integrity with the schema
 // and validates the devfile data.
 // Creates devfile context and runtime objects.
+// Deprecated, use ParseDevfileAndValidate() instead
 func ParseAndValidate(path string) (d parser.DevfileObj, err error) {
 
 	// read and parse devfile from given path
 	d, err = parser.Parse(path)
+	if err != nil {
+		return d, err
+	}
+
+	// generic validation on devfile content
+	err = validate.ValidateDevfileData(d.Data)
+	if err != nil {
+		return d, err
+	}
+
+	return d, err
+}
+
+// ParseDevfileAndValidate func parses the devfile data
+// and validates the devfile integrity with the schema
+// and validates the devfile data.
+// Creates devfile context and runtime objects.
+func ParseDevfileAndValidate(args parser.ParserArgs) (d parser.DevfileObj, err error) {
+	d, err = parser.ParseDevfile(args)
 	if err != nil {
 		return d, err
 	}

@@ -3,6 +3,10 @@ package parser
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/devfile/library/pkg/util"
@@ -35,6 +39,9 @@ type DevfileCtx struct {
 
 	// trace of all url referenced
 	uriMap map[string]bool
+
+	// registry URLs list
+	registryURLs []string
 }
 
 // NewDevfileCtx returns a new DevfileCtx type object
@@ -66,7 +73,17 @@ func (d *DevfileCtx) populateDevfile() (err error) {
 
 // Populate fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) Populate() (err error) {
-
+	if !strings.HasSuffix(d.relPath, ".yaml") {
+		if _, err := os.Stat(filepath.Join(d.relPath, "devfile.yaml")); os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(d.relPath, ".devfile.yaml")); os.IsNotExist(err) {
+				return fmt.Errorf("the provided path is not a valid yaml filepath, and devfile.yaml or .devfile.yaml not found in the provided path : %s", d.relPath)
+			} else {
+				d.relPath = filepath.Join(d.relPath, ".devfile.yaml")
+			}
+		} else {
+			d.relPath = filepath.Join(d.relPath, "devfile.yaml")
+		}
+	}
 	if err := d.SetAbsPath(); err != nil {
 		return err
 	}
@@ -87,10 +104,19 @@ func (d *DevfileCtx) Populate() (err error) {
 
 // PopulateFromURL fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) PopulateFromURL() (err error) {
-
-	_, err = url.ParseRequestURI(d.url)
+	u, err := url.ParseRequestURI(d.url)
 	if err != nil {
 		return err
+	}
+	if !strings.HasSuffix(d.url, ".yaml") {
+		u.Path = path.Join(u.Path, "devfile.yaml")
+		if _, err = util.DownloadFileInMemory(u.String()); err != nil {
+			u.Path = path.Join(path.Dir(u.Path), ".devfile.yaml")
+			if _, err = util.DownloadFileInMemory(u.String()); err != nil {
+				return fmt.Errorf("the provided url is not a valid yaml filepath, and devfile.yaml or .devfile.yaml not found in the provided path : %s", d.url)
+			}
+		}
+		d.url = u.String()
 	}
 	if d.uriMap == nil {
 		d.uriMap = make(map[string]bool)
@@ -148,4 +174,14 @@ func (d *DevfileCtx) GetURIMap() map[string]bool {
 // SetURIMap set uri map in the devfile ctx
 func (d *DevfileCtx) SetURIMap(uriMap map[string]bool) {
 	d.uriMap = uriMap
+}
+
+// GetRegistryURLs func returns current devfile registry URLs
+func (d *DevfileCtx) GetRegistryURLs() []string {
+	return d.registryURLs
+}
+
+// SetRegistryURLs set registry URLs in the devfile ctx
+func (d *DevfileCtx) SetRegistryURLs(registryURLs []string) {
+	d.registryURLs = registryURLs
 }

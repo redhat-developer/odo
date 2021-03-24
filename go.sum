@@ -226,8 +226,13 @@ github.com/devfile/library v0.0.0-20210216162950-3066a892876c/go.mod h1:aGJSpcGr
 
 github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b h1:r6Z2rXRA60eQQTdh1cJBBrj3vp9/c1rNbX42kyw2WpA=
 github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b/go.mod h1:Cot4snybn3qhIh48oIFi9McocnIx7zY5fFbjfrIpPvg=
+
 github.com/devfile/library v1.0.0-alpha.2.0.20210311210521-3ea632c8a3d0 h1:eVw2OYh+LZCNkR3R6F9PI212uDKkSmzy7ZzwD5AcBwY=
 github.com/devfile/library v1.0.0-alpha.2.0.20210311210521-3ea632c8a3d0/go.mod h1:6WF7h4BVqUyAULCa3bCjHgFueeOPc2qIipVmtDbWkNY=
+
+
+github.com/devfile/library v1.0.0-alpha.2.0.20210323153322-3d708859f0b5 h1:cxv4Cs86FcWhpKFXITuxwH0qI1Ik9U34HVM+F8x+ncU=
+github.com/devfile/library v1.0.0-alpha.2.0.20210323153322-3d708859f0b5/go.mod h1:6WF7h4BVqUyAULCa3bCjHgFueeOPc2qIipVmtDbWkNY=
 
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=

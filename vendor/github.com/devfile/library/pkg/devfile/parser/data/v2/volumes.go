@@ -9,11 +9,11 @@ import (
 )
 
 // AddVolumeMounts adds the volume mounts to the specified container component
-func (d *DevfileV2) AddVolumeMounts(componentName string, volumeMounts []v1.VolumeMount) error {
+func (d *DevfileV2) AddVolumeMounts(containerName string, volumeMounts []v1.VolumeMount) error {
 	var pathErrorContainers []string
 	found := false
 	for _, component := range d.Components {
-		if component.Container != nil && component.Name == componentName {
+		if component.Container != nil && component.Name == containerName {
 			found = true
 			for _, devfileVolumeMount := range component.Container.VolumeMounts {
 				for _, volumeMount := range volumeMounts {
@@ -31,7 +31,7 @@ func (d *DevfileV2) AddVolumeMounts(componentName string, volumeMounts []v1.Volu
 	if !found {
 		return &common.FieldNotFoundError{
 			Field: "container component",
-			Name:  componentName,
+			Name:  containerName,
 		}
 	}
 
@@ -70,27 +70,33 @@ func (d *DevfileV2) DeleteVolumeMount(name string) error {
 	return nil
 }
 
-// GetVolumeMountPath gets the mount path of the specified volume mount from the specified container component
-func (d *DevfileV2) GetVolumeMountPath(mountName, componentName string) (string, error) {
+// GetVolumeMountPaths gets all the mount paths of the specified volume mount from the specified container component.
+// A container can mount at different paths for a given volume.
+func (d *DevfileV2) GetVolumeMountPaths(mountName, containerName string) ([]string, error) {
 	componentFound := false
+	var mountPaths []string
 
 	for _, component := range d.Components {
-		if component.Container != nil && component.Name == componentName {
+		if component.Container != nil && component.Name == containerName {
 			componentFound = true
 			for _, volumeMount := range component.Container.VolumeMounts {
 				if volumeMount.Name == mountName {
-					return volumeMount.Path, nil
+					mountPaths = append(mountPaths, volumeMount.Path)
 				}
 			}
 		}
 	}
 
 	if !componentFound {
-		return "", &common.FieldNotFoundError{
+		return mountPaths, &common.FieldNotFoundError{
 			Field: "container component",
-			Name:  componentName,
+			Name:  containerName,
 		}
 	}
 
-	return "", fmt.Errorf("volume %s not mounted to component %s", mountName, componentName)
+	if len(mountPaths) == 0 {
+		return mountPaths, fmt.Errorf("volume %s not mounted to component %s", mountName, containerName)
+	}
+
+	return mountPaths, nil
 }

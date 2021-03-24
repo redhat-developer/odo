@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"reflect"
 	"strings"
 
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -9,21 +10,40 @@ import (
 
 // GetCommands returns the slice of Command objects parsed from the Devfile
 func (d *DevfileV2) GetCommands(options common.DevfileOptions) ([]v1.Command, error) {
-	if len(options.Filter) == 0 {
+
+	if reflect.DeepEqual(options, common.DevfileOptions{}) {
 		return d.Commands, nil
 	}
 
 	var commands []v1.Command
 	for _, command := range d.Commands {
+		// Filter Command Attributes
 		filterIn, err := common.FilterDevfileObject(command.Attributes, options)
 		if err != nil {
 			return nil, err
+		} else if !filterIn {
+			continue
 		}
 
-		if filterIn {
-			command.Id = strings.ToLower(command.Id)
-			commands = append(commands, command)
+		// Filter Command Type - Exec, Composite, etc.
+		commandType, err := common.GetCommandType(command)
+		if err != nil {
+			return nil, err
 		}
+		if options.CommandOptions.CommandType != "" && commandType != options.CommandOptions.CommandType {
+			continue
+		}
+
+		// Filter Command Group Kind - Run, Build, etc.
+		commandGroup := common.GetGroup(command)
+		// exclude conditions:
+		// 1. options group is present and command group is present but does not match
+		// 2. options group is present and command group is not present
+		if options.CommandOptions.CommandGroupKind != "" && ((commandGroup != nil && options.CommandOptions.CommandGroupKind != commandGroup.Kind) || commandGroup == nil) {
+			continue
+		}
+
+		commands = append(commands, command)
 	}
 
 	return commands, nil

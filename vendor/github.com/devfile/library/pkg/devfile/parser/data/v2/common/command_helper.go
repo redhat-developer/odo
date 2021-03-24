@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
@@ -46,4 +48,21 @@ func GetExecWorkingDir(dc v1.Command) string {
 	}
 
 	return ""
+}
+
+// GetCommandType returns the command type of a given command
+func GetCommandType(command v1.Command) (v1.CommandType, error) {
+	switch {
+	case command.Apply != nil:
+		return v1.ApplyCommandType, nil
+	case command.Composite != nil:
+		return v1.CompositeCommandType, nil
+	case command.Exec != nil:
+		return v1.ExecCommandType, nil
+	case command.Custom != nil:
+		return v1.CustomCommandType, nil
+
+	default:
+		return "", fmt.Errorf("unknown command type")
+	}
 }
