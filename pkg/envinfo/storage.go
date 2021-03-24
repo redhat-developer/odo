@@ -162,6 +162,9 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if len(containers) == 0 {
+		return "", fmt.Errorf("invalid devfile: components.container: required value")
+	}
 
 	// since all container components have same volume mounts, we simply refer to the first container in the list
 	// refer https://github.com/openshift/odo/issues/4105 for addressing "all containers have same volume mounts"
@@ -169,7 +172,15 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return paths[0], nil
+
+	// Below "if" condition needs to go away when https://github.com/openshift/odo/issues/4105 is addressed.
+	if len(paths) > 0 {
+		return paths[0], nil
+	}
+	// Sending empty string will lead to bad UX as user will be shown an empty value for the mount path
+	// that's supposed to be deleted through "odo storage delete" command.
+	// This and the above "if" condition need to go away when we address https://github.com/openshift/odo/issues/4105
+	return "", nil
 }
 
 // GetVolumeMountPath gets the volume mount's path
