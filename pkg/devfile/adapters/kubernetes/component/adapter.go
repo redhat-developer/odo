@@ -3,8 +3,10 @@ package component
 import (
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -34,6 +36,8 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+const supervisorDStatusWaitTimeInterval = 1
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
@@ -248,12 +252,66 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
+
+		runCommand := pushDevfileCommands[devfilev1.RunCommandGroupKind]
+		if parameters.Debug {
+			runCommand = pushDevfileCommands[devfilev1.DebugCommandGroupKind]
+		}
+
+		// wait for a second
+		wait := time.After(supervisorDStatusWaitTimeInterval * time.Second)
+		<-wait
+
+		err := a.CheckSupervisordCtlStatus(runCommand)
+		if err != nil {
+			return err
+		}
 	} else {
 		// no file was modified/added/deleted/renamed, thus return without syncing files
 		log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 	}
 
 	return nil
+}
+
+// CheckSupervisordCtlStatus checks the supervisord status according to the given command
+// if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
+func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
+	statusInContainer := getSupervisordStatusInContainer(a.pod.Name, command.Exec.Component, a)
+
+	supervisordProgramName := "devrun"
+
+	// if the command is a debug one, we check against `debugrun`
+	if command.Exec.Group.Kind == devfilev1.DebugCommandGroupKind {
+		supervisordProgramName = "debugrun"
+	}
+
+	for _, status := range statusInContainer {
+		if strings.EqualFold(status.program, supervisordProgramName) {
+			if strings.EqualFold(status.status, "running") {
+				return nil
+			} else {
+				numberOfLines := 20
+				log.Warningf("devfile command \"%s\" exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
+				log.Infof("Last %d lines of the component's log:", numberOfLines)
+
+				rd, err := a.Log(false, command)
+				if err != nil {
+					return err
+				}
+
+				err = util.DisplayLog(false, rd, os.Stderr, a.ComponentName, numberOfLines)
+				if err != nil {
+					return err
+				}
+
+				log.Info("To get the full log output, please run 'odo log'")
+
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("the supervisord program %s not found", supervisordProgramName)
 }
 
 // Test runs the devfile test command
@@ -530,7 +588,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 }
 
 // Log returns log from component
-func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
+func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
 
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
@@ -539,23 +597,6 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
 	if pod.Status.Phase != corev1.PodRunning {
 		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
-	}
-
-	var command devfilev1.Command
-	if debug {
-		command, err = common.GetDebugCommand(a.Devfile.Data, "")
-		if err != nil {
-			return nil, err
-		}
-		if reflect.DeepEqual(devfilev1.Command{}, command) {
-			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
-		}
-
-	} else {
-		command, err = common.GetRunCommand(a.Devfile.Data, "")
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	containerName := command.Exec.Component

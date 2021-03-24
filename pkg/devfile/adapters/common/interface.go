@@ -2,6 +2,8 @@ package common
 
 import (
 	"io"
+
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
 // ComponentAdapter defines the functions that platform-specific adapters must implement
@@ -11,8 +13,9 @@ type ComponentAdapter interface {
 	DoesComponentExist(cmpName string) (bool, error)
 	Delete(labels map[string]string, show bool) error
 	Test(testCmd string, show bool) error
+	CheckSupervisordCtlStatus(command devfilev1.Command) error
 	StartContainerStatusWatch()
 	StartSupervisordCtlStatusWatch()
-	Log(follow, debug bool) (io.ReadCloser, error)
+	Log(follow bool, command devfilev1.Command) (io.ReadCloser, error)
 	Exec(command []string) error
 }
