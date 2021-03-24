@@ -406,30 +406,6 @@ spec:
 			Expect(stdOut).To(ContainSubstring("Invalid service name"))
 		})
 
-		It("should fail if binding name is not valid kubernetes name", func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
-
-			componentName := helper.RandString(90)
-			helper.CmdShouldPass("odo", "create", componentName)
-
-			stdOut := helper.CmdShouldFail("odo", "link", "--bindingName", componentName)
-			Expect(stdOut).To(ContainSubstring("is not valid"))
-		})
-
-		It("should fail if binding name is not provided for file based binding", func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
-
-			componentName := helper.RandString(90)
-			helper.CmdShouldPass("odo", "create", componentName)
-
-			stdOut := helper.CmdShouldFail("odo", "link", "--bindAsFiles", "--bindingName", componentName)
-			Expect(stdOut).To(ContainSubstring("--bindAsFiles option requires --bindingName to be specified"))
-		})
-
 		It("should fail if the provided service doesn't exist in the namespace", func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
@@ -467,7 +443,7 @@ spec:
 				return strings.Contains(output, "Running")
 			})
 
-			stdOut := helper.CmdShouldPass("odo", "link", "--bindAsFiles", "--bindingName", "test-binding", "EtcdCluster/example")
+			stdOut := helper.CmdShouldPass("odo", "link", "--bindAsFiles", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
 			helper.CmdShouldPass("odo", "push")
 

@@ -35,7 +35,6 @@ const unlink = "unlink"
 type commonLinkOptions struct {
 	wait             bool
 	port             string
-	bindingName      string
 	bindAsFiles      bool
 	secretName       string
 	isTargetAService bool
@@ -115,12 +114,8 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		o.serviceBinding.Kind = serviceBindingKind
 		o.serviceBinding.APIVersion = strings.Join([]string{serviceBindingGroup, serviceBindingVersion}, "/")
 
-		if o.bindingName != "" {
-			o.serviceBinding.Name = o.bindingName
-		} else {
-			// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
-			o.serviceBinding.Name = getServiceBindingName(componentName, o.serviceType, o.serviceName)
-		}
+		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
+		o.serviceBinding.Name = getServiceBindingName(componentName, o.serviceType, o.serviceName)
 
 		o.serviceBinding.Spec.BindAsFiles = o.bindAsFiles
 

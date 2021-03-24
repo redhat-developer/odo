@@ -188,11 +188,11 @@ Your application can reference environment variables directly in the codebase to
 Many frameworks support more secure and reliable ways of sharing credentials using file system.
 link:https://github.com/redhat-developer/service-binding-operator/tree/v0.5.0[Service Binding Operator] provides ability to 
 create file structure containing files representing values from the secret.
-For example when executing `odo link` we can specifi
+For example when executing `odo link` we can specify `bindAsFiles` option that will bind credentials into container filesystem.
 
 [source,shell]
 ----
-odo link --bindAsFiles --bindingName=db
+odo link --bindAsFiles
 ----
 
 After pushing changes we could see number of files created inside the bindings folder

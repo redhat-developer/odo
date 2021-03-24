@@ -11,8 +11,6 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -40,7 +38,7 @@ var (
 %[1]s backend --component nodejs
 
 # Link using filesystem instead of environment variables
-%[1]s --bindAsFiles --bindingName=mybinding EtcdCluster/myetcd
+%[1]s --bindAsFiles EtcdCluster/myetcd
 
 # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
 %[1]s backend --port 8080`)
@@ -127,16 +125,6 @@ func (o *LinkOptions) Validate() (err error) {
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		return
 	}
-	if o.bindingName != "" {
-		err = util.ValidateK8sResourceName("Binding Name", o.bindingName)
-		if err != nil {
-			return err
-		}
-	}
-
-	if o.bindAsFiles && o.bindingName == "" {
-		return errors.New(`--bindAsFiles option requires --bindingName to be specified`)
-	}
 
 	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, o.Component(), o.Application)
 	if err != nil {
@@ -176,7 +164,6 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	}
 
 	linkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to link")
-	linkCmd.PersistentFlags().StringVar(&o.bindingName, "bindingName", "", "Name of the service binding object")
 	linkCmd.PersistentFlags().BoolVarP(&o.bindAsFiles, "bindAsFiles", "", false, "If present will mount service binding as files in /bindings folder")
 	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
