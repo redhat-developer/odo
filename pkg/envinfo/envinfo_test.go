@@ -2,12 +2,13 @@ package envinfo
 
 import (
 	"fmt"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -179,8 +180,11 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 			existingDevfile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "runtime",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -199,6 +203,9 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -216,8 +223,11 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 			existingDevfile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "runtime",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -232,6 +242,9 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -387,8 +400,11 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "testcontainer1",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -406,6 +422,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -444,8 +463,11 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "testcontainer1",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -457,6 +479,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -491,8 +516,11 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "testcontainer1",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -521,6 +549,9 @@ func TestAddEndpointInDevfile(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -598,8 +629,11 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "testcontainer1",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -622,6 +656,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -651,8 +688,11 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "testcontainer1",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -671,6 +711,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -695,8 +738,11 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "testcontainer1",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -732,6 +778,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -773,8 +822,11 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 			devObj: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "testcontainer1",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -793,6 +845,9 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},

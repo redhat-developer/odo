@@ -1,12 +1,13 @@
 package utils
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/storage"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/storage"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -728,8 +729,11 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: component,
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -751,7 +755,13 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 							},
 						},
 					})
-					_ = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -951,14 +961,26 @@ func TestGetPreStartInitContainers(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands(execCommands)
-					_ = devfileData.AddCommands(compCommands)
-					_ = devfileData.AddEvents(devfilev1.Events{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddEvents(devfilev1.Events{
 						WorkspaceEvents: devfilev1.WorkspaceEvents{
 							PreStart: tt.eventCommands,
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}

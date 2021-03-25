@@ -1,10 +1,11 @@
 package component
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -106,9 +107,18 @@ func TestPush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents(tt.components)
-					_ = devfileData.AddCommands(execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(tt.components)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -293,9 +303,18 @@ func TestDockerTest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents(tt.components)
-					_ = devfileData.AddCommands(tt.execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(tt.components)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -384,8 +403,14 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents(tt.components)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(tt.components)
+					if err != nil {
+						t.Error(err)
+					}
 
 					return devfileData
 				}(),
@@ -463,8 +488,14 @@ func TestAdapterDelete(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -839,8 +870,14 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error(err)
+					}
 
 					return devfileData
 				}(),

@@ -852,8 +852,11 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 				name: "testName",
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-						_ = devfileData.AddComponents([]v1alpha2.Component{{
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]v1alpha2.Component{{
 							Name: "testName",
 							ComponentUnion: devfile.ComponentUnion{
 								Kubernetes: &devfile.KubernetesComponent{
@@ -867,6 +870,9 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 							},
 						},
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 					Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),

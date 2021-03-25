@@ -1,8 +1,9 @@
 package component
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	"github.com/openshift/odo/pkg/envinfo"
 
@@ -165,11 +166,27 @@ func TestGetDeploymentStatus(t *testing.T) {
 			comp := testingutil.GetFakeContainerComponent(testComponentName)
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{comp})
-					_ = devfileData.AddCommands([]devfilev1.Command{
-						getExecCommand("run", devfilev1.RunCommandGroupKind),
-					})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{comp})
+					if err != nil {
+						t.Error(err)
+					}
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					if err != nil {
+						t.Error(err)
+					}
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}

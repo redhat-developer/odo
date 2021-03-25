@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	"github.com/docker/go-connections/nat"
 
@@ -90,8 +91,14 @@ func TestComponentExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents(tt.components)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error()
+					}
+					err = devfileData.AddComponents(tt.components)
+					if err != nil {
+						t.Error()
+					}
 					return devfileData
 				}(),
 			}

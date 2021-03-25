@@ -169,7 +169,10 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -388,7 +391,10 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},

@@ -1,9 +1,10 @@
 package kclient
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -23,10 +24,14 @@ func TestCreateService(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
 		Data: func() data.DevfileData {
-			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-			_ = devfileData.AddComponents([]devfilev1.Component{
-				testingutil.GetFakeContainerComponent("container1"),
-			})
+			devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+			if err != nil {
+				t.Error(err)
+			}
+			err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("container1")})
+			if err != nil {
+				t.Error(err)
+			}
 			return devfileData
 		}(),
 	}
@@ -106,10 +111,14 @@ func TestUpdateService(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
 		Data: func() data.DevfileData {
-			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-			_ = devfileData.AddComponents([]devfilev1.Component{
-				testingutil.GetFakeContainerComponent("container1"),
-			})
+			devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+			if err != nil {
+				t.Error(err)
+			}
+			err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("container1")})
+			if err != nil {
+				t.Error(err)
+			}
 			return devfileData
 		}(),
 	}

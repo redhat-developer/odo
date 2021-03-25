@@ -2,9 +2,10 @@ package common
 
 import (
 	"fmt"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"

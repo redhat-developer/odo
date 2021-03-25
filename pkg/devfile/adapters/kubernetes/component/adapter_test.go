@@ -1,8 +1,9 @@
 package component
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -84,9 +85,18 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{comp})
-					_ = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{comp})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -264,9 +274,18 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
-					_ = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -348,8 +367,14 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -473,7 +498,10 @@ func TestAdapterDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}

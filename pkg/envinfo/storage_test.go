@@ -1,9 +1,10 @@
 package envinfo
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -126,8 +127,11 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -165,6 +169,9 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 							testingutil.GetFakeVolumeComponent("volume-0", "5Gi"),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -195,7 +202,10 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						_ = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
@@ -243,7 +253,10 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						_ = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
@@ -279,7 +292,10 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						_ = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
@@ -333,7 +349,10 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						_ = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
@@ -361,7 +380,10 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						_ = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
@@ -442,7 +464,10 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						_ = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
@@ -467,7 +492,10 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
 						_ = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",

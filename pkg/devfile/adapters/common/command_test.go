@@ -186,10 +186,22 @@ func TestGetCommand(t *testing.T) {
 			components := []devfilev1.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands(tt.execCommands)
-					_ = devfileData.AddCommands(tt.compCommands)
-					_ = devfileData.AddComponents(components)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(components)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -454,10 +466,22 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			components := []devfilev1.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands(tt.execCommands)
-					_ = devfileData.AddCommands(tt.compCommands)
-					_ = devfileData.AddComponents(components)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(components)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -739,10 +763,22 @@ func TestGetCommandFromFlag(t *testing.T) {
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands(tt.execCommands)
-					_ = devfileData.AddCommands(tt.compCommands)
-					_ = devfileData.AddComponents(components)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(components)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -894,9 +930,18 @@ func TestGetBuildCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands(tt.execCommands)
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -1008,9 +1053,18 @@ func TestGetDebugCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
-					_ = devfileData.AddCommands(tt.execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -1124,9 +1178,18 @@ func TestGetTestCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
-					_ = devfileData.AddCommands(tt.execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -1246,9 +1309,18 @@ func TestGetRunCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
-					_ = devfileData.AddCommands(tt.execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -1340,9 +1412,18 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
-					_ = devfileData.AddCommands(execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -1515,9 +1596,18 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands(tt.execCommands)
-					_ = devfileData.AddComponents(([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)}))
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)}))
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -1612,9 +1702,18 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
-					_ = devfileData.AddCommands(execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}

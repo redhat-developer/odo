@@ -2,12 +2,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -526,8 +527,11 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "runtime",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -557,7 +561,10 @@ func TestSetDevfileConfiguration(t *testing.T) {
 							},
 						},
 					})
-					_ = devfileData.AddCommands([]devfilev1.Command{
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands([]devfilev1.Command{
 						{
 							Id: "devbuild",
 							CommandUnion: devfilev1.CommandUnion{
@@ -567,6 +574,9 @@ func TestSetDevfileConfiguration(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},
@@ -580,8 +590,11 @@ func TestSetDevfileConfiguration(t *testing.T) {
 			wantDevFile: parser.DevfileObj{
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands([]devfilev1.Command{
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands([]devfilev1.Command{
 						{
 							Id: "devbuild",
 							CommandUnion: devfilev1.CommandUnion{
@@ -591,7 +604,10 @@ func TestSetDevfileConfiguration(t *testing.T) {
 							},
 						},
 					})
-					_ = devfileData.AddComponents([]devfilev1.Component{
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: "runtime",
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -639,6 +655,9 @@ func TestSetDevfileConfiguration(t *testing.T) {
 							},
 						},
 					})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			},

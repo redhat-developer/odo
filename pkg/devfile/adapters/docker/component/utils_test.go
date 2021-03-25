@@ -1,9 +1,10 @@
 package component
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"strings"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -121,8 +122,14 @@ func TestExecDevfile(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error()
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error()
+					}
 					return devfileData
 				}(),
 			}
@@ -233,8 +240,14 @@ func TestExecTestCmd(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents(validComponents)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error()
+					}
+					err = devfileData.AddComponents(validComponents)
+					if err != nil {
+						t.Error()
+					}
 					return devfileData
 				}(),
 			}
@@ -298,8 +311,14 @@ func TestCreateProjectVolumeIfReqd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error()
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error()
+					}
 					return devfileData
 				}(),
 			}
@@ -348,8 +367,14 @@ func TestStartBootstrapSupervisordInitContainer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error()
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error()
+					}
 					return devfileData
 				}(),
 			}
@@ -396,8 +421,14 @@ func TestCreateAndInitSupervisordVolumeIfReqd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error()
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error()
+					}
 					return devfileData
 				}(),
 			}

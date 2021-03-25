@@ -1,10 +1,11 @@
 package common
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -142,8 +143,14 @@ func TestGetVolumes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents(tt.component)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(tt.component)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -365,9 +372,18 @@ func TestGetCommandsForGroup(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
 		Data: func() data.DevfileData {
-			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-			_ = devfileData.AddComponents(component)
-			_ = devfileData.AddCommands(execCommands)
+			devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+			if err != nil {
+				t.Error(err)
+			}
+			err = devfileData.AddComponents(component)
+			if err != nil {
+				t.Error(err)
+			}
+			err = devfileData.AddCommands(execCommands)
+			if err != nil {
+				t.Error(err)
+			}
 			return devfileData
 		}(),
 	}
@@ -517,10 +533,22 @@ func TestGetCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents(component)
-					_ = devfileData.AddCommands(tt.execCommands)
-					_ = devfileData.AddCommands(tt.compCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(component)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.compCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
@@ -673,9 +701,18 @@ func TestGetCommandsFromEvent(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddCommands(compCommands)
-					_ = devfileData.AddCommands(execCommands)
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}

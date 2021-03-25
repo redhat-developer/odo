@@ -1,9 +1,10 @@
 package adapters
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -31,8 +32,14 @@ func TestNewPlatformAdapter(t *testing.T) {
 		t.Run("get platform adapter", func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
-					_ = devfileData.AddComponents([]devfilev1.Component{})
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error(err)
+					}
 					return devfileData
 				}(),
 			}
