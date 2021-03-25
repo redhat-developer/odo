@@ -55,6 +55,17 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("When viewing global config", func() {
+		var newContext string
+		// ConsentTelemetry is set to false in helper.CommonBeforeEach so that it does not prompt to set a value
+		// during the tests, but we want to check preference values as they would be in real time and hence
+		// we set the GLOBALODOCONFIG variable to a value in new context
+		var _ = JustBeforeEach(func() {
+			newContext = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(newContext, "preference.yaml"))
+		})
+		var _ = JustAfterEach(func() {
+			helper.DeleteDir(newContext)
+		})
 		It("should get the default global config keys", func() {
 			configOutput := helper.CmdShouldPass("odo", "preference", "view")
 			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "PushTarget", "BuildTimeout", "PushTimeout", "Experimental", "Ephemeral", "ConsentTelemetry"}
