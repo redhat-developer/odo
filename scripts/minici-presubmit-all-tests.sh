@@ -17,16 +17,16 @@ case $1 in
         export JOB_NAME="odo-minikube-pr-build"
         export SENDQUEUE="amqp.ci.queue.minikube.send"
         export SENDTOPIC="amqp.ci.topic.minikube.send"
-        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh"
-        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh"
+        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minikube"
+        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minikube"
         export TIMEOUT="2h15m"
         ;;
     minishift)
         export JOB_NAME="odo-minishift-pr-tests"
         export SENDQUEUE="amqp.ci.queue.minishift.send"
         export SENDTOPIC="amqp.ci.topic.minishift.send"
-        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh"
-        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh"
+        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minishift"
+        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minishift"
         export TIMEOUT="4h00m"
         ;;
     *)
@@ -50,4 +50,4 @@ set -x
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --setupscript $SETUP_SCRIPT --runscript $RUN_SCRIPT --timeout $TIMEOUT
+./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --setupscript "$SETUP_SCRIPT" --runscript "$RUN_SCRIPT" --timeout $TIMEOUT

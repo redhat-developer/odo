@@ -8,7 +8,7 @@ shout() {
 
 set -ex
 
-case ${CI_INFO} in
+case ${1} in
     minikube)
         # Integration tests
         shout "| Running integration Tests on MiniKube"
