@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -20,15 +21,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-)
-
-var (
-	// Hardcoded variables since we can't install SBO on k8s using OLM
-	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
-	serviceBindingGroup    = "binding.operators.coreos.com"
-	serviceBindingVersion  = "v1alpha1"
-	serviceBindingKind     = "ServiceBinding"
-	serviceBindingResource = "servicebindings"
 )
 
 const unlink = "unlink"
@@ -111,8 +103,8 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		componentName := o.EnvSpecificInfo.GetName()
 
 		// Assign static/hardcoded values to SBR
-		o.serviceBinding.Kind = serviceBindingKind
-		o.serviceBinding.APIVersion = strings.Join([]string{serviceBindingGroup, serviceBindingVersion}, "/")
+		o.serviceBinding.Kind = kclient.ServiceBindingKind
+		o.serviceBinding.APIVersion = strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/")
 
 		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
 		o.serviceBinding.Name = getServiceBindingName(componentName, o.serviceType, o.serviceName)
@@ -142,7 +134,12 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 				Group:    deploymentSelfLinkSplit[2], // "apps" in above example output
 				Version:  deploymentSelfLinkSplit[3], // "v1" in above example output
 				Resource: deploymentSelfLinkSplit[6], // "deployments" in above example output
-			},
+			}
+		}
+
+		// Populate the application selector field in service binding request
+		o.serviceBinding.Spec.Application = &servicebinding.Application{
+			Ref: ref,
 		}
 		o.serviceBinding.Spec.Application.Name = componentName
 
@@ -208,7 +205,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			}
 
 			// Verify if the underlying service binding request actually exists
-			serviceBindingSvcFullName := strings.Join([]string{serviceBindingKind, serviceBindingName}, "/")
+			serviceBindingSvcFullName := strings.Join([]string{kclient.ServiceBindingKind, serviceBindingName}, "/")
 			serviceBindingExists, err := svc.OperatorSvcExists(o.KClient, serviceBindingSvcFullName)
 			if err != nil {
 				return err
@@ -284,7 +281,7 @@ func (o *commonLinkOptions) run() (err error) {
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
 			serviceBindingName := getServiceBindingName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
-			svcFullName := getSvcFullName(serviceBindingKind, serviceBindingName)
+			svcFullName := getSvcFullName(kclient.ServiceBindingKind, serviceBindingName)
 			err = svc.DeleteServiceBindingRequest(o.KClient, svcFullName)
 			if err != nil {
 				return err
@@ -312,7 +309,7 @@ func (o *commonLinkOptions) run() (err error) {
 
 		// this creates a link by creating a service of type
 		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
-		err = o.KClient.CreateDynamicResource(serviceBindingMap, serviceBindingGroup, serviceBindingVersion, serviceBindingResource)
+		err = o.KClient.CreateDynamicResource(serviceBindingMap, kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				return fmt.Errorf("component %q is already linked with the service %q", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
