@@ -39,9 +39,55 @@ case ${1} in
         export GOPATH=$HOME/go
         mkdir -p $GOPATH/bin
         export PATH="$PATH:$(pwd):$GOPATH/bin"
-        curl -kJLO https://github.com/openshift/odo/blob/master/scripts/minishift-start-if-required.sh
-        chmod +x minishift-start-if-required.sh
-        sh ./minishift-start-if-required.sh
+
+        #Export github API token to prevent pull limit error
+        export MINISHIFT_GITHUB_API_TOKEN=$MINISHIFT_GITHUB_API_TOKEN_VALUE
+
+        # Verify if minishift or openshift are stopped and take appropriate actions
+        msStatus=$(minishift status)
+        shout "| Checking if Minishift needs to be started..."
+        if [[ "$msStatus" == *"Does Not Exist"* ]] || [[ "$msStatus" == *"Minishift:  Stopped"* ]]
+        then 
+            shout "| Starting Minishift..."
+            (minishift start --vm-driver kvm --show-libmachine-logs -v 5)
+        else 
+            if [[ "$msStatus" == *"OpenShift:  Stopped"* ]];
+                then 
+                shout "| Minishift is running but Openshift is stopped, restarting minishift..."
+                (minishift stop)
+                (minishift start --vm-driver kvm --show-libmachine-logs -v 5)
+            else
+                if [[ "$msStatus" == *"Running"* ]]; 
+                    then shout "| Minishift is running"
+                fi
+            fi
+        fi
+
+        # Check if service-catalog, automation-service-broker, and template-service-broker need to be installed
+        compList=$(minishift openshift component list)
+        shout "| Checking if required components need to be installed..."
+        if [[ "$compList" == *"service-catalog"* ]] 
+        then 
+            shout "| service-catalog already installed "
+        else 
+                shout "| Installing service-catalog ..."
+                (minishift openshift component add service-catalog)
+        fi
+        if [[ "$compList" == *"automation-service-broker"* ]] 
+        then 
+            shout "| automation-service-broker already installed "
+        else 
+                shout "| Installing automation-service-broker ..."
+                (minishift openshift component add automation-service-broker)
+        fi
+        if [[ "$compList" == *"template-service-broker"* ]] 
+        then 
+            shout "| template-service-broker already installed "
+        else 
+                shout "| Installing template-service-broker ..."
+                (minishift openshift component add template-service-broker)
+        fi
+
         ;;
     minikube)
         shout "| Start minikube"

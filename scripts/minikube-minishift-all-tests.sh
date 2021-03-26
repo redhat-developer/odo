@@ -17,17 +17,17 @@ case ${1} in
         ;;
     minishift)
         eval $(minishift oc-env)
-
         shout "| Logging in to minishift..."
         oc login -u developer -p developer --insecure-skip-tls-verify $(minishift ip):8443
 
+        # Execute Integration Tests
         shout "| Executing on minishift: generic, login, component command and plugin handler integration tests"
         make test-integration
-
 
         shout "| Executing on minishift: devfile catalog, create, push, watch, delete, registry, exec, test, env, status, config, debug and log command integration tests"
         make test-integration-devfile
 
+        #Execute end-to-end tests
         shout "| Executing on minishift: core beta, java, source e2e tests"
         make test-e2e-beta
         make test-e2e-java
