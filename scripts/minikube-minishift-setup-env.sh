@@ -41,9 +41,10 @@ case ${1} in
         export PATH="$PATH:$(pwd):$GOPATH/bin"
 
         #Export github API token to prevent pull limit error
-        export MINISHIFT_GITHUB_API_TOKEN=$MINISHIFT_GITHUB_API_TOKEN_VALUE
+        export MINISHIFT_GITHUB_API_TOKEN=${MINISHIFT_GITHUB_API_TOKEN_VALUE}
 
         # Verify if minishift or openshift are stopped and take appropriate actions
+        minishift version
         msStatus=$(minishift status)
         if [[ "$msStatus" == *"command not found"* ]]
         then
