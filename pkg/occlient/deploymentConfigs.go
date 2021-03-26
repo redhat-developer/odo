@@ -3,6 +3,7 @@ package occlient
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"time"
 
@@ -230,7 +231,7 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
 	}
 
-	return util.DisplayLog(followLog, rd, deploymentConfigName)
+	return util.DisplayLog(followLog, rd, os.Stdout, deploymentConfigName, -1)
 }
 
 // StartDeployment instantiates a given deployment

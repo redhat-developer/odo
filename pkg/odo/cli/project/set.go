@@ -19,7 +19,9 @@ var (
 	%[1]s myproject
 	`)
 
-	setLongDesc = ktemplates.LongDesc(`Set the active project`)
+	setLongDesc = ktemplates.LongDesc(`Set the active project.
+	This command directly performs actions on the cluster and doesn't require a push.
+	`)
 
 	setShortDesc = `Set the current active project`
 )

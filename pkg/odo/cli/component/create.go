@@ -487,6 +487,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				// If user can use existing devfile directly, the first arg is component name instead of component type
 				if len(args) == 1 {
 					componentName = args[0]
+
 				} else {
 					currentDirPath, err := os.Getwd()
 					if err != nil {
@@ -503,11 +504,20 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				// Component type: Get from full command's first argument (mandatory in direct mode)
 				componentType = args[0]
 
-				// Component name: Get from full command's second argument (optional in direct mode), by default it is component type from first argument
+				// Component name: Get from full command's second argument (optional in direct mode), by default it is a generated name if second arg is not provided
 				if len(args) == 2 {
 					componentName = args[1]
 				} else {
-					componentName = args[0]
+					var err error
+					componentName, err = createDefaultComponentName(
+						co.Context,
+						componentType,
+						config.LOCAL, // always local for devfile
+						co.componentContext,
+					)
+					if err != nil {
+						return err
+					}
 				}
 
 				// Get available devfile components for checking devfile compatibility
@@ -812,7 +822,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 				if err != nil {
 					return err
 				}
-				u.Path = path.Join(u.Path, "devfiles", co.devfileMetadata.componentName)
+				u.Path = path.Join(u.Path, "devfiles", co.devfileMetadata.componentType)
 				url := u.String()
 				params = util.HTTPRequestParams{
 					URL: url,

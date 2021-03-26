@@ -120,7 +120,7 @@ func TestGetBuildTimeout(t *testing.T) {
 
 			output := cfg.GetBuildTimeout()
 			if output != tt.want {
-				t.Errorf("GetBuildTimeout returned unexpeced value expected \ngot: %d \nexpected: %d\n", output, tt.want)
+				t.Errorf("GetBuildTimeout returned unexpected value\ngot: %d \nexpected: %d\n", output, tt.want)
 			}
 		})
 	}
@@ -176,7 +176,7 @@ func TestGetPushTimeout(t *testing.T) {
 
 			output := cfg.GetPushTimeout()
 			if output != tt.want {
-				t.Errorf("GetPushTimeout returned unexpeced value expected \ngot: %d \nexpected: %d\n", output, tt.want)
+				t.Errorf("GetPushTimeout returned unexpected value\ngot: %d \nexpected: %d\n", output, tt.want)
 			}
 		})
 	}
@@ -232,7 +232,7 @@ func TestGetTimeout(t *testing.T) {
 
 			output := cfg.GetTimeout()
 			if output != tt.want {
-				t.Errorf("GetTimeout returned unexpeced value expected \ngot: %d \nexpected: %d\n", output, tt.want)
+				t.Errorf("GetTimeout returned unexpected value\ngot: %d \nexpected: %d\n", output, tt.want)
 			}
 		})
 	}
@@ -491,6 +491,33 @@ func TestSetConfiguration(t *testing.T) {
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
+		{
+			name:           fmt.Sprintf("Case 27: set %s to non bool value", ConsentTelemetrySetting),
+			parameter:      ConsentTelemetrySetting,
+			value:          "123",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
+		{
+			name:           fmt.Sprintf("Case 28: set %s from nil to true", ConsentTelemetrySetting),
+			parameter:      ConsentTelemetrySetting,
+			value:          "true",
+			existingConfig: Preference{},
+			wantErr:        false,
+			want:           true,
+		},
+		{
+			name:      fmt.Sprintf("Case 29: set %s from true to false", ConsentTelemetrySetting),
+			parameter: ConsentTelemetrySetting,
+			value:     "false",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					ConsentTelemetry: &trueValue,
+				},
+			},
+			wantErr: false,
+			want:    false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -508,23 +535,23 @@ func TestSetConfiguration(t *testing.T) {
 				switch tt.parameter {
 				case "updatenotification":
 					if *cfg.OdoSettings.UpdateNotification != tt.want {
-						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %t \nexpected: %t\n", *cfg.OdoSettings.UpdateNotification, tt.want)
+						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %t \nexpected: %t\n", *cfg.OdoSettings.UpdateNotification, tt.want)
 					}
 				case "timeout":
 					if *cfg.OdoSettings.Timeout != tt.want {
-						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.Timeout, tt.want)
+						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %v \nexpected: %d\n", cfg.OdoSettings.Timeout, tt.want)
 					}
 				case "experimental":
 					if *cfg.OdoSettings.Experimental != tt.want {
-						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.Experimental, tt.want)
+						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %v \nexpected: %d\n", cfg.OdoSettings.Experimental, tt.want)
 					}
 				case "pushtarget":
 					if *cfg.OdoSettings.PushTarget != tt.want {
-						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.PushTarget, tt.want)
+						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %v \nexpected: %d\n", cfg.OdoSettings.PushTarget, tt.want)
 					}
 				case "registrycachetime":
 					if *cfg.OdoSettings.RegistryCacheTime != tt.want {
-						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", *cfg.OdoSettings.RegistryCacheTime, tt.want)
+						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %v \nexpected: %d\n", *cfg.OdoSettings.RegistryCacheTime, tt.want)
 					}
 				}
 			} else if tt.wantErr && err != nil {
@@ -541,6 +568,61 @@ func TestSetConfiguration(t *testing.T) {
 				}
 			} else {
 				t.Error(err)
+			}
+
+		})
+	}
+}
+
+func TestConsentTelemetry(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	trueValue := true
+	falseValue := false
+
+	tests := []struct {
+		name           string
+		existingConfig Preference
+		want           bool
+	}{
+		{
+			name:           fmt.Sprintf("Case 1: %s nil", ConsentTelemetrySetting),
+			existingConfig: Preference{},
+			want:           false,
+		},
+		{
+			name: fmt.Sprintf("Case 2: %s true", ConsentTelemetrySetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					ConsentTelemetry: &trueValue,
+				},
+			},
+			want: true,
+		},
+		{
+			name: fmt.Sprintf("Case 3: %s false", ConsentTelemetrySetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					ConsentTelemetry: &falseValue,
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := PreferenceInfo{
+				Preference: tt.existingConfig,
+			}
+			output := cfg.GetConsentTelemetry()
+
+			if output != tt.want {
+				t.Errorf("ConsentTelemetry returned unexpected value\ngot: %t \nexpected: %t\n", output, tt.want)
 			}
 
 		})
@@ -596,7 +678,7 @@ func TestGetupdateNotification(t *testing.T) {
 			output := cfg.GetUpdateNotification()
 
 			if output != tt.want {
-				t.Errorf("GetUpdateNotification returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
+				t.Errorf("GetUpdateNotification returned unexpected value\ngot: %t \nexpected: %t\n", output, tt.want)
 			}
 
 		})
@@ -652,7 +734,7 @@ func TestGetExperimental(t *testing.T) {
 			output := cfg.GetExperimental()
 
 			if output != tt.want {
-				t.Errorf("GetExperimental returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
+				t.Errorf("GetExperimental returned unexpected value\ngot: %t \nexpected: %t\n", output, tt.want)
 			}
 
 		})
@@ -708,7 +790,7 @@ func TestGetPushTarget(t *testing.T) {
 			output := cfg.GetPushTarget()
 
 			if output != tt.want {
-				t.Errorf("GetExperimental returned unexpeced value expected \ngot: %s \nexpected: %s\n", output, tt.want)
+				t.Errorf("GetExperimental returned unexpected value\ngot: %s \nexpected: %s\n", output, tt.want)
 			}
 
 		})
@@ -967,7 +1049,7 @@ func TestGetConsentTelemetry(t *testing.T) {
 			output := cfg.GetConsentTelemetry()
 
 			if output != tt.want {
-				t.Errorf("GetConsentTelemetry returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
+				t.Errorf("GetConsentTelemetry returned unexpected value\ngot: %t \nexpected: %t\n", output, tt.want)
 			}
 
 		})

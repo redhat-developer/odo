@@ -50,4 +50,4 @@ set -x
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --setupscript $SETUP_SCRIPT --runscript $RUN_SCRIPT --timeout $TIMEOUT
+./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --setupscript "$SETUP_SCRIPT" --runscript "$RUN_SCRIPT" --timeout $TIMEOUT

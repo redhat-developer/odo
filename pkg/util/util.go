@@ -1197,7 +1197,8 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 }
 
 // DisplayLog displays logs to user stdout with some color formatting
-func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
+// numberOfLastLines limits the number of lines from the output when we are not following it
+func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName string, numberOfLastLines int) (err error) {
 
 	defer rd.Close()
 
@@ -1217,12 +1218,11 @@ func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
 			os.Exit(1)
 		}()
 
-		if _, err = io.Copy(os.Stdout, rd); err != nil {
+		if _, err = io.Copy(writer, rd); err != nil {
 			return errors.Wrapf(err, "error followLoging logs for %s", compName)
 		}
 
-	} else {
-
+	} else if numberOfLastLines == -1 {
 		// Copy to buffer (we aren't going to be followLoging the logs..)
 		buf := new(bytes.Buffer)
 		_, err = io.Copy(buf, rd)
@@ -1231,10 +1231,36 @@ func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
 		}
 
 		// Copy to stdout
-		if _, err = io.Copy(os.Stdout, buf); err != nil {
+		if _, err = io.Copy(writer, buf); err != nil {
 			return errors.Wrapf(err, "error copying logs to stdout")
 		}
+	} else {
+		reader := bufio.NewReader(rd)
+		var lines []string
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					return err
+				} else {
+					break
+				}
+			}
 
+			lines = append(lines, line)
+		}
+
+		index := len(lines) - numberOfLastLines
+		if index < 0 {
+			index = 0
+		}
+
+		for i := index; i < len(lines)-1; i++ {
+			_, err := fmt.Fprintf(writer, lines[i])
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return
 

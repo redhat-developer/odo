@@ -10,6 +10,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+const promtMessageSubString = "Help odo improve by allowing it to collect usage data."
+
 var _ = Describe("odo preference and config command tests", func() {
 	// TODO: A neater way to provide odo path. Currently we assume \
 	// odo and oc in $PATH already.
@@ -53,6 +55,17 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("When viewing global config", func() {
+		var newContext string
+		// ConsentTelemetry is set to false in helper.CommonBeforeEach so that it does not prompt to set a value
+		// during the tests, but we want to check preference values as they would be in real time and hence
+		// we set the GLOBALODOCONFIG variable to a value in new context
+		var _ = JustBeforeEach(func() {
+			newContext = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(newContext, "preference.yaml"))
+		})
+		var _ = JustAfterEach(func() {
+			helper.DeleteDir(newContext)
+		})
 		It("should get the default global config keys", func() {
 			configOutput := helper.CmdShouldPass("odo", "preference", "view")
 			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "PushTarget", "BuildTimeout", "PushTimeout", "Experimental", "Ephemeral", "ConsentTelemetry"}
@@ -325,4 +338,44 @@ var _ = Describe("odo preference and config command tests", func() {
 			Expect(ok).To(BeFalse())
 		})
 	})
+
+	Context("When no ConsentTelemetry preference value is set", func() {
+		var _ = JustBeforeEach(func() {
+			// unset the preference in case it is already set
+			helper.CmdShouldPass("odo", "preference", "unset", "ConsentTelemetry", "-f")
+		})
+		It("prompt should not appear when user calls for help", func() {
+			output := helper.CmdShouldPass("odo", "create", "--help")
+			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+		})
+
+		It("prompt should not appear when preference command is run", func() {
+			output := helper.CmdShouldPass("odo", "preference", "view")
+			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+
+			output = helper.CmdShouldPass("odo", "preference", "set", "buildtimeout", "5", "-f")
+			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+
+			output = helper.CmdShouldPass("odo", "preference", "unset", "buildtimeout", "-f")
+			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+		})
+		It("prompt should appear when non-preference command is run", func() {
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
+			Expect(output).To(ContainSubstring(promtMessageSubString))
+		})
+	})
+
+	Context("Prompt should not appear when", func() {
+		It("ConsentTelemetry is set to true", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "true", "-f")
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
+			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+		})
+		It("ConsentTelemetry is set to false", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "false", "-f")
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
+			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+		})
+	})
+
 })

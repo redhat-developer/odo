@@ -562,9 +562,9 @@ func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace s
 	Expect(output).NotTo(ContainSubstring(resourceName))
 }
 
-// CreateRandNamespaceProject create new project with random name in oc cluster (10 letters)
+// CreateRandNamespaceProject create new project
 func (oc OcRunner) CreateRandNamespaceProject() string {
-	projectName := RandString(10)
+	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
 	Expect(session).To(ContainSubstring("New project created"))

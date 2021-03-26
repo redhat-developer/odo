@@ -1083,6 +1083,27 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
+	Context("when the run command throws an error", func() {
+		It("should wait and error out with some log", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
+
+			_, output := helper.CmdShouldPassIncludeErrStream("odo", "push", "--context", commonVar.Context)
+			helper.MatchAllInOutput(output, []string{
+				"exited with error status within 1 sec",
+				"Did you mean one of these?",
+			})
+
+			_, output = helper.CmdShouldPassIncludeErrStream("odo", "push", "--context", commonVar.Context, "-f", "--run-command", "run")
+			helper.MatchAllInOutput(output, []string{
+				"exited with error status within 1 sec",
+				"Did you mean one of these?",
+			})
+		})
+	})
+
 	Context("Testing Push for OpenShift specific scenarios", func() {
 		JustBeforeEach(func() {
 			if os.Getenv("KUBERNETES") == "true" {

@@ -1,0 +1,29 @@
+[[odo]]
+= `odo` - Developer-focused CLI for Kubernetes and OpenShift
+:toc: macro
+:toc-title:
+:toclevels: 1
+
+[[usage-data]]
+== Usage Data
+
+If the user has consented to `odo` collecting usage data, the following data is collected when a command is executed -
+
+* command's ID
+* command's duration time
+* command's error message and error type (in case of failure)
+* whether the command was run from a terminal
+* system information such as OS type
+* `odo` version in use
+
+
+[[enable-disable]]
+== Enable/Disable preference
+
+Enable::
+`odo preference set ConsentTelemetry true`
+
+Disable::
+`odo preference set ConsentTelemetry false`
+
+Note: If earlier the `ConsentTelemetry` preference was enabled, then the data will be collected about the disabling of the preference.
