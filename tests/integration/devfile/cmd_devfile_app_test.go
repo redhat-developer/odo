@@ -1,40 +1,29 @@
 package devfile
 
 import (
+	"os"
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 var _ = Describe("odo devfile app command tests", func() {
 
-	var namespace, context, currentWorkingDirectory, originalKubeconfig string
-
-	// Using program command according to cliRunner in devfile
-	cliRunner := helper.GetCliRunner()
+	var namespace string
+	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		namespace = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
+		commonVar = helper.CommonBeforeEach()
+		helper.Chdir(commonVar.Context)
+		namespace = commonVar.Project
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("listing apps", func() {
