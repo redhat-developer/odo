@@ -129,9 +129,9 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		// Populate the application selector field in service binding request
 		o.serviceBinding.Spec.Application = &servicebinding.Application{
 			GroupVersionResource: metav1.GroupVersionResource{
-				Group:    deploymentGVR["group"],
-				Version:  deploymentGVR["version"],
-				Resource: deploymentGVR["resource"],
+				Group:    deploymentGVR.Group,
+				Version:  deploymentGVR.Version,
+				Resource: deploymentGVR.Resource,
 			},
 		}
 

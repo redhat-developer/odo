@@ -386,25 +386,25 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 
 // GetDeploymentAPIVersion returns a map with Group, Version, Resource information of Deployment objects
 // depending on the GVR supported by the cluster
-func (c *Client) GetDeploymentAPIVersion() (map[string]string, error) {
+func (c *Client) GetDeploymentAPIVersion() (metav1.GroupVersionResource, error) {
 	extV1Beta1, err := c.IsDeploymentExtensionsV1Beta1()
 	if err != nil {
-		return nil, err
+		return metav1.GroupVersionResource{}, err
 	}
 
 	if extV1Beta1 {
 		// this indicates we're running on OCP 3.11 cluster
-		return map[string]string{
-			"group":    "extensions",
-			"version":  "v1beta1",
-			"resource": "deployments",
+		return metav1.GroupVersionResource{
+			Group:    "extensions",
+			Version:  "v1beta1",
+			Resource: "deployments",
 		}, nil
 	}
 
-	return map[string]string{
-		"group":    "apps",
-		"version":  "v1",
-		"resource": "deployments",
+	return metav1.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "deployments",
 	}, nil
 }
 
