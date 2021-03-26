@@ -211,7 +211,7 @@ func (c *Client) CreateServiceBinding(bindingName string, namespace string, labe
 				},
 				SecretName: bindingName,
 			},
-		}, metav1.CreateOptions{})
+		}, metav1.CreateOptions{FieldManager: "odo"})
 
 	if err != nil {
 		return errors.Wrap(err, "Creation of the secret failed")

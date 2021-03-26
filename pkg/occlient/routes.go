@@ -42,7 +42,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 
-	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{})
+	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating route")
 	}

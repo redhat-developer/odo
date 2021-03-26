@@ -176,7 +176,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			Name: projectName,
 		},
 	}
-	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{})
+	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}

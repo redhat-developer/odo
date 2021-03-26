@@ -40,7 +40,7 @@ func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objec
 		Data:       data,
 	}
 
-	secret, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secretTemplate, metav1.CreateOptions{})
+	secret, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secretTemplate, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create secret %s", objectMeta.Name)
 	}
@@ -117,7 +117,7 @@ func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]stri
 		StringData: data,
 	}
 	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
-	_, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secret, metav1.CreateOptions{})
+	_, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secret, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
 	}

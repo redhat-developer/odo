@@ -143,7 +143,7 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 			return err
 		}
 
-		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{})
+		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{FieldManager: "odo"})
 		return updateErr
 	})
 	if retryErr != nil {

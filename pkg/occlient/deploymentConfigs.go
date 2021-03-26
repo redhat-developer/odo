@@ -68,7 +68,7 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 	}
 
 	dc.Annotations = annotations
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{})
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
 	}
@@ -95,7 +95,7 @@ func (c *Client) patchDC(dcName string, dcPatchProvider dcPatchProvider) error {
 		}
 
 		// patch the DeploymentConfig with the secret
-		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(context.TODO(), dcName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{})
+		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(context.TODO(), dcName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: "odo"})
 		if err != nil {
 			return errors.Wrapf(err, "DeploymentConfig not patched %s", dc.Name)
 		}
@@ -249,7 +249,7 @@ func (c *Client) StartDeployment(deploymentName string) (string, error) {
 		Latest: true,
 		Force:  true,
 	}
-	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(context.TODO(), deploymentName, &deploymentRequest, metav1.CreateOptions{})
+	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(context.TODO(), deploymentName, &deploymentRequest, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate Deployment for %s", deploymentName)
 	}
@@ -298,7 +298,7 @@ func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar,
 
 	dc.Spec.Template.Spec.Containers[0].Env = append(dc.Spec.Template.Spec.Containers[0].Env, envs...)
 
-	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{})
+	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
 	}

@@ -188,7 +188,7 @@ See below for a list of failed events that occured more than %d times during dep
 
 // CreateDeployment creates a deployment based on the given deployment spec
 func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{})
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Deployment %s", deploy.Name)
 	}
@@ -197,7 +197,11 @@ func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment,
 
 // UpdateDeployment updates a deployment based on the given deployment spec
 func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.TODO(), &deploy, metav1.UpdateOptions{})
+	data, err := json.Marshal(deploy)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to marshal deployment")
+	}
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: "odo"})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
@@ -231,7 +235,7 @@ func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interfac
 	klog.V(5).Infoln("Creating resource:")
 	klog.V(5).Infoln(string(debugOut))
 	// Create the dynamic resource based on the alm-example for the CRD
-	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return err
 	}
@@ -330,7 +334,7 @@ func (c *Client) patchDeployment(deploymentName string, deploymentPatchProvider 
 		}
 
 		// patch the Deployment with the secret
-		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploymentName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{})
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploymentName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: "odo"})
 		if err != nil {
 			return errors.Wrapf(err, "Deployment not patched %s", deployment.Name)
 		}

@@ -64,7 +64,7 @@ func (c *Client) CreateNamespace(name string) (*corev1.Namespace, error) {
 		},
 	}
 
-	newNamespace, err := c.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+	newNamespace, err := c.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Namespace %s", namespace.ObjectMeta.Name)
 	}

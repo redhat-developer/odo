@@ -416,7 +416,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
 	}
-	_, err = c.imageClient.ImageStreams(c.Namespace).Create(context.TODO(), &is, metav1.CreateOptions{})
+	_, err = c.imageClient.ImageStreams(c.Namespace).Create(context.TODO(), &is, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
@@ -438,7 +438,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
-	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(context.TODO(), &dc, metav1.CreateOptions{})
+	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(context.TODO(), &dc, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
@@ -575,7 +575,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
 	}
-	_, err = c.imageClient.ImageStreams(c.Namespace).Create(context.TODO(), &is, metav1.CreateOptions{})
+	_, err = c.imageClient.ImageStreams(c.Namespace).Create(context.TODO(), &is, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
@@ -629,7 +629,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
 
-	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(context.TODO(), &dc, metav1.CreateOptions{})
+	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(context.TODO(), &dc, metav1.CreateOptions{FieldManager: "odo"})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
@@ -735,7 +735,7 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 	// Update the current one that's deployed with the new Spec.
 	// despite the "patch" function name, we use update since `.Patch` requires
 	// use to define each and every object we must change. Updating makes it easier.
-	updatedDc, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), &modifiedDC, metav1.UpdateOptions{})
+	updatedDc, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), &modifiedDC, metav1.UpdateOptions{FieldManager: "odo"})
 
 	if err != nil {
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
