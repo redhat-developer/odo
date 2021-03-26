@@ -1,6 +1,8 @@
 package occlient
 
 import (
+	"context"
+
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
@@ -17,7 +19,7 @@ func (c *Client) IsRouteSupported() (bool, error) {
 
 // GetRoute gets the route with the given name
 func (c *Client) GetRoute(name string) (*routev1.Route, error) {
-	return c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
+	return c.routeClient.Routes(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 // CreateRoute creates a route object for the given service and with the given labels
@@ -40,7 +42,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 
-	r, err := c.routeClient.Routes(c.Namespace).Create(route)
+	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating route")
 	}
@@ -49,7 +51,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 
 // DeleteRoute deleted the given route
 func (c *Client) DeleteRoute(name string) error {
-	err := c.routeClient.Routes(c.Namespace).Delete(name, &metav1.DeleteOptions{})
+	err := c.routeClient.Routes(c.Namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to delete route")
 	}
@@ -59,7 +61,7 @@ func (c *Client) DeleteRoute(name string) error {
 // ListRoutes lists all the routes based on the given label selector
 func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
 	klog.V(3).Infof("Listing routes with label selector: %v", labelSelector)
-	routeList, err := c.routeClient.Routes(c.Namespace).List(metav1.ListOptions{
+	routeList, err := c.routeClient.Routes(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {

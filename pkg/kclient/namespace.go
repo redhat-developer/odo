@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -23,7 +24,7 @@ const (
 
 // GetNamespaces return list of existing namespaces that user has access to.
 func (c *Client) GetNamespaces() ([]string, error) {
-	namespaces, err := c.KubeClient.CoreV1().Namespaces().List(metav1.ListOptions{})
+	namespaces, err := c.KubeClient.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list namespaces")
 	}
@@ -38,7 +39,7 @@ func (c *Client) GetNamespaces() ([]string, error) {
 // GetNamespace returns Namespace based on its name
 // Errors related to project not being found or forbidden are translated to nil project for compatibility
 func (c *Client) GetNamespace(name string) (*corev1.Namespace, error) {
-	ns, err := c.KubeClient.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
+	ns, err := c.KubeClient.CoreV1().Namespaces().Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		istatus, ok := err.(kerrors.APIStatus)
 		if ok {
@@ -63,7 +64,7 @@ func (c *Client) CreateNamespace(name string) (*corev1.Namespace, error) {
 		},
 	}
 
-	newNamespace, err := c.KubeClient.CoreV1().Namespaces().Create(namespace)
+	newNamespace, err := c.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Namespace %s", namespace.ObjectMeta.Name)
 	}
@@ -76,7 +77,7 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 	var watcher watch.Interface
 	var err error
 	if wait {
-		watcher, err = c.KubeClient.CoreV1().Namespaces().Watch(metav1.ListOptions{
+		watcher, err = c.KubeClient.CoreV1().Namespaces().Watch(context.TODO(), metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 		})
 		if err != nil {
@@ -85,7 +86,7 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 		defer watcher.Stop()
 	}
 
-	err = c.KubeClient.CoreV1().Namespaces().Delete(name, &metav1.DeleteOptions{})
+	err = c.KubeClient.CoreV1().Namespaces().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete Namespace %s", name)
 	}
@@ -162,7 +163,7 @@ func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName 
 	if namespace == "" || serviceAccountName == "" {
 		return errors.New("namespace and serviceAccountName cannot be empty")
 	}
-	watcher, err := c.KubeClient.CoreV1().ServiceAccounts(namespace).Watch(metav1.SingleObject(metav1.ObjectMeta{Name: serviceAccountName}))
+	watcher, err := c.KubeClient.CoreV1().ServiceAccounts(namespace).Watch(context.TODO(), metav1.SingleObject(metav1.ObjectMeta{Name: serviceAccountName}))
 	if err != nil {
 		return err
 	}

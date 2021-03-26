@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"strings"
@@ -40,7 +41,7 @@ type KubernetesPodStatus struct {
 func (a Adapter) getDeploymentStatus() (*KubernetesDeploymentStatus, error) {
 
 	// 1) Retrieve the deployment
-	deployment, err := a.Client.GetKubeClient().KubeClient.AppsV1().Deployments(a.Client.Namespace).Get(a.ComponentName, metav1.GetOptions{})
+	deployment, err := a.Client.GetKubeClient().KubeClient.AppsV1().Deployments(a.Client.Namespace).Get(context.TODO(), a.ComponentName, metav1.GetOptions{})
 	if err != nil {
 		klog.V(4).Infof("Unable to retrieve deployment %s in %s ", a.ComponentName, a.Client.Namespace)
 		return nil, err
@@ -53,7 +54,7 @@ func (a Adapter) getDeploymentStatus() (*KubernetesDeploymentStatus, error) {
 	deploymentUID := deployment.UID
 
 	// 2) Retrieve the replica set that is owned by the deployment; if multiple, go with one with largest generation
-	replicaSetList, err := a.Client.GetKubeClient().KubeClient.AppsV1().ReplicaSets(a.Client.Namespace).List(metav1.ListOptions{})
+	replicaSetList, err := a.Client.GetKubeClient().KubeClient.AppsV1().ReplicaSets(a.Client.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ outer:
 	replicaSetUID := matchingReplicaSets[0].UID
 
 	// 3) Retrieves the pods that are owned by the ReplicaSet and return
-	podList, err := a.Client.GetKubeClient().KubeClient.CoreV1().Pods(a.Client.Namespace).List(metav1.ListOptions{})
+	podList, err := a.Client.GetKubeClient().KubeClient.CoreV1().Pods(a.Client.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -127,7 +128,7 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 	}
 	// Delete Deployments
 	klog.V(3).Info("Deleting Deployments")
-	err := c.appsClient.Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
+	err := c.appsClient.Deployments(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deployments")
 	}
@@ -156,7 +157,7 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 
 	klog.V(3).Infof("Waiting for component to get deleted")
 
-	watcher, err := c.appsClient.Deployments(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
+	watcher, err := c.appsClient.Deployments(c.Namespace).Watch(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}

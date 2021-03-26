@@ -2,12 +2,14 @@ package kclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/preference"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/preference"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
@@ -40,7 +42,7 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 	spinner := log.Spinner(waitMessage)
 	defer spinner.End(false)
 
-	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
+	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -193,7 +195,7 @@ func (c *Client) GetPodUsingComponentName(componentName string) (*corev1.Pod, er
 
 // GetOnePodFromSelector gets a pod from the selector
 func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
-	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
+	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -240,7 +242,7 @@ func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.R
 		Resource("pods").
 		SubResource("log").
 		VersionedParams(&podLogOptions, scheme.ParameterCodec).
-		Stream()
+		Stream(context.TODO())
 
 	return rd, err
 }

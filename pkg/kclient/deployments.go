@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -38,7 +39,7 @@ const (
 
 // GetDeploymentByName gets a deployment by querying by name
 func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	return deployment, err
 }
 
@@ -69,11 +70,11 @@ func (c *Client) GetDeploymentFromSelector(selector string) ([]appsv1.Deployment
 	var err error
 
 	if selector != "" {
-		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: selector,
 		})
 	} else {
-		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+		deploymentList, err = c.KubeClient.AppsV1().Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
 		})
 	}
@@ -98,7 +99,7 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 // ListDeployments lists all deployments by selector
 func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error) {
 
-	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
 	})
 }
@@ -109,7 +110,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 	s := log.Spinner("Waiting for component to start")
 	defer s.End(false)
 
-	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
+	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to watch deployment")
 	}
@@ -187,7 +188,7 @@ See below for a list of failed events that occured more than %d times during dep
 
 // CreateDeployment creates a deployment based on the given deployment spec
 func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(&deploy)
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Deployment %s", deploy.Name)
 	}
@@ -196,7 +197,7 @@ func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment,
 
 // UpdateDeployment updates a deployment based on the given deployment spec
 func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(&deploy)
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.TODO(), &deploy, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
@@ -215,7 +216,7 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 	// Delete Deployment
 	klog.V(3).Info("Deleting Deployment")
 
-	return c.KubeClient.AppsV1().Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	return c.KubeClient.AppsV1().Deployments(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }
 
 // CreateDynamicResource creates a dynamic custom resource
@@ -230,7 +231,7 @@ func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interfac
 	klog.V(5).Infoln("Creating resource:")
 	klog.V(5).Infoln(string(debugOut))
 	// Create the dynamic resource based on the alm-example for the CRD
-	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(deployment, metav1.CreateOptions{})
+	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -243,7 +244,7 @@ func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interfac
 func (c *Client) ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error) {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
-	list, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).List(metav1.ListOptions{})
+	list, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +257,7 @@ func (c *Client) ListDynamicResource(group, version, resource string) (*unstruct
 func (c *Client) GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error) {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
-	res, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Get(name, metav1.GetOptions{})
+	res, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +268,7 @@ func (c *Client) GetDynamicResource(group, version, resource, name string) (*uns
 func (c *Client) DeleteDynamicResource(name, group, version, resource string) error {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
-	return c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Delete(name, &metav1.DeleteOptions{})
+	return c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 }
 
 // Define a function that is meant to create patch based on the contents of the deployment
@@ -329,7 +330,7 @@ func (c *Client) patchDeployment(deploymentName string, deploymentPatchProvider 
 		}
 
 		// patch the Deployment with the secret
-		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(deploymentName, types.JSONPatchType, []byte(patch))
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploymentName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "Deployment not patched %s", deployment.Name)
 		}
@@ -345,7 +346,7 @@ func (c *Client) patchDeployment(deploymentName string, deploymentPatchProvider 
 func (c *Client) GetDeploymentLabelValues(label string, selector string) ([]string, error) {
 
 	// List DeploymentConfig according to selectors
-	dcList, err := c.appsClient.Deployments(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	dcList, err := c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
@@ -373,11 +374,11 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 	var err error
 
 	if selector != "" {
-		dcList, err = c.appsClient.Deployments(c.Namespace).List(metav1.ListOptions{
+		dcList, err = c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: selector,
 		})
 	} else {
-		dcList, err = c.appsClient.Deployments(c.Namespace).List(metav1.ListOptions{
+		dcList, err = c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
 		})
 	}

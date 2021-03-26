@@ -1,6 +1,8 @@
 package kclient
 
 import (
+	"context"
+
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -15,7 +17,7 @@ const (
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and labels
 func (c *Client) CreatePVC(pvc corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
-	createdPvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(&pvc)
+	createdPvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(context.TODO(), &pvc, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}
@@ -24,12 +26,12 @@ func (c *Client) CreatePVC(pvc corev1.PersistentVolumeClaim) (*corev1.Persistent
 
 // DeletePVC deletes the required PVC resource from the cluster
 func (c *Client) DeletePVC(pvcName string) error {
-	return c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(pvcName, &metav1.DeleteOptions{})
+	return c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(context.TODO(), pvcName, metav1.DeleteOptions{})
 }
 
 // ListPVCs returns the PVCs based on the given selector
 func (c *Client) ListPVCs(selector string) ([]corev1.PersistentVolumeClaim, error) {
-	pvcList, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
+	pvcList, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -56,13 +58,13 @@ func (c *Client) ListPVCNames(selector string) ([]string, error) {
 
 // GetPVCFromName returns the PVC of the given name
 func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error) {
-	return c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
+	return c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(context.TODO(), pvcName, metav1.GetOptions{})
 }
 
 // UpdatePVCLabels updates the given PVC with the given labels
 func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
 	pvc.Labels = labels
-	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
+	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), pvc, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to remove storage label from PVC")
 	}
@@ -75,14 +77,14 @@ func (c *Client) GetAndUpdateStorageOwnerReference(pvc *corev1.PersistentVolumeC
 		return errors.New("owner references are empty")
 	}
 	// get the latest version of the PVC to avoid conflict errors
-	latestPVC, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvc.Name, metav1.GetOptions{})
+	latestPVC, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(context.TODO(), pvc.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	for _, owRf := range ownerReference {
 		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
-	_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(latestPVC)
+	_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), latestPVC, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -103,7 +105,7 @@ func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, 
 	updatedPVC.OwnerReferences = ownerReference
 	updatedPVC.Spec = pvc.Spec
 
-	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(updatedPVC)
+	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), updatedPVC, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
@@ -18,7 +19,7 @@ import (
 // GetBuildConfigFromName get BuildConfig by its name
 func (c *Client) GetBuildConfigFromName(name string) (*buildv1.BuildConfig, error) {
 	klog.V(3).Infof("Getting BuildConfig: %s", name)
-	bc, err := c.buildClient.BuildConfigs(c.Namespace).Get(name, metav1.GetOptions{})
+	bc, err := c.buildClient.BuildConfigs(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
 	}
@@ -29,7 +30,7 @@ func (c *Client) GetBuildConfigFromName(name string) (*buildv1.BuildConfig, erro
 // buildConfigName is the name of the buildConfig for which we are fetching the build name
 // returns the name of the latest build or the error
 func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
-	buildConfig, err := c.buildClient.BuildConfigs(c.Namespace).Get(buildConfigName, metav1.GetOptions{})
+	buildConfig, err := c.buildClient.BuildConfigs(c.Namespace).Get(context.TODO(), buildConfigName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get the latest build name")
 	}
@@ -59,7 +60,7 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	if len(envVars) > 0 {
 		bc.Spec.Strategy.SourceStrategy.Env = envVars
 	}
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(&bc)
+	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(context.TODO(), &bc, metav1.CreateOptions{})
 	if err != nil {
 		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
 	}
@@ -91,7 +92,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 	}
 	buildConfig.Spec.Source = buildSource
 	buildConfig.Annotations = annotations
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Update(buildConfig)
+	_, err = c.buildClient.BuildConfigs(c.Namespace).Update(context.TODO(), buildConfig, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to update the component")
 	}
@@ -107,7 +108,7 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 
 	// Delete BuildConfig
 	klog.V(3).Info("Deleting BuildConfigs with DeleteBuildConfig")
-	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }
 
 // WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
@@ -117,7 +118,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer, buildT
 	klog.V(3).Infof("Waiting for %s  build to finish", buildName)
 
 	// start a watch on the build resources and look for the given build name
-	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
+	w, err := c.buildClient.Builds(c.Namespace).Watch(context.TODO(), metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": buildName}.AsSelector().String(),
 	})
 	if err != nil {
@@ -170,7 +171,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 			Name: name,
 		},
 	}
-	result, err := c.buildClient.BuildConfigs(c.Namespace).Instantiate(name, &buildRequest)
+	result, err := c.buildClient.BuildConfigs(c.Namespace).Instantiate(context.TODO(), name, &buildRequest, metav1.CreateOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
 	}
@@ -193,7 +194,7 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout
 		Name(buildName).
 		SubResource("log").
 		VersionedParams(&buildLogOptions, buildschema.ParameterCodec).
-		Stream()
+		Stream(context.TODO())
 
 	if err != nil {
 		return errors.Wrapf(err, "unable get build log %s", buildName)

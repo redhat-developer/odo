@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -274,7 +275,7 @@ func ParseImageName(image string) (string, string, string, string, error) {
 
 // RunLogout logs out the current user from cluster
 func (c *Client) RunLogout(stdout io.Writer) error {
-	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
+	output, err := c.userClient.Users().Get(context.TODO(), "~", metav1.GetOptions{})
 	if err != nil {
 		klog.V(1).Infof("%v : unable to get userinfo", err)
 	}
@@ -291,7 +292,7 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 	}
 
 	// deleting token form the server
-	if err := client.OAuthAccessTokens().Delete(conf.BearerToken, &metav1.DeleteOptions{}); err != nil {
+	if err := client.OAuthAccessTokens().Delete(context.TODO(), conf.BearerToken, metav1.DeleteOptions{}); err != nil {
 		klog.V(1).Infof("%v", err)
 	}
 
@@ -415,7 +416,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
 	}
-	_, err = c.imageClient.ImageStreams(c.Namespace).Create(&is)
+	_, err = c.imageClient.ImageStreams(c.Namespace).Create(context.TODO(), &is, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
@@ -437,7 +438,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
-	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
+	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(context.TODO(), &dc, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
@@ -574,7 +575,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
 	}
-	_, err = c.imageClient.ImageStreams(c.Namespace).Create(&is)
+	_, err = c.imageClient.ImageStreams(c.Namespace).Create(context.TODO(), &is, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
@@ -628,7 +629,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
 
-	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
+	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(context.TODO(), &dc, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
@@ -734,7 +735,7 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 	// Update the current one that's deployed with the new Spec.
 	// despite the "patch" function name, we use update since `.Patch` requires
 	// use to define each and every object we must change. Updating makes it easier.
-	updatedDc, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(&modifiedDC)
+	updatedDc, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), &modifiedDC, metav1.UpdateOptions{})
 
 	if err != nil {
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
@@ -1045,19 +1046,19 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 	}
 	// Delete DeploymentConfig
 	klog.V(3).Info("Deleting DeploymentConfigs")
-	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
+	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
 	// Delete BuildConfig
 	klog.V(3).Info("Deleting BuildConfigs")
-	err = c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err = c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete buildconfig")
 	}
 	// Delete ImageStream
 	klog.V(3).Info("Deleting ImageStreams")
-	err = c.imageClient.ImageStreams(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err = c.imageClient.ImageStreams(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete imagestream")
 	}
@@ -1086,7 +1087,7 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 
 	klog.V(3).Infof("Waiting for component to get deleted")
 
-	watcher, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
+	watcher, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
@@ -1188,14 +1189,14 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	}
 
 	// fail fast if user is not connected (same logic as `oc whoami`)
-	_, err = c.userClient.Users().Get("~", metav1.GetOptions{})
+	_, err = c.userClient.Users().Get(context.TODO(), "~", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	// This will fetch the information about OpenShift Version
 	coreGet := c.kubeClient.KubeClient.CoreV1().RESTClient().Get()
-	rawOpenShiftVersion, err := coreGet.AbsPath("/version/openshift").Do().Raw()
+	rawOpenShiftVersion, err := coreGet.AbsPath("/version/openshift").Do(context.TODO()).Raw()
 	if err != nil {
 		// when using Minishift (or plain 'oc cluster up' for that matter) with OKD 3.11, the version endpoint is missing...
 		klog.V(3).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
@@ -1208,7 +1209,7 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	}
 
 	// This will fetch the information about Kubernetes Version
-	rawKubernetesVersion, err := coreGet.AbsPath("/version").Do().Raw()
+	rawKubernetesVersion, err := coreGet.AbsPath("/version").Do(context.TODO()).Raw()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get Kubernetes Version")
 	}

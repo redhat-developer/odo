@@ -2,17 +2,19 @@ package kclient
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/klog"
 	"math/big"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/klog"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +40,7 @@ func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objec
 		Data:       data,
 	}
 
-	secret, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(&secretTemplate)
+	secret, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secretTemplate, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create secret %s", objectMeta.Name)
 	}
@@ -98,7 +100,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 
 // GetSecret returns the Secret object in the given namespace
 func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
-	secret, err := c.KubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := c.KubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
 	}
@@ -115,7 +117,7 @@ func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]stri
 		StringData: data,
 	}
 	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
-	_, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
+	_, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secret, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
 	}
@@ -168,7 +170,7 @@ func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 		}
 	}
 
-	secretList, err := c.KubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
+	secretList, err := c.KubeClient.CoreV1().Secrets(c.Namespace).List(context.TODO(), listOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get secret list")
 	}
@@ -180,7 +182,7 @@ func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error) {
 	klog.V(3).Infof("Waiting for secret %s to become available", name)
 
-	w, err := c.KubeClient.CoreV1().Secrets(namespace).Watch(metav1.ListOptions{
+	w, err := c.KubeClient.CoreV1().Secrets(namespace).Watch(context.TODO(), metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 	})
 	if err != nil {

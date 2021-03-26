@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ func (c *Client) CreateIngress(ingress extensionsv1.Ingress) (*extensionsv1.Ingr
 	if ingress.GetName() == "" {
 		return nil, fmt.Errorf("ingress name is empty")
 	}
-	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(&ingress)
+	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(context.TODO(), &ingress, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating ingress")
 	}
@@ -23,7 +24,7 @@ func (c *Client) CreateIngress(ingress extensionsv1.Ingress) (*extensionsv1.Ingr
 
 // DeleteIngress deletes the given ingress
 func (c *Client) DeleteIngress(name string) error {
-	err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Delete(name, &metav1.DeleteOptions{})
+	err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to delete ingress")
 	}
@@ -32,7 +33,7 @@ func (c *Client) DeleteIngress(name string) error {
 
 // ListIngresses lists all the ingresses based on the given label selector
 func (c *Client) ListIngresses(labelSelector string) ([]extensionsv1.Ingress, error) {
-	ingressList, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).List(metav1.ListOptions{
+	ingressList, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
@@ -44,6 +45,6 @@ func (c *Client) ListIngresses(labelSelector string) ([]extensionsv1.Ingress, er
 
 // GetIngress gets an ingress based on the given name
 func (c *Client) GetIngress(name string) (*extensionsv1.Ingress, error) {
-	ingress, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Get(name, metav1.GetOptions{})
+	ingress, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	return ingress, err
 }

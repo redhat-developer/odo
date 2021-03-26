@@ -1,12 +1,14 @@
 package kclient
 
 import (
+	"context"
 	"fmt"
+	"sync"
+
 	"github.com/openshift/odo/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	"sync"
 )
 
 // We use a mutex here in order to make 100% sure that functions such as CollectEvents
@@ -22,7 +24,7 @@ const (
 func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int) {
 
 	// Secondly, we will start a go routine for watching for events related to the pod and update our pod status accordingly.
-	eventWatcher, err := c.KubeClient.CoreV1().Events(c.Namespace).Watch(metav1.ListOptions{})
+	eventWatcher, err := c.KubeClient.CoreV1().Events(c.Namespace).Watch(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		log.Warningf("Unable to watch for events: %s", err)
 		return

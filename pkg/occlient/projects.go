@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 // GetProject returns project based on the name of the project
 // errors related to project not being found or forbidden are translated to nil project for compatibility
 func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
-	prj, err := c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
+	prj, err := c.projectClient.Projects().Get(context.TODO(), projectName, metav1.GetOptions{})
 	if err != nil {
 		istatus, ok := err.(kerrors.APIStatus)
 		if ok {
@@ -37,7 +38,7 @@ func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
 
 // ListProjects return list of existing projects that user has access to.
 func (c *Client) ListProjects() (*projectv1.ProjectList, error) {
-	return c.projectClient.Projects().List(metav1.ListOptions{})
+	return c.projectClient.Projects().List(context.TODO(), metav1.ListOptions{})
 }
 
 // ListProjectNames return list of existing project names that user has access to.
@@ -72,7 +73,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 
 	// If --wait has been passed, we will wait for the project to fully be deleted
 	if wait {
-		watcher, err = c.projectClient.Projects().Watch(metav1.ListOptions{
+		watcher, err = c.projectClient.Projects().Watch(context.TODO(), metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 		})
 		if err != nil {
@@ -82,7 +83,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 	}
 
 	// Delete the project
-	err = c.projectClient.Projects().Delete(name, &metav1.DeleteOptions{})
+	err = c.projectClient.Projects().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to delete project")
 	}
@@ -161,7 +162,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	var watcher watch.Interface
 	var err error
 	if wait {
-		watcher, err = c.projectClient.Projects().Watch(metav1.ListOptions{
+		watcher, err = c.projectClient.Projects().Watch(context.TODO(), metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
 		})
 		if err != nil {
@@ -175,7 +176,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			Name: projectName,
 		},
 	}
-	_, err = c.projectClient.ProjectRequests().Create(projectRequest)
+	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}
