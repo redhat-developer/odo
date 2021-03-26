@@ -45,6 +45,14 @@ case ${1} in
 
         # Verify if minishift or openshift are stopped and take appropriate actions
         msStatus=$(minishift status)
+        if [[ "$msStatus" == *"command not found"* ]]
+        then
+            shout "| Installing Minishift"
+            curl -Lo minishift.tgz https://github.com/minishift/minishift/releases/download/v1.34.3/minishift-1.34.3-linux-amd64.tgz
+            tar -xvzf minishift.tgz
+            sudo mv minishift-1.34.3-linux-amd64/minishift /usr/local/bin
+            rm minishift.tgz
+        fi
         shout "| Checking if Minishift needs to be started..."
         if [[ "$msStatus" == *"Does Not Exist"* ]] || [[ "$msStatus" == *"Minishift:  Stopped"* ]]
         then 
