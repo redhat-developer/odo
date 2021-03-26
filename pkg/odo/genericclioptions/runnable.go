@@ -4,11 +4,24 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
+	"time"
+
+	"github.com/openshift/odo/pkg/odo/cli/ui"
+	"gopkg.in/AlecAivazis/survey.v1"
+
+	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/segment"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+)
+
+var (
+	segmentClient *segment.Client
 )
 
 type Runnable interface {
@@ -18,6 +31,33 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
+	var err error
+	var startTime time.Time
+	cfg, _ := preference.New()
+
+	// Prompt the user to consent for telemetry if a value is not set already
+	// Skip prompting if the preference command is called
+	// This prompt has been placed here so that it does not prompt the user when they call --help
+	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
+		var consentTelemetry bool
+		prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
+		err = survey.AskOne(prompt, &consentTelemetry, nil)
+		ui.HandleError(err)
+		if err == nil {
+			if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
+				klog.V(4).Info(err1.Error())
+			}
+		}
+
+	}
+	// Initiate the segment client if ConsentTelemetry preference is set to true
+	if cfg.GetConsentTelemetry() {
+		if segmentClient, err = segment.NewClient(cfg); err != nil {
+			klog.V(4).Infof("Cannot create a segment client, will not send any data: %s", err.Error())
+		}
+		defer segmentClient.Close()
+		startTime = time.Now()
+	}
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions
@@ -26,9 +66,30 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// LogErrorAndExit is used so that we get -o (jsonoutput) for cmds which have json output implemented
 	util.LogErrorAndExit(checkConflictingFlags(cmd), "")
 	// Run completion, validation and run.
-	util.LogErrorAndExit(o.Complete(cmd.Name(), cmd, args), "")
-	util.LogErrorAndExit(o.Validate(), "")
-	util.LogErrorAndExit(o.Run(), "")
+	// Only upload data to segment for completion and validation if a non-nil error is returned.
+	err = o.Complete(cmd.Name(), cmd, args)
+	if err != nil {
+		uploadToSegmentAndLog(cmd, err, startTime)
+	}
+	err = o.Validate()
+	if err != nil {
+		uploadToSegmentAndLog(cmd, err, startTime)
+	}
+	uploadToSegmentAndLog(cmd, o.Run(), startTime)
+}
+
+// uploadToSegmentAndLog uploads the data to segment and logs the error
+func uploadToSegmentAndLog(cmd *cobra.Command, err error, startTime time.Time) {
+	if segmentClient != nil {
+		if serr := segmentClient.Upload(cmd.CommandPath(), time.Since(startTime), err); serr != nil {
+			klog.Errorf("Cannot send data to telemetry: %v", serr)
+		}
+		// If the error is not nil, client will be closed so that data can be sent before the program exits.
+		if err != nil {
+			segmentClient.Close()
+		}
+	}
+	util.LogErrorAndExit(err, "")
 }
 
 // checkConflictingFlags checks for conflicting flags. Currently --context cannot be provided

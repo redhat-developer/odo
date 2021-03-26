@@ -18,7 +18,6 @@ require (
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe
 	github.com/golang/mock v1.4.4
-	github.com/gosimple/slug v1.9.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/imdario/mergo v0.3.11 // indirect
@@ -40,20 +39,24 @@ require (
 	github.com/openshift/library-go v0.0.0-20200407165825-2e79bd232e72
 	github.com/openshift/oc v0.0.0-alpha.0.0.20200305142246-2576e482bf00
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200422144016-a6acf50218ed
+	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.2
 	github.com/redhat-developer/service-binding-operator v0.3.0
+	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.6.3
+	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zalando/go-keyring v0.1.0
 	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392 // indirect
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
 	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
 	gopkg.in/AlecAivazis/survey.v1 v1.8.0
+	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.19.0
 	k8s.io/apimachinery v0.19.0

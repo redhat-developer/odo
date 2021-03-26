@@ -129,7 +129,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should successfully create the devfile component and show json output for non connected cluster", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
 			cmd := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json")
-			output := cmd.WithEnv("KUBECONFIG=/no/such/path").ShouldPass().Out()
+			output := cmd.WithEnv("KUBECONFIG=/no/such/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
 		})
@@ -153,7 +153,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
 			cmd := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json")
-			output := cmd.WithEnv("KUBECONFIG=" + newKubeConfigPath).ShouldPass().Out()
+			output := cmd.WithEnv("KUBECONFIG="+newKubeConfigPath, "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
 

@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/odo/pkg/preference"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -294,7 +296,10 @@ func CommonBeforeEach() CommonVar {
 	commonVar.Project = commonVar.CliRunner.CreateRandNamespaceProject()
 	commonVar.OriginalWorkingDirectory = Getwd()
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "preference.yaml"))
-
+	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
+	cfg, _ := preference.New()
+	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
+	Expect(err).To(BeNil())
 	return commonVar
 }
 

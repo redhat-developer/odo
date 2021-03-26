@@ -98,7 +98,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 		It("should show json output for non connected cluster", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
-			output := helper.Cmd("odo", "describe", "--context", commonVar.Context, "-o", "json").WithEnv("KUBECONFIG=/no/path").ShouldPass().Out()
+			output := helper.Cmd("odo", "describe", "--context", commonVar.Context, "-o", "json").WithEnv("KUBECONFIG=/no/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
 		})

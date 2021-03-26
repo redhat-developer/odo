@@ -17,34 +17,25 @@ import (
 )
 
 var _ = Describe("odo devfile status command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-
+	var namespace, context, cmpName string
+	var commonVar helper.CommonVar
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
 		SetDefaultEventuallyTimeout(5 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-
-		originalKubeconfig = os.Getenv("KUBECONFIG")
-		helper.LocalKubeconfigSet(context)
-		namespace = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
-		helper.Chdir(context)
+		namespace = commonVar.Project
+		context = commonVar.Context
+		helper.Chdir(commonVar.Context)
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		err := os.Setenv("KUBECONFIG", originalKubeconfig)
-		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Verify devfile status works", func() {
