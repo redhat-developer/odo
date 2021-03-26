@@ -44,6 +44,7 @@ case ${1} in
         export MINISHIFT_GITHUB_API_TOKEN=${MINISHIFT_GITHUB_API_TOKEN_VALUE}
 
         # Verify if minishift or openshift are stopped and take appropriate actions
+        shout "| Checking if minishift needs to be installed..."
         minishift version
         msStatus=$(minishift status)
         if [[ "$msStatus" == *"command not found"* ]]
@@ -54,6 +55,7 @@ case ${1} in
             sudo mv minishift-1.34.3-linux-amd64/minishift /usr/local/bin
             rm minishift.tgz
         fi
+
         shout "| Checking if Minishift needs to be started..."
         if [[ "$msStatus" == *"Does Not Exist"* ]] || [[ "$msStatus" == *"Minishift:  Stopped"* ]]
         then 
