@@ -31,7 +31,7 @@ make bin
 cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
-hm = $(hostname)
+hm = `hostname`
 echo `hostname`
 shout "| $hm"
 
