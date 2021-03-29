@@ -32,7 +32,8 @@ cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
 hm = $(hostname)
-shout "| hm"
+echo `hostname`
+shout "| $hm"
 
 case ${1} in
     minishift)
