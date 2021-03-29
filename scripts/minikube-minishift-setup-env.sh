@@ -33,7 +33,7 @@ shout "| Getting ginkgo"
 make goget-ginkgo
 hm = `hostname`
 echo `hostname`
-shout "| $hm"
+shout "| `hostname`"
 
 case ${1} in
     minishift)
