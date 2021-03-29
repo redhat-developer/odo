@@ -34,7 +34,7 @@ make goget-ginkgo
 echo `hostname`
 shout "| `hostname`"
 echo `go version`
-echo `which go`
+
 case ${1} in
     minishift)
         shout "| Setting environment for minishift"
