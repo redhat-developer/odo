@@ -31,7 +31,8 @@ make bin
 cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
-hostname
+hm = $(hostname)
+shout "| hm"
 
 case ${1} in
     minishift)
