@@ -15,10 +15,12 @@ mkdir bin artifacts
 # Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
 # for eg go get ginkgo later on will produce ginkgo binary in GOBIN
 export GOBIN="`pwd`/bin"
+export GOBIN_TEMP=$GOBIN
 # Set kubeconfig to current dir. This ensures no clashes with other test runs
 export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
+export WORKDIR=${WORKDIR:-"`pwd`"}
 
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
@@ -35,10 +37,11 @@ else
     curl --connect-timeout 150 --max-time 2048 -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
     set -x
     if [[ $BASE_OS == "windows" ]]; then
+        GOBIN_TEMP=$GOBIN
         GOBIN="$(cygpath -pw $GOBIN)"
         CURRDIR="$(cygpath -pw $WORKDIR)"
         powershell -Command "Expand-Archive -Path $CURRDIR\oc.zip  -DestinationPath $GOBIN"
-        chmod +x $GOBIN/*
+        chmod +x $GOBIN_TEMP/*
     fi
     if [[ $BASE_OS == "mac" ]]; then
         unzip ./oc.zip -d $GOBIN && rm -rf ./oc.zip && chmod +x $GOBIN/oc

@@ -11,7 +11,7 @@ shout "Building odo binaries"
 make bin
 
 # copy built odo to GOBIN
-cp -avrf ./odo $GOBIN/
+cp -avf ./odo $GOBIN_TEMP/
 shout "getting ginkgo"
 make goget-ginkgo
 

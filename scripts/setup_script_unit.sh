@@ -19,6 +19,7 @@ export GOBIN="`pwd`/bin"
 export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
+export WORKDIR=${WORKDIR:-"`pwd`"}
 
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
