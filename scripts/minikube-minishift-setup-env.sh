@@ -31,6 +31,7 @@ make bin
 cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
+hostname
 
 case ${1} in
     minishift)
