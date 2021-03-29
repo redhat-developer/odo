@@ -1,6 +1,7 @@
 package motd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -8,7 +9,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Display the necessary MOTD if it's configured in the system.
@@ -16,7 +17,7 @@ import (
 // should be in the "openshift" namespace. This needs to be configured
 // by the deployer.
 func DisplayMOTD(coreClient corev1client.CoreV1Interface, out io.Writer) error {
-	motdcm, err := coreClient.ConfigMaps("openshift").Get("motd", metav1.GetOptions{})
+	motdcm, err := coreClient.ConfigMaps("openshift").Get(context.TODO(), "motd", metav1.GetOptions{})
 	if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) {
 		// NOTE(jaosorior): If no motd is configured, it's fine. No need to
 		// print anything. If we get a "Forbidden" error, this is because no
