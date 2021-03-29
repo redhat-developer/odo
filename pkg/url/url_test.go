@@ -1384,6 +1384,8 @@ func TestPush(t *testing.T) {
 			fakeClient, fakeClientSet := occlient.FakeNew()
 			fakeKClient, fakeKClientSet := kclient.FakeNew()
 
+			fakeClient.SetKubeClient(fakeKClient)
+
 			fakeKClientSet.Kubernetes.PrependReactor("delete", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, nil, nil
 			})
@@ -1407,7 +1409,7 @@ func TestPush(t *testing.T) {
 				return true, testingutil.CreateFakeDeployment(tt.componentName), nil
 			})
 
-			if err := Push(fakeClient, fakeKClient, PushParameters{
+			if err := Push(fakeClient, PushParameters{
 				LocalConfig:      mockLocalConfigProvider,
 				URLClient:        mockURLClient,
 				IsRouteSupported: tt.args.isRouteSupported,

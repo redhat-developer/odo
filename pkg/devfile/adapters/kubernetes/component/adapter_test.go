@@ -13,6 +13,7 @@ import (
 	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/occlient"
 	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 
 	v1 "k8s.io/api/apps/v1"
@@ -92,7 +93,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 
 			if tt.running {
 				fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -270,7 +271,7 @@ func TestDoesComponentExist(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 			fkWatch := watch.NewFake()
 
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
@@ -351,7 +352,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 			fkWatch := watch.NewFake()
 
 			// Change the status
@@ -478,7 +479,7 @@ func TestAdapterDelete(t *testing.T) {
 				adapterCtx.ComponentName = "doesNotExists"
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 
 			a := New(adapterCtx, *fkclient)
 

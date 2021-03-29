@@ -10,6 +10,7 @@ import (
 	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/occlient"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -175,7 +176,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 
 			// Return test case's deployment, when requested
 			fkclientset.Kubernetes.PrependReactor("get", "*", func(action ktesting.Action) (bool, runtime.Object, error) {

@@ -603,7 +603,7 @@ type PushParameters struct {
 }
 
 // Push creates and deletes the required URLs
-func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParameters) error {
+func Push(client *occlient.Client, parameters PushParameters) error {
 	urlLOCAL := make(map[string]URL)
 
 	localConfigURLs, err := parameters.LocalConfig.ListURLs()
@@ -666,17 +666,17 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		}
 
 		if !ok || configMismatch {
-			if urlSpec.Spec.Kind == localConfigProvider.INGRESS && kClient == nil {
+			if urlSpec.Spec.Kind == localConfigProvider.INGRESS && client.GetKubeClient() == nil {
 				continue
 			}
 			// delete the url
 			deleteURLName := urlName
-			if !parameters.IsS2I && kClient != nil {
+			if !parameters.IsS2I && client.GetKubeClient() != nil {
 				// route/ingress name is defined as <urlName>-<componentName>
 				// to avoid error due to duplicate ingress name defined in different devfile components
 				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.LocalConfig.GetName())
 			}
-			err := Delete(client, kClient, deleteURLName, parameters.LocalConfig.GetApplication(), urlSpec.Spec.Kind, parameters.IsS2I)
+			err := Delete(client, client.GetKubeClient(), deleteURLName, parameters.LocalConfig.GetApplication(), urlSpec.Spec.Kind, parameters.IsS2I)
 			if err != nil {
 				return err
 			}
@@ -691,7 +691,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	for urlName, urlInfo := range urlLOCAL {
 		_, ok := urlCLUSTER[urlName]
 		if !ok {
-			if urlInfo.Spec.Kind == localConfigProvider.INGRESS && kClient == nil {
+			if urlInfo.Spec.Kind == localConfigProvider.INGRESS && client.GetKubeClient() == nil {
 				continue
 			}
 			createParameters := CreateParameters{
@@ -705,7 +705,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				urlKind:         urlInfo.Spec.Kind,
 				path:            urlInfo.Spec.Path,
 			}
-			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsS2I)
+			host, err := Create(client, client.GetKubeClient(), createParameters, parameters.IsRouteSupported, parameters.IsS2I)
 			if err != nil {
 				return err
 			}

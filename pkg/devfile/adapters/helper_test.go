@@ -8,7 +8,7 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/occlient"
 )
 
 func TestNewPlatformAdapter(t *testing.T) {
@@ -39,7 +39,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 				ComponentName: tt.componentName,
 				Devfile:       devObj,
 			}
-			fkclient, _ := kclient.FakeNew()
+			fkclient, _ := occlient.FakeNew()
 			adapter, err := newKubernetesAdapter(adapterContext, *fkclient)
 			if err != nil {
 				t.Errorf("unexpected error: '%v'", err)
