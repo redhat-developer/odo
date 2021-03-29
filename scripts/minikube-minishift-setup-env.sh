@@ -31,13 +31,13 @@ make bin
 cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
-hm = `hostname`
 echo `hostname`
 shout "| `hostname`"
-
+echo `go version`
+echo `which go`
 case ${1} in
     minishift)
-        shout "| Setting environemnt for minishift"
+        shout "| Setting environment for minishift"
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
         export PATH="$PATH:/usr/local/go/bin/"
         export GOPATH=$HOME/go
