@@ -170,20 +170,11 @@ func TestGetDeploymentStatus(t *testing.T) {
 					if err != nil {
 						t.Error(err)
 					}
-					if err != nil {
-						t.Error(err)
-					}
 					err = devfileData.AddComponents([]devfilev1.Component{comp})
 					if err != nil {
 						t.Error(err)
 					}
-					if err != nil {
-						t.Error(err)
-					}
 					err = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
-					if err != nil {
-						t.Error(err)
-					}
 					if err != nil {
 						t.Error(err)
 					}

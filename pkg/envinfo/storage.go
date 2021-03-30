@@ -173,7 +173,7 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 		return "", err
 	}
 
-	// Below "if" condition needs to go away when https://github.com/openshift/odo/issues/4105 is addressed.
+	// TODO: Below "if" condition needs to go away when https://github.com/openshift/odo/issues/4105 is addressed.
 	if len(paths) > 0 {
 		return paths[0], nil
 	}

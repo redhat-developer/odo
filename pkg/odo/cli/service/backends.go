@@ -341,7 +341,7 @@ func (b *ServiceCatalogBackend) ValidateServiceCreate(o *CreateOptions) (err err
 	// make sure the service type exists
 	classPtr, err := o.Client.GetKubeClient().GetClusterServiceClass(o.ServiceType)
 	if err != nil {
-		return errors.Wrap(err, "unable to create service because Service Catalog is not enabled in your cluster")
+		return fmt.Errorf("unable to create service because Service Catalog is not enabled in your cluster")
 	}
 	if classPtr == nil {
 		return fmt.Errorf("service %v doesn't exist\nRun 'odo catalog list services' to see a list of supported services.\n", o.ServiceType)

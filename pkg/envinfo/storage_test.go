@@ -206,7 +206,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 						if err != nil {
 							t.Error(err)
 						}
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -229,6 +229,9 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 							testingutil.GetFakeVolumeComponent("volume-0", ""),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -257,7 +260,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 						if err != nil {
 							t.Error(err)
 						}
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -274,6 +277,9 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", ""),
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -296,7 +302,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 						if err != nil {
 							t.Error(err)
 						}
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -308,6 +314,9 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 							testingutil.GetFakeVolumeComponent("volume-0", ""),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -353,7 +362,7 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 						if err != nil {
 							t.Error(err)
 						}
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -363,6 +372,9 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 								},
 							},
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -384,7 +396,7 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 						if err != nil {
 							t.Error(err)
 						}
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -421,6 +433,9 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", "5Gi"),
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -468,7 +483,7 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 						if err != nil {
 							t.Error(err)
 						}
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -478,6 +493,9 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 								},
 							},
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
@@ -496,7 +514,7 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 						if err != nil {
 							t.Error(err)
 						}
-						_ = devfileData.AddComponents([]devfilev1.Component{
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -534,6 +552,9 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 							testingutil.GetFakeVolumeComponent("volume-0", "5Gi"),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
 						})
+						if err != nil {
+							t.Error(err)
+						}
 						return devfileData
 					}(),
 				},
