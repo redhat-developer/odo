@@ -31,7 +31,6 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	preSetup := func() {
 		helper.MakeDir(projectDirPath)
-		helper.Chdir(projectDirPath)
 	}
 
 	// This is run after every Spec (It)
@@ -48,7 +47,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
-			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.RenameFile(filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 			httpPort, err := util.HTTPGetFreePort()
@@ -77,7 +76,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
-			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.RenameFile(filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--context", projectDirPath)
 			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
@@ -113,7 +112,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp", "--project", commonVar.Project, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
-			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.RenameFile(filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 			httpPort, err := util.HTTPGetFreePort()
@@ -138,7 +137,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
-			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.RenameFile(filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 			httpPort, err := util.HTTPGetFreePort()
