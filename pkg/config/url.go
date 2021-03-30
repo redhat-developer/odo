@@ -21,6 +21,8 @@ func (lc *LocalConfig) GetPorts() ([]string, error) {
 func (lc *LocalConfig) CompleteURL(url *localConfigProvider.LocalURL) error {
 	var err error
 
+	url.Kind = localConfigProvider.ROUTE
+
 	ports, err := lc.GetPorts()
 	if err != nil {
 		return err

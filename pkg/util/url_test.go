@@ -67,7 +67,7 @@ func TestGetValidPortNumber(t *testing.T) {
 			if err == nil && !tt.wantErr {
 
 				if !reflect.DeepEqual(gotPortNumber, tt.wantedPort) {
-					t.Errorf("Create() = %#v, want %#v", gotPortNumber, tt.wantedPort)
+					t.Errorf("GetValidPortNumber() = %#v, want %#v", gotPortNumber, tt.wantedPort)
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
