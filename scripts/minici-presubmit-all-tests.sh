@@ -20,7 +20,6 @@ case $1 in
         export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minikube"
         export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minikube"
         export TIMEOUT="2h15m"
-        export CLUSTER="minikube"
         ;;
     minishift)
         export JOB_NAME="odo-minishift-pr-build"
@@ -29,7 +28,6 @@ case $1 in
         export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minishift"
         export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minishift"
         export TIMEOUT="4h00m"
-        export CLUSTER="minishift"
         ;;
     *)
         echo "Missing parameter, must pass minikube or minishift as paramater in --setupscript and --runscript firewall command"
