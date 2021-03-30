@@ -32,7 +32,7 @@ case $1 in
         export CLUSTER="minishift"
         ;;
     *)
-        echo "Must pass minikube or minishift as paramater"
+        echo "Missing parameter, must pass minikube or minishift as paramater in --setupscript and --runscript firewall command"
         exit 1
         ;;
 esac

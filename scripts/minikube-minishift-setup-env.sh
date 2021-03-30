@@ -6,6 +6,8 @@ shout() {
   set -x
 }
 
+shout "Setting up environment in `hostname`"
+
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
 mkdir bin artifacts
 # Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
@@ -31,9 +33,7 @@ make bin
 cp -avrf ./odo $GOBIN/
 shout "| Getting ginkgo"
 make goget-ginkgo
-echo `hostname`
-shout "| `hostname`"
-echo `go version`
+
 
 case ${1} in
     minishift)
@@ -118,7 +118,7 @@ case ${1} in
         export KUBERNETES=true
         ;;
     *)
-        echo "<<< Need (parameter) CLUSTER env. variable set to minikube or minishift >>>"
+        echo "Missing parameter, must pass minikube or minishift as paramater in --setupscript and --runscript firewall command"
         exit 1
         ;;
 esac

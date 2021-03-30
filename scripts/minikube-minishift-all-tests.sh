@@ -38,7 +38,7 @@ case ${1} in
         odo logout
         ;;
     *)
-        echo "Need parameter set to minikube or minishift"
+        echo "Missing parameter, must pass minikube or minishift as paramater in --setupscript and --runscript firewall command"
         exit 1
         ;;
 esac
