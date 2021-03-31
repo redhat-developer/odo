@@ -12,16 +12,69 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/service/ui"
-	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
 )
+
+// DynamicCRD holds the original CR obtained from the Operator (a CSV), or user
+// (when they use --from-file flag), and few other attributes that are likely
+// to be used to validate a CRD before creating a service from it
+type DynamicCRD struct {
+	// contains the CR as obtained from CSV or user
+	OriginalCRD map[string]interface{}
+}
+
+func NewDynamicCRD() *DynamicCRD {
+	return &DynamicCRD{}
+}
+
+// validateMetadataInCRD validates if the CRD has metadata.name field and returns an error
+func (d *DynamicCRD) validateMetadataInCRD() error {
+	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
+	if !ok {
+		// this condition is satisfied if there's no metadata at all in the provided CRD
+		return fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata start the service")
+	}
+
+	if _, ok := metadata["name"].(string); ok {
+		// found the metadata.name; no error
+		return nil
+	}
+	return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
+}
+
+// setServiceName modifies the CRD to contain user provided name on the CLI
+// instead of using the default one in almExample
+func (d *DynamicCRD) setServiceName(name string) {
+	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
+
+	for k := range metaMap {
+		if k == "name" {
+			metaMap[k] = name
+			return
+		}
+		// if metadata doesn't have 'name' field, we set it up
+		metaMap["name"] = name
+	}
+}
+
+// getServiceNameFromCRD fetches the service name from metadata.name field of the CRD
+func (d *DynamicCRD) getServiceNameFromCRD() (string, error) {
+	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
+	if !ok {
+		// this condition is satisfied if there's no metadata at all in the provided CRD
+		return "", fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata.name to start the service")
+	}
+
+	if name, ok := metadata["name"].(string); ok {
+		// found the metadata.name; no error
+		return name, nil
+	}
+	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
+}
 
 // This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
 func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Command, args []string) (err error) {
@@ -213,7 +266,7 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 
 		return nil
 	} else {
-		err = svc.CreateOperatorService(o.KClient, o.EnvSpecificInfo, o.ServiceName, b.group, b.version, b.resource, b.CustomResourceDefinition)
+		err = svc.CreateOperatorService(o.KClient, b.group, b.version, b.resource, b.CustomResourceDefinition)
 		if err != nil {
 			// TODO: logic to remove CRD info from devfile because service creation failed.
 			return err
@@ -237,10 +290,6 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 	return
 }
 
-func (b *OperatorBackend) CompleteServiceDelete(o *DeleteOptions, cmd *cobra.Command, args []string) (err error) {
-	return
-}
-
 func (b *OperatorBackend) ServiceExists(o *DeleteOptions) (bool, error) {
 	return svc.OperatorSvcExists(o.KClient, o.serviceName)
 }
@@ -258,164 +307,6 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 	err = svc.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return errors.Wrap(err, "failed to delete service from the devfile")
-	}
-
-	return nil
-}
-
-func (b *ServiceCatalogBackend) CompleteServiceDelete(o *DeleteOptions, cmd *cobra.Command, args []string) (err error) {
-	return nil
-}
-
-// This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Service Catalog backend
-func (b *ServiceCatalogBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Command, args []string) (err error) {
-	if len(args) == 0 && !cmd.HasFlags() {
-		o.interactive = true
-
-	}
-
-	var class scv1beta1.ClusterServiceClass
-
-	if o.interactive {
-		classesByCategory, err := o.Client.GetKubeClient().ListServiceClassesByCategory()
-		if err != nil {
-			return fmt.Errorf("unable to retrieve service classes: %v", err)
-		}
-
-		if len(classesByCategory) == 0 {
-			return fmt.Errorf("no available service classes")
-		}
-
-		class, o.ServiceType = ui.SelectClassInteractively(classesByCategory)
-
-		plans, err := o.Client.GetKubeClient().ListMatchingPlans(class)
-		if err != nil {
-			return fmt.Errorf("couldn't retrieve plans for class %s: %v", class.GetExternalName(), err)
-		}
-
-		var svcPlan scv1beta1.ClusterServicePlan
-		// if there is only one available plan, we select it
-		if len(plans) == 1 {
-			for k, v := range plans {
-				o.Plan = k
-				svcPlan = v
-			}
-			klog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
-		} else {
-			// otherwise select the plan interactively
-			o.Plan = ui.SelectPlanNameInteractively(plans, "Which service plan should we use ")
-			svcPlan = plans[o.Plan]
-		}
-
-		o.ParametersMap = ui.EnterServicePropertiesInteractively(svcPlan)
-		o.ServiceName = ui.EnterServiceNameInteractively(o.ServiceType, "How should we name your service ", o.validateServiceName)
-		o.outputCLI = commonui.Proceed("Output the non-interactive version of the selected options")
-		o.wait = commonui.Proceed("Wait for the service to be ready")
-	} else {
-
-		o.ServiceType = args[0]
-
-		// if two args are given, first is service type and second one is service name
-		if len(args) == 2 {
-			o.ServiceName = args[1]
-		} else {
-			o.ServiceName = o.ServiceType
-		}
-
-		// we convert the param list provided in the format of key=value list
-		// to a map
-		o.ParametersMap = make(map[string]string)
-		for _, kv := range o.parameters {
-			kvSlice := strings.Split(kv, "=")
-			// key value not provided in format of key=value
-			if len(kvSlice) != 2 {
-				return errors.New("parameters not provided in key=value format")
-			}
-			o.ParametersMap[kvSlice[0]] = kvSlice[1]
-		}
-	}
-	return nil
-}
-
-func (b *ServiceCatalogBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
-	// make sure the service type exists
-	classPtr, err := o.Client.GetKubeClient().GetClusterServiceClass(o.ServiceType)
-	if err != nil {
-		return fmt.Errorf("unable to create service because Service Catalog is not enabled in your cluster")
-	}
-	if classPtr == nil {
-		return fmt.Errorf("service %v doesn't exist\nRun 'odo catalog list services' to see a list of supported services.\n", o.ServiceType)
-	}
-
-	// check plan
-	plans, err := o.Client.GetKubeClient().ListMatchingPlans(*classPtr)
-	if err != nil {
-		return err
-	}
-	if len(o.Plan) == 0 {
-		// when the plan has not been supplied, if there is only one available plan, we select it
-		if len(plans) == 1 {
-			for k := range plans {
-				o.Plan = k
-			}
-			klog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
-		} else {
-			return fmt.Errorf("no plan was supplied for service %v.\nPlease select one of: %v\n", o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
-		}
-	} else {
-		// when the plan has been supplied, we need to make sure it exists
-		if _, ok := plans[o.Plan]; !ok {
-			return fmt.Errorf("plan %s is invalid for service %v.\nPlease select one of: %v\n", o.Plan, o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
-		}
-	}
-	//validate service name
-	return o.validateServiceName(o.ServiceName)
-}
-
-func (b *ServiceCatalogBackend) RunServiceCreate(o *CreateOptions) (err error) {
-	s := &log.Status{}
-
-	log.Infof("Deploying service %q of type: %q", o.ServiceName, o.ServiceType)
-	// create a ServiceInstance
-	serviceInstance, err := svc.CreateService(o.Client, o.EnvSpecificInfo, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
-	if err != nil {
-		return err
-	}
-
-	err = svc.AddKubernetesComponentToDevfile(serviceInstance, o.ServiceName, o.EnvSpecificInfo.GetDevfileObj())
-	if err != nil {
-		return err
-	}
-
-	s.End(true)
-
-	if o.wait {
-		s = log.Spinner("Waiting for service to come up")
-		_, err = o.Client.GetKubeClient().WaitAndGetSecret(o.ServiceName, o.Project)
-		if err == nil {
-			s.End(true)
-			log.Successf(`Service %q is ready for use`, o.ServiceName)
-		}
-	} else {
-		log.Successf(`Service %q was created`, o.ServiceName)
-		log.Italic("\nProgress of the provisioning will not be reported and might take a long time\nYou can see the current status by executing 'odo service list'")
-	}
-	return
-}
-
-func (b *ServiceCatalogBackend) ServiceExists(o *DeleteOptions) (bool, error) {
-	return svc.SvcExists(o.Client, o.serviceName, o.Application)
-}
-
-func (b *ServiceCatalogBackend) DeleteService(o *DeleteOptions, name string, application string) error {
-	err := svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
-	if err != nil {
-		return err
-	}
-
-	err = svc.DeleteKubernetesComponentFromDevfile(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
-	if err != nil {
-		return err
 	}
 
 	return nil

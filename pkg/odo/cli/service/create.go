@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/validation"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 
@@ -93,18 +92,6 @@ func NewCreateOptions() *CreateOptions {
 	return &CreateOptions{}
 }
 
-// DynamicCRD holds the original CR obtained from the Operator (a CSV), or user
-// (when they use --from-file flag), and few other attributes that are likely
-// to be used to validate a CRD before creating a service from it
-type DynamicCRD struct {
-	// contains the CR as obtained from CSV or user
-	OriginalCRD map[string]interface{}
-}
-
-func NewDynamicCRD() *DynamicCRD {
-	return &DynamicCRD{}
-}
-
 // Complete completes CreateOptions after they've been created
 func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
@@ -114,6 +101,34 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	})
 	if err != nil {
 		return err
+	}
+
+	// decide which service backend to use
+	if o.fromFile != "" {
+		// fromFile is supported only for Operator backend
+		o.Backend = NewOperatorBackend()
+		// since interactive mode is not supported for Operators yet, set it to false
+		o.interactive = false
+
+		return o.Backend.CompleteServiceCreate(o, cmd, args)
+	}
+
+	// check if interactive mode is requested
+	// TODO:
+	if len(args) == 0 {
+		o.interactive = true
+		// only Service Catalog backend supports interactive mode for service creation
+		o.Backend = NewServiceCatalogBackend()
+	} else {
+		_, _, err = svc.SplitServiceKindName(args[0])
+		if err != nil {
+			// failure to split provided name into two; hence ServiceCatalogBackend
+			o.Backend = NewServiceCatalogBackend()
+			err = nil
+		} else {
+			// provided name adheres to the format <operator-type>/<crd-name>; hence OperatorBackend
+			o.Backend = NewOperatorBackend()
+		}
 	}
 
 	// check if service create is executed from a valid context because without that,
@@ -127,43 +142,7 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 			"refer %q for more information", "odo servce create -h")
 	}
 
-	// decide which service backend to use
-	if o.fromFile != "" {
-		// fromFile is supported only for Operator backend
-		o.Backend = NewOperatorBackend()
-		// since interactive mode is not supported for Operators yet, set it to false
-		o.interactive = false
-
-		return o.Backend.CompleteServiceCreate(o, cmd, args)
-	}
-	_, _, err = svc.SplitServiceKindName(args[0])
-	if err != nil {
-		// failure to split provided name into two; hence ServiceCatalogBackend
-		o.Backend = NewServiceCatalogBackend()
-		err = nil
-	} else {
-		// provided name adheres to the format <operator-type>/<crd-name>; hence OperatorBackend
-		o.Backend = NewOperatorBackend()
-	}
-
 	return o.Backend.CompleteServiceCreate(o, cmd, args)
-}
-
-// validateServiceName adopts the Validator interface and checks that the name of the service being created is valid
-func (o *CreateOptions) validateServiceName(i interface{}) (err error) {
-	s := i.(string)
-	err = validation.ValidateName(s)
-	if err != nil {
-		return err
-	}
-	exists, err := svc.SvcExists(o.Client, s, o.Application)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return fmt.Errorf("%s service already exists in the current application", o.ServiceName)
-	}
-	return
 }
 
 // outputNonInteractiveEquivalent outputs the populated options as the equivalent command that would be used in non-interactive mode
@@ -238,49 +217,4 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "plan", completion.ServicePlanCompletionHandler)
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "parameters", completion.ServiceParameterCompletionHandler)
 	return serviceCreateCmd
-}
-
-// validateMetadataInCRD validates if the CRD has metadata.name field and returns an error
-func (d *DynamicCRD) validateMetadataInCRD() error {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata start the service")
-	}
-
-	if _, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return nil
-	}
-	return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
-}
-
-// setServiceName modifies the CRD to contain user provided name on the CLI
-// instead of using the default one in almExample
-func (d *DynamicCRD) setServiceName(name string) {
-	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
-
-	for k := range metaMap {
-		if k == "name" {
-			metaMap[k] = name
-			return
-		}
-		// if metadata doesn't have 'name' field, we set it up
-		metaMap["name"] = name
-	}
-}
-
-// getServiceNameFromCRD fetches the service name from metadata.name field of the CRD
-func (d *DynamicCRD) getServiceNameFromCRD() (string, error) {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return "", fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata.name to start the service")
-	}
-
-	if name, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return name, nil
-	}
-	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
 }

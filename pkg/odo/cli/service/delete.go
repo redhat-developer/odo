@@ -79,11 +79,6 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 			"refer %q for more information", "odo servce create -h")
 	}
 
-	err = o.Backend.CompleteServiceDelete(o, cmd, args)
-	if err != nil {
-		return err
-	}
-
 	return
 }
 

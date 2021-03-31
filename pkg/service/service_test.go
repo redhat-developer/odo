@@ -825,7 +825,10 @@ func TestAddKubernetesComponentToDevfile(t *testing.T) {
 			if err := AddKubernetesComponentToDevfile(tt.args.crd, tt.args.name, tt.args.devfileObj); (err != nil) != tt.wantErr {
 				t.Errorf("AddKubernetesComponentToDevfile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			got, _ := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
+			got, err := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
+			if err != nil {
+				t.Error(err)
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetComponents() = %v, want %v", got, tt.want)
 			}
@@ -887,7 +890,10 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 			if err := DeleteKubernetesComponentFromDevfile(tt.args.name, tt.args.devfileObj); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteKubernetesComponentFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			got, _ := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
+			got, err := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
+			if err != nil {
+				t.Error(err)
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetComponents() = %v, want %v", got, tt.want)
 			}

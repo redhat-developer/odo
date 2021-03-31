@@ -16,7 +16,6 @@ import (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
-	var project string
 	var oc helper.OcRunner
 
 	BeforeEach(func() {
@@ -26,13 +25,10 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	})
 
 	AfterEach(func() {
-		helper.CommonAfterEach(commonVar)
+		//helper.CommonAfterEach(commonVar)
 	})
 
 	preSetup := func() {
-		project = helper.CreateRandProject()
-		helper.CmdShouldPass("odo", "project", "set", project)
-
 		// wait till oc can see the all operators installed by setup script in the namespace
 		odoArgs := []string{"catalog", "list", "services"}
 		operators := []string{"etcdoperator", "service-binding-operator"}
@@ -44,7 +40,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	}
 
 	cleanPreSetup := func() {
-		helper.DeleteProject(project)
+		helper.DeleteProject(commonVar.Project)
 	}
 
 	Context("When Operators are installed in the cluster", func() {
@@ -54,7 +50,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		})
 
 		JustAfterEach(func() {
-			cleanPreSetup()
+			//cleanPreSetup()
 		})
 
 		It("should list operators installed in the namespace", func() {
@@ -62,9 +58,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			helper.MatchAllInOutput(stdOut, []string{"Services available through Operators", "etcdoperator"})
 		})
 
-		It("should not allow interactive mode command to be executed", func() {
+		It("should not allow creating service without valid context, and fail for interactive mode", func() {
 			stdOut := helper.CmdShouldFail("odo", "service", "create")
-			Expect(stdOut).To(ContainSubstring("please use a valid command to start an Operator backed service"))
+			Expect(stdOut).To(ContainSubstring("service can be created from a valid component directory only"))
+
+			helper.CmdShouldPass("odo", "create", "nodejs")
+			stdOut = helper.CmdShouldFail("odo", "service", "create")
+			Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
 		})
 	})
 
@@ -81,15 +81,15 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		It("should be able to create, list and then delete EtcdCluster from its alm example", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
 			Expect(stdOut).To(ContainSubstring("Service 'example' was created"))
 
 			// now verify if the pods for the operator have started
-			pods := oc.GetAllPodsInNs(project)
+			pods := oc.GetAllPodsInNs(commonVar.Project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
-			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
 			})
@@ -111,21 +111,21 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			svcFullName := strings.Join([]string{"EtcdCluster", name}, "/")
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", project)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
 
 			// now verify if the pods for the operator have started
-			pods := oc.GetAllPodsInNs(project)
+			pods := oc.GetAllPodsInNs(commonVar.Project)
 			// Look for pod with custom name because that's the name etcd will give to the pods.
 			compileString := name + `-.[a-z0-9]*`
 			etcdPod := regexp.MustCompile(compileString).FindString(pods)
 
-			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
 			})
 
 			// now try creating service with same name again. it should fail
-			stdOut := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", project)
+			stdOut := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
 			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
 
 			helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
@@ -167,7 +167,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 
-			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", project)
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", commonVar.Project)
 			helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
 		})
 	})
@@ -209,7 +209,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 
-			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", project)
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", commonVar.Project)
 
 			// stdOut contains the yaml specification. Store it to a file
 			randomFileName := helper.RandString(6) + ".yaml"
@@ -219,14 +219,14 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			}
 
 			// now create operator backed service
-			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, "--project", project)
+			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project)
 
 			// now verify if the pods for the operator have started
-			pods := oc.GetAllPodsInNs(project)
+			pods := oc.GetAllPodsInNs(commonVar.Project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
-			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
 			})
@@ -240,7 +240,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 
-			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", project)
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", commonVar.Project)
 
 			// stdOut contains the yaml specification. Store it to a file
 			randomFileName := helper.RandString(6) + ".yaml"
@@ -250,10 +250,10 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			}
 
 			// now create operator backed service
-			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, name, "--project", project)
+			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project)
 
 			// Attempting to create service with same name should fail
-			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name, "--project", project)
+			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project)
 			Expect(stdOut).To(ContainSubstring("please provide a different name or delete the existing service first"))
 		})
 	})
@@ -294,7 +294,7 @@ spec:
 			}
 
 			// now create operator backed service
-			stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, "--project", project)
+			stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project)
 			Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
 
 			invalidMetaFile := helper.RandString(6) + ".yaml"
@@ -304,7 +304,7 @@ spec:
 			}
 
 			// now create operator backed service
-			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, "--project", project)
+			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project)
 			Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
 
 		})
@@ -339,14 +339,14 @@ spec:
 		It("should list the services if they exist", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
 
 			// now verify if the pods for the operator have started
-			pods := oc.GetAllPodsInNs(project)
+			pods := oc.GetAllPodsInNs(commonVar.Project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
-			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
 			})
@@ -364,8 +364,8 @@ spec:
 			stdOut = helper.CmdShouldFail("odo", "service", "list")
 			jsonOut = helper.CmdShouldFail("odo", "service", "list", "-o", "json")
 
-			msg := fmt.Sprintf("no operator backed services found in namespace: %s", project)
-			msgWithQuote := fmt.Sprintf("\"message\": \"no operator backed services found in namespace: %s\"", project)
+			msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
+			msgWithQuote := fmt.Sprintf("\"message\": \"no operator backed services found in namespace: %s\"", commonVar.Project)
 			Expect(stdOut).To(ContainSubstring(msg))
 			helper.MatchAllInOutput(jsonOut, []string{msg, msgWithQuote})
 		})
@@ -433,14 +433,14 @@ spec:
 			// start the Operator backed service first
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
 
 			// now verify if the pods for the operator have started
-			pods := oc.GetAllPodsInNs(project)
+			pods := oc.GetAllPodsInNs(commonVar.Project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
-			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
 			})
@@ -452,9 +452,9 @@ spec:
 			Expect(stdOut).To(ContainSubstring("already linked with the service"))
 
 			// Before running "odo unlink" checks, wait for the pod to come up from "odo push" done after "odo link"
-			pods = oc.GetAllPodsInNs(project)
+			pods = oc.GetAllPodsInNs(commonVar.Project)
 			componentPod := regexp.MustCompile(fmt.Sprintf(`%s-.[a-z0-9]*-.[a-z0-9\-]*`, componentName)).FindString(pods)
-			ocArgs = []string{"get", "pods", componentPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			ocArgs = []string{"get", "pods", componentPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
 			})
@@ -480,14 +480,14 @@ spec:
 			// start the Operator backed service first
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", project)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
 
 			// now verify if the pods for the operator have started
-			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", commonVar.Project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
 
-			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "Running")
 			})

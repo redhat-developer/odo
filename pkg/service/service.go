@@ -7,8 +7,6 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/envinfo"
-
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,7 +58,7 @@ func (params servicePlanParameters) Swap(i, j int) {
 
 // CreateService creates new service from serviceCatalog
 // It returns string representation of service instance created on the cluster and error (if any).
-func CreateService(client *occlient.Client, esi *envinfo.EnvSpecificInfo, serviceName, serviceType, servicePlan string, parameters map[string]string, applicationName string) (string, error) {
+func CreateService(client *occlient.Client, serviceName, serviceType, servicePlan string, parameters map[string]string, applicationName string) (string, error) {
 	labels := componentlabels.GetLabels(serviceName, applicationName, true)
 	// save service type as label
 	labels[componentlabels.ComponentTypeLabel] = serviceType
@@ -103,7 +101,7 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 }
 
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
-func CreateOperatorService(client *kclient.Client, esi *envinfo.EnvSpecificInfo, serviceName, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
+func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
 	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
 	if err != nil {
 		return errors.Wrap(err, "unable to create operator backed service")
