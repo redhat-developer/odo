@@ -4,6 +4,8 @@
 set -e
 # Hide command that deals with secrets
 set +x
+
+echo "*** Setting environment variables for Minikube or Minishift ***"
 if [[ -f $ODO_RABBITMQ_AMQP_URL ]]; then
     export AMQP_URI=$(cat $ODO_RABBITMQ_AMQP_URL)
 fi
@@ -30,7 +32,7 @@ case $1 in
         export TIMEOUT="4h00m"
         ;;
     *)
-        echo "Missing parameter, must pass minikube or minishift as paramater in --setupscript and --runscript firewall command"
+        echo "Missing parameter, must pass minikube or minishift as command paramater in openshift-odo-master__psi.yaml (release/ci-operator repo)"
         exit 1
         ;;
 esac
