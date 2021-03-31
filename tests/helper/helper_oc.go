@@ -319,13 +319,15 @@ func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project str
 // ImportJavaIS import the openjdk image which is used for jars
 func (oc OcRunner) ImportJavaIS(project string) {
 	// if ImageStream already exists, no need to do anything
-	if oc.checkForImageStream("java", "8") {
-		return
-	}
+
+	// Commenting as per the article https://access.redhat.com/articles/4301321
+	// if oc.checkForImageStream("java", "8") {
+	// 	return
+	// }
 
 	// we need to import the openjdk image which is used for jars because it's not available by default
 	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", "java:8",
-		"--namespace="+project, "--from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.5",
+		"--namespace="+project, "--from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.8",
 		"--confirm")
 	CmdShouldPass(oc.path, "annotate", "istag/java:8", "--namespace="+project,
 		"tags=builder", "--overwrite")
