@@ -366,11 +366,15 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("Prompt should not appear when", func() {
-		It("ConsentTelemetry is set to true", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "true", "-f")
-			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
-			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
-		})
+
+		// This test is disable because it sends out the telemetry data and messes up the statistics
+
+		// It("ConsentTelemetry is set to true", func() {
+		// 	helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "true", "-f")
+		// 	output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
+		// 	Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+		// })
+
 		It("ConsentTelemetry is set to false", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "false", "-f")
 			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
