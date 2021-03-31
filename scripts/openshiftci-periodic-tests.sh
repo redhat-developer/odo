@@ -21,7 +21,7 @@ chmod 640 $TMP_DIR/kubeconfig
 export KUBECONFIG=$TMP_DIR/kubeconfig
 
 # Login as developer
-odo login -u developer -p password@123
+oc login -u developer -p password@123
 
 # Check login user name for debugging purpose
 oc whoami
@@ -38,4 +38,4 @@ make test-e2e-all
 
 cp -r reports $ARTIFACT_DIR 
 
-odo logout
+oc logout
