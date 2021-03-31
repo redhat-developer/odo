@@ -24,6 +24,10 @@ var (
 	segmentClient *segment.Client
 )
 
+// disableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely
+// hiding even the question
+const disableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
+
 type Runnable interface {
 	Complete(name string, cmd *cobra.Command, args []string) error
 	Validate() error
@@ -38,25 +42,33 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
 	// This prompt has been placed here so that it does not prompt the user when they call --help
+
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
-		var consentTelemetry bool
-		prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
-		err = survey.AskOne(prompt, &consentTelemetry, nil)
-		ui.HandleError(err)
-		if err == nil {
-			if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
-				klog.V(4).Info(err1.Error())
+		if os.Getenv(disableTelemetryEnv) == "true" {
+			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", disableTelemetryEnv, os.Getenv(disableTelemetryEnv))
+		} else {
+			var consentTelemetry bool
+			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
+			err = survey.AskOne(prompt, &consentTelemetry, nil)
+			ui.HandleError(err)
+			if err == nil {
+				if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
+					klog.V(4).Info(err1.Error())
+				}
 			}
 		}
-
 	}
 	// Initiate the segment client if ConsentTelemetry preference is set to true
 	if cfg.GetConsentTelemetry() {
-		if segmentClient, err = segment.NewClient(cfg); err != nil {
-			klog.V(4).Infof("Cannot create a segment client, will not send any data: %s", err.Error())
+		if os.Getenv(disableTelemetryEnv) == "true" {
+			log.Warningf("Sending telemetry disabled by %s=%s\n", disableTelemetryEnv, os.Getenv(disableTelemetryEnv))
+		} else {
+			if segmentClient, err = segment.NewClient(cfg); err != nil {
+				klog.V(4).Infof("Cannot create a segment client, will not send any data: %s", err.Error())
+			}
+			defer segmentClient.Close()
+			startTime = time.Now()
 		}
-		defer segmentClient.Close()
-		startTime = time.Now()
 	}
 
 	// CheckMachineReadableOutput
@@ -75,7 +87,9 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	if err != nil {
 		uploadToSegmentAndLog(cmd, err, startTime)
 	}
-	uploadToSegmentAndLog(cmd, o.Run(), startTime)
+	err = o.Run()
+	uploadToSegmentAndLog(cmd, err, startTime)
+
 }
 
 // uploadToSegmentAndLog uploads the data to segment and logs the error
