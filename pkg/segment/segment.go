@@ -22,6 +22,9 @@ import (
 // writekey will be the API key used to send data to the correct source on Segment. Default is the dev key
 var writeKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
 
+// Sanitizer replaces a PII data
+const Sanitizer = "XXXX"
+
 type Client struct {
 	// SegmentClient helps interact with the segment API
 	SegmentClient analytics.Client
@@ -139,13 +142,21 @@ func getUserIdentity(telemetryFilePath string) (string, error) {
 }
 
 // SetError sanitizes any PII(Personally Identifiable Information) from the error
-func SetError(err error) string {
-	// Sanitize user information
+func SetError(err error) (errString string) {
+	// sanitize user information
 	user1, err1 := user.Current()
 	if err1 != nil {
 		return errors.Wrapf(err1, err1.Error()).Error()
 	}
-	return strings.ReplaceAll(err.Error(), user1.Username, "XXXX")
+	errString = strings.ReplaceAll(err.Error(), user1.Username, Sanitizer)
+
+	// sanitize file path
+	for _, str := range strings.Split(errString, " ") {
+		if strings.Count(str, string(os.PathSeparator)) > 1 {
+			errString = strings.ReplaceAll(errString, str, Sanitizer)
+		}
+	}
+	return errString
 }
 
 // errorType returns the type of error
