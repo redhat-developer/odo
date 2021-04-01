@@ -19,8 +19,8 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 )
 
-// Writekey will be the API key used to send data to the correct source on Segment
-var WriteKey = "R1Z79HadJIrphLoeONZy5uqOjusljSwN"
+// writekey will be the API key used to send data to the correct source on Segment. Default is the dev key
+const writeKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
 
 type Client struct {
 	// SegmentClient helps interact with the segment API
@@ -43,7 +43,7 @@ func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
 // newCustomClient returns a Client created with custom args
 func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
 	// DefaultContext has IP set to 0.0.0.0 so that it does not track user's IP, which it does in case no IP is set
-	client, err := analytics.NewWithConfig(WriteKey, analytics.Config{
+	client, err := analytics.NewWithConfig(writeKey, analytics.Config{
 		Endpoint: segmentEndpoint,
 		DefaultContext: &analytics.Context{
 			IP: net.IPv4(0, 0, 0, 0),
