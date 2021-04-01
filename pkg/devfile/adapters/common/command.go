@@ -8,7 +8,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
@@ -66,27 +65,6 @@ func getCommandFromDevfile(data data.DevfileData, groupType devfilev1.CommandGro
 		return devfilev1.Command{}, err
 	}
 	var onlyCommand devfilev1.Command
-
-	// validate the command groups before searching for a command match
-	// if the command groups are invalid, err out
-	// we only validate when the push command flags are absent,
-	// since we know the command kind from the push flags
-	err = validateCommandsForGroup(data, groupType)
-	if err != nil {
-		if groupType == devfilev1.BuildCommandGroupKind || groupType == devfilev1.DebugCommandGroupKind {
-			if _, ok := err.(NoDefaultForGroup); ok {
-				log.Warning(err.Error())
-				return devfilev1.Command{}, nil
-			}
-
-			if _, ok := err.(NoCommandForGroup); ok {
-				klog.V(2).Info(err.Error())
-				return devfilev1.Command{}, nil
-			}
-		}
-
-		return devfilev1.Command{}, err
-	}
 
 	for _, command := range commands {
 		cmdGroup := parsercommon.GetGroup(command)
@@ -149,44 +127,6 @@ func getCommandFromFlag(data data.DevfileData, groupType devfilev1.CommandGroupK
 	err = fmt.Errorf("the command \"%v\" is not found in the devfile", commandName)
 
 	return
-}
-
-// validateCommandsForGroup validates the commands in a devfile for a group
-// 1. multiple commands belonging to a single group should have at least one default
-// 2. multiple commands belonging to a single group cannot have more than one default
-func validateCommandsForGroup(data data.DevfileData, groupType devfilev1.CommandGroupKind) error {
-
-	devfileCommands, err := data.GetCommands(parsercommon.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	commands := getCommandsByGroup(devfileCommands, groupType)
-
-	if len(commands) == 0 {
-		return NoCommandForGroup{Group: groupType}
-	}
-
-	defaultCommandCount := 0
-
-	if len(commands) > 1 {
-		for _, command := range commands {
-			if parsercommon.GetGroup(command).IsDefault {
-				defaultCommandCount++
-			}
-		}
-	} else if len(commands) == 1 {
-		// if there is only one command, it is the default command for the group
-		defaultCommandCount = 1
-	}
-
-	if defaultCommandCount == 0 {
-		return NoDefaultForGroup{Group: groupType}
-	} else if defaultCommandCount > 1 {
-		return MoreDefaultForGroup{Group: groupType}
-	}
-
-	return nil
 }
 
 // GetBuildCommand iterates through the components in the devfile and returns the build command

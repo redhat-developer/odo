@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,15 +15,18 @@ import (
 
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
+	var commonVar helper.CommonVar
 	var project string
 	var oc helper.OcRunner
 
 	BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		// TODO: remove this when OperatorHub integration is fully baked into odo
-		// helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		commonVar = helper.CommonBeforeEach()
+		helper.Chdir(commonVar.Context)
 		oc = helper.NewOcRunner("oc")
+	})
+
+	AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
 	})
 
 	preSetup := func() {
@@ -448,6 +450,14 @@ spec:
 			helper.CmdShouldPass("odo", "push")
 			stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("already linked with the service"))
+
+			// Before running "odo unlink" checks, wait for the pod to come up from "odo push" done after "odo link"
+			pods = oc.GetAllPodsInNs(project)
+			componentPod := regexp.MustCompile(fmt.Sprintf(`%s-.[a-z0-9]*-.[a-z0-9\-]*`, componentName)).FindString(pods)
+			ocArgs = []string{"get", "pods", componentPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+			})
 
 			stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))

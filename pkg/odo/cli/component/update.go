@@ -79,10 +79,13 @@ func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	if util.CheckPathExists(uo.devfilePath) {
 		// Configure the devfile context
-		uo.Context = genericclioptions.NewDevfileContext(cmd)
+		uo.Context, err = genericclioptions.NewDevfileContext(cmd)
 		return
 	}
-	uo.Context = genericclioptions.NewContext(cmd)
+	uo.Context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
 	uo.LocalConfigInfo, err = config.NewLocalConfigInfo(uo.componentContext)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update component")

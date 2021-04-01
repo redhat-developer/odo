@@ -337,11 +337,13 @@ func (co *CreateOptions) checkConflictingDevfileFlags() error {
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if co.forceS2i || co.now {
 		// this populates the LocalConfigInfo as well
-		co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		if err != nil {
+			return err
+		}
 	} else {
 		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
 	}
-
 	err = co.checkConflictingFlags()
 	if err != nil {
 		return
@@ -366,6 +368,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	co.DevfilePath = DevfilePath
 
 	if util.CheckPathExists(ConfigFilePath) {
+		return errors.New("this directory already contains a component")
+	}
+
+	if util.CheckPathExists(EnvFilePath) && util.CheckPathExists(co.DevfilePath) {
 		return errors.New("this directory already contains a component")
 	}
 
@@ -452,7 +458,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				// Component type: We provide devfile component list to let user choose
 				componentType = ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
-				// Component name: User needs to specify the componet name, by default it is component type that user chooses
+				// Component name: User needs to specify the component name, by default it is component type that user chooses
 				componentName = ui.EnterDevfileComponentName(componentType)
 
 				// Component namespace: User needs to specify component namespace, by default it is the current active namespace
@@ -479,6 +485,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				// If user can use existing devfile directly, the first arg is component name instead of component type
 				if len(args) == 1 {
 					componentName = args[0]
+
 				} else {
 					currentDirPath, err := os.Getwd()
 					if err != nil {
@@ -495,11 +502,20 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				// Component type: Get from full command's first argument (mandatory in direct mode)
 				componentType = args[0]
 
-				// Component name: Get from full command's second argument (optional in direct mode), by default it is component type from first argument
+				// Component name: Get from full command's second argument (optional in direct mode), by default it is a generated name if second arg is not provided
 				if len(args) == 2 {
 					componentName = args[1]
 				} else {
-					componentName = args[0]
+					var err error
+					componentName, err = createDefaultComponentName(
+						co.Context,
+						componentType,
+						config.LOCAL, // always local for devfile
+						co.componentContext,
+					)
+					if err != nil {
+						return err
+					}
 				}
 
 				// Get available devfile components for checking devfile compatibility
@@ -633,7 +649,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// the component type was not found for devfile components
 	// fallback to s2i
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	if err != nil {
+		return err
+	}
 
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
@@ -874,7 +893,29 @@ func (co *CreateOptions) Run() (err error) {
 
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
-		return co.devfileRun()
+		err := co.devfileRun()
+		if err != nil {
+			return err
+		}
+		if log.IsJSON() {
+
+			client, err := genericclioptions.Client()
+			if err == nil {
+				co.Client = client
+			}
+
+			envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
+			if err != nil {
+				return err
+			}
+
+			cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
+			if err != nil {
+				return err
+			}
+			machineoutput.OutputSuccess(cfd.GetComponent())
+		}
+		return nil
 	}
 
 	// If not, we run s2i (if the --s2i parameter has been passed in).

@@ -30,6 +30,7 @@ var (
    %[1]s %[6]s 30
    %[1]s %[7]s true
    %[1]s %[8]s docker
+   %[1]s %[9]s true
 	`)
 )
 
@@ -63,11 +64,12 @@ func (o *SetOptions) Run() (err error) {
 	cfg, err := preference.New()
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to set preference")
+		return errors.Errorf("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md")
 	}
 
 	if !o.configForceFlag {
 		if isSet := cfg.IsSet(o.paramName); isSet {
+			// TODO: could add a logic to check if the new value set by the user is not same as the current value
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
 				log.Info("Aborted by the user")
 				return nil
@@ -94,7 +96,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName,
 			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
 			preference.TimeoutSetting, preference.BuildTimeoutSetting, preference.PushTimeoutSetting,
-			preference.ExperimentalSetting, preference.PushTargetSetting),
+			preference.ExperimentalSetting, preference.PushTargetSetting, preference.ConsentTelemetrySetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("please provide a parameter name and value")

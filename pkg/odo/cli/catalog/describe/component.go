@@ -2,14 +2,13 @@ package describe
 
 import (
 	"fmt"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"os"
 	"text/tabwriter"
 
-	"github.com/devfile/library/pkg/devfile"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
@@ -17,9 +16,13 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -58,8 +61,10 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 	tasks := util.NewConcurrentTasks(2)
 
 	if !pushtarget.IsPushTargetDocker() {
-		o.Context = genericclioptions.NewContext(cmd, true)
-
+		o.Context, err = genericclioptions.NewContext(cmd, true)
+		if err != nil {
+			return err
+		}
 		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			catalogList, err := catalog.ListComponents(o.Client)
 			if err != nil {
@@ -100,19 +105,28 @@ func (o *DescribeComponentOptions) Validate() (err error) {
 	return nil
 }
 
+// DevfileComponentDescription represents the JSON output of Devfile component description
+// used in odo catalog describe component <name> -o json
+type DevfileComponentDescription struct {
+	RegistryName string           `json:"RegistryName"`
+	Devfile      data.DevfileData `json:"Devfile"`
+}
+
 // Run contains the logic for the command associated with DescribeComponentOptions
 func (o *DescribeComponentOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	if log.IsJSON() {
 		if len(o.devfileComponents) > 0 {
+			out := []DevfileComponentDescription{}
+
 			for _, devfileComponent := range o.devfileComponents {
 				devObj, err := GetDevfile(devfileComponent)
 				if err != nil {
 					return err
 				}
-
-				machineoutput.OutputSuccess(devObj)
+				out = append(out, DevfileComponentDescription{RegistryName: devfileComponent.Registry.Name, Devfile: devObj.Data})
 			}
+			machineoutput.OutputSuccess(out)
 		}
 	} else {
 		if len(o.devfileComponents) > 1 {

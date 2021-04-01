@@ -20,7 +20,9 @@ var (
 	%[1]s myproject  
 	`)
 
-	deleteLongDesc = ktemplates.LongDesc(`Delete a project and all resources deployed in the project being deleted`)
+	deleteLongDesc = ktemplates.LongDesc(`Delete a project and all resources deployed in the project being deleted.
+	This command directly performs actions on the cluster and doesn't require a push.
+	`)
 
 	deleteShortDesc = `Delete a project`
 )
@@ -49,7 +51,7 @@ func NewProjectDeleteOptions() *ProjectDeleteOptions {
 // Complete completes ProjectDeleteOptions after they've been created
 func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pdo.projectName = args[0]
-	pdo.Context = genericclioptions.NewContext(cmd)
+	pdo.Context, err = genericclioptions.NewContext(cmd)
 	return
 }
 

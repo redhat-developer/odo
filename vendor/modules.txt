@@ -223,6 +223,8 @@ github.com/google/go-cmp/cmp/internal/value
 # github.com/google/gofuzz v1.2.0
 github.com/google/gofuzz
 github.com/google/gofuzz/bytesource
+# github.com/google/uuid v1.1.1
+github.com/google/uuid
 # github.com/googleapis/gnostic v0.3.1
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
@@ -235,8 +237,6 @@ github.com/gophercloud/gophercloud/openstack/identity/v2/tokens
 github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
-# github.com/gosimple/slug v1.9.0
-github.com/gosimple/slug
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
@@ -423,6 +423,8 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version
+# github.com/pborman/uuid v1.2.0
+github.com/pborman/uuid
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
 # github.com/pkg/errors v0.9.1
@@ -448,12 +450,12 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be
-github.com/rainycape/unidecode
 # github.com/redhat-developer/service-binding-operator v0.3.0
 github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
+# github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3
+github.com/segmentio/backo-go
 # github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.4.2
@@ -482,6 +484,8 @@ github.com/xeipuuv/gojsonpointer
 github.com/xeipuuv/gojsonreference
 # github.com/xeipuuv/gojsonschema v1.2.0
 github.com/xeipuuv/gojsonschema
+# github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c
+github.com/xtgo/uuid
 # github.com/zalando/go-keyring v0.1.0
 github.com/zalando/go-keyring
 github.com/zalando/go-keyring/secret_service
@@ -614,6 +618,8 @@ gopkg.in/AlecAivazis/survey.v1/core
 gopkg.in/AlecAivazis/survey.v1/terminal
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
+# gopkg.in/segmentio/analytics-go.v3 v3.1.0
+gopkg.in/segmentio/analytics-go.v3
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 gopkg.in/tomb.v1
 # gopkg.in/warnings.v0 v0.1.2

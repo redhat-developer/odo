@@ -57,9 +57,13 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 func (k kubernetesClient) List() (URLList, error) {
 	// get the URLs present on the cluster
 	clusterURLMap := make(map[string]URL)
-	clusterURLs, err := k.ListFromCluster()
-	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list routes")
+	var clusterURLs URLList
+	var err error
+	if k.client.GetKubeClient() != nil {
+		clusterURLs, err = k.ListFromCluster()
+		if err != nil {
+			return URLList{}, errors.Wrap(err, "unable to list routes")
+		}
 	}
 
 	for _, url := range clusterURLs.Items {

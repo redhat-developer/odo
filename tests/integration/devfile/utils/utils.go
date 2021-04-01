@@ -369,7 +369,7 @@ type OdoV2Watch struct {
 
 // OdoWatch creates files, dir in the context and watches for the changes to be pushed
 // Specify OdoV1Watch for odo version 1, OdoV2Watch for odo version 2(devfile)
-// platform is either kube or docker
+// platform is kube
 func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, flag string, runner interface{}, platform string) {
 
 	isDevfileTest := false
@@ -600,11 +600,6 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 			stdOut = ocRunner.ExecListDir(podName, project, filepath.ToSlash(filepath.Join(dir, "src")))
 		}
-	case "docker":
-		dockerRunner := runner.(helper.DockerRunner)
-		containers := dockerRunner.GetRunningContainersByCompAlias(odoV2Watch.CmpName, "runtime")
-		Expect(len(containers)).To(Equal(1))
-		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la /projects")
 	default:
 		return fmt.Errorf("Platform %s is not supported", platform)
 	}
@@ -680,16 +675,7 @@ func ExecWithInvalidCommand(context, cmpName, pushTarget string) {
 
 	args = []string{"exec", "--context", context}
 	args = append(args, "--", "invalidCommand")
-	var output string
-
-	// since exec package for docker returns no error
-	// on execution of an invalid command
-	switch strings.ToLower(pushTarget) {
-	case "kube":
-		output = helper.CmdShouldFail("odo", args...)
-	case "docker":
-		output = helper.CmdShouldPass("odo", args...)
-	}
+	output := helper.CmdShouldFail("odo", args...)
 
 	Expect(output).To(ContainSubstring("executable file not found in $PATH"))
 }

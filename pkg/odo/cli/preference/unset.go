@@ -31,6 +31,7 @@ var (
    %[1]s %[6]s
    %[1]s %[7]s
    %[1]s %[8]s
+   %[1]s %[9]s
 	`)
 )
 
@@ -62,7 +63,7 @@ func (o *UnsetOptions) Run() (err error) {
 	cfg, err := preference.New()
 
 	if err != nil {
-		return errors.Wrapf(err, "")
+		return errors.Errorf("something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md")
 	}
 
 	if !o.preferenceForceFlag {
@@ -97,7 +98,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
 			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
 			preference.TimeoutSetting, preference.BuildTimeoutSetting, preference.PushTimeoutSetting,
-			preference.ExperimentalSetting, preference.PushTargetSetting),
+			preference.ExperimentalSetting, preference.PushTargetSetting, preference.ConsentTelemetrySetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")

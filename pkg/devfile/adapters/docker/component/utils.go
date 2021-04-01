@@ -39,13 +39,6 @@ func (a Adapter) createComponent() (err error) {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
 
-	// Get the storage adapter and create the volumes if it does not exist
-	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	err = stoAdapter.Create(a.uniqueStorage)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create Docker storage adapter for component %s", componentName)
-	}
-
 	// Loop over each container component and start a container for it
 	for _, comp := range containerComponents {
 		var dockerVolumeMounts []mount.Mount
@@ -72,10 +65,6 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	klog.V(2).Info("The component already exists, attempting to update it")
 	componentExists = true
 	componentName := a.ComponentName
-
-	// Get the storage adapter and create the volumes if it does not exist
-	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	err = stoAdapter.Create(a.uniqueStorage)
 
 	containerComponents, err := a.Devfile.Data.GetDevfileContainerComponents(parsercommon.DevfileOptions{})
 	if err != nil {

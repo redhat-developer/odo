@@ -27,6 +27,13 @@ const (
 	// TimedOutReason is added in a deployment when its newest replica set fails to show any progress
 	// within the given deadline (progressDeadlineSeconds).
 	timedOutReason = "ProgressDeadlineExceeded"
+
+	// Hardcoded variables since we can't install SBO on k8s using OLM
+	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
+	ServiceBindingGroup    = "binding.operators.coreos.com"
+	ServiceBindingVersion  = "v1alpha1"
+	ServiceBindingKind     = "ServiceBinding"
+	ServiceBindingResource = "servicebindings"
 )
 
 // GetDeploymentByName gets a deployment by querying by name
@@ -239,6 +246,18 @@ func (c *Client) ListDynamicResource(group, version, resource string) (*unstruct
 	}
 
 	return list, nil
+}
+
+// GetDynamicResource returns an unstructured instances of a Custom
+// Resource currently deployed in the active namespace of the cluster
+func (c *Client) GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error) {
+	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+
+	res, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 // DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource

@@ -107,7 +107,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 
 	Context("odo supported images deployment", func() {
 		It("Should be able to verify the openjdk18-openshift image", func() {
-			oc.ImportImageFromRegistry("registry.access.redhat.com", "redhat-openjdk-18/openjdk18-openshift:latest", "java:8", commonVar.Project)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", "redhat-openjdk-18/openjdk18-openshift:1.8", "java:8", commonVar.Project)
 			verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", commonVar.Project, appName, commonVar.Context)
 		})
 

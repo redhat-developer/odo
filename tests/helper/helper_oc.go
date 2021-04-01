@@ -319,13 +319,15 @@ func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project str
 // ImportJavaIS import the openjdk image which is used for jars
 func (oc OcRunner) ImportJavaIS(project string) {
 	// if ImageStream already exists, no need to do anything
-	if oc.checkForImageStream("java", "8") {
-		return
-	}
+
+	// Commenting as per the article https://access.redhat.com/articles/4301321
+	// if oc.checkForImageStream("java", "8") {
+	// 	return
+	// }
 
 	// we need to import the openjdk image which is used for jars because it's not available by default
 	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", "java:8",
-		"--namespace="+project, "--from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.5",
+		"--namespace="+project, "--from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.8",
 		"--confirm")
 	CmdShouldPass(oc.path, "annotate", "istag/java:8", "--namespace="+project,
 		"tags=builder", "--overwrite")
@@ -383,7 +385,7 @@ func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace strin
 
 // GetPVCSize executes oc command and returns the bound storage size
 func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
-	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
 	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
 	return strings.TrimSpace(stdOut)
 }
@@ -562,9 +564,9 @@ func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace s
 	Expect(output).NotTo(ContainSubstring(resourceName))
 }
 
-// CreateRandNamespaceProject create new project with random name in oc cluster (10 letters)
+// CreateRandNamespaceProject create new project
 func (oc OcRunner) CreateRandNamespaceProject() string {
-	projectName := RandString(10)
+	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
 	Expect(session).To(ContainSubstring("New project created"))

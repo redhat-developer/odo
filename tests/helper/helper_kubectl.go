@@ -74,7 +74,7 @@ func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, names
 
 // GetPVCSize executes kubectl command and returns the bound storage size
 func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string) string {
-	selector := fmt.Sprintf("--selector=storage-name=%s,component=%s", storageName, compName)
+	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
 	stdOut := CmdShouldPass(kubectl.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
 	return strings.TrimSpace(stdOut)
 }
@@ -138,9 +138,9 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 	return output
 }
 
-// CreateRandNamespaceProject create new project with random name in kubernetes cluster (10 letters)
+// CreateRandNamespaceProject create new project
 func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
-	projectName := RandString(10)
+	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	CmdShouldPass("kubectl", "create", "namespace", projectName)
 	CmdShouldPass("kubectl", "config", "set-context", "--current", "--namespace", projectName)

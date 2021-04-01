@@ -47,9 +47,12 @@ func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
 		return err
 	} else if o.csvSupport {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.Context, err = genericclioptions.NewDevfileContext(cmd)
 	} else {
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.NewContext(cmd)
+	}
+	if err != nil {
+		return err
 	}
 	o.serviceName = args[0]
 

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -11,6 +12,8 @@ import (
 	storageLabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -160,8 +163,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs"}),
-					*testingutil.FakePVC("volume-1", "5Gi", map[string]string{"component": "nodejs"}),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
 				},
 			},
 			wantErr: true,
@@ -193,6 +196,116 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
 				},
 			},
+			wantErr: false,
+		},
+		{
+			name: "case 8: no pvc found for mount path",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-0-vol", MountPath: "/data"},
+							{Name: "volume-1-vol", MountPath: "/path"},
+						}),
+						testingutil.CreateFakeContainerWithVolumeMounts("container-1", []corev1.VolumeMount{
+							{Name: "volume-1-vol", MountPath: "/path"},
+							{Name: "volume-vol", MountPath: "/path1"},
+						}),
+					}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
+				},
+			},
+			want:    StorageList{},
+			wantErr: true,
+		},
+		{
+			name: "case 9: avoid the source volume's mount",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-0-vol", MountPath: "/data"},
+							{Name: "volume-1-vol", MountPath: "/path"},
+						}),
+						testingutil.CreateFakeContainerWithVolumeMounts("container-1", []corev1.VolumeMount{
+							{Name: "volume-1-vol", MountPath: "/path"},
+							{Name: OdoSourceVolume, MountPath: "/path1"},
+						}),
+					}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
+				},
+			},
+			want: StorageList{
+				Items: []Storage{
+					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-1"),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 10: avoid the volume mounts used by the init containers",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "nodejs",
+							Labels: map[string]string{
+								"component": "nodejs",
+							},
+						},
+						Spec: corev1.PodSpec{
+							InitContainers: []corev1.Container{
+								{
+									Name: "supervisord",
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											Name:      "odo-shared-project",
+											MountPath: "/opt/",
+										},
+									},
+								},
+							},
+						},
+						Status: corev1.PodStatus{
+							Phase: corev1.PodRunning,
+						},
+					},
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{},
+			},
+			want:    StorageList{},
 			wantErr: false,
 		},
 	}
@@ -519,6 +632,194 @@ func Test_kubernetesClient_List(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("List() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_kubernetesClient_Create(t *testing.T) {
+	type fields struct {
+		generic generic
+	}
+	type args struct {
+		storage Storage
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: valid storage",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			args: args{
+				storage: GetMachineFormatWithContainer("storage-0", "5Gi", "/data", "runtime"),
+			},
+		},
+		{
+			name: "case 2: invalid storage size",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			args: args{
+				storage: GetMachineFormatWithContainer("storage-0", "example", "/data", "runtime"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 3: valid odo project related storage",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			args: args{
+				storage: GetMachineFormatWithContainer("odo-projects-vol", "5Gi", "/data", "runtime"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := kclient.FakeNew()
+
+			fakeocclient, _ := occlient.FakeNew()
+			fakeocclient.SetKubeClient(fkclient)
+
+			k := kubernetesClient{
+				generic: tt.fields.generic,
+				client:  *fakeocclient,
+			}
+			if err := k.Create(tt.args.storage); (err != nil) != tt.wantErr {
+				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr == true {
+				return
+			}
+
+			// Check for validating actions performed
+			if (len(fkclientset.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
+				t.Errorf("expected 1 action in CreatePVC got: %v", fkclientset.Kubernetes.Actions())
+				return
+			}
+
+			createdPVC := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.PersistentVolumeClaim)
+			quantity, err := resource.ParseQuantity(tt.args.storage.Spec.Size)
+			if err != nil {
+				t.Errorf("failed to create quantity by calling resource.ParseQuantity(%v)", tt.args.storage.Spec.Size)
+			}
+
+			wantLabels := storageLabels.GetLabels(tt.args.storage.Name, tt.fields.generic.componentName, tt.fields.generic.appName, true)
+			wantLabels["component"] = tt.fields.generic.componentName
+			wantLabels[storageLabels.DevfileStorageLabel] = tt.args.storage.Name
+
+			if strings.Contains(tt.args.storage.Name, OdoSourceVolume) {
+				// Add label for source pvc
+				wantLabels[storageLabels.SourcePVCLabel] = tt.args.storage.Name
+			}
+
+			// created PVC should be labeled with labels passed to CreatePVC
+			if !reflect.DeepEqual(createdPVC.Labels, wantLabels) {
+				t.Errorf("labels in created pvc is not matching expected labels, expected: %v, got: %v", wantLabels, createdPVC.Labels)
+			}
+			// name, size of createdPVC should be matching to size, name passed to CreatePVC
+			if !reflect.DeepEqual(createdPVC.Spec.Resources.Requests["storage"], quantity) {
+				t.Errorf("size of PVC is not matching to expected size, expected: %v, got %v", quantity, createdPVC.Spec.Resources.Requests["storage"])
+			}
+		})
+	}
+}
+
+func Test_kubernetesClient_Delete(t *testing.T) {
+	pvcName := "pvc-0"
+	returnedPVCs := corev1.PersistentVolumeClaimList{
+		Items: []corev1.PersistentVolumeClaim{
+			*testingutil.FakePVC(pvcName, "5Gi", getStorageLabels("storage-0", "nodejs", "app")),
+		},
+	}
+
+	type fields struct {
+		generic generic
+	}
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: delete successful",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			args: args{
+				"storage-0",
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 2: pvc not found",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: "nodejs",
+				},
+			},
+			args: args{
+				"storage-example",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := kclient.FakeNew()
+
+			fakeocclient, _ := occlient.FakeNew()
+			fakeocclient.SetKubeClient(fkclient)
+
+			fkclientset.Kubernetes.PrependReactor("list", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &returnedPVCs, nil
+			})
+
+			fkclientset.Kubernetes.PrependReactor("delete", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if action.(ktesting.DeleteAction).GetName() != pvcName {
+					t.Errorf("delete called with = %v, want %v", action.(ktesting.DeleteAction).GetName(), pvcName)
+				}
+				return true, nil, nil
+			})
+
+			k := kubernetesClient{
+				generic: tt.fields.generic,
+				client:  *fakeocclient,
+			}
+			if err := k.Delete(tt.args.name); (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			if len(fkclientset.Kubernetes.Actions()) != 2 {
+				t.Errorf("expected 2 action, got %v", len(fkclientset.Kubernetes.Actions()))
 			}
 		})
 	}

@@ -80,8 +80,10 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 	// if experimental mode is enabled and devfile is present
 	if util.CheckPathExists(wo.devfilePath) {
-		wo.Context = genericclioptions.NewDevfileContext(cmd)
-
+		wo.Context, err = genericclioptions.NewDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 		// Set the source path to either the context or current working directory (if context not set)
 		wo.sourcePath, err = util.GetAbsPath(wo.componentContext)
 		if err != nil {
@@ -123,10 +125,14 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 
 	// Set the correct context
-	wo.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
-	wo.client = genericclioptions.Client(cmd)
-
+	wo.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	if err != nil {
+		return err
+	}
+	wo.client, err = genericclioptions.Client()
+	if err != nil {
+		return err
+	}
 	// Set the necessary values within WatchOptions
 	conf := wo.Context.LocalConfigInfo
 	wo.sourceType = conf.LocalConfig.GetSourceType()

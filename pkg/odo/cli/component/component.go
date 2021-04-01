@@ -34,10 +34,15 @@ func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []str
 	context := genericclioptions.GetContextFlagValue(cmd)
 	devfilePath := filepath.Join(context, devFile)
 	if util.CheckPathExists(devfilePath) {
-		co.Context = genericclioptions.NewDevfileContext(cmd)
+		co.Context, err = genericclioptions.NewDevfileContext(cmd)
 	} else {
-		co.Context = genericclioptions.NewContext(cmd)
+		co.Context, err = genericclioptions.NewContext(cmd)
 	}
+	if err != nil {
+		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+		err = nil
+	}
+
 	co.componentName = co.Context.Component(args...)
 	return
 }

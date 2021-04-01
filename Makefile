@@ -235,11 +235,6 @@ test-cmd-devfile-push:
 test-cmd-devfile-exec:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile exec command tests" tests/integration/devfile/
 
-# Run odo exec docker devfile command tests
-.PHONY: test-cmd-docker-devfile-exec
-test-cmd-docker-devfile-exec:
-	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile exec command tests" tests/integration/devfile/docker
-
 # Run odo status devfile command tests
 .PHONY: test-cmd-devfile-status
 test-cmd-devfile-status:
@@ -310,47 +305,6 @@ test-cmd-devfile-env:
 .PHONY: test-cmd-devfile-config
 test-cmd-devfile-config:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile config command tests" tests/integration/devfile/
-
-# Fix https://github.com/openshift/odo/issues/3714 to uncomment docker make target
-# # Run odo push docker devfile command tests
-# .PHONY: test-cmd-docker-devfile-push
-# test-cmd-docker-devfile-push:
-# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile push command tests" tests/integration/devfile/docker/
-
-# # Run odo watch docker devfile command tests
-# .PHONY: test-cmd-docker-devfile-watch
-# test-cmd-docker-devfile-watch:
-# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile watch command tests" tests/integration/devfile/docker/
-
-# # Run odo url docker devfile command tests
-# .PHONY: test-cmd-docker-devfile-url
-# test-cmd-docker-devfile-url:
-# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url command tests" tests/integration/devfile/docker/
-
-# # Run odo docker devfile delete command tests
-# .PHONY: test-cmd-docker-devfile-delete
-# test-cmd-docker-devfile-delete:
-# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
-
-# Run odo status docker devfile command tests
-#.PHONY: test-cmd-docker-devfile-status
-#test-cmd-docker-devfile-status:
-#	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile status command tests" tests/integration/devfile/docker/
-
-# # Run odo catalog devfile command tests
-# .PHONY: test-cmd-docker-devfile-catalog
-# test-cmd-docker-devfile-catalog:
-# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile catalog command tests" tests/integration/devfile/docker/
-
-# # Run odo url docker devfile command tests
-# .PHONY: test-cmd-docker-devfile-url-pushtarget
-# test-cmd-docker-devfile-url-pushtarget:
-# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url pushtarget command tests" tests/integration/devfile/docker/
-
-# # Run odo test docker devfile command tests
-# .PHONY: test-cmd-docker-devfile-test
-# test-cmd-docker-devfile-test:
-# 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile test command tests" tests/integration/devfile/docker/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch

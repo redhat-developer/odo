@@ -39,9 +39,12 @@ func NewDeleteOptions() *DeleteOptions {
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if util.CheckPathExists(filepath.Join(".odo", "config.yaml")) {
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.NewContext(cmd)
 	} else {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.Context, err = genericclioptions.NewDevfileContext(cmd)
+	}
+	if err != nil {
+		return err
 	}
 	o.appName = o.Application
 	if len(args) == 1 {

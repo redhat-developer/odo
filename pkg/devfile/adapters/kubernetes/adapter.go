@@ -42,6 +42,16 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 	return nil
 }
 
+// CheckSupervisordCtlStatus calls the component adapter's CheckSupervisordCtlStatus
+func (k Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
+	err := k.componentAdapter.CheckSupervisordCtlStatus(command)
+	if err != nil {
+		return errors.Wrap(err, "Failed to check the status")
+	}
+
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists
 func (k Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return k.componentAdapter.DoesComponentExist(cmpName)
@@ -64,8 +74,8 @@ func (k Adapter) Test(testCmd string, show bool) error {
 }
 
 // Log shows log from component
-func (k Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
-	return k.componentAdapter.Log(follow, debug)
+func (k Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
+	return k.componentAdapter.Log(follow, command)
 }
 
 // Exec executes a command in the component

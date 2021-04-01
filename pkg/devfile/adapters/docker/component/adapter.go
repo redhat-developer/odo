@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"io"
-	"reflect"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -182,6 +181,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
+	return nil
+}
+
 // Test runs the devfile test command
 func (a Adapter) Test(testCmd string, show bool) (err error) {
 	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
@@ -346,7 +349,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 }
 
 // Log returns log from component
-func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
+func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
 
 	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
 
@@ -363,23 +366,6 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 		return nil, errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
 	}
 
-	var command devfilev1.Command
-	if debug {
-		command, err = common.GetDebugCommand(a.Devfile.Data, "")
-		if err != nil {
-			return nil, err
-		}
-		if reflect.DeepEqual(devfilev1.Command{}, command) {
-			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
-		}
-
-	} else {
-		command, err = common.GetRunCommand(a.Devfile.Data, "")
-		if err != nil {
-			return nil, err
-		}
-
-	}
 	containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 
 	return a.Client.GetContainerLogs(containerID, follow)

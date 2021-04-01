@@ -90,6 +90,12 @@ const (
 
 	// DefaultEphemeralSettings is a default value for Ephemeral preference
 	DefaultEphemeralSettings = true
+
+	// ConsentTelemetrySettings specifies if the user consents to telemetry
+	ConsentTelemetrySetting = "ConsentTelemetry"
+
+	// DefaultConsentTelemetry is a default value for ConsentTelemetry preference
+	DefaultConsentTelemetrySetting = false
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -107,6 +113,9 @@ var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo wi
 // EphemeralDescription adds a description for EphemeralSourceVolume
 var EphemeralDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code (Default: %t)", DefaultEphemeralSettings)
 
+//TelemetryConsentDescription adds a description for TelemetryConsentSetting
+var ConsentTelemetryDescription = fmt.Sprintf("If true odo will collect telemetry for the user's odo usage (Default: %t)\n\t\t    For more information: https://developers.redhat.com/article/tool-data-collection", DefaultConsentTelemetrySetting)
+
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
@@ -123,6 +132,7 @@ var (
 		PushTargetSetting:         PushTargetDescription,
 		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
 		EphemeralSetting:          EphemeralDescription,
+		ConsentTelemetrySetting:   ConsentTelemetryDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -167,6 +177,9 @@ type OdoSettings struct {
 
 	// Ephemeral if true creates odo emptyDir to store odo source code
 	Ephemeral *bool `yaml:"Ephemeral,omitempty"`
+
+	// ConsentTelemetry if true collects telemetry for odo
+	ConsentTelemetry *bool `yaml:"ConsentTelemetry,omitempty"`
 }
 
 // Registry includes the registry metadata
@@ -221,7 +234,7 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	preferenceFile, err := getPreferenceFile()
 	klog.V(4).Infof("The path for preference file is %+v", preferenceFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get odo preference file")
+		return nil, errors.Errorf("unable to get odo preference file, run the command with more verbosity to check if the preference path is correct")
 	}
 
 	c := PreferenceInfo{
@@ -294,7 +307,7 @@ func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, 
 	c.OdoSettings.RegistryList = &registryList
 	err = util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to write the configuration of %s operation to preference file", operation)
+		return errors.Errorf("unable to write the configuration of %q operation to preference file", operation)
 	}
 
 	return nil
@@ -312,10 +325,10 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		registryList = append(registryList, registry)
 
 	case "update":
-		return nil, errors.Errorf("failed to update registry: registry %s doesn't exist", registryName)
+		return nil, errors.Errorf("failed to update registry: registry %q doesn't exist", registryName)
 
 	case "delete":
-		return nil, errors.Errorf("failed to delete registry: registry %s doesn't exist", registryName)
+		return nil, errors.Errorf("failed to delete registry: registry %q doesn't exist", registryName)
 	}
 
 	return registryList, nil
@@ -325,11 +338,11 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 	switch operation {
 
 	case "add":
-		return nil, errors.Errorf("failed to add registry: registry %s already exists", registryName)
+		return nil, errors.Errorf("failed to add registry: registry %q already exists", registryName)
 
 	case "update":
 		if !forceFlag {
-			if !ui.Proceed(fmt.Sprintf("Are you sure you want to update registry %s", registryName)) {
+			if !ui.Proceed(fmt.Sprintf("Are you sure you want to update registry %q", registryName)) {
 				log.Info("Aborted by the user")
 				return registryList, nil
 			}
@@ -341,7 +354,7 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 
 	case "delete":
 		if !forceFlag {
-			if !ui.Proceed(fmt.Sprintf("Are you sure you want to delete registry %s", registryName)) {
+			if !ui.Proceed(fmt.Sprintf("Are you sure you want to delete registry %q", registryName)) {
 				log.Info("Aborted by the user")
 				return registryList, nil
 			}
@@ -367,7 +380,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "timeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %q to %q", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -377,7 +390,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "buildtimeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -387,7 +400,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "pushtimeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -397,7 +410,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "registrycachetime":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
 				return errors.Errorf("cannot set timeout to less than 0")
@@ -407,41 +420,49 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "updatenotification":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.UpdateNotification = &val
 
+		//	TODO: should we add a validator here? What is the use of nameprefix?
 		case "nameprefix":
 			c.OdoSettings.NamePrefix = &value
 
 		case "experimental":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.Experimental = &val
 
 		case "ephemeral":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.Ephemeral = &val
 
 		case "pushtarget":
 			val := strings.ToLower(value)
 			if val != DockerPushTarget && val != KubePushTarget {
-				return errors.Errorf("cannot set pushtarget to values other than '%s' or '%s'", DockerPushTarget, KubePushTarget)
+				return errors.Errorf("cannot set pushtarget to values other than %q or %q", DockerPushTarget, KubePushTarget)
 			}
 			c.OdoSettings.PushTarget = &val
+
+		case "consenttelemetry":
+			val, err := strconv.ParseBool(strings.ToLower(value))
+			if err != nil {
+				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
+			}
+			c.OdoSettings.ConsentTelemetry = &val
 		}
 	} else {
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo preference", parameter)
+		return errors.Errorf("unknown parameter : %q is not a parameter in odo preference, run help to see list of available parameters", parameter)
 	}
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to set %s", parameter)
+		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }
@@ -456,12 +477,12 @@ func (c *PreferenceInfo) DeleteConfiguration(parameter string) error {
 			return err
 		}
 	} else {
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in the odo preference", parameter)
+		return errors.Errorf("unknown parameter :%q is not a parameter in the odo preference", parameter)
 	}
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to set %s", parameter)
+		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }
@@ -521,10 +542,17 @@ func (c *PreferenceInfo) GetExperimental() bool {
 }
 
 // GetPushTarget returns the value of PushTarget from preferences
-// and if absent then returns defualt
+// and if absent then returns default
 // default value: kube, docker push target needs to be manually enabled
 func (c *PreferenceInfo) GetPushTarget() string {
 	return util.GetStringOrDefault(c.OdoSettings.PushTarget, KubePushTarget)
+}
+
+// GetConsentTelemetry returns the value of ConsentTelemetry from preferences
+// and if absent then returns default
+// default value: false, consent telemetry is disabled by default
+func (c *PreferenceInfo) GetConsentTelemetry() bool {
+	return util.GetBoolOrDefault(c.OdoSettings.ConsentTelemetry, DefaultConsentTelemetrySetting)
 }
 
 // FormatSupportedParameters outputs supported parameters and their description

@@ -34,7 +34,7 @@ func NewStorageMountOptions() *StorageMountOptions {
 
 // Complete completes StorageMountOptions after they've been created
 func (o *StorageMountOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	o.Context, err = genericclioptions.NewContext(cmd)
 	o.storageName = args[0]
 	return
 }

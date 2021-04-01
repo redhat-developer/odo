@@ -110,7 +110,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+commonVar.Project, "--project", commonVar.Project, "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp", "--project", commonVar.Project, "--context", projectDirPath)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
@@ -130,7 +130,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
 			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", projectDirPath)
 			Expect(runningString).To(ContainSubstring(freePort))
-			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-" + commonVar.Project + "-odo-debug.json"))
+			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-odo-debug.json"))
 			stopChannel <- true
 		})
 
@@ -173,6 +173,27 @@ var _ = Describe("odo devfile debug command tests", func() {
 				Expect(helper.ListFilesInDir(os.TempDir())).To(Not(ContainElement(commonVar.Project + "-app" + "-nodejs-cmp-" + commonVar.Project + "-odo-debug.json")))
 			}
 
+		})
+	})
+
+	Context("when the debug command throws an error during push", func() {
+		It("should wait and error out with some log", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm run debug", "npm run debugs")
+
+			_, output := helper.CmdShouldPassIncludeErrStream("odo", "push", "--debug", "--context", commonVar.Context)
+			helper.MatchAllInOutput(output, []string{
+				"exited with error status within 1 sec",
+				"Did you mean this?",
+			})
+
+			_, output = helper.CmdShouldPassIncludeErrStream("odo", "push", "--debug", "--context", commonVar.Context, "--debug-command", "debug", "-f")
+			helper.MatchAllInOutput(output, []string{
+				"exited with error status within 1 sec",
+				"Did you mean this?",
+			})
 		})
 	})
 })

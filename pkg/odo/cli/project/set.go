@@ -19,7 +19,9 @@ var (
 	%[1]s myproject
 	`)
 
-	setLongDesc = ktemplates.LongDesc(`Set the active project`)
+	setLongDesc = ktemplates.LongDesc(`Set the active project.
+	This command directly performs actions on the cluster and doesn't require a push.
+	`)
 
 	setShortDesc = `Set the current active project`
 )
@@ -44,7 +46,7 @@ func NewProjectSetOptions() *ProjectSetOptions {
 
 // Complete completes ProjectSetOptions after they've been created
 func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	pso.Context = genericclioptions.NewContext(cmd)
+	pso.Context, err = genericclioptions.NewContext(cmd)
 	pso.projectName = args[0]
 
 	return

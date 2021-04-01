@@ -3,8 +3,10 @@ package component
 import (
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -13,6 +15,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -21,18 +24,21 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/preference"
-
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	storagepkg "github.com/openshift/odo/pkg/storage"
+	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/openshift/odo/pkg/sync"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+const supervisorDStatusWaitTimeInterval = 1
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
@@ -166,7 +172,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "unable to create or update component")
 	}
 
-	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
+	deployment, err := a.Client.WaitForDeploymentRollout(a.ComponentName)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
@@ -175,6 +181,23 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	pod, err := a.getPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	// list the latest state of the PVCs
+	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	if err != nil {
+		return err
+	}
+
+	// update the owner reference of the PVCs with the deployment
+	for i := range pvcs {
+		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
+			continue
+		}
+		err = a.Client.UpdateStorageOwnerReference(&pvcs[i], generator.GetOwnerReference(deployment))
+		if err != nil {
+			return err
+		}
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
@@ -230,12 +253,66 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
+
+		runCommand := pushDevfileCommands[devfilev1.RunCommandGroupKind]
+		if parameters.Debug {
+			runCommand = pushDevfileCommands[devfilev1.DebugCommandGroupKind]
+		}
+
+		// wait for a second
+		wait := time.After(supervisorDStatusWaitTimeInterval * time.Second)
+		<-wait
+
+		err := a.CheckSupervisordCtlStatus(runCommand)
+		if err != nil {
+			return err
+		}
 	} else {
 		// no file was modified/added/deleted/renamed, thus return without syncing files
 		log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 	}
 
 	return nil
+}
+
+// CheckSupervisordCtlStatus checks the supervisord status according to the given command
+// if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
+func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
+	statusInContainer := getSupervisordStatusInContainer(a.pod.Name, command.Exec.Component, a)
+
+	supervisordProgramName := "devrun"
+
+	// if the command is a debug one, we check against `debugrun`
+	if command.Exec.Group.Kind == devfilev1.DebugCommandGroupKind {
+		supervisordProgramName = "debugrun"
+	}
+
+	for _, status := range statusInContainer {
+		if strings.EqualFold(status.program, supervisordProgramName) {
+			if strings.EqualFold(status.status, "running") {
+				return nil
+			} else {
+				numberOfLines := 20
+				log.Warningf("devfile command \"%s\" exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
+				log.Infof("Last %d lines of the component's log:", numberOfLines)
+
+				rd, err := a.Log(false, command)
+				if err != nil {
+					return err
+				}
+
+				err = util.DisplayLog(false, rd, os.Stderr, a.ComponentName, numberOfLines)
+				if err != nil {
+					return err
+				}
+
+				log.Info("To get the full log output, please run 'odo log'")
+
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("the supervisord program %s not found", supervisordProgramName)
 }
 
 // Test runs the devfile test command
@@ -267,6 +344,29 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 }
 
 func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
+	ei.SetDevfileObj(a.Devfile)
+	ocClient, err := occlient.New()
+	if err != nil {
+		return err
+	}
+	ocClient.SetKubeClient(&a.Client)
+
+	storageClient := storagepkg.NewClient(storagepkg.ClientOptions{
+		OCClient:            *ocClient,
+		LocalConfigProvider: &ei,
+	})
+
+	// handle the ephemeral storage
+	err = storage.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName)
+	if err != nil {
+		return err
+	}
+
+	err = storagepkg.Push(storageClient, &ei)
+	if err != nil {
+		return err
+	}
+
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -292,8 +392,25 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
+	// Get ServiceBinding Secret name for each Link
+	var sbSecrets []string
+	for _, link := range ei.GetLink() {
+		sb, err := a.Client.GetDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource, link.Name)
+		if err != nil {
+			return err
+		}
+		secret, found, err := unstructured.NestedString(sb.Object, "status", "secret")
+		if err != nil {
+			return err
+		}
+		if !found {
+			return fmt.Errorf("unable to find secret in ServiceBinding %s", link.Name)
+		}
+		sbSecrets = append(sbSecrets, secret)
+	}
+
 	// set EnvFrom to the container that's supposed to have link to the Operator backed service
-	containers, err = utils.UpdateContainerWithEnvFrom(containers, a.Devfile, a.devfileRunCmd, ei)
+	containers, err = utils.UpdateContainerWithEnvFromSecrets(containers, a.Devfile, a.devfileRunCmd, ei, sbSecrets)
 	if err != nil {
 		return err
 	}
@@ -311,77 +428,23 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	pref, err := preference.New()
-	if err != nil {
-		return err
-	}
-
-	if !pref.GetEphemeralSourceVolume() {
-
-		// If ephemeral volume is false, then we need to add to source volume in the map to create pvc.
-		containerNameToVolumes["odosource"] = []common.DevfileVolume{
-			{
-				Name: utils.OdoSourceVolume,
-				Size: utils.OdoSourceVolumeSize,
-			},
-		}
-	}
-
 	var odoSourcePVCName string
 
-	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
-	processedVolumes := make(map[string]bool)
 
-	// Get a list of all the unique volume names and generate their PVC names
-	// we do not use the volume components which are unique here because
-	// not all volume components maybe referenced by a container component.
-	// We only want to create PVCs which are going to be used by a container
-	for _, volumes := range containerNameToVolumes {
-		for _, vol := range volumes {
-			if _, ok := processedVolumes[vol.Name]; !ok {
-				processedVolumes[vol.Name] = true
-
-				// Generate the PVC Names
-				klog.V(2).Infof("Generating PVC name for %v", vol.Name)
-				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
-				if err != nil {
-					return err
-				}
-
-				// Check if we have an existing PVC with the labels, overwrite the generated name with the existing name if present
-				existingPVCName, err := storage.GetExistingPVC(&a.Client, vol.Name, componentName)
-				if err != nil {
-					return err
-				}
-				if len(existingPVCName) > 0 {
-					klog.V(2).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
-					generatedPVCName = existingPVCName
-				}
-
-				if vol.Name == utils.OdoSourceVolume {
-					odoSourcePVCName = generatedPVCName
-				}
-
-				pvc := common.Storage{
-					Name:   generatedPVCName,
-					Volume: vol,
-				}
-				uniqueStorages = append(uniqueStorages, pvc)
-				volumeNameToPVCName[vol.Name] = generatedPVCName
-			}
-		}
-	}
-
-	err = storage.DeleteOldPVCs(&a.Client, componentName, processedVolumes)
+	// list all the pvcs for the component
+	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
 	if err != nil {
 		return err
 	}
 
-	// remove odo source volume from these maps as we do not want to pass source volume in GetPVCAndVolumeMount
-	// we are mounting odo source volume seperately
-	delete(volumeNameToPVCName, utils.OdoSourceVolume)
-	delete(containerNameToVolumes, "odosource")
+	for _, pvc := range pvcs {
+		// check if the pvc is in the terminating state
+		if pvc.DeletionTimestamp != nil {
+			continue
+		}
+		volumeNameToPVCName[pvc.Labels[storagelabels.StorageLabel]] = pvc.Name
+	}
 
 	// Get PVC volumes and Volume Mounts
 	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
@@ -420,7 +483,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err := a.Client.UpdateDeployment(*deployment)
+		deployment, err = a.Client.UpdateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
@@ -454,7 +517,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			}
 		}
 	} else {
-		deployment, err := a.Client.CreateDeployment(*deployment)
+		deployment, err = a.Client.CreateDeployment(*deployment)
 		if err != nil {
 			return err
 		}
@@ -469,13 +532,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			klog.V(2).Infof("Successfully created Service for component %s", componentName)
 		}
 
-	}
-
-	// Get the storage adapter and create the volumes if it does not exist
-	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	err = stoAdapter.Create(uniqueStorages)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -550,7 +606,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 }
 
 // Log returns log from component
-func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
+func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
 
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
@@ -559,23 +615,6 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
 	if pod.Status.Phase != corev1.PodRunning {
 		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
-	}
-
-	var command devfilev1.Command
-	if debug {
-		command, err = common.GetDebugCommand(a.Devfile.Data, "")
-		if err != nil {
-			return nil, err
-		}
-		if reflect.DeepEqual(devfilev1.Command{}, command) {
-			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
-		}
-
-	} else {
-		command, err = common.GetRunCommand(a.Devfile.Data, "")
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	containerName := command.Exec.Component

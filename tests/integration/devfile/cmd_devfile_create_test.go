@@ -5,6 +5,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
+	"strings"
+
+	"github.com/tidwall/gjson"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -99,6 +103,63 @@ var _ = Describe("odo devfile create command tests", func() {
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 		})
+
+		It("should successfully create the devfile component with auto generated name", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", newContext)
+			output := helper.Cmd("odo", "env", "view", "--context", newContext, "-o", "json").ShouldPass().Out()
+			value := gjson.Get(output, "spec.name")
+			Expect(strings.TrimSpace(value.String())).To(ContainSubstring(strings.TrimSpace("nodejs-" + filepath.Base(strings.ToLower(newContext)))))
+		})
+
+		It("should successfully create the devfile component and show json output for working cluster", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", newContext, "-o", "json")
+			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
+		})
+
+		It("should successfully create and push the devfile component and show json output for working cluster", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json", "--now")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
+			helper.MatchAllInOutput(output, []string{"Pushed", "nodejs", "Component"})
+		})
+
+		It("should successfully create the devfile component and show json output for non connected cluster", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			cmd := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json")
+			output := cmd.WithEnv("KUBECONFIG=/no/such/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
+			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
+		})
+
+		It("should successfully create the devfile component and show json output for a unreachable cluster", func() {
+
+			path := os.Getenv("KUBECONFIG")
+
+			// read the contents from the kubeconfig and replace the server entries
+			reg := regexp.MustCompile(`server: .*`)
+			kubeConfigContents, err := helper.ReadFile(path)
+			Expect(err).To(BeNil())
+			kubeConfigContents = reg.ReplaceAllString(kubeConfigContents, "server: https://not-reachable.com:443")
+
+			// write to a new file which will be used as the new kubeconfig
+			newKubeConfigPath := filepath.Join(commonVar.Context, "newKUBECONFIG")
+			newKubeConfig, err := os.Create(newKubeConfigPath)
+			Expect(err).To(BeNil())
+			_, err = newKubeConfig.WriteString(kubeConfigContents)
+			Expect(err).To(BeNil())
+
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
+			cmd := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json")
+			output := cmd.WithEnv("KUBECONFIG="+newKubeConfigPath, "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
+			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
+
+			err = os.Remove(newKubeConfigPath)
+			Expect(err).To(BeNil())
+		})
 	})
 
 	Context("When executing odo create with existing devfile", func() {
@@ -107,7 +168,7 @@ var _ = Describe("odo devfile create command tests", func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(commonVar.Context, devfile))
 			})
 
-			It("should successfully create the devfile componet", func() {
+			It("should successfully create the devfile component", func() {
 				helper.CmdShouldPass("odo", "create", "nodejs")
 			})
 
@@ -124,6 +185,15 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should fail to create the devfile component with --devfile points to different devfile", func() {
 				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "/path/to/file")
+			})
+
+			It("should fail when we create the devfile component multiple times", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs")
+				output := helper.CmdShouldFail("odo", "create", "nodejs")
+				Expect(output).To(ContainSubstring("this directory already contains a component"))
+				output = helper.CmdShouldFail("odo", "create", "nodejs", "--s2i")
+				Expect(output).To(ContainSubstring("this directory already contains a component"))
+
 			})
 		})
 

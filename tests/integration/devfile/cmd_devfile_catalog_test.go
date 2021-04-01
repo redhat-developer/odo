@@ -1,7 +1,10 @@
 package devfile
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
 )
 
@@ -46,6 +49,11 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	Context("When executing catalog list components with -o json flag", func() {
 		It("should list devfile components in json format", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+
+			var outputData interface{}
+			unmarshalErr := json.Unmarshal([]byte(output), &outputData)
+			Expect(unmarshalErr).NotTo(HaveOccurred(), "Output is not a valid JSON")
+
 			wantOutput := []string{
 				"odo.dev/v1alpha1",
 				"devfileItems",
@@ -56,6 +64,15 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"java-maven",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
+		})
+	})
+
+	Context("When executing catalog describe component with -o json", func() {
+		It("should display a valid JSON", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs", "-o", "json")
+			var outputData interface{}
+			unmarshalErr := json.Unmarshal([]byte(output), &outputData)
+			Expect(unmarshalErr).NotTo(HaveOccurred(), "Output is not a valid JSON")
 		})
 	})
 
