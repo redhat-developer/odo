@@ -6,8 +6,6 @@ shout() {
   set -x
 }
 
-shout "Setting up environment in `hostname`"
-
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
 mkdir bin artifacts
 # Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
@@ -26,7 +24,7 @@ SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 export PATH=$PATH:$GOBIN
 
 # Prep for integration/e2e
-shout "Building odo binaries"
+shout "| Building odo binaries"
 make bin
 
 # copy built odo to GOBIN
@@ -49,7 +47,6 @@ case ${1} in
 
         # Verify if minishift or openshift are stopped and take appropriate actions
         shout "| Checking if minishift needs to be installed..."
-        minishift version
         msStatus=$(minishift status)
         if [[ "$msStatus" == *"command not found"* ]]
         then
@@ -58,8 +55,12 @@ case ${1} in
             tar -xvzf minishift.tgz
             sudo mv minishift-1.34.3-linux-amd64/minishift /usr/local/bin
             rm minishift.tgz
+            minishift version
+        else
+            shout "| Minishift already installed "
         fi
 
+        msStatus=$(minishift status)
         shout "| Checking if Minishift needs to be started..."
         if [[ "$msStatus" == *"Does Not Exist"* ]] || [[ "$msStatus" == *"Minishift:  Stopped"* ]]
         then 
