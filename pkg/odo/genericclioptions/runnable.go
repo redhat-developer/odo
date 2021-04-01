@@ -44,7 +44,9 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// This prompt has been placed here so that it does not prompt the user when they call --help
 
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
-		if os.Getenv(disableTelemetryEnv) == "true" {
+		if !segment.RunningInTerminal() {
+			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
+		} else if os.Getenv(disableTelemetryEnv) == "true" {
 			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", disableTelemetryEnv, os.Getenv(disableTelemetryEnv))
 		} else {
 			var consentTelemetry bool
