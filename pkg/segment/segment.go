@@ -20,7 +20,7 @@ import (
 )
 
 // writekey will be the API key used to send data to the correct source on Segment. Default is the dev key
-const writeKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
+var writeKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
 
 type Client struct {
 	// SegmentClient helps interact with the segment API
