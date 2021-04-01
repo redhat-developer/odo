@@ -120,21 +120,15 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
 		ownerReference := generator.GetOwnerReference(deployment)
 		o.serviceBinding.SetOwnerReferences(append(o.serviceBinding.GetOwnerReferences(), ownerReference))
+
+		deploymentGVR, err := o.KClient.GetDeploymentAPIVersion()
 		if err != nil {
 			return err
 		}
 
-		// This is a really hacky way to get group, version and resource info but I couldn't find better one.
-		// A sample "deploymentSelfLinkSplit" looks like: [ apis apps v1 namespaces myproject deployments nodejs ]
-		deploymentSelfLinkSplit := strings.Split(deployment.SelfLink, "/")
-
 		// Populate the application selector field in service binding request
 		o.serviceBinding.Spec.Application = &servicebinding.Application{
-			GroupVersionResource: metav1.GroupVersionResource{
-				Group:    deploymentSelfLinkSplit[2], // "apps" in above example output
-				Version:  deploymentSelfLinkSplit[3], // "v1" in above example output
-				Resource: deploymentSelfLinkSplit[6], // "deployments" in above example output
-			},
+			GroupVersionResource: deploymentGVR,
 		}
 
 		o.serviceBinding.Spec.Application.Name = componentName
