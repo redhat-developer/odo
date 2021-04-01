@@ -23,9 +23,9 @@ import (
 
 type segmentResponse struct {
 	Batch []struct {
-		AnonymousID string `json:"anonymousId"`
-		MessageId   string `json:"messageId"`
-		Traits      struct {
+		UserId    string `json:"userId"`
+		MessageId string `json:"messageId"`
+		Traits    struct {
 			OS string `json:"os"`
 		} `json:"traits"`
 		Properties struct {

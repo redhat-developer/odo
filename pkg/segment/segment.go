@@ -79,8 +79,8 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 
 	// queue the data that helps identify the user on segment
 	if err1 := c.SegmentClient.Enqueue(analytics.Identify{
-		AnonymousId: anonymousID,
-		Traits:      addConfigTraits(),
+		UserId: anonymousID,
+		Traits: addConfigTraits(),
 	}); err1 != nil {
 		return err1
 	}
@@ -99,9 +99,9 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 
 	// queue the data that has telemetry information
 	return c.SegmentClient.Enqueue(analytics.Track{
-		AnonymousId: anonymousID,
-		Event:       action,
-		Properties:  properties,
+		UserId:     anonymousID,
+		Event:      action,
+		Properties: properties,
 	})
 }
 
