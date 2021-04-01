@@ -595,24 +595,13 @@ func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceN
 // ApplyConfig applies the component config onto component dc
 // Parameters:
 //	client: occlient instance
-//	kClient: kclient instance
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
 //  isS2I: Legacy option. Set as true if you want to use the old S2I method as it differentiates slightly.
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, isS2I bool) (err error) {
-
-	if client == nil {
-		var err error
-		client, err = occlient.New()
-		if err != nil {
-			return err
-		}
-		// new client created to support route URLs for devfile components should use the same namespace as kClient's
-		client.Namespace = kClient.Namespace
-	}
+func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, isS2I bool) (err error) {
 
 	var configProvider localConfigProvider.LocalConfigProvider
 	if isS2I {
@@ -624,7 +613,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		}
 	}
 
-	if isS2I || kClient == nil {
+	if isS2I {
 		configProvider = &componentConfig
 	} else {
 		configProvider = &envSpecificInfo
@@ -642,7 +631,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		LocalConfigProvider: configProvider,
 	})
 
-	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
+	return urlpkg.Push(client, urlpkg.PushParameters{
 		LocalConfig:      configProvider,
 		URLClient:        urlClient,
 		IsRouteSupported: isRouteSupported,

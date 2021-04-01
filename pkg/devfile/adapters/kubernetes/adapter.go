@@ -8,7 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +22,7 @@ type KubernetesContext struct {
 }
 
 // New instantiates a kubernetes adapter
-func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
+func New(adapterContext common.AdapterContext, client occlient.Client) Adapter {
 
 	compAdapter := component.New(adapterContext, client)
 
