@@ -28,4 +28,4 @@ Disable::
 
 Note: If earlier the `ConsentTelemetry` preference was enabled, then the data will be collected about the disabling of the preference.
 
-Alternatively you can disable telemetry by setting `ODO_DISABLE_TELEMETRY` environment variable to `false`.
+Alternatively you can disable telemetry by setting `ODO_DISABLE_TELEMETRY` environment variable to `true`.
