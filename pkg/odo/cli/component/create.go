@@ -3,9 +3,7 @@ package component
 import (
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -14,6 +12,7 @@ import (
 	"github.com/zalando/go-keyring"
 
 	"github.com/devfile/library/pkg/devfile"
+	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -817,15 +816,9 @@ func (co *CreateOptions) devfileRun() (err error) {
 					params.Token = token
 				}
 			} else {
-				// OCI-based registry
-				u, err := url.Parse(co.devfileMetadata.devfileRegistry.URL)
+				err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
 				if err != nil {
 					return err
-				}
-				u.Path = path.Join(u.Path, "devfiles", co.devfileMetadata.componentType)
-				url := u.String()
-				params = util.HTTPRequestParams{
-					URL: url,
 				}
 			}
 
@@ -833,7 +826,12 @@ func (co *CreateOptions) devfileRun() (err error) {
 			if err != nil {
 				return err
 			}
-			devfileData, err = util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
+
+			if strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
+				devfileData, err = util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
+			} else {
+				devfileData, err = ioutil.ReadFile(DevfilePath)
+			}
 			if err != nil {
 				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 			}

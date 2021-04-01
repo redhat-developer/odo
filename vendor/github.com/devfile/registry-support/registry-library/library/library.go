@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"text/tabwriter"
 	"time"
 
@@ -107,8 +108,8 @@ func PrintRegistryStacks(registry string) error {
 	return nil
 }
 
-// PullStackByMediaTypesFromRegistry pulls stack from registry with allowed media types
-func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMediaTypes []string) error {
+// PullStackByMediaTypesFromRegistry pulls stack from registry with allowed media types to the destination directory
+func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMediaTypes []string, destDir string) error {
 	// Get the registry index
 	registryIndex, err := GetRegistryStacks(registry)
 	if err != nil {
@@ -141,7 +142,7 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	}
 	resolver := docker.NewResolver(docker.ResolverOptions{PlainHTTP: plainHTTP})
 	ref := path.Join(urlObj.Host, stackIndex.Links["self"])
-	fileStore := content.NewFileStore("")
+	fileStore := content.NewFileStore(destDir)
 	defer fileStore.Close()
 
 	// Pull stack from registry and save it to disk
@@ -153,13 +154,14 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	log.Printf("Pulled stack %s from %s with digest %s\n", stack, ref, desc.Digest)
 
 	// Decompress archive.tar
-	if _, err := os.Stat("archive.tar"); err == nil {
-		err := decompress(".", "archive.tar")
+	archivePath := filepath.Join(destDir, "archive.tar")
+	if _, err := os.Stat(archivePath); err == nil {
+		err := decompress(destDir, archivePath)
 		if err != nil {
 			return err
 		}
 
-		err = os.RemoveAll("archive.tar")
+		err = os.RemoveAll(archivePath)
 		if err != nil {
 			return err
 		}
@@ -168,9 +170,9 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	return nil
 }
 
-// PullStackFromRegistry pulls stack from registry with all stack resources (all media types)
-func PullStackFromRegistry(registry string, stack string) error {
-	return PullStackByMediaTypesFromRegistry(registry, stack, DevfileAllMediaTypesList)
+// PullStackFromRegistry pulls stack from registry with all stack resources (all media types) to the destination directory
+func PullStackFromRegistry(registry string, stack string, destDir string) error {
+	return PullStackByMediaTypesFromRegistry(registry, stack, DevfileAllMediaTypesList, destDir)
 }
 
 // decompress extracts the archive file

@@ -10,7 +10,7 @@ require (
 	github.com/devfile/api/v2 v2.0.0-20210211160219-33a78aec06af
 	github.com/devfile/library v0.0.0-20210216162950-3066a892876c
 	github.com/devfile/registry-support/index/generator v0.0.0-20210311161226-db3f89d5186f
-	github.com/devfile/registry-support/registry-library v0.0.0-20210311161226-db3f89d5186f
+	github.com/devfile/registry-support/registry-library v0.0.0-20210401183644-707be62c0ba5
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce
 	github.com/fatih/color v1.7.0

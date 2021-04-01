@@ -108,7 +108,7 @@ github.com/devfile/library/pkg/testingutil/filesystem
 github.com/devfile/library/pkg/util
 # github.com/devfile/registry-support/index/generator v0.0.0-20210311161226-db3f89d5186f
 github.com/devfile/registry-support/index/generator/schema
-# github.com/devfile/registry-support/registry-library v0.0.0-20210311161226-db3f89d5186f
+# github.com/devfile/registry-support/registry-library v0.0.0-20210401183644-707be62c0ba5
 github.com/devfile/registry-support/registry-library/library
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
