@@ -22,7 +22,7 @@ case $1 in
         export TIMEOUT="2h15m"
         ;;
     minishift)
-        export JOB_NAME="odo-minishift-pr-tests"
+        export JOB_NAME="odo-minishift-pr-build"
         export SENDQUEUE="amqp.ci.queue.minishift.send"
         export SENDTOPIC="amqp.ci.topic.minishift.send"
         export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minishift"
