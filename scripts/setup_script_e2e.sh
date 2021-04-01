@@ -19,7 +19,7 @@ export GOBIN_TEMP=$GOBIN
 # Set kubeconfig to current dir. This ensures no clashes with other test runs
 export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
-export CUSTOM_HOMEDIR=$ARTIFACT_DIR
+export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 export WORKDIR=${WORKDIR:-"`pwd`"}
 
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
