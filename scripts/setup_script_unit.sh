@@ -19,20 +19,18 @@ export GOBIN="`pwd`/bin"
 export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
-export WORKDIR=${WORKDIR:-"`pwd`"}
 
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
-shout "Setting PATH"
-
 if [[ $BASE_OS == "windows" ]]; then
     shout "Setting GOBIN for windows"
     GOBIN="$(cygpath -pw $GOBIN)"
-    CURRDIR="$(cygpath -pw $WORKDIR)"
+elif [[ $BASE_OS == "mac" ]]; then
+    PATH="$PATH:/usr/local/bin:/usr/local/go/bin"                           #Path to `go` command as `/usr/local/go/bin:/usr/local/bin` is not included in $PATH while running test
 fi
     
-
+shout "Setting PATH"
 # Add GOBIN which is the bin dir we created earlier to PATH so any binaries there are automatically available in PATH
 export PATH=$PATH:$GOBIN
 
