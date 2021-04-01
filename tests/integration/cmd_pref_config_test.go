@@ -87,7 +87,8 @@ var _ = Describe("odo preference and config command tests", func() {
 			{"NamePrefix", "foo", "bar", ""},
 			{"BuildTimeout", "5", "7", "foo"},
 			{"Experimental", "false", "true", "foo"},
-			{"ConsentTelemetry", "false", "true", "foo"},
+			// !! Do not test ConsentTelemetry with true because it sends out the telemetry data and messes up the statistics !!
+			{"ConsentTelemetry", "false", "false", "foo"},
 			{"PushTimeout", "4", "6", "f00"},
 		}
 
@@ -367,15 +368,8 @@ var _ = Describe("odo preference and config command tests", func() {
 
 	Context("Prompt should not appear when", func() {
 
-		// This test is disable because it sends out the telemetry data and messes up the statistics
-
-		// It("ConsentTelemetry is set to true", func() {
-		// 	helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "true", "-f")
-		// 	output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
-		// 	Expect(output).ToNot(ContainSubstring(promtMessageSubString))
-		// })
-
-		It("ConsentTelemetry is set to false", func() {
+		// !! Do not test with true because it sends out the telemetry data and messes up the statistics !!
+		It("ConsentTelemetry is set", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "false", "-f")
 			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
 			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
