@@ -360,10 +360,6 @@ var _ = Describe("odo preference and config command tests", func() {
 			output = helper.CmdShouldPass("odo", "preference", "unset", "buildtimeout", "-f")
 			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
 		})
-		It("prompt should appear when non-preference command is run", func() {
-			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring(promtMessageSubString))
-		})
 	})
 
 	Context("Prompt should not appear when", func() {

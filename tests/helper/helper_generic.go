@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/tests/helper/reporter"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -341,4 +343,11 @@ func SetProjectName() string {
 	currGinkgoTestLineNum := strconv.Itoa(CurrentGinkgoTestDescription().LineNumber)
 	projectName := currGinkgoTestFileName + currGinkgoTestLineNum + RandString(3)
 	return projectName
+}
+
+// RunTestSpecs defines a common way how test specs in test suite are executed
+func RunTestSpecs(t *testing.T, description string) {
+	os.Setenv("ODO_DISABLE_TELEMETRY", "true")
+	RegisterFailHandler(Fail)
+	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport(t, "../../reports/")})
 }
