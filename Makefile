@@ -7,7 +7,7 @@ endif
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests)
 COMMON_LDFLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := -mod=vendor -ldflags="$(COMMON_LDFLAGS)"
-CROSS_BUILD_FLAGS := -mod=vendor -ldflags="-s -w $(COMMON_LDFLAGS)"
+CROSS_BUILD_FLAGS := -mod=vendor -ldflags="-s -w -X $(PROJECT)/pkg/segment.writeKey=R1Z79HadJIrphLoeONZy5uqOjusljSwN $(COMMON_LDFLAGS)"
 FILES := odo dist
 TIMEOUT ?= 7200s
 
