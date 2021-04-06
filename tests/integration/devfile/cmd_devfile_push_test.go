@@ -920,7 +920,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		It("checks components in a specific app and all apps", func() {
 
 			// component created in "app" application
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
