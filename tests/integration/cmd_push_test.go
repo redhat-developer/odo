@@ -30,17 +30,17 @@ var _ = Describe("odo push command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	Context("Check pod timeout", func() {
+	// Context("Check pod timeout", func() {
 
-		// TODO: issue with PushTimeout
-		// It("Check that pod timeout works and we time out immediately", func() {
-		// 	helper.CmdShouldPass("odo", "component", "create", "--s2i", "--git", "https://github.com/openshift/nodejs-ex", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-		// 	helper.CmdShouldPass("odo", "preference", "set", "PushTimeout", "1")
-		// 	output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-		// 	Expect(output).To(ContainSubstring("waited 1s but couldn't find running pod matching selector"))
-		// })
+	// 	It("Check that pod timeout works and we time out immediately..", func() {
+	// 		helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+	// 		helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
+	// 		helper.CmdShouldPass("odo", "preference", "set", "PushTimeout", "1")
+	// 		output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
+	// 		Expect(output).To(ContainSubstring("waited 1s but couldn't find running pod matching selector"))
+	// 	})
 
-	})
+	// })
 
 	Context("Check memory and cpu config before odo push", func() {
 		It("Should work when memory is set..", func() {
@@ -196,9 +196,12 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := oc.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+			podName := oc.GetRunningPodNameOfComp(cmpName, commonVar.Project)
 
-			stdOut := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
+			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
+
+			stdOut := oc.ExecListDir(podName, commonVar.Project, dir)
 			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 
 			// Now we delete the file and dir and push
@@ -207,7 +210,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context, "-v4")
 
 			// Then check to see if it's truly been deleted
-			stdOut = oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut = oc.ExecListDir(podName, commonVar.Project, dir)
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 		})
 
@@ -231,10 +234,13 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// get the name of running pod
-			podName := oc.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+			podName := oc.GetRunningPodNameOfComp(cmpName, commonVar.Project)
+
+			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
+			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
 			// verify that the new file was pushed
-			stdOut := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut := oc.ExecListDir(podName, commonVar.Project, dir)
 
 			Expect(stdOut).To(Not(ContainSubstring("README.md")))
 
@@ -246,7 +252,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// verify that the new file was pushed
-			stdOut = oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut = oc.ExecListDir(podName, commonVar.Project, dir)
 
 			Expect(stdOut).To(Not(ContainSubstring("tests")))
 

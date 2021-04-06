@@ -1,11 +1,13 @@
 package convert
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
@@ -46,12 +48,23 @@ func GenerateDevfileYaml(client *occlient.Client, co *config.LocalConfigInfo, co
 	// git, local, binary, none
 	sourceType := co.GetSourceType()
 
+	debugPort := co.GetDebugPort()
+
 	imageStream, imageforDevfile, err := getImageforDevfile(client, componentType)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get image details")
 	}
 
 	envVarList := co.GetEnvVars()
+
+	if debugPort != 0 || debugPort == config.DefaultDebugPort {
+		env := config.EnvVar{
+			Name:  common.EnvDebugPort,
+			Value: fmt.Sprint(debugPort),
+		}
+		envVarList = append(envVarList, env)
+	}
+
 	s2iEnv, err := occlient.GetS2IEnvForDevfile(string(sourceType), envVarList, *imageStream)
 	if err != nil {
 		return err
