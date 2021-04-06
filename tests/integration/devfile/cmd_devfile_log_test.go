@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("odo devfile log command tests", func() {
+var _ = Describe("odo devfile log command tests", func() {
 	var cmpName string
 	var commonVar helper.CommonVar
 
