@@ -123,7 +123,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		}
 
 		// Run the indexer and find the modified/added/deleted/renamed files
-		ret, err = util.RunIndexer(pushParameters.Path, absIgnoreRules)
+		ret, err = util.RunIndexerWithRemote(pushParameters.Path, absIgnoreRules, syncParameters.Files)
 		s.End(true)
 
 		if err != nil {
@@ -138,18 +138,18 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		// and ignore the files on which the rules apply and filter them out
 		filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 
-		// Remove the relative file directory from the list of deleted files
-		// in order to make the changes correctly within the Kubernetes pod
-		deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, pushParameters.Path)
-		if err != nil {
-			return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
-		}
+		deletedFiles = append(filesDeletedFiltered, ret.RemoteDeleted...)
+		deletedFiles = append(deletedFiles, ret.RemoteDeleted...)
 		klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
 		changedFiles = filesChangedFiltered
 		klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
 		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !isForcePush {
 			return false, nil
+		}
+
+		if isForcePush {
+			deletedFiles = append(deletedFiles, "*")
 		}
 	}
 
@@ -159,6 +159,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		isForcePush,
 		util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles),
 		syncParameters.CompInfo,
+		ret,
 	)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
@@ -174,7 +175,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 }
 
 // pushLocal syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo common.ComponentInfo) error {
+func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo common.ComponentInfo, ret util.IndexerRet) error {
 	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -221,7 +222,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps)
+		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
@@ -301,5 +302,9 @@ func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
 	rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
 	klog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
-	return append(cmdArr, rmPaths...)
+
+	for _, remote := range rmPaths {
+		cmdArr = append(cmdArr, filepath.ToSlash(remote))
+	}
+	return cmdArr
 }
