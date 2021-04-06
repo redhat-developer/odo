@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/version"
 	"github.com/pborman/uuid"
@@ -61,6 +62,7 @@ func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath st
 
 // Close client connection and send the data
 func (c *Client) Close() error {
+	log.Info("Sending usage data. Please wait...")
 	return c.SegmentClient.Close()
 }
 
