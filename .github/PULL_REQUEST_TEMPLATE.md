@@ -16,7 +16,7 @@
 > /kind documentation
 > [skip ci]
 
-**What does does this PR do / why we need it**:
+**What does this PR do / why we need it**:
 
 **Which issue(s) this PR fixes**:
 
