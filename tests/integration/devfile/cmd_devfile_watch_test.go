@@ -101,7 +101,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
-			session := helper.CmdRunner("odo", "watch", "--context", commonVar.Context)
+			session := helper.CmdRunner("odo", "watch")
 			defer session.Kill()
 
 			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
@@ -128,7 +128,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 
 			// 3) Odo watch that project
-			session := helper.CmdRunner("odo", "watch", "--context", commonVar.Context)
+			session := helper.CmdRunner("odo", "watch")
 			defer session.Kill()
 
 			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
@@ -204,7 +204,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
 
 			// check that the --debug-command fails when the component is not pushed using debug mode
-			output = helper.CmdShouldFailWithRetry(1, 1, "odo", "watch", "--context", commonVar.Context, "--debug-command", "debug")
+			output = helper.CmdShouldFailWithRetry(1, 1, "odo", "watch", "--debug-command", "debug")
 			Expect(output).To(ContainSubstring("please start the component in debug mode"))
 		})
 	})
@@ -245,7 +245,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// 2) Odo watch that project
-			session := helper.CmdRunner("odo", "watch", "--context", commonVar.Context)
+			session := helper.CmdRunner("odo", "watch")
 			defer session.Kill()
 
 			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
