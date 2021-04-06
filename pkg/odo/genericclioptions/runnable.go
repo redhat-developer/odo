@@ -38,6 +38,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	var startTime time.Time
 	cfg, _ := preference.New()
+	disableTelemetry := os.Getenv(disableTelemetryEnv)
 
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
@@ -46,8 +47,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
-		} else if os.Getenv(disableTelemetryEnv) == "true" {
-			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", disableTelemetryEnv, os.Getenv(disableTelemetryEnv))
+		} else if disableTelemetry == "true" {
+			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", disableTelemetryEnv, disableTelemetry)
 		} else {
 			var consentTelemetry bool
 			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
@@ -62,8 +63,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	// Initiate the segment client if ConsentTelemetry preference is set to true
 	if cfg.GetConsentTelemetry() {
-		if os.Getenv(disableTelemetryEnv) == "true" {
-			log.Warningf("Sending telemetry disabled by %s=%s\n", disableTelemetryEnv, os.Getenv(disableTelemetryEnv))
+		if disableTelemetry == "true" {
+			log.Warningf("Sending telemetry disabled by %s=%s\n", disableTelemetryEnv, disableTelemetry)
 		} else {
 			if segmentClient, err = segment.NewClient(cfg); err != nil {
 				klog.V(4).Infof("Cannot create a segment client, will not send any data: %s", err.Error())
