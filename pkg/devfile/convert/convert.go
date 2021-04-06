@@ -3,6 +3,8 @@ package convert
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -10,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -270,7 +273,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	}
 	envs = append(envs, env)
 
-	// convert s2i ports to devfile endpoints
+	// convert s2i urls to devfile endpoints
 	for _, url := range urls {
 
 		endpoint := devfilev1.Endpoint{
@@ -280,6 +283,37 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		}
 
 		endpoints = append(endpoints, endpoint)
+	}
+
+	ports, err := localConfig.GetPorts()
+	if err != nil {
+		return err
+	}
+	// convert s2i ports to devfile endpoints if there are no urls present
+	for _, port := range ports {
+		i_port, err := strconv.Atoi(strings.Split(port, "/")[0])
+		// we dont fail if the ports are malformed
+		if err != nil {
+			continue
+		}
+		hasURL := false
+		for _, url := range urls {
+			if i_port == url.Port {
+				hasURL = true
+			}
+		}
+
+		if !hasURL {
+			// every port is an exposed url for now
+			endpoint := devfilev1.Endpoint{
+				Name:       util.GetURLName(localConfig.GetName(), i_port),
+				TargetPort: i_port,
+				Secure:     false,
+			}
+
+			endpoints = append(endpoints, endpoint)
+		}
+
 	}
 
 	container := devfilev1.Component{
