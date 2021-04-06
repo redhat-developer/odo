@@ -31,7 +31,7 @@ const (
 	// container component name to be used in devfile
 	containerName = "s2i-builder"
 	// directory to sync s2i source code
-	sourceMappingS2i = "/tmp/projects"
+	defaultSourceMappingS2i = "/tmp/projects"
 	// devfile version
 	devfileVersion = "2.0.0"
 	// environment variable set for s2i assemble and restart scripts
@@ -254,6 +254,8 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		volumeMounts = append(volumeMounts, volumeMount)
 	}
 
+	sourceMapping := defaultSourceMappingS2i
+
 	// Add s2i specific env variable in devfile
 	for _, env := range s2iEnv {
 		env := devfilev1.EnvVar{
@@ -287,7 +289,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 				Container: devfilev1.Container{
 					Image:         s2iImage,
 					MountSources:  &mountSources,
-					SourceMapping: sourceMappingS2i,
+					SourceMapping: sourceMapping,
 					MemoryLimit:   maxMemory,
 					Env:           envs,
 					VolumeMounts:  volumeMounts,
