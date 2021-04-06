@@ -1,10 +1,11 @@
 package devfile
 
 import (
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
-	"path/filepath"
 )
 
 var _ = Describe("odo devfile test command tests", func() {
@@ -16,7 +17,6 @@ var _ = Describe("odo devfile test command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
-		helper.Chdir(commonVar.Context)
 	})
 
 	// This is run after every Spec (It)
@@ -28,7 +28,7 @@ var _ = Describe("odo devfile test command tests", func() {
 
 		// used ";" as consolidating symbol as this spec covers multiple scenerios
 		It("should show error if component is not pushed; should error out if a non-existent command or a command from wrong group is specified", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", commonVar.Context)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -77,7 +77,7 @@ var _ = Describe("odo devfile test command tests", func() {
 		})
 
 		It("should error out on devfile flag", func() {
-			helper.CmdShouldFail("odo", "test", "--devfile", "invalid.yaml")
+			helper.CmdShouldFail("odo", "test", "--devfile", "invalid.yaml", "--context", commonVar.Context)
 		})
 	})
 
