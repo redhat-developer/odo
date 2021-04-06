@@ -47,7 +47,8 @@ func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
 func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
 	// DefaultContext has IP set to 0.0.0.0 so that it does not track user's IP, which it does in case no IP is set
 	client, err := analytics.NewWithConfig(writeKey, analytics.Config{
-		Endpoint: segmentEndpoint,
+		Endpoint:  segmentEndpoint,
+		BatchSize: 1,
 		DefaultContext: &analytics.Context{
 			IP: net.IPv4(0, 0, 0, 0),
 		},
@@ -75,17 +76,9 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 	}
 
 	// obtain the user ID
-	userId, uerr := getUserIdentity(c.TelemetryFilePath)
+	userId, uerr := getUserIdentity(c, c.TelemetryFilePath)
 	if uerr != nil {
 		return uerr
-	}
-
-	// queue the data that helps identify the user on segment
-	if err1 := c.SegmentClient.Enqueue(analytics.Identify{
-		UserId: userId,
-		Traits: addConfigTraits(),
-	}); err1 != nil {
-		return err1
 	}
 
 	// add information to the data
@@ -114,8 +107,8 @@ func addConfigTraits() analytics.Traits {
 	return traits
 }
 
-// getUserIdentity returns the anonymous ID if it exists, else creates a new one
-func getUserIdentity(telemetryFilePath string) (string, error) {
+// getUserIdentity returns the anonymous ID if it exists, else creates a new one and sends the data to Segment
+func getUserIdentity(client *Client, telemetryFilePath string) (string, error) {
 	var id []byte
 
 	// Get-or-Create the '$HOME/.redhat' directory
@@ -137,6 +130,15 @@ func getUserIdentity(telemetryFilePath string) (string, error) {
 		if err := ioutil.WriteFile(telemetryFilePath, id, 0600); err != nil {
 			return "", err
 		}
+		// Since a new ID was created, send the Identify message data that helps identify the user on segment
+		if err1 := client.SegmentClient.Enqueue(analytics.Identify{
+			AnonymousId: strings.TrimSpace(string(id)),
+			Traits:      addConfigTraits(),
+		}); err1 != nil {
+			// TODO: maybe change this to klog Info instead of returning
+			return "", err1
+		}
+
 	}
 	return strings.TrimSpace(string(id)), nil
 }
