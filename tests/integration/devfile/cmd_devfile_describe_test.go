@@ -29,6 +29,8 @@ var _ = Describe("odo devfile describe command tests", func() {
 	Context("When executing odo describe", func() {
 		JustAfterEach(func() {
 			// odo delete requires changing directory because it does not work as intended with --context
+			// TODO: Remove helper.Chdir after these issues are closed - https://github.com/openshift/odo/issues/4451
+			// TODO: and https://github.com/openshift/odo/issues/4135
 			helper.Chdir(commonVar.Context)
 			helper.CmdShouldPass("odo", "delete", "-f", "--all")
 		})
