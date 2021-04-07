@@ -15,12 +15,10 @@ const promtMessageSubString = "Help odo improve by allowing it to collect usage 
 var _ = Describe("odo preference and config command tests", func() {
 	// TODO: A neater way to provide odo path. Currently we assume \
 	// odo and oc in $PATH already.
-	var oc helper.OcRunner
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
 	})
 
