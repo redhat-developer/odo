@@ -146,7 +146,6 @@ var _ = Describe("odo source e2e tests", func() {
 			Expect(cmpList).To(ContainSubstring("python-app"))
 
 			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			routeURL := helper.DetermineRouteURL(commonVar.Context)
 
