@@ -27,6 +27,13 @@ const (
 	// TimedOutReason is added in a deployment when its newest replica set fails to show any progress
 	// within the given deadline (progressDeadlineSeconds).
 	timedOutReason = "ProgressDeadlineExceeded"
+
+	// Hardcoded variables since we can't install SBO on k8s using OLM
+	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
+	ServiceBindingGroup    = "binding.operators.coreos.com"
+	ServiceBindingVersion  = "v1alpha1"
+	ServiceBindingKind     = "ServiceBinding"
+	ServiceBindingResource = "servicebindings"
 )
 
 // GetDeploymentByName gets a deployment by querying by name
@@ -241,6 +248,18 @@ func (c *Client) ListDynamicResource(group, version, resource string) (*unstruct
 	return list, nil
 }
 
+// GetDynamicResource returns an unstructured instances of a Custom
+// Resource currently deployed in the active namespace of the cluster
+func (c *Client) GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error) {
+	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+
+	res, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource
 func (c *Client) DeleteDynamicResource(name, group, version, resource string) error {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
@@ -363,4 +382,32 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
 	return dcList.Items, nil
+}
+
+// GetDeploymentAPIVersion returns a map with Group, Version, Resource information of Deployment objects
+// depending on the GVR supported by the cluster
+func (c *Client) GetDeploymentAPIVersion() (metav1.GroupVersionResource, error) {
+	extV1Beta1, err := c.IsDeploymentExtensionsV1Beta1()
+	if err != nil {
+		return metav1.GroupVersionResource{}, err
+	}
+
+	if extV1Beta1 {
+		// this indicates we're running on OCP 3.11 cluster
+		return metav1.GroupVersionResource{
+			Group:    "extensions",
+			Version:  "v1beta1",
+			Resource: "deployments",
+		}, nil
+	}
+
+	return metav1.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "deployments",
+	}, nil
+}
+
+func (c *Client) IsDeploymentExtensionsV1Beta1() (bool, error) {
+	return c.IsResourceSupported("extensions", "v1beta1", "deployments")
 }

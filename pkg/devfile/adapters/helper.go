@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 )
 
@@ -36,10 +37,16 @@ func NewComponentAdapter(componentName string, context string, appName string, d
 }
 
 func createKubernetesAdapter(adapterContext common.AdapterContext, namespace string) (common.ComponentAdapter, error) {
-	client, err := kclient.New()
+	client, err := occlient.New()
 	if err != nil {
 		return nil, err
 	}
+
+	kClient, err := kclient.New()
+	if err != nil {
+		return nil, err
+	}
+	client.SetKubeClient(kClient)
 
 	// If a namespace was passed in
 	if namespace != "" {
@@ -48,7 +55,7 @@ func createKubernetesAdapter(adapterContext common.AdapterContext, namespace str
 	return newKubernetesAdapter(adapterContext, *client)
 }
 
-func newKubernetesAdapter(adapterContext common.AdapterContext, client kclient.Client) (common.ComponentAdapter, error) {
+func newKubernetesAdapter(adapterContext common.AdapterContext, client occlient.Client) (common.ComponentAdapter, error) {
 	// Feed the common metadata to the platform-specific adapter
 	kubernetesAdapter := kubernetes.New(adapterContext, client)
 

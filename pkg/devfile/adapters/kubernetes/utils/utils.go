@@ -225,10 +225,8 @@ func overrideContainerArgs(container *corev1.Container) {
 	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 }
 
-// UpdateContainerWithEnvFrom populates the runtime container with relevant
-// values for "EnvFrom" so that component can be linked with Operator backed
-// service
-func UpdateContainerWithEnvFrom(containers []corev1.Container, devfile devfileParser.DevfileObj, devfileRunCmd string, ei envinfo.EnvSpecificInfo) ([]corev1.Container, error) {
+// UpdateContainerWithEnvFromSecrets adds Secrets to "EnvFrom" of the runtime container
+func UpdateContainerWithEnvFromSecrets(containers []corev1.Container, devfile devfileParser.DevfileObj, devfileRunCmd string, ei envinfo.EnvSpecificInfo, secrets []string) ([]corev1.Container, error) {
 	runCommand, err := adaptersCommon.GetRunCommand(devfile.Data, devfileRunCmd)
 	if err != nil {
 		return nil, err
@@ -237,28 +235,19 @@ func UpdateContainerWithEnvFrom(containers []corev1.Container, devfile devfilePa
 	for i := range containers {
 		c := &containers[i]
 		if c.Name == runCommand.Exec.Component {
-			c.EnvFrom = generateEnvFromSource(ei)
+			for _, secret := range secrets {
+				c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{
+					SecretRef: &corev1.SecretEnvSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: secret,
+						},
+					},
+				})
+			}
 		}
 	}
 
 	return containers, nil
-}
-
-func generateEnvFromSource(ei envinfo.EnvSpecificInfo) []corev1.EnvFromSource {
-
-	envFrom := []corev1.EnvFromSource{}
-
-	for _, link := range ei.GetLink() {
-		envFrom = append(envFrom, corev1.EnvFromSource{
-			SecretRef: &corev1.SecretEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: link.Name,
-				},
-			},
-		})
-	}
-
-	return envFrom
 }
 
 // GetPreStartInitContainers gets the init container for every preStart devfile event

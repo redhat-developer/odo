@@ -3,11 +3,9 @@ package integration_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/helper"
 )
 
 func TestOperatorhub(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Operatorhub Suite")
+	helper.RunTestSpecs(t, "Operatorhub Suite")
 }
