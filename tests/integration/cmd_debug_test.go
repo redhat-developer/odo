@@ -60,9 +60,9 @@ var _ = Describe("odo debug command tests", func() {
 
 		It("should expect a ws connection when tried to connect on different debug port locally and remotely", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "config", "set", "--force", "DebugPort", "9292", "--context", commonVar.Context)
-			dbgPort := helper.GetConfigValueWithContext("DebugPort", commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "env", "set", "--force", "DebugPort", "9292", "--context", commonVar.Context)
+			dbgPort := helper.GetLocalEnvInfoValueWithContext("DebugPort", commonVar.Context)
 			Expect(dbgPort).To(Equal("9292"))
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
