@@ -57,15 +57,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			helper.MatchAllInOutput(stdOut, []string{"Services available through Operators", "etcdoperator"})
 		})
-
-		It("should not allow creating service without valid context, and fail for interactive mode", func() {
-			stdOut := helper.CmdShouldFail("odo", "service", "create")
-			Expect(stdOut).To(ContainSubstring("service can be created from a valid component directory only"))
-
-			helper.CmdShouldPass("odo", "create", "nodejs")
-			stdOut = helper.CmdShouldFail("odo", "service", "create")
-			Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
-		})
 	})
 
 	Context("When creating and deleting an operator backed service", func() {
@@ -268,6 +259,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		})
 
 		It("should fail to create service if metadata doesn't exist or is invalid", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs")
 			noMetadata := `
 apiVersion: etcd.database.coreos.com/v1beta2
 kind: EtcdCluster
