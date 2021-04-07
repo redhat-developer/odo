@@ -114,7 +114,6 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 
 	// check if interactive mode is requested
-	// TODO:
 	if len(args) == 0 {
 		o.interactive = true
 		// only Service Catalog backend supports interactive mode for service creation

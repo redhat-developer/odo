@@ -85,6 +85,14 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
 			Expect(stdOut).To(ContainSubstring("Service \"example\" was created"))
 
+			// read the devfile.yaml to check if service definition was rightly inserted
+			devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
+			content, err := ioutil.ReadFile(devfilePath)
+			Expect(err).To(BeNil())
+
+			matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "example"}
+			helper.MatchAllInOutput(string(content), matchInOutput)
+
 			// now verify if the pods for the operator have started
 			pods := oc.GetAllPodsInNs(commonVar.Project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
@@ -101,6 +109,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			// now test the deletion of the service using odo
 			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
+
+			// read the devfile.yaml to check if service definition was deleted
+			content, err = ioutil.ReadFile(devfilePath)
+			Expect(err).To(BeNil())
+
+			helper.DontMatchAllInOutput(string(content), matchInOutput)
 
 			// now try deleting the same service again. It should fail with error message
 			stdOut = helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
