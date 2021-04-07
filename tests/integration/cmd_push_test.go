@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -43,26 +42,6 @@ var _ = Describe("odo push command tests", func() {
 
 	// })
 
-	Context("Check for label propagation after pushing", func() {
-
-		It("Check for labels", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			// Check for all the labels
-			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app:"+appName)
-			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app.kubernetes.io/part-of:"+appName)
-			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app.kubernetes.io/managed-by:odo")
-
-			// Check for the version
-			versionInfo := helper.CmdShouldPass("odo", "version")
-			re := regexp.MustCompile(`v[0-9]\S*`)
-			odoVersionString := re.FindStringSubmatch(versionInfo)
-			oc.VerifyLabelExistsOfComponent(cmpName, commonVar.Project, "app.kubernetes.io/managed-by-version:"+odoVersionString[0])
-		})
-	})
-
 	Context("Test push outside of the current working direcory", func() {
 
 		// Change to "outside" the directory before running the below tests
@@ -94,21 +73,6 @@ var _ = Describe("odo push command tests", func() {
 	})
 
 	Context("when push command is executed", func() {
-		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
-			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
-
-			url := oc.GetFirstURL(cmpName, appName, commonVar.Project)
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello world from node.js!", "UPDATED!")
-
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
-		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions and build", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)

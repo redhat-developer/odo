@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -92,28 +91,6 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project)...)
 			output := helper.CmdShouldFail("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project)...)
 			Expect(output).To(ContainSubstring("this directory already contains a component"))
-		})
-
-		It("should list out component in json format along with path flag", func() {
-			var contextPath string
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project)...)
-			info := helper.LocalEnvInfo(commonVar.Context)
-			Expect(info.GetApplication(), "app")
-			Expect(info.GetName(), "nodejs")
-			if runtime.GOOS == "windows" {
-				contextPath = strings.Replace(strings.TrimSpace(commonVar.Context), "\\", "\\\\", -1)
-			} else {
-				contextPath = strings.TrimSpace(commonVar.Context)
-			}
-			// this orders the json
-			desired, err := helper.Unindented(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","sourceType": "local","ports":["8080/TCP"]},"status":{"context":"%s","state":"Not Pushed"}}`, commonVar.Project, contextPath))
-			Expect(err).Should(BeNil())
-
-			actual, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", filepath.Dir(commonVar.Context))...))
-			Expect(err).Should(BeNil())
-			// since the tests are run parallel, there might be many odo component directories in the root folder
-			// so we only check for the presence of the current one
-			Expect(actual).Should(ContainSubstring(desired))
 		})
 
 		// TODO: Fix later
@@ -476,24 +453,25 @@ func componentTests(args ...string) {
 			helper.CmdShouldFail("odo", append(args, "delete", "-f", "--app", appName, "--project", commonVar.Project)...)
 		})
 
-		FIt("should pass outside a odo directory with component name as parameter", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
-			info := helper.LocalEnvInfo(commonVar.Context)
-			Expect(info.GetApplication(), appName)
-			Expect(info.GetName(), cmpName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+		// issue https://github.com/openshift/odo/issues/4451
+		// It("should pass outside a odo directory with component name as parameter", func() {
+		// 	helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+		// 	helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+		// 	info := helper.LocalEnvInfo(commonVar.Context)
+		// 	Expect(info.GetApplication(), appName)
+		// 	Expect(info.GetName(), cmpName)
+		// 	helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
 
-			cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...)
-			Expect(cmpListOutput).To(ContainSubstring(cmpName))
+		// 	cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...)
+		// 	Expect(cmpListOutput).To(ContainSubstring(cmpName))
 
-			actualDesCompJSON := helper.CmdShouldPass("odo", append(args, "describe", cmpName, "--app", appName, "--project", commonVar.Project, "-o", "json")...)
-			valuesDescCJ := gjson.GetMany(actualDesCompJSON, "kind", "metadata.name", "spec.app", "spec.type", "status.state")
-			expectedDescCJ := []string{"Component", "nodejs", "app", "nodejs", "Pushed"}
-			Expect(helper.GjsonMatcher(valuesDescCJ, expectedDescCJ)).To(Equal(true))
+		// 	actualDesCompJSON := helper.CmdShouldPass("odo", append(args, "describe", cmpName, "--app", appName, "--project", commonVar.Project, "-o", "json")...)
+		// 	valuesDescCJ := gjson.GetMany(actualDesCompJSON, "kind", "metadata.name", "spec.app", "spec.type", "status.state")
+		// 	expectedDescCJ := []string{"Component", "nodejs", "app", "nodejs", "Pushed"}
+		// 	Expect(helper.GjsonMatcher(valuesDescCJ, expectedDescCJ)).To(Equal(true))
 
-			helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", commonVar.Project, "-f")...)
-		})
+		// 	helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", commonVar.Project, "-f")...)
+		// })
 	})
 
 	Context("when running odo push multiple times, check for existence of environment variables", func() {
