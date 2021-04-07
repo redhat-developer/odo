@@ -26,6 +26,8 @@ SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 if [[ $BASE_OS == "windows" ]]; then
     shout "Setting GOBIN for windows"
     GOBIN="$(cygpath -pw $GOBIN)"
+    ARTIFACT_DIR="$(cygpath -pw $ARTIFACT_DIR)"
+    CUSTOM_HOMEDIR="$(cygpath -pw $CUSTOM_HOMEDIR)"
 elif [[ $BASE_OS == "mac" ]]; then
     PATH="$PATH:/usr/local/bin:/usr/local/go/bin"                           #Path to `go` command as `/usr/local/go/bin:/usr/local/bin` is not included in $PATH while running test
 fi
