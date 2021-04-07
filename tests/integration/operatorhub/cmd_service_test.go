@@ -89,7 +89,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 			content, err := ioutil.ReadFile(devfilePath)
 			Expect(err).To(BeNil())
-
 			matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "example"}
 			helper.MatchAllInOutput(string(content), matchInOutput)
 
@@ -113,7 +112,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// read the devfile.yaml to check if service definition was deleted
 			content, err = ioutil.ReadFile(devfilePath)
 			Expect(err).To(BeNil())
-
 			helper.DontMatchAllInOutput(string(content), matchInOutput)
 
 			// now try deleting the same service again. It should fail with error message
