@@ -25,7 +25,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	})
 
 	AfterEach(func() {
-		//helper.CommonAfterEach(commonVar)
+		helper.CommonAfterEach(commonVar)
 	})
 
 	preSetup := func() {
