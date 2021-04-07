@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -59,16 +58,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 
 	// decide which service backend to use
-	_, _, err = svc.SplitServiceKindName(args[0])
-	if err != nil {
-		// failure to split provided name into two; hence ServiceCatalogBackend
-		o.Backend = NewServiceCatalogBackend()
-
-		err = nil
-	} else {
-		// provided name adheres to the format <operator-type>/<crd-name>; hence OperatorBackend
-		o.Backend = NewOperatorBackend()
-	}
+	o.Backend = decideBackend(args[0])
 	o.serviceName = args[0]
 
 	return

@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -121,15 +120,7 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 		// only Service Catalog backend supports interactive mode for service creation
 		o.Backend = NewServiceCatalogBackend()
 	} else {
-		_, _, err = svc.SplitServiceKindName(args[0])
-		if err != nil {
-			// failure to split provided name into two; hence ServiceCatalogBackend
-			o.Backend = NewServiceCatalogBackend()
-			err = nil
-		} else {
-			// provided name adheres to the format <operator-type>/<crd-name>; hence OperatorBackend
-			o.Backend = NewOperatorBackend()
-		}
+		o.Backend = decideBackend(args[0])
 	}
 
 	return o.Backend.CompleteServiceCreate(o, cmd, args)
