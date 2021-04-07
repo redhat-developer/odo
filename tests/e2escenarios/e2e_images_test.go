@@ -36,21 +36,17 @@ var _ = Describe("odo supported images e2e tests", func() {
 	// Also verify the flow of odo commands with respect to supported images only.
 	verifySupportedImage := func(image, srcType, cmpType, project, appName, context string) {
 
+		cmpName := srcType + "-app"
 		// create the component
 		helper.CopyExample(filepath.Join("source", srcType), commonVar.Context)
-		helper.CmdShouldPass("odo", "create", "--s2i", cmpType, srcType+"-app", "--project", project, "--context", context, "--app", appName)
-
-		helper.CmdShouldPass("odo", "config", "set", "minmemory", "400Mi", "--context", context)
-		helper.CmdShouldPass("odo", "config", "set", "maxmemory", "700Mi", "--context", context)
+		helper.CmdShouldPass("odo", "create", "--s2i", cmpType, cmpName, "--project", project, "--context", context, "--app", appName)
 
 		// push component and validate
 		helper.CmdShouldPass("odo", "push", "--context", context)
 		cmpList := helper.CmdShouldPass("odo", "list", "--context", context)
 		Expect(cmpList).To(ContainSubstring(srcType + "-app"))
 
-		// create a url
-		helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context)
-		helper.CmdShouldPass("odo", "push", "--context", context)
+		// get the url
 		routeURL := helper.DetermineRouteURL(context)
 
 		// Ping said URL
@@ -68,13 +64,13 @@ var _ = Describe("odo supported images e2e tests", func() {
 		}
 
 		watchFlag := ""
-		odoV1Watch := utils.OdoV1Watch{
-			SrcType:  srcType,
-			RouteURL: routeURL,
-			AppName:  appName,
-		}
+
 		// odo watch and validate
-		utils.OdoWatch(odoV1Watch, utils.OdoV2Watch{}, project, context, watchFlag, oc, "kube")
+		utils.OdoWatch(utils.OdoV1Watch{},
+			utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing s2i-assemble command", "Executing s2i-run command"},
+			}, project, context, watchFlag, oc, "kube")
 
 		// delete the component and validate
 		helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")

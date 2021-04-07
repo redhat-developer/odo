@@ -43,72 +43,6 @@ var _ = Describe("odo push command tests", func() {
 
 	// })
 
-	Context("Check memory and cpu config before odo push", func() {
-		It("Should work when memory is set..", func() {
-
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-
-			helper.CmdShouldPass("odo", "config", "set", "Memory", "300Mi", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-		})
-
-		It("Should fail if minMemory is set but maxmemory is not set..", func() {
-
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-
-			helper.CmdShouldPass("odo", "config", "set", "minmemory", "100Mi", "--context", commonVar.Context)
-			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("`minmemory` should accompany `maxmemory` or use `odo config set memory` to use same value for both min and max"))
-		})
-
-		It("should fail if maxmemory is set but minmemory is not set..", func() {
-
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-
-			helper.CmdShouldPass("odo", "config", "set", "maxmemory", "400Mi", "--context", commonVar.Context)
-			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("`minmemory` should accompany `maxmemory` or use `odo config set memory` to use same value for both min and max"))
-		})
-
-		It("Should work when cpu is set", func() {
-
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-
-			helper.CmdShouldPass("odo", "config", "set", "cpu", "0.4", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-		})
-
-		It("Should fail if mincpu is set but maxcpu is not set..", func() {
-
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-
-			helper.CmdShouldPass("odo", "config", "set", "mincpu", "0.4", "--context", commonVar.Context)
-			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("`mincpu` should accompany `maxcpu` or use `odo config set cpu` to use same value for both min and max"))
-		})
-
-		It("should fail if maxcpu is set but mincpu is not set..", func() {
-
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-
-			helper.CmdShouldPass("odo", "config", "set", "maxcpu", "0.5", "--context", commonVar.Context)
-			output := helper.CmdShouldFail("odo", "push", "--context", commonVar.Context)
-			Expect(output).To(ContainSubstring("`mincpu` should accompany `maxcpu` or use `odo config set cpu` to use same value for both min and max"))
-		})
-	})
-
 	Context("Check for label propagation after pushing", func() {
 
 		It("Check for labels", func() {
@@ -263,41 +197,6 @@ var _ = Describe("odo push command tests", func() {
 			// use the force build flag and push
 			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context, "-f")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
-		})
-
-		It("should push only the modified files", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			url := oc.GetFirstURL(cmpName, appName, commonVar.Project)
-
-			// Wait for running app before getting info about files.
-			// During the startup sequence there is something that will modify the access time of a source file.
-			helper.HttpWaitFor("http://"+url, "Hello world from node.js!", 30, 1)
-
-			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
-			dir := envs["ODO_S2I_SRC_BIN_PATH"]
-
-			earlierCatServerFile := ""
-			earlierCatServerFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "server.js")))
-
-			earlierCatPackageFile := ""
-			earlierCatPackageFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "package.json")))
-
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello world from node.js!", "UPDATED!")
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
-
-			modifiedCatPackageFile := ""
-			modifiedCatPackageFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "package.json")))
-
-			modifiedCatServerFile := ""
-			modifiedCatServerFile = oc.StatFileInPod(cmpName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(dir, "src", "server.js")))
-
-			Expect(modifiedCatPackageFile).To(Equal(earlierCatPackageFile))
-			Expect(modifiedCatServerFile).NotTo(Equal(earlierCatServerFile))
 		})
 
 		It("should delete the files from the container if its removed locally", func() {

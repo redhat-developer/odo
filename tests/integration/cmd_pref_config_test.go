@@ -186,7 +186,7 @@ var _ = Describe("odo preference and config command tests", func() {
 					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--git", "https://github.com/sclorg/nodejs-ex")
 			for _, testCase := range cases {
 				helper.CmdShouldPass("odo", "config", "set", testCase.paramName, testCase.paramValue, "-f")
 				setValue := helper.GetConfigValue(testCase.paramName)

@@ -320,7 +320,7 @@ var _ = Describe("odo generic", func() {
 			}
 			for _, testCase := range cases {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				output := helper.CmdShouldFail("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--"+testCase.paramName, testCase.paramValue)
+				output := helper.CmdShouldFail("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--"+testCase.paramName, testCase.paramValue, "--git", "https://github.com/odo-devfiles/nodejs-ex.git")
 				Expect(output).To(ContainSubstring("unknown flag: --" + testCase.paramName))
 			}
 		})

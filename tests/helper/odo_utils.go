@@ -59,6 +59,24 @@ func DetermineRouteURL(context string) string {
 	return routeURL(context)
 }
 
+// DetermineRouteURLs takes context path as argument and returns the URLs
+// where the current component exposes it's service, these URL can
+// then be used in order to interact with the deployed service running in Openshift
+func DetermineRouteURLs(context string) []string {
+	var stdOut string
+	if context != "" {
+		stdOut = CmdShouldPass("odo", "url", "list", "--context", context)
+	} else {
+		stdOut = CmdShouldPass("odo", "url", "list")
+	}
+	reURL := regexp.MustCompile(`\s+http(s?)://.\S+`)
+	odoURLs := reURL.FindAllString(stdOut, -1)
+	for i := range odoURLs {
+		odoURLs[i] = strings.TrimSpace(odoURLs[i])
+	}
+	return odoURLs
+}
+
 func routeURL(context string) string {
 	var stdOut string
 	if context != "" {

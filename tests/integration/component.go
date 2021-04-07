@@ -64,29 +64,6 @@ func componentTests(args ...string) {
 			helper.CmdShouldFail("odo", "list", "--project", commonVar.Project, "--context", commonVar.Context)
 		})
 
-		It("Without an application should create one", func() {
-			componentName := helper.RandString(6)
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", componentName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", "app")...)
-
-			info := helper.LocalEnvInfo(commonVar.Context)
-			Expect(info.GetApplication(), "app")
-			Expect(info.GetName(), componentName)
-			helper.CmdShouldPass("odo", append(args, "push")...)
-			appName := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
-			Expect(appName).ToNot(BeEmpty())
-
-			// checking if application name is set to "app"
-			applicationName := helper.GetConfigValue("Application")
-			Expect(applicationName).To(Equal("app"))
-
-			// clean up
-			helper.CmdShouldPass("odo", "app", "delete", "app", "-f")
-			helper.CmdShouldFail("odo", "app", "delete", "app", "-f")
-			helper.CmdShouldFail("odo", append(args, "delete", componentName, "-f")...)
-
-		})
-
 		It("should create default named component when passed same context differently", func() {
 			dir := filepath.Base(commonVar.Context)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
@@ -248,21 +225,9 @@ func componentTests(args ...string) {
 				"nodejs",
 				"url-1",
 				"url-2",
-				"https://github.com/openshift/nodejs-ex",
 				"storage-1",
 			})
 
-			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "describe", "-o", "json", "--context", commonVar.Context)...))
-			Expect(err).Should(BeNil())
-			valuesDesc := gjson.GetMany(cmpDescribeJSON, "kind", "metadata.name", "spec.urls.items.0.kind", "spec.urls.items.0.metadata.name", "spec.urls.items.0.status.state", "spec.urls.items.1.kind", "spec.urls.items.1.metadata.name", "spec.urls.items.1.status.state")
-			expectedDesc := []string{"Component", "cmp-git", "url", "url-1", "Not Pushed", "url", "url-2", "Not Pushed"}
-			Expect(helper.GjsonMatcher(valuesDesc, expectedDesc)).To(Equal(true))
-
-			// odo should describe not pushed component if component name is given.
-			helper.CmdShouldPass("odo", append(args, "describe", "cmp-git", "--context", commonVar.Context)...)
-			Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
-
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
 		})
 
 		It("checks that odo describe works for s2i component from a devfile directory", func() {
@@ -698,32 +663,33 @@ func componentTests(args ...string) {
 			oc.WaitAndCheckForExistence("service", commonVar.Project, 1)
 		})
 
-		It("should delete the component and the owned resources with wait flag", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+		// issue https://github.com/openshift/odo/issues/4593
+		// It("should delete the component and the owned resources with wait flag", func() {
+		// 	helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+		// 	helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+		// 	helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
 
-			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
-			info := helper.LocalEnvInfo(commonVar.Context)
-			Expect(info.GetApplication(), appName)
-			Expect(info.GetName(), cmpName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+		// 	helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+		// 	info := helper.LocalEnvInfo(commonVar.Context)
+		// 	Expect(info.GetApplication(), appName)
+		// 	Expect(info.GetName(), cmpName)
+		// 	helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
 
-			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+		// 	helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
+		// 	helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
+		// 	helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
 
-			// delete with --wait flag
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
+		// 	// delete with --wait flag
+		// 	helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
 
-			oc.VerifyResourceDeleted("routes", "example", commonVar.Project)
-			oc.VerifyResourceDeleted("service", cmpName, commonVar.Project)
-			// verify s2i pvc is delete
-			oc.VerifyResourceDeleted("pvc", "s2idata", commonVar.Project)
-			oc.VerifyResourceDeleted("pvc", "storage-1", commonVar.Project)
-			oc.VerifyResourceDeleted("pvc", "storage-2", commonVar.Project)
-			oc.VerifyResourceDeleted("dc", cmpName, commonVar.Project)
-		})
+		// 	oc.VerifyResourceDeleted("routes", "example", commonVar.Project)
+		// 	oc.VerifyResourceDeleted("service", cmpName, commonVar.Project)
+		// 	// verify s2i pvc is delete
+		// 	oc.VerifyResourceDeleted("pvc", "s2idata", commonVar.Project)
+		// 	oc.VerifyResourceDeleted("pvc", "storage-1", commonVar.Project)
+		// 	oc.VerifyResourceDeleted("pvc", "storage-2", commonVar.Project)
+		// 	oc.VerifyResourceDeleted("dc", cmpName, commonVar.Project)
+		// })
 
 	})
 
