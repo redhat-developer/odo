@@ -45,7 +45,8 @@ var _ = Describe("odo supported images e2e tests", func() {
 		helper.CmdShouldPass("odo", "push", "--context", context)
 		cmpList := helper.CmdShouldPass("odo", "list", "--context", context)
 		Expect(cmpList).To(ContainSubstring(srcType + "-app"))
-
+		// push again just to confirm it works
+		helper.CmdShouldPass("odo", "push", "--context", context)
 		// get the url
 		routeURL := helper.DetermineRouteURL(context)
 

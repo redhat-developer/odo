@@ -326,33 +326,6 @@ func componentTests(args ...string) {
 		})
 	})
 
-	Context("Test odo push with --now flag during creation", func() {
-		JustBeforeEach(func() {
-			helper.Chdir(commonVar.Context)
-		})
-		It("should successfully create config and push code in one create command with --now", func() {
-			appName := "nodejs-create-now-test"
-			cmpName := "nodejs-push-atonce"
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--now")...)
-			info := helper.LocalEnvInfo(commonVar.Context)
-			Expect(info.GetApplication(), appName)
-			Expect(info.GetName(), cmpName)
-
-			oc.VerifyCmpExists(cmpName, appName, commonVar.Project)
-			remoteCmdExecPass := oc.CheckCmdOpInRemoteCmpPod(
-				cmpName,
-				appName,
-				commonVar.Project,
-				[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
-				func(cmdOp string, err error) bool {
-					return err == nil
-				},
-			)
-			Expect(remoteCmdExecPass).To(Equal(true))
-		})
-	})
-
 	Context("when component is in the current directory and --project flag is used", func() {
 
 		appName := "app"
@@ -503,7 +476,7 @@ func componentTests(args ...string) {
 			helper.CmdShouldFail("odo", append(args, "delete", "-f", "--app", appName, "--project", commonVar.Project)...)
 		})
 
-		It("should pass outside a odo directory with component name as parameter", func() {
+		FIt("should pass outside a odo directory with component name as parameter", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
 			info := helper.LocalEnvInfo(commonVar.Context)
@@ -537,15 +510,10 @@ func componentTests(args ...string) {
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), componentName)
-			ports := oc.GetDcPorts(componentName, appName, commonVar.Project)
-			Expect(ports).To(ContainSubstring("8080"))
-			dcName := oc.GetDcName(componentName, commonVar.Project)
-			stdOut := helper.CmdShouldPass("oc", "get", "dc/"+dcName, "-n", commonVar.Project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
-			Expect(stdOut).To(ContainSubstring("FOO"))
-
-			helper.CmdShouldPass("odo", append(args, "push")...)
-			stdOut = oc.DescribeDc(dcName, commonVar.Project)
-			Expect(stdOut).To(ContainSubstring("FOO"))
+			envVars := oc.GetEnvsDevFileDeployment(componentName, commonVar.Project)
+			val, ok := envVars["FOO"]
+			Expect(ok).To(BeTrue())
+			Expect(val).To(Equal("BAR"))
 		})
 	})
 
