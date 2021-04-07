@@ -2,14 +2,11 @@ package service
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/util"
-
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
@@ -47,6 +44,20 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+		Cmd:              cmd,
+		DevfilePath:      component.DevfilePath,
+		ComponentContext: o.componentContext,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = validDevfileDirectory(o.componentContext)
+	if err != nil {
+		return err
+	}
+
 	// decide which service backend to use
 	_, _, err = svc.SplitServiceKindName(args[0])
 	if err != nil {
@@ -59,25 +70,6 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 		o.Backend = NewOperatorBackend()
 	}
 	o.serviceName = args[0]
-
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      component.DevfilePath,
-		ComponentContext: o.componentContext,
-	})
-	if err != nil {
-		return err
-	}
-
-	// check if service create is executed from a valid context because without that, it's useless to execute further
-	if o.componentContext == "" {
-		o.componentContext = component.LocalDirectoryDefaultLocation
-	}
-	devfilePath := filepath.Join(o.componentContext, component.DevfilePath)
-	if !util.CheckPathExists(devfilePath) {
-		return fmt.Errorf("service can be created from a valid component directory only\n"+
-			"refer %q for more information", "odo servce create -h")
-	}
 
 	return
 }

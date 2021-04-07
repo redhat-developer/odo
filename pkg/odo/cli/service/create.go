@@ -3,14 +3,11 @@ package service
 import (
 	"bytes"
 	"fmt"
-	"path/filepath"
 	"strings"
 	"text/template"
 
-	"github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/util"
-
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -103,6 +100,11 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 		return err
 	}
 
+	err = validDevfileDirectory(o.componentContext)
+	if err != nil {
+		return err
+	}
+
 	// decide which service backend to use
 	if o.fromFile != "" {
 		// fromFile is supported only for Operator backend
@@ -128,17 +130,6 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 			// provided name adheres to the format <operator-type>/<crd-name>; hence OperatorBackend
 			o.Backend = NewOperatorBackend()
 		}
-	}
-
-	// check if service create is executed from a valid context because without that,
-	// it's useless to execute further as we want to store service info in devfile
-	if o.componentContext == "" {
-		o.componentContext = component.LocalDirectoryDefaultLocation
-	}
-	devfilePath := filepath.Join(o.componentContext, component.DevfilePath)
-	if !util.CheckPathExists(devfilePath) {
-		return fmt.Errorf("service can be created from a valid component directory only\n"+
-			"refer %q for more information", "odo servce create -h")
 	}
 
 	return o.Backend.CompleteServiceCreate(o, cmd, args)
