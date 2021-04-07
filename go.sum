@@ -271,8 +271,8 @@ github.com/devfile/library v0.0.0-20210216162950-3066a892876c/go.mod h1:aGJSpcGr
 github.com/devfile/registry-support/index/generator v0.0.0-20201211145454-bc904934d987/go.mod h1:H8hBF8b+025XN+Wk70F5P1zeoJ28bAYkbQAeWyTkHEQ=
 github.com/devfile/registry-support/index/generator v0.0.0-20210311161226-db3f89d5186f h1:Xmg8JDqB9LeM++VQtrrg+i5KFVnAC/LZ1EkTbJiHHbg=
 github.com/devfile/registry-support/index/generator v0.0.0-20210311161226-db3f89d5186f/go.mod h1:WkWqaKO61BICUbdXjm3rqi0J4nOHM+F3bCTZKShqENY=
-github.com/devfile/registry-support/registry-library v0.0.0-20210401183644-707be62c0ba5 h1:0oPmJHAvrj3Ww3LC8R1B9kscPSmMmrvELPkWkHd89KQ=
-github.com/devfile/registry-support/registry-library v0.0.0-20210401183644-707be62c0ba5/go.mod h1:EX/xegXkiNXvt89bpN76lLKgDUMBtYE7bdah3VYayJM=
+github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873 h1:8TZf2dj7F5GNtdQA4bmyMVRm1cz9y4C0xwnetRN3uvo=
+github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873/go.mod h1:EX/xegXkiNXvt89bpN76lLKgDUMBtYE7bdah3VYayJM=
 github.com/dgrijalva/jwt-go v0.0.0-20170104182250-a601269ab70c/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=

@@ -14,7 +14,6 @@ package library
 import (
 	"archive/tar"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,6 +26,8 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 	"time"
+
+	orasctx "github.com/deislabs/oras/pkg/context"
 
 	"github.com/containerd/containerd/remotes/docker"
 	"github.com/deislabs/oras/pkg/content"
@@ -131,7 +132,7 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	}
 
 	// Pull stack initialization
-	ctx := context.Background()
+	ctx := orasctx.Background()
 	urlObj, err := url.Parse(registry)
 	if err != nil {
 		return err
@@ -146,12 +147,10 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	defer fileStore.Close()
 
 	// Pull stack from registry and save it to disk
-	log.Printf("Pulling stack %s from %s with allowed media types %v...\n", stack, ref, allowedMediaTypes)
-	desc, _, err := oras.Pull(ctx, resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
+	_, _, err = oras.Pull(ctx, resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
 	if err != nil {
-		return fmt.Errorf("Failed to pull stack %s from %s: %v", stack, ref, err)
+		return fmt.Errorf("Failed to pull stack %s from %s with allowed media types %v: %v", stack, ref, allowedMediaTypes, err)
 	}
-	log.Printf("Pulled stack %s from %s with digest %s\n", stack, ref, desc.Digest)
 
 	// Decompress archive.tar
 	archivePath := filepath.Join(destDir, "archive.tar")
