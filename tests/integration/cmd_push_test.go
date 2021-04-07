@@ -163,48 +163,6 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 		})
 
-		It("should delete the files from the container if its removed locally", func() {
-			oc.ImportJavaIS(commonVar.Project)
-			cmpName := "backend"
-			helper.CopyExample(filepath.Join("source", "openjdk"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "backend", "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
-			dir := envs["ODO_S2I_SRC_BIN_PATH"]
-
-			var statErr error
-			oc.CheckCmdOpInRemoteCmpPod(
-				"backend",
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))},
-				func(cmdOp string, err error) bool {
-					statErr = err
-					return true
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-			Expect(os.Remove(filepath.Join(commonVar.Context, "src", "main", "java", "AnotherMessageProducer.java"))).NotTo(HaveOccurred())
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			oc.CheckCmdOpInRemoteCmpPod(
-				"backend",
-				appName,
-				commonVar.Project,
-				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))},
-				func(cmdOp string, err error) bool {
-					statErr = err
-					return true
-				},
-			)
-
-			Expect(statErr).To(HaveOccurred())
-			path := filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))
-			Expect(statErr.Error()).To(ContainSubstring("cannot stat '" + path + "': No such file or directory"))
-		})
-
 	})
 
 	Context("when .odoignore file exists", func() {
