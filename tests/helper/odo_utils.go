@@ -36,6 +36,27 @@ func GetConfigValueWithContext(key string, context string) string {
 	return ""
 }
 
+// GetLocalEnvInfoValueWithContext returns an envInfo value of given key and contextdir or
+// returns an empty string if value is not set
+func GetLocalEnvInfoValueWithContext(key string, context string) string {
+	var stdOut string
+	if context != "" {
+		stdOut = CmdShouldPass("odo", "env", "view", "--context", context)
+	} else {
+		stdOut = CmdShouldPass("odo", "env", "view")
+	}
+	re := regexp.MustCompile(key + `.+`)
+	odoConfigKeyValue := re.FindString(stdOut)
+	if odoConfigKeyValue == "" {
+		return fmt.Sprintf("%s not found", key)
+	}
+	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
+	if strings.Compare(key, trimKeyValue) != 0 {
+		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
+	}
+	return ""
+}
+
 // GetPreferenceValue a global config value of given key or
 // returns an empty string if value is not set
 func GetPreferenceValue(key string) string {

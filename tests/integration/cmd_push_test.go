@@ -208,6 +208,7 @@ var _ = Describe("odo push command tests", func() {
 	})
 
 	Context("when .odoignore file exists", func() {
+		// works
 		It("should create and push the contents of a named component excluding the contents and changes detected in .odoignore file", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 
@@ -222,17 +223,14 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 			// get the name of running pod
-			podName := oc.GetRunningPodNameOfComp("nodejs", commonVar.Project)
-
-			envs := oc.GetEnvs(cmpName, appName, commonVar.Project)
-			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
+			podName := oc.GetRunningPodNameByComponent("nodejs", commonVar.Project)
 
 			// verify that the server file got pushed
-			stdOut1 := oc.ExecListDir(podName, commonVar.Project, dir)
+			stdOut1 := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
 			Expect(stdOut1).To(ContainSubstring("server.js"))
 
 			// verify that the README.md file was not pushed
-			stdOut3 := oc.ExecListDir(podName, commonVar.Project, dir)
+			stdOut3 := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
 			Expect(stdOut3).To(Not(ContainSubstring(("README.md"))))
 
 			// modify a ignored file and push

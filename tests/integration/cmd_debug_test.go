@@ -77,22 +77,6 @@ var _ = Describe("odo debug command tests", func() {
 			stopChannel <- true
 		})
 
-		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			stopChannel := make(chan bool)
-			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--context", commonVar.Context)
-			}()
-
-			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
-			// We are just using this to validate if nodejs agent is listening on the other side
-			helper.HttpWaitForWithStatus("http://localhost:5858", "WebSockets request was expected", 12, 5, 400)
-			stopChannel <- true
-		})
-
 	})
 
 	Context("odo debug info should work on a odo component", func() {
