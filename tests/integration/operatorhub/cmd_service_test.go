@@ -57,6 +57,15 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			helper.MatchAllInOutput(stdOut, []string{"Services available through Operators", "etcdoperator"})
 		})
+
+		It("should not allow creating service without valid context, and fail for interactive mode", func() {
+			stdOut := helper.CmdShouldFail("odo", "service", "create")
+			Expect(stdOut).To(ContainSubstring("service can be created/deleted from a valid component directory only"))
+
+			helper.CmdShouldPass("odo", "create", "nodejs")
+			stdOut = helper.CmdShouldFail("odo", "service", "create")
+			Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
+		})
 	})
 
 	Context("When creating and deleting an operator backed service", func() {
