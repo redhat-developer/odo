@@ -31,8 +31,8 @@ type CreateOptions struct {
 	storagePath      string
 	componentContext string
 
-	container   string // container to which this storage belongs
-	storage localConfigProvider.LocalStorage
+	container string // container to which this storage belongs
+	storage   localConfigProvider.LocalStorage
 	*genericclioptions.Context
 }
 
@@ -60,9 +60,9 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 
 	o.storage = localConfigProvider.LocalStorage{
-		Name: o.storageName,
-		Size: o.storageSize,
-		Path: o.storagePath,
+		Name:      o.storageName,
+		Size:      o.storageSize,
+		Path:      o.storagePath,
 		Container: o.container,
 	}
 
