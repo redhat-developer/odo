@@ -66,6 +66,20 @@ var _ = Describe("odo devfile storage command tests", func() {
 			}
 		})
 
+		It("should create storage and attach to specified container successfully and list it correctly", func() {
+			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-containers.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			storageName := helper.RandString(5)
+			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", "/data1", "--context", commonVar.Context, "--container", "funtime")
+			storageList := helper.CmdShouldPass("odo", "storage", "list")
+			helper.MatchAllInOutput(storageList, []string{"/data1", "funtime", storageName})
+			helper.DontMatchAllInOutput(storageList, []string{"runtime"})
+		})
+
 		It("should create a storage with default size when --size is not provided", func() {
 			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
 			helper.CmdShouldPass("odo", args...)
