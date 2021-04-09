@@ -80,7 +80,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			storageList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(storageList, []string{pathName, "funtime", storageName, size})
 			helper.DontMatchAllInOutput(storageList, []string{"runtime"})
-			helper.CmdShouldPass("odo", "push", "--context")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			storageList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(storageList, []string{"/data1", "funtime", storageName})
 			helper.DontMatchAllInOutput(storageList, []string{"runtime"})
