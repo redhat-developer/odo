@@ -203,6 +203,9 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 
 	if strings.Contains(devfileComponent.Registry.URL, "github") {
 		devObj, err = devfile.ParseFromURLAndValidate(devfileComponent.Registry.URL + devfileComponent.Link)
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from Github-based registry for devfile component: %s", devfileComponent.Name)
+		}
 	} else {
 		registryURL, err := url.Parse(devfileComponent.Registry.URL)
 		if err != nil {
@@ -210,9 +213,9 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 		}
 		registryURL.Path = path.Join(registryURL.Path, "devfiles", devfileComponent.Name)
 		devObj, err = devfile.ParseFromURLAndValidate(registryURL.String())
-	}
-	if err != nil {
-		return devObj, errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from OCI-based registry for devfile component: %s", devfileComponent.Name)
+		}
 	}
 
 	err = validate.ValidateDevfileData(devObj.Data)
