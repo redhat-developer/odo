@@ -23,7 +23,7 @@ IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11"
 ## Let developer user have access to the project
 ##oc adm policy add-role-to-user edit developer
 
-#sh $SETUP_OPERATORS
+sh $SETUP_OPERATORS
 # OperatorHub setup complete
 
 # Create the namespace for e2e image test apply pull secret to the namespace
