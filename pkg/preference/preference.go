@@ -267,6 +267,17 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 		c.OdoSettings.RegistryList = &defaultRegistryList
 	}
 
+	// Handle OCI-based default registry migration
+	if c.OdoSettings.RegistryList != nil {
+		for index, registry := range *c.OdoSettings.RegistryList {
+			if registry.Name == DefaultDevfileRegistryName && registry.URL != DefaultDevfileRegistryURL {
+				registryList := *c.OdoSettings.RegistryList
+				registryList[index].URL = DefaultDevfileRegistryURL
+				break
+			}
+		}
+	}
+
 	return &c, nil
 }
 
