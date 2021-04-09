@@ -74,10 +74,40 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-containers.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageName := helper.RandString(5)
-			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", "/data1", "--context", commonVar.Context, "--container", "funtime")
+			pathName := "/data1"
+			size := "1Gi"
+			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", pathName, "--context", commonVar.Context, "--container", "funtime", "--size", size)
 			storageList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+			helper.MatchAllInOutput(storageList, []string{pathName, "funtime", storageName, size})
+			helper.DontMatchAllInOutput(storageList, []string{"runtime"})
+			helper.CmdShouldPass("odo", "push", "--context")
+			storageList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(storageList, []string{"/data1", "funtime", storageName})
 			helper.DontMatchAllInOutput(storageList, []string{"runtime"})
+
+			// check the volume name and mount paths for the funtime container
+			volumesMatched := 0
+			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "funtime", commonVar.Project)
+			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
+			for _, volNamesAndPath := range volNamesAndPathsArr {
+				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
+				if strings.Contains(volNamesAndPathArr[0], storageName) && volNamesAndPathArr[1] == pathName {
+					volumesMatched++
+				}
+			}
+			Expect(volumesMatched).To(Equal(1))
+
+			// check the volume name and mount path Not present in runtime container
+			volumesMatched = 0
+			volNamesAndPaths = commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", commonVar.Project)
+			volNamesAndPathsArr = strings.Fields(volNamesAndPaths)
+			for _, volNamesAndPath := range volNamesAndPathsArr {
+				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
+				if strings.Contains(volNamesAndPathArr[0], storageName) && volNamesAndPathArr[1] == pathName {
+					volumesMatched++
+				}
+			}
+			Expect(volumesMatched).To(Equal(0))
 		})
 
 		It("should create a storage with default size when --size is not provided", func() {
