@@ -184,7 +184,7 @@ OdoSettings:
   Experimental: true
   RegistryList:
   - Name: DefaultDevfileRegistry
-    URL: https://github.com/elsony/devfile-registry
+    URL: https://registry.devfile.io
   - Name: CheDevfileRegistry
     URL: https://che-devfile-registry.openshift.io/`,
 	))
@@ -211,7 +211,7 @@ OdoSettings:
 				},
 				{
 					Name:   "DefaultDevfileRegistry",
-					URL:    "https://github.com/elsony/devfile-registry",
+					URL:    "https://registry.devfile.io",
 					Secure: false,
 				},
 			},
