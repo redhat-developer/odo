@@ -1,11 +1,13 @@
 package utils
 
 import (
-	"github.com/openshift/odo/pkg/storage"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/storage"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -726,8 +728,12 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{
 						{
 							Name: component,
 							ComponentUnion: devfilev1.ComponentUnion{
@@ -748,9 +754,16 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 								},
 							},
 						},
-					},
-					Commands: tt.execCommands,
-				},
+					})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			containers, err := UpdateContainersWithSupervisord(devObj, tt.containers, tt.runCommand, tt.debugCommand, tt.debugPort)
@@ -947,14 +960,29 @@ func TestGetPreStartInitContainers(t *testing.T) {
 			}
 
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Commands: append(execCommands, compCommands...),
-					Events: devfilev1.Events{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddEvents(devfilev1.Events{
 						WorkspaceEvents: devfilev1.WorkspaceEvents{
 							PreStart: tt.eventCommands,
 						},
-					},
-				},
+					})
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			initContainers, err := GetPreStartInitContainers(devObj, containers)

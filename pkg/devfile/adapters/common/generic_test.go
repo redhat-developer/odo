@@ -5,9 +5,10 @@ import (
 	"io"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/parser/data"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 )
 
 // Create a simple mock client for the ExecClient interface for the devfile exec unit tests.
@@ -300,8 +301,11 @@ func TestExecuteDevfileCommand(t *testing.T) {
 }
 
 func adapter(fakeExecClient ExecClient, commands []devfilev1.Command, cif func(command devfilev1.Command) (ComponentInfo, error)) *GenericAdapter {
-	data := &testingutil.TestDevfileData{}
-	_ = data.AddCommands(commands...)
+	data := func() data.DevfileData {
+		devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+		return devfileData
+	}()
+	_ = data.AddCommands(commands)
 	devObj := devfileParser.DevfileObj{
 		Data: data,
 	}

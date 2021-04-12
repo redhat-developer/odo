@@ -787,7 +787,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push")
-			Expect(output).To(ContainSubstring("unable to find schema for version \"1.0.0\""))
+			Expect(output).To(ContainSubstring("schemaVersion not present in devfile"))
 		})
 
 	})

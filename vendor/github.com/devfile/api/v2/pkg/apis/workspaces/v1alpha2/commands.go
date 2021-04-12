@@ -7,16 +7,14 @@ import (
 
 // CommandType describes the type of command.
 // Only one of the following command type may be specified.
-// +kubebuilder:validation:Enum=Exec;Apply;VscodeTask;VscodeLaunch;Composite;Custom
+// +kubebuilder:validation:Enum=Exec;Apply;Composite;Custom
 type CommandType string
 
 const (
-	ExecCommandType         CommandType = "Exec"
-	ApplyCommandType        CommandType = "Apply"
-	VscodeTaskCommandType   CommandType = "VscodeTask"
-	VscodeLaunchCommandType CommandType = "VscodeLaunch"
-	CompositeCommandType    CommandType = "Composite"
-	CustomCommandType       CommandType = "Custom"
+	ExecCommandType      CommandType = "Exec"
+	ApplyCommandType     CommandType = "Apply"
+	CompositeCommandType CommandType = "Composite"
+	CustomCommandType    CommandType = "Custom"
 )
 
 // CommandGroupKind describes the kind of command group.
@@ -92,14 +90,6 @@ type CommandUnion struct {
 	// +optional
 	Apply *ApplyCommand `json:"apply,omitempty"`
 
-	// Command providing the definition of a VsCode Task
-	// +optional
-	VscodeTask *VscodeConfigurationCommand `json:"vscodeTask,omitempty"`
-
-	// Command providing the definition of a VsCode launch action
-	// +optional
-	VscodeLaunch *VscodeConfigurationCommand `json:"vscodeLaunch,omitempty"`
-
 	// Composite command that allows executing several sub-commands
 	// either sequentially or concurrently
 	// +optional
@@ -171,40 +161,6 @@ type CompositeCommand struct {
 	// Indicates if the sub-commands should be executed concurrently
 	// +optional
 	Parallel bool `json:"parallel,omitempty"`
-}
-
-// VscodeConfigurationCommandLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-// +kubebuilder:validation:Enum=Uri;Inlined
-type VscodeConfigurationCommandLocationType string
-
-const (
-	UriVscodeConfigurationCommandLocationType     VscodeConfigurationCommandLocationType = "Uri"
-	InlinedVscodeConfigurationCommandLocationType VscodeConfigurationCommandLocationType = "Inlined"
-)
-
-// +union
-type VscodeConfigurationCommandLocation struct {
-	// Type of Vscode configuration command location
-	// +
-	// +unionDiscriminator
-	// +optional
-	LocationType VscodeConfigurationCommandLocationType `json:"locationType,omitempty"`
-
-	// Location as an absolute of relative URI
-	// the VsCode configuration will be fetched from
-	// +optional
-	Uri string `json:"uri,omitempty"`
-
-	// Inlined content of the VsCode configuration
-	// +optional
-	Inlined string `json:"inlined,omitempty"`
-}
-
-type VscodeConfigurationCommand struct {
-	BaseCommand                        `json:",inline"`
-	VscodeConfigurationCommandLocation `json:",inline"`
 }
 
 type CustomCommand struct {

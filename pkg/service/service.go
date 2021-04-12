@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +22,8 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+
+	"github.com/devfile/library/pkg/devfile/parser"
 )
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"
@@ -53,16 +57,16 @@ func (params servicePlanParameters) Swap(i, j int) {
 }
 
 // CreateService creates new service from serviceCatalog
-func CreateService(client *occlient.Client, serviceName string, serviceType string, servicePlan string, parameters map[string]string, applicationName string) error {
+// It returns string representation of service instance created on the cluster and error (if any).
+func CreateService(client *occlient.Client, serviceName, serviceType, servicePlan string, parameters map[string]string, applicationName string) (string, error) {
 	labels := componentlabels.GetLabels(serviceName, applicationName, true)
 	// save service type as label
 	labels[componentlabels.ComponentTypeLabel] = serviceType
-	err := client.GetKubeClient().CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
+	serviceInstance, err := client.GetKubeClient().CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
 	if err != nil {
-		return errors.Wrap(err, "unable to create service instance")
-
+		return "", errors.Wrap(err, "unable to create service instance")
 	}
-	return nil
+	return serviceInstance, nil
 }
 
 // GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
@@ -162,7 +166,7 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 	}
 
 	if csv == nil {
-		return fmt.Errorf("Unable to find any Operator providing the service %q", kind)
+		return fmt.Errorf("unable to find any Operator providing the service %q", kind)
 	}
 
 	crs := client.GetCustomResourcesFromCSV(csv)
@@ -353,7 +357,7 @@ func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
+		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	resource = gr[0]
@@ -400,7 +404,7 @@ func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err erro
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
+		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	group = gr[1]
@@ -423,7 +427,7 @@ func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almEx
 	} else {
 		// There's no alm examples in the CSV's definition
 		return nil,
-			fmt.Errorf("could not find alm-examples in %q Operator's definition.", cr)
+			fmt.Errorf("could not find alm-examples in %q Operator's definition", cr)
 	}
 
 	almExample, err = getAlmExample(almExamples, cr, serviceType)
@@ -487,7 +491,7 @@ func IsOperatorServiceNameValid(name string) (string, string, error) {
 	checkName := strings.SplitN(name, "/", 2)
 
 	if len(checkName) != 2 || checkName[0] == "" || checkName[1] == "" {
-		return "", "", fmt.Errorf("Invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services.", "EtcdCluster/example", "odo service list")
+		return "", "", fmt.Errorf("invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services", "EtcdCluster/example", "odo service list")
 	}
 	return checkName[0], checkName[1], nil
 }
@@ -679,10 +683,58 @@ func isRequired(required []string, name string) bool {
 
 // IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
 func IsCSVSupported() (bool, error) {
-	occlient, err := occlient.New()
+	client, err := occlient.New()
 	if err != nil {
 		return false, err
 	}
 
-	return occlient.GetKubeClient().IsCSVSupported()
+	return client.GetKubeClient().IsCSVSupported()
+}
+
+// AddKubernetesComponentToDevfile adds service definition to devfile as an inlined Kubernetes component
+func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
+	err := devfileObj.Data.AddComponents([]devfile.Component{{
+		Name: name,
+		ComponentUnion: devfile.ComponentUnion{
+			Kubernetes: &devfile.KubernetesComponent{
+				K8sLikeComponent: devfile.K8sLikeComponent{
+					BaseComponent: devfile.BaseComponent{},
+					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
+						Inlined: crd,
+					},
+				},
+			},
+		},
+	}})
+	if err != nil {
+		return err
+	}
+
+	return devfileObj.WriteYamlDevfile()
+}
+
+// DeleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
+func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj) error {
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for _, c := range components {
+		if c.Name == name {
+			err = devfileObj.Data.DeleteComponent(c.Name)
+			if err != nil {
+				return err
+			}
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("could not find the service %q in devfile", name)
+	}
+
+	return devfileObj.WriteYamlDevfile()
 }

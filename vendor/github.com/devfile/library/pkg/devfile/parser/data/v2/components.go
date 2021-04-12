@@ -1,32 +1,46 @@
 package v2
 
 import (
+	"reflect"
+
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
 // GetComponents returns the slice of Component objects parsed from the Devfile
 func (d *DevfileV2) GetComponents(options common.DevfileOptions) ([]v1.Component, error) {
-	if len(options.Filter) == 0 {
+
+	if reflect.DeepEqual(options, common.DevfileOptions{}) {
 		return d.Components, nil
 	}
 
 	var components []v1.Component
-	for _, comp := range d.Components {
-		filterIn, err := common.FilterDevfileObject(comp.Attributes, options)
+	for _, component := range d.Components {
+		// Filter Component Attributes
+		filterIn, err := common.FilterDevfileObject(component.Attributes, options)
+		if err != nil {
+			return nil, err
+		} else if !filterIn {
+			continue
+		}
+
+		// Filter Component Type - Container, Volume, etc.
+		componentType, err := common.GetComponentType(component)
 		if err != nil {
 			return nil, err
 		}
-
-		if filterIn {
-			components = append(components, comp)
+		if options.ComponentOptions.ComponentType != "" && componentType != options.ComponentOptions.ComponentType {
+			continue
 		}
+
+		components = append(components, component)
 	}
 
 	return components, nil
 }
 
-// GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components
+// GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components.
+// Deprecated, use GetComponents() with the DevfileOptions.
 func (d *DevfileV2) GetDevfileContainerComponents(options common.DevfileOptions) ([]v1.Component, error) {
 	var components []v1.Component
 	devfileComponents, err := d.GetComponents(options)
@@ -41,7 +55,8 @@ func (d *DevfileV2) GetDevfileContainerComponents(options common.DevfileOptions)
 	return components, nil
 }
 
-// GetDevfileVolumeComponents iterates through the components in the devfile and returns a list of devfile volume components
+// GetDevfileVolumeComponents iterates through the components in the devfile and returns a list of devfile volume components.
+// Deprecated, use GetComponents() with the DevfileOptions.
 func (d *DevfileV2) GetDevfileVolumeComponents(options common.DevfileOptions) ([]v1.Component, error) {
 	var components []v1.Component
 	devfileComponents, err := d.GetComponents(options)
@@ -60,17 +75,13 @@ func (d *DevfileV2) GetDevfileVolumeComponents(options common.DevfileOptions) ([
 // if a component is already defined, error out
 func (d *DevfileV2) AddComponents(components []v1.Component) error {
 
-	componentMap := make(map[string]bool)
-
-	for _, component := range d.Components {
-		componentMap[component.Name] = true
-	}
 	for _, component := range components {
-		if _, ok := componentMap[component.Name]; !ok {
-			d.Components = append(d.Components, component)
-		} else {
-			return &common.FieldAlreadyExistError{Name: component.Name, Field: "component"}
+		for _, devfileComponent := range d.Components {
+			if component.Name == devfileComponent.Name {
+				return &common.FieldAlreadyExistError{Name: component.Name, Field: "component"}
+			}
 		}
+		d.Components = append(d.Components, component)
 	}
 	return nil
 }
@@ -86,5 +97,21 @@ func (d *DevfileV2) UpdateComponent(component v1.Component) {
 	}
 	if index != -1 {
 		d.Components[index] = component
+	}
+}
+
+// DeleteComponent removes the specified component
+func (d *DevfileV2) DeleteComponent(name string) error {
+
+	for i := range d.Components {
+		if d.Components[i].Name == name {
+			d.Components = append(d.Components[:i], d.Components[i+1:]...)
+			return nil
+		}
+	}
+
+	return &common.FieldNotFoundError{
+		Field: "component",
+		Name:  name,
 	}
 }
