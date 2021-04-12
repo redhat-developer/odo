@@ -51,6 +51,7 @@ func createKubernetesAdapter(adapterContext common.AdapterContext, namespace str
 	// If a namespace was passed in
 	if namespace != "" {
 		client.Namespace = namespace
+		kClient.Namespace = namespace
 	}
 	return newKubernetesAdapter(adapterContext, *client)
 }
