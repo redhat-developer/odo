@@ -73,7 +73,7 @@ type ProjectSource struct {
 	// +optional
 	Git *GitProjectSource `json:"git,omitempty"`
 
-	// Project's GitHub source
+	// Project's GitHub source. Deprecated, use `Git` instead
 	// +optional
 	Github *GithubProjectSource `json:"github,omitempty"`
 

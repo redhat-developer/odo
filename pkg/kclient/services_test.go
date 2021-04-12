@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/parser/data"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -21,11 +23,17 @@ import (
 func TestCreateService(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
-		Data: &testingutil.TestDevfileData{
-			Components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("container1"),
-			},
-		},
+		Data: func() data.DevfileData {
+			devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+			if err != nil {
+				t.Error(err)
+			}
+			err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("container1")})
+			if err != nil {
+				t.Error(err)
+			}
+			return devfileData
+		}(),
 	}
 
 	tests := []struct {
@@ -102,11 +110,17 @@ func TestCreateService(t *testing.T) {
 func TestUpdateService(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
-		Data: &testingutil.TestDevfileData{
-			Components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("container1"),
-			},
-		},
+		Data: func() data.DevfileData {
+			devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+			if err != nil {
+				t.Error(err)
+			}
+			err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("container1")})
+			if err != nil {
+				t.Error(err)
+			}
+			return devfileData
+		}(),
 	}
 
 	tests := []struct {

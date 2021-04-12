@@ -14,6 +14,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 )
 
@@ -65,7 +66,10 @@ func GenerateDevfileYaml(client *occlient.Client, co *config.LocalConfigInfo, co
 	s2iDevfile.SetSchemaVersion(devfileVersion)
 
 	// set metadata
-	s2iDevfile.SetMetadata(co.GetName(), "1.0.0")
+	s2iDevfile.SetMetadata(devfilepkg.DevfileMetadata{
+		Name:    co.GetName(),
+		Version: "1.0.0",
+	})
 	// set commponents
 	err = setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, co, s2iEnv)
 	if err != nil {
@@ -191,7 +195,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 		},
 	}
 	// Ignoring error as we are writing new file
-	_ = d.AddCommands(buildCommand, runCommand)
+	_ = d.AddCommands([]devfilev1.Command{buildCommand, runCommand})
 
 }
 

@@ -4,7 +4,7 @@ import (
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	devfileTestingUtil "github.com/devfile/library/pkg/testingutil"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 )
 
@@ -87,223 +87,228 @@ func GetFakeVolumeMount(name, path string) v1.VolumeMount {
 
 // GetTestDevfileObj returns a devfile object for testing
 func GetTestDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
-	return parser.DevfileObj{
-		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-		Data: &devfileTestingUtil.TestDevfileData{
-			Commands: []v1.Command{
-				{
-					Id: "devbuild",
-					CommandUnion: v1.CommandUnion{
-						Exec: &v1.ExecCommand{
-							WorkingDir: "/projects/nodejs-starter",
-						},
-					},
+	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+	_ = devfileData.AddCommands([]v1.Command{
+		{
+			Id: "devbuild",
+			CommandUnion: v1.CommandUnion{
+				Exec: &v1.ExecCommand{
+					WorkingDir: "/projects/nodejs-starter",
 				},
 			},
-			Components: []v1.Component{
-				{
-					Name: "runtime",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Container: v1.Container{
-								Image: "quay.io/nodejs-12",
-							},
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-3030",
-									TargetPort: 3000,
-								},
-							},
-						},
+		},
+	})
+	_ = devfileData.AddComponents([]v1.Component{
+		{
+			Name: "runtime",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Container: v1.Container{
+						Image: "quay.io/nodejs-12",
 					},
-				},
-				{
-					Name: "loadbalancer",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Container: v1.Container{
-								Image: "quay.io/nginx",
-							},
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-3030",
+							TargetPort: 3000,
 						},
 					},
 				},
 			},
 		},
+		{
+			Name: "loadbalancer",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Container: v1.Container{
+						Image: "quay.io/nginx",
+					},
+				},
+			},
+		},
+	})
+
+	return parser.DevfileObj{
+		Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: devfileData,
 	}
 }
 
 // GetTestDevfileObjWithMultipleEndpoints returns a devfile object with multiple endpoints for testing
 func GetTestDevfileObjWithMultipleEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
-	return parser.DevfileObj{
-		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-		Data: &devfileTestingUtil.TestDevfileData{
-			Components: []v1.Component{
-				{
-					Name: "runtime",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-3030",
-									TargetPort: 3030,
-								},
-								{
-									Name:       "port-3000",
-									TargetPort: 3000,
-								},
-							},
+	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+	_ = devfileData.AddComponents([]v1.Component{
+		{
+			Name: "runtime",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-3030",
+							TargetPort: 3030,
 						},
-					},
-				},
-				{
-					Name: "runtime-debug",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-8080",
-									TargetPort: 8080,
-								},
-							},
+						{
+							Name:       "port-3000",
+							TargetPort: 3000,
 						},
 					},
 				},
 			},
 		},
+		{
+			Name: "runtime-debug",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-8080",
+							TargetPort: 8080,
+						},
+					},
+				},
+			},
+		},
+	})
+	return parser.DevfileObj{
+		Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: devfileData,
 	}
 }
 
 // DevfileObjWithInternalNoneEndpoints returns a devfile object with internal endpoints for testing
 func DevfileObjWithInternalNoneEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
-	return parser.DevfileObj{
-		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-		Data: &devfileTestingUtil.TestDevfileData{
-			Components: []v1.Component{
-				{
-					Name: "runtime",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-3030",
-									TargetPort: 3030,
-									Exposure:   v1.NoneEndpointExposure,
-								},
-								{
-									Name:       "port-3000",
-									TargetPort: 3000,
-								},
-							},
+	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+
+	_ = devfileData.AddComponents([]v1.Component{
+		{
+			Name: "runtime",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-3030",
+							TargetPort: 3030,
+							Exposure:   v1.NoneEndpointExposure,
 						},
-					},
-				},
-				{
-					Name: "runtime-debug",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-8080",
-									TargetPort: 8080,
-									Exposure:   v1.InternalEndpointExposure,
-								},
-							},
+						{
+							Name:       "port-3000",
+							TargetPort: 3000,
 						},
 					},
 				},
 			},
 		},
+		{
+			Name: "runtime-debug",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-8080",
+							TargetPort: 8080,
+							Exposure:   v1.InternalEndpointExposure,
+						},
+					},
+				},
+			},
+		},
+	})
+
+	return parser.DevfileObj{
+		Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: devfileData,
 	}
 }
 
 // DevfileObjWithSecureEndpoints returns a devfile object with internal endpoints for testing
 func DevfileObjWithSecureEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
-	return parser.DevfileObj{
-		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-		Data: &devfileTestingUtil.TestDevfileData{
-			Components: []v1.Component{
-				{
-					Name: "runtime",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-3030",
-									TargetPort: 3030,
-									Protocol:   v1.WSSEndpointProtocol,
-								},
-								{
-									Name:       "port-3000",
-									TargetPort: 3000,
-									Protocol:   v1.HTTPSEndpointProtocol,
-								},
-							},
+	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+
+	_ = devfileData.AddComponents([]v1.Component{
+		{
+			Name: "runtime",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-3030",
+							TargetPort: 3030,
+							Protocol:   v1.WSSEndpointProtocol,
 						},
-					},
-				},
-				{
-					Name: "runtime-debug",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-8080",
-									TargetPort: 8080,
-									Secure:     true,
-								},
-							},
+						{
+							Name:       "port-3000",
+							TargetPort: 3000,
+							Protocol:   v1.HTTPSEndpointProtocol,
 						},
 					},
 				},
 			},
 		},
+		{
+			Name: "runtime-debug",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-8080",
+							TargetPort: 8080,
+							Secure:     true,
+						},
+					},
+				},
+			},
+		},
+	})
+	return parser.DevfileObj{
+		Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: devfileData,
 	}
 }
 
 // GetTestDevfileObjWithPath returns a devfile object for testing
 func GetTestDevfileObjWithPath(fs devfilefs.Filesystem) parser.DevfileObj {
-	return parser.DevfileObj{
-		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-		Data: &devfileTestingUtil.TestDevfileData{
-			Commands: []v1.Command{
-				{
-					Id: "devbuild",
-					CommandUnion: v1.CommandUnion{
-						Exec: &v1.ExecCommand{
-							WorkingDir: "/projects/nodejs-starter",
-						},
-					},
+	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+
+	_ = devfileData.AddCommands([]v1.Command{
+		{
+			Id: "devbuild",
+			CommandUnion: v1.CommandUnion{
+				Exec: &v1.ExecCommand{
+					WorkingDir: "/projects/nodejs-starter",
 				},
 			},
-			Components: []v1.Component{
-				{
-					Name: "runtime",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Container: v1.Container{
-								Image: "quay.io/nodejs-12",
-							},
-							Endpoints: []v1.Endpoint{
-								{
-									Name:       "port-3030",
-									TargetPort: 3000,
-									Path:       "/test",
-								},
-							},
-						},
+		},
+	})
+	_ = devfileData.AddComponents([]v1.Component{
+		{
+			Name: "runtime",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Container: v1.Container{
+						Image: "quay.io/nodejs-12",
 					},
-				},
-				{
-					Name: "loadbalancer",
-					ComponentUnion: v1.ComponentUnion{
-						Container: &v1.ContainerComponent{
-							Container: v1.Container{
-								Image: "quay.io/nginx",
-							},
+					Endpoints: []v1.Endpoint{
+						{
+							Name:       "port-3030",
+							TargetPort: 3000,
+							Path:       "/test",
 						},
 					},
 				},
 			},
 		},
+		{
+			Name: "loadbalancer",
+			ComponentUnion: v1.ComponentUnion{
+				Container: &v1.ContainerComponent{
+					Container: v1.Container{
+						Image: "quay.io/nginx",
+					},
+				},
+			},
+		},
+	})
+	return parser.DevfileObj{
+		Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+		Data: devfileData,
 	}
 }

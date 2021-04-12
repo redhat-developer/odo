@@ -57,14 +57,6 @@ func validateCommand(command v1alpha2.Command, parentCommands map[string]string,
 		return validateCompositeCommand(&command, parentCommands, devfileCommands, components)
 	case command.Exec != nil || command.Apply != nil:
 		return validateCommandComponent(command, components)
-	case command.VscodeLaunch != nil:
-		if command.VscodeLaunch.Uri != "" {
-			return ValidateURI(command.VscodeLaunch.Uri)
-		}
-	case command.VscodeTask != nil:
-		if command.VscodeTask.Uri != "" {
-			return ValidateURI(command.VscodeTask.Uri)
-		}
 	default:
 		err = fmt.Errorf("command %s type is invalid", command.Id)
 	}
@@ -106,10 +98,6 @@ func getGroup(command v1alpha2.Command) *v1alpha2.CommandGroup {
 		return command.Exec.Group
 	case command.Apply != nil:
 		return command.Apply.Group
-	case command.VscodeLaunch != nil:
-		return command.VscodeLaunch.Group
-	case command.VscodeTask != nil:
-		return command.VscodeTask.Group
 	case command.Custom != nil:
 		return command.Custom.Group
 

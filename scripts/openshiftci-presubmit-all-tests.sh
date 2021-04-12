@@ -39,6 +39,7 @@ if [ "${ARCH}" == "s390x" ]; then
     make test-integration-devfile
     make test-cmd-login-logout
     make test-cmd-project
+    make test-operator-hub
     # E2e tests
     make test-e2e-all
 elif  [ "${ARCH}" == "ppc64le" ]; then

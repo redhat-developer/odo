@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"reflect"
 	"strings"
 
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -9,20 +10,31 @@ import (
 
 // GetProjects returns the Project Object parsed from devfile
 func (d *DevfileV2) GetProjects(options common.DevfileOptions) ([]v1.Project, error) {
-	if len(options.Filter) == 0 {
+
+	if reflect.DeepEqual(options, common.DevfileOptions{}) {
 		return d.Projects, nil
 	}
 
 	var projects []v1.Project
-	for _, proj := range d.Projects {
-		filterIn, err := common.FilterDevfileObject(proj.Attributes, options)
+	for _, project := range d.Projects {
+		// Filter Project Attributes
+		filterIn, err := common.FilterDevfileObject(project.Attributes, options)
+		if err != nil {
+			return nil, err
+		} else if !filterIn {
+			continue
+		}
+
+		// Filter Project Source Type - Git, Zip, etc.
+		projectSourceType, err := common.GetProjectSourceType(project.ProjectSource)
 		if err != nil {
 			return nil, err
 		}
-
-		if filterIn {
-			projects = append(projects, proj)
+		if options.ProjectOptions.ProjectSourceType != "" && projectSourceType != options.ProjectOptions.ProjectSourceType {
+			continue
 		}
+
+		projects = append(projects, project)
 	}
 
 	return projects, nil
@@ -55,22 +67,49 @@ func (d *DevfileV2) UpdateProject(project v1.Project) {
 	}
 }
 
+// DeleteProject removes the specified project
+func (d *DevfileV2) DeleteProject(name string) error {
+
+	for i := range d.Projects {
+		if d.Projects[i].Name == name {
+			d.Projects = append(d.Projects[:i], d.Projects[i+1:]...)
+			return nil
+		}
+	}
+
+	return &common.FieldNotFoundError{
+		Field: "project",
+		Name:  name,
+	}
+}
+
 //GetStarterProjects returns the DevfileStarterProject parsed from devfile
 func (d *DevfileV2) GetStarterProjects(options common.DevfileOptions) ([]v1.StarterProject, error) {
-	if len(options.Filter) == 0 {
+
+	if reflect.DeepEqual(options, common.DevfileOptions{}) {
 		return d.StarterProjects, nil
 	}
 
 	var starterProjects []v1.StarterProject
-	for _, starterProj := range d.StarterProjects {
-		filterIn, err := common.FilterDevfileObject(starterProj.Attributes, options)
+	for _, starterProject := range d.StarterProjects {
+		// Filter Starter Project Attributes
+		filterIn, err := common.FilterDevfileObject(starterProject.Attributes, options)
+		if err != nil {
+			return nil, err
+		} else if !filterIn {
+			continue
+		}
+
+		// Filter Starter Project Source Type - Git, Zip, etc.
+		starterProjectSourceType, err := common.GetProjectSourceType(starterProject.ProjectSource)
 		if err != nil {
 			return nil, err
 		}
-
-		if filterIn {
-			starterProjects = append(starterProjects, starterProj)
+		if options.ProjectOptions.ProjectSourceType != "" && starterProjectSourceType != options.ProjectOptions.ProjectSourceType {
+			continue
 		}
+
+		starterProjects = append(starterProjects, starterProject)
 	}
 
 	return starterProjects, nil
@@ -100,5 +139,21 @@ func (d *DevfileV2) UpdateStarterProject(project v1.StarterProject) {
 		if d.StarterProjects[i].Name == strings.ToLower(project.Name) {
 			d.StarterProjects[i] = project
 		}
+	}
+}
+
+// DeleteStarterProject removes the specified starter project
+func (d *DevfileV2) DeleteStarterProject(name string) error {
+
+	for i := range d.StarterProjects {
+		if d.StarterProjects[i].Name == name {
+			d.StarterProjects = append(d.StarterProjects[:i], d.StarterProjects[i+1:]...)
+			return nil
+		}
+	}
+
+	return &common.FieldNotFoundError{
+		Field: "starter project",
+		Name:  name,
 	}
 }

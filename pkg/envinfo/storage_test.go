@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/parser/data"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
@@ -124,8 +126,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			name: "case 1: list all the volumes in the devfile along with their respective size and containers",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -162,8 +168,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", "5Gi"),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			want: []localConfigProvider.LocalStorage{
@@ -191,8 +201,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			name: "case 2: list all the volumes in the devfile with the default size when no size is mentioned",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -214,8 +228,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", ""),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			want: []localConfigProvider.LocalStorage{
@@ -237,8 +255,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			name: "case 3: list all the volumes in the devfile with the default mount path when no path is mentioned",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -254,8 +276,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 								},
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", ""),
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			want: []localConfigProvider.LocalStorage{
@@ -271,8 +297,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			name: "case 4: return empty when no volumes is mounted",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -283,8 +313,12 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", ""),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			want: nil,
@@ -323,8 +357,12 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			name: "case 1: storage with the same name doesn't exist",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -333,8 +371,12 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 									},
 								},
 							},
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			args: args{
@@ -349,8 +391,12 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			name: "case 2: storage with same name exists",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -386,8 +432,12 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 								},
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", "5Gi"),
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			args: args{
@@ -428,8 +478,12 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			name: "case 1: storage with the given name doesn't exist",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -438,8 +492,12 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 									},
 								},
 							},
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			args: args{
@@ -451,8 +509,12 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			name: "case 2: storage with the given name exists",
 			fields: fields{
 				devfileObj: parser.DevfileObj{
-					Data: &testingutil.TestDevfileData{
-						Components: []devfilev1.Component{
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]devfilev1.Component{
 							{
 								Name: "container-0",
 								ComponentUnion: devfilev1.ComponentUnion{
@@ -489,8 +551,12 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 							},
 							testingutil.GetFakeVolumeComponent("volume-0", "5Gi"),
 							testingutil.GetFakeVolumeComponent("volume-1", "10Gi"),
-						},
-					},
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
 				},
 			},
 			args: args{

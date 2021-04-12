@@ -7,9 +7,9 @@ require (
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/devfile/api/v2 v2.0.0-20210211160219-33a78aec06af
-	github.com/devfile/library v0.0.0-20210216162950-3066a892876c
-	github.com/devfile/registry-support/index/generator v0.0.0-20210311161226-db3f89d5186f
+	github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b
+	github.com/devfile/library v1.0.0-alpha.2.0.20210323153322-3d708859f0b5
+	github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873
 	github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce

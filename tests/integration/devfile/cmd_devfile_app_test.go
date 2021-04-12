@@ -17,7 +17,6 @@ var _ = Describe("odo devfile app command tests", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
-		helper.Chdir(commonVar.Context)
 		namespace = commonVar.Project
 	})
 

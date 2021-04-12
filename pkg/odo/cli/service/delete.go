@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -26,89 +25,72 @@ var (
 	Delete an existing service`)
 )
 
-// ServiceDeleteOptions encapsulates the options for the odo service delete command
-type ServiceDeleteOptions struct {
+// DeleteOptions encapsulates the options for the odo service delete command
+type DeleteOptions struct {
 	serviceForceDeleteFlag bool
 	serviceName            string
 	*genericclioptions.Context
 	// Context to use when listing service. This will use app and project values from the context
 	componentContext string
-	// choose between Operator Hub and Service Catalog. If true, Operator Hub
-	csvSupport bool
+	// Backend is the service provider backend (Operator Hub or Service Catalog) that was used to create the service
+	Backend ServiceProviderBackend
 }
 
-// NewServiceDeleteOptions creates a new ServiceDeleteOptions instance
-func NewServiceDeleteOptions() *ServiceDeleteOptions {
-	return &ServiceDeleteOptions{}
+// NewDeleteOptions creates a new DeleteOptions instance
+func NewDeleteOptions() *DeleteOptions {
+	return &DeleteOptions{}
 }
 
-// Complete completes ServiceDeleteOptions after they've been created
-func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
-		return err
-	} else if o.csvSupport {
-		o.Context, err = genericclioptions.NewDevfileContext(cmd)
-	} else {
-		o.Context, err = genericclioptions.NewContext(cmd)
-	}
+// Complete completes DeleteOptions after they've been created
+func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+		Cmd:              cmd,
+		DevfilePath:      component.DevfilePath,
+		ComponentContext: o.componentContext,
+	})
 	if err != nil {
 		return err
 	}
+
+	err = validDevfileDirectory(o.componentContext)
+	if err != nil {
+		return err
+	}
+
+	// decide which service backend to use
+	o.Backend = decideBackend(args[0])
 	o.serviceName = args[0]
 
 	return
 }
 
-// Validate validates the ServiceDeleteOptions based on completed values
-func (o *ServiceDeleteOptions) Validate() (err error) {
-	if o.csvSupport {
-		svcExists, err := svc.OperatorSvcExists(o.KClient, o.serviceName)
-		if err != nil {
-			return err
-		}
-
-		if !svcExists {
-			return fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", o.serviceName, "odo service list")
-		}
-		return nil
-	}
-
-	exists, err := svc.SvcExists(o.Client, o.serviceName, o.Application)
+// Validate validates the DeleteOptions based on completed values
+func (o *DeleteOptions) Validate() (err error) {
+	svcExists, err := o.Backend.ServiceExists(o)
 	if err != nil {
-		return fmt.Errorf("unable to delete service because Service Catalog is not enabled in your cluster:\n%v", err)
+		return err
 	}
-	if !exists {
-		return fmt.Errorf("Service with the name %s does not exist in the current application\n", o.serviceName)
+
+	if !svcExists {
+		return fmt.Errorf("couldn't find service named %q. Refer %q to see list of running services", o.serviceName, "odo service list")
 	}
 	return
 }
 
 // Run contains the logic for the odo service delete command
-func (o *ServiceDeleteOptions) Run() (err error) {
-	if o.csvSupport {
-		if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
+func (o *DeleteOptions) Run() (err error) {
+	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
+		s := log.Spinner("Waiting for service to be deleted")
+		defer s.End(false)
 
-			s := log.Spinner("Waiting for service to be deleted")
-			defer s.End(false)
-
-			err = svc.DeleteOperatorService(o.KClient, o.serviceName)
-			if err != nil {
-				return err
-			}
-
-			s.End(true)
-
-			log.Infof("Service %q has been successfully deleted", o.serviceName)
-		}
-		return nil
-	}
-
-	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v", o.serviceName, o.Application)) {
-		err = svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
+		err = o.Backend.DeleteService(o, o.serviceName, o.Application)
 		if err != nil {
-			return fmt.Errorf("unable to delete service %s:\n%v", o.serviceName, err)
+			return err
 		}
-		log.Infof("Service %s from application %s has been deleted", o.serviceName, o.Application)
+
+		s.End(true)
+
+		log.Infof("Service %q has been successfully deleted", o.serviceName)
 	} else {
 		log.Errorf("Aborting deletion of service: %v", o.serviceName)
 	}
@@ -117,7 +99,7 @@ func (o *ServiceDeleteOptions) Run() (err error) {
 
 // NewCmdServiceDelete implements the odo service delete command.
 func NewCmdServiceDelete(name, fullName string) *cobra.Command {
-	o := NewServiceDeleteOptions()
+	o := NewDeleteOptions()
 	serviceDeleteCmd := &cobra.Command{
 		Use:     name + " <service_name>",
 		Short:   "Delete an existing service",

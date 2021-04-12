@@ -174,7 +174,7 @@ type ProjectSourceParentOverride struct {
 	// +optional
 	Git *GitProjectSourceParentOverride `json:"git,omitempty"`
 
-	// Project's GitHub source
+	// Project's GitHub source. Deprecated, use `Git` instead
 	// +optional
 	Github *GithubProjectSourceParentOverride `json:"github,omitempty"`
 
@@ -186,7 +186,7 @@ type ProjectSourceParentOverride struct {
 // +union
 type CommandUnionParentOverride struct {
 
-	// +kubebuilder:validation:Enum=Exec;Apply;VscodeTask;VscodeLaunch;Composite
+	// +kubebuilder:validation:Enum=Exec;Apply;Composite
 	// Type of workspace command
 	// +unionDiscriminator
 	// +optional
@@ -209,14 +209,6 @@ type CommandUnionParentOverride struct {
 	// by default.
 	// +optional
 	Apply *ApplyCommandParentOverride `json:"apply,omitempty"`
-
-	// Command providing the definition of a VsCode Task
-	// +optional
-	VscodeTask *VscodeConfigurationCommandParentOverride `json:"vscodeTask,omitempty"`
-
-	// Command providing the definition of a VsCode launch action
-	// +optional
-	VscodeLaunch *VscodeConfigurationCommandParentOverride `json:"vscodeLaunch,omitempty"`
 
 	// Composite command that allows executing several sub-commands
 	// either sequentially or concurrently
@@ -333,11 +325,6 @@ type ApplyCommandParentOverride struct {
 	// Describes component that will be applied
 	//
 	Component string `json:"component,omitempty"`
-}
-
-type VscodeConfigurationCommandParentOverride struct {
-	BaseCommandParentOverride                        `json:",inline"`
-	VscodeConfigurationCommandLocationParentOverride `json:",inline"`
 }
 
 type CompositeCommandParentOverride struct {
@@ -498,6 +485,11 @@ type VolumeParentOverride struct {
 	// +optional
 	// Size of the volume
 	Size string `json:"size,omitempty"`
+
+	// +optional
+	// Ephemeral volumes are not stored persistently across restarts. Defaults
+	// to false
+	Ephemeral bool `json:"ephemeral,omitempty"`
 }
 
 type ImportReferenceParentOverride struct {
@@ -555,33 +547,6 @@ type EnvVarParentOverride struct {
 	Name string `json:"name" yaml:"name"`
 	//  +optional
 	Value string `json:"value,omitempty" yaml:"value"`
-}
-
-type BaseCommandParentOverride struct {
-
-	// +optional
-	// Defines the group this command is part of
-	Group *CommandGroupParentOverride `json:"group,omitempty"`
-}
-
-// +union
-type VscodeConfigurationCommandLocationParentOverride struct {
-
-	// +kubebuilder:validation:Enum=Uri;Inlined
-	// Type of Vscode configuration command location
-	// +
-	// +unionDiscriminator
-	// +optional
-	LocationType VscodeConfigurationCommandLocationTypeParentOverride `json:"locationType,omitempty"`
-
-	// Location as an absolute of relative URI
-	// the VsCode configuration will be fetched from
-	// +optional
-	Uri string `json:"uri,omitempty"`
-
-	// Inlined content of the VsCode configuration
-	// +optional
-	Inlined string `json:"inlined,omitempty"`
 }
 
 // Volume that should be mounted to a component container
@@ -700,21 +665,12 @@ type CheckoutFromParentOverride struct {
 	Remote string `json:"remote,omitempty"`
 }
 
-type CommandGroupParentOverride struct {
-
-	//  +optional
-	// Kind of group the command is part of
-	Kind CommandGroupKindParentOverride `json:"kind,omitempty"`
+type BaseCommandParentOverride struct {
 
 	// +optional
-	// Identifies the default command for a given group kind
-	IsDefault bool `json:"isDefault,omitempty"`
+	// Defines the group this command is part of
+	Group *CommandGroupParentOverride `json:"group,omitempty"`
 }
-
-// VscodeConfigurationCommandLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-type VscodeConfigurationCommandLocationTypeParentOverride string
 
 // K8sLikeComponentLocationType describes the type of
 // the location the configuration is fetched from.
@@ -771,7 +727,7 @@ type ComponentUnionPluginOverrideParentOverride struct {
 // +union
 type CommandUnionPluginOverrideParentOverride struct {
 
-	// +kubebuilder:validation:Enum=Exec;Apply;VscodeTask;VscodeLaunch;Composite
+	// +kubebuilder:validation:Enum=Exec;Apply;Composite
 	// Type of workspace command
 	// +unionDiscriminator
 	// +optional
@@ -795,23 +751,22 @@ type CommandUnionPluginOverrideParentOverride struct {
 	// +optional
 	Apply *ApplyCommandPluginOverrideParentOverride `json:"apply,omitempty"`
 
-	// Command providing the definition of a VsCode Task
-	// +optional
-	VscodeTask *VscodeConfigurationCommandPluginOverrideParentOverride `json:"vscodeTask,omitempty"`
-
-	// Command providing the definition of a VsCode launch action
-	// +optional
-	VscodeLaunch *VscodeConfigurationCommandPluginOverrideParentOverride `json:"vscodeLaunch,omitempty"`
-
 	// Composite command that allows executing several sub-commands
 	// either sequentially or concurrently
 	// +optional
 	Composite *CompositeCommandPluginOverrideParentOverride `json:"composite,omitempty"`
 }
 
-// CommandGroupKind describes the kind of command group.
-// +kubebuilder:validation:Enum=build;run;test;debug
-type CommandGroupKindParentOverride string
+type CommandGroupParentOverride struct {
+
+	//  +optional
+	// Kind of group the command is part of
+	Kind CommandGroupKindParentOverride `json:"kind,omitempty"`
+
+	// +optional
+	// Identifies the default command for a given group kind
+	IsDefault bool `json:"isDefault,omitempty"`
+}
 
 // ComponentType describes the type of component.
 // Only one of the following component type may be specified.
@@ -896,11 +851,6 @@ type ApplyCommandPluginOverrideParentOverride struct {
 	Component string `json:"component,omitempty"`
 }
 
-type VscodeConfigurationCommandPluginOverrideParentOverride struct {
-	BaseCommandPluginOverrideParentOverride                        `json:",inline"`
-	VscodeConfigurationCommandLocationPluginOverrideParentOverride `json:",inline"`
-}
-
 type CompositeCommandPluginOverrideParentOverride struct {
 	LabeledCommandPluginOverrideParentOverride `json:",inline"`
 
@@ -911,6 +861,10 @@ type CompositeCommandPluginOverrideParentOverride struct {
 	// +optional
 	Parallel bool `json:"parallel,omitempty"`
 }
+
+// CommandGroupKind describes the kind of command group.
+// +kubebuilder:validation:Enum=build;run;test;debug
+type CommandGroupKindParentOverride string
 
 // Workspace component: Anything that will bring additional features / tooling / behaviour / context
 // to the workspace, in order to make working in it easier.
@@ -1060,6 +1014,11 @@ type VolumePluginOverrideParentOverride struct {
 	// +optional
 	// Size of the volume
 	Size string `json:"size,omitempty"`
+
+	// +optional
+	// Ephemeral volumes are not stored persistently across restarts. Defaults
+	// to false
+	Ephemeral bool `json:"ephemeral,omitempty"`
 }
 
 type LabeledCommandPluginOverrideParentOverride struct {
@@ -1076,33 +1035,6 @@ type EnvVarPluginOverrideParentOverride struct {
 
 	//  +optional
 	Value string `json:"value,omitempty" yaml:"value"`
-}
-
-type BaseCommandPluginOverrideParentOverride struct {
-
-	// +optional
-	// Defines the group this command is part of
-	Group *CommandGroupPluginOverrideParentOverride `json:"group,omitempty"`
-}
-
-// +union
-type VscodeConfigurationCommandLocationPluginOverrideParentOverride struct {
-
-	// +kubebuilder:validation:Enum=Uri;Inlined
-	// Type of Vscode configuration command location
-	// +
-	// +unionDiscriminator
-	// +optional
-	LocationType VscodeConfigurationCommandLocationTypePluginOverrideParentOverride `json:"locationType,omitempty"`
-
-	// Location as an absolute of relative URI
-	// the VsCode configuration will be fetched from
-	// +optional
-	Uri string `json:"uri,omitempty"`
-
-	// Inlined content of the VsCode configuration
-	// +optional
-	Inlined string `json:"inlined,omitempty"`
 }
 
 // Volume that should be mounted to a component container
@@ -1150,6 +1082,18 @@ type K8sLikeComponentLocationPluginOverrideParentOverride struct {
 	Inlined string `json:"inlined,omitempty"`
 }
 
+type BaseCommandPluginOverrideParentOverride struct {
+
+	// +optional
+	// Defines the group this command is part of
+	Group *CommandGroupPluginOverrideParentOverride `json:"group,omitempty"`
+}
+
+// K8sLikeComponentLocationType describes the type of
+// the location the configuration is fetched from.
+// Only one of the following component type may be specified.
+type K8sLikeComponentLocationTypePluginOverrideParentOverride string
+
 type CommandGroupPluginOverrideParentOverride struct {
 
 	//  +optional
@@ -1160,16 +1104,6 @@ type CommandGroupPluginOverrideParentOverride struct {
 	// Identifies the default command for a given group kind
 	IsDefault bool `json:"isDefault,omitempty"`
 }
-
-// VscodeConfigurationCommandLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-type VscodeConfigurationCommandLocationTypePluginOverrideParentOverride string
-
-// K8sLikeComponentLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-type K8sLikeComponentLocationTypePluginOverrideParentOverride string
 
 // CommandGroupKind describes the kind of command group.
 // +kubebuilder:validation:Enum=build;run;test;debug

@@ -54,7 +54,7 @@ func (d *DevfileCtx) SetDevfileContent() error {
 	if d.url != "" {
 		data, err = util.DownloadFileInMemory(d.url)
 		if err != nil {
-			return errors.Wrap(err, "error getting parent info from url")
+			return errors.Wrap(err, "error getting devfile info from url")
 		}
 	} else if d.absPath != "" {
 		// Read devfile

@@ -41,3 +41,20 @@ func GetDefaultSource(ps v1.GitLikeProjectSource) (remoteName string, remoteURL 
 	return remoteName, remoteURL, revision, err
 
 }
+
+// GetProjectSourceType returns the source type of a given project source
+func GetProjectSourceType(projectSrc v1.ProjectSource) (v1.ProjectSourceType, error) {
+	switch {
+	case projectSrc.Git != nil:
+		return v1.GitProjectSourceType, nil
+	case projectSrc.Github != nil:
+		return v1.GitHubProjectSourceType, nil
+	case projectSrc.Zip != nil:
+		return v1.ZipProjectSourceType, nil
+	case projectSrc.Custom != nil:
+		return v1.CustomProjectSourceType, nil
+
+	default:
+		return "", fmt.Errorf("unknown project source type")
+	}
+}
