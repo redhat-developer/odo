@@ -19,7 +19,6 @@ var _ = Describe("odo devfile describe command tests", func() {
 		}
 
 		commonVar = helper.CommonBeforeEach()
-		helper.Chdir(commonVar.Context)
 	})
 
 	// This is run after every Spec (It)
@@ -28,6 +27,14 @@ var _ = Describe("odo devfile describe command tests", func() {
 	})
 
 	Context("When executing odo describe", func() {
+		JustAfterEach(func() {
+			// odo delete requires changing directory because it does not work as intended with --context
+			// TODO: Remove helper.Chdir after these issues are closed - https://github.com/openshift/odo/issues/4451
+			// TODO: and https://github.com/openshift/odo/issues/4135
+			helper.Chdir(commonVar.Context)
+			helper.CmdShouldPass("odo", "delete", "-f", "--all")
+		})
+
 		It("should describe the component when it is not pushed", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")
 			helper.CmdShouldPass("odo", "url", "create", "url-1", "--port", "3000", "--host", "example.com", "--context", commonVar.Context)
@@ -51,8 +58,6 @@ var _ = Describe("odo devfile describe command tests", func() {
 			// odo should describe not pushed component if component name is given.
 			helper.CmdShouldPass("odo", "describe", "cmp-git", "--context", commonVar.Context)
 			Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
-
-			helper.CmdShouldPass("odo", "delete", "-f", "--all", "--context", commonVar.Context)
 		})
 
 		It("should describe the component when it is pushed", func() {
@@ -79,8 +84,6 @@ var _ = Describe("odo devfile describe command tests", func() {
 			// odo should describe not pushed component if component name is given.
 			helper.CmdShouldPass("odo", "describe", "cmp-git", "--context", commonVar.Context)
 			Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
-
-			helper.CmdShouldPass("odo", "delete", "-f", "--all", "--context", commonVar.Context)
 		})
 	})
 
