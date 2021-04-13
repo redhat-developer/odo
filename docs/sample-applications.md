@@ -31,7 +31,7 @@ wildfly     openshift     10.0,10.1,8.1,9.0,latest
 > 
 > For `odo` Java and Node.js are the officially supported component types. Run `odo catalog list components` to verify the officially supported component types.
 
-In order to access the component over the web, create a URL using `odo url create`.
+To access the component over the web, create a URL using `odo url create`.
 
 # Examples from Git repositories
 
