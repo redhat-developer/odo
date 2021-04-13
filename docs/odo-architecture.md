@@ -100,7 +100,7 @@ The naming convention of the persistent volume is \<component\_name\>-s2idata.
 | `copy-files-to-volume` | `/mnt`          |
 | Application container  | `/opt/app-root` |
 
-## `emptyDir` volume
+## emptyDir volume
 
 An `emptyDir` volume is created when a pod is assigned to a node, and exists as long as that pod is running on the node. If the container is restarted or moved, the content of the `emptyDir` is removed, Init container restores the data back to the `emptyDir`. `emptyDir` is initially empty.
 
@@ -117,13 +117,13 @@ A service is a Kubernetes concept of abstracting the way of communicating with a
 
 odo creates a service for every application pod to make it accessible for communication.
 
-# `odo push` workflow
+# odo push workflow
 
 This section describes `odo push` workflow. odo push deploys user code on an OpenShift cluster with all the necessary OpenShift resources.
 
 1.  Creating resources
     
-    If not already created, `odo push` creates the following OpenShift resources:
+    If not already created, `odo` push creates the following OpenShift resources:
     
       - `DeploymentConfig` object:
         

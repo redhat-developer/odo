@@ -309,7 +309,7 @@ To create and deploy a front-end component, download the Node.js application and
 
 # Linking both components
 
-Components running on the cluster need to be connected in order to interact. OpenShift provides linking mechanisms to publish communication bindings from a program to its clients.
+Components running on the cluster need to be connected to interact. OpenShift provides linking mechanisms to publish communication bindings from a program to its clients.
 
 1.  List all the components that are running on the cluster:
     
