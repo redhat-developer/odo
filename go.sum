@@ -263,11 +263,12 @@ github.com/deislabs/oras v0.8.1/go.mod h1:Mx0rMSbBNaNfY9hjpccEnxkOqJL6KGjtxNHPLC
 github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3/go.mod h1:zAg7JM8CkOJ43xKXIj7eRO9kmWm/TW578qo+oDO6tuM=
 github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/devfile/api/v2 v2.0.0-20210211160219-33a78aec06af/go.mod h1:Cot4snybn3qhIh48oIFi9McocnIx7zY5fFbjfrIpPvg=
-github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b h1:r6Z2rXRA60eQQTdh1cJBBrj3vp9/c1rNbX42kyw2WpA=
-github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b/go.mod h1:Cot4snybn3qhIh48oIFi9McocnIx7zY5fFbjfrIpPvg=
+github.com/devfile/api/v2 v2.0.0-20210408144711-a313872749ed h1:eTSeB23FwKwMN0kI7qB7Nq3OhfCaXkPPWUsru8TRo+o=
+github.com/devfile/api/v2 v2.0.0-20210408144711-a313872749ed/go.mod h1:Cot4snybn3qhIh48oIFi9McocnIx7zY5fFbjfrIpPvg=
+github.com/devfile/library v1.0.0-alpha.2 h1:LN3KOQnUtP/NXl9CLYW7gQgH6gPpCSrEH2mmhxvrpgc=
 github.com/devfile/library v1.0.0-alpha.2/go.mod h1:aGJSpcGrRiYwsQQJMQH1ChHuOptUf49n+j0RDBYyTIQ=
-github.com/devfile/library v1.0.0-alpha.2.0.20210323153322-3d708859f0b5 h1:cxv4Cs86FcWhpKFXITuxwH0qI1Ik9U34HVM+F8x+ncU=
-github.com/devfile/library v1.0.0-alpha.2.0.20210323153322-3d708859f0b5/go.mod h1:6WF7h4BVqUyAULCa3bCjHgFueeOPc2qIipVmtDbWkNY=
+github.com/devfile/library v1.0.0-alpha.2.0.20210409194304-7a52b221a48e h1:eAiWJwLOjlF+BwyW4BA+7vP5KjXaEKqe6k+v9TnxA+0=
+github.com/devfile/library v1.0.0-alpha.2.0.20210409194304-7a52b221a48e/go.mod h1:fpjS/SO9vSbhdF0xA+GMG6nGChJk9tULt+nqBKYh3S8=
 github.com/devfile/registry-support/index/generator v0.0.0-20201211145454-bc904934d987/go.mod h1:H8hBF8b+025XN+Wk70F5P1zeoJ28bAYkbQAeWyTkHEQ=
 github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873 h1:1PF19I6JXCAtD5Tr6qWRRYQ9kLn6DbGdGr6gz9jCWUI=
 github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873/go.mod h1:02/+7NmfHFJQ0C0S7akdfCeJSQSWmOvep8MmYcsSFko=

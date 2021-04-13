@@ -1,9 +1,9 @@
 package v1alpha2
 
-// Structure of the workspace. This is also the specification of a workspace template.
+// Structure of the devworkspace. This is also the specification of a devworkspace template.
 // +devfile:jsonschema:generate
 type DevWorkspaceTemplateSpec struct {
-	// Parent workspace template
+	// Parent devworkspace template
 	// +optional
 	Parent *Parent `json:"parent,omitempty"`
 
@@ -12,7 +12,7 @@ type DevWorkspaceTemplateSpec struct {
 
 // +devfile:overrides:generate
 type DevWorkspaceTemplateSpecContent struct {
-	// List of the workspace components, such as editor and plugins,
+	// List of the devworkspace components, such as editor and plugins,
 	// user-provided containers, or other types of components
 	// +optional
 	// +patchMergeKey=name
@@ -21,7 +21,7 @@ type DevWorkspaceTemplateSpecContent struct {
 	// +devfile:toplevellist
 	Components []Component `json:"components,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
-	// Projects worked on in the workspace, containing names and sources locations
+	// Projects worked on in the devworkspace, containing names and sources locations
 	// +optional
 	// +patchMergeKey=name
 	// +patchStrategy=merge
@@ -37,7 +37,7 @@ type DevWorkspaceTemplateSpecContent struct {
 	// +devfile:toplevellist
 	StarterProjects []StarterProject `json:"starterProjects,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
-	// Predefined, ready-to-use, workspace-related commands
+	// Predefined, ready-to-use, devworkspace-related commands
 	// +optional
 	// +patchMergeKey=id
 	// +patchStrategy=merge

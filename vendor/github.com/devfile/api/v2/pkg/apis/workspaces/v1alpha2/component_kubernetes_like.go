@@ -34,12 +34,12 @@ type K8sLikeComponent struct {
 	Endpoints                []Endpoint `json:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
-// Component that allows partly importing Kubernetes resources into the workspace POD
+// Component that allows partly importing Kubernetes resources into the devworkspace POD
 type KubernetesComponent struct {
 	K8sLikeComponent `json:",inline"`
 }
 
-// Component that allows partly importing Openshift resources into the workspace POD
+// Component that allows partly importing Openshift resources into the devworkspace POD
 type OpenshiftComponent struct {
 	K8sLikeComponent `json:",inline"`
 }

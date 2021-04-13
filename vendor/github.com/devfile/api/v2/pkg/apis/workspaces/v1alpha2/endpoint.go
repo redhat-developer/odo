@@ -37,12 +37,12 @@ const (
 	// Endpoint will be exposed on the public network, typically through
 	// a K8S ingress or an OpenShift route
 	PublicEndpointExposure EndpointExposure = "public"
-	// Endpoint will be exposed internally outside of the main workspace POD,
+	// Endpoint will be exposed internally outside of the main devworkspace POD,
 	// typically by K8S services, to be consumed by other elements running
 	// on the same cloud internal network.
 	InternalEndpointExposure EndpointExposure = "internal"
 	// Endpoint will not be exposed and will only be accessible
-	// inside the main workspace POD, on a local address.
+	// inside the main devworkspace POD, on a local address.
 	NoneEndpointExposure EndpointExposure = "none"
 )
 
@@ -58,12 +58,12 @@ type Endpoint struct {
 	// - `public` means that the endpoint will be exposed on the public network, typically through
 	// a K8S ingress or an OpenShift route.
 	//
-	// - `internal` means that the endpoint will be exposed internally outside of the main workspace POD,
+	// - `internal` means that the endpoint will be exposed internally outside of the main devworkspace POD,
 	// typically by K8S services, to be consumed by other elements running
 	// on the same cloud internal network.
 	//
 	// - `none` means that the endpoint will not be exposed and will only be accessible
-	// inside the main workspace POD, on a local address.
+	// inside the main devworkspace POD, on a local address.
 	//
 	// Default value is `public`
 	// +optional

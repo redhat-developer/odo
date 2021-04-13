@@ -27,6 +27,27 @@ type CommandUnionVisitor struct {
 	Custom    func(*CustomCommand) error
 }
 
+var k8sLikeComponentLocation reflect.Type = reflect.TypeOf(K8sLikeComponentLocationVisitor{})
+
+func (union K8sLikeComponentLocation) Visit(visitor K8sLikeComponentLocationVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *K8sLikeComponentLocation) discriminator() *string {
+	return (*string)(&union.LocationType)
+}
+func (union *K8sLikeComponentLocation) Normalize() error {
+	return normalizeUnion(union, k8sLikeComponentLocation)
+}
+func (union *K8sLikeComponentLocation) Simplify() {
+	simplifyUnion(union, k8sLikeComponentLocation)
+}
+
+// +k8s:deepcopy-gen=false
+type K8sLikeComponentLocationVisitor struct {
+	Uri     func(string) error
+	Inlined func(string) error
+}
+
 var componentUnion reflect.Type = reflect.TypeOf(ComponentUnionVisitor{})
 
 func (union ComponentUnion) Visit(visitor ComponentUnionVisitor) error {
@@ -72,27 +93,6 @@ type ImportReferenceUnionVisitor struct {
 	Uri        func(string) error
 	Id         func(string) error
 	Kubernetes func(*KubernetesCustomResourceImportReference) error
-}
-
-var k8sLikeComponentLocation reflect.Type = reflect.TypeOf(K8sLikeComponentLocationVisitor{})
-
-func (union K8sLikeComponentLocation) Visit(visitor K8sLikeComponentLocationVisitor) error {
-	return visitUnion(union, visitor)
-}
-func (union *K8sLikeComponentLocation) discriminator() *string {
-	return (*string)(&union.LocationType)
-}
-func (union *K8sLikeComponentLocation) Normalize() error {
-	return normalizeUnion(union, k8sLikeComponentLocation)
-}
-func (union *K8sLikeComponentLocation) Simplify() {
-	simplifyUnion(union, k8sLikeComponentLocation)
-}
-
-// +k8s:deepcopy-gen=false
-type K8sLikeComponentLocationVisitor struct {
-	Uri     func(string) error
-	Inlined func(string) error
 }
 
 var projectSource reflect.Type = reflect.TypeOf(ProjectSourceVisitor{})

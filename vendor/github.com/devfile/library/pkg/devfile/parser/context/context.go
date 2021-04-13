@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -104,19 +103,9 @@ func (d *DevfileCtx) Populate() (err error) {
 
 // PopulateFromURL fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) PopulateFromURL() (err error) {
-	u, err := url.ParseRequestURI(d.url)
+	_, err = url.ParseRequestURI(d.url)
 	if err != nil {
 		return err
-	}
-	if !strings.HasSuffix(d.url, ".yaml") {
-		u.Path = path.Join(u.Path, "devfile.yaml")
-		if _, err = util.DownloadFileInMemory(u.String()); err != nil {
-			u.Path = path.Join(path.Dir(u.Path), ".devfile.yaml")
-			if _, err = util.DownloadFileInMemory(u.String()); err != nil {
-				return fmt.Errorf("the provided url is not a valid yaml filepath, and devfile.yaml or .devfile.yaml not found in the provided path : %s", d.url)
-			}
-		}
-		d.url = u.String()
 	}
 	if d.uriMap == nil {
 		d.uriMap = make(map[string]bool)

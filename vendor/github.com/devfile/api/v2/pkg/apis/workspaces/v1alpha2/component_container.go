@@ -1,6 +1,6 @@
 package v1alpha2
 
-// Component that allows the developer to add a configured container into his workspace
+// Component that allows the developer to add a configured container into their devworkspace
 type ContainerComponent struct {
 	BaseComponent `json:",inline"`
 	Container     `json:",inline"`

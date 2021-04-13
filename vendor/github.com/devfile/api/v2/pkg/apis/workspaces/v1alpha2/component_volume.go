@@ -1,6 +1,6 @@
 package v1alpha2
 
-// Component that allows the developer to declare and configure a volume into his workspace
+// Component that allows the developer to declare and configure a volume into their devworkspace
 type VolumeComponent struct {
 	BaseComponent `json:",inline"`
 	Volume        `json:",inline"`
