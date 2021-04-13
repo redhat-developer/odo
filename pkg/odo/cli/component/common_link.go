@@ -1,7 +1,6 @@
 package component
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -16,10 +15,9 @@ import (
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
-	servicebinding "github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 )
 
@@ -38,7 +36,7 @@ type commonLinkOptions struct {
 	operationName string
 
 	// Service Binding Operator options
-	serviceBinding *servicebinding.ServiceBinding
+	serviceBinding unstructured.Unstructured
 	serviceType    string
 	serviceName    string
 	*genericclioptions.Context
@@ -102,16 +100,6 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		componentName := o.EnvSpecificInfo.GetName()
 
-		// Assign static/hardcoded values to SBR
-		o.serviceBinding.Kind = kclient.ServiceBindingKind
-		o.serviceBinding.APIVersion = strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/")
-
-		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
-		o.serviceBinding.Name = getServiceBindingName(componentName, o.serviceType, o.serviceName)
-		o.serviceBinding.Namespace = o.EnvSpecificInfo.GetNamespace()
-		truePtr := true
-		o.serviceBinding.Spec.DetectBindingResources = &truePtr // because we want the operator what to bind from the service
-
 		deployment, err := o.KClient.GetDeploymentByName(componentName)
 		if err != nil {
 			return err
@@ -119,19 +107,42 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
 		ownerReference := generator.GetOwnerReference(deployment)
-		o.serviceBinding.SetOwnerReferences(append(o.serviceBinding.GetOwnerReferences(), ownerReference))
 
 		deploymentGVR, err := o.KClient.GetDeploymentAPIVersion()
 		if err != nil {
 			return err
 		}
 
-		// Populate the application selector field in service binding request
-		o.serviceBinding.Spec.Application = &servicebinding.Application{
-			GroupVersionResource: deploymentGVR,
-		}
+		o.serviceBinding.SetAPIVersion(strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"))
+		o.serviceBinding.SetKind(kclient.ServiceBindingKind)
+		o.serviceBinding.SetName(getServiceBindingName(componentName, o.serviceType, o.serviceName))
+		o.serviceBinding.SetOwnerReferences(append(o.serviceBinding.GetOwnerReferences(), ownerReference))
+		o.serviceBinding.SetNamespace(o.EnvSpecificInfo.GetNamespace())
 
-		o.serviceBinding.Spec.Application.Name = componentName
+		err = unstructured.SetNestedField(o.serviceBinding.Object, true, "spec", "detectBindingResources")
+		if err != nil {
+			return err
+		}
+		err = unstructured.SetNestedField(o.serviceBinding.Object, false, "spec", "bindAsFiles")
+		if err != nil {
+			return err
+		}
+		err = unstructured.SetNestedField(o.serviceBinding.Object, componentName, "spec", "application", "name")
+		if err != nil {
+			return err
+		}
+		err = unstructured.SetNestedField(o.serviceBinding.Object, deploymentGVR.Group, "spec", "application", "group")
+		if err != nil {
+			return err
+		}
+		err = unstructured.SetNestedField(o.serviceBinding.Object, deploymentGVR.Version, "spec", "application", "version")
+		if err != nil {
+			return err
+		}
+		err = unstructured.SetNestedField(o.serviceBinding.Object, deploymentGVR.Resource, "spec", "application", "resource")
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
@@ -225,16 +236,18 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			return err
 		}
 
-		service := servicebinding.Service{
-			GroupVersionKind: metav1.GroupVersionKind{
-				Group:   group,
-				Version: version,
-				Kind:    kind,
-			},
-			Namespace: &o.KClient.Namespace,
+		service := map[string]interface{}{
+			"name":      o.serviceName,
+			"group":     group,
+			"version":   version,
+			"kind":      kind,
+			"namespace": o.KClient.Namespace,
 		}
-		service.Name = o.serviceName
-		o.serviceBinding.Spec.Services = &[]servicebinding.Service{service}
+
+		err = unstructured.SetNestedSlice(o.serviceBinding.Object, []interface{}{service}, "spec", "services")
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
@@ -288,18 +301,9 @@ func (o *commonLinkOptions) run() (err error) {
 			return
 		}
 
-		// convert service binding request into a ma[string]interface{} type so
-		// as to use it with dynamic client
-		serviceBindingMap := make(map[string]interface{})
-		intermediate, _ := json.Marshal(o.serviceBinding)
-		err = json.Unmarshal(intermediate, &serviceBindingMap)
-		if err != nil {
-			return err
-		}
-
 		// this creates a link by creating a service of type
 		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
-		err = o.KClient.CreateDynamicResource(serviceBindingMap, kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+		err = o.KClient.CreateDynamicResource(o.serviceBinding.Object, kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				return fmt.Errorf("component %q is already linked with the service %q", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
@@ -310,7 +314,7 @@ func (o *commonLinkOptions) run() (err error) {
 		// once the link is created, we need to store the information in
 		// env.yaml so that subsequent odo push can create a new deployment
 		// based on it
-		err = o.Context.EnvSpecificInfo.SetConfiguration("link", envinfo.EnvInfoLink{Name: o.serviceBinding.Name, ServiceKind: o.serviceType, ServiceName: o.serviceName})
+		err = o.Context.EnvSpecificInfo.SetConfiguration("link", envinfo.EnvInfoLink{Name: o.serviceBinding.GetName(), ServiceKind: o.serviceType, ServiceName: o.serviceName})
 		if err != nil {
 			return err
 		}
