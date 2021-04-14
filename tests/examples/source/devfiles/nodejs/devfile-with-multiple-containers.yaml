@@ -19,6 +19,7 @@ components:
     container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
+      mountSources: true
 commands:
   - id: devbuild
     exec:
