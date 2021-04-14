@@ -509,13 +509,14 @@ func componentTests(args ...string) {
 			helper.DeleteDir(contextNumeric)
 		})
 
-		It("should create default named component in a directory with numeric name", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), contextNumeric)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", contextNumeric, "--app", "testing")...)
-			info := helper.LocalEnvInfo(contextNumeric)
-			Expect(info.GetApplication(), "testing")
-			helper.CmdShouldPass("odo", append(args, "push", "--context", contextNumeric, "-v4")...)
-		})
+		// issue https://github.com/openshift/odo/issues/4621
+		// It("should create default named component in a directory with numeric name", func() {
+		// 	helper.CopyExample(filepath.Join("source", "nodejs"), contextNumeric)
+		// 	helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", contextNumeric, "--app", "testing")...)
+		// 	info := helper.LocalEnvInfo(contextNumeric)
+		// 	Expect(info.GetApplication(), "testing")
+		// 	helper.CmdShouldPass("odo", append(args, "push", "--context", contextNumeric, "-v4")...)
+		// })
 	})
 
 	Context("Creating component using symlink", func() {

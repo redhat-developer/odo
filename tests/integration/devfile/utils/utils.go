@@ -365,6 +365,7 @@ type OdoV2Watch struct {
 	CmpName               string
 	StringsToBeMatched    []string
 	StringsNotToBeMatched []string
+	FolderToCheck         string
 }
 
 // OdoWatch creates files, dir in the context and watches for the changes to be pushed
@@ -590,9 +591,13 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 	switch platform {
 	case "kube":
 		if isDevfileTest {
+			folderToCheck := "/projects"
+			if odoV2Watch.FolderToCheck != "" {
+				folderToCheck = odoV2Watch.FolderToCheck
+			}
 			cliRunner := runner.(helper.CliRunner)
 			podName := cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
-			stdOut = cliRunner.ExecListDir(podName, project, "/projects")
+			stdOut = cliRunner.ExecListDir(podName, project, folderToCheck)
 		} else {
 			ocRunner := runner.(helper.OcRunner)
 			podName := ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)

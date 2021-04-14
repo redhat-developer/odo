@@ -71,6 +71,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 			utils.OdoV2Watch{
 				CmpName:            cmpName,
 				StringsToBeMatched: []string{"Executing s2i-assemble command", "Executing s2i-run command"},
+				FolderToCheck:      "/tmp/projects",
 			}, project, context, watchFlag, oc, "kube")
 
 		// delete the component and validate
