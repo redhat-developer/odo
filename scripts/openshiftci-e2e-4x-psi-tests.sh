@@ -29,6 +29,6 @@ export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 export CI_FIREWALL_VERSION="v0.1.0"
 
 echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
-curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
+curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 ./ci-firewall request --sendQName $SENDQUEUE --sendTopic $SENDTOPIC --sendexchange $SENDEXCHANGE --setupscript $SETUPSCRIPT  --runscript $RUNSCRIPT  --timeout 2h15m
