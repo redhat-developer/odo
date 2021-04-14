@@ -56,26 +56,14 @@ func (ei *EnvInfo) GetStorage(name string) (*localConfigProvider.LocalStorage, e
 
 // CreateStorage sets the storage related information in the local configuration
 func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error {
-	// Get all the containers in the devfile
-	containers, err := ei.GetContainers()
-	if err != nil {
-		return err
+	//initialize volume mount and volume container
+	vm := []devfilev1.VolumeMount{
+		{
+			Name: storage.Name,
+			Path: storage.Path,
+		},
 	}
-
-	// Add volumeMount to all containers in the devfile
-	for _, c := range containers {
-		if err := ei.devfileObj.Data.AddVolumeMounts(c.Name, []devfilev1.VolumeMount{
-			{
-				Name: storage.Name,
-				Path: storage.Path,
-			},
-		}); err != nil {
-			return err
-		}
-	}
-
-	// Add volume component to devfile. Think along the lines of a k8s pod spec's volumeMount and volume.
-	err = ei.devfileObj.Data.AddComponents([]devfilev1.Component{{
+	vc := []devfilev1.Component{{
 		Name: storage.Name,
 		ComponentUnion: devfilev1.ComponentUnion{
 			Volume: &devfilev1.VolumeComponent{
@@ -84,9 +72,45 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 				},
 			},
 		},
-	}})
+	}}
+	volumeExists := false
+	// Get all the containers in the devfile
+	containers, err := ei.GetContainers()
 	if err != nil {
 		return err
+	}
+
+	// Add volumeMount to all containers if no container is specified else to specified container(s) in the devfile
+	for _, c := range containers {
+		if storage.Container == "" || (storage.Container != "" && c.Name == storage.Container) {
+			if err := ei.devfileObj.Data.AddVolumeMounts(c.Name, vm); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Get all the components to check if volume component exists
+	components, err := ei.devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	// check if volume component already exists
+	for _, component := range components {
+		if component.Volume != nil && component.Name == storage.Name {
+			volumeExists = true
+		}
+	}
+
+	// Add volume component to devfile. Think along the lines of a k8s pod spec's volumeMount and volume.
+	// Add if volume does not exist, otherwise update
+	if !volumeExists {
+		err = ei.devfileObj.Data.AddComponents(vc)
+		if err != nil {
+			return err
+		}
+	} else {
+		ei.devfileObj.Data.UpdateComponent(vc[0])
 	}
 
 	err = ei.devfileObj.WriteYamlDevfile()
