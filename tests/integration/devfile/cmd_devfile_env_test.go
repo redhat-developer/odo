@@ -27,7 +27,7 @@ var _ = Describe("odo devfile env command tests", func() {
 	})
 
 	Context("When executing env view", func() {
-		FIt("Should view all default parameters", func() {
+		It("Should view all default parameters", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, "--app", "testing")
 			output := helper.CmdShouldPass("odo", "env", "view")
 			wantOutput := []string{
