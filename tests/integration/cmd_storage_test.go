@@ -10,12 +10,10 @@ import (
 )
 
 var _ = Describe("odo storage command tests", func() {
-	var oc helper.OcRunner
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
 	})
 
