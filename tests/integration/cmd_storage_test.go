@@ -32,42 +32,6 @@ var _ = Describe("odo storage command tests", func() {
 		})
 	})
 
-	Context("when using storage command with specified flag values", func() {
-		It("should add a storage, list and delete it", func() {
-			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "python", "python", "--app", "pyapp", "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "1Gi", "--context", commonVar.Context)
-			Expect(storAdd).To(ContainSubstring("python"))
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			dcName := oc.GetDcName("python", commonVar.Project)
-
-			// Check against the volume name against dc
-			getDcVolumeMountName := oc.GetVolumeMountName(dcName, commonVar.Project)
-			Expect(getDcVolumeMountName).To(ContainSubstring("pv1"))
-
-			// Check if the storage is added on the path provided
-			getMntPath := oc.GetVolumeMountPath(dcName, commonVar.Project)
-			Expect(getMntPath).To(ContainSubstring("/mnt/pv1"))
-
-			storeList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			Expect(storeList).To(ContainSubstring("pv1"))
-
-			// delete the storage
-			helper.CmdShouldPass("odo", "storage", "delete", "pv1", "--context", commonVar.Context, "-f")
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			storeList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-
-			Expect(storeList).NotTo(ContainSubstring("pv1"))
-
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			getDcVolumeMountName = oc.GetVolumeMountName(dcName, commonVar.Project)
-			Expect(getDcVolumeMountName).NotTo(ContainSubstring("pv1"))
-		})
-	})
-
 	Context("when using storage command with -o json", func() {
 		It("should create and list output in json format", func() {
 			helper.CopyExample(filepath.Join("source", "wildfly"), commonVar.Context)

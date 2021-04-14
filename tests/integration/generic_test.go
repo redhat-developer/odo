@@ -180,13 +180,14 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("when running odo push with flag --show-log", func() {
+		// works
 		It("should be able to push changes", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
 
 			// Push the changes with --show-log
 			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context)
-			Expect(getLogging).To(ContainSubstring("Creating Kubernetes resources for component nodejs "))
+			Expect(getLogging).To(ContainSubstring("Creating Kubernetes resources for component nodejs"))
 		})
 	})
 
