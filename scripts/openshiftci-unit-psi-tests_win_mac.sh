@@ -9,6 +9,7 @@ case $1 in
     export SETUPSCRIPT="scripts/setup_script_unit.sh"
     export RUNSCRIPT="scripts/run_script_unit.sh"
     export JOBNAME=odo-mac-unit-pr-build
+    export SENDEXCHANGE=amqp.ci.exchange.win.unit.send 
     ;;
 
   mac)
@@ -17,6 +18,7 @@ case $1 in
     export SETUPSCRIPT="scripts/setup_script_unit.sh"
     export RUNSCRIPT="scripts/run_script_unit.sh"
     export JOB_NAME=odo-mac-unit-pr-build
+    export SENDEXCHANGE=amqp.ci.exchange.mac.unit.send 
     ;;
 esac
 

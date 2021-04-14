@@ -13,6 +13,7 @@ export SENDQUEUE=${SENDQUEUE:-"amqp.ci.queue.send"}
 export SENDTOPIC=${SENDTOPIC:-"amqp.ci.topic.send"}
 export SETUPSCRIPT=${SETUPSCRIPT:-"scripts/setup_script_e2e.sh"}
 export RUNSCRIPT=${RUNSCRIPT:-"scripts/run_script_e2e.sh"}
+export SENDEXCHANGE=${SENDEXCHANGE:-"amqp.ci.exchange.send"}
 
 # show commands
 set -x
@@ -25,9 +26,9 @@ export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
 ##### ci-firewall parameters end
 # The version of CI_FIREWALL TO USE
-export CI_FIREWALL_VERSION="valpha"
+export CI_FIREWALL_VERSION="v0.1.0"
 
 echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
-./ci-firewall request --sendQName $SENDQUEUE --sendTopic $SENDTOPIC --setupscript $SETUPSCRIPT  --runscript $RUNSCRIPT  --timeout 2h15m
+./ci-firewall request --sendQName $SENDQUEUE --sendTopic $SENDTOPIC --sendexchange $SENDEXCHANGE --setupscript $SETUPSCRIPT  --runscript $RUNSCRIPT  --timeout 2h15m
