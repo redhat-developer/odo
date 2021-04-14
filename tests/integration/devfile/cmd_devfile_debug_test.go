@@ -91,7 +91,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 	})
 
 	Context("odo debug info should work on a odo component", func() {
-		FIt("should start a debug session and run debug info on a running debug session", func() {
+		It("should start a debug session and run debug info on a running debug session", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp", "--project", commonVar.Project, "--context", commonVar.Context)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
