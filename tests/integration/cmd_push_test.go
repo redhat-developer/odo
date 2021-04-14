@@ -152,17 +152,6 @@ var _ = Describe("odo push command tests", func() {
 			Expect(stdOut).To(ContainSubstring("testing"))
 		})
 
-		It("should build when no changes are detected in the directory and force flag is enabled", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
-
-			// use the force build flag and push
-			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context, "-f")
-			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
-		})
-
 	})
 
 	Context("when .odoignore file exists", func() {

@@ -509,7 +509,7 @@ func componentTests(args ...string) {
 			helper.DeleteDir(contextNumeric)
 		})
 
-		It("should create default named component in a directory with numeric name", func() {
+		FIt("should create default named component in a directory with numeric name", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), contextNumeric)
 			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", contextNumeric, "--app", "testing")...)
 			info := helper.LocalEnvInfo(contextNumeric)

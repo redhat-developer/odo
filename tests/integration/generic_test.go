@@ -186,7 +186,7 @@ var _ = Describe("odo generic", func() {
 
 			// Push the changes with --show-log
 			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context)
-			Expect(getLogging).To(ContainSubstring("Building component"))
+			Expect(getLogging).To(ContainSubstring("Creating Kubernetes resources for component nodejs "))
 		})
 	})
 
