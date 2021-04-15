@@ -366,6 +366,7 @@ type OdoV2Watch struct {
 	StringsToBeMatched    []string
 	StringsNotToBeMatched []string
 	FolderToCheck         string
+	SrcType               string
 }
 
 // OdoWatch creates files, dir in the context and watches for the changes to be pushed
@@ -395,7 +396,11 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 			Expect(err).To(BeNil())
 
 			if isDevfileTest {
-				helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
+				if odoV2Watch.SrcType == "openjdk" {
+					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
+				} else {
+					helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
+				}
 			} else {
 				helper.DeleteDir(filepath.Join(context, "abcd"))
 				if odoV1Watch.SrcType == "openjdk" {
