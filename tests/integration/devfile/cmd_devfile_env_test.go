@@ -38,6 +38,8 @@ var _ = Describe("odo devfile env command tests", func() {
 				"Project",
 				commonVar.Project,
 				"DebugPort",
+				"Application",
+				"app",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})

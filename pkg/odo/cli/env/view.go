@@ -69,7 +69,9 @@ func (o *ViewOptions) Run() (err error) {
 	fmt.Fprintln(w, "PARAMETER NAME", "\t", "PARAMETER VALUE")
 	fmt.Fprintln(w, "Name", "\t", cs.Name)
 	fmt.Fprintln(w, "Project", "\t", cs.Project)
+	fmt.Fprintln(w, "Application", "\t", cs.AppName)
 	fmt.Fprintln(w, "DebugPort", "\t", showBlankIfNil(cs.DebugPort))
+
 	w.Flush()
 
 	return nil
