@@ -103,6 +103,16 @@ var _ = Describe("odo supported images e2e tests", func() {
 			oc.ImportImageFromRegistry("registry.access.redhat.com", "rhscl/nodejs-10-rhel7:latest", "nodejs:latest", commonVar.Project)
 			verifySupportedImage("rhscl/nodejs-10-rhel7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
+
+		It("Should be able to verify the nodejs-10-centos7 image", func() {
+			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-10-centos7:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("centos7/nodejs-10-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+		})
+
+		It("Should be able to verify the nodejs-12-centos7 image", func() {
+			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-12-centos7:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("centos7/nodejs-12-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+		})
 	})
 
 	Context("odo supported private registry images deployment", func() {
@@ -123,6 +133,12 @@ var _ = Describe("odo supported images e2e tests", func() {
 			redhatOpenjdk11UBI8Project := util.GetEnvWithDefault("REDHAT_OPENJDK11_UBI8_PROJECT", "openjdk-11")
 			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/openjdk-11:latest", "java:8", redhatOpenjdk11UBI8Project)
 			verifySupportedImage("ubi8/openjdk-11:latest", "openjdk", "java:8", redhatOpenjdk11UBI8Project, appName, commonVar.Context)
+		})
+
+		It("Should be able to verify the openjdk-11-rhel8 image", func() {
+			redhatOpenjdk12RHEL8Project := util.GetEnvWithDefault("REDHAT_OPENJDK11_RHEL8_PROJECT", "openjdk-11-rhel8")
+			oc.ImportImageFromRegistry("registry.redhat.io", "openjdk/openjdk-11-rhel8:latest", "java:8", redhatOpenjdk12RHEL8Project)
+			verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", redhatOpenjdk12RHEL8Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-14 image", func() {
