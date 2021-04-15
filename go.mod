@@ -3,6 +3,7 @@ module github.com/openshift/odo
 go 1.13
 
 require (
+	cloud.google.com/go v0.45.1 // indirect
 	github.com/Azure/go-autorest/autorest v0.11.4 // indirect
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
@@ -18,6 +19,8 @@ require (
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe
 	github.com/golang/mock v1.4.4
+	github.com/gophercloud/gophercloud v0.2.0 // indirect
+	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/imdario/mergo v0.3.11 // indirect
@@ -35,14 +38,12 @@ require (
 	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240 // indirect
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
-	github.com/openshift/custom-resource-status v0.0.0-20200602122900-c002fd1547ca // indirect
 	github.com/openshift/library-go v0.0.0-20200407165825-2e79bd232e72
 	github.com/openshift/oc v0.0.0-alpha.0.0.20200305142246-2576e482bf00
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200422144016-a6acf50218ed
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.2
-	github.com/redhat-developer/service-binding-operator v0.3.0
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5

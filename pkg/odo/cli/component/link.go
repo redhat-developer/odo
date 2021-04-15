@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	svc "github.com/openshift/odo/pkg/service"
-	servicebinding "github.com/redhat-developer/service-binding-operator/pkg/apis/operators/v1alpha1"
+	"github.com/spf13/cobra"
 
+	"github.com/openshift/odo/pkg/component"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	svc "github.com/openshift/odo/pkg/service"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-
-	"github.com/spf13/cobra"
 )
 
 // LinkRecommendedCommandName is the recommended link command name
@@ -88,7 +87,7 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
-	options.commonLinkOptions.serviceBinding = &servicebinding.ServiceBinding{}
+	options.commonLinkOptions.serviceBinding = unstructured.Unstructured{}
 	return &options
 }
 
