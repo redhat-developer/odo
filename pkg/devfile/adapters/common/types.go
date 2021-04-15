@@ -15,19 +15,6 @@ type AdapterContext struct {
 	Devfile       devfileParser.DevfileObj // Devfile is the object returned by the Devfile parser
 }
 
-// DevfileVolume is a struct for Devfile volume that is common to all the adapters
-type DevfileVolume struct {
-	Name          string
-	ContainerPath string
-	Size          string
-}
-
-// Storage is a struct that is common to all the adapters
-type Storage struct {
-	Name   string
-	Volume DevfileVolume
-}
-
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component
 type PushParameters struct {
 	Path                     string                  // Path refers to the parent folder containing the source code to push up to a component

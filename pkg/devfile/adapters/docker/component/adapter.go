@@ -13,7 +13,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
@@ -33,14 +32,11 @@ type Adapter struct {
 	Client lclient.Client
 	*common.GenericAdapter
 
-	containerNameToVolumes    map[string][]common.DevfileVolume
-	uniqueStorage             []common.Storage
-	volumeNameToDockerVolName map[string]string
-	devfileBuildCmd           string
-	devfileRunCmd             string
-	supervisordVolumeName     string
-	projectVolumeName         string
-	containers                []types.Container
+	devfileBuildCmd       string
+	devfileRunCmd         string
+	supervisordVolumeName string
+	projectVolumeName     string
+	containers            []types.Container
 }
 
 // getPod lazily records and retrieves the containers associated with the component associated with this adapter
@@ -85,16 +81,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
-	}
-
-	// Process the volumes defined in the devfile
-	a.containerNameToVolumes, err = common.GetVolumes(a.Devfile)
-	if err != nil {
-		return err
-	}
-	a.uniqueStorage, a.volumeNameToDockerVolName, err = storage.ProcessVolumes(&a.Client, a.ComponentName, a.containerNameToVolumes)
-	if err != nil {
-		return errors.Wrapf(err, "unable to process volumes for component %s", a.ComponentName)
 	}
 
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
