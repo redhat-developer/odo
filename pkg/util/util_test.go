@@ -1571,14 +1571,14 @@ func TestIsValidProjectDir(t *testing.T) {
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{"file1.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder %s contains one element and it's not the devfile used.",
+			expectedError: "Folder %s doesn't contain the devfile used.",
 		},
 		{
 			name:          "Case 4: Folder contains a hidden file which is not the devfile",
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{".file1.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder %s contains one element and it's not the devfile used.",
+			expectedError: "Folder %s doesn't contain the devfile used.",
 		},
 		{
 			name:          "Case 5: Folder contains devfile.yaml and more files",
@@ -1586,20 +1586,6 @@ func TestIsValidProjectDir(t *testing.T) {
 			filesToCreate: []string{"devfile.yaml", "file1.yaml", "file2.yaml"},
 			dirToCreate:   []string{},
 			expectedError: "Folder %s is not empty. It can only contain the devfile used.",
-		},
-		{
-			name:          "Case 6: Folder contains a directory",
-			devfilePath:   "",
-			filesToCreate: []string{},
-			dirToCreate:   []string{"dir"},
-			expectedError: "Folder %s is not empty. It contains a subfolder.",
-		},
-		{
-			name:          "Case 7: Folder contains a hidden directory",
-			devfilePath:   "",
-			filesToCreate: []string{},
-			dirToCreate:   []string{".dir"},
-			expectedError: "Folder %s is not empty. It contains a subfolder.",
 		},
 	}
 

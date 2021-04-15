@@ -1,7 +1,7 @@
 package overriding
 
 import (
-	workspaces "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dw "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -14,7 +14,7 @@ type checkFn func(elementType string, keysSets []sets.String) []error
 // For each type of top-level list, the `keysSets` argument that will be passed to the `doCheck` function
 // contains the the key sets that correspond to the `toplevelListContainers` passed to this method,
 // in the same order.
-func checkKeys(doCheck checkFn, toplevelListContainers ...workspaces.TopLevelListContainer) error {
+func checkKeys(doCheck checkFn, toplevelListContainers ...dw.TopLevelListContainer) error {
 	var errors *multierror.Error
 
 	// intermediate storage for the conversion []map[string]KeyedList -> map[string][]sets.String

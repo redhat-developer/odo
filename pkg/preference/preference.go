@@ -80,7 +80,7 @@ const (
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
+	DefaultDevfileRegistryURL = "https://registry.devfile.io"
 
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
 	DefaultRegistryCacheTime = 15
@@ -265,6 +265,17 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	// Handle user has preference file but doesn't use dynamic registry before
 	if c.OdoSettings.RegistryList == nil {
 		c.OdoSettings.RegistryList = &defaultRegistryList
+	}
+
+	// Handle OCI-based default registry migration
+	if c.OdoSettings.RegistryList != nil {
+		for index, registry := range *c.OdoSettings.RegistryList {
+			if registry.Name == DefaultDevfileRegistryName && registry.URL != DefaultDevfileRegistryURL {
+				registryList := *c.OdoSettings.RegistryList
+				registryList[index].URL = DefaultDevfileRegistryURL
+				break
+			}
+		}
 	}
 
 	return &c, nil

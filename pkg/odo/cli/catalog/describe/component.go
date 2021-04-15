@@ -2,7 +2,10 @@ package describe
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"path"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
@@ -196,11 +199,25 @@ func (o *DescribeComponentOptions) GetDevfileComponentsByName(catalogDevfileList
 // GetDevfile downloads the devfile in memory and return the devfile object
 func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileObj, error) {
 	var devObj parser.DevfileObj
+	var err error
 
-	devObj, err := devfile.ParseFromURLAndValidate(devfileComponent.Registry.URL + devfileComponent.Link)
-	if err != nil {
-		return devObj, errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
+	if strings.Contains(devfileComponent.Registry.URL, "github") {
+		devObj, err = devfile.ParseFromURLAndValidate(devfileComponent.Registry.URL + devfileComponent.Link)
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from Github-based registry for devfile component: %s", devfileComponent.Name)
+		}
+	} else {
+		registryURL, err := url.Parse(devfileComponent.Registry.URL)
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to parse registry URL for devfile component: %s", devfileComponent.Name)
+		}
+		registryURL.Path = path.Join(registryURL.Path, "devfiles", devfileComponent.Name)
+		devObj, err = devfile.ParseFromURLAndValidate(registryURL.String())
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from OCI-based registry for devfile component: %s", devfileComponent.Name)
+		}
 	}
+
 	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return devObj, err

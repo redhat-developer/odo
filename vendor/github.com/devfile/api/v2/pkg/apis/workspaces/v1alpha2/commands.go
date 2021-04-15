@@ -67,7 +67,7 @@ type Command struct {
 
 // +union
 type CommandUnion struct {
-	// Type of workspace command
+	// Type of devworkspace command
 	// +unionDiscriminator
 	// +optional
 	CommandType CommandType `json:"commandType,omitempty"`
@@ -77,15 +77,15 @@ type CommandUnion struct {
 	Exec *ExecCommand `json:"exec,omitempty"`
 
 	// Command that consists in applying a given component definition,
-	// typically bound to a workspace event.
+	// typically bound to a devworkspace event.
 	//
 	// For example, when an `apply` command is bound to a `preStart` event,
 	// and references a `container` component, it will start the container as a
-	// K8S initContainer in the workspace POD, unless the component has its
+	// K8S initContainer in the devworkspace POD, unless the component has its
 	// `dedicatedPod` field set to `true`.
 	//
 	// When no `apply` command exist for a given component,
-	// it is assumed the component will be applied at workspace start
+	// it is assumed the component will be applied at devworkspace start
 	// by default.
 	// +optional
 	Apply *ApplyCommand `json:"apply,omitempty"`

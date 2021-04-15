@@ -285,7 +285,7 @@ func parseFromRegistry(parentId, registryURL string, curDevfileCtx devfileCtx.De
 
 func getDevfileFromRegistry(parentId, registryURL string) ([]byte, error) {
 	if !strings.HasPrefix(registryURL, "http://") && !strings.HasPrefix(registryURL, "https://") {
-		registryURL = fmt.Sprintf("http://%s", registryURL)
+		return nil, fmt.Errorf("the provided registryURL: %s is not a valid URL", registryURL)
 	}
 	param := util.HTTPRequestParams{
 		URL: fmt.Sprintf("%s/devfiles/%s", registryURL, parentId),

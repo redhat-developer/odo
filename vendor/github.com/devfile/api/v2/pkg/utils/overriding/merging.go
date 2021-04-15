@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	workspaces "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dw "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -21,11 +21,11 @@ import (
 // The result is a transformed `DevWorkspaceTemplateSpec` object, that does not contain any `plugin` component
 // (since they are expected to be provided as flattened overridden devfiles in the arguments)
 func MergeDevWorkspaceTemplateSpec(
-	mainContent *workspaces.DevWorkspaceTemplateSpecContent,
-	parentFlattenedContent *workspaces.DevWorkspaceTemplateSpecContent,
-	pluginFlattenedContents ...*workspaces.DevWorkspaceTemplateSpecContent) (*workspaces.DevWorkspaceTemplateSpecContent, error) {
+	mainContent *dw.DevWorkspaceTemplateSpecContent,
+	parentFlattenedContent *dw.DevWorkspaceTemplateSpecContent,
+	pluginFlattenedContents ...*dw.DevWorkspaceTemplateSpecContent) (*dw.DevWorkspaceTemplateSpecContent, error) {
 
-	allContents := []*workspaces.DevWorkspaceTemplateSpecContent{}
+	allContents := []*dw.DevWorkspaceTemplateSpecContent{}
 	if parentFlattenedContent != nil {
 		allContents = append(allContents, parentFlattenedContent)
 	}
@@ -52,12 +52,12 @@ func MergeDevWorkspaceTemplateSpec(
 		}
 	}
 
-	result := workspaces.DevWorkspaceTemplateSpecContent{}
+	result := dw.DevWorkspaceTemplateSpecContent{}
 
 	// Merge top-level lists (Commands, Projects, Components, etc ...)
 
 	topLevelListsNames := result.GetToplevelLists()
-	topLevelListsByContent := []workspaces.TopLevelLists{}
+	topLevelListsByContent := []dw.TopLevelLists{}
 	for _, content := range allContents {
 		topLevelListsByContent = append(topLevelListsByContent, content.GetToplevelLists())
 	}
@@ -78,7 +78,7 @@ func MergeDevWorkspaceTemplateSpec(
 			keyedList := toplevelLists[toplevelListName]
 			for _, keyed := range keyedList {
 				if content == mainContent {
-					if component, isComponent := keyed.(workspaces.Component); isComponent &&
+					if component, isComponent := keyed.(dw.Component); isComponent &&
 						component.Plugin != nil {
 						continue
 					}
@@ -98,7 +98,7 @@ func MergeDevWorkspaceTemplateSpec(
 	for _, content := range allContents {
 		if content.Events != nil {
 			if result.Events == nil {
-				result.Events = &workspaces.Events{}
+				result.Events = &dw.Events{}
 			}
 			preStartCommands = preStartCommands.Union(sets.NewString(content.Events.PreStart...))
 			postStartCommands = postStartCommands.Union(sets.NewString(content.Events.PostStart...))
@@ -126,13 +126,13 @@ func MergeDevWorkspaceTemplateSpec(
 //
 // The result is a transformed `DevfileWorkspaceTemplateSpec` object, that does not contain any `plugin` component
 // (since they are expected to be provided as flattened overridden devfiles in the arguments)
-func MergeDevWorkspaceTemplateSpecBytes(originalBytes []byte, flattenedParentBytes []byte, flattenPluginsBytes ...[]byte) (*workspaces.DevWorkspaceTemplateSpecContent, error) {
+func MergeDevWorkspaceTemplateSpecBytes(originalBytes []byte, flattenedParentBytes []byte, flattenPluginsBytes ...[]byte) (*dw.DevWorkspaceTemplateSpecContent, error) {
 	originalJson, err := yaml.ToJSON(originalBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	original := workspaces.DevWorkspaceTemplateSpecContent{}
+	original := dw.DevWorkspaceTemplateSpecContent{}
 	err = json.Unmarshal(originalJson, &original)
 	if err != nil {
 		return nil, err
@@ -143,20 +143,20 @@ func MergeDevWorkspaceTemplateSpecBytes(originalBytes []byte, flattenedParentByt
 		return nil, err
 	}
 
-	flattenedParent := workspaces.DevWorkspaceTemplateSpecContent{}
+	flattenedParent := dw.DevWorkspaceTemplateSpecContent{}
 	err = json.Unmarshal(flattenedParentJson, &flattenedParent)
 	if err != nil {
 		return nil, err
 	}
 
-	flattenedPlugins := []*workspaces.DevWorkspaceTemplateSpecContent{}
+	flattenedPlugins := []*dw.DevWorkspaceTemplateSpecContent{}
 	for _, flattenedPluginBytes := range flattenPluginsBytes {
 		flattenedPluginJson, err := yaml.ToJSON(flattenedPluginBytes)
 		if err != nil {
 			return nil, err
 		}
 
-		flattenedPlugin := workspaces.DevWorkspaceTemplateSpecContent{}
+		flattenedPlugin := dw.DevWorkspaceTemplateSpecContent{}
 		err = json.Unmarshal(flattenedPluginJson, &flattenedPlugin)
 		if err != nil {
 			return nil, err
@@ -167,7 +167,7 @@ func MergeDevWorkspaceTemplateSpecBytes(originalBytes []byte, flattenedParentByt
 	return MergeDevWorkspaceTemplateSpec(&original, &flattenedParent, flattenedPlugins...)
 }
 
-func ensureNoConflictWithParent(mainContent *workspaces.DevWorkspaceTemplateSpecContent, parentflattenedContent *workspaces.DevWorkspaceTemplateSpecContent) error {
+func ensureNoConflictWithParent(mainContent *dw.DevWorkspaceTemplateSpecContent, parentflattenedContent *dw.DevWorkspaceTemplateSpecContent) error {
 	return checkKeys(func(elementType string, keysSets []sets.String) []error {
 		mainKeys := keysSets[0]
 		parentOrPluginKeys := keysSets[1]
@@ -183,7 +183,7 @@ func ensureNoConflictWithParent(mainContent *workspaces.DevWorkspaceTemplateSpec
 		mainContent, parentflattenedContent)
 }
 
-func ensureNoConflictsWithPlugins(mainContent *workspaces.DevWorkspaceTemplateSpecContent, pluginFlattenedContents ...*workspaces.DevWorkspaceTemplateSpecContent) error {
+func ensureNoConflictsWithPlugins(mainContent *dw.DevWorkspaceTemplateSpecContent, pluginFlattenedContents ...*dw.DevWorkspaceTemplateSpecContent) error {
 	getPluginKey := func(pluginIndex int) string {
 		index := 0
 		for _, comp := range mainContent.Components {
@@ -197,7 +197,7 @@ func ensureNoConflictsWithPlugins(mainContent *workspaces.DevWorkspaceTemplateSp
 		return "unknown"
 	}
 
-	allSpecs := []workspaces.TopLevelListContainer{mainContent}
+	allSpecs := []dw.TopLevelListContainer{mainContent}
 	for _, pluginFlattenedContent := range pluginFlattenedContents {
 		allSpecs = append(allSpecs, pluginFlattenedContent)
 	}

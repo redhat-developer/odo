@@ -3,14 +3,14 @@ module github.com/openshift/odo
 go 1.13
 
 require (
-	cloud.google.com/go v0.45.1 // indirect
 	github.com/Azure/go-autorest/autorest v0.11.4 // indirect
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/containerd/containerd v1.3.3 // indirect
-	github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b
-	github.com/devfile/library v1.0.0-alpha.2.0.20210323153322-3d708859f0b5
+	github.com/devfile/api/v2 v2.0.0-20210408144711-a313872749ed
+	github.com/devfile/library v1.0.0-alpha.2.0.20210409194304-7a52b221a48e
+	github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873
+	github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce
 	github.com/fatih/color v1.7.0
@@ -46,7 +46,7 @@ require (
 	github.com/posener/complete v1.1.2
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/spf13/afero v1.2.2
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.6.3

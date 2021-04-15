@@ -19,8 +19,8 @@ const (
 	CustomComponentType     ComponentType = "Custom"
 )
 
-// Workspace component: Anything that will bring additional features / tooling / behaviour / context
-// to the workspace, in order to make working in it easier.
+// DevWorkspace component: Anything that will bring additional features / tooling / behaviour / context
+// to the devworkspace, in order to make working in it easier.
 type BaseComponent struct {
 }
 
@@ -46,18 +46,18 @@ type ComponentUnion struct {
 	// +optional
 	ComponentType ComponentType `json:"componentType,omitempty"`
 
-	// Allows adding and configuring workspace-related containers
+	// Allows adding and configuring devworkspace-related containers
 	// +optional
 	Container *ContainerComponent `json:"container,omitempty"`
 
-	// Allows importing into the workspace the Kubernetes resources
+	// Allows importing into the devworkspace the Kubernetes resources
 	// defined in a given manifest. For example this allows reusing the Kubernetes
 	// definitions used to deploy some runtime components in production.
 	//
 	// +optional
 	Kubernetes *KubernetesComponent `json:"kubernetes,omitempty"`
 
-	// Allows importing into the workspace the OpenShift resources
+	// Allows importing into the devworkspace the OpenShift resources
 	// defined in a given manifest. For example this allows reusing the OpenShift
 	// definitions used to deploy some runtime components in production.
 	//

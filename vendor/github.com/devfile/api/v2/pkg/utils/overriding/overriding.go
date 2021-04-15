@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	workspaces "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dw "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	unions "github.com/devfile/api/v2/pkg/utils/unions"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -21,13 +21,13 @@ import (
 // https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md#background
 //
 // The result is a transformed `DevfileWorkspaceTemplateSpec` object that can be serialized back to yaml or json.
-func OverrideDevWorkspaceTemplateSpecBytes(originalBytes []byte, patchBytes []byte) (*workspaces.DevWorkspaceTemplateSpecContent, error) {
+func OverrideDevWorkspaceTemplateSpecBytes(originalBytes []byte, patchBytes []byte) (*dw.DevWorkspaceTemplateSpecContent, error) {
 	originalJson, err := yaml.ToJSON(originalBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	original := workspaces.DevWorkspaceTemplateSpecContent{}
+	original := dw.DevWorkspaceTemplateSpecContent{}
 	err = json.Unmarshal(originalJson, &original)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func OverrideDevWorkspaceTemplateSpecBytes(originalBytes []byte, patchBytes []by
 		return nil, err
 	}
 
-	patch := workspaces.ParentOverrides{}
+	patch := dw.ParentOverrides{}
 	err = json.Unmarshal(patchJson, &patch)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func OverrideDevWorkspaceTemplateSpecBytes(originalBytes []byte, patchBytes []by
 // https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md#background
 //
 // The result is a transformed `DevfileWorkspaceTemplateSpec` object.
-func OverrideDevWorkspaceTemplateSpec(original *workspaces.DevWorkspaceTemplateSpecContent, patch workspaces.Overrides) (*workspaces.DevWorkspaceTemplateSpecContent, error) {
+func OverrideDevWorkspaceTemplateSpec(original *dw.DevWorkspaceTemplateSpecContent, patch dw.Overrides) (*dw.DevWorkspaceTemplateSpecContent, error) {
 	if err := ensureOnlyExistingElementsAreOverridden(original, patch); err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func OverrideDevWorkspaceTemplateSpec(original *workspaces.DevWorkspaceTemplateS
 		return nil, err
 	}
 
-	patched := workspaces.DevWorkspaceTemplateSpecContent{}
+	patched := dw.DevWorkspaceTemplateSpecContent{}
 	err = json.Unmarshal(patchedBytes, &patched)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func OverrideDevWorkspaceTemplateSpec(original *workspaces.DevWorkspaceTemplateS
 	return &patched, nil
 }
 
-func ensureOnlyExistingElementsAreOverridden(spec *workspaces.DevWorkspaceTemplateSpecContent, overrides workspaces.Overrides) error {
+func ensureOnlyExistingElementsAreOverridden(spec *dw.DevWorkspaceTemplateSpecContent, overrides dw.Overrides) error {
 	return checkKeys(func(elementType string, keysSets []sets.String) []error {
 		if len(keysSets) <= 1 {
 			return []error{}

@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.45.1
+# cloud.google.com/go v0.46.3
 cloud.google.com/go/compute/metadata
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 github.com/Azure/go-ansiterm
@@ -21,6 +21,25 @@ github.com/MakeNowJust/heredoc
 # github.com/Microsoft/go-winio v0.4.15
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
+# github.com/Microsoft/hcsshim v0.8.7
+github.com/Microsoft/hcsshim
+github.com/Microsoft/hcsshim/internal/cow
+github.com/Microsoft/hcsshim/internal/hcs
+github.com/Microsoft/hcsshim/internal/hcserror
+github.com/Microsoft/hcsshim/internal/hns
+github.com/Microsoft/hcsshim/internal/interop
+github.com/Microsoft/hcsshim/internal/log
+github.com/Microsoft/hcsshim/internal/logfields
+github.com/Microsoft/hcsshim/internal/longpath
+github.com/Microsoft/hcsshim/internal/mergemaps
+github.com/Microsoft/hcsshim/internal/oc
+github.com/Microsoft/hcsshim/internal/safefile
+github.com/Microsoft/hcsshim/internal/schema1
+github.com/Microsoft/hcsshim/internal/schema2
+github.com/Microsoft/hcsshim/internal/timeout
+github.com/Microsoft/hcsshim/internal/vmcompute
+github.com/Microsoft/hcsshim/internal/wclayer
+github.com/Microsoft/hcsshim/osversion
 # github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
 github.com/Netflix/go-expect
 # github.com/PuerkitoBio/purell v1.1.1
@@ -40,20 +59,41 @@ github.com/beorn7/perks/quantile
 github.com/blang/semver
 # github.com/cespare/xxhash/v2 v2.1.0
 github.com/cespare/xxhash/v2
-# github.com/containerd/containerd v1.3.3
+# github.com/containerd/cgroups v0.0.0-20190919134610-bf292b21730f
+github.com/containerd/cgroups/stats/v1
+# github.com/containerd/containerd v1.4.3
+github.com/containerd/containerd/archive/compression
+github.com/containerd/containerd/content
+github.com/containerd/containerd/content/local
 github.com/containerd/containerd/errdefs
+github.com/containerd/containerd/filters
+github.com/containerd/containerd/images
+github.com/containerd/containerd/labels
+github.com/containerd/containerd/log
+github.com/containerd/containerd/platforms
+github.com/containerd/containerd/reference
+github.com/containerd/containerd/remotes
+github.com/containerd/containerd/remotes/docker
+github.com/containerd/containerd/remotes/docker/schema1
+github.com/containerd/containerd/sys
+github.com/containerd/containerd/version
 # github.com/danieljoos/wincred v1.0.2
 github.com/danieljoos/wincred
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/devfile/api/v2 v2.0.0-20210304212617-bfc3f501616b
+# github.com/deislabs/oras v0.8.1
+github.com/deislabs/oras/pkg/artifact
+github.com/deislabs/oras/pkg/content
+github.com/deislabs/oras/pkg/context
+github.com/deislabs/oras/pkg/oras
+# github.com/devfile/api/v2 v2.0.0-20210408144711-a313872749ed
 github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2
 github.com/devfile/api/v2/pkg/attributes
 github.com/devfile/api/v2/pkg/devfile
 github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
-# github.com/devfile/library v1.0.0-alpha.2.0.20210323153322-3d708859f0b5
+# github.com/devfile/library v1.0.0-alpha.2.0.20210409194304-7a52b221a48e
 github.com/devfile/library/pkg/devfile
 github.com/devfile/library/pkg/devfile/generator
 github.com/devfile/library/pkg/devfile/parser
@@ -67,6 +107,10 @@ github.com/devfile/library/pkg/devfile/validate
 github.com/devfile/library/pkg/testingutil
 github.com/devfile/library/pkg/testingutil/filesystem
 github.com/devfile/library/pkg/util
+# github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873
+github.com/devfile/registry-support/index/generator/schema
+# github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873
+github.com/devfile/registry-support/registry-library/library
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
 # github.com/docker/distribution v2.7.1+incompatible
@@ -200,7 +244,9 @@ github.com/gobwas/glob/util/strings
 # github.com/godbus/dbus v4.1.0+incompatible
 github.com/godbus/dbus
 # github.com/gogo/protobuf v1.3.1
+github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 github.com/golang/groupcache/lru
@@ -459,7 +505,7 @@ github.com/sirupsen/logrus
 # github.com/spf13/afero v1.2.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
-# github.com/spf13/cobra v0.0.5
+# github.com/spf13/cobra v1.1.1
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
@@ -485,6 +531,12 @@ github.com/xtgo/uuid
 # github.com/zalando/go-keyring v0.1.0
 github.com/zalando/go-keyring
 github.com/zalando/go-keyring/secret_service
+# go.opencensus.io v0.22.0
+go.opencensus.io
+go.opencensus.io/internal
+go.opencensus.io/trace
+go.opencensus.io/trace/internal
+go.opencensus.io/trace/tracestate
 # golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
@@ -523,6 +575,9 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
+# golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+golang.org/x/sync/errgroup
+golang.org/x/sync/semaphore
 # golang.org/x/sys v0.0.0-20201119102817-f84b799fce68
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
@@ -569,9 +624,9 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6
+# google.golang.org/genproto v0.0.0-20191108220845-16a3f7862a1a
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.24.0
+# google.golang.org/grpc v1.27.0
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
 google.golang.org/grpc/grpclog

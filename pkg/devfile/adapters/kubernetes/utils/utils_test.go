@@ -974,7 +974,7 @@ func TestGetPreStartInitContainers(t *testing.T) {
 						t.Error(err)
 					}
 					err = devfileData.AddEvents(devfilev1.Events{
-						WorkspaceEvents: devfilev1.WorkspaceEvents{
+						DevWorkspaceEvents: devfilev1.DevWorkspaceEvents{
 							PreStart: tt.eventCommands,
 						},
 					})

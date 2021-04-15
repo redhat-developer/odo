@@ -801,25 +801,22 @@ func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 }
 
 // IsValidProjectDir checks that the folder to download the project from devfile is
-// either empty or only contains the devfile used.
+// either empty or contains the devfile used.
 func IsValidProjectDir(path string, devfilePath string) error {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err
 	}
 
-	if len(files) > 1 {
-		return errors.Errorf("Folder %s is not empty. It can only contain the devfile used.", path)
-	} else if len(files) == 1 {
-		file := files[0]
-		if file.IsDir() {
-			return errors.Errorf("Folder %s is not empty. It contains a subfolder.", path)
+	if len(files) >= 1 {
+		for _, file := range files {
+			fileName := file.Name()
+			devfilePath = strings.TrimPrefix(devfilePath, "./")
+			if !file.IsDir() && fileName == devfilePath {
+				return nil
+			}
 		}
-		fileName := files[0].Name()
-		devfilePath = strings.TrimPrefix(devfilePath, "./")
-		if fileName != devfilePath {
-			return errors.Errorf("Folder %s contains one element and it's not the devfile used.", path)
-		}
+		return errors.Errorf("Folder %s doesn't contain the devfile used.", path)
 	}
 
 	return nil

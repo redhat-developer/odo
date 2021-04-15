@@ -3,7 +3,7 @@ package unions
 import (
 	"reflect"
 
-	workspaces "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dw "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/mitchellh/reflectwalk"
 )
 
@@ -15,7 +15,7 @@ func (n *normalizer) Struct(s reflect.Value) error {
 		addr := s.Addr()
 		if addr.CanInterface() {
 			i := addr.Interface()
-			if u, ok := i.(workspaces.Union); ok {
+			if u, ok := i.(dw.Union); ok {
 				u.Normalize()
 			}
 		}
@@ -34,7 +34,7 @@ func (n *simplifier) Struct(s reflect.Value) error {
 		addr := s.Addr()
 		if addr.CanInterface() {
 			i := addr.Interface()
-			if u, ok := i.(workspaces.Union); ok {
+			if u, ok := i.(dw.Union); ok {
 				u.Simplify()
 			}
 		}
