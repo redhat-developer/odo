@@ -33,50 +33,51 @@ var _ = Describe("odo source e2e tests", func() {
 			}
 		})
 
-		It("Should be able to deploy a wildfly source application", func() {
-			helper.CopyExample(filepath.Join("source", "wildfly"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "wildfly", "wildfly-app", "--project",
-				commonVar.Project, "--context", commonVar.Context)
+		// issue https://github.com/openshift/odo/issues/4623
+		// It("Should be able to deploy a wildfly source application", func() {
+		// 	helper.CopyExample(filepath.Join("source", "wildfly"), commonVar.Context)
+		// 	helper.CmdShouldPass("odo", "create", "--s2i", "wildfly", "wildfly-app", "--project",
+		// 		commonVar.Project, "--context", commonVar.Context)
 
-			// Push changes
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			cmpList := helper.CmdShouldPass("odo", "list", "--context", commonVar.Context)
-			Expect(cmpList).To(ContainSubstring("wildfly-app"))
+		// 	// Push changes
+		// 	helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+		// 	cmpList := helper.CmdShouldPass("odo", "list", "--context", commonVar.Context)
+		// 	Expect(cmpList).To(ContainSubstring("wildfly-app"))
 
-			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			routeURL := helper.DetermineRouteURL(commonVar.Context)
+		// 	// Create a URL
+		// 	helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
+		// 	helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+		// 	routeURL := helper.DetermineRouteURL(commonVar.Context)
 
-			// Ping said URL
-			helper.HttpWaitFor(routeURL, "Insult", 30, 1)
+		// 	// Ping said URL
+		// 	helper.HttpWaitFor(routeURL, "Insult", 30, 1)
 
-			// Delete the component
-			helper.CmdShouldPass("odo", "app", "delete", "app", "--project", commonVar.Project, "-f")
-		})
+		// 	// Delete the component
+		// 	helper.CmdShouldPass("odo", "app", "delete", "app", "--project", commonVar.Project, "-f")
+		// })
 
-		It("Should be able to deploy a dotnet source application", func() {
-			oc.ImportDotnet20IS(commonVar.Project)
-			helper.CopyExample(filepath.Join("source", "dotnet"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "dotnet:2.0", "dotnet-app", "--project",
-				commonVar.Project, "--context", commonVar.Context)
+		// issue https://github.com/openshift/odo/issues/4623
+		// It("Should be able to deploy a dotnet source application", func() {
+		// 	oc.ImportDotnet20IS(commonVar.Project)
+		// 	helper.CopyExample(filepath.Join("source", "dotnet"), commonVar.Context)
+		// 	helper.CmdShouldPass("odo", "create", "--s2i", "dotnet:2.0", "dotnet-app", "--project",
+		// 		commonVar.Project, "--context", commonVar.Context)
 
-			// Push changes
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			cmpList := helper.CmdShouldPass("odo", "list", "--context", commonVar.Context)
-			Expect(cmpList).To(ContainSubstring("dotnet-app"))
+		// 	// Push changes
+		// 	helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+		// 	cmpList := helper.CmdShouldPass("odo", "list", "--context", commonVar.Context)
+		// 	Expect(cmpList).To(ContainSubstring("dotnet-app"))
 
-			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			routeURL := helper.DetermineRouteURL(commonVar.Context)
+		// 	// Create a URL
+		// 	helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+		// 	routeURL := helper.DetermineRouteURL(commonVar.Context)
 
-			// Ping said URL
-			helper.HttpWaitFor(routeURL, "dotnet", 30, 1)
+		// 	// Ping said URL
+		// 	helper.HttpWaitFor(routeURL, "dotnet", 30, 1)
 
-			// Delete the component
-			helper.CmdShouldPass("odo", "app", "delete", "app", "--project", commonVar.Project, "-f")
-		})
+		// 	// Delete the component
+		// 	helper.CmdShouldPass("odo", "app", "delete", "app", "--project", commonVar.Project, "-f")
+		// })
 	})
 
 	Context("odo component creation", func() {
