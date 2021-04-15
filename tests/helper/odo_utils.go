@@ -81,7 +81,7 @@ func DetermineRouteURL(context string) string {
 }
 
 // DetermineRouteURLs takes context path as argument and returns the URLs
-// where the current component exposes it's service, these URL can
+// where the current component exposes it's service, these URLs can
 // then be used in order to interact with the deployed service running in Openshift
 func DetermineRouteURLs(context string) []string {
 	var stdOut string
