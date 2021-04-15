@@ -42,10 +42,10 @@ sleep 15
 oc import-image nodejs:latest --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
 sleep 15
 oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite
-oc import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
+oc import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift:1.8 --confirm
 sleep 15
 oc annotate istag/java:8 --namespace=openshift tags=builder --overwrite
-oc import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
+oc import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift:1.8 --confirm
 sleep 15
 oc annotate istag/java:latest --namespace=openshift tags=builder --overwrite
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/ppc64le/official/ruby/imagestreams/ruby-rhel.json

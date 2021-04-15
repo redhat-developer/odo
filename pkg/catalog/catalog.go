@@ -30,6 +30,7 @@ const (
 
 var supportedImages = map[string]bool{
 	"redhat-openjdk-18/openjdk18-openshift:latest": true,
+	"redhat-openjdk-18/openjdk18-openshift:1.8":    true,
 	"openjdk/openjdk-11-rhel8:latest":              true,
 	"openjdk/openjdk-11-rhel7:latest":              true,
 	"ubi8/openjdk-11:latest":                       true,
