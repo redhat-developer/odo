@@ -17,8 +17,11 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.2.0
+	github.com/go-logr/logr v0.3.0 // indirect
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe
-	github.com/golang/mock v1.4.4
+	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/mock v1.5.0
+	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/gophercloud/gophercloud v0.2.0 // indirect
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
@@ -33,8 +36,8 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/olekukonko/tablewriter v0.0.0-20180506121414-d4647c9c7a84
-	github.com/onsi/ginkgo v1.14.0
-	github.com/onsi/gomega v1.10.1
+	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/gomega v1.10.2
 	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240 // indirect
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
@@ -44,9 +47,10 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.2
+	github.com/redhat-developer/service-binding-operator v0.7.0 // indirect
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/spf13/afero v1.2.2
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.6.3
@@ -59,12 +63,14 @@ require (
 	gopkg.in/AlecAivazis/survey.v1 v1.8.0
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.19.0
-	k8s.io/apimachinery v0.19.0
+	k8s.io/api v0.19.2
+	k8s.io/apiextensions-apiserver v0.19.2 // indirect
+	k8s.io/apimachinery v0.19.2
 	k8s.io/cli-runtime v0.17.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/kubectl v0.0.0
+	sigs.k8s.io/controller-runtime v0.6.4 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
