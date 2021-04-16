@@ -12,25 +12,25 @@ import (
 
 var _ = Describe("odo debug command tests", func() {
 	var commonVar helper.CommonVar
+	var projName string
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
+		projName = helper.GetCliRunner().CreateRandNamespaceProjectOfLength(5)
+
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
+		helper.GetCliRunner().DeleteNamespaceProject(projName)
 	})
 
 	Context("odo debug on a nodejs:latest component", func() {
 
 		It("should expect a ws connection when tried to connect on different debug port locally and remotely", func() {
-			projName := helper.GetCliRunner().CreateRandNamespaceProjectOfLength(5)
-			defer func() {
-				helper.GetCliRunner().DeleteNamespaceProject(projName)
-			}()
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "node", "--project", projName, "--context", commonVar.Context)
 			// need to set this twice because of https://github.com/openshift/odo/issues/4615

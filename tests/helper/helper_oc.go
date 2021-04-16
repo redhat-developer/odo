@@ -569,14 +569,13 @@ func (oc OcRunner) CreateRandNamespaceProject() string {
 	return projectName
 }
 
-// CreateRandNamespaceProject create new project
+// CreateRandNamespaceProject creates a new project with name of length i
 func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)
 	oc.createRandNamespaceProject(projectName)
 	return projectName
 }
 
-// CreateRandNamespaceProject create new project
 func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")

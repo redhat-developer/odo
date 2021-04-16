@@ -72,6 +72,7 @@ func decideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 	return component.DownloadStarterProject(starterProject, token, contextDir)
 }
 
+// DevfileJSON creates the full json description of a devfile component is prints it
 func (co *CreateOptions) DevfileJSON() error {
 	client, err := genericclioptions.Client()
 	if err == nil {
