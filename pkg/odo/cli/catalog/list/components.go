@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,26 +43,24 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 
 	tasks := util.NewConcurrentTasks(2)
 
-	if !pushtarget.IsPushTargetDocker() {
-		o.Context, err = genericclioptions.NewContext(cmd)
-		if err != nil {
-			return err
-		}
-		supported, err := o.Client.IsImageStreamSupported()
-		if err != nil {
-			klog.V(4).Info("ignoring error while checking imagestream support:", err.Error())
-		}
+	o.Context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
+	supported, err := o.Client.IsImageStreamSupported()
+	if err != nil {
+		klog.V(4).Info("ignoring error while checking imagestream support:", err.Error())
+	}
 
-		if supported {
-			tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-				o.catalogList, err = catalog.ListComponents(o.Client)
-				if err != nil {
-					errChannel <- err
-				} else {
-					o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
-				}
-			}})
-		}
+	if supported {
+		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			o.catalogList, err = catalog.ListComponents(o.Client)
+			if err != nil {
+				errChannel <- err
+			} else {
+				o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
+			}
+		}})
 	}
 
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {

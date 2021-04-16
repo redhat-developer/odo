@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -110,15 +109,12 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		var platformContext interface{}
-		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-			wo.namespace = wo.KClient.Namespace
-			platformContext = kubernetes.KubernetesContext{
-				Namespace: wo.namespace,
-			}
-		} else {
-			platformContext = nil
+		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
+		wo.namespace = wo.KClient.Namespace
+		platformContext = kubernetes.KubernetesContext{
+			Namespace: wo.namespace,
 		}
+
 		wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
 
 		return err
@@ -334,12 +330,8 @@ func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters wat
 	}
 
 	var platformContext interface{}
-	if !pushtarget.IsPushTargetDocker() {
-		platformContext = kubernetes.KubernetesContext{
-			Namespace: wo.namespace,
-		}
-	} else {
-		platformContext = nil
+	platformContext = kubernetes.KubernetesContext{
+		Namespace: wo.namespace,
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)

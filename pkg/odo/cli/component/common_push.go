@@ -359,10 +359,7 @@ func retrieveKubernetesDefaultNamespace() (string, error) {
 
 // retrieveCmdNamespace retrieves the namespace from project flag, if unset
 // we revert to the default namespace available from Kubernetes
-func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
-	var componentNamespace string
-	var err error
-
+func retrieveCmdNamespace(cmd *cobra.Command) (componentNamespace string, err error) {
 	// For "odo create" check to see if --project has been passed.
 	if cmd.Flags().Changed("project") {
 		componentNamespace, err = cmd.Flags().GetString("project")
@@ -379,7 +376,7 @@ func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
 	return componentNamespace, nil
 }
 
-// gatherName parses the Devfile retrieves an appropriate name in two ways.
+// gatherName parses the Devfile and retrieves an appropriate name in two ways.
 // 1. If metadata.name exists, we use it
 // 2. If metadata.name does NOT exist, we use the folder name where the devfile.yaml is located
 func gatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {

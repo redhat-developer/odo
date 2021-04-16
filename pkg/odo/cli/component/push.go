@@ -7,7 +7,6 @@ import (
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -117,7 +116,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			// either cmd commands or the current default kubernetes namespace
 			namespace, err := retrieveCmdNamespace(cmd)
 			if err != nil {
-				return errors.Wrap(err, "unable to determine target namespace for devfile")
+				return errors.Wrap(err, "unable to determine target namespace for the component")
 			}
 			client, err := genericclioptions.Client()
 			if err != nil {
@@ -184,12 +183,6 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		po.Context, err = genericclioptions.NewDevfileContext(cmd)
 		if err != nil {
 			return err
-		}
-
-		// If the push target has been set to Docker, we will have to change the current namespace.
-		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-		if !pushtarget.IsPushTargetDocker() {
-			po.namespace = po.KClient.Namespace
 		}
 
 		return nil

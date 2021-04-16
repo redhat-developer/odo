@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 )
 
 // NewComponentAdapter returns a Devfile adapter for the targeted platform
@@ -21,11 +20,6 @@ func NewComponentAdapter(componentName string, context string, appName string, d
 		Context:       context,
 		AppName:       appName,
 		Devfile:       devObj,
-	}
-
-	// If the pushtarget is set to Docker, initialize the Docker adapter, otherwise initialize the Kubernetes adapter
-	if pushtarget.IsPushTargetDocker() {
-		return createDockerAdapter(adapterContext)
 	}
 
 	kc, ok := platformContext.(kubernetes.KubernetesContext)
