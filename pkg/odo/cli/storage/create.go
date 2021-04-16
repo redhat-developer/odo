@@ -112,7 +112,7 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 
 	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
-	storageCreateCmd.Flags().StringVar(&o.container, "container", "", "container to attach the storage to in devfile")
+	storageCreateCmd.Flags().StringVar(&o.container, "container", "", "Name of container to attach the storage to in devfile")
 
 	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)
