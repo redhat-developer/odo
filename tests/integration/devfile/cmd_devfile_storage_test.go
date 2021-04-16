@@ -67,27 +67,25 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create storage and attach to specified container successfully and list it correctly", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", "java-springboot", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
 			helper.CmdShouldPass("odo", args...)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-containers.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageName := helper.RandString(5)
 			pathName := "/data1"
 			size := "1Gi"
-			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", pathName, "--context", commonVar.Context, "--container", "funtime", "--size", size)
+			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", pathName, "--context", commonVar.Context, "--container", "tools", "--size", size)
 			storageList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(storageList, []string{pathName, "funtime", storageName, size})
-			helper.DontMatchAllInOutput(storageList, []string{"runtime"})
+			helper.MatchAllInOutput(storageList, []string{pathName, "tools", storageName, size})
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			storageList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(storageList, []string{"/data1", "funtime", storageName})
-			helper.DontMatchAllInOutput(storageList, []string{"runtime"})
+			helper.MatchAllInOutput(storageList, []string{pathName, "tools", storageName})
 
 			// check the volume name and mount paths for the funtime container
 			volumesMatched := 0
-			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "funtime", commonVar.Project)
+			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "tools", commonVar.Project)
 			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
 			for _, volNamesAndPath := range volNamesAndPathsArr {
 				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
@@ -112,7 +110,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.CmdShouldPass("odo", "storage", "delete", "-f", "--context", commonVar.Context, storageName)
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			storageList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			Expect(storageList).To(ContainSubstring("no storage"))
+			helper.DontMatchAllInOutput(storageList, []string{pathName, "tools", storageName, size})
 		})
 
 		It("should create a storage with default size when --size is not provided", func() {
