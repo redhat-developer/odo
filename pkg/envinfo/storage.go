@@ -128,7 +128,7 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 			return err
 		}
 	} else {
-		ei.devfileObj.Data.UpdateComponent(vc[0])
+		return fmt.Errorf("voglume with name %s already exists", storage.Name)
 	}
 
 	err = ei.devfileObj.WriteYamlDevfile()
