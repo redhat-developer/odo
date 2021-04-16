@@ -79,7 +79,7 @@ Here, we have 2 containers, with names `runtime` and `funtime`. To attach a stor
 
 ----
 
-You can list the same, using `odo stprage list` command
+You can list the same, using `odo storage list` command
 
 [source, sh]
 ----
