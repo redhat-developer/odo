@@ -208,21 +208,31 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 		return "", fmt.Errorf("invalid devfile: components.container: required value")
 	}
 
-	// since all container components have same volume mounts, we simply refer to the first container in the list
-	// refer https://github.com/openshift/odo/issues/4105 for addressing "all containers have same volume mounts"
-	paths, err := ei.devfileObj.Data.GetVolumeMountPaths(storageName, containers[0].Name)
-	if err != nil {
-		return "", err
+	var paths, uniquePaths []string
+
+	// go over all containers
+	for _, c := range containers {
+		// get all volume mount paths in current container
+		pt, err := ei.devfileObj.Data.GetVolumeMountPaths(storageName, c.Name)
+		if err != nil {
+			return "", err
+		}
+		paths = append(paths, pt...)
 	}
 
-	// TODO: Below "if" condition needs to go away when https://github.com/openshift/odo/issues/4105 is addressed.
-	if len(paths) > 0 {
-		return paths[0], nil
+	//remove duplicates, if any
+	keys := make(map[string]bool)
+	for _, item := range paths {
+		if !keys[item] {
+			uniquePaths = append(uniquePaths, item)
+			keys[item] = true
+		}
 	}
-	// Sending empty string will lead to bad UX as user will be shown an empty value for the mount path
-	// that's supposed to be deleted through "odo storage delete" command.
-	// This and the above "if" condition need to go away when we address https://github.com/openshift/odo/issues/4105
-	return "", nil
+	// TODO: Below "if" storage needs to be mounted on multiple containers, then the return will have to be an array.
+	if len(uniquePaths) > 0 {
+		return uniquePaths[0], nil
+	}
+	return "No mount", nil
 }
 
 // GetVolumeMountPath gets the volume mount's path.
