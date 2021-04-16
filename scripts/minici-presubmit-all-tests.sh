@@ -20,7 +20,7 @@ case $1 in
         export EXCHANGE="amqp.ci.exchange.minikube.send"
         export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minikube"
         export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minikube"
-        export TIMEOUT="2h15m"
+        export TIMEOUT="4h00m"
         ;;
     minishift)
         export JOB_NAME="odo-minishift-pr-tests"
