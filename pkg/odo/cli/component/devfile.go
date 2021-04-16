@@ -259,14 +259,8 @@ func warnIfURLSInvalid(url []localConfigProvider.LocalURL) {
 	if len(url) > 0 {
 		kubeURLExists = true
 	}
-	var urlOutput string
-	if len(url) > 1 {
-		urlOutput = "URLs"
-	} else {
-		urlOutput = "a URL"
-	}
 	if !kubeURLExists {
-		log.Warningf("Found no valid URLs for Kubernetes.", urlOutput)
+		log.Warning("Found no valid URLs for Kubernetes")
 	}
 }
 
