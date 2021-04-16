@@ -128,7 +128,7 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 			return err
 		}
 	} else {
-		return fmt.Errorf("voglume with name %s already exists", storage.Name)
+		return fmt.Errorf("volume with name %s already exists", storage.Name)
 	}
 
 	err = ei.devfileObj.WriteYamlDevfile()
