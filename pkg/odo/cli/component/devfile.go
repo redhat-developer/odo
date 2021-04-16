@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
@@ -82,7 +84,7 @@ func (po *PushOptions) DevfilePush() error {
 func (po *PushOptions) devfilePushInner() (err error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
 
 	if err != nil {
 		return err
@@ -159,7 +161,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 // DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
 	// Parse devfile
-	devObj, err := devfile.ParseAndValidate(lo.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
 	if err != nil {
 		return err
 	}
@@ -219,7 +221,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(do.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: do.devfilePath})
 	if err != nil {
 		return err
 	}
@@ -293,7 +295,7 @@ func warnIfURLSInvalid(url []localConfigProvider.LocalURL) {
 // DevfileComponentExec executes the given user command inside the component
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 	// Parse devfile
-	devObj, err := devfile.ParseAndValidate(eo.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: eo.devfilePath})
 	if err != nil {
 		return err
 	}
