@@ -859,11 +859,15 @@ func (co *CreateOptions) devfileRun() (err error) {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
 
-	// save devfile
+	// save devfile and corresponding resources if possible
 	// use original devfileData to persist original formatting of the devfile file
 	err = ioutil.WriteFile(DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
+	}
+	err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
+	if err != nil {
+		return err
 	}
 
 	// Generate env file
