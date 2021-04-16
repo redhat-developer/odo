@@ -59,8 +59,6 @@ type PushOptions struct {
 	devfileRunCommand   string
 	devfileDebugCommand string
 	debugRun            bool
-
-	namespace string
 }
 
 // NewPushOptions returns new instance of PushOptions

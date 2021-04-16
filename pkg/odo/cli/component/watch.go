@@ -329,8 +329,7 @@ func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters wat
 		return nil, err
 	}
 
-	var platformContext interface{}
-	platformContext = kubernetes.KubernetesContext{
+	platformContext := kubernetes.KubernetesContext{
 		Namespace: wo.namespace,
 	}
 

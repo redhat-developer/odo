@@ -5,10 +5,8 @@ import (
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/docker"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
 )
 
@@ -55,18 +53,4 @@ func newKubernetesAdapter(adapterContext common.AdapterContext, client occlient.
 	kubernetesAdapter := kubernetes.New(adapterContext, client)
 
 	return kubernetesAdapter, nil
-}
-
-func createDockerAdapter(adapterContext common.AdapterContext) (common.ComponentAdapter, error) {
-	client, err := lclient.New()
-	if err != nil {
-		return nil, err
-	}
-
-	return newDockerAdapter(adapterContext, *client)
-}
-
-func newDockerAdapter(adapterContext common.AdapterContext, client lclient.Client) (common.ComponentAdapter, error) {
-	dockerAdapter := docker.New(adapterContext, client)
-	return dockerAdapter, nil
 }
