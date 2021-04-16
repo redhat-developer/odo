@@ -108,6 +108,11 @@ var _ = Describe("odo devfile storage command tests", func() {
 				}
 			}
 			Expect(volumesMatched).To(Equal(0))
+
+			helper.CmdShouldPass("odo", "storage", "delete", "-f", "--context", commonVar.Context, storageName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			storageList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+			Expect(storageList).To(ContainSubstring("no storage"))
 		})
 
 		It("should create a storage with default size when --size is not provided", func() {
