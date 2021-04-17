@@ -145,7 +145,6 @@ func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
 	return projectName
 }
 
-// CreateRandNamespaceProject create new project
 func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	CmdShouldPass("kubectl", "create", "namespace", projectName)
@@ -155,7 +154,7 @@ func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) stri
 	return projectName
 }
 
-// CreateRandNamespaceProject create new project
+// CreateRandNamespaceProjectOfLength create new project with i as the length of the name
 func (kubectl KubectlRunner) CreateRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)
 	kubectl.createRandNamespaceProject(projectName)
