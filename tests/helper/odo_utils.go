@@ -77,7 +77,13 @@ func GetPreferenceValue(key string) string {
 // where the current component exposes it's service this URL can
 // then be used in order to interact with the deployed service running in Openshift
 func DetermineRouteURL(context string) string {
-	return routeURL(context)
+	urls := DetermineRouteURLs(context)
+	// only return the 1st element if it exists
+	if len(urls) > 0 {
+		return urls[0]
+	}
+
+	return ""
 }
 
 // DetermineRouteURLs takes context path as argument and returns the URLs
@@ -96,18 +102,6 @@ func DetermineRouteURLs(context string) []string {
 		odoURLs[i] = strings.TrimSpace(odoURLs[i])
 	}
 	return odoURLs
-}
-
-func routeURL(context string) string {
-	var stdOut string
-	if context != "" {
-		stdOut = CmdShouldPass("odo", "url", "list", "--context", context)
-	} else {
-		stdOut = CmdShouldPass("odo", "url", "list")
-	}
-	reURL := regexp.MustCompile(`\s+http(s?)://.\S+`)
-	odoURL := reURL.FindString(stdOut)
-	return strings.TrimSpace(odoURL)
 }
 
 // CreateRandProject create new project with random name (10 letters)
