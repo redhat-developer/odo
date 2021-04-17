@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/openshift/odo/pkg/devfile/convert"
 	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
@@ -97,7 +98,7 @@ var _ = Describe("odo push command tests", func() {
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
-			stdOut := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut := oc.ExecListDir(podName, commonVar.Project, convert.DefaultSourceMappingS2i)
 			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 
 			// Now we delete the file and dir and push
@@ -106,7 +107,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context, "-v4")
 
 			// Then check to see if it's truly been deleted
-			stdOut = oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut = oc.ExecListDir(podName, commonVar.Project, convert.DefaultSourceMappingS2i)
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 		})
 
@@ -133,7 +134,7 @@ var _ = Describe("odo push command tests", func() {
 			podName := oc.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
 			// verify that the new file was pushed
-			stdOut := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut := oc.ExecListDir(podName, commonVar.Project, convert.DefaultSourceMappingS2i)
 
 			Expect(stdOut).To(Not(ContainSubstring("README.md")))
 
@@ -145,11 +146,42 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// verify that the new file was pushed
-			stdOut = oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut = oc.ExecListDir(podName, commonVar.Project, convert.DefaultSourceMappingS2i)
 
 			Expect(stdOut).To(Not(ContainSubstring("tests")))
 
 			Expect(stdOut).To(ContainSubstring("testing"))
+		})
+
+		It("should push only the modified files", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			url := oc.GetFirstURL(cmpName, appName, commonVar.Project)
+
+			// Wait for running app before getting info about files.
+			// During the startup sequence there is something that will modify the access time of a source file.
+			helper.HttpWaitFor("http://"+url, "Hello world from node.js!", 30, 1)
+			runner := helper.NewKubectlRunner("kubectl")
+			earlierCatServerFile := ""
+			earlierCatServerFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "server.js")))
+
+			earlierCatPackageFile := ""
+			earlierCatPackageFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "package.json")))
+
+			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello world from node.js!", "UPDATED!")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
+
+			modifiedCatPackageFile := ""
+			modifiedCatPackageFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "package.json")))
+
+			modifiedCatServerFile := ""
+			modifiedCatServerFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "server.js")))
+
+			Expect(modifiedCatPackageFile).To(Equal(earlierCatPackageFile))
+			Expect(modifiedCatServerFile).NotTo(Equal(earlierCatServerFile))
 		})
 
 	})
@@ -173,11 +205,11 @@ var _ = Describe("odo push command tests", func() {
 			podName := oc.GetRunningPodNameByComponent("nodejs", commonVar.Project)
 
 			// verify that the server file got pushed
-			stdOut1 := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut1 := oc.ExecListDir(podName, commonVar.Project, convert.DefaultSourceMappingS2i)
 			Expect(stdOut1).To(ContainSubstring("server.js"))
 
 			// verify that the README.md file was not pushed
-			stdOut3 := oc.ExecListDir(podName, commonVar.Project, "/tmp/projects")
+			stdOut3 := oc.ExecListDir(podName, commonVar.Project, convert.DefaultSourceMappingS2i)
 			Expect(stdOut3).To(Not(ContainSubstring(("README.md"))))
 
 			// modify a ignored file and push

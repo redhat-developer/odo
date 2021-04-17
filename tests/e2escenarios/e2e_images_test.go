@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/devfile/convert"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
@@ -71,7 +72,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 			utils.OdoV2Watch{
 				CmpName:            cmpName,
 				StringsToBeMatched: []string{"Executing s2i-assemble command", "Executing s2i-run command"},
-				FolderToCheck:      "/tmp/projects",
+				FolderToCheck:      convert.DefaultSourceMappingS2i,
 				SrcType:            srcType,
 			}, project, context, watchFlag, oc, "kube")
 

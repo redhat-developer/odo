@@ -31,10 +31,10 @@ const (
 	runCommandID = "s2i-run"
 	// run command to be used in s2i devfile
 	runCommandS2i = "/opt/odo/bin/run"
-	// container component name to be used in devfile
-	containerName = "s2i-builder"
-	// directory to sync s2i source code
-	defaultSourceMappingS2i = "/tmp/projects"
+	// ContainerName is component name to be used in devfile
+	ContainerName = "s2i-builder"
+	// DefaultSourceMappingS2i is the directory to sync s2i source code
+	DefaultSourceMappingS2i = "/tmp/projects"
 	// devfile version
 	devfileVersion = "2.0.0"
 	// environment variable set for s2i assemble and restart scripts
@@ -179,7 +179,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 		Id: buildCommandID,
 		CommandUnion: devfilev1.CommandUnion{
 			Exec: &devfilev1.ExecCommand{
-				Component:   containerName,
+				Component:   ContainerName,
 				CommandLine: buildCommandS2i,
 				LabeledCommand: devfilev1.LabeledCommand{
 					BaseCommand: devfilev1.BaseCommand{
@@ -197,7 +197,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 		Id: runCommandID,
 		CommandUnion: devfilev1.CommandUnion{
 			Exec: &devfilev1.ExecCommand{
-				Component:   containerName,
+				Component:   ContainerName,
 				CommandLine: runCommandS2i,
 				LabeledCommand: devfilev1.LabeledCommand{
 					BaseCommand: devfilev1.BaseCommand{
@@ -257,7 +257,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		volumeMounts = append(volumeMounts, volumeMount)
 	}
 
-	sourceMapping := defaultSourceMappingS2i
+	sourceMapping := DefaultSourceMappingS2i
 
 	// Add s2i specific env variable in devfile
 	for _, env := range s2iEnv {
@@ -317,7 +317,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	}
 
 	container := devfilev1.Component{
-		Name: containerName,
+		Name: ContainerName,
 		ComponentUnion: devfilev1.ComponentUnion{
 			Container: &devfilev1.ContainerComponent{
 				Container: devfilev1.Container{
