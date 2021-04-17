@@ -82,7 +82,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		so.componentName = so.EnvSpecificInfo.GetName()
 
 		// Parse devfile
-		devObj, err := devfile.ParseAndValidate(so.devfilePath)
+		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: so.devfilePath})
 		if err != nil {
 			return err
 		}

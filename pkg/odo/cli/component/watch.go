@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -100,7 +102,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		wo.componentName = wo.EnvSpecificInfo.GetName()
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidate(wo.devfilePath)
+		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
 		if err != nil {
 			return err
 		}
@@ -324,7 +326,7 @@ func (wo *WatchOptions) regenerateAdapterAndPush(pushParams common.PushParameter
 func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(wo.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse and validate '%s'", wo.devfilePath)
 	}

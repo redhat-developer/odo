@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -77,7 +79,7 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 		}
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidate(parameters.DevfilePath)
+		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: parameters.DevfilePath})
 		if err != nil {
 			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}
