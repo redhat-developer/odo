@@ -68,7 +68,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 		It("should get the default global config keys", func() {
 			configOutput := helper.CmdShouldPass("odo", "preference", "view")
-			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "PushTarget", "BuildTimeout", "PushTimeout", "Experimental", "Ephemeral", "ConsentTelemetry"}
+			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "BuildTimeout", "PushTimeout", "Experimental", "Ephemeral", "ConsentTelemetry"}
 			helper.MatchAllInOutput(configOutput, preferences)
 			for _, key := range preferences {
 				value := helper.GetPreferenceValue(key)
@@ -83,7 +83,6 @@ var _ = Describe("odo preference and config command tests", func() {
 		}{
 			{"UpdateNotification", "false", "true", "foo"},
 			{"Timeout", "5", "6", "foo"},
-			{"PushTarget", "docker", "kube", "smh"},
 			{"NamePrefix", "foo", "bar", ""},
 			{"BuildTimeout", "5", "7", "foo"},
 			{"Experimental", "false", "true", "foo"},
