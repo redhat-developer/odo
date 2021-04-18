@@ -10,7 +10,6 @@ import (
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
@@ -130,11 +129,10 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
-	localURLs, err := po.EnvSpecificInfo.ListURLs()
+	_, err = po.EnvSpecificInfo.ListURLs()
 	if err != nil {
 		return err
 	}
-	warnIfURLSInvalid(localURLs)
 
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
@@ -250,18 +248,6 @@ func (to *TestOptions) RunTestCommand() error {
 		return err
 	}
 	return devfileHandler.Test(to.commandName, to.show)
-}
-
-func warnIfURLSInvalid(url []localConfigProvider.LocalURL) {
-	// warnIfURLSInvalid checks if env.yaml contains a valid URL
-	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
-	kubeURLExists := false
-	if len(url) > 0 {
-		kubeURLExists = true
-	}
-	if !kubeURLExists {
-		log.Warning("Found no valid URLs for Kubernetes")
-	}
 }
 
 // DevfileComponentExec executes the given user command inside the component

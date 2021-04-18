@@ -3,15 +3,13 @@ package url
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"net/http"
-	"strconv"
 	"time"
 
+	"github.com/openshift/odo/pkg/localConfigProvider"
+
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
@@ -53,35 +51,6 @@ func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kcl
 		singleEntry := [][]statusURL{urlList}
 
 		startURLTester(singleEntry, loggingClient)
-
-	}()
-}
-
-// StartURLHttpRequestStatusWatchForDocker begins testing URLs for responses, outputting the result to console
-func StartURLHttpRequestStatusWatchForDocker(envInfo *envinfo.EnvSpecificInfo, loggingClient machineoutput.MachineEventLoggingClient) {
-
-	// This is a non-blocking function so that other status watchers may start as needed
-	go func() {
-
-		// Since Docker URLs do not have a protocol (http/https) associated with them, this URL list will contain URLs for
-		// both protocols.
-		var urlList [][]statusURL
-
-		for {
-			var err error
-			urlList, err = getURLsForDocker(envInfo)
-
-			if err == nil {
-				// Success!
-				break
-			} else {
-				// Try again in a few seconds...
-				klog.V(4).Infof("Unable to get Docker URLs: %v", err)
-				time.Sleep(URLFailureWaitTime)
-			}
-		}
-
-		startURLTester(urlList, loggingClient)
 
 	}()
 }
@@ -161,62 +130,6 @@ type statusURL struct {
 	port   int
 	secure bool
 	kind   string
-}
-
-func getURLsForDocker(envInfo *envinfo.EnvSpecificInfo) ([][]statusURL, error) {
-
-	componentName := envInfo.GetName()
-	client, err := lclient.New()
-	if err != nil {
-		return nil, err
-	}
-
-	urls, err := ListDockerURL(client, componentName, envInfo)
-	if err != nil {
-		return nil, err
-	}
-
-	urlList := [][]statusURL{}
-
-	for _, u := range urls.Items {
-		var urlString string
-		if u.Status.State == StateTypeNotPushed {
-			continue
-		}
-
-		urlPair := []statusURL{}
-
-		// Docker URLs (unlike K8s URLs) do not have a protocol assigned to them, so we must add both HTTP and HTTPS
-
-		// Add http://
-		urlString = fmt.Sprintf("http://%s:%s", u.Spec.Host, strconv.Itoa(u.Spec.ExternalPort))
-
-		statusURLVal := statusURL{
-			name:   u.Name,
-			url:    urlString,
-			kind:   "docker",
-			port:   u.Spec.ExternalPort,
-			secure: false,
-		}
-
-		urlPair = append(urlPair, statusURLVal)
-
-		// Add https://
-		urlString = fmt.Sprintf("https://%s:%s", u.Spec.Host, strconv.Itoa(u.Spec.ExternalPort))
-
-		statusURLVal = statusURL{
-			name:   u.Name,
-			url:    urlString,
-			kind:   "docker",
-			port:   u.Spec.ExternalPort,
-			secure: true,
-		}
-		urlPair = append(urlPair, statusURLVal)
-
-		urlList = append(urlList, urlPair)
-	}
-
-	return urlList, nil
 }
 
 // startURLTestGoRoutine tests one or more urls ('urls' param); if at least one of them is successful, a success is reported.
