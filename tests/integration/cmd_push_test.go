@@ -163,22 +163,21 @@ var _ = Describe("odo push command tests", func() {
 			// Wait for running app before getting info about files.
 			// During the startup sequence there is something that will modify the access time of a source file.
 			helper.HttpWaitFor("http://"+url, "Hello world from node.js!", 30, 1)
-			runner := helper.NewKubectlRunner("kubectl")
 			earlierCatServerFile := ""
-			earlierCatServerFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "server.js")))
+			earlierCatServerFile = helper.StatFileInPodContainer(oc, cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "server.js")))
 
 			earlierCatPackageFile := ""
-			earlierCatPackageFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "package.json")))
+			earlierCatPackageFile = helper.StatFileInPodContainer(oc, cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "package.json")))
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello world from node.js!", "UPDATED!")
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 
 			modifiedCatPackageFile := ""
-			modifiedCatPackageFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "package.json")))
+			modifiedCatPackageFile = helper.StatFileInPodContainer(oc, cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "package.json")))
 
 			modifiedCatServerFile := ""
-			modifiedCatServerFile = runner.StatFileInPod(cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "server.js")))
+			modifiedCatServerFile = helper.StatFileInPodContainer(oc, cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "server.js")))
 
 			Expect(modifiedCatPackageFile).To(Equal(earlierCatPackageFile))
 			Expect(modifiedCatServerFile).NotTo(Equal(earlierCatServerFile))

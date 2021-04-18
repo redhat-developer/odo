@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -63,29 +62,6 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 		return checkOp(stdOut, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stdErr, podName))
 	}
 	return checkOp(stdOut, nil)
-}
-
-//StatFileInPod returns stat result of filepath in pod of given component, in a given app, in a given project.
-//It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
-//in it anyway
-func (kubectl KubectlRunner) StatFileInPod(cmpName, containerName, appName, project, filepath string) string {
-	podName := kubectl.GetRunningPodNameByComponent(cmpName, project)
-	var result string
-	kubectl.CheckCmdOpInRemoteDevfilePod(
-		podName,
-		containerName,
-		project,
-		[]string{"stat", filepath},
-		func(cmdOp string, err error) bool {
-			//strip out access info as
-			// 1. Touching a file (such as running it in a script) modifies access times. This gives wrong value on mounts without noatime
-			// 2. We are not interested in Access info anyway.
-			re := regexp.MustCompile("(?m)[\r\n]+^.*Access.*$")
-			result = re.ReplaceAllString(cmdOp, "")
-			return true
-		},
-	)
-	return result
 }
 
 // GetRunningPodNameByComponent executes kubectl command and returns the running pod name of a deployed
