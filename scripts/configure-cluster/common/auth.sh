@@ -41,7 +41,7 @@ waitforstablelogin() {
     # Login as developer and check for stable server
     for i in {1..40}; do
         # Try logging in as developer
-        oc login -u developer -p password@123 &> /dev/null
+        oc login -u developer -p password@123 --insecure-skip-tls-verify &> /dev/null
         if [ $? -eq 0 ]; then
             # If login succeeds, assume success
     	    OC_STABLE_LOGIN="true"
