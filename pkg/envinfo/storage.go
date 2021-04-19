@@ -208,8 +208,6 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 		return "", fmt.Errorf("invalid devfile: components.container: required value")
 	}
 
-	var paths, uniquePaths []string
-
 	// go over all containers
 	for _, c := range containers {
 		// get all volume mount paths in current container
@@ -217,22 +215,12 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		paths = append(paths, pt...)
-	}
-
-	//remove duplicates, if any
-	keys := make(map[string]bool)
-	for _, item := range paths {
-		if !keys[item] {
-			uniquePaths = append(uniquePaths, item)
-			keys[item] = true
+		if len(pt) > 0 {
+			return pt[0], nil
 		}
 	}
 	// TODO: Below "if" storage needs to be mounted on multiple containers, then the return will have to be an array.
-	if len(uniquePaths) > 0 {
-		return uniquePaths[0], nil
-	}
-	return "No mount", nil
+	return "", nil
 }
 
 // GetVolumeMountPath gets the volume mount's path.
