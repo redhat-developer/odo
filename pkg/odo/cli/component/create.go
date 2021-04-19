@@ -865,9 +865,11 @@ func (co *CreateOptions) devfileRun() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
 	}
-	err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
-	if err != nil {
-		return err
+	if co.devfileMetadata.devfilePath.value == "" && !util.CheckPathExists(DevfilePath) {
+		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Generate env file
