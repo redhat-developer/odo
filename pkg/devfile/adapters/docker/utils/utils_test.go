@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/parser/data"
+
 	"github.com/docker/go-connections/nat"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -88,9 +90,17 @@ func TestComponentExists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: tt.components,
-				},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error()
+					}
+					err = devfileData.AddComponents(tt.components)
+					if err != nil {
+						t.Error()
+					}
+					return devfileData
+				}(),
 			}
 			cmpExists, err := ComponentExists(*tt.client, devObj.Data, tt.componentName)
 			if !tt.wantErr && err != nil {

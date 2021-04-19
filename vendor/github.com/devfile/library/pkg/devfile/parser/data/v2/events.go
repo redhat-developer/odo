@@ -16,6 +16,11 @@ func (d *DevfileV2) GetEvents() v1.Events {
 // AddEvents adds the Events Object to the devfile's events
 // if the event is already defined in the devfile, error out
 func (d *DevfileV2) AddEvents(events v1.Events) error {
+
+	if d.Events == nil {
+		d.Events = &v1.Events{}
+	}
+
 	if len(events.PreStop) > 0 {
 		if len(d.Events.PreStop) > 0 {
 			return &common.FieldAlreadyExistError{Field: "pre stop"}
@@ -50,16 +55,21 @@ func (d *DevfileV2) AddEvents(events v1.Events) error {
 // UpdateEvents updates the devfile's events
 // it only updates the events passed to it
 func (d *DevfileV2) UpdateEvents(postStart, postStop, preStart, preStop []string) {
-	if len(postStart) != 0 {
+
+	if d.Events == nil {
+		d.Events = &v1.Events{}
+	}
+
+	if postStart != nil {
 		d.Events.PostStart = postStart
 	}
-	if len(postStop) != 0 {
+	if postStop != nil {
 		d.Events.PostStop = postStop
 	}
-	if len(preStart) != 0 {
+	if preStart != nil {
 		d.Events.PreStart = preStart
 	}
-	if len(preStop) != 0 {
+	if preStop != nil {
 		d.Events.PreStop = preStop
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/zalando/go-keyring"
 
 	"github.com/devfile/library/pkg/devfile"
+	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -26,7 +27,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
@@ -462,12 +462,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				componentName = ui.EnterDevfileComponentName(componentType)
 
 				// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-				if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
+				if cmd.Flags().Changed("project") {
 					componentNamespace, err = cmd.Flags().GetString("project")
 					if err != nil {
 						return err
 					}
-				} else if !pushtarget.IsPushTargetDocker() {
+				} else {
 					componentNamespace = ui.EnterDevfileComponentProject(defaultComponentNamespace)
 				}
 			}
@@ -657,11 +657,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
 	var openshiftCluster bool
-	if !pushtarget.IsPushTargetDocker() {
-		openshiftCluster, _ = co.Client.IsImageStreamSupported()
-	} else {
-		openshiftCluster = false
-	}
+	openshiftCluster, _ = co.Client.IsImageStreamSupported()
 	if !openshiftCluster {
 		return errors.New("component type not found")
 	}
@@ -800,23 +796,37 @@ func (co *CreateOptions) devfileRun() (err error) {
 			}
 		} else {
 			// Download devfile from registry
-			params := util.HTTPRequestParams{
-				URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
-			}
+			var params util.HTTPRequestParams
 
-			if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-				token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
-				if err != nil {
-					return errors.Wrap(err, "unable to get secure registry credential from keyring")
+			if strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
+				// Github-based registry
+				params = util.HTTPRequestParams{
+					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
 				}
-				params.Token = token
+				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+					token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+					if err != nil {
+						return errors.Wrap(err, "unable to get secure registry credential from keyring")
+					}
+					params.Token = token
+				}
+			} else {
+				err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
+				if err != nil {
+					return err
+				}
 			}
 
 			cfg, err := preference.New()
 			if err != nil {
 				return err
 			}
-			devfileData, err = util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
+
+			if strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
+				devfileData, err = util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
+			} else {
+				devfileData, err = ioutil.ReadFile(DevfilePath)
+			}
 			if err != nil {
 				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 			}

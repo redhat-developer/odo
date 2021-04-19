@@ -59,28 +59,14 @@ const (
 	// ExperimentalDescription is human-readable description for the experimental setting
 	ExperimentalDescription = "Set this value to true to expose features in development/experimental mode"
 
-	// PushTargetSetting is the name of the setting confrolling the push target for odo (docker or kube)
-	PushTargetSetting = "PushTarget"
-
-	// PushTargetDescription is human-readable description for the pushtarget setting
-	PushTargetDescription = "Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube)"
-
 	// RegistryCacheTimeSetting is human-readable description for the registrycachetime setting
 	RegistryCacheTimeSetting = "RegistryCacheTime"
-
-	// Constants for PushTarget values
-
-	// DockerPushTarget represents the value of the push target when it's set to Docker
-	DockerPushTarget = "docker"
-
-	// KubePushTarget represents the value of the push target when it's set to Kube
-	KubePushTarget = "kube"
 
 	// DefaultDevfileRegistryName is the name of default devfile registry
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
+	DefaultDevfileRegistryURL = "https://registry.devfile.io"
 
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
 	DefaultRegistryCacheTime = 15
@@ -129,7 +115,6 @@ var (
 		BuildTimeoutSetting:       BuildTimeoutSettingDescription,
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
 		ExperimentalSetting:       ExperimentalDescription,
-		PushTargetSetting:         PushTargetDescription,
 		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
 		EphemeralSetting:          EphemeralDescription,
 		ConsentTelemetrySetting:   ConsentTelemetryDescription,
@@ -165,9 +150,6 @@ type OdoSettings struct {
 
 	// Experimental for exposing features in development/experimental mode
 	Experimental *bool `yaml:"Experimental,omitempty"`
-
-	// PushTarget for telling odo which platform to push to (either kube or docker)
-	PushTarget *string `yaml:"PushTarget,omitempty"`
 
 	// RegistryList for telling odo to connect to all the registries in the registry list
 	RegistryList *[]Registry `yaml:"RegistryList,omitempty"`
@@ -265,6 +247,17 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	// Handle user has preference file but doesn't use dynamic registry before
 	if c.OdoSettings.RegistryList == nil {
 		c.OdoSettings.RegistryList = &defaultRegistryList
+	}
+
+	// Handle OCI-based default registry migration
+	if c.OdoSettings.RegistryList != nil {
+		for index, registry := range *c.OdoSettings.RegistryList {
+			if registry.Name == DefaultDevfileRegistryName && registry.URL != DefaultDevfileRegistryURL {
+				registryList := *c.OdoSettings.RegistryList
+				registryList[index].URL = DefaultDevfileRegistryURL
+				break
+			}
+		}
 	}
 
 	return &c, nil
@@ -442,13 +435,6 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			}
 			c.OdoSettings.Ephemeral = &val
 
-		case "pushtarget":
-			val := strings.ToLower(value)
-			if val != DockerPushTarget && val != KubePushTarget {
-				return errors.Errorf("cannot set pushtarget to values other than %q or %q", DockerPushTarget, KubePushTarget)
-			}
-			c.OdoSettings.PushTarget = &val
-
 		case "consenttelemetry":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
@@ -539,13 +525,6 @@ func (c *PreferenceInfo) GetNamePrefix() string {
 // default value: false, experimental mode is disabled by default
 func (c *PreferenceInfo) GetExperimental() bool {
 	return util.GetBoolOrDefault(c.OdoSettings.Experimental, false)
-}
-
-// GetPushTarget returns the value of PushTarget from preferences
-// and if absent then returns default
-// default value: kube, docker push target needs to be manually enabled
-func (c *PreferenceInfo) GetPushTarget() string {
-	return util.GetStringOrDefault(c.OdoSettings.PushTarget, KubePushTarget)
 }
 
 // GetConsentTelemetry returns the value of ConsentTelemetry from preferences

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -17,7 +19,6 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -100,7 +101,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		wo.componentName = wo.EnvSpecificInfo.GetName()
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidate(wo.devfilePath)
+		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
 		if err != nil {
 			return err
 		}
@@ -110,15 +111,12 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		var platformContext interface{}
-		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-			wo.namespace = wo.KClient.Namespace
-			platformContext = kubernetes.KubernetesContext{
-				Namespace: wo.namespace,
-			}
-		} else {
-			platformContext = nil
+		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
+		wo.namespace = wo.KClient.Namespace
+		platformContext = kubernetes.KubernetesContext{
+			Namespace: wo.namespace,
 		}
+
 		wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
 
 		return err
@@ -324,7 +322,7 @@ func (wo *WatchOptions) regenerateAdapterAndPush(pushParams common.PushParameter
 func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(wo.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse and validate '%s'", wo.devfilePath)
 	}
@@ -333,13 +331,8 @@ func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters wat
 		return nil, err
 	}
 
-	var platformContext interface{}
-	if !pushtarget.IsPushTargetDocker() {
-		platformContext = kubernetes.KubernetesContext{
-			Namespace: wo.namespace,
-		}
-	} else {
-		platformContext = nil
+	platformContext := kubernetes.KubernetesContext{
+		Namespace: wo.namespace,
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)

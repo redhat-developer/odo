@@ -14,34 +14,34 @@ type DevWorkspaceSpec struct {
 
 // DevWorkspaceStatus defines the observed state of DevWorkspace
 type DevWorkspaceStatus struct {
-	// Id of the workspace
-	WorkspaceId string `json:"workspaceId"`
-	// URL at which the Worksace Editor can be joined
-	IdeUrl string         `json:"ideUrl,omitempty"`
-	Phase  WorkspacePhase `json:"phase,omitempty"`
+	// Id of the DevWorkspace
+	DevWorkspaceId string `json:"devworkspaceId"`
+	// URL at which the DevWorkspace Editor can be joined
+	IdeUrl string            `json:"ideUrl,omitempty"`
+	Phase  DevWorkspacePhase `json:"phase,omitempty"`
 	// Conditions represent the latest available observations of an object's state
-	Conditions []WorkspaceCondition `json:"conditions,omitempty"`
+	Conditions []DevWorkspaceCondition `json:"conditions,omitempty"`
 	// Message is a short user-readable message giving additional information
 	// about an object's state
 	Message string `json:"message,omitempty"`
 }
 
-type WorkspacePhase string
+type DevWorkspacePhase string
 
-// Valid workspace Statuses
+// Valid devworkspace Statuses
 const (
-	WorkspaceStatusStarting WorkspacePhase = "Starting"
-	WorkspaceStatusRunning  WorkspacePhase = "Running"
-	WorkspaceStatusStopped  WorkspacePhase = "Stopped"
-	WorkspaceStatusStopping WorkspacePhase = "Stopping"
-	WorkspaceStatusFailed   WorkspacePhase = "Failed"
-	WorkspaceStatusError    WorkspacePhase = "Error"
+	DevWorkspaceStatusStarting DevWorkspacePhase = "Starting"
+	DevWorkspaceStatusRunning  DevWorkspacePhase = "Running"
+	DevWorkspaceStatusStopped  DevWorkspacePhase = "Stopped"
+	DevWorkspaceStatusStopping DevWorkspacePhase = "Stopping"
+	DevWorkspaceStatusFailed   DevWorkspacePhase = "Failed"
+	DevWorkspaceStatusError    DevWorkspacePhase = "Error"
 )
 
-// WorkspaceCondition contains details for the current condition of this workspace.
-type WorkspaceCondition struct {
+// DevWorkspaceCondition contains details for the current condition of this devworkspace.
+type DevWorkspaceCondition struct {
 	// Type is the type of the condition.
-	Type WorkspaceConditionType `json:"type"`
+	Type DevWorkspaceConditionType `json:"type"`
 	// Phase is the status of the condition.
 	// Can be True, False, Unknown.
 	Status corev1.ConditionStatus `json:"status"`
@@ -53,16 +53,16 @@ type WorkspaceCondition struct {
 	Message string `json:"message,omitempty"`
 }
 
-// Types of conditions reported by workspace
-type WorkspaceConditionType string
+// Types of conditions reported by devworkspace
+type DevWorkspaceConditionType string
 
 const (
-	WorkspaceComponentsReady     WorkspaceConditionType = "ComponentsReady"
-	WorkspaceRoutingReady        WorkspaceConditionType = "RoutingReady"
-	WorkspaceServiceAccountReady WorkspaceConditionType = "ServiceAccountReady"
-	WorkspaceReady               WorkspaceConditionType = "Ready"
-	WorkspaceFailedStart         WorkspaceConditionType = "FailedStart"
-	WorkspaceError               WorkspaceConditionType = "Error"
+	DevWorkspaceComponentsReady     DevWorkspaceConditionType = "ComponentsReady"
+	DevWorkspaceRoutingReady        DevWorkspaceConditionType = "RoutingReady"
+	DevWorkspaceServiceAccountReady DevWorkspaceConditionType = "ServiceAccountReady"
+	DevWorkspaceReady               DevWorkspaceConditionType = "Ready"
+	DevWorkspaceFailedStart         DevWorkspaceConditionType = "FailedStart"
+	DevWorkspaceError               DevWorkspaceConditionType = "Error"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -70,9 +70,9 @@ const (
 // DevWorkspace is the Schema for the devworkspaces API
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=devworkspaces,scope=Namespaced,shortName=dw
-// +kubebuilder:printcolumn:name="Workspace ID",type="string",JSONPath=".status.workspaceId",description="The workspace's unique id"
-// +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase",description="The current workspace startup phase"
-// +kubebuilder:printcolumn:name="Info",type="string",JSONPath=".status.message",description="Additional information about the workspace"
+// +kubebuilder:printcolumn:name="DevWorkspace ID",type="string",JSONPath=".status.devworkspaceId",description="The devworkspace's unique id"
+// +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase",description="The current devworkspace startup phase"
+// +kubebuilder:printcolumn:name="Info",type="string",JSONPath=".status.message",description="Additional information about the devworkspace"
 // +devfile:jsonschema:generate
 // +kubebuilder:storageversion
 type DevWorkspace struct {

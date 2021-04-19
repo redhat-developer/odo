@@ -6,19 +6,14 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	types "github.com/docker/docker/api/types"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
-	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
@@ -280,93 +275,6 @@ func (s sortableURLs) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-// ListDockerURL returns all Docker URLs for given component.
-func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo *envinfo.EnvSpecificInfo) (URLList, error) {
-	containers, err := dockerutils.GetComponentContainers(*client, componentName)
-	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list component container")
-	}
-
-	localURLs, err := envSpecificInfo.ListURLs()
-	if err != nil {
-		return URLList{}, err
-	}
-
-	var urls []URL
-
-	containerJSONMap := make(map[string]types.ContainerJSON)
-
-	// iterating through each container's HostConfig
-	// find out if there is a match config in local env.yaml
-	// if found a match, then the URL is <Pushed>
-	// if the config does not exist in local env.yaml file, then the URL is <Locally Deleted>
-	for _, c := range containers {
-		var found = false
-		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
-		if err != nil {
-			return URLList{}, err
-		}
-		containerJSONMap[c.ID] = containerJSON
-		for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
-			externalport, err := strconv.Atoi(portbinding[0].HostPort)
-			if err != nil {
-				return URLList{}, err
-			}
-			dockerURL := getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, containerJSON.Config.Labels[internalPort.Port()])
-			for _, localurl := range localURLs {
-				// only checks for Docker URLs
-				if localurl.Kind != localConfigProvider.DOCKER {
-					continue
-				}
-				if localurl.Port == dockerURL.Spec.Port && localurl.ExposedPort == dockerURL.Spec.ExternalPort {
-					// URL is in both env file and Docker HostConfig
-					dockerURL.Status.State = StateTypePushed
-					urls = append(urls, dockerURL)
-					found = true
-					break
-				}
-			}
-			if !found {
-				// URL is in Docker HostConfig but not in env file
-				dockerURL.Status.State = StateTypeLocallyDeleted
-				urls = append(urls, dockerURL)
-			}
-		}
-	}
-
-	// iterating through URLs in local env.yaml
-	// find out if there is a match config in Docker container
-	// if the config does not exist in Docker container, then the URL is <Not Pushed>
-	for _, localurl := range localURLs {
-		// only checks for Docker URLs
-		if localurl.Kind != localConfigProvider.DOCKER {
-			continue
-		}
-		var found = false
-		localURL := getMachineReadableFormatDocker(localurl.Port, localurl.ExposedPort, dockercomponent.LocalhostIP, localurl.Name)
-		for _, c := range containers {
-			containerJSON := containerJSONMap[c.ID]
-			for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
-				externalport, err := strconv.Atoi(portbinding[0].HostPort)
-				if err != nil {
-					return URLList{}, err
-				}
-				if localURL.Spec.Port == internalPort.Int() && localURL.Spec.ExternalPort == externalport {
-					found = true
-					break
-				}
-			}
-		}
-		if !found {
-			// URL is in the env file but not pushed to Docker container
-			localURL.Status.State = StateTypeNotPushed
-			urls = append(urls, localURL)
-		}
-	}
-	urlList := getMachineReadableFormatForList(urls)
-	return urlList, nil
-}
-
 // GetProtocol returns the protocol string
 func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 	if !reflect.DeepEqual(ingress, iextensionsv1.Ingress{}) && ingress.Spec.TLS != nil {
@@ -587,14 +495,6 @@ func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv
 	return ingress
 }
 
-func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP string, urlName string) URL {
-	return URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
-		ObjectMeta: metav1.ObjectMeta{Name: urlName},
-		Spec:       URLSpec{Host: hostIP, Port: internalPort, ExternalPort: externalPort},
-	}
-}
-
 type PushParameters struct {
 	LocalConfig      localConfigProvider.LocalConfigProvider
 	URLClient        Client
@@ -603,7 +503,7 @@ type PushParameters struct {
 }
 
 // Push creates and deletes the required URLs
-func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParameters) error {
+func Push(client *occlient.Client, parameters PushParameters) error {
 	urlLOCAL := make(map[string]URL)
 
 	localConfigURLs, err := parameters.LocalConfig.ListURLs()
@@ -666,17 +566,17 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		}
 
 		if !ok || configMismatch {
-			if urlSpec.Spec.Kind == localConfigProvider.INGRESS && kClient == nil {
+			if urlSpec.Spec.Kind == localConfigProvider.INGRESS && client.GetKubeClient() == nil {
 				continue
 			}
 			// delete the url
 			deleteURLName := urlName
-			if !parameters.IsS2I && kClient != nil {
+			if !parameters.IsS2I && client.GetKubeClient() != nil {
 				// route/ingress name is defined as <urlName>-<componentName>
 				// to avoid error due to duplicate ingress name defined in different devfile components
 				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.LocalConfig.GetName())
 			}
-			err := Delete(client, kClient, deleteURLName, parameters.LocalConfig.GetApplication(), urlSpec.Spec.Kind, parameters.IsS2I)
+			err := Delete(client, client.GetKubeClient(), deleteURLName, parameters.LocalConfig.GetApplication(), urlSpec.Spec.Kind, parameters.IsS2I)
 			if err != nil {
 				return err
 			}
@@ -691,7 +591,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	for urlName, urlInfo := range urlLOCAL {
 		_, ok := urlCLUSTER[urlName]
 		if !ok {
-			if urlInfo.Spec.Kind == localConfigProvider.INGRESS && kClient == nil {
+			if urlInfo.Spec.Kind == localConfigProvider.INGRESS && client.GetKubeClient() == nil {
 				continue
 			}
 			createParameters := CreateParameters{
@@ -705,7 +605,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				urlKind:         urlInfo.Spec.Kind,
 				path:            urlInfo.Spec.Path,
 			}
-			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsS2I)
+			host, err := Create(client, client.GetKubeClient(), createParameters, parameters.IsRouteSupported, parameters.IsS2I)
 			if err != nil {
 				return err
 			}

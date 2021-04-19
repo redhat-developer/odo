@@ -80,13 +80,6 @@ func toPreferenceItems(prefInfo PreferenceInfo) []PreferenceItem {
 			Description: ExperimentalDescription,
 		},
 		{
-			Name:        PushTargetSetting,
-			Value:       odoSettings.PushTarget,
-			Default:     KubePushTarget,
-			Type:        getType(prefInfo.GetPushTarget()),
-			Description: PushTargetDescription,
-		},
-		{
 			Name:        ConsentTelemetrySetting,
 			Value:       odoSettings.ConsentTelemetry,
 			Default:     DefaultConsentTelemetrySetting,

@@ -191,9 +191,21 @@ var _ = Describe("odo devfile create command tests", func() {
 				helper.CmdShouldPass("odo", "create", "nodejs")
 				output := helper.CmdShouldFail("odo", "create", "nodejs")
 				Expect(output).To(ContainSubstring("this directory already contains a component"))
-				output = helper.CmdShouldFail("odo", "create", "nodejs", "--s2i")
-				Expect(output).To(ContainSubstring("this directory already contains a component"))
+			})
+		})
 
+		Context("Testing Create for OpenShift specific scenarios", func() {
+			JustBeforeEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
+			})
+
+			It("should fail when we create the devfile or s2i component multiple times", func() {
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(commonVar.Context, devfile))
+				helper.CmdShouldPass("odo", "create", "nodejs")
+				output := helper.CmdShouldFail("odo", "create", "nodejs", "--s2i")
+				Expect(output).To(ContainSubstring("this directory already contains a component"))
 			})
 		})
 

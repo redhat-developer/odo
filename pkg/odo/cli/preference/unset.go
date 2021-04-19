@@ -98,7 +98,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
 			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
 			preference.TimeoutSetting, preference.BuildTimeoutSetting, preference.PushTimeoutSetting,
-			preference.ExperimentalSetting, preference.PushTargetSetting, preference.ConsentTelemetrySetting),
+			preference.ExperimentalSetting, preference.ConsentTelemetrySetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")

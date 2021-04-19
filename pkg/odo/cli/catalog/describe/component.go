@@ -2,7 +2,10 @@ package describe
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"path"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
@@ -14,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -60,27 +62,25 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 	o.componentName = args[0]
 	tasks := util.NewConcurrentTasks(2)
 
-	if !pushtarget.IsPushTargetDocker() {
-		o.Context, err = genericclioptions.NewContext(cmd, true)
-		if err != nil {
-			return err
-		}
-		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			catalogList, err := catalog.ListComponents(o.Client)
-			if err != nil {
-				// TODO:
-				// This MAY have to change in the future.. There is no good way to determine whether the user
-				// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
-				// we are unable to list anything from OpenShift.
-				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-			}
-			for _, image := range catalogList.Items {
-				if image.Name == o.componentName {
-					o.component = image.Name
-				}
-			}
-		}})
+	o.Context, err = genericclioptions.NewContext(cmd, true)
+	if err != nil {
+		return err
 	}
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+		catalogList, err := catalog.ListComponents(o.Client)
+		if err != nil {
+			// TODO:
+			// This MAY have to change in the future.. There is no good way to determine whether the user
+			// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
+			// we are unable to list anything from OpenShift.
+			klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+		}
+		for _, image := range catalogList.Items {
+			if image.Name == o.componentName {
+				o.component = image.Name
+			}
+		}
+	}})
 
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 		catalogDevfileList, err := catalog.ListDevfileComponents("")
@@ -196,11 +196,25 @@ func (o *DescribeComponentOptions) GetDevfileComponentsByName(catalogDevfileList
 // GetDevfile downloads the devfile in memory and return the devfile object
 func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileObj, error) {
 	var devObj parser.DevfileObj
+	var err error
 
-	devObj, err := devfile.ParseFromURLAndValidate(devfileComponent.Registry.URL + devfileComponent.Link)
-	if err != nil {
-		return devObj, errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
+	if strings.Contains(devfileComponent.Registry.URL, "github") {
+		devObj, err = devfile.ParseFromURLAndValidate(devfileComponent.Registry.URL + devfileComponent.Link)
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from Github-based registry for devfile component: %s", devfileComponent.Name)
+		}
+	} else {
+		registryURL, err := url.Parse(devfileComponent.Registry.URL)
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to parse registry URL for devfile component: %s", devfileComponent.Name)
+		}
+		registryURL.Path = path.Join(registryURL.Path, "devfiles", devfileComponent.Name)
+		devObj, err = devfile.ParseFromURLAndValidate(registryURL.String())
+		if err != nil {
+			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from OCI-based registry for devfile component: %s", devfileComponent.Name)
+		}
 	}
+
 	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return devObj, err

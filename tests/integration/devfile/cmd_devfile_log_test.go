@@ -17,7 +17,6 @@ var _ = Describe("odo devfile log command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
-		helper.Chdir(commonVar.Context)
 	})
 
 	// This is run after every Spec (It)
@@ -54,9 +53,7 @@ var _ = Describe("odo devfile log command tests", func() {
 		})
 
 		It("should log debug command output", func() {
-
 			projectDir := filepath.Join(commonVar.Context, "projectDir")
-
 			helper.CopyExample(filepath.Join("source", "web-nodejs-sample"), projectDir)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", projectDir)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDir, "devfile.yaml"))

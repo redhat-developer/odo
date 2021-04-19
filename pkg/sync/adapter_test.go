@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io/ioutil"
 	"os"
 	"path"
@@ -11,7 +12,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 	"github.com/golang/mock/gomock"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/sync/mock"
@@ -190,9 +190,17 @@ func TestSyncFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{},
-				},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := common.AdapterContext{
@@ -332,9 +340,17 @@ func TestPushLocal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{},
-				},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{})
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := common.AdapterContext{

@@ -20,9 +20,6 @@ func (d *DevfileV2) GetMetadata() devfilepkg.DevfileMetadata {
 }
 
 // SetMetadata sets the metadata for devfile
-func (d *DevfileV2) SetMetadata(name, version string) {
-	d.Metadata = devfilepkg.DevfileMetadata{
-		Name:    name,
-		Version: version,
-	}
+func (d *DevfileV2) SetMetadata(metadata devfilepkg.DevfileMetadata) {
+	d.Metadata = metadata
 }

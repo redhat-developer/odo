@@ -7,9 +7,10 @@ require (
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/containerd/containerd v1.3.3 // indirect
-	github.com/devfile/api/v2 v2.0.0-20210211160219-33a78aec06af
-	github.com/devfile/library v0.0.0-20210216162950-3066a892876c
+	github.com/devfile/api/v2 v2.0.0-20210408144711-a313872749ed
+	github.com/devfile/library v1.0.0-alpha.2.0.20210409194304-7a52b221a48e
+	github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873
+	github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible
 	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce
 	github.com/fatih/color v1.7.0
@@ -18,6 +19,8 @@ require (
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe
 	github.com/golang/mock v1.4.4
+	github.com/gophercloud/gophercloud v0.2.0 // indirect
+	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/imdario/mergo v0.3.11 // indirect
@@ -35,17 +38,15 @@ require (
 	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240 // indirect
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
-	github.com/openshift/custom-resource-status v0.0.0-20200602122900-c002fd1547ca // indirect
 	github.com/openshift/library-go v0.0.0-20200407165825-2e79bd232e72
 	github.com/openshift/oc v0.0.0-alpha.0.0.20200305142246-2576e482bf00
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200422144016-a6acf50218ed
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.2
-	github.com/redhat-developer/service-binding-operator v0.3.0
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/spf13/afero v1.2.2
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.6.3

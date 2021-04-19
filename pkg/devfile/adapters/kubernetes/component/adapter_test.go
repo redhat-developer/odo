@@ -3,6 +3,8 @@ package component
 import (
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/parser/data"
+
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/util"
@@ -13,6 +15,7 @@ import (
 	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/occlient"
 	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 
 	v1 "k8s.io/api/apps/v1"
@@ -81,10 +84,21 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{comp},
-					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
-				},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{comp})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -92,7 +106,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 
 			if tt.running {
 				fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -259,10 +273,21 @@ func TestDoesComponentExist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
-					Commands:   []devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)},
-				},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -270,7 +295,7 @@ func TestDoesComponentExist(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 			fkWatch := watch.NewFake()
 
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
@@ -341,9 +366,17 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					Components: []devfilev1.Component{testingutil.GetFakeContainerComponent("component")},
-				},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -351,7 +384,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 			fkWatch := watch.NewFake()
 
 			// Change the status
@@ -464,9 +497,13 @@ func TestAdapterDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{
-					// ComponentType: "nodejs",
-				},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -478,7 +515,7 @@ func TestAdapterDelete(t *testing.T) {
 				adapterCtx.ComponentName = "doesNotExists"
 			}
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := occlient.FakeNew()
 
 			a := New(adapterCtx, *fkclient)
 

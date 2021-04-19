@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -18,7 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 )
 
 const (
@@ -77,7 +78,7 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 		}
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidate(parameters.DevfilePath)
+		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: parameters.DevfilePath})
 		if err != nil {
 			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}
@@ -276,24 +277,20 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 	internalCxt.EnvSpecificInfo = envInfo
 	internalCxt.resolveApp(createAppIfNeeded, envInfo)
 
-	// If the push target is NOT Docker we will set the client to Kubernetes.
-	if !pushtarget.IsPushTargetDocker() {
-
-		// Create a new kubernetes client
-		internalCxt.KClient, err = kClient()
-		if err != nil {
-			return nil, err
-		}
-		internalCxt.Client, err = ocClient()
-		if err != nil {
-			return nil, err
-		}
-
-		// Gather the environment information
-		internalCxt.EnvSpecificInfo = envInfo
-
-		internalCxt.resolveNamespace(envInfo)
+	// Create a new kubernetes client
+	internalCxt.KClient, err = kClient()
+	if err != nil {
+		return nil, err
 	}
+	internalCxt.Client, err = ocClient()
+	if err != nil {
+		return nil, err
+	}
+
+	// Gather the environment information
+	internalCxt.EnvSpecificInfo = envInfo
+
+	internalCxt.resolveNamespace(envInfo)
 
 	// resolve the component
 	internalCxt.resolveAndSetComponent(command, envInfo)

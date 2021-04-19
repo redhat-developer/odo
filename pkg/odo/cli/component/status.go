@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -82,7 +81,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		so.componentName = so.EnvSpecificInfo.GetName()
 
 		// Parse devfile
-		devObj, err := devfile.ParseAndValidate(so.devfilePath)
+		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: so.devfilePath})
 		if err != nil {
 			return err
 		}
@@ -96,15 +95,12 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		so.localConfig = so.EnvSpecificInfo
 
 		var platformContext interface{}
-		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-			so.namespace = so.KClient.Namespace
-			platformContext = kubernetes.KubernetesContext{
-				Namespace: so.namespace,
-			}
-		} else {
-			platformContext = nil
+		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
+		so.namespace = so.KClient.Namespace
+		platformContext = kubernetes.KubernetesContext{
+			Namespace: so.namespace,
 		}
+
 		so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.Application, devObj, platformContext)
 
 		return err
@@ -141,21 +137,16 @@ func (so *StatusOptions) Run() (err error) {
 
 	loggingClient := machineoutput.NewConsoleMachineEventLoggingClient()
 
-	if pushtarget.IsPushTargetDocker() {
-		url.StartURLHttpRequestStatusWatchForDocker(so.EnvSpecificInfo, loggingClient)
+	// occlient is required so that we can report the status for route URLs (eg in addition to our already testing ingress URLs for k8s)
+	oclient, err := occlient.New()
+	if err != nil {
+		// Fallback to k8s if occlient throws an error
+		oclient = nil
 	} else {
-
-		// occlient is required so that we can report the status for route URLs (eg in addition to our already testing ingress URLs for k8s)
-		oclient, err := occlient.New()
-		if err != nil {
-			// Fallback to k8s if occlient throws an error
-			oclient = nil
-		} else {
-			oclient.Namespace = so.KClient.Namespace
-		}
-
-		url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.localConfig, loggingClient)
+		oclient.Namespace = so.KClient.Namespace
 	}
+
+	url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.localConfig, loggingClient)
 
 	// You can call Run() any time you like, but you can never leave.
 	for {

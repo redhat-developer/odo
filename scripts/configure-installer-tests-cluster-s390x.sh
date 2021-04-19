@@ -23,7 +23,7 @@ IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11"
 ## Let developer user have access to the project
 ##oc adm policy add-role-to-user edit developer
 
-#sh $SETUP_OPERATORS
+sh $SETUP_OPERATORS
 # OperatorHub setup complete
 
 # Create the namespace for e2e image test apply pull secret to the namespace
@@ -41,11 +41,9 @@ oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/
 oc --request-timeout 5m delete istag nodejs:latest -n openshift
 oc --request-timeout 5m import-image nodejs:latest --from=registry.redhat.io/rhscl/nodejs-12-rhel7 --confirm -n openshift
 oc annotate istag/nodejs:latest tags=builder -n openshift --overwrite
-oc --request-timeout 5m delete istag java:8 -n openshift
-oc --request-timeout 5m import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
+oc --request-timeout 5m import-image java:8 --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift:1.8 --confirm
 oc annotate istag/java:8 --namespace=openshift tags=builder --overwrite
-oc --request-timeout 5m delete istag java:latest -n openshift
-oc --request-timeout 5m import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift --confirm
+oc --request-timeout 5m import-image java:latest --namespace=openshift --from=registry.redhat.io/redhat-openjdk-18/openjdk18-openshift:1.8 --confirm
 oc annotate istag/java:latest --namespace=openshift tags=builder --overwrite
 oc --request-timeout 5m apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/s390x/official/ruby/imagestreams/ruby-rhel.json
 oc annotate istag/ruby:latest --namespace=openshift tags=builder --overwrite

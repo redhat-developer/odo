@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -89,10 +88,8 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
-		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-			do.namespace = do.KClient.Namespace
-		}
+		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
+		do.namespace = do.KClient.Namespace
 
 		return nil
 	}

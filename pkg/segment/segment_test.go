@@ -23,9 +23,9 @@ import (
 
 type segmentResponse struct {
 	Batch []struct {
-		AnonymousID string `json:"anonymousId"`
-		MessageId   string `json:"messageId"`
-		Traits      struct {
+		UserId    string `json:"userId"`
+		MessageId string `json:"messageId"`
+		Traits    struct {
 			OS string `json:"os"`
 		} `json:"traits"`
 		Properties struct {
@@ -181,6 +181,8 @@ func TestSetError(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	unixPath := "/home/xyz/.odo/preference.yaml"
+	windowsPath := "C:\\User\\XYZ\\preference.yaml"
 
 	tests := []struct {
 		name   string
@@ -188,25 +190,50 @@ func TestSetError(t *testing.T) {
 		hasPII bool
 	}{
 		{
-			name:   "error without PII information",
+			name:   "no PII information",
 			err:    errors.New("this is an error string"),
 			hasPII: false,
 		},
 		{
-			name:   "error with PII information",
-			err:    fmt.Errorf("cannot access the preference file '/home/%s/.odo/preference.yaml'", user.Username),
+			name:   "username",
+			err:    fmt.Errorf("cannot create component name with %s", user.Username),
+			hasPII: true,
+		},
+		{
+			name:   "filepath-unix",
+			err:    fmt.Errorf("cannot find the preference file at %s", unixPath),
+			hasPII: true,
+		},
+		{
+			name:   "filepath-windows",
+			err:    fmt.Errorf("cannot find the preference file at %s", windowsPath),
 			hasPII: true,
 		},
 	}
 
 	for _, tt := range tests {
+		if tt.name == "filepath-windows" && os.Getenv("GOOS") != "windows" {
+			t.Skip("Cannot run windows test on a unix system")
+		} else if tt.name == "filepath-unix" && os.Getenv("GOOS") != "linux" {
+			t.Skip("Cannot run unix test on a windows system")
+		}
+		var want string
 		got := SetError(tt.err)
 
 		// if error has PII, string returned by SetError must not be the same as the error since it was sanitized
 		// else it will be the same.
 		if (tt.hasPII && got == tt.err.Error()) || (!tt.hasPII && got != tt.err.Error()) {
-			if tt.hasPII && strings.Contains(got, user.Username) {
-				t.Error("PII was not sanitized properly.")
+			if tt.hasPII {
+				switch tt.name {
+				case "username":
+					want = strings.ReplaceAll(tt.err.Error(), user.Username, Sanitizer)
+				case "filepath-unix":
+					want = strings.ReplaceAll(tt.err.Error(), unixPath, Sanitizer)
+				case "filepath-windows":
+					want = strings.ReplaceAll(tt.err.Error(), windowsPath, Sanitizer)
+				default:
+				}
+				t.Errorf("got: %q, want: %q", got, want)
 			} else {
 				t.Errorf("got: %s, want: %s", got, tt.err.Error())
 			}

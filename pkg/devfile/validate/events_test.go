@@ -1,8 +1,9 @@
 package validate
 
 import (
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"testing"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
 func Test_validateEvents(t *testing.T) {
@@ -15,7 +16,7 @@ func Test_validateEvents(t *testing.T) {
 		{
 			name: "just postStart event present",
 			events: v1alpha2.Events{
-				WorkspaceEvents: v1alpha2.WorkspaceEvents{
+				DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
 					PostStart: []string{"asdf"},
 				},
 			},
@@ -24,7 +25,7 @@ func Test_validateEvents(t *testing.T) {
 		{
 			name: "preStart event present",
 			events: v1alpha2.Events{
-				WorkspaceEvents: v1alpha2.WorkspaceEvents{
+				DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
 					PostStart: []string{"asdf"},
 					PreStart:  []string{"asdf"},
 				},

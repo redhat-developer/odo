@@ -19,8 +19,11 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 )
 
-// Writekey will be the API key used to send data to the correct source on Segment
-var WriteKey = "R1Z79HadJIrphLoeONZy5uqOjusljSwN"
+// writekey will be the API key used to send data to the correct source on Segment. Default is the dev key
+var writeKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
+
+// Sanitizer replaces a PII data
+const Sanitizer = "XXXX"
 
 type Client struct {
 	// SegmentClient helps interact with the segment API
@@ -43,7 +46,7 @@ func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
 // newCustomClient returns a Client created with custom args
 func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
 	// DefaultContext has IP set to 0.0.0.0 so that it does not track user's IP, which it does in case no IP is set
-	client, err := analytics.NewWithConfig(WriteKey, analytics.Config{
+	client, err := analytics.NewWithConfig(writeKey, analytics.Config{
 		Endpoint: segmentEndpoint,
 		DefaultContext: &analytics.Context{
 			IP: net.IPv4(0, 0, 0, 0),
@@ -71,16 +74,16 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 		return nil
 	}
 
-	// obtain the anonymous ID
-	anonymousID, uerr := getUserIdentity(c.TelemetryFilePath)
+	// obtain the user ID
+	userId, uerr := getUserIdentity(c.TelemetryFilePath)
 	if uerr != nil {
 		return uerr
 	}
 
 	// queue the data that helps identify the user on segment
 	if err1 := c.SegmentClient.Enqueue(analytics.Identify{
-		AnonymousId: anonymousID,
-		Traits:      addConfigTraits(),
+		UserId: userId,
+		Traits: addConfigTraits(),
 	}); err1 != nil {
 		return err1
 	}
@@ -99,9 +102,9 @@ func (c *Client) Upload(action string, duration time.Duration, err error) error 
 
 	// queue the data that has telemetry information
 	return c.SegmentClient.Enqueue(analytics.Track{
-		AnonymousId: anonymousID,
-		Event:       action,
-		Properties:  properties,
+		UserId:     userId,
+		Event:      action,
+		Properties: properties,
 	})
 }
 
@@ -139,13 +142,21 @@ func getUserIdentity(telemetryFilePath string) (string, error) {
 }
 
 // SetError sanitizes any PII(Personally Identifiable Information) from the error
-func SetError(err error) string {
-	// Sanitize user information
+func SetError(err error) (errString string) {
+	// sanitize user information
 	user1, err1 := user.Current()
 	if err1 != nil {
 		return errors.Wrapf(err1, err1.Error()).Error()
 	}
-	return strings.ReplaceAll(err.Error(), user1.Username, "XXXX")
+	errString = strings.ReplaceAll(err.Error(), user1.Username, Sanitizer)
+
+	// sanitize file path
+	for _, str := range strings.Split(errString, " ") {
+		if strings.Count(str, string(os.PathSeparator)) > 1 {
+			errString = strings.ReplaceAll(errString, str, Sanitizer)
+		}
+	}
+	return errString
 }
 
 // errorType returns the type of error

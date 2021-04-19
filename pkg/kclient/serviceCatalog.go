@@ -3,6 +3,7 @@ package kclient
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ghodss/yaml"
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -24,43 +25,49 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 }
 
 // CreateServiceInstance creates service instance from service catalog
-func (c *Client) CreateServiceInstance(serviceName string, serviceType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
+func (c *Client) CreateServiceInstance(serviceName string, serviceType string, servicePlan string, parameters map[string]string, labels map[string]string) (string, error) {
 	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
 	if err != nil {
-		return errors.Wrap(err, "unable to create the service instance parameters")
+		return "", errors.Wrap(err, "unable to create the service instance parameters")
 	}
 
-	_, err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Create(
-		&scv1beta1.ServiceInstance{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ServiceInstance",
-				APIVersion: "servicecatalog.k8s.io/v1beta1",
+	si := &scv1beta1.ServiceInstance{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceInstance",
+			APIVersion: "servicecatalog.k8s.io/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: c.Namespace,
+			Labels:    labels,
+		},
+		Spec: scv1beta1.ServiceInstanceSpec{
+			PlanReference: scv1beta1.PlanReference{
+				ClusterServiceClassExternalName: serviceType,
+				ClusterServicePlanExternalName:  servicePlan,
 			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      serviceName,
-				Namespace: c.Namespace,
-				Labels:    labels,
-			},
-			Spec: scv1beta1.ServiceInstanceSpec{
-				PlanReference: scv1beta1.PlanReference{
-					ClusterServiceClassExternalName: serviceType,
-					ClusterServicePlanExternalName:  servicePlan,
-				},
-				Parameters: serviceInstanceParameters,
-			},
-		})
+			Parameters: serviceInstanceParameters,
+		},
+	}
+
+	_, err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Create(si)
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to create the service instance %s for the service type %s and plan %s", serviceName, serviceType, servicePlan)
+		return "", errors.Wrapf(err, "unable to create the service instance %s for the service type %s and plan %s", serviceName, serviceType, servicePlan)
 	}
 
 	// Create the secret containing the parameters of the plan selected.
 	err = c.CreateServiceBinding(serviceName, c.Namespace, labels)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
+		return "", errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
 	}
 
-	return nil
+	siString, err := yaml.Marshal(si)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to marshal service instance to string")
+	}
+
+	return string(siString), nil
 }
 
 // ListServiceInstances returns list service instances

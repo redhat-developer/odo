@@ -6,14 +6,14 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -82,7 +82,7 @@ func (po *PushOptions) DevfilePush() error {
 func (po *PushOptions) devfilePushInner() (err error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
 
 	if err != nil {
 		return err
@@ -108,14 +108,10 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	}
 
 	var platformContext interface{}
-	if pushtarget.IsPushTargetDocker() {
-		platformContext = nil
-	} else {
-		kc := kubernetes.KubernetesContext{
-			Namespace: po.KClient.Namespace,
-		}
-		platformContext = kc
+	kc := kubernetes.KubernetesContext{
+		Namespace: po.KClient.Namespace,
 	}
+	platformContext = kc
 
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
 	if err != nil {
@@ -135,11 +131,10 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
-	localURLs, err := po.EnvSpecificInfo.ListURLs()
+	_, err = po.EnvSpecificInfo.ListURLs()
 	if err != nil {
 		return err
 	}
-	warnIfURLSInvalid(localURLs)
 
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
@@ -159,7 +154,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 // DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
 	// Parse devfile
-	devObj, err := devfile.ParseAndValidate(lo.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
 	if err != nil {
 		return err
 	}
@@ -170,14 +165,10 @@ func (lo LogOptions) DevfileComponentLog() error {
 	componentName := lo.Context.EnvSpecificInfo.GetName()
 
 	var platformContext interface{}
-	if pushtarget.IsPushTargetDocker() {
-		platformContext = nil
-	} else {
-		kc := kubernetes.KubernetesContext{
-			Namespace: lo.KClient.Namespace,
-		}
-		platformContext = kc
+	kc := kubernetes.KubernetesContext{
+		Namespace: lo.KClient.Namespace,
 	}
+	platformContext = kc
 
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, lo.Application, devObj, platformContext)
 
@@ -219,7 +210,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidate(do.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: do.devfilePath})
 	if err != nil {
 		return err
 	}
@@ -249,14 +240,10 @@ func (to *TestOptions) RunTestCommand() error {
 	componentName := to.Context.EnvSpecificInfo.GetName()
 
 	var platformContext interface{}
-	if pushtarget.IsPushTargetDocker() {
-		platformContext = nil
-	} else {
-		kc := kubernetes.KubernetesContext{
-			Namespace: to.KClient.Namespace,
-		}
-		platformContext = kc
+	kc := kubernetes.KubernetesContext{
+		Namespace: to.KClient.Namespace,
 	}
+	platformContext = kc
 
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.Application, to.devObj, platformContext)
 	if err != nil {
@@ -265,35 +252,10 @@ func (to *TestOptions) RunTestCommand() error {
 	return devfileHandler.Test(to.commandName, to.show)
 }
 
-func warnIfURLSInvalid(url []localConfigProvider.LocalURL) {
-	// warnIfURLSInvalid checks if env.yaml contains a valid URL for the current pushtarget
-	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
-	dockerURLExists := false
-	kubeURLExists := false
-	for _, element := range url {
-		if element.Kind == localConfigProvider.DOCKER {
-			dockerURLExists = true
-		} else {
-			kubeURLExists = true
-		}
-	}
-	var urlOutput string
-	if len(url) > 1 {
-		urlOutput = "URLs"
-	} else {
-		urlOutput = "a URL"
-	}
-	if pushtarget.IsPushTargetDocker() && !dockerURLExists && kubeURLExists {
-		log.Warningf("Found %v defined for Kubernetes, but no valid URLs for Docker.", urlOutput)
-	} else if !pushtarget.IsPushTargetDocker() && !kubeURLExists && dockerURLExists {
-		log.Warningf("Found %v defined for Docker, but no valid URLs for Kubernetes.", urlOutput)
-	}
-}
-
 // DevfileComponentExec executes the given user command inside the component
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 	// Parse devfile
-	devObj, err := devfile.ParseAndValidate(eo.devfilePath)
+	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: eo.devfilePath})
 	if err != nil {
 		return err
 	}

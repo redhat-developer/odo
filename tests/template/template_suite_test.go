@@ -3,11 +3,10 @@ package template
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/helper"
 )
 
 func TestTemplate(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "TestTemplate Suite")
+	helper.RunTestSpecs(t, "TestTemplate Suite")
+
 }

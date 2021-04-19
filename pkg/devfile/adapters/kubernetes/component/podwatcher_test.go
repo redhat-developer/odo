@@ -3,15 +3,15 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"sync"
 	"testing"
 	"time"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/occlient"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -277,7 +277,13 @@ func TestStatusReconciler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
-				Data: &testingutil.TestDevfileData{},
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
@@ -285,7 +291,7 @@ func TestStatusReconciler(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, _ := kclient.FakeNew()
+			fkclient, _ := occlient.FakeNew()
 
 			adapter := New(adapterCtx, *fkclient)
 

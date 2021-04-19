@@ -1,6 +1,6 @@
 == Installing Service Binding Operator
 
-This document walks you through the steps to install link:https://github.com/redhat-developer/service-binding-operator/tree/v0.3.0[Service Binding Operator v0.3.0] on OpenShift cluster and link:https://operatorhub.io/operator/service-binding-operator[Service Binding Operator v0.4.0] on Kubernetes cluster.
+This document walks you through the steps to install link:https://github.com/redhat-developer/service-binding-operator/[Service Binding Operator] on OpenShift cluster and Kubernetes cluster.
 
 === Why do I need the Service Binding Operator?
 
@@ -8,22 +8,23 @@ odo uses Service Binding Operator to provide the `odo link` feature which helps 
 
 === Installing Service Binding Operator on OpenShift
 
-To install Service Binding Operator on OpenShift, refer link:https://www.youtube.com/watch?v=8QmewscQwHg[this video].
+To install Service Binding Operator on OpenShift, refer link:https://docs.openshift.com/container-platform/latest/operators/admin/olm-adding-operators-to-cluster.html[the documentation on docs.openshift.com].
 
 === Installing Service Binding Operator on Kubernetes
 
 Before installing an Operator, we first need to enable the Operator Lifecycle Manager (OLM).
 
-1. If you are using link:https://minikube.sigs.k8s.io/[minikube], please enable the OLM addon by doing:
+1. If you are using link:https://minikube.sigs.k8s.io/[minikube], please install OLM by doing:
 +
 [source,sh]
 ----
-$ minikube addons enable olm
+$ curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.17.0/install.sh | bash -s v0.17.0
 ----
+This will install OLM v0.17.0 (latest at the time of writing this)
 
 2. To install OLM on a Kubernetes cluster setup other than minikube, please refer the link:https://github.com/operator-framework/operator-lifecycle-manager/#installation[installation instructions on GitHub].
 
-To install the Operator, execute the following `kubectl` command provided on its link:https://operatorhub.io/operator/service-binding-operator[OperatorHub.io page]:
+Now, to install the Service Binding Operator, execute the following `kubectl` command provided on its link:https://operatorhub.io/operator/service-binding-operator[OperatorHub.io page]:
 [source,sh]
 ----
 $ kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml

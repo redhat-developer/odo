@@ -3,13 +3,14 @@ package parser
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/devfile/library/pkg/util"
 	"k8s.io/klog"
 )
-
-var URIMap = make(map[string]bool)
 
 // DevfileCtx stores context info regarding devfile
 type DevfileCtx struct {
@@ -34,6 +35,12 @@ type DevfileCtx struct {
 
 	// filesystem for devfile
 	fs filesystem.Filesystem
+
+	// trace of all url referenced
+	uriMap map[string]bool
+
+	// registry URLs list
+	registryURLs []string
 }
 
 // NewDevfileCtx returns a new DevfileCtx type object
@@ -65,15 +72,28 @@ func (d *DevfileCtx) populateDevfile() (err error) {
 
 // Populate fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) Populate() (err error) {
-
+	if !strings.HasSuffix(d.relPath, ".yaml") {
+		if _, err := os.Stat(filepath.Join(d.relPath, "devfile.yaml")); os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(d.relPath, ".devfile.yaml")); os.IsNotExist(err) {
+				return fmt.Errorf("the provided path is not a valid yaml filepath, and devfile.yaml or .devfile.yaml not found in the provided path : %s", d.relPath)
+			} else {
+				d.relPath = filepath.Join(d.relPath, ".devfile.yaml")
+			}
+		} else {
+			d.relPath = filepath.Join(d.relPath, "devfile.yaml")
+		}
+	}
 	if err := d.SetAbsPath(); err != nil {
 		return err
 	}
 	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
-	if URIMap[d.absPath] {
+	if d.uriMap == nil {
+		d.uriMap = make(map[string]bool)
+	}
+	if d.uriMap[d.absPath] {
 		return fmt.Errorf("URI %v is recursively referenced", d.absPath)
 	}
-	URIMap[d.absPath] = true
+	d.uriMap[d.absPath] = true
 	// Read and save devfile content
 	if err := d.SetDevfileContent(); err != nil {
 		return err
@@ -83,15 +103,17 @@ func (d *DevfileCtx) Populate() (err error) {
 
 // PopulateFromURL fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) PopulateFromURL() (err error) {
-
 	_, err = url.ParseRequestURI(d.url)
 	if err != nil {
 		return err
 	}
-	if URIMap[d.url] {
+	if d.uriMap == nil {
+		d.uriMap = make(map[string]bool)
+	}
+	if d.uriMap[d.url] {
 		return fmt.Errorf("URI %v is recursively referenced", d.url)
 	}
-	URIMap[d.url] = true
+	d.uriMap[d.url] = true
 	// Read and save devfile content
 	if err := d.SetDevfileContent(); err != nil {
 		return err
@@ -131,4 +153,24 @@ func (d *DevfileCtx) SetAbsPath() (err error) {
 
 	return nil
 
+}
+
+// GetURIMap func returns current devfile uri map
+func (d *DevfileCtx) GetURIMap() map[string]bool {
+	return d.uriMap
+}
+
+// SetURIMap set uri map in the devfile ctx
+func (d *DevfileCtx) SetURIMap(uriMap map[string]bool) {
+	d.uriMap = uriMap
+}
+
+// GetRegistryURLs func returns current devfile registry URLs
+func (d *DevfileCtx) GetRegistryURLs() []string {
+	return d.registryURLs
+}
+
+// SetRegistryURLs set registry URLs in the devfile ctx
+func (d *DevfileCtx) SetRegistryURLs(registryURLs []string) {
+	d.registryURLs = registryURLs
 }

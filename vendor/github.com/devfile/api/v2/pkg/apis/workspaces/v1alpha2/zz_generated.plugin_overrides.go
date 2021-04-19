@@ -66,18 +66,18 @@ type ComponentUnionPluginOverride struct {
 	// +optional
 	ComponentType ComponentTypePluginOverride `json:"componentType,omitempty"`
 
-	// Allows adding and configuring workspace-related containers
+	// Allows adding and configuring devworkspace-related containers
 	// +optional
 	Container *ContainerComponentPluginOverride `json:"container,omitempty"`
 
-	// Allows importing into the workspace the Kubernetes resources
+	// Allows importing into the devworkspace the Kubernetes resources
 	// defined in a given manifest. For example this allows reusing the Kubernetes
 	// definitions used to deploy some runtime components in production.
 	//
 	// +optional
 	Kubernetes *KubernetesComponentPluginOverride `json:"kubernetes,omitempty"`
 
-	// Allows importing into the workspace the OpenShift resources
+	// Allows importing into the devworkspace the OpenShift resources
 	// defined in a given manifest. For example this allows reusing the OpenShift
 	// definitions used to deploy some runtime components in production.
 	//
@@ -93,8 +93,8 @@ type ComponentUnionPluginOverride struct {
 // +union
 type CommandUnionPluginOverride struct {
 
-	// +kubebuilder:validation:Enum=Exec;Apply;VscodeTask;VscodeLaunch;Composite
-	// Type of workspace command
+	// +kubebuilder:validation:Enum=Exec;Apply;Composite
+	// Type of devworkspace command
 	// +unionDiscriminator
 	// +optional
 	CommandType CommandTypePluginOverride `json:"commandType,omitempty"`
@@ -104,26 +104,18 @@ type CommandUnionPluginOverride struct {
 	Exec *ExecCommandPluginOverride `json:"exec,omitempty"`
 
 	// Command that consists in applying a given component definition,
-	// typically bound to a workspace event.
+	// typically bound to a devworkspace event.
 	//
 	// For example, when an `apply` command is bound to a `preStart` event,
 	// and references a `container` component, it will start the container as a
-	// K8S initContainer in the workspace POD, unless the component has its
+	// K8S initContainer in the devworkspace POD, unless the component has its
 	// `dedicatedPod` field set to `true`.
 	//
 	// When no `apply` command exist for a given component,
-	// it is assumed the component will be applied at workspace start
+	// it is assumed the component will be applied at devworkspace start
 	// by default.
 	// +optional
 	Apply *ApplyCommandPluginOverride `json:"apply,omitempty"`
-
-	// Command providing the definition of a VsCode Task
-	// +optional
-	VscodeTask *VscodeConfigurationCommandPluginOverride `json:"vscodeTask,omitempty"`
-
-	// Command providing the definition of a VsCode launch action
-	// +optional
-	VscodeLaunch *VscodeConfigurationCommandPluginOverride `json:"vscodeLaunch,omitempty"`
 
 	// Composite command that allows executing several sub-commands
 	// either sequentially or concurrently
@@ -135,24 +127,24 @@ type CommandUnionPluginOverride struct {
 // Only one of the following component type may be specified.
 type ComponentTypePluginOverride string
 
-// Component that allows the developer to add a configured container into his workspace
+// Component that allows the developer to add a configured container into their devworkspace
 type ContainerComponentPluginOverride struct {
 	BaseComponentPluginOverride `json:",inline"`
 	ContainerPluginOverride     `json:",inline"`
 	Endpoints                   []EndpointPluginOverride `json:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
-// Component that allows partly importing Kubernetes resources into the workspace POD
+// Component that allows partly importing Kubernetes resources into the devworkspace POD
 type KubernetesComponentPluginOverride struct {
 	K8sLikeComponentPluginOverride `json:",inline"`
 }
 
-// Component that allows partly importing Openshift resources into the workspace POD
+// Component that allows partly importing Openshift resources into the devworkspace POD
 type OpenshiftComponentPluginOverride struct {
 	K8sLikeComponentPluginOverride `json:",inline"`
 }
 
-// Component that allows the developer to declare and configure a volume into his workspace
+// Component that allows the developer to declare and configure a volume into their devworkspace
 type VolumeComponentPluginOverride struct {
 	BaseComponentPluginOverride `json:",inline"`
 	VolumePluginOverride        `json:",inline"`
@@ -214,11 +206,6 @@ type ApplyCommandPluginOverride struct {
 	Component string `json:"component,omitempty"`
 }
 
-type VscodeConfigurationCommandPluginOverride struct {
-	BaseCommandPluginOverride                        `json:",inline"`
-	VscodeConfigurationCommandLocationPluginOverride `json:",inline"`
-}
-
 type CompositeCommandPluginOverride struct {
 	LabeledCommandPluginOverride `json:",inline"`
 
@@ -230,8 +217,8 @@ type CompositeCommandPluginOverride struct {
 	Parallel bool `json:"parallel,omitempty"`
 }
 
-// Workspace component: Anything that will bring additional features / tooling / behaviour / context
-// to the workspace, in order to make working in it easier.
+// DevWorkspace component: Anything that will bring additional features / tooling / behaviour / context
+// to the devworkspace, in order to make working in it easier.
 type BaseComponentPluginOverride struct {
 }
 
@@ -314,12 +301,12 @@ type EndpointPluginOverride struct {
 	// - `public` means that the endpoint will be exposed on the public network, typically through
 	// a K8S ingress or an OpenShift route.
 	//
-	// - `internal` means that the endpoint will be exposed internally outside of the main workspace POD,
+	// - `internal` means that the endpoint will be exposed internally outside of the main devworkspace POD,
 	// typically by K8S services, to be consumed by other elements running
 	// on the same cloud internal network.
 	//
 	// - `none` means that the endpoint will not be exposed and will only be accessible
-	// inside the main workspace POD, on a local address.
+	// inside the main devworkspace POD, on a local address.
 	//
 	// Default value is `public`
 	// +optional
@@ -377,6 +364,11 @@ type VolumePluginOverride struct {
 	// +optional
 	// Size of the volume
 	Size string `json:"size,omitempty"`
+
+	// +optional
+	// Ephemeral volumes are not stored persistently across restarts. Defaults
+	// to false
+	Ephemeral bool `json:"ephemeral,omitempty"`
 }
 
 type LabeledCommandPluginOverride struct {
@@ -392,33 +384,6 @@ type EnvVarPluginOverride struct {
 	Name string `json:"name" yaml:"name"`
 	//  +optional
 	Value string `json:"value,omitempty" yaml:"value"`
-}
-
-type BaseCommandPluginOverride struct {
-
-	// +optional
-	// Defines the group this command is part of
-	Group *CommandGroupPluginOverride `json:"group,omitempty"`
-}
-
-// +union
-type VscodeConfigurationCommandLocationPluginOverride struct {
-
-	// +kubebuilder:validation:Enum=Uri;Inlined
-	// Type of Vscode configuration command location
-	// +
-	// +unionDiscriminator
-	// +optional
-	LocationType VscodeConfigurationCommandLocationTypePluginOverride `json:"locationType,omitempty"`
-
-	// Location as an absolute of relative URI
-	// the VsCode configuration will be fetched from
-	// +optional
-	Uri string `json:"uri,omitempty"`
-
-	// Inlined content of the VsCode configuration
-	// +optional
-	Inlined string `json:"inlined,omitempty"`
 }
 
 // Volume that should be mounted to a component container
@@ -466,6 +431,18 @@ type K8sLikeComponentLocationPluginOverride struct {
 	Inlined string `json:"inlined,omitempty"`
 }
 
+type BaseCommandPluginOverride struct {
+
+	// +optional
+	// Defines the group this command is part of
+	Group *CommandGroupPluginOverride `json:"group,omitempty"`
+}
+
+// K8sLikeComponentLocationType describes the type of
+// the location the configuration is fetched from.
+// Only one of the following component type may be specified.
+type K8sLikeComponentLocationTypePluginOverride string
+
 type CommandGroupPluginOverride struct {
 
 	//  +optional
@@ -476,16 +453,6 @@ type CommandGroupPluginOverride struct {
 	// Identifies the default command for a given group kind
 	IsDefault bool `json:"isDefault,omitempty"`
 }
-
-// VscodeConfigurationCommandLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-type VscodeConfigurationCommandLocationTypePluginOverride string
-
-// K8sLikeComponentLocationType describes the type of
-// the location the configuration is fetched from.
-// Only one of the following component type may be specified.
-type K8sLikeComponentLocationTypePluginOverride string
 
 // CommandGroupKind describes the kind of command group.
 // +kubebuilder:validation:Enum=build;run;test;debug

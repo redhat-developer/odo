@@ -22,7 +22,8 @@ const (
 // SetMetadataName set metadata name in a devfile
 func (d DevfileObj) SetMetadataName(name string) error {
 	metadata := d.Data.GetMetadata()
-	d.Data.SetMetadata(name, metadata.Version)
+	metadata.Name = name
+	d.Data.SetMetadata(metadata)
 	return d.WriteYamlDevfile()
 }
 
