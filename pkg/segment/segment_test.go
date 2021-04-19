@@ -71,17 +71,27 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// run a command, odo preference view
-	if err = c.Upload("odo preference view", time.Second, errors.New("an error occurred")); err != nil {
-		t.Error(err)
+	defer c.Close()
+
+	testError := errors.New("error occurred")
+	uploadData := TelemetryData{
+		Event: "odo preference view",
+		Properties: TelmetryProperties{
+			Error:     SetError(testError),
+			ErrorType: ErrorType(testError),
+			Success:   false,
+			Tty:       RunningInTerminal(),
+			Version:   version.VERSION,
+		},
 	}
-	if err = c.Close(); err != nil {
+	// run a command, odo preference view
+	if err = c.Upload(uploadData); err != nil {
 		t.Error(err)
 	}
 
 	select {
-	case <-body:
-		t.Error("server should not receive data")
+	case x := <-body:
+		t.Errorf("server should not receive data: %q", x)
 	default:
 	}
 }
@@ -106,18 +116,21 @@ func TestClientUploadWithConsent(t *testing.T) {
 		err      error
 		success  bool
 		errType  string
+		version  string
 	}{
 		{
 			testName: "command ran successfully",
 			err:      nil,
 			success:  true,
 			errType:  "",
+			version:  version.VERSION,
 		},
 		{
 			testName: "command failed",
 			err:      errors.New("some error occurred"),
 			success:  false,
 			errType:  "*errors.errorString",
+			version:  version.VERSION,
 		},
 	}
 	for _, tt := range tests {
@@ -127,50 +140,61 @@ func TestClientUploadWithConsent(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+			defer c.Close()
+			uploadData := TelemetryData{
+				Event: "odo create",
+				Properties: TelmetryProperties{
+					Duration:  time.Second.Milliseconds(),
+					Error:     SetError(tt.err),
+					ErrorType: ErrorType(tt.err),
+					Success:   tt.err == nil,
+					Tty:       RunningInTerminal(),
+					Version:   version.VERSION,
+				},
+			}
 			// upload the data to Segment
-			if err := c.Upload("odo create", time.Second, tt.err); err != nil {
+			if err = c.Upload(uploadData); err != nil {
 				t.Error(err)
 			}
-			if err := c.Close(); err != nil {
-				t.Error(err)
-			}
-
-			select {
-			case x := <-body:
-				s := segmentResponse{}
-				if err := json.Unmarshal(x, &s); err != nil {
-					t.Error(err)
-				}
-				// Response returns 2 Batches in response - 1) identify - user's system information,
-				// and 2) track - information about the fired command
-				// This checks if both the responses were received
-				if s.Batch[0].Type != "identify" && s.Batch[1].Type != "track" {
-					t.Errorf("Missing Identify or Track information.\nIdentify: %v\nTrack:%v", s.Batch[0].Type, s.Batch[1].Type)
-				}
-				if s.Batch[0].Traits.OS != runtime.GOOS {
-					t.Error("OS does not match")
-				}
-				if !tt.success {
-					if s.Batch[1].Properties.Error != tt.err.Error() {
-						t.Error("Error does not match")
+			// Note: Do not use `default` inside select with for loop, it lands in panic
+			for i := 0; i < 2; i++ {
+				select {
+				case x := <-body:
+					s := segmentResponse{}
+					if err = json.Unmarshal(x, &s); err != nil {
+						t.Error(err)
 					}
-				} else {
-					if s.Batch[1].Properties.Error != "" {
-						t.Error("Error does not match")
+					fmt.Println(string(x), s)
+					//Response returns 2 Batches in response - 1) identify - user's system information in case it is new,
+					//and 2) track - information about the fired command
+					//This checks if both the responses were received
+					if s.Batch[0].Type == "identify" {
+						if s.Batch[0].Traits.OS != runtime.GOOS {
+							t.Error("OS does not match")
+						}
+					} else if s.Batch[0].Type == "track" {
+						if !tt.success {
+							if s.Batch[0].Properties.Error != tt.err.Error() {
+								t.Error("Error does not match")
+							}
+						} else {
+							if s.Batch[0].Properties.Error != "" {
+								t.Error("Error does not match")
+							}
+						}
+						if s.Batch[0].Properties.Success != tt.success {
+							t.Error("Success does not match")
+						}
+						if s.Batch[0].Properties.ErrorType != tt.errType {
+							t.Error("Error Type does not match")
+						}
+						if !strings.Contains(s.Batch[0].Properties.Version, version.VERSION) {
+							t.Error("Odo version does not match")
+						}
+					} else {
+						t.Errorf("Missing Identify or Track information.\nIdentify: %v\nTrack:%v", s.Batch[0].Type, s.Batch[0].Type)
 					}
 				}
-				if s.Batch[1].Properties.Success != tt.success {
-					t.Error("Success does not match")
-				}
-				if s.Batch[1].Properties.ErrorType != tt.errType {
-					t.Error("Error Type does not match")
-				}
-				if !strings.Contains(s.Batch[1].Properties.Version, version.VERSION) {
-					t.Error("Odo version does not match")
-				}
-
-			default:
-				t.Error("Server should receive data")
 			}
 		})
 	}

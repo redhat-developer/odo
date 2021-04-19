@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/openshift/odo/pkg/odo/cli/telemetry"
+
 	"github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/odo/cli/catalog"
 	"github.com/openshift/odo/pkg/odo/cli/component"
@@ -204,6 +206,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
 		component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
+		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
 	)
 
 	// Add all subcommands to base commands
