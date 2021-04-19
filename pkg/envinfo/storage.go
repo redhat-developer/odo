@@ -183,7 +183,8 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 	return "", nil
 }
 
-// GetVolumeMountPath gets the volume mount's path
+// GetVolumeMountPath gets the volume mount's path.
+// To be moved to devfile/library.
 func GetVolumeMountPath(volumeMount devfilev1.VolumeMount) string {
 	// if there is no volume mount path, default to volume mount name as per devfile schema
 	if volumeMount.Path == "" {

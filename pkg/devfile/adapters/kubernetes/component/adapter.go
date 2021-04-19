@@ -418,14 +418,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 	initContainers = append(initContainers, supervisordInitContainer)
 
-	containerNameToVolumes, err := common.GetVolumes(a.Devfile)
-	if err != nil {
-		return err
-	}
-
 	var odoSourcePVCName string
-
-	volumeNameToPVCName := make(map[string]string)
 
 	// list all the pvcs for the component
 	pvcs, err := a.Client.GetKubeClient().ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
@@ -433,16 +426,26 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
+	volumeNameToVolInfo := make(map[string]storage.VolumeInfo)
 	for _, pvc := range pvcs {
 		// check if the pvc is in the terminating state
 		if pvc.DeletionTimestamp != nil {
 			continue
 		}
-		volumeNameToPVCName[pvc.Labels[storagelabels.StorageLabel]] = pvc.Name
+
+		generatedVolumeName, err := storage.GenerateVolumeNameFromPVC(pvc.Name)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to generate volume name from pvc name")
+		}
+
+		volumeNameToVolInfo[pvc.Labels[storagelabels.StorageLabel]] = storage.VolumeInfo{
+			PVCName:    pvc.Name,
+			VolumeName: generatedVolumeName,
+		}
 	}
 
 	// Get PVC volumes and Volume Mounts
-	containers, pvcVolumes, err := storage.GetPVCAndVolumeMount(containers, volumeNameToPVCName, containerNameToVolumes)
+	pvcVolumes, err := storage.GetVolumesAndVolumeMounts(a.Devfile, containers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}

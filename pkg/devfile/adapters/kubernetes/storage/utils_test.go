@@ -1,10 +1,15 @@
 package storage
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/attributes"
+	"github.com/devfile/library/pkg/devfile/generator"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/testingutil"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -35,7 +40,7 @@ func TestGetPVC(t *testing.T) {
 	}
 }
 
-func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
+func TestAddVolumeMountToContainers(t *testing.T) {
 
 	tests := []struct {
 		podName                string
@@ -92,7 +97,8 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.podName, func(t *testing.T) {
-			containers := addVolumeMountToContainers([]v1.Container{tt.container}, tt.volumeName, tt.containerMountPathsMap)
+			containers := []v1.Container{tt.container}
+			addVolumeMountToContainers(containers, tt.volumeName, tt.containerMountPathsMap)
 
 			mountPathCount := 0
 			for _, container := range containers {
@@ -110,103 +116,159 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 			}
 
 			if mountPathCount != len(tt.containerMountPathsMap[tt.container.Name]) {
-				t.Errorf("Volume Mounts for %s have not been properly mounted to the podTemplateSpec", tt.volumeName)
+				t.Errorf("Volume Mounts for %s have not been properly mounted to the container", tt.volumeName)
 			}
 		})
 	}
 }
 
-func TestGetPVCAndVolumeMount(t *testing.T) {
+func TestGetVolumesAndVolumeMounts(t *testing.T) {
 
-	volNames := [...]string{"volume1", "volume2", "volume3"}
-	volContainerPath := [...]string{"/home/user/path1", "/home/user/path2", "/home/user/path3"}
+	type testVolumeMountInfo struct {
+		mountPath  string
+		volumeName string
+	}
 
 	tests := []struct {
-		name                    string
-		podName                 string
-		namespace               string
-		labels                  map[string]string
-		containers              []v1.Container
-		volumeNameToPVCName     map[string]string
-		componentAliasToVolumes map[string][]common.DevfileVolume
-		wantErr                 bool
+		name                string
+		components          []devfilev1.Component
+		volumeNameToVolInfo map[string]VolumeInfo
+		wantContainerToVol  map[string][]testVolumeMountInfo
+		wantErr             bool
 	}{
 		{
-			name:      "Case: Valid case",
-			podName:   "podSpecTest",
-			namespace: "default",
-			labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
-			containers: []v1.Container{
-				{
-					Name: "container1",
-				},
-				{
-					Name: "container2",
+			name:       "One volume mounted",
+			components: []devfilev1.Component{testingutil.GetFakeContainerComponent("comp1"), testingutil.GetFakeContainerComponent("comp2")},
+			volumeNameToVolInfo: map[string]VolumeInfo{
+				"myvolume1": {
+					PVCName:    "volume1-pvc",
+					VolumeName: "volume1-pvc-vol",
 				},
 			},
-			volumeNameToPVCName: map[string]string{
-				"volume1": "volume1-pvc",
-				"volume2": "volume2-pvc",
-				"volume3": "volume3-pvc",
-			},
-			componentAliasToVolumes: map[string][]common.DevfileVolume{
-				"container1": []common.DevfileVolume{
+			wantContainerToVol: map[string][]testVolumeMountInfo{
+				"comp1": {
 					{
-						Name:          volNames[0],
-						ContainerPath: volContainerPath[0],
-					},
-					{
-						Name:          volNames[0],
-						ContainerPath: volContainerPath[1],
-					},
-					{
-						Name:          volNames[1],
-						ContainerPath: volContainerPath[2],
+						mountPath:  "/my/volume/mount/path1",
+						volumeName: "volume1-pvc-vol",
 					},
 				},
-				"container2": []common.DevfileVolume{
+				"comp2": {
 					{
-						Name:          volNames[1],
-						ContainerPath: volContainerPath[1],
-					},
-					{
-						Name:          volNames[2],
-						ContainerPath: volContainerPath[2],
+						mountPath:  "/my/volume/mount/path1",
+						volumeName: "volume1-pvc-vol",
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:      "Case: Error case",
-			podName:   "podSpecTest",
-			namespace: "default",
-			labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
-			containers: []v1.Container{
+			name: "One volume mounted at diff locations",
+			components: []devfilev1.Component{
 				{
-					Name: "container2",
+					Name: "container1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "volume1",
+										Path: "/path1",
+									},
+									{
+										Name: "volume1",
+										Path: "/path2",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
-			volumeNameToPVCName: map[string]string{
-				"volume2": "",
-				"volume3": "volume3-pvc",
+			volumeNameToVolInfo: map[string]VolumeInfo{
+				"volume1": {
+					PVCName:    "volume1-pvc",
+					VolumeName: "volume1-pvc-vol",
+				},
 			},
-			componentAliasToVolumes: map[string][]common.DevfileVolume{
-				"container2": []common.DevfileVolume{
+			wantContainerToVol: map[string][]testVolumeMountInfo{
+				"container1": {
 					{
-						Name:          volNames[1],
-						ContainerPath: volContainerPath[1],
+						mountPath:  "/path1",
+						volumeName: "volume1-pvc-vol",
 					},
 					{
-						Name:          volNames[2],
-						ContainerPath: volContainerPath[2],
+						mountPath:  "/path2",
+						volumeName: "volume1-pvc-vol",
 					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One volume mounted at diff container components",
+			components: []devfilev1.Component{
+				{
+					Name: "container1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "volume1",
+										Path: "/path1",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "container2",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{
+								VolumeMounts: []devfilev1.VolumeMount{
+									{
+										Name: "volume1",
+										Path: "/path2",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			volumeNameToVolInfo: map[string]VolumeInfo{
+				"volume1": {
+					PVCName:    "volume1-pvc",
+					VolumeName: "volume1-pvc-vol",
+				},
+			},
+			wantContainerToVol: map[string][]testVolumeMountInfo{
+				"container1": {
+					{
+						mountPath:  "/path1",
+						volumeName: "volume1-pvc-vol",
+					},
+				},
+				"container2": {
+					{
+						mountPath:  "/path2",
+						volumeName: "volume1-pvc-vol",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid case",
+			components: []devfilev1.Component{
+				{
+					Name: "container1",
+					Attributes: attributes.Attributes{}.FromStringMap(map[string]string{
+						"firstString": "firstStringValue",
+					}),
+					ComponentUnion: devfilev1.ComponentUnion{},
 				},
 			},
 			wantErr: true,
@@ -216,51 +278,76 @@ func TestGetPVCAndVolumeMount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			containers, pvcVols, err := GetPVCAndVolumeMount(tt.containers, tt.volumeNameToPVCName, tt.componentAliasToVolumes)
+			devObj := devfileParser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(tt.components)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
+			if err != nil {
+				t.Errorf("TestGetVolumesAndVolumeMounts error - %v", err)
+				return
+			}
+
+			var options parsercommon.DevfileOptions
+			if tt.wantErr {
+				options = parsercommon.DevfileOptions{
+					Filter: map[string]interface{}{
+						"firstString": "firstStringValue",
+					},
+				}
+			}
+
+			pvcVols, err := GetVolumesAndVolumeMounts(devObj, containers, tt.volumeNameToVolInfo, options)
 			if !tt.wantErr && err != nil {
-				t.Errorf("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TestGetVolumesAndVolumeMounts unexpected error: %v", err)
+				return
 			} else if tt.wantErr && err != nil {
 				return
 			} else if tt.wantErr && err == nil {
-				t.Error("TestGetPVCAndVolumeMount.AddPVCAndVolumeMount() expected error but got nil")
+				t.Error("TestGetVolumesAndVolumeMounts expected error but got nil")
 				return
 			}
 
-			// The total number of expected volumes is equal to the number of volumes defined in the devfile
-			expectedNumVolumes := len(tt.volumeNameToPVCName)
+			// check if the pvc volumes returned are correct
+			for _, volInfo := range tt.volumeNameToVolInfo {
+				matched := false
+				for _, pvcVol := range pvcVols {
+					if volInfo.VolumeName == pvcVol.Name && pvcVol.PersistentVolumeClaim != nil && volInfo.PVCName == pvcVol.PersistentVolumeClaim.ClaimName {
+						matched = true
+					}
+				}
 
-			// check the number of containers and volumes in the pod template spec
-			if len(containers) != len(tt.containers) {
-				t.Errorf("TestGetPVCAndVolumeMount error - Incorrect number of Containers found in the pod template spec, expected: %v found: %v", len(tt.containers), len(containers))
-				return
-			}
-			if len(pvcVols) != expectedNumVolumes {
-				t.Errorf("TestGetPVCAndVolumeMount error - incorrect amount of pvc volumes in pod template spec expected %v, actual %v", expectedNumVolumes, len(pvcVols))
-				return
+				if !matched {
+					t.Errorf("TestGetVolumesAndVolumeMounts error - could not find volume details %s in the actual result", volInfo.VolumeName)
+				}
 			}
 
-			// check the volume mounts of the pod template spec containers
+			// check the volume mounts of the containers
 			for _, container := range containers {
-				for testcontainerAlias, testContainerVolumes := range tt.componentAliasToVolumes {
-					if container.Name == testcontainerAlias {
-						// check if container has the correct number of volume mounts
-						if len(container.VolumeMounts) != len(testContainerVolumes) {
-							t.Errorf("TestGetPVCAndVolumeMount - Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), len(container.VolumeMounts))
-						}
-
-						// check if container has the specified volume
-						volumeMatched := 0
-						for _, volumeMount := range container.VolumeMounts {
-							for _, testVolume := range testContainerVolumes {
-								testVolumeName := testVolume.Name
-								testVolumePath := testVolume.ContainerPath
-								if strings.Contains(volumeMount.Name, testVolumeName) && volumeMount.MountPath == testVolumePath {
-									volumeMatched++
-								}
+				if volMounts, ok := tt.wantContainerToVol[container.Name]; !ok {
+					t.Errorf("TestGetVolumesAndVolumeMounts error - did not find the expected container %s", container.Name)
+					return
+				} else {
+					for _, expectedVolMount := range volMounts {
+						matched := false
+						for _, actualVolMount := range container.VolumeMounts {
+							if expectedVolMount.volumeName == actualVolMount.Name && expectedVolMount.mountPath == actualVolMount.MountPath {
+								matched = true
 							}
 						}
-						if volumeMatched != len(testContainerVolumes) {
-							t.Errorf("TestGetPVCAndVolumeMount - Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), volumeMatched)
+
+						if !matched {
+							t.Errorf("TestGetVolumesAndVolumeMounts error - could not find volume mount details for path %s in the actual result for container %s", expectedVolMount.mountPath, container.Name)
 						}
 					}
 				}

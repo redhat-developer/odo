@@ -42,15 +42,6 @@ func (a Adapter) createComponent() (err error) {
 	// Loop over each container component and start a container for it
 	for _, comp := range containerComponents {
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.containerNameToVolumes[comp.Name] {
-
-			volMount := mount.Mount{
-				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[vol.Name],
-				Target: vol.ContainerPath,
-			}
-			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
-		}
 		err = a.pullAndStartContainer(dockerVolumeMounts, comp)
 		if err != nil {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", comp.Name, componentName)
@@ -83,14 +74,6 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		}
 
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.containerNameToVolumes[comp.Name] {
-			volMount := mount.Mount{
-				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[vol.Name],
-				Target: vol.ContainerPath,
-			}
-			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
-		}
 		if len(containers) == 0 {
 			log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 
