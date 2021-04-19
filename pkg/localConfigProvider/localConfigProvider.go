@@ -4,7 +4,6 @@ package localConfigProvider
 type URLKind string
 
 const (
-	DOCKER  URLKind = "docker"
 	INGRESS URLKind = "ingress"
 	ROUTE   URLKind = "route"
 )

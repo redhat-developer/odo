@@ -27,7 +27,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
@@ -463,12 +462,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				componentName = ui.EnterDevfileComponentName(componentType)
 
 				// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-				if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
+				if cmd.Flags().Changed("project") {
 					componentNamespace, err = cmd.Flags().GetString("project")
 					if err != nil {
 						return err
 					}
-				} else if !pushtarget.IsPushTargetDocker() {
+				} else {
 					componentNamespace = ui.EnterDevfileComponentProject(defaultComponentNamespace)
 				}
 			}
@@ -658,11 +657,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
 	var openshiftCluster bool
-	if !pushtarget.IsPushTargetDocker() {
-		openshiftCluster, _ = co.Client.IsImageStreamSupported()
-	} else {
-		openshiftCluster = false
-	}
+	openshiftCluster, _ = co.Client.IsImageStreamSupported()
 	if !openshiftCluster {
 		return errors.New("component type not found")
 	}

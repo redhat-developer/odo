@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -63,27 +62,25 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 	o.componentName = args[0]
 	tasks := util.NewConcurrentTasks(2)
 
-	if !pushtarget.IsPushTargetDocker() {
-		o.Context, err = genericclioptions.NewContext(cmd, true)
-		if err != nil {
-			return err
-		}
-		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			catalogList, err := catalog.ListComponents(o.Client)
-			if err != nil {
-				// TODO:
-				// This MAY have to change in the future.. There is no good way to determine whether the user
-				// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
-				// we are unable to list anything from OpenShift.
-				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-			}
-			for _, image := range catalogList.Items {
-				if image.Name == o.componentName {
-					o.component = image.Name
-				}
-			}
-		}})
+	o.Context, err = genericclioptions.NewContext(cmd, true)
+	if err != nil {
+		return err
 	}
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+		catalogList, err := catalog.ListComponents(o.Client)
+		if err != nil {
+			// TODO:
+			// This MAY have to change in the future.. There is no good way to determine whether the user
+			// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
+			// we are unable to list anything from OpenShift.
+			klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+		}
+		for _, image := range catalogList.Items {
+			if image.Name == o.componentName {
+				o.component = image.Name
+			}
+		}
+	}})
 
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 		catalogDevfileList, err := catalog.ListDevfileComponents("")
