@@ -38,16 +38,20 @@ func (ei *EnvInfo) ValidateStorage(storage localConfigProvider.LocalStorage) err
 		}
 	}
 
-	//check if specified container exists or not
+	//check if specified container exists or not (if specified)
 	containerExists := false
-	containers, err := ei.GetContainers()
-	if err != nil {
-		return err
-	}
+	if storage.Container == "" {
+		containerExists = true
+	} else {
+		containers, err := ei.GetContainers()
+		if err != nil {
+			return err
+		}
 
-	for _, c := range containers {
-		if c.Name == storage.Container {
-			containerExists = true
+		for _, c := range containers {
+			if c.Name == storage.Container {
+				containerExists = true
+			}
 		}
 	}
 
