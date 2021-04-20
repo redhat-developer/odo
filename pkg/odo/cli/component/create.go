@@ -866,7 +866,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
 	}
-	if co.devfileMetadata.devfilePath.value == "" && !devfileExist {
+	if co.devfileMetadata.devfilePath.value == "" && !devfileExist && !strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
 		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
 		if err != nil {
 			return err
