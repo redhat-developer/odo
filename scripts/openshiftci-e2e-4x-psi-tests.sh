@@ -13,6 +13,7 @@ export AMQP_URI=${AMQP_URI:?"Please set AMQP_URI env with amqp uri or provide pa
 # show commands
 set -x
 
+export EXCHANGE="amqp.ci.exchange.send"
 export JOB_NAME="odo-pr-build"
 export REPO_URL="https://github.com/openshift/odo"
 # Extract PR NUMBER from prow job spec, which is injected by prow.
@@ -21,9 +22,9 @@ export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
 ##### ci-firewall parameters end
 # The version of CI_FIREWALL TO USE
-export CI_FIREWALL_VERSION="valpha"
+export CI_FIREWALL_VERSION="v0.1.1"
 
 echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
-./ci-firewall request --runscript scripts/run_all_tests.sh --timeout 2h15m
+./ci-firewall request --sendexchange $EXCHANGE --runscript scripts/run_all_tests.sh --timeout 4h00m
