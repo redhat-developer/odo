@@ -32,8 +32,12 @@ var _ = Describe("odo debug command serial tests", func() {
 	})
 
 	It("should auto-select a local debug port when the given local port is occupied", func() {
+		projName := helper.GetCliRunner().CreateRandNamespaceProjectOfLength(5)
+		defer func() {
+			helper.GetCliRunner().DeleteNamespaceProject(projName)
+		}()
 		helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-		helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", "nodejs-cmp-"+commonVar.Project, "--project", commonVar.Project, "--context", commonVar.Context)
+		helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", "nodejs-cmp", "--project", projName, "--context", commonVar.Context)
 		helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
 		stopChannel := make(chan bool)

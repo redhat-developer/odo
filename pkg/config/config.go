@@ -407,6 +407,11 @@ func (lc *LocalConfig) GetSourceType() SrcType {
 	return *lc.componentSettings.SourceType
 }
 
+// SetComponentSettingsWithoutFileWrite sets the componentSetting but doesn't write to file
+func (lci *LocalConfigInfo) SetComponentSettingsWithoutFileWrite(cs ComponentSettings) {
+	lci.componentSettings = cs
+}
+
 // GetApplication returns the app, returns default if nil
 func (lc *LocalConfig) GetApplication() string {
 	return util.GetStringOrEmpty(lc.componentSettings.Application)

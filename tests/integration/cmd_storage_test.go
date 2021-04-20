@@ -10,12 +10,10 @@ import (
 )
 
 var _ = Describe("odo storage command tests", func() {
-	var oc helper.OcRunner
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
 	})
 
@@ -29,97 +27,6 @@ var _ = Describe("odo storage command tests", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "storage", "-h")
 			Expect(appHelp).To(ContainSubstring("Perform storage operations"))
-		})
-	})
-
-	Context("when running storage command without required flag(s)", func() {
-		It("should fail", func() {
-			requiredFlags := []string{"size", "path"}
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "nodejs", "--app", "nodeapp", "--project", commonVar.Project, "--context", commonVar.Context)
-			stdErr := helper.CmdShouldFail("odo", "storage", "create", "pv1", "--size", "1Gi", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdErr, requiredFlags)
-
-			requiredFlagsS := []string{"size"}
-			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--path", "/data", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdErr, requiredFlagsS)
-			stdErr = helper.CmdShouldFail("odo", "storage", "create", "pv1", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdErr, requiredFlags)
-		})
-	})
-
-	Context("when using storage command with default flag values", func() {
-		It("should add a storage, list and delete it", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "nodejs", "--app", "nodeapp", "--project", commonVar.Project, "--context", commonVar.Context)
-			// Default flag value
-			// --app string         Application, defaults to active application
-			// --component string   Component, defaults to active component.
-			// --project string     Project, defaults to active project
-			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "1Gi", "--context", commonVar.Context)
-			Expect(storAdd).To(ContainSubstring("nodejs"))
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			dcName := oc.GetDcName("nodejs", commonVar.Project)
-
-			// Check against the volume name against dc
-			getDcVolumeMountName := oc.GetVolumeMountName(dcName, commonVar.Project)
-			Expect(getDcVolumeMountName).To(ContainSubstring("pv1"))
-
-			// Check if the storage is added on the path provided
-			getMntPath := oc.GetVolumeMountPath(dcName, commonVar.Project)
-			Expect(getMntPath).To(ContainSubstring("/mnt/pv1"))
-
-			storeList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			Expect(storeList).To(ContainSubstring("pv1"))
-
-			// delete the storage
-			helper.CmdShouldPass("odo", "storage", "delete", "pv1", "--context", commonVar.Context, "-f")
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			storeList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			Expect(storeList).NotTo(ContainSubstring("pv1"))
-
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			getDcVolumeMountName = oc.GetVolumeMountName(dcName, commonVar.Project)
-			Expect(getDcVolumeMountName).NotTo(ContainSubstring("pv1"))
-		})
-	})
-
-	Context("when using storage command with specified flag values", func() {
-		It("should add a storage, list and delete it", func() {
-			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "python", "python", "--app", "pyapp", "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "1Gi", "--context", commonVar.Context)
-			Expect(storAdd).To(ContainSubstring("python"))
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			dcName := oc.GetDcName("python", commonVar.Project)
-
-			// Check against the volume name against dc
-			getDcVolumeMountName := oc.GetVolumeMountName(dcName, commonVar.Project)
-			Expect(getDcVolumeMountName).To(ContainSubstring("pv1"))
-
-			// Check if the storage is added on the path provided
-			getMntPath := oc.GetVolumeMountPath(dcName, commonVar.Project)
-			Expect(getMntPath).To(ContainSubstring("/mnt/pv1"))
-
-			storeList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-			Expect(storeList).To(ContainSubstring("pv1"))
-
-			// delete the storage
-			helper.CmdShouldPass("odo", "storage", "delete", "pv1", "--context", commonVar.Context, "-f")
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-
-			storeList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
-
-			Expect(storeList).NotTo(ContainSubstring("pv1"))
-
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			getDcVolumeMountName = oc.GetVolumeMountName(dcName, commonVar.Project)
-			Expect(getDcVolumeMountName).NotTo(ContainSubstring("pv1"))
 		})
 	})
 

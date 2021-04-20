@@ -1,6 +1,7 @@
 package e2escenarios
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -40,21 +41,21 @@ var _ = Describe("odo devfile supported tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	createStarterProjAndSetDebug := func(component string) {
+	createStarterProjAndSetDebug := func(component, debugLocalPort string) {
 		helper.CmdShouldPass("odo", "create", component, "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
 		helper.CmdShouldPass("odo", "push", "--context", projectDirPath)
 		helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 		stopChannel := make(chan bool)
 		go func() {
-			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5858", "--context", projectDirPath)
+			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", debugLocalPort, "--context", projectDirPath)
 		}()
 
 		// Make sure that the debug information output, outputs correctly.
 		// We do *not* check the json output since the debugProcessID will be different each time.
 		helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
 			if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
-				strings.Contains(output, `"localPort": 5858`) {
+				strings.Contains(output, fmt.Sprintf(`"localPort": %s`, debugLocalPort)) {
 				return true
 			}
 			return false
@@ -64,19 +65,19 @@ var _ = Describe("odo devfile supported tests", func() {
 
 	Context("odo debug support for devfile components", func() {
 		It("Verify output debug information for nodeJS debug works", func() {
-			createStarterProjAndSetDebug("nodejs")
+			createStarterProjAndSetDebug("nodejs", "5859")
 		})
 		It("Verify output debug information for java-springboot works", func() {
-			createStarterProjAndSetDebug("java-springboot")
+			createStarterProjAndSetDebug("java-springboot", "5860")
 		})
 		It("Verify output debug information for java-openliberty debug works", func() {
-			createStarterProjAndSetDebug("java-openliberty")
+			createStarterProjAndSetDebug("java-openliberty", "5861")
 		})
 		It("Verify output debug information for java-quarkus debug works", func() {
-			createStarterProjAndSetDebug("java-quarkus")
+			createStarterProjAndSetDebug("java-quarkus", "5862")
 		})
 		It("Verify output debug information for java-maven debug works", func() {
-			createStarterProjAndSetDebug("java-maven")
+			createStarterProjAndSetDebug("java-maven", "5863")
 		})
 	})
 

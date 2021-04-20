@@ -92,7 +92,6 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	if err != nil {
 		return err
 	}
-
 	componentName := po.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)

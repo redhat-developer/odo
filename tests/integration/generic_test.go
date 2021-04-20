@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -181,13 +180,14 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("when running odo push with flag --show-log", func() {
+		// works
 		It("should be able to push changes", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
 
 			// Push the changes with --show-log
 			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context)
-			Expect(getLogging).To(ContainSubstring("Building component"))
+			Expect(getLogging).To(ContainSubstring("Creating Kubernetes resources for component nodejs"))
 		})
 	})
 
@@ -248,38 +248,6 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	Context("when component's deployment config is deleted with oc", func() {
-		var componentRandomName string
-
-		JustBeforeEach(func() {
-			componentRandomName = helper.RandString(6)
-			helper.Chdir(commonVar.Context)
-		})
-
-		It("should delete all OpenShift objects except the component's imagestream", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", componentRandomName, "--project", commonVar.Project)
-			helper.CmdShouldPass("odo", "push")
-
-			// Delete the deployment config using oc delete
-			dc := oc.GetDcName(componentRandomName, commonVar.Project)
-			helper.CmdShouldPass("oc", "delete", "--wait", "dc", dc, "--namespace", commonVar.Project)
-
-			// insert sleep because it takes a few seconds to delete *all*
-			// objects owned by DC but we should be able to check if a service
-			// got deleted in a second.
-			time.Sleep(1 * time.Second)
-
-			// now check if the service owned by the DC exists. Service name is
-			// same as DC name for a given component.
-			stdOut := helper.CmdShouldFail("oc", "get", "svc", dc, "--namespace", commonVar.Project)
-			Expect(stdOut).To(ContainSubstring("NotFound"))
-
-			// ensure that the image stream still exists
-			helper.CmdShouldPass("oc", "get", "is", dc, "--namespace", commonVar.Project)
-		})
-	})
-
 	Context("When using cpu or memory flag with odo create", func() {
 		cmpName := "nodejs"
 
@@ -320,7 +288,7 @@ var _ = Describe("odo generic", func() {
 			}
 			for _, testCase := range cases {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				output := helper.CmdShouldFail("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--"+testCase.paramName, testCase.paramValue)
+				output := helper.CmdShouldFail("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--"+testCase.paramName, testCase.paramValue, "--git", "https://github.com/sclorg/nodejs-ex.git")
 				Expect(output).To(ContainSubstring("unknown flag: --" + testCase.paramName))
 			}
 		})

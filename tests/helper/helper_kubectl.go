@@ -141,11 +141,23 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 // CreateRandNamespaceProject create new project
 func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
 	projectName := SetProjectName()
+	kubectl.createRandNamespaceProject(projectName)
+	return projectName
+}
+
+func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	CmdShouldPass("kubectl", "create", "namespace", projectName)
 	CmdShouldPass("kubectl", "config", "set-context", "--current", "--namespace", projectName)
 	session := CmdShouldPass("kubectl", "get", "namespaces")
 	Expect(session).To(ContainSubstring(projectName))
+	return projectName
+}
+
+// CreateRandNamespaceProjectOfLength create new project with i as the length of the name
+func (kubectl KubectlRunner) CreateRandNamespaceProjectOfLength(i int) string {
+	projectName := RandString(i)
+	kubectl.createRandNamespaceProject(projectName)
 	return projectName
 }
 
