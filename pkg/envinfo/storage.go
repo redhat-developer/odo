@@ -2,6 +2,7 @@ package envinfo
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
@@ -214,7 +215,7 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 	for _, c := range containers {
 		// get all volume mount paths in current container
 		pt, err := ei.devfileObj.Data.GetVolumeMountPaths(storageName, c.Name)
-		if err != nil {
+		if err != nil && strings.Contains(err.Error(), "not mounted") {
 			return "", err
 		}
 		if len(pt) > 0 {

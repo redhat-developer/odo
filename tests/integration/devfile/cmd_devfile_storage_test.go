@@ -113,6 +113,22 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.DontMatchAllInOutput(storageList, []string{pathName, "tools", storageName, size})
 		})
 
+		It("should be able to delete storage if storage is mounted to any container other than first one", func() {
+			args := []string{"create", "java-springboot", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			storageName := helper.RandString(5)
+			pathName := "/data1"
+			size := "1Gi"
+			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", pathName, "--context", commonVar.Context, "--container", "runtime", "--size", size)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "storage", "delete", "-f", "--context", commonVar.Context, storageName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+		})
+
 		It("should create a storage with default size when --size is not provided", func() {
 			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
 			helper.CmdShouldPass("odo", args...)
