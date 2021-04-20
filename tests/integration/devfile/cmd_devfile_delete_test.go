@@ -15,8 +15,7 @@ import (
 
 var _ = Describe("odo devfile delete command tests", func() {
 	const devfile = "devfile.yaml"
-	var devfilePath string
-	var componentName, invalidNamespace string
+	var componentName string
 
 	var commonVar helper.CommonVar
 
@@ -33,19 +32,23 @@ var _ = Describe("odo devfile delete command tests", func() {
 	})
 
 	Context("when devfile delete command is executed", func() {
-		It("should not throw an error with an existing namespace when no component exists", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
+		JustBeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f")
+			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project)
+		})
+
+		// Why do we have this test case? `It` part doesn't make sense
+		It("should not throw an error with an existing namespace when no component exists", func() {
+			helper.CmdShouldPass("odo", "delete", componentName, "--project", commonVar.Project, "-f")
+		})
+
+		It("should wait for the pods to terminate while using --wait flag to delete", func() {
+			helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f", "--wait")
+			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)).To(BeEmpty())
 		})
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
 			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
-
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress")
 
 			if os.Getenv("KUBERNETES") != "true" {
@@ -63,11 +66,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 
 		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file with all flag", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
-
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress")
 
 			if os.Getenv("KUBERNETES") != "true" {
@@ -84,8 +83,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 
 		It("should execute preStop events if present", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
@@ -97,39 +94,32 @@ var _ = Describe("odo devfile delete command tests", func() {
 				"Executing secondprestop command",
 				"Executing thirdprestop command",
 			})
-
-		})
-
-		It("should error out on devfile flag", func() {
-			helper.CmdShouldFail("odo", "delete", "--devfile", "invalid.yaml")
 		})
 	})
 
 	Context("when the project doesn't exist", func() {
-		JustBeforeEach(func() {
-			invalidNamespace = "garbage"
-		})
+		var invalidNamespace = "garbage"
 
 		It("should let the user delete the local config files with -a flag", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
+			// utils.DeleteLocalConfig appends -a flag
 			utils.DeleteLocalConfig("delete")
 		})
 
-		It("should let the user delete the local config files with -a and -project flags", func() {
+		It("should let the user delete the local config files with -a and --project flags", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
+			// utils.DeleteLocalConfig appends -a flag
 			utils.DeleteLocalConfig("delete", "--project", invalidNamespace)
 		})
 	})
 
 	Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {
-		JustBeforeEach(func() {
+		It("should successfully delete the devfile as its not present in root on delete", func() {
 			newContext := path.Join(commonVar.Context, "newContext")
-			devfilePath = filepath.Join(newContext, devfile)
+			devfilePath := filepath.Join(newContext, devfile)
 			helper.MakeDir(newContext)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
-		})
 
-		It("should successfully delete the devfile as its not present in root on delete", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", devfilePath)
 			// devfile was copied to top level
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
@@ -145,7 +135,59 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("odo", "delete", "--all", "-f")
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
 		})
+	})
 
+	Context("When deleting component data from other component's directory", func() {
+		var firstComponent, secondComponent, firstContext, secondContext string
+		var setup = func(componentName, contextName string) {
+			helper.Chdir(contextName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), contextName)
+			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+		}
+		JustBeforeEach(func() {
+			// Create the second component in a new context dir
+			secondContext = path.Join(commonVar.Context, "newContext")
+			secondComponent = helper.RandString(6)
+			helper.MakeDir(secondContext)
+			setup(secondComponent, secondContext)
+			// Create the first component in commonVar.Context
+			// redefining the variables for better verbosity
+			firstContext = commonVar.Context
+			firstComponent = componentName
+			setup(firstComponent, firstContext)
+		})
+		JustAfterEach(func() {
+			for _, dir := range []string{secondContext, firstContext} {
+				helper.Chdir(dir)
+				helper.CmdShouldPass("odo", "delete", "-af")
+			}
+		})
+		It("should delete the context directory's component with --context flag", func() {
+			output := helper.CmdShouldPass("odo", "delete", "-f", "--context", secondContext)
+			Expect(output).To(ContainSubstring(secondComponent))
+			Expect(output).ToNot(ContainSubstring(firstComponent))
+			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(secondComponent, commonVar.Project)).To(BeEmpty())
+			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(firstComponent, commonVar.Project)).ToNot(BeEmpty())
+		})
+		It("should delete all the config files and component with -a and --context flag of the context directory", func() {
+			output := helper.CmdShouldPass("odo", "delete", "-af", "--context", secondContext)
+			Expect(output).To(ContainSubstring(secondComponent))
+			Expect(output).ToNot(ContainSubstring(firstComponent))
+			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(secondComponent, commonVar.Project)).To(BeEmpty())
+			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(firstComponent, commonVar.Project)).ToNot(BeEmpty())
+
+			files := helper.ListFilesInDir(secondContext)
+			Expect(files).To(Not(ContainElement(".odo")))
+			Expect(files).To(Not(ContainElement("devfile.yaml")))
+		})
+		It("should delete the component when deleting with component name and --project flag", func() {
+			output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f")
+			Expect(output).To(ContainSubstring(secondComponent))
+			Expect(output).ToNot(ContainSubstring(firstComponent))
+			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(secondComponent, commonVar.Project)).To(BeEmpty())
+			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(firstComponent, commonVar.Project)).ToNot(BeEmpty())
+		})
 	})
 
 	Context("odo component delete should clean owned resources", func() {

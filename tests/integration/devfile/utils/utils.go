@@ -690,8 +690,9 @@ func ExecWithInvalidCommand(context, cmpName, pushTarget string) {
 	Expect(output).To(ContainSubstring("executable file not found in $PATH"))
 }
 
-// DeleteLocalConfig helps user to delete local config files with flags
+// DeleteLocalConfig helps user to delete local config files with flags
 func DeleteLocalConfig(args ...string) {
+	//TODO: why do we have CmdShouldFail and CmdShouldPass?
 	helper.CmdShouldFail("odo", args...)
 	output := helper.CmdShouldPass("odo", append(args, "-af")...)
 	expectedOutput := []string{
