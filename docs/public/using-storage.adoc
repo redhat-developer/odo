@@ -42,7 +42,7 @@ We can delete a storage volume using `odo storage delete`
 == Adding storage to specific container
 
 If your devfile has multiple containers, you can specify to which container you want the
-storage to attach to using `--container` flag in the `odo storage create` command.
+storage to attach to using the `--container` flag in the `odo storage create` command.
 
 For example:
 
