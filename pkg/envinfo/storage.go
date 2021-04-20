@@ -2,9 +2,8 @@ package envinfo
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"k8s.io/klog/v2"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -215,8 +214,8 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 	for _, c := range containers {
 		// get all volume mount paths in current container
 		pt, err := ei.devfileObj.Data.GetVolumeMountPaths(storageName, c.Name)
-		if err != nil && strings.Contains(err.Error(), "not mounted") {
-			return "", err
+		if err != nil {
+			klog.V(2).Infof("Failed to get volume mount paths for storage %s in container %s: %s", storageName, c.Name, err.Error())
 		}
 		if len(pt) > 0 {
 			return pt[0], nil
