@@ -191,8 +191,15 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Return test case's deployment, when requested
 			fkclientset.Kubernetes.PrependReactor("get", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
-
 				if getAction, is := action.(ktesting.GetAction); is && getAction.GetName() == testComponentName {
+					return true, &tt.deployment, nil
+				}
+				return false, nil, nil
+			})
+
+			// Return test case's deployment, when requested
+			fkclientset.Kubernetes.PrependReactor("patch", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if patchAction, is := action.(ktesting.PatchAction); is && patchAction.GetName() == testComponentName {
 					return true, &tt.deployment, nil
 				}
 				return false, nil, nil
@@ -218,10 +225,9 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Call the function to test
 			result, err := componentAdapter.getDeploymentStatus()
-
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 			if string(result.DeploymentUID) != tt.expectedDeploymentUID {
 				t.Fatalf("could not find expected deployment UID %s %s", string(result.DeploymentUID), tt.expectedDeploymentUID)

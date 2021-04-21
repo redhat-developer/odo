@@ -53,7 +53,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 	}
 	deploy := generator.GetDeployment(deploymentParams)
 
-	fkclientset.Kubernetes.PrependReactor("create", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+	fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if podName == "" {
 			return true, nil, errors.Errorf("deployment name is empty")
 		}
@@ -70,7 +70,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		return true, &deployment, nil
 	})
 
-	createdDeployment, err := fkclient.CreateDeployment(*deploy)
+	createdDeployment, err := fkclient.ApplyDeployment(*deploy)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func TestUpdateDeployment(t *testing.T) {
 			}
 			deploy := generator.GetDeployment(deploymentParams)
 
-			fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
 					return true, nil, errors.Errorf("deployment name is empty")
 				}

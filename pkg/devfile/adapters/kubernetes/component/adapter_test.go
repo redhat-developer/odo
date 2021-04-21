@@ -1,6 +1,7 @@
 package component
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -108,16 +109,15 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 			fkclient, fkclientset := occlient.FakeNew()
 
-			if tt.running {
-				fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-					return true, &deployment, nil
-				})
+			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &deployment, nil
+			})
 
+			if tt.running {
 				fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 					return true, &deployment, nil
 				})
 			}
-
 			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 
@@ -298,10 +298,23 @@ func TestDoesComponentExist(t *testing.T) {
 			fkclient, fkclientset := occlient.FakeNew()
 			fkWatch := watch.NewFake()
 
+			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if patchAction, is := action.(ktesting.PatchAction); is {
+					patch := patchAction.GetPatch()
+					var deployment v1.Deployment
+					err := json.Unmarshal(patch, &deployment)
+					if err != nil {
+						t.Errorf("unable to parse deployment %q\n", err)
+						return false, nil, err
+					}
+					return true, &deployment, nil
+				}
+				return false, nil, nil
+			})
+
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
 			})
-
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
