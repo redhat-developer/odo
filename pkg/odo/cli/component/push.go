@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/log"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"

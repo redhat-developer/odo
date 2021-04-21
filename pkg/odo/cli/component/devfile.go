@@ -83,11 +83,11 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 	// Parse devfile and validate
 	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
-
 	if err != nil {
 		return err
 	}
 
+	// odo specific validations
 	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
@@ -138,12 +138,12 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
-		err = errors.Errorf("Failed to start component with name %s. Error: %v",
+		err = errors.Errorf("Failed to start component with name %q. Error: %v",
 			componentName,
 			err,
 		)
 	} else {
-		log.Infof("\nPushing devfile component %s", componentName)
+		log.Infof("\nPushing devfile component %q", componentName)
 		log.Success("Changes successfully pushed to component")
 	}
 

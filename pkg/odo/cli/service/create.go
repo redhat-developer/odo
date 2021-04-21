@@ -126,20 +126,6 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	return o.Backend.CompleteServiceCreate(o, cmd, args)
 }
 
-// outputNonInteractiveEquivalent outputs the populated options as the equivalent command that would be used in non-interactive mode
-func (o *CreateOptions) outputNonInteractiveEquivalent() string {
-	if o.outputCLI {
-		var tpl bytes.Buffer
-		t := template.Must(template.New("service-create-cli").Parse(equivalentTemplate))
-		e := t.Execute(&tpl, o)
-		if e != nil {
-			panic(e) // shouldn't happen
-		}
-		return strings.TrimSpace(tpl.String())
-	}
-	return ""
-}
-
 // Validate validates the CreateOptions based on completed values
 func (o *CreateOptions) Validate() (err error) {
 	// if we are in interactive mode, all values are already valid
@@ -159,7 +145,7 @@ func (o *CreateOptions) Run() (err error) {
 
 	// Information on what to do next; don't do this if "--dry-run" was requested as it gets appended to the file
 	if !o.DryRun {
-		log.Infof("You can now link the service to a component using 'odo link'; check 'odo link -h'")
+		log.Info("Successfully added service to the configuration; do 'odo push' to create service on the cluster")
 	}
 
 	equivalent := o.outputNonInteractiveEquivalent()
@@ -167,6 +153,20 @@ func (o *CreateOptions) Run() (err error) {
 		log.Info("Equivalent command:\n" + ui.StyledOutput(equivalent, "cyan"))
 	}
 	return
+}
+
+// outputNonInteractiveEquivalent outputs the populated options as the equivalent command that would be used in non-interactive mode
+func (o *CreateOptions) outputNonInteractiveEquivalent() string {
+	if o.outputCLI {
+		var tpl bytes.Buffer
+		t := template.Must(template.New("service-create-cli").Parse(equivalentTemplate))
+		e := t.Execute(&tpl, o)
+		if e != nil {
+			panic(e) // shouldn't happen
+		}
+		return strings.TrimSpace(tpl.String())
+	}
+	return ""
 }
 
 // NewCmdServiceCreate implements the odo service create command.
