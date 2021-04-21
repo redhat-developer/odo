@@ -2,8 +2,8 @@ package envinfo
 
 import (
 	"fmt"
-
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"k8s.io/klog/v2"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -37,6 +37,26 @@ func (ei *EnvInfo) ValidateStorage(storage localConfigProvider.LocalStorage) err
 			return fmt.Errorf("storage with name %s already exists", storage.Name)
 		}
 	}
+
+	if storage.Container == "" {
+		return nil
+	}
+
+	//check if specified container exists or not (if specified)
+	containerExists := false
+	containers, err := ei.GetContainers()
+	if err != nil {
+		return err
+	}
+
+	for _, c := range containers {
+		if c.Name == storage.Container {
+			containerExists = true
+		}
+	}
+	if !containerExists {
+		return fmt.Errorf("specified container %s does not exist", storage.Container)
+	}
 	return nil
 }
 
@@ -56,26 +76,14 @@ func (ei *EnvInfo) GetStorage(name string) (*localConfigProvider.LocalStorage, e
 
 // CreateStorage sets the storage related information in the local configuration
 func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error {
-	// Get all the containers in the devfile
-	containers, err := ei.GetContainers()
-	if err != nil {
-		return err
+	//initialize volume mount and volume container
+	vm := []devfilev1.VolumeMount{
+		{
+			Name: storage.Name,
+			Path: storage.Path,
+		},
 	}
-
-	// Add volumeMount to all containers in the devfile
-	for _, c := range containers {
-		if err := ei.devfileObj.Data.AddVolumeMounts(c.Name, []devfilev1.VolumeMount{
-			{
-				Name: storage.Name,
-				Path: storage.Path,
-			},
-		}); err != nil {
-			return err
-		}
-	}
-
-	// Add volume component to devfile. Think along the lines of a k8s pod spec's volumeMount and volume.
-	err = ei.devfileObj.Data.AddComponents([]devfilev1.Component{{
+	vc := []devfilev1.Component{{
 		Name: storage.Name,
 		ComponentUnion: devfilev1.ComponentUnion{
 			Volume: &devfilev1.VolumeComponent{
@@ -84,9 +92,45 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 				},
 			},
 		},
-	}})
+	}}
+	volumeExists := false
+	// Get all the containers in the devfile
+	containers, err := ei.GetContainers()
 	if err != nil {
 		return err
+	}
+
+	// Add volumeMount to all containers if no container is specified else to specified container(s) in the devfile
+	for _, c := range containers {
+		if storage.Container == "" || (storage.Container != "" && c.Name == storage.Container) {
+			if err := ei.devfileObj.Data.AddVolumeMounts(c.Name, vm); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Get all the components to check if volume component exists
+	components, err := ei.devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	// check if volume component already exists
+	for _, component := range components {
+		if component.Volume != nil && component.Name == storage.Name {
+			volumeExists = true
+		}
+	}
+
+	// Add volume component to devfile. Think along the lines of a k8s pod spec's volumeMount and volume.
+	// Add if volume does not exist, otherwise update
+	if !volumeExists {
+		err = ei.devfileObj.Data.AddComponents(vc)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("volume with name %s already exists", storage.Name)
 	}
 
 	err = ei.devfileObj.WriteYamlDevfile()
@@ -166,20 +210,18 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 		return "", fmt.Errorf("invalid devfile: components.container: required value")
 	}
 
-	// since all container components have same volume mounts, we simply refer to the first container in the list
-	// refer https://github.com/openshift/odo/issues/4105 for addressing "all containers have same volume mounts"
-	paths, err := ei.devfileObj.Data.GetVolumeMountPaths(storageName, containers[0].Name)
-	if err != nil {
-		return "", err
+	// go over all containers
+	for _, c := range containers {
+		// get all volume mount paths in current container
+		pt, err := ei.devfileObj.Data.GetVolumeMountPaths(storageName, c.Name)
+		if err != nil {
+			klog.V(2).Infof("Failed to get volume mount paths for storage %s in container %s: %s", storageName, c.Name, err.Error())
+		}
+		if len(pt) > 0 {
+			return pt[0], nil
+		}
 	}
-
-	// TODO: Below "if" condition needs to go away when https://github.com/openshift/odo/issues/4105 is addressed.
-	if len(paths) > 0 {
-		return paths[0], nil
-	}
-	// Sending empty string will lead to bad UX as user will be shown an empty value for the mount path
-	// that's supposed to be deleted through "odo storage delete" command.
-	// This and the above "if" condition need to go away when we address https://github.com/openshift/odo/issues/4105
+	// TODO: Below "if" storage needs to be mounted on multiple containers, then the return will have to be an array.
 	return "", nil
 }
 
