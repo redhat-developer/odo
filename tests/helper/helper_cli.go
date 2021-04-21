@@ -14,6 +14,7 @@ type CliRunner interface {
 	WaitAndCheckForExistence(resourceType, namespace string, timeoutMinutes int) bool
 	GetServices(namespace string) string
 	CreateRandNamespaceProject() string
+	CreateRandNamespaceProjectOfLength(i int) string
 	DeleteNamespaceProject(projectName string)
 	DeletePod(podName string, projectName string)
 	GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string

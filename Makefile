@@ -9,7 +9,7 @@ COMMON_LDFLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := -mod=vendor -ldflags="$(COMMON_LDFLAGS)"
 CROSS_BUILD_FLAGS := -mod=vendor -ldflags="-s -w -X $(PROJECT)/pkg/segment.writeKey=R1Z79HadJIrphLoeONZy5uqOjusljSwN $(COMMON_LDFLAGS)"
 FILES := odo dist
-TIMEOUT ?= 7200s
+TIMEOUT ?= 14400s
 
 # Env variable TEST_EXEC_NODES is used to pass spec execution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use

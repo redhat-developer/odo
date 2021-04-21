@@ -70,12 +70,12 @@ var _ = Describe("odo url command tests", func() {
 
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
-			secureURL := helper.DetermineRouteURL(commonVar.Context)
-			Expect(secureURL).To(ContainSubstring("https:"))
-			helper.HttpWaitFor(secureURL, "Hello world from node.js!", 20, 1)
+			secureURLs := helper.DetermineRouteURLs(commonVar.Context)
+			Expect(secureURLs).To(ContainElement(ContainSubstring("https")))
+			helper.HttpWaitFor(secureURLs[0], "Hello world from node.js!", 20, 1)
 
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", commonVar.Context)
-			helper.MatchAllInOutput(stdout, []string{secureURL, "Pushed", "true"})
+			helper.MatchAllInOutput(stdout, []string{secureURLs[0], "Pushed", "true"})
 
 			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
 		})

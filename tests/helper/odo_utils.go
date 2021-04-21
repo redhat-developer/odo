@@ -36,6 +36,27 @@ func GetConfigValueWithContext(key string, context string) string {
 	return ""
 }
 
+// GetLocalEnvInfoValueWithContext returns an envInfo value of given key and contextdir or
+// returns an empty string if value is not set
+func GetLocalEnvInfoValueWithContext(key string, context string) string {
+	var stdOut string
+	if context != "" {
+		stdOut = CmdShouldPass("odo", "env", "view", "--context", context)
+	} else {
+		stdOut = CmdShouldPass("odo", "env", "view")
+	}
+	re := regexp.MustCompile(key + `.+`)
+	odoConfigKeyValue := re.FindString(stdOut)
+	if odoConfigKeyValue == "" {
+		return fmt.Sprintf("%s not found", key)
+	}
+	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
+	if strings.Compare(key, trimKeyValue) != 0 {
+		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
+	}
+	return ""
+}
+
 // GetPreferenceValue a global config value of given key or
 // returns an empty string if value is not set
 func GetPreferenceValue(key string) string {
@@ -56,10 +77,19 @@ func GetPreferenceValue(key string) string {
 // where the current component exposes it's service this URL can
 // then be used in order to interact with the deployed service running in Openshift
 func DetermineRouteURL(context string) string {
-	return routeURL(context)
+	urls := DetermineRouteURLs(context)
+	// only return the 1st element if it exists
+	if len(urls) > 0 {
+		return urls[0]
+	}
+
+	return ""
 }
 
-func routeURL(context string) string {
+// DetermineRouteURLs takes context path as argument and returns the URLs
+// where the current component exposes it's service, these URLs can
+// then be used in order to interact with the deployed service running in Openshift
+func DetermineRouteURLs(context string) []string {
 	var stdOut string
 	if context != "" {
 		stdOut = CmdShouldPass("odo", "url", "list", "--context", context)
@@ -67,8 +97,11 @@ func routeURL(context string) string {
 		stdOut = CmdShouldPass("odo", "url", "list")
 	}
 	reURL := regexp.MustCompile(`\s+http(s?)://.\S+`)
-	odoURL := reURL.FindString(stdOut)
-	return strings.TrimSpace(odoURL)
+	odoURLs := reURL.FindAllString(stdOut, -1)
+	for i := range odoURLs {
+		odoURLs[i] = strings.TrimSpace(odoURLs[i])
+	}
+	return odoURLs
 }
 
 // CreateRandProject create new project with random name (10 letters)

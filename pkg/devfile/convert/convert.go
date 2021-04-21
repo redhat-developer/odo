@@ -1,13 +1,18 @@
 package convert
 
 import (
+	"fmt"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -26,10 +31,10 @@ const (
 	runCommandID = "s2i-run"
 	// run command to be used in s2i devfile
 	runCommandS2i = "/opt/odo/bin/run"
-	// container component name to be used in devfile
-	containerName = "s2i-builder"
-	// directory to sync s2i source code
-	sourceMappingS2i = "/tmp/projects"
+	// ContainerName is component name to be used in devfile
+	ContainerName = "s2i-builder"
+	// DefaultSourceMappingS2i is the directory to sync s2i source code
+	DefaultSourceMappingS2i = "/tmp/projects"
 	// devfile version
 	devfileVersion = "2.0.0"
 	// environment variable set for s2i assemble and restart scripts
@@ -46,12 +51,23 @@ func GenerateDevfileYaml(client *occlient.Client, co *config.LocalConfigInfo, co
 	// git, local, binary, none
 	sourceType := co.GetSourceType()
 
+	debugPort := co.GetDebugPort()
+
 	imageStream, imageforDevfile, err := getImageforDevfile(client, componentType)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get image details")
 	}
 
 	envVarList := co.GetEnvVars()
+
+	if debugPort != 0 || debugPort == config.DefaultDebugPort {
+		env := config.EnvVar{
+			Name:  common.EnvDebugPort,
+			Value: fmt.Sprint(debugPort),
+		}
+		envVarList = append(envVarList, env)
+	}
+
 	s2iEnv, err := occlient.GetS2IEnvForDevfile(string(sourceType), envVarList, *imageStream)
 	if err != nil {
 		return err
@@ -163,7 +179,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 		Id: buildCommandID,
 		CommandUnion: devfilev1.CommandUnion{
 			Exec: &devfilev1.ExecCommand{
-				Component:   containerName,
+				Component:   ContainerName,
 				CommandLine: buildCommandS2i,
 				LabeledCommand: devfilev1.LabeledCommand{
 					BaseCommand: devfilev1.BaseCommand{
@@ -181,7 +197,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 		Id: runCommandID,
 		CommandUnion: devfilev1.CommandUnion{
 			Exec: &devfilev1.ExecCommand{
-				Component:   containerName,
+				Component:   ContainerName,
 				CommandLine: runCommandS2i,
 				LabeledCommand: devfilev1.LabeledCommand{
 					BaseCommand: devfilev1.BaseCommand{
@@ -241,6 +257,8 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		volumeMounts = append(volumeMounts, volumeMount)
 	}
 
+	sourceMapping := DefaultSourceMappingS2i
+
 	// Add s2i specific env variable in devfile
 	for _, env := range s2iEnv {
 		env := devfilev1.EnvVar{
@@ -255,7 +273,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	}
 	envs = append(envs, env)
 
-	// convert s2i ports to devfile endpoints
+	// convert s2i urls to devfile endpoints
 	for _, url := range urls {
 
 		endpoint := devfilev1.Endpoint{
@@ -267,14 +285,45 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		endpoints = append(endpoints, endpoint)
 	}
 
+	ports, err := localConfig.GetPorts()
+	if err != nil {
+		return err
+	}
+	// convert s2i ports to devfile endpoints if there are no urls present
+	for _, port := range ports {
+		i_port, err := strconv.Atoi(strings.Split(port, "/")[0])
+		// we dont fail if the ports are malformed
+		if err != nil {
+			continue
+		}
+		hasURL := false
+		for _, url := range urls {
+			if i_port == url.Port {
+				hasURL = true
+			}
+		}
+
+		if !hasURL {
+			// every port is an exposed url for now
+			endpoint := devfilev1.Endpoint{
+				Name:       util.GetURLName(localConfig.GetName(), i_port),
+				TargetPort: i_port,
+				Secure:     false,
+			}
+
+			endpoints = append(endpoints, endpoint)
+		}
+
+	}
+
 	container := devfilev1.Component{
-		Name: containerName,
+		Name: ContainerName,
 		ComponentUnion: devfilev1.ComponentUnion{
 			Container: &devfilev1.ContainerComponent{
 				Container: devfilev1.Container{
 					Image:         s2iImage,
 					MountSources:  &mountSources,
-					SourceMapping: sourceMappingS2i,
+					SourceMapping: sourceMapping,
 					MemoryLimit:   maxMemory,
 					Env:           envs,
 					VolumeMounts:  volumeMounts,

@@ -15,7 +15,7 @@ setup_kubeadmin() {
     fi
     KUBEADMIN_PASSWORD=`cat $KUBEADMIN_PASSWORD_FILE`
     # Login as admin user
-    oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
+    oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD --insecure-skip-tls-verify
 }
 
 setup_kubeconfig() {
@@ -37,4 +37,5 @@ setup_kubeconfig() {
 
 setup_kubeconfig
 setup_kubeadmin
+oc whoami
 echo "Call `scripts/configure-cluster/common/kubeconfigreset.sh` separately if you want to reset the kubeconfig"

@@ -7,9 +7,7 @@ import (
 	"k8s.io/klog"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/envinfo"
 )
 
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
@@ -130,42 +128,6 @@ func getCommandsByGroup(commands []devfilev1.Command, groupType devfilev1.Comman
 	}
 
 	return filteredCommands
-}
-
-// GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
-func GetVolumes(devfileObj devfileParser.DevfileObj) (map[string][]DevfileVolume, error) {
-	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(parsercommon.DevfileOptions{})
-	if err != nil {
-		return nil, err
-	}
-	volumeComponents, err := devfileObj.Data.GetDevfileVolumeComponents(parsercommon.DevfileOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
-	containerNameToVolumes := make(map[string][]DevfileVolume)
-	for _, containerComp := range containerComponents {
-		for _, volumeMount := range containerComp.Container.VolumeMounts {
-			size := DefaultVolumeSize
-
-			// check if there is a volume component name against the container component volume mount name
-			for _, volumeComp := range volumeComponents {
-				if volumeComp.Name == volumeMount.Name && len(volumeComp.Volume.Size) > 0 {
-					// If there is a volume size mentioned in the devfile, use it
-					size = volumeComp.Volume.Size
-				}
-			}
-
-			vol := DevfileVolume{
-				Name:          volumeMount.Name,
-				ContainerPath: envinfo.GetVolumeMountPath(volumeMount),
-				Size:          size,
-			}
-			containerNameToVolumes[containerComp.Name] = append(containerNameToVolumes[containerComp.Name], vol)
-		}
-	}
-	return containerNameToVolumes, nil
 }
 
 // IsRestartRequired checks if restart required for run command

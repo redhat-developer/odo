@@ -18,7 +18,12 @@ export SENDEXCHANGE=${SENDEXCHANGE:-"amqp.ci.exchange.send"}
 # show commands
 set -x
 
+<<<<<<< HEAD
 export JOB_NAME=${JOB_NAME:-"odo-pr-build"}
+=======
+export EXCHANGE="amqp.ci.exchange.send"
+export JOB_NAME="odo-pr-build"
+>>>>>>> 2a0cb0dafdd34b18efb99ccafc626feadbca6ce8
 export REPO_URL="https://github.com/openshift/odo"
 # Extract PR NUMBER from prow job spec, which is injected by prow.
 export TARGET="$(jq .refs.pulls[0].number <<< $(echo $JOB_SPEC))"
@@ -26,9 +31,17 @@ export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
 ##### ci-firewall parameters end
 # The version of CI_FIREWALL TO USE
+<<<<<<< HEAD
 export CI_FIREWALL_VERSION="v0.1.0"
+=======
+export CI_FIREWALL_VERSION="v0.1.1"
+>>>>>>> 2a0cb0dafdd34b18efb99ccafc626feadbca6ce8
 
 echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
+<<<<<<< HEAD
 ./ci-firewall request --sendQName $SENDQUEUE --sendTopic $SENDTOPIC --sendexchange $SENDEXCHANGE --setupscript $SETUPSCRIPT  --runscript $RUNSCRIPT  --timeout 2h15m
+=======
+./ci-firewall request --sendexchange $EXCHANGE --runscript scripts/run_all_tests.sh --timeout 4h00m
+>>>>>>> 2a0cb0dafdd34b18efb99ccafc626feadbca6ce8
