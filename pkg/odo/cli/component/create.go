@@ -767,6 +767,7 @@ func (co *CreateOptions) s2iRun() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) devfileRun() (err error) {
 	var devfileData []byte
+	devfileExist := util.CheckPathExists(DevfilePath)
 	// Use existing devfile directly from --devfile flag
 	if co.devfileMetadata.devfilePath.value != "" {
 		if co.devfileMetadata.devfilePath.protocol == "http(s)" {
@@ -786,7 +787,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 			}
 		}
 	} else {
-		if util.CheckPathExists(DevfilePath) {
+		if devfileExist {
 			// if local devfile already exists read that
 			// odo create command was expected in a directory already containing devfile
 			devfileData, err = ioutil.ReadFile(DevfilePath)
@@ -853,11 +854,17 @@ func (co *CreateOptions) devfileRun() (err error) {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
 
-	// save devfile
+	// save devfile and corresponding resources if possible
 	// use original devfileData to persist original formatting of the devfile file
 	err = ioutil.WriteFile(DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
+	}
+	if co.devfileMetadata.devfilePath.value == "" && !devfileExist && !strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
+		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Generate env file
