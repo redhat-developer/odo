@@ -110,12 +110,19 @@ func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err erro
 			klog.V(4).Infof("Failed to search for odo path. %q", err.Error())
 		}
 		telemetryPath := []string{odoPath, "telemetry", string(data)}
-		process, err := os.StartProcess(odoPath, telemetryPath, &os.ProcAttr{})
-		if err != nil {
-			klog.V(4).Infof("Failed to start the telemetry process. %q", err.Error())
-		}
-		if err = process.Release(); err != nil {
-			klog.V(4).Infof("Failed to release the process. %q", err.Error())
+		if os.Getenv("GOOS") == "windows" {
+			cmd := exec.Command(odoPath, telemetryPath...)
+			if err = cmd.Start(); err != nil {
+				klog.V(4).Infof("Failed to start the telemetry process")
+			}
+		} else {
+			process, err := os.StartProcess(odoPath, telemetryPath, &os.ProcAttr{})
+			if err != nil {
+				klog.V(4).Infof("Failed to start the telemetry process. %q", err.Error())
+			}
+			if err = process.Release(); err != nil {
+				klog.V(4).Infof("Failed to release the process. %q", err.Error())
+			}
 		}
 	}
 }
