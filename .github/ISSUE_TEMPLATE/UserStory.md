@@ -13,7 +13,6 @@ As a ... I want to ... So that ...
 - [ ] It should ....
 
 ## Links 
-- Feature Request: 
-- Related issue: 
+- Related Epic (mandatory): 
 
 /kind user-story
