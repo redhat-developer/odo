@@ -83,7 +83,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
-			Expect(stdOut).To(ContainSubstring("Service \"example\" was created"))
+			Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
 
 			// read the devfile.yaml to check if service definition was rightly inserted
 			devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
@@ -92,7 +92,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "example"}
 			helper.MatchAllInOutput(string(content), matchInOutput)
 
-			// now verify if the pods for the operator have started
+			// now create the service on cluster and verify if the pods for the operator have started
+			helper.CmdShouldPass("odo", "push")
 			pods := oc.GetAllPodsInNs(commonVar.Project)
 			// Look for pod with example name because that's the name etcd will give to the pods.
 			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
@@ -126,6 +127,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push")
 
 			// now verify if the pods for the operator have started
 			pods := oc.GetAllPodsInNs(commonVar.Project)
@@ -217,6 +219,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			// now create operator backed service
 			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push")
 
 			// now verify if the pods for the operator have started
 			pods := oc.GetAllPodsInNs(commonVar.Project)
@@ -250,6 +253,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			// now create operator backed service
 			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push")
 
 			// Attempting to create service with same name should fail
 			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project)
@@ -342,6 +346,7 @@ spec:
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push")
 
 			// now verify if the pods for the operator have started
 			pods := oc.GetAllPodsInNs(commonVar.Project)
@@ -426,6 +431,7 @@ spec:
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push")
 
 			// now verify if the pods for the operator have started
 			pods := oc.GetAllPodsInNs(commonVar.Project)
@@ -458,40 +464,6 @@ spec:
 			// verify that sbr is deleted
 			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
-		})
-
-		It("should fail if we delete a link outside of odo (using oc)", func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
-
-			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", componentName)
-			helper.CmdShouldPass("odo", "push")
-
-			// start the Operator backed service first
-			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
-
-			// now verify if the pods for the operator have started
-			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", commonVar.Project)
-			// Look for pod with example name because that's the name etcd will give to the pods.
-			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
-
-			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "Running")
-			})
-
-			stdOut := helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
-			Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
-			helper.CmdShouldPass("odo", "push")
-
-			sbrName := strings.Join([]string{componentName, "etcdcluster", "example"}, "-")
-			helper.CmdShouldPass("oc", "delete", fmt.Sprintf("ServiceBinding/%s", sbrName))
-			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
-			helper.MatchAllInOutput(stdOut, []string{"component's link with", "has been deleted outside odo"})
 		})
 	})
 })
