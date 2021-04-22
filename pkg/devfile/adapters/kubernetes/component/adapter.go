@@ -483,7 +483,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
+		deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
 		if err != nil {
 			return err
 		}
@@ -517,7 +517,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			}
 		}
 	} else {
-		deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
+		deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
 		if err != nil {
 			return err
 		}

@@ -20,6 +20,10 @@ import (
 	"k8s.io/klog"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 // constants for deployments
 const (
 	DeploymentKind       = "Deployment"
@@ -186,22 +190,22 @@ See below for a list of failed events that occured more than %d times during dep
 	}
 }
 
-// CreateDeployment creates a deployment based on the given deployment spec
-func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{FieldManager: "odo"})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Deployment %s", deploy.Name)
-	}
-	return deployment, nil
+func resourceAsJson(resource interface{}) string {
+	data, _ := json.MarshalIndent(resource, " ", " ")
+	return string(data)
 }
 
-// UpdateDeployment updates a deployment based on the given deployment spec
-func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
+// ApplyDeployment updates a deployment based on the given deployment spec
+func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	data, err := json.Marshal(deploy)
+
+	klog.V(5).Infoln("Applying Deployment via server-side apply:")
+	klog.V(5).Infoln(resourceAsJson(deploy))
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to marshal deployment")
 	}
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: "odo"})
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: "odo", Force: boolPtr(true)})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
@@ -291,7 +295,7 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 
-	return c.patchDeployment(componentName, deploymentPatchProvider)
+	return c.jsonPatchDeployment(componentName, deploymentPatchProvider)
 }
 
 // UnlinkSecret unlinks a secret to the Deployment of a component
@@ -313,14 +317,14 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
 	}
 
-	return c.patchDeployment(componentName, deploymentPatchProvider)
+	return c.jsonPatchDeployment(componentName, deploymentPatchProvider)
 }
 
 // this function will look up the appropriate DC, and execute the specified patch
 // the whole point of using patch is to avoid race conditions where we try to update
 // deployment while it's being simultaneously updated from another source (for example Kubernetes itself)
 // this will result in the triggering of a redeployment
-func (c *Client) patchDeployment(deploymentName string, deploymentPatchProvider deploymentPatchProvider) error {
+func (c *Client) jsonPatchDeployment(deploymentName string, deploymentPatchProvider deploymentPatchProvider) error {
 
 	deployment, err := c.GetDeploymentByName(deploymentName)
 	if err != nil {

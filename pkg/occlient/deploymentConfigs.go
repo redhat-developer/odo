@@ -19,6 +19,10 @@ import (
 	"k8s.io/klog"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 // IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
 func (c *Client) IsDeploymentConfigSupported() (bool, error) {
 	const Group = "apps.openshift.io"
@@ -95,7 +99,7 @@ func (c *Client) patchDC(dcName string, dcPatchProvider dcPatchProvider) error {
 		}
 
 		// patch the DeploymentConfig with the secret
-		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(context.TODO(), dcName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: "odo"})
+		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(context.TODO(), dcName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: "odo", Force: boolPtr(true)})
 		if err != nil {
 			return errors.Wrapf(err, "DeploymentConfig not patched %s", dc.Name)
 		}

@@ -252,7 +252,7 @@ func TestUpdateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			updatedDeployment, err := fkclient.UpdateDeployment(*deploy)
+			updatedDeployment, err := fkclient.ApplyDeployment(*deploy)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
