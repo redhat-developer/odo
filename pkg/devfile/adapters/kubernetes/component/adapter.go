@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/odo/pkg/service"
+
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -170,6 +172,26 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
+	}
+
+	// fetch the "kubernetes inlined components" to create them on cluster
+	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
+	k8sComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
+	})
+	if err != nil {
+		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
+	}
+	// create the Kubernetes objects from the manifest
+	services, err := service.CreateServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents)
+	if err != nil {
+		return errors.Wrap(err, "failed to create service(s) associated with the component")
+	}
+
+	if len(services) == 1 {
+		log.Infof("Created service %q on the cluster; refer %q to know how to link it to the component", services[0], "odo link -h")
+	} else if len(services) > 1 {
+		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(services, ", "), "odo link -h")
 	}
 
 	deployment, err := a.Client.GetKubeClient().WaitForDeploymentRollout(a.ComponentName)
@@ -376,7 +398,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	if len(containers) == 0 {
-		return fmt.Errorf("No valid components found in the devfile")
+		return fmt.Errorf("no valid components found in the devfile")
 	}
 
 	// Add the project volume before generating init containers
@@ -471,7 +493,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		ObjectMeta:     objectMeta,
 		SelectorLabels: selectorLabels,
 	}
-	service, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
+	svc, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}
@@ -488,21 +510,21 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		ownerReference := generator.GetOwnerReference(deployment)
-		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
+		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
-			if len(service.Spec.Ports) > 0 {
-				_, err = a.Client.GetKubeClient().CreateService(*service)
+			if len(svc.Spec.Ports) > 0 {
+				_, err = a.Client.GetKubeClient().CreateService(*svc)
 				if err != nil {
 					return err
 				}
 				klog.V(2).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
-			if len(service.Spec.Ports) > 0 {
-				service.Spec.ClusterIP = oldSvc.Spec.ClusterIP
-				service.ResourceVersion = oldSvc.GetResourceVersion()
-				_, err = a.Client.GetKubeClient().UpdateService(*service)
+			if len(svc.Spec.Ports) > 0 {
+				svc.Spec.ClusterIP = oldSvc.Spec.ClusterIP
+				svc.ResourceVersion = oldSvc.GetResourceVersion()
+				_, err = a.Client.GetKubeClient().UpdateService(*svc)
 				if err != nil {
 					return err
 				}
@@ -521,9 +543,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
 		ownerReference := generator.GetOwnerReference(deployment)
-		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
-		if len(service.Spec.Ports) > 0 {
-			_, err = a.Client.GetKubeClient().CreateService(*service)
+		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
+		if len(svc.Spec.Ports) > 0 {
+			_, err = a.Client.GetKubeClient().CreateService(*svc)
 			if err != nil {
 				return err
 			}
@@ -549,7 +571,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 		}
 	}
 
-	return "", "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // Delete deletes the component
