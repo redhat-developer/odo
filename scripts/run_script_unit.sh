@@ -9,7 +9,7 @@ shout "Running unit tests"
 
 # Run unit tests
 if [[ $BASE_OS == "windows" ]]; then
-  GOFLAGS='-mod=vendor' test-windows
+  GOFLAGS='-mod=vendor' make test-windows
 else
   GOFLAGS='-mod=vendor' make test
 fi
