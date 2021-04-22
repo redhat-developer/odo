@@ -9,7 +9,7 @@ shout "Running unit tests"
 
 # Run unit tests
 if [[ $BASE_OS == "windows" ]]; then
-  GOFLAGS='-mod=vendor' powershell -Command "make test"
+  GOFLAGS='-mod=vendor' test-windows
 else
   GOFLAGS='-mod=vendor' make test
 fi

@@ -21,6 +21,7 @@ export KUBECONFIG="`pwd`/config"
 export ARTIFACT_DIR=${ARTIFACT_DIR:-"`pwd`/artifacts"}
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 export WORKDIR=${WORKDIR:-"`pwd`"}
+export GOCACHE=`pwd`/.gocache && mkdir $GOCACHE
 
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
@@ -33,18 +34,20 @@ if [[ $BASE_OS == "linux"  ]]; then
     set -x
     tar -C $GOBIN -xvf ./oc.tar && rm -rf ./oc.tar
 else
-    set +x
-    curl --connect-timeout 210 --max-time 2048 -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
-    set -x
     if [[ $BASE_OS == "windows" ]]; then
+        set +x
+        curl --connect-timeout 210 --max-time 2048 -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
+        set -x
         GOBIN_TEMP=$GOBIN
         GOBIN="$(cygpath -pw $GOBIN)"
         CURRDIR="$(cygpath -pw $WORKDIR)"
+        GOCACHE="$(cygpath -pw $GOCACHE)"
         powershell -Command "Expand-Archive -Path $CURRDIR\oc.zip  -DestinationPath $GOBIN"
         chmod +x $GOBIN_TEMP/*
     fi
     if [[ $BASE_OS == "mac" ]]; then
-        unzip ./oc.zip -d $GOBIN && rm -rf ./oc.zip && chmod +x $GOBIN/oc
+        # Skiping download of oc binary for test due to bandwidth issue, binary from cluster is stored in ~/ocforodo dir in macmini 
+        unzip ~/ocforodo/oc.zip -d $GOBIN && chmod +x $GOBIN/oc
         PATH="$PATH:/usr/local/bin:/usr/local/go/bin"
     fi
 fi
