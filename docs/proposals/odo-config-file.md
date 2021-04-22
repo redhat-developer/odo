@@ -188,7 +188,7 @@ odo utils config [create|update|delete|list|add|remove|get|describe] [KEY] [VALU
 In order to create configuration, we should call odo with the appropriate key and value or list of values to apply, as well as the scope for this configuration to be saved (local or global).
 
 ```bash
-odo utils config set memory 2Gi               # Set's component memory to 2 GB local config
+odo utils config set memory 2Gi               # Sets component memory to 2 GB local config
 odo utils config add odoignore .odo --local   # Adds a value to odoignore list local config
 odo utils config add odoignore .odo --global  # Adds a value to odoignore list global config
 ```
@@ -235,8 +235,8 @@ The verbs that add configuration are:
 When a user wants to update specific configuration.
 
 ```bash
-odo utils config delete memory --local                # Removes configuration for memory
-odo utils config remove odoignore .git --local        # Removes .git from the list of values for odoignore
+odo utils config delete memory --local                # Removes configuration for memory
+odo utils config remove odoignore .git --local        # Removes .git from the list of values for odoignore
 ```
 
 * *delete*: Deletes an entire configuration key with all it's values (in case of a list). If the key does not exist, this command should error with the corresponding message.

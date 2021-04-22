@@ -43,8 +43,11 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 
 		It("should wait for the pods to terminate while using --wait flag to delete", func() {
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			helper.CmdShouldPass("odo", "delete", "--project", commonVar.Project, "-f", "--wait")
+			// This check will fail if the wait is longer, this check should happen immediately after the command is run.
 			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)).To(BeEmpty())
+			Expect(true).ToNot(BeFalse())
 		})
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
@@ -113,7 +116,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 	})
 
-	Context("When devfile exists not in user's working directory and user specify the devfile path via --devfile", func() {
+	Context("When devfile does not exist in user's working directory and user specifies the devfile path via --devfile", func() {
 		It("should successfully delete the devfile as its not present in root on delete", func() {
 			newContext := path.Join(commonVar.Context, "newContext")
 			devfilePath := filepath.Join(newContext, devfile)
@@ -156,8 +159,13 @@ var _ = Describe("odo devfile delete command tests", func() {
 			firstContext = commonVar.Context
 			firstComponent = componentName
 			setup(firstComponent, firstContext)
+			// we are passing secondContext to --context,
+			// hence it is required that we be in firstContext when all the commands are run.
+			cwd, _ := os.Getwd()
+			Expect(cwd).To(BeEquivalentTo(firstContext))
 		})
 		JustAfterEach(func() {
+			// Delete any pushed component and related config files in both the directories
 			for _, dir := range []string{secondContext, firstContext} {
 				helper.Chdir(dir)
 				helper.CmdShouldPass("odo", "delete", "-af")
@@ -179,10 +187,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			files := helper.ListFilesInDir(secondContext)
 			Expect(files).To(Not(ContainElement(".odo")))
+			// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4135 is fixed
 			Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
 		It("should delete the component when deleting with component name and --project flag", func() {
 			output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f")
+			// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4451 is fixed
 			Expect(output).To(ContainSubstring(secondComponent))
 			Expect(output).ToNot(ContainSubstring(firstComponent))
 			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(secondComponent, commonVar.Project)).To(BeEmpty())
