@@ -169,22 +169,18 @@ var _ = Describe("odo devfile delete command tests", func() {
 			// Delete any pushed component and related config files in both the directories
 			for _, dir := range []string{secondContext, firstContext} {
 				helper.Chdir(dir)
-				helper.CmdShouldPass("odo", "delete", "-af")
+				helper.CmdRunner("odo", "delete", "-f")
 			}
 		})
 		It("should delete the context directory's component with --context flag", func() {
 			output := helper.CmdShouldPass("odo", "delete", "-f", "--context", secondContext)
 			Expect(output).To(ContainSubstring(secondComponent))
 			Expect(output).ToNot(ContainSubstring(firstComponent))
-			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(secondComponent, commonVar.Project)).To(BeEmpty())
-			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(firstComponent, commonVar.Project)).ToNot(BeEmpty())
 		})
 		It("should delete all the config files and component with -a and --context flag of the context directory", func() {
 			output := helper.CmdShouldPass("odo", "delete", "-af", "--context", secondContext)
 			Expect(output).To(ContainSubstring(secondComponent))
 			Expect(output).ToNot(ContainSubstring(firstComponent))
-			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(secondComponent, commonVar.Project)).To(BeEmpty())
-			Expect(commonVar.CliRunner.GetRunningPodNameByComponent(firstComponent, commonVar.Project)).ToNot(BeEmpty())
 
 			files := helper.ListFilesInDir(secondContext)
 			Expect(files).To(Not(ContainElement(".odo")))
@@ -196,8 +192,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 		//	output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f")
 		//	Expect(output).To(ContainSubstring(secondComponent))
 		//	Expect(output).ToNot(ContainSubstring(firstComponent))
-		//	Expect(commonVar.CliRunner.GetRunningPodNameByComponent(secondComponent, commonVar.Project)).To(BeEmpty())
-		//	Expect(commonVar.CliRunner.GetRunningPodNameByComponent(firstComponent, commonVar.Project)).ToNot(BeEmpty())
 		//})
 	})
 
