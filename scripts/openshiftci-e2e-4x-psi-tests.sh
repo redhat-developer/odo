@@ -27,4 +27,4 @@ export CI_FIREWALL_VERSION="v0.1.1"
 echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/valpha/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
-./ci-firewall request --sendexchange $EXCHANGE --runscript scripts/run_all_tests.sh --timeout 4h00m
+./ci-firewall request --sendexchange $EXCHANGE --runscript scripts/run_all_tests.sh --timeout 4h00m --mainbranch main
