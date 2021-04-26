@@ -55,17 +55,17 @@ oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify 
 set -x
 
 # # Integration tests
-# shout "Running integration Tests"
+shout "Running integration Tests"
 # make test-operator-hub || error=true
 # make test-integration || error=true
-# make test-integration-devfile || error=true
+make test-integration-devfile || error=true
 # make test-cmd-login-logout || error=true
 # make test-cmd-project || error=true
 
 
 # E2e tests
-shout "Running e2e tests"
-make test-e2e-all || error=true
+# shout "Running e2e tests"
+# make test-e2e-all || error=true
 # Fail the build if there is any error while test execution
 if [ $error ]; then 
     exit -1
