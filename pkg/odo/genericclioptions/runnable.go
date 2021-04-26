@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -110,7 +111,7 @@ func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err erro
 			klog.V(4).Infof("Failed to search for odo path. %q", err1.Error())
 		}
 		telemetryPath := []string{odoPath, "telemetry", string(data)}
-		if os.Getenv("GOOS") == "windows" {
+		if runtime.GOOS == "windows" {
 			command := exec.Command(odoPath, telemetryPath...)
 			if err1 = command.Start(); err1 != nil {
 				klog.V(4).Infof("Failed to start the telemetry process")

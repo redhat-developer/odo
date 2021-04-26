@@ -192,7 +192,7 @@ func TestClientUploadWithConsent(t *testing.T) {
 							t.Error("Odo version does not match")
 						}
 					} else {
-						t.Errorf("Missing Identify or Track information.\nIdentify: %v\nTrack:%v", s.Batch[0].Type, s.Batch[0].Type)
+						t.Errorf("Missing Identify or Track information. Available info: %v", s.Batch[0].Type)
 					}
 				}
 			}

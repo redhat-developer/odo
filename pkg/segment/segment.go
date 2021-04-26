@@ -128,7 +128,7 @@ func getUserIdentity(client *Client, telemetryFilePath string) (string, error) {
 	var id []byte
 
 	// Get-or-Create the '$HOME/.redhat' directory
-	if err := os.MkdirAll(filepath.Dir(telemetryFilePath), 0750); err != nil {
+	if err := os.MkdirAll(filepath.Dir(telemetryFilePath), os.ModePerm); err != nil {
 		return "", err
 	}
 
