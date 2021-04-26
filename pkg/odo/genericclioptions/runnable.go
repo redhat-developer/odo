@@ -101,27 +101,27 @@ func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err erro
 			uploadData.Properties.Error = segment.SetError(err)
 			uploadData.Properties.ErrorType = segment.ErrorType(err)
 		}
-		data, err := json.Marshal(uploadData)
-		if err != nil {
-			klog.V(4).Infof("Failed to marshall telemetry data. %q", err.Error())
+		data, err1 := json.Marshal(uploadData)
+		if err1 != nil {
+			klog.V(4).Infof("Failed to marshall telemetry data. %q", err1.Error())
 		}
-		odoPath, err := exec.LookPath("odo")
-		if err != nil {
-			klog.V(4).Infof("Failed to search for odo path. %q", err.Error())
+		odoPath, err1 := exec.LookPath("odo")
+		if err1 != nil {
+			klog.V(4).Infof("Failed to search for odo path. %q", err1.Error())
 		}
 		telemetryPath := []string{odoPath, "telemetry", string(data)}
 		if os.Getenv("GOOS") == "windows" {
-			cmd := exec.Command(odoPath, telemetryPath...)
-			if err = cmd.Start(); err != nil {
+			command := exec.Command(odoPath, telemetryPath...)
+			if err1 = command.Start(); err1 != nil {
 				klog.V(4).Infof("Failed to start the telemetry process")
 			}
 		} else {
-			process, err := os.StartProcess(odoPath, telemetryPath, &os.ProcAttr{})
-			if err != nil {
-				klog.V(4).Infof("Failed to start the telemetry process. %q", err.Error())
+			process, err1 := os.StartProcess(odoPath, telemetryPath, &os.ProcAttr{})
+			if err1 != nil {
+				klog.V(4).Infof("Failed to start the telemetry process. %q", err1.Error())
 			}
-			if err = process.Release(); err != nil {
-				klog.V(4).Infof("Failed to release the process. %q", err.Error())
+			if err1 = process.Release(); err1 != nil {
+				klog.V(4).Infof("Failed to release the process. %q", err1.Error())
 			}
 		}
 	}

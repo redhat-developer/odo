@@ -15,10 +15,6 @@ import (
 
 const RecommendedCommandName = "telemetry"
 
-var (
-	telemetryExample = `odo telemetry '{"event": "odo list", "properties": {"duration(ms)": 18, "error": "Get \"https://kubernetes.docker.internal:6443/apis/apps.openshift.io/v1?timeout=32s\": dial tcp 127.0.0.1:6443: connect: connection refused", "errortype": "*net.OpError", "success": false, "tty": true, "version": "odo v2.0.8 (791738b24)"}}''`
-)
-
 type TelemetryOptions struct {
 	telemetryData segment.TelemetryData
 }
@@ -67,7 +63,6 @@ func NewCmdTelemetry(name string) *cobra.Command {
 	telemetryCmd := &cobra.Command{
 		Use:                    name,
 		Short:                  "Collect and upload usage data.",
-		Example:                telemetryExample,
 		BashCompletionFunction: "",
 		Hidden:                 true,
 		Annotations:            map[string]string{},
