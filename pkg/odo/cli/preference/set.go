@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/odo/pkg/segment"
+
 	"github.com/openshift/odo/pkg/log"
 
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -50,7 +52,7 @@ func (o *SetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *SetOptions) Run() (err error) {
+func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
 
 	cfg, err := preference.New()
 
@@ -69,6 +71,7 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	err = cfg.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	segment.SetConfigurationKey(cmd.Context(), strings.ToLower(o.paramName))
 	if err != nil {
 		return err
 	}

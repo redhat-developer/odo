@@ -39,7 +39,7 @@ func (o *LogoutOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo logout command
-func (o *LogoutOptions) Run() (err error) {
+func (o *LogoutOptions) Run(cmd *cobra.Command) (err error) {
 	return o.Client.RunLogout(os.Stdout)
 }
 

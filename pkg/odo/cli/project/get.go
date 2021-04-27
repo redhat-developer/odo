@@ -52,7 +52,7 @@ func (pgo *ProjectGetOptions) Validate() (err error) {
 }
 
 // Run runs the project get command
-func (pgo *ProjectGetOptions) Run() (err error) {
+func (pgo *ProjectGetOptions) Run(cmd *cobra.Command) (err error) {
 	currentProject := pgo.Context.Project
 
 	if pgo.projectShortFlag {

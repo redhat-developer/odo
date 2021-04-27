@@ -137,7 +137,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service create command
-func (o *CreateOptions) Run() (err error) {
+func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	err = o.Backend.RunServiceCreate(o)
 	if err != nil {
 		return err

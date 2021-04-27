@@ -72,7 +72,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *DeleteOptions) Run() (err error) {
+func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		err = application.Delete(o.Client, o.appName)
 		if err != nil {

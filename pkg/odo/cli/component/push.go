@@ -249,7 +249,7 @@ func (po *PushOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (po *PushOptions) Run() (err error) {
+func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
 		// Return Devfile push

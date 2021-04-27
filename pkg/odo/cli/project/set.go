@@ -65,7 +65,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 }
 
 // Run runs the project set command
-func (pso *ProjectSetOptions) Run() (err error) {
+func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
 	current := pso.Project
 	err = project.SetCurrent(pso.Context, pso.projectName)
 	if err != nil {
