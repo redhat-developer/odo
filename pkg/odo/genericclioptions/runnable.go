@@ -87,6 +87,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 }
 
 // startTelemetry uploads the data to segment and logs the error
+// TODO: move this function to a more suitable place, preferably pkg/segment
 func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err error, startTime time.Time) {
 	if segment.IsTelemetryEnabled(cfg) && !strings.Contains(cmd.CommandPath(), "telemetry") {
 		uploadData := &segment.TelemetryData{
@@ -110,18 +111,13 @@ func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err erro
 		if err1 != nil {
 			klog.V(4).Infof("Failed to search for odo path. %q", err1.Error())
 		}
-		telemetryPath := []string{odoPath, "telemetry", string(data)}
-		if runtime.GOOS == "windows" {
-			command := exec.Command(odoPath, telemetryPath...)
-			if err1 = command.Start(); err1 != nil {
-				klog.V(4).Infof("Failed to start the telemetry process")
-			}
-		} else {
-			process, err1 := os.StartProcess(odoPath, telemetryPath, &os.ProcAttr{})
-			if err1 != nil {
-				klog.V(4).Infof("Failed to start the telemetry process. %q", err1.Error())
-			}
-			if err1 = process.Release(); err1 != nil {
+		telemetryPath := []string{"telemetry", string(data)}
+		command := exec.Command(odoPath, telemetryPath...)
+		if err1 = command.Start(); err1 != nil {
+			klog.V(4).Infof("Failed to start the telemetry process. Error: %q", err1.Error())
+		}
+		if runtime.GOOS != "windows" {
+			if err1 = command.Process.Release(); err1 != nil {
 				klog.V(4).Infof("Failed to release the process. %q", err1.Error())
 			}
 		}
