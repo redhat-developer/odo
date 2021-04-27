@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	scontext "github.com/openshift/odo/pkg/segment/context"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"

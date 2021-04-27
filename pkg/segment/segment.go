@@ -207,6 +207,9 @@ func RunningInTerminal() bool {
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
 func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
+	if cfg == nil {
+		cfg, _ = preference.New()
+	}
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))

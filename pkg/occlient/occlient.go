@@ -1222,6 +1222,14 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	return &info, nil
 }
 
+func (c *Client) IsOpenshift4() bool {
+	resource, err := c.GetKubeClient().IsResourceSupported("config.openshift.io", "v1", "clusterversions")
+	if err != nil {
+		return false
+	}
+	return resource
+}
+
 func (c *Client) GetKubeClient() *kclient.Client {
 	return c.kubeClient
 }
