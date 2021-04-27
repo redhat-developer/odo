@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift/odo/pkg/segment"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -905,8 +907,8 @@ func (co *CreateOptions) devfileRun() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (co *CreateOptions) Run() (err error) {
-
+func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+	segment.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
 		err := co.devfileRun()

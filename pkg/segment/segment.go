@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -10,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/pborman/uuid"
@@ -30,12 +32,13 @@ const Sanitizer = "XXXX"
 const DisableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
 
 type TelemetryProperties struct {
-	Duration  int64  `json:"duration"`
-	Error     string `json:"error"`
-	ErrorType string `json:"errortype"`
-	Success   bool   `json:"success"`
-	Tty       bool   `json:"tty"`
-	Version   string `json:"version"`
+	Duration      int64                  `json:"duration"`
+	Error         string                 `json:"error"`
+	ErrorType     string                 `json:"errortype"`
+	Success       bool                   `json:"success"`
+	Tty           bool                   `json:"tty"`
+	Version       string                 `json:"version"`
+	CmdProperties map[string]interface{} `json:"cmdProperties"`
 }
 
 type TelemetryData struct {
@@ -101,6 +104,10 @@ func (c *Client) Upload(data TelemetryData) error {
 
 	// add information to the data
 	properties := analytics.NewProperties()
+	for k, v := range data.Properties.CmdProperties {
+		properties = properties.Set(k, v)
+	}
+
 	properties = properties.Set("version", data.Properties.Version).
 		Set("success", data.Properties.Success).
 		Set("duration(ms)", data.Properties.Duration).
@@ -210,4 +217,61 @@ func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
 		return true
 	}
 	return false
+}
+
+type contextKey struct{}
+
+var key = contextKey{}
+
+type Properties struct {
+	lock    sync.Mutex
+	storage map[string]interface{}
+}
+
+func (p *Properties) set(name string, value interface{}) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.storage[name] = value
+}
+
+func (p *Properties) values() map[string]interface{} {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	ret := make(map[string]interface{})
+	for k, v := range p.storage {
+		ret[k] = v
+	}
+	return ret
+}
+
+func NewContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, key, &Properties{storage: make(map[string]interface{})})
+}
+func propertiesFromContext(ctx context.Context) *Properties {
+	value := ctx.Value(key)
+	if cast, ok := value.(*Properties); ok {
+		return cast
+	}
+	return nil
+}
+func setContextProperty(ctx context.Context, key string, value interface{}) {
+	properties := propertiesFromContext(ctx)
+	if properties != nil {
+		properties.set(key, value)
+	}
+}
+func SetConfigurationKey(ctx context.Context, value string) {
+	setContextProperty(ctx, "key", value)
+}
+
+func SetComponentType(ctx context.Context, value string) {
+	setContextProperty(ctx, "componentType", value)
+}
+
+func GetContextProperties(ctx context.Context) map[string]interface{} {
+	properties := propertiesFromContext(ctx)
+	if properties == nil {
+		return make(map[string]interface{})
+	}
+	return properties.values()
 }

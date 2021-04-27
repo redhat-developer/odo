@@ -28,7 +28,7 @@ import (
 type Runnable interface {
 	Complete(name string, cmd *cobra.Command, args []string) error
 	Validate() error
-	Run() error
+	Run(cmd *cobra.Command) error
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
@@ -80,22 +80,23 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	util.LogErrorAndExit(err, "")
 
-	err = o.Run()
+	err = o.Run(cmd)
 	startTelemetry(cfg, cmd, err, startTime)
 	util.LogErrorAndExit(err, "")
 }
 
-// startTelemetry uploads the data to segment and logs the error
+// startTelemetry uploads the data to segment if user has consented to usage data collection and the command is not telemetry
 // TODO: move this function to a more suitable place, preferably pkg/segment
 func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err error, startTime time.Time) {
 	if segment.IsTelemetryEnabled(cfg) && !strings.Contains(cmd.CommandPath(), "telemetry") {
 		uploadData := &segment.TelemetryData{
 			Event: cmd.CommandPath(),
 			Properties: segment.TelemetryProperties{
-				Duration: time.Since(startTime).Milliseconds(),
-				Success:  err == nil,
-				Tty:      segment.RunningInTerminal(),
-				Version:  fmt.Sprintf("odo %v (%v)", version.VERSION, version.GITCOMMIT),
+				Duration:      time.Since(startTime).Milliseconds(),
+				Success:       err == nil,
+				Tty:           segment.RunningInTerminal(),
+				Version:       fmt.Sprintf("odo %v (%v)", version.VERSION, version.GITCOMMIT),
+				CmdProperties: segment.GetContextProperties(cmd.Context()),
 			},
 		}
 		if err != nil {

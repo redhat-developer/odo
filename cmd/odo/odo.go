@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/segment"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -65,7 +67,7 @@ func main() {
 		updateInfo := make(chan string)
 		go version.GetLatestReleaseInfo(updateInfo)
 
-		util.LogErrorAndExit(root.Execute(), "")
+		util.LogErrorAndExit(root.ExecuteContext(segment.NewContext(context.Background())), "")
 		select {
 		case message := <-updateInfo:
 			log.Italic(message)
@@ -73,7 +75,7 @@ func main() {
 			klog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
-		util.LogErrorAndExit(root.Execute(), "")
+		util.LogErrorAndExit(root.ExecuteContext(segment.NewContext(context.Background())), "")
 	}
 }
 
