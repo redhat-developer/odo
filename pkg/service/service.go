@@ -797,8 +797,25 @@ func (d *DynamicCRD) GetServiceNameFromCRD() (string, error) {
 	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
 }
 
+// AddComponentLabelsToCRD appends odo labels to CRD if "labels" field already exists in metadata; else creates labels
+func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
+	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
+
+	for k := range metaMap {
+		if k == "labels" {
+			metaLabels := metaMap["labels"].(map[string]interface{})
+			for i := range labels {
+				metaLabels[i] = labels[i]
+			}
+			return
+		}
+	}
+	// if metadata doesn't have 'labels' field, we set it up
+	metaMap["labels"] = labels
+}
+
 // CreateServiceFromKubernetesInlineComponents creates service(s) from Kubernetes Inlined component in a devfile
-func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component) ([]string, error) {
+func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) ([]string, error) {
 	if len(k8sComponents) == 0 {
 		// if there's no Kubernetes Inlined component, there's nothing to do.
 		return []string{}, nil
@@ -832,6 +849,9 @@ func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComp
 				break
 			}
 		}
+
+		// add labels to the CRD before creation
+		d.AddComponentLabelsToCRD(labels)
 
 		// create the service on cluster
 		err = client.CreateDynamicResource(d.OriginalCRD, group, version, resource)

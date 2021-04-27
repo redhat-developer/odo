@@ -182,8 +182,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}
+	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
 	// create the Kubernetes objects from the manifest
-	services, err := service.CreateServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents)
+	services, err := service.CreateServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}
