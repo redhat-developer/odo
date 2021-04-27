@@ -157,7 +157,11 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 
 		err = json.Unmarshal(jsonBytes, &devfileIndex)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
+			if err := util.CleanDefaultHTTPCacheDir(); err != nil {
+				log.Warning("Error while cleaning up cache dir.")
+			}
+			// should we be worried about infinite loop?
+			return getRegistryDevfiles(registry)
 		}
 	} else {
 		// OCI-based registry
