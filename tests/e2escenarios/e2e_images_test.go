@@ -93,6 +93,16 @@ var _ = Describe("odo supported images e2e tests", func() {
 			oc.ImportImageFromRegistry("registry.access.redhat.com", "rhoar-nodejs/nodejs-10:latest", "nodejs:latest", commonVar.Project)
 			verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
+
+		It("Should be able to verify the nodejs-10-centos7 image", func() {
+			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-10-centos7:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("centos7/nodejs-10-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+		})
+
+		It("Should be able to verify the nodejs-12-centos7 image", func() {
+			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-12-centos7:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("centos7/nodejs-12-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
+		})
 	})
 
 	Context("odo supported images deployment", func() {
@@ -104,16 +114,6 @@ var _ = Describe("odo supported images e2e tests", func() {
 		It("Should be able to verify the nodejs-10-rhel7 image", func() {
 			oc.ImportImageFromRegistry("registry.access.redhat.com", "rhscl/nodejs-10-rhel7:latest", "nodejs:latest", commonVar.Project)
 			verifySupportedImage("rhscl/nodejs-10-rhel7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
-		})
-
-		It("Should be able to verify the nodejs-10-centos7 image", func() {
-			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-10-centos7:latest", "nodejs:latest", commonVar.Project)
-			verifySupportedImage("centos7/nodejs-10-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
-		})
-
-		It("Should be able to verify the nodejs-12-centos7 image", func() {
-			oc.ImportImageFromRegistry("quay.io", "centos7/nodejs-12-centos7:latest", "nodejs:latest", commonVar.Project)
-			verifySupportedImage("centos7/nodejs-12-centos7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 	})
 
