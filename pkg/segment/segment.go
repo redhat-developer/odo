@@ -247,6 +247,7 @@ func (p *Properties) values() map[string]interface{} {
 func NewContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, key, &Properties{storage: make(map[string]interface{})})
 }
+
 func propertiesFromContext(ctx context.Context) *Properties {
 	value := ctx.Value(key)
 	if cast, ok := value.(*Properties); ok {
@@ -254,14 +255,12 @@ func propertiesFromContext(ctx context.Context) *Properties {
 	}
 	return nil
 }
+
 func setContextProperty(ctx context.Context, key string, value interface{}) {
 	properties := propertiesFromContext(ctx)
 	if properties != nil {
 		properties.set(key, value)
 	}
-}
-func SetConfigurationKey(ctx context.Context, value string) {
-	setContextProperty(ctx, "key", value)
 }
 
 func SetComponentType(ctx context.Context, value string) {
