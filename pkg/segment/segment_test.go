@@ -74,16 +74,7 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	defer c.Close()
 
 	testError := errors.New("error occurred")
-	uploadData := TelemetryData{
-		Event: "odo preference view",
-		Properties: TelmetryProperties{
-			Error:     SetError(testError),
-			ErrorType: ErrorType(testError),
-			Success:   false,
-			Tty:       RunningInTerminal(),
-			Version:   version.VERSION,
-		},
-	}
+	uploadData := fakeTelemetryData("odo preference view", testError)
 	// run a command, odo preference view
 	if err = c.Upload(uploadData); err != nil {
 		t.Error(err)
@@ -140,61 +131,57 @@ func TestClientUploadWithConsent(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			defer c.Close()
-			uploadData := TelemetryData{
-				Event: "odo create",
-				Properties: TelmetryProperties{
-					Duration:  time.Second.Milliseconds(),
-					Error:     SetError(tt.err),
-					ErrorType: ErrorType(tt.err),
-					Success:   tt.err == nil,
-					Tty:       RunningInTerminal(),
-					Version:   version.VERSION,
-				},
-			}
+			uploadData := fakeTelemetryData("odo create", tt.err)
 			// upload the data to Segment
 			if err = c.Upload(uploadData); err != nil {
 				t.Error(err)
 			}
-			// Note: Do not use `default` inside select with for loop, it lands in panic
-			for i := 0; i < 2; i++ {
-				select {
-				case x := <-body:
-					s := segmentResponse{}
-					if err = json.Unmarshal(x, &s); err != nil {
-						t.Error(err)
+			// segment.Client.SegmentClient uploads the data to server when a condition is met or when the connection is closed.
+			// This condition can be added by setting a BatchSize or Interval to the SegmentClient.
+			// BatchSize or Interval conditions have not been set for segment.Client.SegmentClient, so we will need to
+			// close the connection in order to upload the data to server.
+			// In case a condition is added, we can close the client in the teardown.
+			if err = c.Close(); err != nil {
+				t.Error(err)
+			}
+			// Note: This will need to be changed if segment.Client.SegmentClient has BatchSize or Interval set to something.
+			select {
+			case x := <-body:
+				s := segmentResponse{}
+				if err1 := json.Unmarshal(x, &s); err1 != nil {
+					t.Error(err1)
+				}
+				// Response returns 2 Batches in response -
+				// 1) identify - user's system information in case the server did not already have this information,
+				// and 2) track - information about the fired command
+				// This condition checks if both the responses were received
+				if s.Batch[0].Type != "identify" && s.Batch[1].Type != "track" {
+					t.Errorf("Missing Identify or Track information.\nIdentify: %v\nTrack:%v", s.Batch[0].Type, s.Batch[1].Type)
+				}
+				if s.Batch[0].Traits.OS != runtime.GOOS {
+					t.Error("OS does not match")
+				}
+				if !tt.success {
+					if s.Batch[1].Properties.Error != tt.err.Error() {
+						t.Error("Error does not match")
 					}
-					fmt.Println(string(x), s)
-					//Response returns 2 Batches in response - 1) identify - user's system information in case it is new,
-					//and 2) track - information about the fired command
-					//This checks if both the responses were received
-					if s.Batch[0].Type == "identify" {
-						if s.Batch[0].Traits.OS != runtime.GOOS {
-							t.Error("OS does not match")
-						}
-					} else if s.Batch[0].Type == "track" {
-						if !tt.success {
-							if s.Batch[0].Properties.Error != tt.err.Error() {
-								t.Error("Error does not match")
-							}
-						} else {
-							if s.Batch[0].Properties.Error != "" {
-								t.Error("Error does not match")
-							}
-						}
-						if s.Batch[0].Properties.Success != tt.success {
-							t.Error("Success does not match")
-						}
-						if s.Batch[0].Properties.ErrorType != tt.errType {
-							t.Error("Error Type does not match")
-						}
-						if !strings.Contains(s.Batch[0].Properties.Version, version.VERSION) {
-							t.Error("Odo version does not match")
-						}
-					} else {
-						t.Errorf("Missing Identify or Track information. Available info: %v", s.Batch[0].Type)
+				} else {
+					if s.Batch[1].Properties.Error != "" {
+						t.Error("Error does not match")
 					}
 				}
+				if s.Batch[1].Properties.Success != tt.success {
+					t.Error("Success does not match")
+				}
+				if s.Batch[1].Properties.ErrorType != tt.errType {
+					t.Error("Error Type does not match")
+				}
+				if !strings.Contains(s.Batch[1].Properties.Version, version.VERSION) {
+					t.Error("Odo version does not match")
+				}
+
+			default:
+				t.Error("Server should receive data")
 			}
 		})
 	}
@@ -273,4 +260,19 @@ func createConfigDir(t *testing.T) string {
 		t.Error(err)
 	}
 	return configDir
+}
+
+// fakeTelemetryData returns fake data to test segment client Upload
+func fakeTelemetryData(cmd string, err error) TelemetryData {
+	return TelemetryData{
+		Event: cmd,
+		Properties: TelmetryProperties{
+			Duration:  time.Second.Milliseconds(),
+			Error:     SetError(err),
+			ErrorType: ErrorType(err),
+			Success:   err == nil,
+			Tty:       RunningInTerminal(),
+			Version:   version.VERSION,
+		},
+	}
 }
