@@ -27,7 +27,7 @@ const Sanitizer = "XXXX"
 // hiding even the question
 const DisableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
 
-type TelmetryProperties struct {
+type TelemetryProperties struct {
 	Duration  int64  `json:"duration"`
 	Error     string `json:"error"`
 	ErrorType string `json:"errortype"`
@@ -37,8 +37,8 @@ type TelmetryProperties struct {
 }
 
 type TelemetryData struct {
-	Event      string             `json:"event"`
-	Properties TelmetryProperties `json:"properties"`
+	Event      string              `json:"event"`
+	Properties TelemetryProperties `json:"properties"`
 }
 
 type Client struct {

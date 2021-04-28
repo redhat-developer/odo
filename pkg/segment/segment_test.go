@@ -266,7 +266,7 @@ func createConfigDir(t *testing.T) string {
 func fakeTelemetryData(cmd string, err error) TelemetryData {
 	return TelemetryData{
 		Event: cmd,
-		Properties: TelmetryProperties{
+		Properties: TelemetryProperties{
 			Duration:  time.Second.Milliseconds(),
 			Error:     SetError(err),
 			ErrorType: ErrorType(err),
