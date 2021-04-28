@@ -86,7 +86,6 @@ func (c *Client) Close() error {
 
 // Upload prepares the data to be sent to segment and send it once the client connection closes
 func (c *Client) Upload(data TelemetryData) error {
-	err := data.Properties.Error
 	// if the user has not consented for telemetry, return
 	if !IsTelemetryEnabled(c.Preference) {
 		return nil
@@ -105,7 +104,7 @@ func (c *Client) Upload(data TelemetryData) error {
 		Set("duration(ms)", data.Properties.Duration).
 		Set("tty", data.Properties.Tty)
 	// in case the command executed unsuccessfully, add information about the error in the data
-	if err != "" {
+	if data.Properties.Error != "" {
 		properties = properties.Set("error", data.Properties.Error).Set("error-type", data.Properties.ErrorType)
 	}
 
