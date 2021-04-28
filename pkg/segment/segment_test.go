@@ -362,6 +362,8 @@ func TestClientUploadWithContext(t *testing.T) {
 
 				}
 			}
+		default:
+			t.Error("Server should receive some data")
 		}
 	}
 }
