@@ -90,7 +90,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			for _, property := range properties.Items {
 				value := property.Default
 				if value == "" {
-					value = "smh"
+					value = "foobar"
 				}
 				exampleString += fmt.Sprintf("\n  %s %s %v", fullName, property.Name, value)
 			}
