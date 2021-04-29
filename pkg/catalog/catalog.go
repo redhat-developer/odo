@@ -160,8 +160,16 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 			if err := util.CleanDefaultHTTPCacheDir(); err != nil {
 				log.Warning("Error while cleaning up cache dir.")
 			}
-			// should we be worried about infinite loop?
-			return getRegistryDevfiles(registry)
+			// we try once again
+			jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+			if err != nil {
+				return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
+			}
+
+			err = json.Unmarshal(jsonBytes, &devfileIndex)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
+			}
 		}
 	} else {
 		// OCI-based registry
