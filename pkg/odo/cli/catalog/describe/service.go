@@ -12,6 +12,7 @@ import (
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -133,7 +134,13 @@ func (o *DescribeServiceOptions) operatorRun() (err error) {
 		machineoutput.OutputSuccess(o.CR)
 		return
 	}
-	return fmt.Errorf("human readable output not implemented yet")
+	output, err := yaml.Marshal(svc.ConvertCRDToRepr(o.CR))
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(string(output))
+	return nil
 }
 
 func (o *DescribeServiceOptions) serviceCatalogRun() (err error) {
