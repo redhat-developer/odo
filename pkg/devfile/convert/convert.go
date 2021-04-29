@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -291,7 +290,18 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	}
 	// convert s2i ports to devfile endpoints if there are no urls present
 	for _, port := range ports {
-		i_port, err := strconv.Atoi(strings.Split(port, "/")[0])
+		split_port := strings.Split(port, "/")
+		protocol := "http"
+		//  protocol provided
+		if len(split_port) > 1 {
+			// technically tcp when exposed is by default using http
+			if strings.ToLower(split_port[1]) == "tcp" {
+				protocol = "http"
+			} else {
+				protocol = strings.ToLower(split_port[1])
+			}
+		}
+		i_port, err := strconv.Atoi(split_port[0])
 		// we dont fail if the ports are malformed
 		if err != nil {
 			continue
@@ -306,7 +316,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		if !hasURL {
 			// every port is an exposed url for now
 			endpoint := devfilev1.Endpoint{
-				Name:       util.GetURLName(localConfig.GetName(), i_port),
+				Name:       fmt.Sprintf("%s-%d", protocol, i_port),
 				TargetPort: i_port,
 				Secure:     false,
 			}
