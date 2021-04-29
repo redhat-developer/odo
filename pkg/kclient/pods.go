@@ -208,6 +208,11 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
 	}
 
+	// check if the pod is in the terminating state
+	if pods.Items[0].DeletionTimestamp != nil {
+		return nil, &PodNotFoundError{Selector: selector}
+	}
+
 	return &pods.Items[0], nil
 }
 

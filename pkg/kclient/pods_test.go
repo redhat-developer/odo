@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,6 +100,11 @@ func TestGetOnePodFromSelector(t *testing.T) {
 	fakePod := FakePodStatus(corev1.PodRunning, "nodejs")
 	fakePod.Labels["component"] = "nodejs"
 
+	fakePodWithDeletionTimeStamp := FakePodStatus(corev1.PodRunning, "nodejs")
+	fakePodWithDeletionTimeStamp.Labels["component"] = "nodejs"
+	currentTime := metav1.NewTime(time.Now())
+	fakePodWithDeletionTimeStamp.DeletionTimestamp = &currentTime
+
 	type args struct {
 		selector string
 	}
@@ -136,6 +142,17 @@ func TestGetOnePodFromSelector(t *testing.T) {
 				Items: []corev1.Pod{
 					*fakePod,
 					*fakePod,
+				},
+			},
+			want:    &corev1.Pod{},
+			wantErr: true,
+		},
+		{
+			name: "pod is in the deletion state",
+			args: args{selector: fmt.Sprintf("component=%s", "nodejs")},
+			returnedPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*fakePodWithDeletionTimeStamp,
 				},
 			},
 			want:    &corev1.Pod{},
