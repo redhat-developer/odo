@@ -115,4 +115,4 @@ Once the pod for this `CatalogSource` is up, wait a few seconds before trying to
 
 ## Installing the Service Binding Operator
 
-Service Binding Operator is used by odo to provide `odo link` feature. Please refer [this document](install-service-binding-operator.adoc) to install it on both OpenShift and Kubernetes.
+Service Binding Operator is used by odo to provide `odo link` feature. Please refer to [this document](https://odo.dev/docs/install-service-binding-operator.adoc) to install it on both OpenShift and Kubernetes.
