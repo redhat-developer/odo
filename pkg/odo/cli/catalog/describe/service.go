@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -42,6 +44,7 @@ type DescribeServiceOptions struct {
 	ServiceType    string
 	CustomResource string
 	CSV            olm.ClusterServiceVersion
+	CR             *olm.CRDDescription
 }
 
 // NewDescribeServiceOptions creates a new DescribeServiceOptions instance
@@ -67,10 +70,8 @@ func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args 
 
 	if isSVCSupported && isOperator {
 		o.isOperator = true
-		o.Context, err = genericclioptions.NewDevfileContext(cmd)
-	} else {
-		o.Context, err = genericclioptions.NewContext(cmd, true)
 	}
+	o.Context, err = genericclioptions.NewContext(cmd, true)
 
 	return
 }
@@ -90,6 +91,26 @@ func (o *DescribeServiceOptions) Validate() (err error) {
 			// k8s does't have it installed by default but OCP does
 			return err
 		}
+
+		// Get the specific CR that matches "kind"
+		crs := o.KClient.GetCustomResourcesFromCSV(&o.CSV)
+
+		var cr *olm.CRDDescription
+		hasCR := false
+		for _, custRes := range *crs {
+			c := custRes
+			if c.Kind == o.CustomResource {
+				cr = &c
+				hasCR = true
+				break
+			}
+		}
+		if !hasCR {
+			return fmt.Errorf("the %s resource doesn't exist in specified %s operator", o.CustomResource, o.ServiceType)
+		}
+
+		o.CR = cr
+		return nil
 	}
 	o.service, o.plans, err = svc.GetServiceClassAndPlans(o.Client, o.serviceName)
 	return err
@@ -105,7 +126,11 @@ func (o *DescribeServiceOptions) Run() (err error) {
 
 }
 func (o *DescribeServiceOptions) operatorRun() (err error) {
-	return nil
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(o.CR)
+		return
+	}
+	return fmt.Errorf("human readable output not implemented yet")
 }
 
 func (o *DescribeServiceOptions) serviceCatalogRun() (err error) {
@@ -183,11 +208,12 @@ func (o *DescribeServiceOptions) serviceCatalogRun() (err error) {
 func NewCmdCatalogDescribeService(name, fullName string) *cobra.Command {
 	o := NewDescribeServiceOptions()
 	command := &cobra.Command{
-		Use:     name,
-		Short:   "Describe a service",
-		Long:    serviceLongDesc,
-		Example: fmt.Sprintf(serviceExample, fullName),
-		Args:    cobra.ExactArgs(1),
+		Use:         name,
+		Short:       "Describe a service",
+		Long:        serviceLongDesc,
+		Example:     fmt.Sprintf(serviceExample, fullName),
+		Annotations: map[string]string{"machineoutput": "json"},
+		Args:        cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
