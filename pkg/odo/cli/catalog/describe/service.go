@@ -8,6 +8,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -33,6 +34,14 @@ type DescribeServiceOptions struct {
 	plans   []svc.ServicePlan
 	// generic context options common to all commands
 	*genericclioptions.Context
+
+	// Operator backed services params
+	// split the name provided on CLI and populate servicetype & customresource
+	isOperator     bool
+	SVCSupported   bool
+	ServiceType    string
+	CustomResource string
+	CSV            olm.ClusterServiceVersion
 }
 
 // NewDescribeServiceOptions creates a new DescribeServiceOptions instance
@@ -42,20 +51,64 @@ func NewDescribeServiceOptions() *DescribeServiceOptions {
 
 // Complete completes DescribeServiceOptions after they've been created
 func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.NewContext(cmd, true)
-	o.serviceName = args[0]
+	isSVCSupported, err := svc.IsCSVSupported()
+	if err != nil {
+		isSVCSupported = false
+	}
+	isOperator := false
+	if strings.Contains(args[0], "/") && isSVCSupported {
+		tmpOptrList := strings.Split(args[0], "/")
+		o.ServiceType = tmpOptrList[0]
+		o.CustomResource = tmpOptrList[1]
+		isOperator = true
+	} else {
+		o.serviceName = args[0]
+	}
+
+	if isSVCSupported && isOperator {
+		o.isOperator = true
+		o.Context, err = genericclioptions.NewDevfileContext(cmd)
+	} else {
+		o.Context, err = genericclioptions.NewContext(cmd, true)
+	}
 
 	return
 }
 
 // Validate validates the DescribeServiceOptions based on completed values
 func (o *DescribeServiceOptions) Validate() (err error) {
+
+	if o.isOperator {
+
+		if o.ServiceType == "" || o.CustomResource == "" {
+			return fmt.Errorf("invalid service name, use the format <operator-type>/<crd-name>")
+		}
+		// make sure that CSV of the specified ServiceType exists
+		o.CSV, err = o.KClient.GetClusterServiceVersion(o.ServiceType)
+		if err != nil {
+			// error only occurs when OperatorHub is not installed.
+			// k8s does't have it installed by default but OCP does
+			return err
+		}
+	}
 	o.service, o.plans, err = svc.GetServiceClassAndPlans(o.Client, o.serviceName)
 	return err
+
 }
 
 // Run contains the logic for the command associated with DescribeServiceOptions
 func (o *DescribeServiceOptions) Run() (err error) {
+	if o.isOperator {
+		return o.operatorRun()
+	}
+	return o.serviceCatalogRun()
+
+}
+func (o *DescribeServiceOptions) operatorRun() (err error) {
+	return nil
+}
+
+func (o *DescribeServiceOptions) serviceCatalogRun() (err error) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetBorder(false)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
