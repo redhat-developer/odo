@@ -9,6 +9,7 @@ import (
 	"k8s.io/klog"
 )
 
+// CleanDefaultHTTPCacheDir cleans the default directory used for HTTP caching
 func CleanDefaultHTTPCacheDir() error {
 	cacheFiles, err := ioutil.ReadDir(httpCacheDir)
 	if err != nil {
