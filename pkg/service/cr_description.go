@@ -4,6 +4,7 @@ import olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/api
 
 type CRDDescriptionRepr struct {
 	Kind        string      `yaml:"Kind"`
+	Version     string      `yaml:"Version"`
 	Description string      `yaml:"Description"`
 	Parameters  []Parameter `yaml:"Parameters"`
 }
@@ -18,6 +19,7 @@ func ConvertCRDToRepr(crd *olm.CRDDescription) CRDDescriptionRepr {
 	return CRDDescriptionRepr{
 		Kind:        crd.Kind,
 		Description: crd.Description,
+		Version:     crd.Version,
 		Parameters:  convertSpecDescriptorsToParameters(crd.SpecDescriptors),
 	}
 }

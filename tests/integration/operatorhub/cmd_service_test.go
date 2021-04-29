@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/tidwall/gjson"
 )
 
 var _ = Describe("odo service command tests for OperatorHub", func() {
@@ -56,6 +57,19 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		It("should list operators installed in the namespace", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			helper.MatchAllInOutput(stdOut, []string{"Services available through Operators", "etcdoperator"})
+		})
+
+		It("should describe an installed operator with json output", func() {
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+			etcdCluster := fmt.Sprintf("%s/EtcdCluster", etcdOperator)
+
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster)
+			Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
+			outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "-o", "json")
+			values := gjson.GetMany(outputJSON, "kind", "displayName")
+			expected := []string{"EtcdCluster", "etcd Cluster"}
+			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 		})
 
 		It("should not allow creating service without valid context, and fail for interactive mode", func() {
