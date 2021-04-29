@@ -18,12 +18,19 @@ import (
 const serviceRecommendedCommandName = "service"
 
 var (
-	serviceExample = ktemplates.Examples(`  # Describe a service
-    %[1]s mysql-persistent`)
+	serviceExample = ktemplates.Examples(`  # Describe a service catalog service
+    %[1]s mysql-persistent
+	
+	# Describe a operator backed service
+	%[1]s 
+	`)
 
-	serviceLongDesc = ktemplates.LongDesc(`Describe a service type.
+	serviceLongDesc = ktemplates.LongDesc(`Describes a service type.
+	This command supports both service catalog services and operator backed services.
+	A user can describe an operator backed service by providing the full identifier for an Operand i.e. <service-type>/<operand-type> which they can find by running "odo catalog list services".
 
-This describes the service and the associated plans.
+	If the format doesn't match <service-type>/<operand-type> then service catalog services would be searched.  
+
 `)
 )
 
@@ -58,19 +65,15 @@ func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args 
 	if err != nil {
 		isSVCSupported = false
 	}
-	isOperator := false
 	if strings.Contains(args[0], "/") && isSVCSupported {
 		tmpOptrList := strings.Split(args[0], "/")
 		o.ServiceType = tmpOptrList[0]
 		o.CustomResource = tmpOptrList[1]
-		isOperator = true
+		o.isOperator = true
 	} else {
 		o.serviceName = args[0]
 	}
 
-	if isSVCSupported && isOperator {
-		o.isOperator = true
-	}
 	o.Context, err = genericclioptions.NewContext(cmd, true)
 
 	return
