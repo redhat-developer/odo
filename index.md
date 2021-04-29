@@ -65,7 +65,7 @@ grid_navigation:
     - title: Setup the minikube environment
       excerpt: Setup a Kubernetes cluster that odo can be used with
       cta: Read more
-      url: 'docs/installing-and-onfiguring-minikube-environment'
+      url: 'docs/installing-and-configuring-minikube-environment'
 
     - title: Introduction to Operators
       excerpt: Deploying an Operator from Operator Hub using odo.

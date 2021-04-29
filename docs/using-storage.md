@@ -50,3 +50,48 @@ We can delete a storage volume using `odo storage delete`
 
   Please use `odo push` command to delete the storage from the cluster
 ```
+
+# Adding storage to specific container
+
+If your devfile has multiple containers, you can specify to which container you want the storage to attach to using the `--container` flag in the `odo storage create` command.
+
+For example:
+
+Let us take a devfile with multiple containers that looks like (partial excerpt):
+
+``` yaml
+...
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: "3000-tcp"
+          targetPort: 3000
+      mountSources: true
+  - name: funtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+
+...
+```
+
+Here, we have 2 containers, with names `runtime` and `funtime`. To attach a storage, only to the `funtime` container, we can do
+
+``` sh
+  $ odo storage create store --path /data --size 1Gi --container funtime
+   ✓  Added storage store to nodejs-testing-xnfg
+
+  Please use `odo push` command to make the storage accessible to the component
+```
+
+You can list the same, using `odo storage list` command
+
+``` sh
+  $ odo storage list
+  The component 'nodejs-testing-xnfg' has the following storage attached:
+  NAME      SIZE     PATH      CONTAINER     STATE
+  store     1Gi      /data     funtime       Not Pushed
+```
