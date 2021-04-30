@@ -197,8 +197,16 @@ func resourceAsJson(resource interface{}) string {
 
 // ApplyDeployment updates a deployment based on the given deployment spec
 func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{FieldManager: "odo"})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
+	}
+	return deployment, nil
+}
+
+// UpdateDeployment updates a deployment based on the given deployment spec
+func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.TODO(), &deploy, metav1.UpdateOptions{FieldManager: "odo"})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}

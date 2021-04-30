@@ -1,7 +1,9 @@
 package occlient
 
 import (
+	"fmt"
 	"os"
+	"runtime"
 	"sync"
 
 	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
@@ -14,6 +16,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
 )
@@ -124,4 +127,19 @@ func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 		return rl.list, rl.err
 	}
 	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
+}
+
+func (c *fakeDiscovery) ServerVersion() (*version.Info, error) {
+	versionInfo := version.Info{
+		Major:        "1",
+		Minor:        "16",
+		GitVersion:   "v1.16.0+0000000",
+		GitCommit:    "",
+		GitTreeState: "",
+		BuildDate:    "",
+		GoVersion:    runtime.Version(),
+		Compiler:     runtime.Compiler,
+		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+	}
+	return &versionInfo, nil
 }

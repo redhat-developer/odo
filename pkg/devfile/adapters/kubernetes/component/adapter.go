@@ -479,11 +479,14 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 	klog.V(2).Infof("Creating deployment %v", deployment.Spec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
-
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		if a.Client.GetKubeClient().IsSSASupported() {
+			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		} else {
+			deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
+		}
 		if err != nil {
 			return err
 		}
@@ -517,7 +520,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			}
 		}
 	} else {
-		deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		if a.Client.GetKubeClient().IsSSASupported() {
+			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		} else {
+			deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
+		}
+
 		if err != nil {
 			return err
 		}
