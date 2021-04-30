@@ -290,25 +290,25 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	}
 	// convert s2i ports to devfile endpoints if there are no urls present
 	for _, port := range ports {
-		split_port := strings.Split(port, "/")
+		splitPort := strings.Split(port, "/")
 		protocol := "http"
 		//  protocol provided
-		if len(split_port) > 1 {
+		if len(splitPort) > 1 {
 			// technically tcp when exposed is by default using http
-			if strings.ToLower(split_port[1]) == "tcp" {
+			if strings.ToLower(splitPort[1]) == "tcp" {
 				protocol = "http"
 			} else {
-				protocol = strings.ToLower(split_port[1])
+				protocol = strings.ToLower(splitPort[1])
 			}
 		}
-		i_port, err := strconv.Atoi(split_port[0])
+		intPort, err := strconv.Atoi(splitPort[0])
 		// we dont fail if the ports are malformed
 		if err != nil {
 			continue
 		}
 		hasURL := false
 		for _, url := range urls {
-			if i_port == url.Port {
+			if intPort == url.Port {
 				hasURL = true
 			}
 		}
@@ -316,8 +316,8 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		if !hasURL {
 			// every port is an exposed url for now
 			endpoint := devfilev1.Endpoint{
-				Name:       fmt.Sprintf("%s-%d", protocol, i_port),
-				TargetPort: i_port,
+				Name:       fmt.Sprintf("%s-%d", protocol, intPort),
+				TargetPort: intPort,
 				Secure:     false,
 			}
 
