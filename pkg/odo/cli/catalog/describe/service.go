@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -22,15 +23,15 @@ var (
 	serviceExample = ktemplates.Examples(`  # Describe a service catalog service
     %[1]s mysql-persistent
 	
-	# Describe a operator backed service
+	# Describe a Operator backed service
 	%[1]s 
 	`)
 
 	serviceLongDesc = ktemplates.LongDesc(`Describes a service type.
-	This command supports both service catalog services and operator backed services.
-	A user can describe an operator backed service by providing the full identifier for an Operand i.e. <service-type>/<operand-type> which they can find by running "odo catalog list services".
+	This command supports both Service Catalog services and Operator backed services.
+	A user can describe an Operator backed service by providing the full identifier for an Operand i.e. <operator_type>/<cr_name> which they can find by running "odo catalog list services".
 
-	If the format doesn't match <service-type>/<operand-type> then service catalog services would be searched.  
+	If the format doesn't match <operator_type>/<cr_name> then service catalog services would be searched.  
 
 `)
 )
@@ -47,9 +48,9 @@ type DescribeServiceOptions struct {
 
 	// Operator backed services params
 	// split the name provided on CLI and populate servicetype & customresource
-	isOperator     bool
-	SVCSupported   bool
-	ServiceType    string
+	isOperator bool
+	// the operator name
+	OperatorType   string
 	CustomResource string
 	CSV            olm.ClusterServiceVersion
 	CR             *olm.CRDDescription
@@ -62,13 +63,21 @@ func NewDescribeServiceOptions() *DescribeServiceOptions {
 
 // Complete completes DescribeServiceOptions after they've been created
 func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	isSVCSupported, err := svc.IsCSVSupported()
-	if err != nil {
-		isSVCSupported = false
-	}
-	if strings.Contains(args[0], "/") && isSVCSupported {
+
+	// if the argument contains "/" then we assume the user wants to describe a CRD.
+	if strings.Contains(args[0], "/") {
+		// we check if the cluster supports ClusterServiceVersion or not.
+		isCSVSupported, err := svc.IsCSVSupported()
+		if err != nil {
+			// if there is an error checking it, we return the error.
+			return err
+		}
+		// if its not supported then we return an error
+		if !isCSVSupported {
+			return errors.New("it seems the cluster doesn't support Operators. Please install OLM and try again")
+		}
 		tmpOptrList := strings.Split(args[0], "/")
-		o.ServiceType = tmpOptrList[0]
+		o.OperatorType = tmpOptrList[0]
 		o.CustomResource = tmpOptrList[1]
 		o.isOperator = true
 	} else {
@@ -85,11 +94,11 @@ func (o *DescribeServiceOptions) Validate() (err error) {
 
 	if o.isOperator {
 
-		if o.ServiceType == "" || o.CustomResource == "" {
+		if o.OperatorType == "" || o.CustomResource == "" {
 			return fmt.Errorf("invalid service name, use the format <operator-type>/<crd-name>")
 		}
-		// make sure that CSV of the specified ServiceType exists
-		o.CSV, err = o.KClient.GetClusterServiceVersion(o.ServiceType)
+		// make sure that CSV of the specified OperatorType exists
+		o.CSV, err = o.KClient.GetClusterServiceVersion(o.OperatorType)
 		if err != nil {
 			// error only occurs when OperatorHub is not installed.
 			// k8s does't have it installed by default but OCP does
@@ -110,7 +119,7 @@ func (o *DescribeServiceOptions) Validate() (err error) {
 			}
 		}
 		if !hasCR {
-			return fmt.Errorf("the %s resource doesn't exist in specified %s operator", o.CustomResource, o.ServiceType)
+			return fmt.Errorf("the %s resource doesn't exist in specified %s operator", o.CustomResource, o.OperatorType)
 		}
 
 		o.CR = cr
