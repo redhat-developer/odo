@@ -34,10 +34,10 @@ if [[ $BASE_OS == "linux"  ]]; then
     set -x
     tar -C $GOBIN -xvf ./oc.tar && rm -rf ./oc.tar
 else
+    set +x
+    curl --connect-timeout 210 --max-time 2048 -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
+    set -x
     if [[ $BASE_OS == "windows" ]]; then
-        set +x
-        curl --connect-timeout 210 --max-time 2048 -k ${OCP4X_DOWNLOAD_URL}/${ARCH}/${BASE_OS}/oc.zip -o ./oc.zip
-        set -x
         GOBIN_TEMP=$GOBIN
         GOBIN="$(cygpath -pw $GOBIN)"
         CURRDIR="$(cygpath -pw $WORKDIR)"
@@ -47,7 +47,8 @@ else
     fi
     if [[ $BASE_OS == "mac" ]]; then
         # Skiping download of oc binary for test due to bandwidth issue, binary from cluster is stored in ~/ocforodo dir in macmini 
-        unzip ~/ocforodo/oc.zip -d $GOBIN && chmod +x $GOBIN/oc
+        #unzip ~/ocforodo/oc.zip -d $GOBIN && chmod +x $GOBIN/oc
+        unzip ./oc.zip -d $GOBIN && rm -rf ./oc.zip && chmod +x $GOBIN/oc
         PATH="$PATH:/usr/local/bin:/usr/local/go/bin"
     fi
 fi
