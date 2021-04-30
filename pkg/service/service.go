@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ghodss/yaml"
+
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/kclient"
@@ -97,7 +99,6 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 		}
 	}
 	return olm.ClusterServiceVersion{}, errors.New("could not find the requested cluster resource")
-
 }
 
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
@@ -484,9 +485,9 @@ func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secre
 	}
 }
 
-// IsValidOperatorServiceName checks if the provided name follows
+// IsOperatorServiceNameValid checks if the provided name follows
 // <service-type>/<service-name> format. For example: "EtcdCluster/example" is
-// a valid servicename but "EtcdCluster/", "EtcdCluster", "example" aren't.
+// a valid service name but "EtcdCluster/", "EtcdCluster", "example" aren't.
 func IsOperatorServiceNameValid(name string) (string, string, error) {
 	checkName := strings.SplitN(name, "/", 2)
 
@@ -737,4 +738,137 @@ func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.Devfile
 	}
 
 	return devfileObj.WriteYamlDevfile()
+}
+
+// DynamicCRD holds the original CR obtained from the Operator (a CSV), or user
+// (when they use --from-file flag), and few other attributes that are likely
+// to be used to validate a CRD before creating a service from it
+type DynamicCRD struct {
+	// contains the CR as obtained from CSV or user
+	OriginalCRD map[string]interface{}
+}
+
+func NewDynamicCRD() *DynamicCRD {
+	return &DynamicCRD{}
+}
+
+// ValidateMetadataInCRD validates if the CRD has metadata.name field and returns an error
+func (d *DynamicCRD) ValidateMetadataInCRD() error {
+	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
+	if !ok {
+		// this condition is satisfied if there's no metadata at all in the provided CRD
+		return fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata start the service")
+	}
+
+	if _, ok := metadata["name"].(string); ok {
+		// found the metadata.name; no error
+		return nil
+	}
+	return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
+}
+
+// SetServiceName modifies the CRD to contain user provided name on the CLI
+// instead of using the default one in almExample
+func (d *DynamicCRD) SetServiceName(name string) {
+	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
+
+	for k := range metaMap {
+		if k == "name" {
+			metaMap[k] = name
+			return
+		}
+		// if metadata doesn't have 'name' field, we set it up
+		metaMap["name"] = name
+	}
+}
+
+// GetServiceNameFromCRD fetches the service name from metadata.name field of the CRD
+func (d *DynamicCRD) GetServiceNameFromCRD() (string, error) {
+	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
+	if !ok {
+		// this condition is satisfied if there's no metadata at all in the provided CRD
+		return "", fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata.name to start the service")
+	}
+
+	if name, ok := metadata["name"].(string); ok {
+		// found the metadata.name; no error
+		return name, nil
+	}
+	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
+}
+
+// AddComponentLabelsToCRD appends odo labels to CRD if "labels" field already exists in metadata; else creates labels
+func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
+	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
+
+	for k := range metaMap {
+		if k == "labels" {
+			metaLabels := metaMap["labels"].(map[string]interface{})
+			for i := range labels {
+				metaLabels[i] = labels[i]
+			}
+			return
+		}
+	}
+	// if metadata doesn't have 'labels' field, we set it up
+	metaMap["labels"] = labels
+}
+
+// CreateServiceFromKubernetesInlineComponents creates service(s) from Kubernetes Inlined component in a devfile
+func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) ([]string, error) {
+	if len(k8sComponents) == 0 {
+		// if there's no Kubernetes Inlined component, there's nothing to do.
+		return []string{}, nil
+	}
+
+	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
+	var services []string
+	for _, c := range k8sComponents {
+		// get the string representation of the YAML definition of a CRD
+		strCRD := c.Kubernetes.Inlined
+
+		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
+		d := NewDynamicCRD()
+		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		if err != nil {
+			return []string{}, err
+		}
+
+		cr, csv, err := GetCSV(client, d.OriginalCRD)
+		if err != nil {
+			return []string{}, err
+		}
+
+		var group, version, kind, resource string
+		for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
+			if crd.Kind == cr {
+				group, version, kind, resource, err = getGVKRFromCR(crd)
+				if err != nil {
+					return []string{}, err
+				}
+				break
+			}
+		}
+
+		// add labels to the CRD before creation
+		d.AddComponentLabelsToCRD(labels)
+
+		// create the service on cluster
+		err = client.CreateDynamicResource(d.OriginalCRD, group, version, resource)
+		if err != nil {
+			if strings.Contains(err.Error(), "already exists") {
+				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
+				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
+				err = nil
+				break // this ensures that services slice is not updated
+			} else {
+				return []string{}, err
+			}
+		}
+
+		name, _ := d.GetServiceNameFromCRD() // ignoring error because invalid yaml won't be inserted into devfile through odo
+		services = append(services, strings.Join([]string{kind, name}, "/"))
+	}
+
+	return services, nil
 }

@@ -22,16 +22,7 @@ var (
 
 %[1]s`)
 	setExample = ktemplates.Examples(`
-   # Set a preference value in the global preference
-   %[1]s %[2]s false
-   %[1]s %[3]s "app"
-   %[1]s %[4]s 20
-   %[1]s %[5]s 40
-   %[1]s %[6]s 30
-   %[1]s %[7]s true
-   %[1]s %[8]s docker
-   %[1]s %[9]s true
-	`)
+   # Set a preference value in the global preference`)
 )
 
 // SetOptions encapsulates the options for the command
@@ -93,10 +84,18 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: "Set a value in odo config file",
 		Long:  fmt.Sprintf(setLongDesc, preference.FormatSupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName,
-			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
-			preference.TimeoutSetting, preference.BuildTimeoutSetting, preference.PushTimeoutSetting,
-			preference.ExperimentalSetting, preference.ConsentTelemetrySetting),
+		Example: func(exampleString, fullName string) string {
+			cfg, _ := preference.New()
+			properties := preference.NewPreferenceList(*cfg)
+			for _, property := range properties.Items {
+				value := property.Default
+				if value == "" {
+					value = "foobar"
+				}
+				exampleString += fmt.Sprintf("\n  %s %s %v", fullName, property.Name, value)
+			}
+			return "\n" + exampleString
+		}(setExample, fullName),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("please provide a parameter name and value")

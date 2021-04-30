@@ -19,63 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DynamicCRD holds the original CR obtained from the Operator (a CSV), or user
-// (when they use --from-file flag), and few other attributes that are likely
-// to be used to validate a CRD before creating a service from it
-type DynamicCRD struct {
-	// contains the CR as obtained from CSV or user
-	OriginalCRD map[string]interface{}
-}
-
-func NewDynamicCRD() *DynamicCRD {
-	return &DynamicCRD{}
-}
-
-// validateMetadataInCRD validates if the CRD has metadata.name field and returns an error
-func (d *DynamicCRD) validateMetadataInCRD() error {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata start the service")
-	}
-
-	if _, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return nil
-	}
-	return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
-}
-
-// setServiceName modifies the CRD to contain user provided name on the CLI
-// instead of using the default one in almExample
-func (d *DynamicCRD) setServiceName(name string) {
-	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
-
-	for k := range metaMap {
-		if k == "name" {
-			metaMap[k] = name
-			return
-		}
-		// if metadata doesn't have 'name' field, we set it up
-		metaMap["name"] = name
-	}
-}
-
-// getServiceNameFromCRD fetches the service name from metadata.name field of the CRD
-func (d *DynamicCRD) getServiceNameFromCRD() (string, error) {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return "", fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata.name to start the service")
-	}
-
-	if name, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return name, nil
-	}
-	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
-}
-
 // This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
 func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Command, args []string) (err error) {
 	// since interactive mode is not supported for Operators yet, set it to false
@@ -109,7 +52,7 @@ func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Com
 }
 
 func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
-	d := NewDynamicCRD()
+	d := svc.NewDynamicCRD()
 	// if the user wants to create service from a file, we check for
 	// existence of file and validate if the requested operator and CR
 	// exist on the cluster
@@ -142,7 +85,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
-		err = d.validateMetadataInCRD()
+		err = d.ValidateMetadataInCRD()
 		if err != nil {
 			return err
 		}
@@ -158,9 +101,9 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 				return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first", svcFullName)
 			}
 
-			d.setServiceName(o.ServiceName)
+			d.SetServiceName(o.ServiceName)
 		} else {
-			o.ServiceName, err = d.getServiceNameFromCRD()
+			o.ServiceName, err = d.GetServiceNameFromCRD()
 			if err != nil {
 				return err
 			}
@@ -202,10 +145,10 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 				return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first", svcFullName)
 			}
 
-			d.setServiceName(o.ServiceName)
+			d.SetServiceName(o.ServiceName)
 		}
 
-		err = d.validateMetadataInCRD()
+		err = d.ValidateMetadataInCRD()
 		if err != nil {
 			return err
 		}
@@ -214,7 +157,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		b.CustomResourceDefinition = d.OriginalCRD
 
 		if o.ServiceName == "" {
-			o.ServiceName, err = d.getServiceNameFromCRD()
+			o.ServiceName, err = d.GetServiceNameFromCRD()
 			if err != nil {
 				return err
 			}
@@ -235,18 +178,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 	s := &log.Status{}
 
-	// in case of an Operator backed service, name of the service is
-	// provided by the yaml specification in alm-examples. It might also
-	// happen that a user wants to spin up Service Catalog based service in
-	// spite of having 4.x cluster mode but we're not supporting
-	// interacting with both Operator Hub and Service Catalog on 4.x. So
-	// the user won't get to see service name in the log message
-	if !o.DryRun {
-		log.Infof("Deploying service %q of type: %q", o.ServiceName, b.CustomResource)
-		s = log.Spinner("Deploying service")
-		defer s.End(false)
-	}
-
 	// if cluster has resources of type CSV and o.CustomResource is not
 	// empty, we're expected to create an Operator backed service
 	if o.DryRun {
@@ -266,15 +197,6 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 
 		return nil
 	} else {
-		err = svc.CreateOperatorService(o.KClient, b.group, b.version, b.resource, b.CustomResourceDefinition)
-		if err != nil {
-			// TODO: logic to remove CRD info from devfile because service creation failed.
-			return err
-		} else {
-			s.End(true)
-			log.Successf(`Service %q was created`, o.ServiceName)
-		}
-
 		crdYaml, err := yaml.Marshal(b.CustomResourceDefinition)
 		if err != nil {
 			return err
