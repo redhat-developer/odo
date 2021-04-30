@@ -209,10 +209,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			// since we don't have `wait` for `odo delete` at this moment
 			// we need to wait for the pod to be in the terminating state or it has been deleted from the cluster
-			ocArgs := []string{"get", "pod", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "Terminating") || strings.Contains(output, "No resources")
-			})
+			commonVar.CliRunner.WaitAndCheckForTerminatingState("pods", commonVar.Project, 1)
 
 			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
 

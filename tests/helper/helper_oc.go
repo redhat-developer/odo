@@ -660,3 +660,31 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 	)
 	return result
 }
+
+// WaitAndCheckForTerminatingState waits for the given interval
+// and checks if the given resource type has been deleted on the cluster or is in the terminating state
+func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
+	pingTimeout := time.After(time.Duration(timeoutMinutes) * time.Minute)
+	// this is a test package so time.Tick() is acceptable
+	// nolint
+	tick := time.Tick(time.Second)
+	for {
+		select {
+		case <-pingTimeout:
+			Fail(fmt.Sprintf("Timeout after %d minutes", timeoutMinutes))
+
+		case <-tick:
+			session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
+			Eventually(session).Should(gexec.Exit(0))
+			// https://github.com/kubernetes/kubectl/issues/847
+			outputStdErr := string(session.Wait().Err.Contents())
+			outputStdOut := string(session.Wait().Out.Contents())
+
+			// if the resource gets deleted before the check, we won't get the `terminating` state output
+			// thus we also check and exit when the resource has been deleted on the cluster.
+			if strings.Contains(strings.ToLower(outputStdErr), "no resources found") || strings.Contains(strings.ToLower(outputStdOut), "terminating") {
+				return true
+			}
+		}
+	}
+}
