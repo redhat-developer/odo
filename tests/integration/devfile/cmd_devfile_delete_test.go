@@ -142,12 +142,13 @@ var _ = Describe("odo devfile delete command tests", func() {
 	})
 
 	Context("When deleting component data from other component's directory", func() {
-		var firstComponent, secondComponent, firstContext, secondContext string
+		var firstComponent, secondComponent, firstContext, secondContext, appName string
+		appName = "myapp"
 		var setup = func(componentName, contextName string) {
 			helper.Chdir(contextName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), contextName)
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project)
-			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "--app", appName)
 		}
 		JustBeforeEach(func() {
 			// Create the second component in a new context dir
@@ -187,78 +188,84 @@ var _ = Describe("odo devfile delete command tests", func() {
 			// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4135 is fixed
 			//Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
+
 		// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4451 is fixed
-		//It("should delete the component when deleting with component name and --project flag", func() {
-		//	output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f")
+		//It("should delete the component when deleting with component name, --app and --project flags", func() {
+		//	output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f", "--app", appName)
 		//	Expect(output).To(ContainSubstring(secondComponent))
 		//	Expect(output).ToNot(ContainSubstring(firstComponent))
 		//})
-	})
 
-	Context("odo component delete should clean owned resources", func() {
-		appName := helper.RandString(5)
-		It("should delete the devfile component and the owned resources with wait flag", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com", "--ingress")
+		Context("odo component delete should clean owned resources", func() {
+			appName := helper.RandString(5)
+			It("should delete the devfile component and the owned resources with wait flag", func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
+				helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com", "--ingress")
 
-			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
-			info := helper.LocalEnvInfo(commonVar.Context)
-			Expect(info.GetApplication(), appName)
-			Expect(info.GetName(), componentName)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+				helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+				info := helper.LocalEnvInfo(commonVar.Context)
+				Expect(info.GetApplication(), appName)
+				Expect(info.GetName(), componentName)
+				helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
-			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context, "--host", "com", "--ingress")
-			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+				helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context, "--host", "com", "--ingress")
+				helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
+				helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
-			// Pod should exist
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-			Expect(podName).NotTo(BeEmpty())
+				// Pod should exist
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+				Expect(podName).NotTo(BeEmpty())
 
-			// delete with --wait flag
-			helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
+				// delete with --wait flag
+				helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
 
-			// Deployment and Pod should be deleted
-			helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
-				{
+				// Deployment and Pod should be deleted
+				helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+					{
 
-					ResourceType: helper.ResourceTypeDeployment,
-					ResourceName: componentName,
-					Namespace:    commonVar.Project,
-				},
-				{
+						ResourceType: helper.ResourceTypeDeployment,
+						ResourceName: componentName,
+						Namespace:    commonVar.Project,
+					},
+					{
 
-					ResourceType: helper.ResourceTypePod,
-					ResourceName: podName,
-					Namespace:    commonVar.Project,
-				},
-			})
+						ResourceType: helper.ResourceTypePod,
+						ResourceName: podName,
+						Namespace:    commonVar.Project,
+					},
+				})
 
-			// Dependent resources should be marked to be deleted (see https://github.com/openshift/odo/issues/4593)
-			helper.VerifyResourcesToBeDeleted(commonVar.CliRunner, []helper.ResourceInfo{
-				{
-					ResourceType: helper.ResourceTypeIngress,
-					ResourceName: "example",
-					Namespace:    commonVar.Project,
-				},
-				{
-					ResourceType: helper.ResourceTypeService,
-					ResourceName: componentName,
-					Namespace:    commonVar.Project,
-				},
-				{
-					ResourceType: helper.ResourceTypePVC,
-					ResourceName: "storage-1",
-					Namespace:    commonVar.Project,
-				},
-				{
-					ResourceType: helper.ResourceTypePVC,
-					ResourceName: "storage-2",
-					Namespace:    commonVar.Project,
-				},
+				// Dependent resources should be marked to be deleted (see https://github.com/openshift/odo/issues/4593)
+				helper.VerifyResourcesToBeDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+					{
+						ResourceType: helper.ResourceTypeIngress,
+						ResourceName: "example",
+						Namespace:    commonVar.Project,
+					},
+					{
+						ResourceType: helper.ResourceTypeService,
+						ResourceName: componentName,
+						Namespace:    commonVar.Project,
+					},
+					{
+						ResourceType: helper.ResourceTypePVC,
+						ResourceName: "storage-1",
+						Namespace:    commonVar.Project,
+					},
+					{
+						ResourceType: helper.ResourceTypePVC,
+						ResourceName: "storage-2",
+						Namespace:    commonVar.Project,
+					},
+				})
 			})
 		})
-	})
 
+		It("should throw an error when passing --app and --project flags with --context flag", func() {
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "--app", appName)
+			output := helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--app", appName)
+			Expect(output).To(ContainSubstring("cannot provide --app, --project or --component flag when --context is provided"))
+		})
+	})
 })

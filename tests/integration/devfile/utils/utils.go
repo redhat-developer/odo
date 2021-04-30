@@ -692,7 +692,6 @@ func ExecWithInvalidCommand(context, cmpName, pushTarget string) {
 
 // DeleteLocalConfig helps user to delete local config files with flags
 func DeleteLocalConfig(args ...string) {
-	//TODO: why do we have CmdShouldFail and CmdShouldPass?
 	helper.CmdShouldFail("odo", args...)
 	output := helper.CmdShouldPass("odo", append(args, "-af")...)
 	expectedOutput := []string{
