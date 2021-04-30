@@ -197,3 +197,9 @@ func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
 func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
 	CmdShouldPass(kubectl.path, "delete", "pod", "--namespace", namespace, podName)
 }
+
+// WaitAndCheckForTerminatingState waits for the given interval
+// and checks if the given resource type has been deleted on the cluster or is in the terminating state
+func (kubectl KubectlRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
+	return WaitAndCheckForTerminatingState(kubectl.path, resourceType, namespace, timeoutMinutes)
+}

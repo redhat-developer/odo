@@ -22,4 +22,5 @@ type CliRunner interface {
 	GetAllPVCNames(namespace string) []string
 	GetPodInitContainers(compName, namespace string) []string
 	GetContainerEnv(podName, containerName, namespace string) string
+	WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool
 }

@@ -660,3 +660,9 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 	)
 	return result
 }
+
+// WaitAndCheckForTerminatingState waits for the given interval
+// and checks if the given resource type has been deleted on the cluster or is in the terminating state
+func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
+	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
+}
