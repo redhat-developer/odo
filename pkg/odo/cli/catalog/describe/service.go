@@ -63,7 +63,7 @@ func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args 
 	}
 
 	// if the argument contains "/" then we assume the user wants to describe a CRD.
-	if _, _, err := service.SplitServiceKindName(args[0]); err != nil {
+	if _, _, err := service.SplitServiceKindName(args[0]); err == nil {
 		o.backend = NewOperatorBackend()
 	} else {
 		o.backend = NewServiceCatalogBackend()
