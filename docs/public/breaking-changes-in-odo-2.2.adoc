@@ -57,10 +57,6 @@ Note - observe there wasn't any conversion step involved here.
 
 It won’t fail in the sense that if you tried the conventional s2i approach and try to create odo url create it would fail with url for 8080 port already present as there would already be one for you. issue - #4621
 
-* Is odo env --now and odo delete --wait permanent or temporary as we already have the issue for “normal” devfile components
-
-Each and every change listed if they have an issue at the end of it will be fixed as a follow up e.g. #4594 for odo env and #4593 for odo delete
-
 * Not sure to understand the status of the debug
 
 odo env set DebugPort wont work, instead you would need to use odo config set --env DEBUG_PORT - this is because the s2i to devfile converted devfiles dont have a debug type command defined in them. We would fix this too.
@@ -69,6 +65,6 @@ odo env set DebugPort wont work, instead you would need to use odo config set --
 
 They should work as is mostly because I tried them and they work, maybe try odo list because that one is quite complex to work across the board.
 
-* If oc based checks are not going to work, is there an alternative odo support around it ?
+* If oc based checks in tests are not going to work, is there an alternative odo support around it ?
 
 I wouldn't say you cannot use oc based checks but they would break because now s2i components being converted to devfile would generate a deployment but the oc would try to find a DeploymentConfig.
