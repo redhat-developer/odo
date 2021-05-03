@@ -27,6 +27,8 @@ Please use `odo push` command to create the component with source deployed
 
 would generate a `devfile.yaml` which would be using the S2I images and variables that are part of the `nodejs`.
 
+* Note - This wouldn't break any existing S2I components, you are encouraged to convert then using `odo utils convert-to-devfile`. But they would still work.*
+
 * *Currently devfile components do not support `--git` and `--binary` components hence we still use S2I component flow when a user wants to create them.*
 
 [source,sh]
