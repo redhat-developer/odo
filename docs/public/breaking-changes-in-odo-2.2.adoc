@@ -57,7 +57,7 @@ Note - observe there wasn't any conversion step involved here.
 
 * Why does odo fail create to URL using `odo url create` for a component created using `odo create --s2i` even though `odo url craete` is allowed for devfile?
 
-It won’t fail in the sense that if you tried the conventional s2i approach and try to create odo url create it would fail with url for 8080 port already present as there would already be one for you. issue - #4621
+It won’t fail in the sense that if you tried the conventional s2i approach and try to create `odo url create` it would fail with url for 8080 port already present as there would already be one for you. issue - #4621
 
 * Not sure to understand the status of the debug
 
