@@ -7,13 +7,17 @@ As part of that effort the primary change that has happened is
 
 . `odo create --s2i <component-type>` would create a converted Devfile based component on the S2I images of that component type.
 
----
++
+[source,sh]
+----
 odo create --s2i nodejs
----
+----
 
 Output - 
 
----
++
+[source,sh]
+----
 odo create nodejs --s2i
 Validation
  ✓  Validating component [424ms]
@@ -21,19 +25,20 @@ Conversion
  ✓  Successfully generated devfile.yaml and env.yaml for provided S2I component
 
 Please use `odo push` command to create the component with source deployed
----
+----
 
 would generate a `devfile.yaml` which would be using the S2I images and variables that are part of the `nodejs`.
 
 . Currently devfile components do not support `--git` and `--binary` components hence we still use S2I component flow when a user wants to create them.
-
----
++
+[source,sh]
+----
 odo create java --s2i --git ./build.war
 Validation
  ✓  Validating component [431ms]
 
 Please use `odo push` command to create the component with source deployed
----
+----
 Note - observe there wasn't any conversion step involved here.
 
 . `odo env set DebugPort` wont work with converted devfile components, instead you would need to use `odo config set --env DEBUG_PORT`.
