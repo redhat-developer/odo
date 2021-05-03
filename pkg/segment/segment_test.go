@@ -252,6 +252,51 @@ func TestSetError(t *testing.T) {
 	}
 }
 
+func TestIsTelemetryEnabled(t *testing.T) {
+	tests := []struct {
+		errMesssage, envVar   string
+		want, preferenceValue bool
+	}{
+		{
+			want:            false,
+			errMesssage:     "Telemetry must be disabled.",
+			envVar:          "true",
+			preferenceValue: false,
+		},
+		{
+			want:            false,
+			errMesssage:     "Telemetry must be disabled.",
+			envVar:          "false",
+			preferenceValue: false,
+		},
+		{
+			want:            false,
+			errMesssage:     "Telemetry must be disabled.",
+			envVar:          "true",
+			preferenceValue: true,
+		},
+		{
+			want:            true,
+			errMesssage:     "Telemetry must be enabled.",
+			envVar:          "false",
+			preferenceValue: true,
+		},
+	}
+	for _, tt := range tests {
+		os.Setenv(DisableTelemetryEnv, tt.envVar)
+		cfg := &preference.PreferenceInfo{
+			Preference: preference.Preference{
+				OdoSettings: preference.OdoSettings{
+					ConsentTelemetry: &tt.preferenceValue,
+				},
+			},
+		}
+		if IsTelemetryEnabled(cfg) != tt.want {
+			t.Errorf(tt.errMesssage, "%s is set to %q. %s is set to %q.", DisableTelemetryEnv, tt.envVar, preference.ConsentTelemetrySetting, tt.preferenceValue)
+		}
+	}
+}
+
 // createConfigDir creates a mock filesystem
 func createConfigDir(t *testing.T) string {
 	fs := filesystem.NewFakeFs()

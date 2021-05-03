@@ -35,7 +35,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	var startTime time.Time
 	cfg, _ := preference.New()
-	disableTelemetry := os.Getenv(segment.DisableTelemetryEnv)
+	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
 
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
@@ -44,8 +44,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
-		} else if disableTelemetry == "true" {
-			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.DisableTelemetryEnv, disableTelemetry)
+		} else if disableTelemetry {
+			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else {
 			var consentTelemetry bool
 			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
@@ -140,6 +140,7 @@ func checkConflictingFlags(cmd *cobra.Command) error {
 	}
 	return nil
 }
+
 func stringFlagLookup(cmd *cobra.Command, flagName string) string {
 	flag := cmd.Flags().Lookup(flagName)
 	// a check to make sure if the flag is not defined we return blank

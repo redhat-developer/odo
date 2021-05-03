@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/openshift/odo/pkg/preference"
@@ -15,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
+	"k8s.io/klog"
 )
 
 // writekey will be the API key used to send data to the correct source on Segment. Default is the dev key
@@ -198,8 +200,11 @@ func RunningInTerminal() bool {
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
 func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
-	// The env variable gets precedence in this decision
-	if os.Getenv(DisableTelemetryEnv) == "true" {
+	// The env variable gets precedence in this decision.
+	// In case a non-bool value was passed to the env var, we ignore it
+	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))
+	if disableTelemetry {
+		klog.V(4).Infof("Sending telemetry disabled by %s=%t\n", DisableTelemetryEnv, disableTelemetry)
 		return false
 	} else if cfg.GetConsentTelemetry() {
 		return true

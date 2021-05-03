@@ -2,11 +2,9 @@ package telemetry
 
 import (
 	"encoding/json"
-	"os"
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/segment"
 	"github.com/pkg/errors"
@@ -34,29 +32,27 @@ func (o *TelemetryOptions) Validate() (err error) {
 }
 
 func (o *TelemetryOptions) Run() (err error) {
-	var segmentClient *segment.Client
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Errorf("unable to update data, required preference.yaml file not found.")
+		return errors.Wrapf(err, "Unable to upload telemetry data.")
 	}
-	// Initiate the segment client if ConsentTelemetry preference is set to true
-	if cfg.GetConsentTelemetry() {
-		if os.Getenv(segment.DisableTelemetryEnv) == "true" {
-			log.Warningf("Sending telemetry disabled by %s=%s\n", segment.DisableTelemetryEnv, os.Getenv(segment.DisableTelemetryEnv))
-		} else {
-			if segmentClient, err = segment.NewClient(cfg); err != nil {
-				klog.V(4).Infof("Cannot create a segment client, will not send any data: %s", err.Error())
-			}
-			defer segmentClient.Close()
-		}
+
+	if !segment.IsTelemetryEnabled(cfg) {
+		return nil
 	}
-	if segmentClient != nil {
-		if serr := segmentClient.Upload(o.telemetryData); serr != nil {
-			klog.V(4).Infof("Cannot send data to telemetry: %q", serr)
-		}
-		return segmentClient.Close()
+
+	segmentClient, err := segment.NewClient(cfg)
+	if err != nil {
+		klog.V(4).Infof("Cannot create a segment client. Will not send any data: %q", err)
 	}
-	return nil
+	defer segmentClient.Close()
+
+	err = segmentClient.Upload(o.telemetryData)
+	if err != nil {
+		klog.V(4).Infof("Cannot send data to telemetry: %q", err)
+	}
+
+	return segmentClient.Close()
 }
 
 func NewCmdTelemetry(name string) *cobra.Command {
@@ -66,6 +62,7 @@ func NewCmdTelemetry(name string) *cobra.Command {
 		Short:                  "Collect and upload usage data.",
 		BashCompletionFunction: "",
 		Hidden:                 true,
+		Args:                   cobra.ExactArgs(1),
 		Annotations:            map[string]string{},
 		SilenceErrors:          true,
 		SilenceUsage:           true,
