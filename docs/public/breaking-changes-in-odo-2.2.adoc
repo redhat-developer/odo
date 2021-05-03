@@ -65,7 +65,7 @@ odo env set DebugPort wont work, instead you would need to use odo config set --
 
 * So every component will now be reported as devfile component but what about existing S2I components
 
-They should work as is mostly because I tried them and they work, maybe try odo list because that one is quite complex to work across the board.
+They should work as is mostly because we tried them and they work, maybe try `odo list` because it is quite complex to make things work across the board.
 
 * If oc based checks in tests are not going to work, is there an alternative odo support around it ?
 
