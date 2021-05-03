@@ -147,8 +147,8 @@ var _ = Describe("odo devfile delete command tests", func() {
 		var setup = func(componentName, contextName string) {
 			helper.Chdir(contextName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), contextName)
-			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project)
-			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "--app", appName)
+			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project, "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 		}
 		JustBeforeEach(func() {
 			// Create the second component in a new context dir
@@ -191,7 +191,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 		// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4451 is fixed
 		//It("should delete the component when deleting with component name, --app and --project flags", func() {
-		//	output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f", "--app", appName)
+		//	output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f",  "--context", secondContext)
 		//	Expect(output).To(ContainSubstring(secondComponent))
 		//	Expect(output).ToNot(ContainSubstring(firstComponent))
 		//})
@@ -263,8 +263,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 
 		It("should throw an error when passing --app and --project flags with --context flag", func() {
-			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "--app", appName)
-			output := helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--app", appName)
+			output := helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--app", appName, "-f", "--context", secondContext)
 			Expect(output).To(ContainSubstring("cannot provide --app, --project or --component flag when --context is provided"))
 		})
 	})
