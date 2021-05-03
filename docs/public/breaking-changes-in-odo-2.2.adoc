@@ -69,4 +69,4 @@ They should work as is mostly because we tried them and they work, maybe try `od
 
 * If oc based checks in tests are not going to work, is there an alternative odo support around it ?
 
-I wouldn't say you cannot use oc based checks but they would break because now s2i components being converted to devfile would generate a deployment but the oc would try to find a DeploymentConfig.
+It wouldn't be right to say that you cannot use `oc` based checks, but they would break because now the s2i components are being converted to devfile, odo would generate a Kubernetes `Deployment` but the `oc` would try to find a `DeploymentConfig` on the cluster.
