@@ -34,7 +34,7 @@ func (o *TelemetryOptions) Validate() (err error) {
 func (o *TelemetryOptions) Run() (err error) {
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Wrapf(err, "Unable to upload telemetry data.")
+		return errors.Wrapf(err, "unable to upload telemetry data")
 	}
 
 	if !segment.IsTelemetryEnabled(cfg) {

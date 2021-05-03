@@ -281,6 +281,12 @@ func TestIsTelemetryEnabled(t *testing.T) {
 			envVar:          "false",
 			preferenceValue: true,
 		},
+		{
+			want:            true,
+			errMesssage:     "Telemetry must be enabled.",
+			envVar:          "foobar",
+			preferenceValue: true,
+		},
 	}
 	for _, tt := range tests {
 		os.Setenv(DisableTelemetryEnv, tt.envVar)
