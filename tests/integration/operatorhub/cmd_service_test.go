@@ -67,7 +67,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster)
 			Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
 			outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "-o", "json")
-			values := gjson.GetMany(outputJSON, "kind", "displayName")
+			values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
 			expected := []string{"EtcdCluster", "etcd Cluster"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 		})

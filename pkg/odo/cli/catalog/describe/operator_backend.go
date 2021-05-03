@@ -76,7 +76,7 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(dso.CR)
+		machineoutput.OutputSuccess(svc.ConvertCRDToJSONRepr(dso.CR))
 		return nil
 	}
 	output, err := yaml.Marshal(svc.ConvertCRDToRepr(dso.CR))
