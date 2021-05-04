@@ -13,6 +13,11 @@ import (
 )
 
 type operatorBackend struct {
+	// the operator name
+	OperatorType   string
+	CustomResource string
+	CSV            olm.ClusterServiceVersion
+	CR             *olm.CRDDescription
 }
 
 func NewOperatorBackend() *operatorBackend {
@@ -34,18 +39,18 @@ func (ohb *operatorBackend) CompleteDescribeService(dso *DescribeServiceOptions,
 	if !isCSVSupported {
 		return errors.New("it seems the cluster doesn't support Operators. Please install OLM and try again")
 	}
-	dso.OperatorType = oprType
-	dso.CustomResource = CR
+	ohb.OperatorType = oprType
+	ohb.CustomResource = CR
 	return nil
 }
 
 func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions) error {
 	var err error
-	if dso.OperatorType == "" || dso.CustomResource == "" {
-		return fmt.Errorf("invalid service name, use the format <operator-type>/<crd-name>")
+	if ohb.OperatorType == "" || ohb.CustomResource == "" {
+		return errors.New("invalid service name, use the format <operator-type>/<crd-name>")
 	}
 	// make sure that CSV of the specified OperatorType exists
-	dso.CSV, err = dso.KClient.GetClusterServiceVersion(dso.OperatorType)
+	ohb.CSV, err = dso.KClient.GetClusterServiceVersion(ohb.OperatorType)
 	if err != nil {
 		// error only occurs when OperatorHub is not installed.
 		// k8s does't have it installed by default but OCP does
@@ -53,33 +58,33 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 	}
 
 	// Get the specific CR that matches "kind"
-	crs := dso.KClient.GetCustomResourcesFromCSV(&dso.CSV)
+	crs := dso.KClient.GetCustomResourcesFromCSV(&ohb.CSV)
 
 	var cr *olm.CRDDescription
 	hasCR := false
 	for _, custRes := range *crs {
 		c := custRes
-		if c.Kind == dso.CustomResource {
+		if c.Kind == ohb.CustomResource {
 			cr = &c
 			hasCR = true
 			break
 		}
 	}
 	if !hasCR {
-		return fmt.Errorf("the %q resource doesn't exist in specified %q operator", dso.CustomResource, dso.OperatorType)
+		return fmt.Errorf("the %q resource doesn't exist in specified %q operator", ohb.CustomResource, ohb.OperatorType)
 	}
 
-	dso.CR = cr
+	ohb.CR = cr
 	return nil
 
 }
 
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(svc.ConvertCRDToJSONRepr(dso.CR))
+		machineoutput.OutputSuccess(svc.ConvertCRDToJSONRepr(ohb.CR))
 		return nil
 	}
-	output, err := yaml.Marshal(svc.ConvertCRDToRepr(dso.CR))
+	output, err := yaml.Marshal(svc.ConvertCRDToRepr(ohb.CR))
 	if err != nil {
 		return err
 	}
