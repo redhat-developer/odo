@@ -66,7 +66,7 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 		}
 	}
 	if !hasCR {
-		return fmt.Errorf("the %s resource doesn't exist in specified %s operator", dso.CustomResource, dso.OperatorType)
+		return fmt.Errorf("the %q resource doesn't exist in specified %q operator", dso.CustomResource, dso.OperatorType)
 	}
 
 	dso.CR = cr
