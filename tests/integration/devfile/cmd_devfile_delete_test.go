@@ -37,6 +37,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project)
 		})
 
+		// TODO: To be fixed by https://github.com/openshift/odo/issues/4451
+		//It("should throw an error when only --project flag is passed", func(){
+		//	output := helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project)
+		//	Expect(output).To(ContainSubstring("cannot call delete command with --project flag only, must pass component name"))
+		//})
+
 		It("should not throw an error when a component is not pushed to an existing namespace", func() {
 			helper.CmdShouldPass("odo", "delete", componentName, "--project", commonVar.Project, "-f")
 		})
@@ -172,11 +178,13 @@ var _ = Describe("odo devfile delete command tests", func() {
 				helper.CmdRunner("odo", "delete", "-f")
 			}
 		})
+
 		It("should delete the context directory's component with --context flag", func() {
 			output := helper.CmdShouldPass("odo", "delete", "-f", "--context", secondContext)
 			Expect(output).To(ContainSubstring(secondComponent))
 			Expect(output).ToNot(ContainSubstring(firstComponent))
 		})
+
 		It("should delete all the config files and component with -a and --context flag of the context directory", func() {
 			output := helper.CmdShouldPass("odo", "delete", "-af", "--context", secondContext)
 			Expect(output).To(ContainSubstring(secondComponent))
@@ -184,13 +192,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			files := helper.ListFilesInDir(secondContext)
 			Expect(files).To(Not(ContainElement(".odo")))
-			// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4135 is fixed
 			Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
 
 		// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4451 is fixed
 		//It("should delete the component when deleting with component name, --app and --project flags", func() {
-		//	output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f",  "--context", secondContext)
+		//	output := helper.CmdShouldPass("odo", "delete", secondComponent, "--project", commonVar.Project, "-f", "--app", appName)
 		//	Expect(output).To(ContainSubstring(secondComponent))
 		//	Expect(output).ToNot(ContainSubstring(firstComponent))
 		//})
@@ -261,6 +268,23 @@ var _ = Describe("odo devfile delete command tests", func() {
 			})
 		})
 
+		// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4451 is fixed
+		//It("should throw an error when --app, or --project flag is provided with --all flag", func() {
+		//	output := helper.CmdShouldFail("odo", "delete", secondComponent, "--project", commonVar.Project, "--app", appName, "-f", "-a")
+		//	Expect(output).To(ContainSubstring("cannot provide --app and --project flag when --all flag is provided")
+		//})
+
+		// TODO: Fixed with https://github.com/openshift/odo/issues/4451
+		//It("should throw an error component name is called with --all flag", func(){
+		//	output := helper.CmdShouldFail("odo", "delete", secondComponent, "-a", "-f")
+		//	Expect(output).To(ContainSubstring("cannot provide component name with --all flag"))
+		//})
+
+		// TODO: Fixed with https://github.com/openshift/odo/issues/4451
+		//It("should throw an error when component name is passed with --context flag", func() {
+		//	output := helper.CmdShouldFail("odo", "delete", secondComponent, "--context", secondContext)
+		//	Expect(output).To(ContainSubstring("cannot provide component name with --context flag"))
+		//}
 		It("should throw an error when passing --app and --project flags with --context flag", func() {
 			output := helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--app", appName, "-f", "--context", secondContext)
 			Expect(output).To(ContainSubstring("cannot provide --app, --project or --component flag when --context is provided"))
