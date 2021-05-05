@@ -27,7 +27,7 @@ To install Operators on an OpenShift cluster, contact your cluster administrator
 
 ===== Prerequisites
 
-* You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes]. If you're running a link:https://minikube.sigs.k8s.io/docs/[minikube] cluster, you can refer to link:docs/operators-on-minikube.adoc[this guide] to install Operators required to run example mentioned in this document.
+* You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes]. If you're running a link:https://minikube.sigs.k8s.io/docs/[minikube] cluster, you can refer to link:operators-on-minikube.adoc[this guide] to install Operators required to run example mentioned in this document.
 
 === Creating a project
 
@@ -62,7 +62,7 @@ Each Operator we install refers to the built-in `metadata.annotations.alm-exampl
 
 ==== Kubernetes installation
 
-For Kubernetes installation, you must need to install the Operator Lifecycle Manager and etcd Operator from the link:https://operatorhub.io/operator/etcd[etcd installation guide on Operator Hub]. You can refer to link:docs/operators-on-minikube.adoc[this document] for steps setup Operator Lifecycle Manager and etcd Operator on a link:https://minikube.sigs.k8s.io/[minikube] cluster.
+For Kubernetes installation, you must need to install the Operator Lifecycle Manager and etcd Operator from the link:https://operatorhub.io/operator/etcd[etcd installation guide on Operator Hub]. You can refer to link:operators-on-minikube.adoc[this document] for steps setup Operator Lifecycle Manager and etcd Operator on a link:https://minikube.sigs.k8s.io/[minikube] cluster.
 
 ==== OpenShift installation
 
