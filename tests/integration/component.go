@@ -255,8 +255,13 @@ func componentTests(args ...string) {
 			oc.ImportJavaIS(commonVar.Project)
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
 			// Was failing due to https://github.com/openshift/odo/issues/1969
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"))...)
+			if runtime.GOOS == "darwin" {
+				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+					commonVar.Project, "--binary", filepath.Join("/private", commonVar.Context, "sb.jar"))...)
+			} else {
+				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+					commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"))...)
+			}
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetName(), "sb-jar-test")
 		})
