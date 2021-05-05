@@ -71,6 +71,29 @@ func (oc OcRunner) GetFirstURL(component string, app string, project string) str
 	return ""
 }
 
+//StatFileInPodContainer returns stat result of filepath in a container of a pod of given component, in a given app, in a given project.
+//It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
+//in it anyway
+func StatFileInPodContainer(runner CliRunner, cmpName, containerName, appName, project, filepath string) string {
+	podName := runner.GetRunningPodNameByComponent(cmpName, project)
+	var result string
+	runner.CheckCmdOpInRemoteDevfilePod(
+		podName,
+		containerName,
+		project,
+		[]string{"stat", filepath},
+		func(cmdOp string, err error) bool {
+			//strip out access info as
+			// 1. Touching a file (such as running it in a script) modifies access times. This gives wrong value on mounts without noatime
+			// 2. We are not interested in Access info anyway.
+			re := regexp.MustCompile("(?m)[\r\n]+^.*Access.*$")
+			result = re.ReplaceAllString(cmdOp, "")
+			return true
+		},
+	)
+	return result
+}
+
 // GetComponentRoutes run command to get the Routes in yaml format for given component
 func (oc OcRunner) GetComponentRoutes(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
@@ -565,6 +588,18 @@ func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace s
 // CreateRandNamespaceProject create new project
 func (oc OcRunner) CreateRandNamespaceProject() string {
 	projectName := SetProjectName()
+	oc.createRandNamespaceProject(projectName)
+	return projectName
+}
+
+// CreateRandNamespaceProject creates a new project with name of length i
+func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
+	projectName := RandString(i)
+	oc.createRandNamespaceProject(projectName)
+	return projectName
+}
+
+func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
 	Expect(session).To(ContainSubstring("New project created"))
@@ -624,4 +659,10 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 		},
 	)
 	return result
+}
+
+// WaitAndCheckForTerminatingState waits for the given interval
+// and checks if the given resource type has been deleted on the cluster or is in the terminating state
+func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
+	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
 }

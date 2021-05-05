@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/convert"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
@@ -719,8 +720,6 @@ func (co *CreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	log.Info("Validation")
-
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
 		return err
@@ -768,6 +767,7 @@ func (co *CreateOptions) s2iRun() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) devfileRun() (err error) {
 	var devfileData []byte
+	devfileExist := util.CheckPathExists(DevfilePath)
 	// Use existing devfile directly from --devfile flag
 	if co.devfileMetadata.devfilePath.value != "" {
 		if co.devfileMetadata.devfilePath.protocol == "http(s)" {
@@ -787,7 +787,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 			}
 		}
 	} else {
-		if util.CheckPathExists(DevfilePath) {
+		if devfileExist {
 			// if local devfile already exists read that
 			// odo create command was expected in a directory already containing devfile
 			devfileData, err = ioutil.ReadFile(DevfilePath)
@@ -854,11 +854,17 @@ func (co *CreateOptions) devfileRun() (err error) {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
 
-	// save devfile
+	// save devfile and corresponding resources if possible
 	// use original devfileData to persist original formatting of the devfile file
 	err = ioutil.WriteFile(DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
+	}
+	if co.devfileMetadata.devfilePath.value == "" && !devfileExist && !strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
+		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Generate env file
@@ -908,22 +914,40 @@ func (co *CreateOptions) Run() (err error) {
 			return err
 		}
 		if log.IsJSON() {
+			return co.DevfileJSON()
+		}
+		return nil
+	}
 
-			client, err := genericclioptions.Client()
-			if err == nil {
-				co.Client = client
-			}
+	// we only do conversion if the --s2i is provided and the component is not of --git type
+	if co.forceS2i && len(co.componentGit) == 0 && len(co.componentBinary) == 0 {
+		log.Info("Conversion")
+		// do the conversion
+		// lets fill the localConfigInfo as we are using that as an adapter
+		co.LocalConfigInfo.SetComponentSettingsWithoutFileWrite(co.componentSettings)
+		if err := convert.GenerateDevfileYaml(co.Client, co.LocalConfigInfo, co.componentContext); err != nil {
+			return err
+		}
 
-			envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
+		if _, err := convert.GenerateEnvYaml(co.Client, co.LocalConfigInfo, co.componentContext); err != nil {
+			return err
+		}
+		log.Success("Successfully generated devfile.yaml and env.yaml for provided S2I component")
+
+		if co.now {
+			err = co.InitEnvInfoFromContext()
 			if err != nil {
 				return err
 			}
-
-			cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
+			err = co.DevfilePush()
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to push changes: %w", err)
 			}
-			machineoutput.OutputSuccess(cfd.GetComponent())
+		} else {
+			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
+		}
+		if log.IsJSON() {
+			return co.DevfileJSON()
 		}
 		return nil
 	}

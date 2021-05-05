@@ -66,6 +66,59 @@ var _ = Describe("odo devfile storage command tests", func() {
 			}
 		})
 
+		It("should create storage and attach to specified container successfully and list it correctly", func() {
+			args := []string{"create", "java-springboot", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			helper.CmdShouldPass("odo", args...)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			storageName := helper.RandString(5)
+			pathName := "/data1"
+			size := "1Gi"
+			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", pathName, "--context", commonVar.Context, "--container", "tools", "--size", size)
+			storageList := helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+			helper.MatchAllInOutput(storageList, []string{pathName, "tools", storageName, size})
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			storageList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+			helper.MatchAllInOutput(storageList, []string{pathName, "tools", storageName})
+
+			// check the volume name and mount paths for the funtime container
+			volumesMatched := 0
+			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "tools", commonVar.Project)
+			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
+			for _, volNamesAndPath := range volNamesAndPathsArr {
+				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
+				if strings.Contains(volNamesAndPathArr[0], storageName) && volNamesAndPathArr[1] == pathName {
+					volumesMatched++
+				}
+			}
+			Expect(volumesMatched).To(Equal(1))
+
+			// check the volume name and mount path Not present in runtime container
+			volumesMatched = 0
+			volNamesAndPaths = commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", commonVar.Project)
+			volNamesAndPathsArr = strings.Fields(volNamesAndPaths)
+			for _, volNamesAndPath := range volNamesAndPathsArr {
+				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
+				if strings.Contains(volNamesAndPathArr[0], storageName) && volNamesAndPathArr[1] == pathName {
+					volumesMatched++
+				}
+			}
+			Expect(volumesMatched).To(Equal(0))
+
+			helper.CmdShouldPass("odo", "storage", "delete", "-f", "--context", commonVar.Context, storageName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			storageList = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+			helper.DontMatchAllInOutput(storageList, []string{pathName, "tools", storageName, size})
+
+			storageName2 := helper.RandString(5)
+			helper.CmdShouldPass("odo", "storage", "create", storageName2, "--path", pathName, "--context", commonVar.Context, "--container", "runtime", "--size", size)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "storage", "delete", "-f", "--context", commonVar.Context, storageName2)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+		})
+
 		It("should create a storage with default size when --size is not provided", func() {
 			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
 			helper.CmdShouldPass("odo", args...)
@@ -150,6 +203,20 @@ var _ = Describe("odo devfile storage command tests", func() {
 			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(stdOut, []string{storageNames[0], pathNames[0], sizes[0], "Locally Deleted"})
 			helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
+
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
+
+			// since we don't have `wait` for `odo delete` at this moment
+			// we need to wait for the pod to be in the terminating state or it has been deleted from the cluster
+			commonVar.CliRunner.WaitAndCheckForTerminatingState("pods", commonVar.Project, 1)
+
+			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+
+			helper.MatchAllInOutput(stdOut, []string{"Not Pushed"})
+			// since `Pushed` is a sub string of `Not Pushed`, we count the occurrence of `Pushed`
+			count := strings.Count(stdOut, "Pushed")
+			Expect(count).To(Equal(1))
 		})
 
 		It("should list the storage with the proper states and container names", func() {

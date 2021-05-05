@@ -63,7 +63,7 @@ var _ = Describe("odo app command tests", func() {
 			appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
 			Expect(appListOutput).To(ContainSubstring(appName))
 			actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json", "--project", commonVar.Project)
-			valuesL := gjson.GetMany(actualCompListJSON, "kind", "s2iComponents.0.metadata.name", "s2iComponents.0.metadata.namespace")
+			valuesL := gjson.GetMany(actualCompListJSON, "kind", "devfileComponents.0.metadata.name", "devfileComponents.0.metadata.namespace")
 			expectedL := []string{"List", "nodejs", commonVar.Project}
 			Expect(helper.GjsonMatcher(valuesL, expectedL)).To(Equal(true))
 			helper.CmdShouldPass("odo", "app", "describe", "--project", commonVar.Project)

@@ -40,7 +40,7 @@ type LocalStorage struct {
 	Size string `yaml:"Size,omitempty"`
 	// Path of the storage to which it will be mounted on the container
 	Path string `yaml:"Path,omitempty"`
-	// Container is the container name on which the storage will be mounted
+	// Container is the container name on which this storage is mounted
 	Container string `yaml:"-" json:"-"`
 }
 

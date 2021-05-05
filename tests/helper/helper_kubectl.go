@@ -141,11 +141,23 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 // CreateRandNamespaceProject create new project
 func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
 	projectName := SetProjectName()
+	kubectl.createRandNamespaceProject(projectName)
+	return projectName
+}
+
+func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	CmdShouldPass("kubectl", "create", "namespace", projectName)
 	CmdShouldPass("kubectl", "config", "set-context", "--current", "--namespace", projectName)
 	session := CmdShouldPass("kubectl", "get", "namespaces")
 	Expect(session).To(ContainSubstring(projectName))
+	return projectName
+}
+
+// CreateRandNamespaceProjectOfLength create new project with i as the length of the name
+func (kubectl KubectlRunner) CreateRandNamespaceProjectOfLength(i int) string {
+	projectName := RandString(i)
+	kubectl.createRandNamespaceProject(projectName)
 	return projectName
 }
 
@@ -184,4 +196,10 @@ func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
 // DeletePod deletes a specified pod in the namespace
 func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
 	CmdShouldPass(kubectl.path, "delete", "pod", "--namespace", namespace, podName)
+}
+
+// WaitAndCheckForTerminatingState waits for the given interval
+// and checks if the given resource type has been deleted on the cluster or is in the terminating state
+func (kubectl KubectlRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
+	return WaitAndCheckForTerminatingState(kubectl.path, resourceType, namespace, timeoutMinutes)
 }
