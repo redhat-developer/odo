@@ -42,7 +42,7 @@ odo utilizes Operators and [Operator Hub](https://operatorhub.io/) in order to p
 
 ### Prerequisites
 
-  - You must have cluster permissions to install an Operator on either [OpenShift](https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html) or [Kubernetes](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md). If you’re running a [minikube](https://minikube.sigs.k8s.io/docs/) cluster, you can refer to [this guide](https://odo.dev/docs/operators-on-minikube.adoc) to install Operators required to run example mentioned in this document.
+  - You must have cluster permissions to install an Operator on either [OpenShift](https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html) or [Kubernetes](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md). If you’re running a [minikube](https://minikube.sigs.k8s.io/docs/) cluster, you can refer to [this guide](https://odo.dev/docs/operators-on-minikube) to install Operators required to run example mentioned in this document.
 
 ## Creating a project
 
@@ -72,7 +72,7 @@ In our examples, we install [etcd](https://etcd.io/), a distributed key-value st
 
 ### Kubernetes installation
 
-For Kubernetes installation, you must need to install the Operator Lifecycle Manager and etcd Operator from the [etcd installation guide on Operator Hub](https://operatorhub.io/operator/etcd). You can refer to [this document](https://odo.dev/docs/operators-on-minikube.adoc) for steps setup Operator Lifecycle Manager and etcd Operator on a [minikube](https://minikube.sigs.k8s.io/) cluster.
+For Kubernetes installation, you must need to install the Operator Lifecycle Manager and etcd Operator from the [etcd installation guide on Operator Hub](https://operatorhub.io/operator/etcd). You can refer to [this document](https://odo.dev/docs/operators-on-minikube) for steps setup Operator Lifecycle Manager and etcd Operator on a [minikube](https://minikube.sigs.k8s.io/) cluster.
 
 ### OpenShift installation
 
