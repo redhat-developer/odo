@@ -155,6 +155,10 @@ configure-supported-311-is:
 test:
 	go test $(UNIT_TEST_ARGS) -race $(PKGS)
 
+.PHONY: test-windows
+test-windows:
+	go test $(UNIT_TEST_ARGS)  $(PKGS)
+
 # Run generic integration tests
 .PHONY: test-generic
 test-generic:
