@@ -7,7 +7,8 @@ import (
 
 var _ = Describe("odo devfile registry command tests", func() {
 	const registryName string = "RegistryName"
-	const addRegistryURL string = "https://registry.devfile.io"
+	// Use staging OCI-based registry for tests to avoid overload
+	const addRegistryURL string = "https://registry.stage.devfile.io"
 
 	const updateRegistryURL string = "http://www.example.com/update"
 	var commonVar helper.CommonVar
