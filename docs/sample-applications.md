@@ -91,14 +91,6 @@ This example helps build and run Ruby applications on CentOS 7. For more informa
 $ odo create ruby --git https://github.com/openshift/ruby-ex.git
 ```
 
-## wildfly
-
-This example helps build and run WildFly applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see the [Wildfly - CentOS Docker images for OpenShift](https://github.com/wildfly/wildfly-s2i/blob/master/README.md).
-
-``` terminal
-$ odo create wildfly --git https://github.com/openshift/openshift-jee-sample.git
-```
-
 # Binary examples
 
 ## java
@@ -111,18 +103,4 @@ $ cd spring-petclinic
 $ mvn package
 $ odo create java test3 --binary target/*.jar
 $ odo push
-```
-
-## wildfly
-
-WildFly can be used to deploy a binary application as follows:
-
-``` terminal
-$ git clone https://github.com/openshiftdemos/os-sample-java-web.git
-$ cd os-sample-java-web
-$ mvn package
-$ cd ..
-$ mkdir example && cd example
-$ mv ../os-sample-java-web/target/ROOT.war example.war
-$ odo create wildfly --binary example.war
 ```
