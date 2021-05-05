@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -357,7 +358,8 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 
 	if len(remoteDirectories) == 0 {
 		// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-		innerRet, err := recursiveChecker(directory, filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), filepath.Base(destPath), ignoreRules, remoteDirectories, *existingFileIndex, filesystem.DefaultFs{})
+		pathOptions := recursiveCheckerPathOptions{directory, filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), filepath.Base(destPath)}
+		innerRet, err := recursiveChecker(pathOptions, ignoreRules, remoteDirectories, *existingFileIndex)
 
 		if err != nil {
 			return IndexerRet{}, err
@@ -384,6 +386,9 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 		matches, err := filepath.Glob(filepath.Join(directory, remoteAttribute))
 		if err != nil {
 			return IndexerRet{}, err
+		}
+		if len(matches) == 0 {
+			return IndexerRet{}, fmt.Errorf("path %q doens't exist", remoteAttribute)
 		}
 		for _, fileName := range matches {
 			if checkFileExist(fileName) {
@@ -417,7 +422,8 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				klog.V(4).Infof("makeTar destFile: %s", destFile)
 
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				innerRet, err := recursiveChecker(directory, filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), destFile, ignoreRules, remoteDirectories, *existingFileIndex, filesystem.DefaultFs{})
+				pathOptions := recursiveCheckerPathOptions{directory, filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), destFile}
+				innerRet, err := recursiveChecker(pathOptions, ignoreRules, remoteDirectories, *existingFileIndex)
 				if err != nil {
 					return IndexerRet{}, err
 				}
@@ -437,6 +443,8 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				for _, remote := range innerRet.FilesDeleted {
 					filesDeleted[remote] = true
 				}
+			} else {
+				return IndexerRet{}, fmt.Errorf("path %q doens't exist", fileName)
 			}
 		}
 	}
@@ -492,24 +500,41 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 	return ret, nil
 }
 
+// recursiveCheckerPathOptions are the path options for the recursiveChecker function
+type recursiveCheckerPathOptions struct {
+	// directory of the component
+	// srcBase is the base of the file/folder
+	// srcFile is the file name
+	// destBase is the base of the file's/folder's destination
+	// destFile is the base of the file's destination
+	directory, srcBase, srcFile, destBase, destFile string
+}
+
 // recursiveChecker visits the current source and it's inner files and folders, if any
 // the destination values are used to record the appropriate remote location for file or folder
-func recursiveChecker(directory, srcBase, srcFile, destBase, destFile string, ignoreRules []string, remoteDirectories map[string]string, existingFileIndex FileIndex, fs filesystem.Filesystem) (IndexerRet, error) {
-	klog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
+// ignoreRules are used to ignore file and folders
+// remoteDirectories are used to find the remote destination of the file/folder and to delete files/folders left behind after the attributes are changed
+// existingFileIndex is used to check for file/folder changes
+func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []string, remoteDirectories map[string]string, existingFileIndex FileIndex) (IndexerRet, error) {
+	klog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", pathOptions.srcBase, pathOptions.srcFile, pathOptions.destBase, pathOptions.destFile)
 
 	// The destination is a LINUX container and thus we *must* use ToSlash in order
 	// to get the copying over done correctly..
-	destBase = filepath.ToSlash(destBase)
-	destFile = filepath.ToSlash(destFile)
-	klog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
+	pathOptions.destBase = filepath.ToSlash(pathOptions.destBase)
+	pathOptions.destFile = filepath.ToSlash(pathOptions.destFile)
+	klog.V(4).Infof("Corrected destinations: base: %s file: %s", pathOptions.destBase, pathOptions.destFile)
 
-	joinedPath := filepath.Join(srcBase, srcFile)
+	joinedPath := filepath.Join(pathOptions.srcBase, pathOptions.srcFile)
 	matchedPathsDir, err := filepath.Glob(joinedPath)
 	if err != nil {
 		return IndexerRet{}, err
 	}
 
-	joinedRelPath, err := filepath.Rel(directory, joinedPath)
+	if len(matchedPathsDir) == 0 {
+		return IndexerRet{}, fmt.Errorf("path %q doens't exist", joinedPath)
+	}
+
+	joinedRelPath, err := filepath.Rel(pathOptions.directory, joinedPath)
 	if err != nil {
 		return IndexerRet{}, err
 	}
@@ -532,7 +557,7 @@ func recursiveChecker(directory, srcBase, srcFile, destBase, destFile string, ig
 			return IndexerRet{}, nil
 		}
 
-		stat, err := fs.Stat(matchedPath)
+		stat, err := os.Stat(matchedPath)
 		if err != nil {
 			return IndexerRet{}, err
 		}
@@ -559,7 +584,7 @@ func recursiveChecker(directory, srcBase, srcFile, destBase, destFile string, ig
 			}
 
 			if joinedRelPath != "." {
-				folderData, folderChangedData, folderRemoteChangedData := handleRemoteDataFolder(destFile, matchedPath, joinedRelPath, remoteDirectories, existingFileIndex)
+				folderData, folderChangedData, folderRemoteChangedData := handleRemoteDataFolder(pathOptions.destFile, matchedPath, joinedRelPath, remoteDirectories, existingFileIndex)
 				folderData.Size = stat.Size()
 				folderData.LastModifiedDate = stat.ModTime()
 				ret.NewFileMap[joinedRelPath] = folderData
@@ -574,7 +599,7 @@ func recursiveChecker(directory, srcBase, srcFile, destBase, destFile string, ig
 			}
 
 			// read the current folder and read inner files and folders
-			files, err := fs.ReadDir(matchedPath)
+			files, err := ioutil.ReadDir(matchedPath)
 			if err != nil {
 				return IndexerRet{}, err
 			}
@@ -586,7 +611,8 @@ func recursiveChecker(directory, srcBase, srcFile, destBase, destFile string, ig
 					continue
 				}
 
-				innerRet, err := recursiveChecker(directory, srcBase, filepath.Join(srcFile, f.Name()), destBase, filepath.Join(destFile, f.Name()), ignoreRules, remoteDirectories, existingFileIndex, fs)
+				pathOptions := recursiveCheckerPathOptions{pathOptions.directory, pathOptions.srcBase, filepath.Join(pathOptions.srcFile, f.Name()), pathOptions.destBase, filepath.Join(pathOptions.destFile, f.Name())}
+				innerRet, err := recursiveChecker(pathOptions, ignoreRules, remoteDirectories, existingFileIndex)
 				if err != nil {
 					return IndexerRet{}, err
 				}
@@ -603,7 +629,7 @@ func recursiveChecker(directory, srcBase, srcFile, destBase, destFile string, ig
 				}
 			}
 		} else {
-			fileData, fileChangedData, fileRemoteChangedData := handleRemoteDataFile(destFile, matchedPath, joinedRelPath, remoteDirectories, existingFileIndex)
+			fileData, fileChangedData, fileRemoteChangedData := handleRemoteDataFile(pathOptions.destFile, matchedPath, joinedRelPath, remoteDirectories, existingFileIndex)
 			fileData.Size = stat.Size()
 			fileData.LastModifiedDate = stat.ModTime()
 			ret.NewFileMap[joinedRelPath] = fileData

@@ -855,7 +855,7 @@ func Test_recursiveChecker(t *testing.T) {
 			want: IndexerRet{
 				NewFileMap: map[string]FileData{},
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "case 19: folder doesn't exist",
@@ -871,7 +871,7 @@ func Test_recursiveChecker(t *testing.T) {
 			want: IndexerRet{
 				NewFileMap: map[string]FileData{},
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 
 		{
@@ -985,7 +985,8 @@ func Test_recursiveChecker(t *testing.T) {
 					RemoteAttribute:  tt.args.remoteDirectories[emptyDirStat.Name()],
 				}
 			}
-			got, err := recursiveChecker(tt.args.directory, tt.args.srcBase, tt.args.srcFile, tt.args.destBase, tt.args.destFile, tt.args.ignoreRules, tt.args.remoteDirectories, tt.args.existingFileIndex, fs)
+			pathsOptions := recursiveCheckerPathOptions{tt.args.directory, tt.args.srcBase, tt.args.srcFile, tt.args.destBase, tt.args.destFile}
+			got, err := recursiveChecker(pathsOptions, tt.args.ignoreRules, tt.args.remoteDirectories, tt.args.existingFileIndex)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("recursiveChecker() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1230,7 +1231,7 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			args: args{
 				directory:         tempDirectoryName,
 				ignoreRules:       []string{},
-				remoteDirectories: map[string]string{"blah": "new/Blah", htmlRelFilePath: "new/Folder0/view.html", viewsFolderStat.Name(): "new/Folder"},
+				remoteDirectories: map[string]string{htmlRelFilePath: "new/Folder0/view.html", viewsFolderStat.Name(): "new/Folder"},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
 						htmlRelFilePath: {
@@ -1462,6 +1463,32 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "case 15: local file doesn't exist",
+			args: args{
+				directory:         tempDirectoryName,
+				ignoreRules:       []string{},
+				remoteDirectories: map[string]string{htmlRelFilePath + "blah": htmlRelFilePath},
+				existingFileIndex: &FileIndex{
+					Files: map[string]FileData{},
+				},
+			},
+			wantRet: IndexerRet{},
+			wantErr: true,
+		},
+		{
+			name: "case 16: local folder doesn't exist",
+			args: args{
+				directory:         tempDirectoryName,
+				ignoreRules:       []string{},
+				remoteDirectories: map[string]string{viewsFolderPath + "blah": viewsFolderPath},
+				existingFileIndex: &FileIndex{
+					Files: map[string]FileData{},
+				},
+			},
+			wantRet: IndexerRet{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
