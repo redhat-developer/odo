@@ -37,8 +37,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project)
 		})
 
-		// Why do we have this test case? `It` part doesn't make sense
-		It("should not throw an error with an existing namespace when no component exists", func() {
+		It("should not throw an error when a component is not pushed to an existing namespace", func() {
 			helper.CmdShouldPass("odo", "delete", componentName, "--project", commonVar.Project, "-f")
 		})
 
@@ -186,7 +185,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			files := helper.ListFilesInDir(secondContext)
 			Expect(files).To(Not(ContainElement(".odo")))
 			// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4135 is fixed
-			//Expect(files).To(Not(ContainElement("devfile.yaml")))
+			Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
 
 		// TODO: This is bound to fail until https://github.com/openshift/odo/issues/4451 is fixed
