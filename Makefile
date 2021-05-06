@@ -97,7 +97,7 @@ clean:
 	@rm -rf $(FILES)
 
 .PHONY: goget-tools
-goget-tools: goget-ginkgo ## install tools used for building, tests and  validations
+goget-tools: goget-ginkgo ## install tools used for building, tests and validations
 	mkdir -p $(shell go env GOPATH)/bin
 	GOFLAGS='' go get github.com/frapposelli/wwhrd@v0.3.0
 	GOFLAGS='' go get github.com/securego/gosec/v2/cmd/gosec@v2.4.0
