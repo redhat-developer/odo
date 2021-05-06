@@ -49,6 +49,13 @@ github_changelog_generator \
 --security-label "**Documentation & Discussions:**" \
 --security-labels "kind/docs,kind/documentation,kind/design,kind/discussion,kind/epic"
 
-echo ""
-echo "The changelog is located at: /tmp/changelog"
-echo ""
+RESULT=$?
+
+if [ $RESULT -eq 0 ]; then
+  echo ""
+  echo "The changelog is located at: /tmp/changelog"
+  echo ""
+else
+  echo -e "Unable to generate changelog using github_changelog_generator"
+  exit 1
+fi
