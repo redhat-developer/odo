@@ -9,13 +9,13 @@ In theory, you just run `./scripts/sync.sh`  and BAM. Docs are updated. But we'l
 First of all, we have three sources of documentation that we're pulling from:
 
   - Downstream: OpenShift productized documentation from https://docs.openshift.com
-  - Upstream: Odo public documentation from the docs folder https://github.com/openshift/odo/tree/master/docs
+  - Upstream: Odo public documentation from the docs folder https://github.com/openshift/odo/tree/main/docs
 
 Within these sources, we gather the following from our `master` branch:
 
-  - Blog posts: Blog posts come from https://github.com/openshift/odo/tree/master/docs/blog
-  - Documentation: Public documentation comes from https://github.com/openshift/odo/tree/master/docs/public
-  - File reference: File reference documentation comes from https://github.com/openshift/odo/tree/master/docs/file-reference
+  - Blog posts: Blog posts come from https://github.com/openshift/odo/tree/main/docs/blog
+  - Documentation: Public documentation comes from https://github.com/openshift/odo/tree/main/docs/public
+  - File reference: File reference documentation comes from https://github.com/openshift/odo/tree/main/docs/file-reference
 
 # Files and file directories
 
@@ -38,7 +38,7 @@ Each file within `/chosen-docs` are only TEMPLATE files. These are required in o
 
 1. Check the `/chosen-docs` directory for which file needs updating.
 2. Find out where the file is located.
-  - If the file is located in the `/upstream` folder, update it here: [github.com/openshift/odo/tree/master/docs/public](https://github.com/openshift/odo/tree/master/docs/public)
+  - If the file is located in the `/upstream` folder, update it here: [github.com/openshift/odo/tree/main/docs/public](https://github.com/openshift/odo/tree/main/docs/public)
   - If the file is located in the `/openshift-docs` folder, update it here: [github.com/openshift/openshift-docs/tree/master/cli_reference/developer_cli_odo](https://github.com/openshift/openshift-docs/tree/master/cli_reference/developer_cli_odo)
 3. Push a PR to wherever the original document is (either `odo` or `openshift-docs` repo)
 4. Once you have updated the files, run the `./script/sync.sh` file
@@ -46,10 +46,10 @@ Each file within `/chosen-docs` are only TEMPLATE files. These are required in o
 
 # How to add new documentation
 
-1. Add the document either on the [master branch docs folder](https://github.com/openshift/odo/tree/master/docs/file-reference) or the [openshift-docs repo](https://github.com/openshift/odo/tree/master/docs/file-reference).
+1. Add the document either on the [master branch docs folder](https://github.com/openshift/odo/tree/main/docs/public) or the [openshift-docs repo](https://github.com/openshift/openshift-docs/tree/master/cli_reference/developer_cli_odo).
 2. Copy the `default.md` template to either the:
   - `/chosen-docs/openshift-docs` location if the original adoc is located at https://github.com/openshift/openshift-docs/tree/master/cli_reference/developer_cli_odo
-  - or `/chosen-docs/upstream` if the adoc is located at https://github.com/openshift/odo/tree/master/docs/file-reference
+  - or `/chosen-docs/upstream` if the adoc is located at https://github.com/openshift/odo/tree/main/docs/file-reference
 3. Make sure that the `default.md` template file you've copied over has the EXACT same filename as the `adoc` minus the `.adoc` extension. Example: `understanding-odo.adoc` would be `understanding-odo.md` in the `/chosen-docs` folder
 4. Update the `index.md` file with a "card" of the new document that you have added, or else it will *not* appear on the site.
 
@@ -57,7 +57,7 @@ Each file within `/chosen-docs` are only TEMPLATE files. These are required in o
 
 Looking to write a blog post? Here's what you've got to do!
 
-1. Copy the template.md in the [/docs/blog](https://github.com/openshift/odo/tree/master/docs/blog) folder of the master branch.
+1. Copy the template.md in the [/docs/blog](https://github.com/openshift/odo/tree/main/docs/blog) folder of the master branch.
 2. This new file must be in this date + topic format: `YEAR-MONTH-DATE-TOPIC.md` for example: `2021-10-11-odo-300-release.md`
 3. Write your blog and push a PR to the `master` branch for people to review.
 
@@ -126,4 +126,10 @@ To preview changes / view them locally, run:
 
   # View it online
   $ google-chrome-stable localhost:4000
+```
+
+# Previewing your site locally using docker
+
+```
+docker run --rm -it --volume="$PWD:/srv/jekyll" --volume="$PWD/vendor/bundle:/usr/local/bundle" -p 4000:4000 --env JEKYLL_ENV=development jekyll/jekyll:3.8 jekyll serve . 
 ```

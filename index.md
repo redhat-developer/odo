@@ -91,6 +91,11 @@ grid_navigation:
       excerpt: Use odo's built-in tool to convert your S2I deployment to devfile
       cta: Read more
       url: 'docs/s2i-to-devfile'
+    
+    - title: Breaking changes in odo 2.2.0
+      excerpt: Explaining the breaking changing that have been done in odo.2.2.0
+      cta: Read more
+      url: 'docs/breaking-changes-in-odo-2.2'
 
     - title: Setting up a secure Devfile registry
       excerpt: Learn how to setup a secure private registry that only you or your team can access
