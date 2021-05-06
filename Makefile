@@ -331,7 +331,7 @@ packages: ## create deb and rpm packages using fpm in ./dist/pkgs/
 
 # run 'make cross' and 'make packages' before this!
 .PHONY: upload-packages
-upload-packages: ## upload packages greated by 'make packages' to bintray repositories
+upload-packages: ## upload packages created by 'make packages' to bintray repositories
 	./scripts/upload-packages.sh
 
 .PHONY: vendor-update
