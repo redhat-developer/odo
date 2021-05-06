@@ -297,7 +297,7 @@ test-integration-devfile: ## Run devfile integration tests
 
 # Only service and link command tests are the part of this test run
 .PHONY: test-integration-service-catalog
-test-integration-service-catalog: ## Run command's integration tests which are depend on service catalog enabled cluster.
+test-integration-service-catalog: ## Run command's integration tests which are dependent on service catalog enabled cluster.
 	ginkgo $(GINKGO_FLAGS) tests/integration/servicecatalog/
 
 .PHONY: test-e2e-beta
