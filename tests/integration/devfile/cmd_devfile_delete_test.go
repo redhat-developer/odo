@@ -6,6 +6,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"k8s.io/apimachinery/pkg/util/rand"
+
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
 
@@ -174,8 +176,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		JustAfterEach(func() {
 			// Delete any pushed component and related config files in both the directories
 			for _, dir := range []string{secondContext, firstContext} {
-				helper.Chdir(dir)
-				helper.CmdRunner("odo", "delete", "-f")
+				helper.CmdRunner("odo", "delete", "-f", "--context", dir)
 			}
 		})
 
@@ -288,6 +289,25 @@ var _ = Describe("odo devfile delete command tests", func() {
 		It("should throw an error when passing --app and --project flags with --context flag", func() {
 			output := helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--app", appName, "-f", "--context", secondContext)
 			Expect(output).To(ContainSubstring("cannot provide --app, --project or --component flag when --context is provided"))
+		})
+	})
+	Context("when deleting a component outside context directory", func() {
+		var appName, newContext string
+		JustBeforeEach(func() {
+			appName = rand.String(6)
+			newContext = path.Join(commonVar.Context, "newContext")
+			helper.MakeDir(newContext)
+			helper.Chdir(newContext)
+			helper.CmdShouldPass("odo", "create", componentName, "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+			helper.Chdir(commonVar.Context)
+		})
+		JustAfterEach(func() {
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", newContext)
+		})
+		It("should throw an error when component name is passed with --context flag", func() {
+			output := helper.CmdShouldFail("odo", "delete", componentName, "--context", commonVar.Context)
+			Expect(output).To(ContainSubstring("cannot provide component name with --context flag"))
 		})
 	})
 })
