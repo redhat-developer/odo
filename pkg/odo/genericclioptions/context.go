@@ -94,6 +94,7 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 		if err != nil {
 			return nil, err
 		}
+		context.resolveNamespace(context.EnvSpecificInfo)
 
 		if parameters.CheckRouteAvailability {
 			isRouteSupported, err := context.Client.IsRouteSupported()
