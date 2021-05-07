@@ -67,7 +67,7 @@ bin:: (default) `go build` the executable in cmd/odo
 install:: build and install `odo` in your GOPATH
 validate:: run gofmt, go vet and other validity checks
 goget-tools:: download tools used to build & test
-test:: run all unit tests - same as `go test pkg/...`
+test:: run all unit tests - same as `go test pkg/\...`
 test-integration:: run all integration tests
 test-coverage:: generate test coverage report
 
@@ -136,7 +136,7 @@ unset ODO_BOOTSTRAPPER_IMAGE
 
 `odo` uses `go mod` with vendor directory.
 This means that you should use `-mod=vendor` flag with all `go` commands. Or use `GOFLAGS` to set it permanently (`export GOFLAGS=-mod=vendor`).
-Vendor is important to make sure that odo can always be build even offline.
+Vendor is important to make sure that odo can always be built even offline.
 
 
 === Adding a new dependency
@@ -164,7 +164,7 @@ To release a new version on GitHub:
 ** link:/Dockerfile.rhel[`Dockerfile.rhel`]
 ** link:/scripts/rpm-prepare.sh[`scripts/rpm-prepare.sh`]
 
-There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (except `odo.rb`).
+There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above.
 
 . Merge the above PR.
 . Once the PR is merged create and push the new git tag for the version.
@@ -197,7 +197,7 @@ Here are some tips to consider when writing machine-readable output code.
 
 Within odo, we unmarshal all information from a struct to json. Within this struct, we use `TypeMeta` and `ObjectMeta` in order to supply meta-data information coming from Kubernetes / OpenShift. 
 
-Below is working example of how we would implement a "HelloWorld" struct.
+Below is working example of how we would implement a "GenericSuccess" struct.
 
 
 [source,go]
@@ -212,7 +212,7 @@ Below is working example of how we would implement a "HelloWorld" struct.
   )
   
   // Create the struct. Here we use TypeMeta and ObjectMeta
-  // as require to create a "Kubernetes-like" API.
+  // as required to create a "Kubernetes-like" API.
   type GenericSuccess struct {
     metav1.TypeMeta   `json:",inline"`
     metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -226,7 +226,7 @@ Below is working example of how we would implement a "HelloWorld" struct.
     // APIVersion. Name your "Kind" to what you are implementing
     machineOutput := GenericSuccess{
       TypeMeta: metav1.TypeMeta{
-        Kind:       "HelloWorldExample",
+        Kind:       "genericsuccess",
         APIVersion: "odo.dev/v1alpha1",
       }, 
       ObjectMeta: metav1.ObjectMeta{
@@ -237,7 +237,7 @@ Below is working example of how we would implement a "HelloWorld" struct.
   
     // We then marshal the output and print it out
     printableOutput, _ := json.Marshal(machineOutput)
-    fmt.Println(printableOutput)
+    fmt.Println(string(printableOutput))
   }
 ----
 
