@@ -14,7 +14,7 @@ export AMQP_URI=${AMQP_URI:?"Please set AMQP_URI env with amqp uri or provide pa
 
 case $1 in
     minikube)
-        export JOB_NAME="odo-minikube-pr-build"
+        export JOB_NAME="test-pr-build"
         export SENDQUEUE="amqp.ci.queue.minikube.send"
         export SENDTOPIC="amqp.ci.topic.minikube.send"
         export EXCHANGE="amqp.ci.exchange.minikube.send"

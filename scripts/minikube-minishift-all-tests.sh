@@ -8,12 +8,27 @@ shout() {
 
 set -ex
 
+# This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
+SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
+
 case ${1} in
     minikube)
         # Integration tests
         shout "| Running integration Tests on MiniKube"
         make test-cmd-project
         make test-integration-devfile
+
+        shout "Cleaning up some leftover namespaces"
+
+        set +x
+        for i in $(kubectl get namespace -o jsonpath='{.items[*].metadata.name}' |  tr " " "\n"); do
+            if [[ $i == "${SCRIPT_IDENTITY}"* ]]; then
+                kubectl delete namespaces $i
+            fi
+        done
+        set -x
+
+        odo logout
         ;;
     minishift)
         cd $HOME/openshift/odo
