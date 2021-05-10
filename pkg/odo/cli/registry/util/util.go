@@ -4,6 +4,7 @@ import (
 	// odo packages
 
 	"os"
+	"strings"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
@@ -33,4 +34,12 @@ func IsSecure(registryName string) bool {
 	}
 
 	return isSecure
+}
+
+func IsGitBasedRegistry(url string) bool {
+	return strings.Contains(url, "github")
+}
+
+func PrintGitRegistryDeprecationWarning()  {
+	log.Deprecate("Git based registries", "Please see https://github.com/openshift/odo/tree/main/docs/public/git-registry-deprecation.adoc")
 }

@@ -257,6 +257,14 @@ func Swarningf(format string, a ...interface{}) string {
 	return fmt.Sprintf(" %s%s%s", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
+func Deprecate(what, nextAction string) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	if !IsJSON() {
+		msg1 := fmt.Sprintf("%s%s%s%s%s", yellow(getWarningString()), suffixSpacing, yellow(fmt.Sprintf("%s Deprecated", what)), suffixSpacing, nextAction)
+		fmt.Fprintf(GetStderr(), " %s\n", msg1)
+	}
+}
+
 // Experimental will output in an appropriate "progress" manner
 func Experimental(a ...interface{}) {
 	yellow := color.New(color.FgYellow).SprintFunc()
