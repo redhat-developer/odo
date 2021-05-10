@@ -68,6 +68,9 @@ const (
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
 	DefaultDevfileRegistryURL = "https://registry.devfile.io"
 
+	// OldDefaultDevfileRegistryURL is the URL of old default devfile registry for registry migration purpose
+	OldDefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
+
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
 	DefaultRegistryCacheTime = 15
 
@@ -252,7 +255,7 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	// Handle OCI-based default registry migration
 	if c.OdoSettings.RegistryList != nil {
 		for index, registry := range *c.OdoSettings.RegistryList {
-			if registry.Name == DefaultDevfileRegistryName && registry.URL != DefaultDevfileRegistryURL {
+			if registry.Name == DefaultDevfileRegistryName && registry.URL == OldDefaultDevfileRegistryURL {
 				registryList := *c.OdoSettings.RegistryList
 				registryList[index].URL = DefaultDevfileRegistryURL
 				break
