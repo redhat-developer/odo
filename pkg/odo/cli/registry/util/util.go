@@ -40,6 +40,6 @@ func IsGitBasedRegistry(url string) bool {
 	return strings.Contains(url, "github")
 }
 
-func PrintGitRegistryDeprecationWarning()  {
+func PrintGitRegistryDeprecationWarning() {
 	log.Deprecate("Git based registries", "Please see https://github.com/openshift/odo/tree/main/docs/public/git-registry-deprecation.adoc")
 }
