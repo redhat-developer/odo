@@ -43,8 +43,8 @@ var _ = Describe("odo devfile supported tests", func() {
 
 	createStarterProjAndSetDebug := func(component, debugLocalPort string) {
 		helper.CmdShouldPass("odo", "create", component, "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath)
-		helper.CmdShouldPass("odo", "push", "--context", fmt.Sprint("/private", projectDirPath))
-		helper.CmdShouldPass("odo", "push", "--debug", "--context", fmt.Sprint("/private", projectDirPath))
+		helper.CmdShouldPass("odo", "push", "--context", projectDirPath)
+		helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDirPath)
 
 		stopChannel := make(chan bool)
 		go func() {
