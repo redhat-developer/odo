@@ -71,20 +71,20 @@ func TestIsSecure(t *testing.T) {
 }
 
 func TestIsGitBasedRegistry(t *testing.T) {
-	tests := []struct{
-		name string
+	tests := []struct {
+		name        string
 		registryURL string
-		want bool
-	} {
+		want        bool
+	}{
 		{
-			name: "Case 1: Returns true if URL contains github",
+			name:        "Case 1: Returns true if URL contains github",
 			registryURL: "https://github.com/odo-devfiles/registry",
-			want: true,
+			want:        true,
 		},
 		{
-			name: "Case 2: Returns false if URL does not contain github",
+			name:        "Case 2: Returns false if URL does not contain github",
 			registryURL: " https://registry.devfile.io",
-			want: false,
+			want:        false,
 		},
 	}
 
