@@ -40,6 +40,7 @@ func (pb *ParamBuilder) set(param string, value string) error {
 func (pb *ParamBuilder) SetAndValidate(param string, value string) error {
 	if pb.hasParam(param) {
 		pb.set(param, value)
+		return nil
 	}
 	return fmt.Errorf("the parameter %s is not present in the Operand Schema", param)
 }

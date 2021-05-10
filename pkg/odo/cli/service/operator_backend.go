@@ -122,6 +122,10 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			// k8s does't have it installed by default but OCP does
 			return err
 		}
+		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
+		if err != nil {
+			return err
+		}
 
 		if len(o.parameters) != 0 {
 			var cr *olm.CRDDescription
@@ -153,7 +157,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 				return err
 			}
 			d.OriginalCRD = builtCRD
-
 		} else {
 			almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
 			if err != nil {
@@ -161,11 +164,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			}
 
 			d.OriginalCRD = almExample
-		}
-
-		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
-		if err != nil {
-			return err
 		}
 
 		if o.ServiceName != "" && !o.DryRun {
