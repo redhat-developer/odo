@@ -13,6 +13,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/service"
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
@@ -122,12 +123,45 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
-		almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
-		if err != nil {
-			return err
-		}
+		if len(o.parameters) != 0 {
+			var cr *olm.CRDDescription
+			hasCR := false
+			CRs := o.KClient.GetCustomResourcesFromCSV(&csv)
+			for _, custRes := range *CRs {
+				c := custRes
+				if c.Kind == b.CustomResource {
+					cr = &c
+					hasCR = true
+					break
+				}
+			}
+			if !hasCR {
+				return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
+			}
 
-		d.OriginalCRD = almExample
+			paramBuilder := service.NewParamBuilder(cr.SpecDescriptors)
+
+			for key, value := range o.ParametersMap {
+				err := paramBuilder.SetAndValidate(key, value)
+				if err != nil {
+					return err
+				}
+			}
+
+			builtCRD, err := paramBuilder.Map()
+			if err != nil {
+				return err
+			}
+			d.OriginalCRD = builtCRD
+
+		} else {
+			almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
+			if err != nil {
+				return err
+			}
+
+			d.OriginalCRD = almExample
+		}
 
 		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
 		if err != nil {

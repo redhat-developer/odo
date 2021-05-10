@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -71,17 +70,6 @@ func (b *ServiceCatalogBackend) CompleteServiceCreate(o *CreateOptions, cmd *cob
 			o.ServiceName = o.ServiceType
 		}
 
-		// we convert the param list provided in the format of key=value list
-		// to a map
-		o.ParametersMap = make(map[string]string)
-		for _, kv := range o.parameters {
-			kvSlice := strings.Split(kv, "=")
-			// key value not provided in format of key=value
-			if len(kvSlice) != 2 {
-				return errors.New("parameters not provided in key=value format")
-			}
-			o.ParametersMap[kvSlice[0]] = kvSlice[1]
-		}
 	}
 	return nil
 }
