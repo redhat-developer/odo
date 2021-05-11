@@ -253,7 +253,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
 		PodChanged:      podChanged,
+		Files:           common.GetSyncFilesFromAttributes(pushDevfileCommands),
 	}
+
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)

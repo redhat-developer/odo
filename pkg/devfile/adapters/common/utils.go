@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"k8s.io/klog"
@@ -202,4 +203,19 @@ func GetCommandsMap(commands []devfilev1.Command) map[string]devfilev1.Command {
 		commandMap[command.Id] = command
 	}
 	return commandMap
+}
+
+// GetSyncFilesFromAttributes gets the target files and folders along with their respective remote destination from the devfile
+// it uses the "dev.odo.push.path" attribute in the run command
+func GetSyncFilesFromAttributes(commandsMap PushCommandsMap) map[string]string {
+	syncMap := make(map[string]string)
+	if value, ok := commandsMap[devfilev1.RunCommandGroupKind]; ok {
+		for key, value := range value.Attributes.Strings(nil) {
+			if strings.HasPrefix(key, "dev.odo.push.path:") {
+				localValue := strings.ReplaceAll(key, "dev.odo.push.path:", "")
+				syncMap[filepath.Clean(localValue)] = filepath.ToSlash(filepath.Clean(value))
+			}
+		}
+	}
+	return syncMap
 }
