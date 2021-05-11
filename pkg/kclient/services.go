@@ -11,7 +11,7 @@ import (
 // CreateService generates and creates the service
 // commonObjectMeta is the ObjectMeta for the service
 func (c *Client) CreateService(svc corev1.Service) (*corev1.Service, error) {
-	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Create(context.TODO(), &svc, metav1.CreateOptions{FieldManager: "odo"})
+	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Create(context.TODO(), &svc, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Service for %s", svc.Name)
 	}
@@ -20,7 +20,7 @@ func (c *Client) CreateService(svc corev1.Service) (*corev1.Service, error) {
 
 // UpdateService updates a service based on the given service spec
 func (c *Client) UpdateService(svc corev1.Service) (*corev1.Service, error) {
-	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Update(context.TODO(), &svc, metav1.UpdateOptions{FieldManager: "odo"})
+	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Update(context.TODO(), &svc, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Service for %s", svc.Name)
 	}

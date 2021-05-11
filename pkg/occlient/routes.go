@@ -5,6 +5,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -42,7 +43,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 
-	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{FieldManager: "odo"})
+	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating route")
 	}

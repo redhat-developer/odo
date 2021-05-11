@@ -8,6 +8,7 @@ import (
 
 	buildv1 "github.com/openshift/api/build/v1"
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -60,7 +61,7 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	if len(envVars) > 0 {
 		bc.Spec.Strategy.SourceStrategy.Env = envVars
 	}
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(context.TODO(), &bc, metav1.CreateOptions{FieldManager: "odo"})
+	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(context.TODO(), &bc, metav1.CreateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
 	}
@@ -92,7 +93,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 	}
 	buildConfig.Spec.Source = buildSource
 	buildConfig.Annotations = annotations
-	_, err = c.buildClient.BuildConfigs(c.Namespace).Update(context.TODO(), buildConfig, metav1.UpdateOptions{FieldManager: "odo"})
+	_, err = c.buildClient.BuildConfigs(c.Namespace).Update(context.TODO(), buildConfig, metav1.UpdateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return errors.Wrap(err, "unable to update the component")
 	}
@@ -171,7 +172,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 			Name: name,
 		},
 	}
-	result, err := c.buildClient.BuildConfigs(c.Namespace).Instantiate(context.TODO(), name, &buildRequest, metav1.CreateOptions{FieldManager: "odo"})
+	result, err := c.buildClient.BuildConfigs(c.Namespace).Instantiate(context.TODO(), name, &buildRequest, metav1.CreateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
 	}

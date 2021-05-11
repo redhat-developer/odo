@@ -6,6 +6,7 @@ import (
 	"time"
 
 	projectv1 "github.com/openshift/api/project/v1"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -176,7 +177,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			Name: projectName,
 		},
 	}
-	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{FieldManager: "odo"})
+	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}

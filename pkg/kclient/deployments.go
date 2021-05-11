@@ -197,7 +197,7 @@ func resourceAsJson(resource interface{}) string {
 
 // ApplyDeployment updates a deployment based on the given deployment spec
 func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{FieldManager: "odo"})
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
@@ -206,14 +206,16 @@ func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment,
 
 // UpdateDeployment updates a deployment based on the given deployment spec
 func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.TODO(), &deploy, metav1.UpdateOptions{FieldManager: "odo"})
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.TODO(), &deploy, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
 	return deployment, nil
 }
 
-// ApplyDeployment updates a deployment based on the given deployment spec
+// ApplyDeployment creates or updates a deployment based on the given deployment spec
+// It is using force:true to make sure that if someone changed one of the values that odo manages,
+// odo overrides it with the value it expects instead of failing due to conflict.
 func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	data, err := json.Marshal(deploy)
 
@@ -223,7 +225,7 @@ func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to marshal deployment")
 	}
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: "odo", Force: boolPtr(true)})
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
@@ -257,7 +259,7 @@ func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interfac
 	klog.V(5).Infoln("Creating resource:")
 	klog.V(5).Infoln(string(debugOut))
 	// Create the dynamic resource based on the alm-example for the CRD
-	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{FieldManager: "odo"})
+	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return err
 	}
@@ -356,7 +358,7 @@ func (c *Client) jsonPatchDeployment(deploymentName string, deploymentPatchProvi
 		}
 
 		// patch the Deployment with the secret
-		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploymentName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: "odo"})
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploymentName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
 		if err != nil {
 			return errors.Wrapf(err, "Deployment not patched %s", deployment.Name)
 		}

@@ -17,7 +17,7 @@ const (
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and labels
 func (c *Client) CreatePVC(pvc corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
-	createdPvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(context.TODO(), &pvc, metav1.CreateOptions{FieldManager: "odo"})
+	createdPvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(context.TODO(), &pvc, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}
@@ -64,7 +64,7 @@ func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, 
 // UpdatePVCLabels updates the given PVC with the given labels
 func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
 	pvc.Labels = labels
-	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), pvc, metav1.UpdateOptions{FieldManager: "odo"})
+	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), pvc, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return errors.Wrap(err, "unable to remove storage label from PVC")
 	}
@@ -84,7 +84,7 @@ func (c *Client) GetAndUpdateStorageOwnerReference(pvc *corev1.PersistentVolumeC
 	for _, owRf := range ownerReference {
 		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
-	_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), latestPVC, metav1.UpdateOptions{FieldManager: "odo"})
+	_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), latestPVC, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, 
 	updatedPVC.OwnerReferences = ownerReference
 	updatedPVC.Spec = pvc.Spec
 
-	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), updatedPVC, metav1.UpdateOptions{FieldManager: "odo"})
+	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), updatedPVC, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return err
 	}

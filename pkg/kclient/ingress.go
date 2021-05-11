@@ -15,7 +15,7 @@ func (c *Client) CreateIngress(ingress extensionsv1.Ingress) (*extensionsv1.Ingr
 	if ingress.GetName() == "" {
 		return nil, fmt.Errorf("ingress name is empty")
 	}
-	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(context.TODO(), &ingress, metav1.CreateOptions{FieldManager: "odo"})
+	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(context.TODO(), &ingress, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating ingress")
 	}
