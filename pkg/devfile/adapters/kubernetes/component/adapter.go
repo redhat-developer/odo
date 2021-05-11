@@ -564,7 +564,9 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
-
+	if labels == nil {
+		return fmt.Errorf("cannot delete with labels being nil")
+	}
 	log.Infof("\nGathering information for component %s", a.ComponentName)
 	podSpinner := log.Spinner("Checking status for component")
 	defer podSpinner.End(false)
