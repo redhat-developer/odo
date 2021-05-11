@@ -64,21 +64,25 @@ var _ = Describe("odo devfile supported tests", func() {
 	}
 
 	Context("odo debug support for devfile components", func() {
-		It("Verify output debug information for nodeJS debug works", func() {
-			createStarterProjAndSetDebug("nodejs", "5859")
+		JustAfterEach(func() {
+			podDescribe := helper.CmdShouldPass("oc", "describe", "pods", "-n", commonVar.Project)
+			fmt.Println("value is ", podDescribe)
 		})
-		It("Verify output debug information for java-springboot works", func() {
-			createStarterProjAndSetDebug("java-springboot", "5860")
-		})
+		// It("Verify output debug information for nodeJS debug works", func() {
+		// 	createStarterProjAndSetDebug("nodejs", "5859")
+		// })
+		// It("Verify output debug information for java-springboot works", func() {
+		// 	createStarterProjAndSetDebug("java-springboot", "5860")
+		// })
 		It("Verify output debug information for java-openliberty debug works", func() {
 			createStarterProjAndSetDebug("java-openliberty", "5861")
 		})
-		It("Verify output debug information for java-quarkus debug works", func() {
-			createStarterProjAndSetDebug("java-quarkus", "5862")
-		})
-		It("Verify output debug information for java-maven debug works", func() {
-			createStarterProjAndSetDebug("java-maven", "5863")
-		})
+		// It("Verify output debug information for java-quarkus debug works", func() {
+		// 	createStarterProjAndSetDebug("java-quarkus", "5862")
+		// })
+		// It("Verify output debug information for java-maven debug works", func() {
+		// 	createStarterProjAndSetDebug("java-maven", "5863")
+		// })
 	})
 
 })

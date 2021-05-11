@@ -115,6 +115,7 @@ make test-operator-hub || error=true
 # # E2e tests
 # shout "Running e2e tests"
 # make test-e2e-all || error=true
+make test-e2e-devfile || error=true
 # Fail the build if there is any error while test execution
 if [ $error ]; then 
     exit -1
