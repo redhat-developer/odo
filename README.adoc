@@ -90,7 +90,7 @@ Devfiles describe your development environment link. link:https://odo.dev/docs/d
 
 [NOTE]
 ====
-The list of available Devfiles is sourced from the official link:https://github.com/odo-devfiles/registry[odo registry] as well as any other registries added via `odo registry add`.
+The list of available Devfiles is sourced from the official link:https://github.com/devfile/registry[devfile registry] as well as any other registries added via `odo registry add`.
 ====
 
 To list the available Devfiles:
