@@ -285,7 +285,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			cleanPreSetup()
 		})
 
-		It("should fail to create service if metadata doesn't exist or is invalid", func() {
+		FIt("should fail to create service if metadata doesn't exist or is invalid", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
 			noMetadata := `
 apiVersion: etcd.database.coreos.com/v1beta2
@@ -306,7 +306,8 @@ spec:
 `
 
 			noMetaFile := helper.RandString(6) + ".yaml"
-			fileName := filepath.Join("/tmp", noMetaFile)
+			tmpContext := helper.CreateNewContext()
+			fileName := filepath.Join(tmpContext, noMetaFile)
 			if err := ioutil.WriteFile(fileName, []byte(noMetadata), 0644); err != nil {
 				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
 			}
@@ -316,7 +317,7 @@ spec:
 			Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
 
 			invalidMetaFile := helper.RandString(6) + ".yaml"
-			fileName = filepath.Join("/tmp", invalidMetaFile)
+			fileName = filepath.Join(tmpContext, invalidMetaFile)
 			if err := ioutil.WriteFile(fileName, []byte(invalidMetadata), 0644); err != nil {
 				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
 			}
