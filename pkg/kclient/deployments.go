@@ -18,6 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
+
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 )
 
 func boolPtr(b bool) *bool {
@@ -59,7 +61,7 @@ func (c *Client) GetOneDeploymentFromSelector(selector string) (*appsv1.Deployme
 
 	num := len(deployments)
 	if num == 0 {
-		return nil, fmt.Errorf("no Deployment was found for the selector: %v", selector)
+		return nil, &DeploymentNotFoundError{Selector: selector}
 	} else if num > 1 {
 		return nil, fmt.Errorf("multiple Deployments exist for the selector: %v. Only one must be present", selector)
 	}
@@ -315,7 +317,7 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 
-	return c.jsonPatchDeployment(componentName, deploymentPatchProvider)
+	return c.jsonPatchDeployment(util.ConvertLabelsToSelector(componentlabels.GetLabels(componentName, applicationName, false)), deploymentPatchProvider)
 }
 
 // UnlinkSecret unlinks a secret to the Deployment of a component
@@ -344,11 +346,11 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 // the whole point of using patch is to avoid race conditions where we try to update
 // deployment while it's being simultaneously updated from another source (for example Kubernetes itself)
 // this will result in the triggering of a redeployment
-func (c *Client) jsonPatchDeployment(deploymentName string, deploymentPatchProvider deploymentPatchProvider) error {
+func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchProvider deploymentPatchProvider) error {
 
-	deployment, err := c.GetDeploymentByName(deploymentName)
+	deployment, err := c.GetOneDeploymentFromSelector(deploymentSelector)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to locate Deployment %s", deploymentName)
+		return errors.Wrapf(err, "unable to locate Deployment with selector %q", deploymentSelector)
 	}
 
 	if deploymentPatchProvider != nil {
@@ -358,7 +360,7 @@ func (c *Client) jsonPatchDeployment(deploymentName string, deploymentPatchProvi
 		}
 
 		// patch the Deployment with the secret
-		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploymentName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deployment.Name, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
 		if err != nil {
 			return errors.Wrapf(err, "Deployment not patched %s", deployment.Name)
 		}

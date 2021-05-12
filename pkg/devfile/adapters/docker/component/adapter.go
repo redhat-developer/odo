@@ -78,7 +78,7 @@ func (a Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.Comp
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
-	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName, a.AppName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
@@ -173,7 +173,7 @@ func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 
 // Test runs the devfile test command
 func (a Adapter) Test(testCmd string, show bool) (err error) {
-	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName, a.AppName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
@@ -195,8 +195,8 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
-	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
+func (a Adapter) DoesComponentExist(cmpName, appName string) (bool, error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName, appName)
 	return componentExists, err
 }
 
@@ -337,7 +337,7 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 // Log returns log from component
 func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
 
-	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName, a.AppName)
 
 	if err != nil {
 		return nil, err
@@ -359,7 +359,7 @@ func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, err
 
 // Exec executes a command in the component
 func (a Adapter) Exec(command []string) error {
-	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName, a.AppName)
 	if err != nil {
 		return err
 	}

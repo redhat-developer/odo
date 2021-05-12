@@ -167,7 +167,7 @@ func (wo *WatchOptions) Validate() (err error) {
 		if wo.devfileDebugCommand != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
 			return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
 		}
-		exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName)
+		exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName, wo.Application)
 		if err != nil {
 			return err
 		}

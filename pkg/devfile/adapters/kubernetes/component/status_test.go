@@ -1,6 +1,9 @@
 package component
 
 import (
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/util"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -25,6 +28,12 @@ import (
 func TestGetDeploymentStatus(t *testing.T) {
 
 	testComponentName := "component"
+	testAppName := "app"
+
+	deploymentName, err := util.NamespaceKubernetesObject(testComponentName, testAppName)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	tests := []struct {
 		name                  string
@@ -49,8 +58,12 @@ func TestGetDeploymentStatus(t *testing.T) {
 					APIVersion: kclient.DeploymentAPIVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: testComponentName,
+					Name: deploymentName,
 					UID:  types.UID("deployment-uid"),
+					Labels: map[string]string{
+						componentlabels.ComponentLabel: testComponentName,
+						applabels.ApplicationLabel:     testAppName,
+					},
 				},
 			},
 			replicaSet: v1.ReplicaSetList{
@@ -101,8 +114,12 @@ func TestGetDeploymentStatus(t *testing.T) {
 					APIVersion: kclient.DeploymentAPIVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: testComponentName,
+					Name: deploymentName,
 					UID:  types.UID("deployment-uid"),
+					Labels: map[string]string{
+						componentlabels.ComponentLabel: testComponentName,
+						applabels.ApplicationLabel:     testAppName,
+					},
 				},
 			},
 			replicaSet: v1.ReplicaSetList{
@@ -184,6 +201,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			adapterCtx := adaptersCommon.AdapterContext{
 				ComponentName: testComponentName,
+				AppName:       testAppName,
 				Devfile:       devObj,
 			}
 
@@ -191,7 +209,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Return test case's deployment, when requested
 			fkclientset.Kubernetes.PrependReactor("get", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if getAction, is := action.(ktesting.GetAction); is && getAction.GetName() == testComponentName {
+				if getAction, is := action.(ktesting.GetAction); is && getAction.GetName() == deploymentName {
 					return true, &tt.deployment, nil
 				}
 				return false, nil, nil
@@ -199,7 +217,15 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Return test case's deployment, when requested
 			fkclientset.Kubernetes.PrependReactor("patch", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if patchAction, is := action.(ktesting.PatchAction); is && patchAction.GetName() == testComponentName {
+				if patchAction, is := action.(ktesting.PatchAction); is && patchAction.GetName() == deploymentName {
+					return true, &tt.deployment, nil
+				}
+				return false, nil, nil
+			})
+
+			// Return test case's deployment, when requested
+			fkclientset.Kubernetes.PrependReactor("apply", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if patchAction, is := action.(ktesting.PatchAction); is && patchAction.GetName() == deploymentName {
 					return true, &tt.deployment, nil
 				}
 				return false, nil, nil
@@ -212,6 +238,10 @@ func TestGetDeploymentStatus(t *testing.T) {
 				}
 				if action.GetResource().Resource == "pods" {
 					return true, &tt.podSet, nil
+				}
+
+				if action.GetResource().Resource == "deployments" {
+					return true, &v1.DeploymentList{Items: []v1.Deployment{tt.deployment}}, nil
 				}
 				return false, nil, nil
 			})

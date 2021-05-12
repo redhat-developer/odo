@@ -10,6 +10,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
 	appsv1 "github.com/openshift/api/apps/v1"
+	kappsv1 "k8s.io/api/apps/v1"
+
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -397,8 +399,12 @@ func TestCreate(t *testing.T) {
 				return true, dc, nil
 			})
 
-			fakeKClientSet.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, testingutil.CreateFakeDeployment("nodejs"), nil
+			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &kappsv1.DeploymentList{
+					Items: []kappsv1.Deployment{
+						*testingutil.CreateFakeDeployment("nodejs"),
+					},
+				}, nil
 			})
 
 			urlCreateParameters := CreateParameters{
@@ -1405,8 +1411,12 @@ func TestPush(t *testing.T) {
 				return true, testingutil.OneFakeDeploymentConfigWithMounts(tt.componentName, "local", tt.applicationName, map[string]*v1.PersistentVolumeClaim{}), nil
 			})
 
-			fakeKClientSet.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, testingutil.CreateFakeDeployment(tt.componentName), nil
+			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &kappsv1.DeploymentList{
+					Items: []kappsv1.Deployment{
+						*testingutil.CreateFakeDeployment(tt.componentName),
+					},
+				}, nil
 			})
 
 			if err := Push(fakeClient, PushParameters{

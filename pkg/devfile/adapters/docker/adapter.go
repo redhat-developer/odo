@@ -43,8 +43,8 @@ func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists
-func (d Adapter) DoesComponentExist(cmpName string) (bool, error) {
-	return d.componentAdapter.DoesComponentExist(cmpName)
+func (d Adapter) DoesComponentExist(cmpName, appName string) (bool, error) {
+	return d.componentAdapter.DoesComponentExist(cmpName, appName)
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails

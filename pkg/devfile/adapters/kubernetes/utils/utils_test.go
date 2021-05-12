@@ -17,11 +17,10 @@ import (
 	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 
 	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -31,6 +30,7 @@ func TestComponentExists(t *testing.T) {
 		name             string
 		componentType    devfilev1.ComponentType
 		componentName    string
+		appName          string
 		getComponentName string
 		want             bool
 		wantErr          bool
@@ -38,6 +38,7 @@ func TestComponentExists(t *testing.T) {
 		{
 			name:             "Case 1: Valid component name",
 			componentName:    "test-name",
+			appName:          "app",
 			getComponentName: "test-name",
 			want:             true,
 			wantErr:          false,
@@ -45,6 +46,7 @@ func TestComponentExists(t *testing.T) {
 		{
 			name:             "Case 2: Non-existent component name",
 			componentName:    "test-name",
+			appName:          "",
 			getComponentName: "fake-component",
 			want:             false,
 			wantErr:          false,
@@ -52,6 +54,7 @@ func TestComponentExists(t *testing.T) {
 		{
 			name:             "Case 3: Error condition",
 			componentName:    "test-name",
+			appName:          "app",
 			getComponentName: "test-name",
 			want:             false,
 			wantErr:          true,
@@ -61,21 +64,31 @@ func TestComponentExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			fkclient, fkclientset := kclient.FakeNew()
-			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fkclientset.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
 				deployment := odoTestingUtil.CreateFakeDeployment(tt.getComponentName)
 
 				if tt.wantErr {
-					return true, emptyDeployment, errors.Errorf("deployment get error")
+					return true, &appsv1.DeploymentList{
+						Items: []appsv1.Deployment{
+							*emptyDeployment,
+						},
+					}, errors.Errorf("deployment get error")
 				} else if tt.getComponentName == tt.componentName {
-					return true, deployment, nil
+					return true, &appsv1.DeploymentList{
+						Items: []appsv1.Deployment{
+							*deployment,
+						},
+					}, nil
 				}
 
-				return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+				return true, &appsv1.DeploymentList{
+					Items: []appsv1.Deployment{},
+				}, nil
 			})
 
 			// Verify that a component with the specified name exists
-			componentExists, err := ComponentExists(*fkclient, tt.getComponentName)
+			componentExists, err := ComponentExists(*fkclient, tt.getComponentName, tt.appName)
 			if !tt.wantErr && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else if !tt.wantErr && componentExists != tt.want {

@@ -9,7 +9,6 @@ import (
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 	volumeTypes "github.com/docker/docker/api/types/volume"
@@ -338,102 +337,6 @@ func TestDockerTest(t *testing.T) {
 	err = os.RemoveAll(directory)
 	if err != nil {
 		t.Errorf("TestTest error: error deleting the temp dir %s", directory)
-	}
-
-}
-
-func TestDoesComponentExist(t *testing.T) {
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-
-	tests := []struct {
-		name             string
-		client           *lclient.Client
-		components       []devfilev1.Component
-		componentName    string
-		getComponentName string
-		want             bool
-		wantErr          bool
-	}{
-		{
-			name:   "Case 1: Valid component name",
-			client: fakeClient,
-			components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("alias1"),
-				testingutil.GetFakeContainerComponent("alias2"),
-			},
-			componentName:    "golang",
-			getComponentName: "golang",
-			want:             true,
-			wantErr:          false,
-		},
-		{
-			name:   "Case 2: Non-existent component name",
-			client: fakeClient,
-			components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("alias1"),
-			},
-			componentName:    "test",
-			getComponentName: "fake-component",
-			want:             false,
-			wantErr:          false,
-		},
-		{
-			name:             "Case 3: Container and devfile component mismatch",
-			componentName:    "test",
-			getComponentName: "golang",
-			client:           fakeClient,
-			components:       []devfilev1.Component{},
-			want:             true,
-			wantErr:          true,
-		},
-		{
-			name:   "Case 4: Docker client error",
-			client: fakeErrorClient,
-			components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("alias1"),
-			},
-			componentName:    "test",
-			getComponentName: "fake-component",
-			want:             false,
-			wantErr:          true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddComponents(tt.components)
-					if err != nil {
-						t.Error(err)
-					}
-
-					return devfileData
-				}(),
-			}
-
-			adapterCtx := adaptersCommon.AdapterContext{
-				ComponentName: tt.componentName,
-				Devfile:       devObj,
-			}
-
-			componentAdapter := New(adapterCtx, *tt.client)
-
-			// Verify that a component with the specified name exists
-			componentExists, err := componentAdapter.DoesComponentExist(tt.getComponentName)
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestDoesComponentExist error, unexpected error - %v", err)
-			} else if !tt.wantErr && componentExists != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, componentExists)
-			} else if tt.wantErr && tt.want != componentExists {
-				t.Errorf("expected %v, wanted %v, err %v", componentExists, tt.want, err)
-			}
-
-		})
 	}
 
 }
