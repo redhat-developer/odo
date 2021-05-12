@@ -611,33 +611,32 @@ func componentTests(args ...string) {
 			oc.WaitAndCheckForExistence("service", commonVar.Project, 1)
 		})
 
-		// issue https://github.com/openshift/odo/issues/4593
-		// It("should delete the component and the owned resources with wait flag", func() {
-		// 	helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-		// 	helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
-		// 	helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+		It("should delete the component and the owned resources with wait flag", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
 
-		// 	helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
-		// 	info := helper.LocalEnvInfo(commonVar.Context)
-		// 	Expect(info.GetApplication(), appName)
-		// 	Expect(info.GetName(), cmpName)
-		// 	helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+			info := helper.LocalEnvInfo(commonVar.Context)
+			Expect(info.GetApplication(), appName)
+			Expect(info.GetName(), cmpName)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
 
-		// 	helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
-		// 	helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
-		// 	helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
 
-		// 	// delete with --wait flag
-		// 	helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
+			// delete with --wait flag
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
 
-		// 	oc.VerifyResourceDeleted("routes", "example", commonVar.Project)
-		// 	oc.VerifyResourceDeleted("service", cmpName, commonVar.Project)
-		// 	// verify s2i pvc is delete
-		// 	oc.VerifyResourceDeleted("pvc", "s2idata", commonVar.Project)
-		// 	oc.VerifyResourceDeleted("pvc", "storage-1", commonVar.Project)
-		// 	oc.VerifyResourceDeleted("pvc", "storage-2", commonVar.Project)
-		// 	oc.VerifyResourceDeleted("dc", cmpName, commonVar.Project)
-		// })
+			oc.VerifyResourceDeleted("routes", "example", commonVar.Project)
+			oc.VerifyResourceDeleted("service", cmpName, commonVar.Project)
+			// verify s2i pvc is delete
+			oc.VerifyResourceDeleted("pvc", "s2idata", commonVar.Project)
+			oc.VerifyResourceDeleted("pvc", "storage-1", commonVar.Project)
+			oc.VerifyResourceDeleted("pvc", "storage-2", commonVar.Project)
+			oc.VerifyResourceDeleted("dc", cmpName, commonVar.Project)
+		})
 
 	})
 
