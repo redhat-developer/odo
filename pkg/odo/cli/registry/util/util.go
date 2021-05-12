@@ -37,7 +37,7 @@ func IsSecure(registryName string) bool {
 }
 
 func IsGitBasedRegistry(url string) bool {
-	return strings.Contains(url, "github")
+	return strings.Contains(url, "github.com")
 }
 
 func PrintGitRegistryDeprecationWarning() {
