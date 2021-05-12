@@ -32,5 +32,5 @@ echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-./ci-firewall request --mainbranch main --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --sendexchange $SENDEXCHANGE --setupscript $SETUPSCRIPT --jenkinsProject $JENKINS_PROJECT --runscript $RUNSCRIPT  --timeout 4h00m 
+./ci-firewall request --mainbranch main --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --sendexchange $SENDEXCHANGE --setupscript $SETUPSCRIPT --jenkinsproject $JENKINS_PROJECT --runscript $RUNSCRIPT  --timeout 4h00m 
 
