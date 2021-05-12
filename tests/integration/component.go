@@ -638,6 +638,32 @@ func componentTests(args ...string) {
 			oc.VerifyResourceDeleted("dc", cmpName, commonVar.Project)
 		})
 
+		It("should delete the devfile component and the owned resources with wait flag", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+
+			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+			info := helper.LocalEnvInfo(commonVar.Context)
+			Expect(info.GetApplication(), appName)
+			Expect(info.GetName(), cmpName)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+
+			// delete with --wait flag
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
+
+			oc.VerifyResourceDeleted("routes", "example", commonVar.Project)
+			oc.VerifyResourceDeleted("service", cmpName, commonVar.Project)
+			// verify s2i pvc is delete
+			oc.VerifyResourceDeleted("pvc", "s2idata", commonVar.Project)
+			oc.VerifyResourceDeleted("pvc", "storage-1", commonVar.Project)
+			oc.VerifyResourceDeleted("pvc", "storage-2", commonVar.Project)
+			oc.VerifyResourceDeleted("dc", cmpName, commonVar.Project)
+		})
 	})
 
 	Context("convert s2i to devfile", func() {
