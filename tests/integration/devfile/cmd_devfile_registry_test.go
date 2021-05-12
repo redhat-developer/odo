@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	"github.com/openshift/odo/tests/helper"
 )
@@ -88,12 +89,15 @@ var _ = Describe("odo devfile registry command tests", func() {
 		It("should show deprecation warning when when the git based registry is used", func() {
 			deprecated := "Deprecated"
 			docLink := "https://github.com/openshift/odo/tree/main/docs/public/git-registry-deprecation.adoc"
-			_, err := helper.CmdShouldPassIncludeErrStream("odo", "registry", "add", "RegistryFromGitHub", "https://github.com/odo-devfiles/registry")
-			helper.MatchAllInOutput(err, []string{deprecated, docLink})
-			_, err = helper.CmdShouldPassIncludeErrStream("odo", "registry", "list")
-			helper.MatchAllInOutput(err, []string{deprecated, docLink})
-			_, err = helper.CmdShouldPassIncludeErrStream("odo", "create", "nodejs", "--registry", "RegistryFromGitHub")
-			helper.MatchAllInOutput(err, []string{deprecated, docLink})
+			outstr, errstr := helper.CmdShouldPassIncludeErrStream("odo", "registry", "add", "RegistryFromGitHub", "https://github.com/odo-devfiles/registry")
+			co := fmt.Sprintln(outstr, errstr)
+			helper.MatchAllInOutput(co, []string{deprecated, docLink})
+			outstr, errstr = helper.CmdShouldPassIncludeErrStream("odo", "registry", "list")
+			co = fmt.Sprintln(outstr, errstr)
+			helper.MatchAllInOutput(co, []string{deprecated, docLink})
+			outstr, errstr = helper.CmdShouldPassIncludeErrStream("odo", "create", "nodejs", "--registry", "RegistryFromGitHub")
+			co = fmt.Sprintln(outstr, errstr)
+			helper.MatchAllInOutput(co, []string{deprecated, docLink})
 		})
 		It("should not show deprecation warning if git based registry is not used", func() {
 			deprecated := "Deprecated"
