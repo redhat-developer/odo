@@ -52,4 +52,4 @@ set -x
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --sendexchange $EXCHANGE --setupscript "$SETUP_SCRIPT" --runscript "$RUN_SCRIPT" --timeout $TIMEOUT --mainbranch main
+./ci-firewall request --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --sendexchange $EXCHANGE --setupscript "$SETUP_SCRIPT" --runscript "$RUN_SCRIPT" --jenkinsProject $JENKINS_PROJECT --timeout $TIMEOUT --mainbranch main
