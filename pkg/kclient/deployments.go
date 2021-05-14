@@ -339,7 +339,7 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
 	}
 
-	return c.jsonPatchDeployment(componentName, deploymentPatchProvider)
+	return c.jsonPatchDeployment(util.ConvertLabelsToSelector(componentlabels.GetLabels(componentName, applicationName, false)), deploymentPatchProvider)
 }
 
 // this function will look up the appropriate DC, and execute the specified patch

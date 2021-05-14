@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 	"github.com/tidwall/gjson"
 )
@@ -45,7 +46,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 			volumesMatched := 0
 
 			// check the volume name and mount paths for the containers
-			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", commonVar.Project)
+			deploymentName, err := util.NamespaceKubernetesObject(cmpName, "app")
+			Expect(err).To(BeNil())
+			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(deploymentName, "runtime", commonVar.Project)
 			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
 			for _, volNamesAndPath := range volNamesAndPathsArr {
 				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
@@ -84,8 +87,11 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.MatchAllInOutput(storageList, []string{pathName, "tools", storageName})
 
 			// check the volume name and mount paths for the funtime container
+			deploymentName, err := util.NamespaceKubernetesObject(cmpName, "app")
+			Expect(err).To(BeNil())
+
 			volumesMatched := 0
-			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "tools", commonVar.Project)
+			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(deploymentName, "tools", commonVar.Project)
 			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
 			for _, volNamesAndPath := range volNamesAndPathsArr {
 				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
@@ -97,7 +103,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			// check the volume name and mount path Not present in runtime container
 			volumesMatched = 0
-			volNamesAndPaths = commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", commonVar.Project)
+			volNamesAndPaths = commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(deploymentName, "runtime", commonVar.Project)
 			volNamesAndPathsArr = strings.Fields(volNamesAndPaths)
 			for _, volNamesAndPath := range volNamesAndPathsArr {
 				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")

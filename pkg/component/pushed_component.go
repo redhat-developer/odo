@@ -187,7 +187,7 @@ func (d devfileComponent) GetAnnotations() map[string]string {
 }
 
 func (d devfileComponent) GetName() string {
-	return d.d.Name
+	return d.d.Labels[componentlabels.ComponentLabel]
 }
 
 func (d devfileComponent) GetType() (string, error) {

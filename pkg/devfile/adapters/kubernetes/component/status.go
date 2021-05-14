@@ -2,8 +2,6 @@ package component
 
 import (
 	"context"
-	componentLabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/util"
 	"reflect"
 	"sort"
 	"strings"
@@ -17,8 +15,10 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
+	componentLabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // KubernetesDeploymentStatus is a simplified representation of the component's cluster resources
