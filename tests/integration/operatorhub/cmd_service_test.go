@@ -285,7 +285,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			cleanPreSetup()
 		})
 
-		FIt("should fail to create service if metadata doesn't exist or is invalid", func() {
+		It("should fail to create service if metadata doesn't exist or is invalid", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs")
 			noMetadata := `
 apiVersion: etcd.database.coreos.com/v1beta2
