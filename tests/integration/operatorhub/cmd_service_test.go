@@ -277,11 +277,15 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	Context("When using from-file option", func() {
 
+		var tmpContext string
+
 		JustBeforeEach(func() {
+			tmpContext = helper.CreateNewContext()
 			preSetup()
 		})
 
 		JustAfterEach(func() {
+			helper.DeleteDir(tmpContext)
 			cleanPreSetup()
 		})
 
@@ -306,7 +310,6 @@ spec:
 `
 
 			noMetaFile := helper.RandString(6) + ".yaml"
-			tmpContext := helper.CreateNewContext()
 			fileName := filepath.Join(tmpContext, noMetaFile)
 			if err := ioutil.WriteFile(fileName, []byte(noMetadata), 0644); err != nil {
 				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
