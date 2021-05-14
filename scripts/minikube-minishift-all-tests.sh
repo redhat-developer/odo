@@ -8,7 +8,7 @@ shout() {
 
 set -ex
 
-# This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
+# This is one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
 case ${1} in
@@ -21,9 +21,9 @@ case ${1} in
         shout "Cleaning up some leftover namespaces"
 
         set +x
-        for i in $(kubectl get namespace -o jsonpath='{.items[*].metadata.name}' |  tr " " "\n"); do
-            if [[ $i == "${SCRIPT_IDENTITY}"* ]]; then
-                kubectl delete namespaces $i
+        for i in $(kubectl get namespace -o name); do
+	        if [[ $i == "namespace/${SCRIPT_IDENTITY}"* ]]; then
+	            kubectl delete $i
             fi
         done
         set -x
