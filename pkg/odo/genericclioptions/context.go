@@ -54,10 +54,11 @@ type internalCxt struct {
 
 // CreateParameters defines the options which can be provided while creating the context
 type CreateParameters struct {
-	Cmd              *cobra.Command
-	DevfilePath      string
-	ComponentContext string
-	IsNow            bool
+	Cmd                    *cobra.Command
+	DevfilePath            string
+	ComponentContext       string
+	IsNow                  bool
+	CheckRouteAvailability bool
 }
 
 // New creates a context based on the given parameters
@@ -88,6 +89,20 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 		}
 
 		context.EnvSpecificInfo.SetDevfileObj(devObj)
+
+		context.Client, err = Client()
+		if err != nil {
+			return nil, err
+		}
+		context.resolveNamespace(context.EnvSpecificInfo)
+
+		if parameters.CheckRouteAvailability {
+			isRouteSupported, err := context.Client.IsRouteSupported()
+			if err != nil {
+				return nil, err
+			}
+			context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
+		}
 		context.LocalConfigProvider = context.EnvSpecificInfo
 	} else {
 		if parameters.IsNow {

@@ -326,6 +326,10 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000")
 
+			fileOutput, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(BeNil())
+			helper.MatchAllInOutput(fileOutput, []string{"3000-tcp", "3000"})
+
 			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			pushStdOut := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			helper.DontMatchAllInOutput(pushStdOut, []string{"successfully deleted", "created"})
@@ -372,6 +376,37 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "url", "list")
 			Expect(output).Should(ContainSubstring(url1))
+		})
+	})
+
+	Context("Testing URLs for Kubernetes specific scenarios", func() {
+		JustBeforeEach(func() {
+			if os.Getenv("KUBERNETES") != "true" {
+				Skip("This is a Kubernetes specific scenario, skipping")
+			}
+		})
+
+		It("should use an existing URL when there are URLs with no host defined in the env file with same port", func() {
+			url1 := helper.RandString(5)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create", "--host", "com", "--port", "3000")
+			fileOutput, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(BeNil())
+			helper.MatchAllInOutput(fileOutput, []string{"3000-tcp", "3000"})
+			count := strings.Count(fileOutput, "targetPort")
+			Expect(count).To(Equal(1))
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--host", "com", "--port", "8080")
+			fileOutput, err = helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(BeNil())
+			helper.MatchAllInOutput(fileOutput, []string{url1, "8080"})
+			count = strings.Count(fileOutput, "targetPort")
+			Expect(count).To(Equal(2))
 		})
 	})
 })
