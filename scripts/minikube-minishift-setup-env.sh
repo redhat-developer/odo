@@ -47,6 +47,7 @@ case ${1} in
         minikube delete
         minikube start --vm-driver=docker --container-runtime=docker
         minikube version
+
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
