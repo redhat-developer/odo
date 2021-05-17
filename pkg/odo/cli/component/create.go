@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	segment "github.com/openshift/odo/pkg/segment/context"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -908,7 +908,7 @@ func (co *CreateOptions) devfileRun() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
-	segment.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
+	scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
 		err := co.devfileRun()
