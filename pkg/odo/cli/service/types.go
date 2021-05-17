@@ -15,7 +15,7 @@ type OperatorBackend struct {
 	// Resource of the GVR
 	resource string
 
-	paramBuilder *service.ParamBuilder
+	paramBuilder *service.CRSpecBuilder
 }
 
 func NewOperatorBackend() *OperatorBackend {

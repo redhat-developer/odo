@@ -143,19 +143,31 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 				return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
 			}
 
-			paramBuilder := service.NewParamBuilder(cr.SpecDescriptors)
+			crBuilder := service.NewCRBuilder(cr)
 
 			for key, value := range o.ParametersMap {
-				err := paramBuilder.SetAndValidate(key, value)
+				err := crBuilder.SetAndValidate(key, value)
 				if err != nil {
 					return err
 				}
 			}
+			almExample, _ := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
 
-			builtCRD, err := paramBuilder.Map()
+			fmt.Printf("%+v\n", b.group)
+			fmt.Printf("%+v\n", b.version)
+			fmt.Printf("%+v\n", b.resource)
+
+			fmt.Printf("%+v\n", almExample)
+
+			fmt.Print("---------------\n")
+
+			builtCRD, err := crBuilder.Map()
 			if err != nil {
 				return err
 			}
+
+			fmt.Printf("%+v\n", builtCRD)
+
 			d.OriginalCRD = builtCRD
 		} else {
 			almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
