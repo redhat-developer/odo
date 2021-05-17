@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -45,7 +46,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 	if imageNS == "" {
 
 		// First try finding imagestream from current namespace
-		currentNSImageStream, e := c.imageClient.ImageStreams(currentProjectName).Get(imageName, metav1.GetOptions{})
+		currentNSImageStream, e := c.imageClient.ImageStreams(currentProjectName).Get(context.TODO(), imageName, metav1.GetOptions{})
 		if e != nil {
 			err = errors.Wrapf(e, "no match found for : %s in namespace %s", imageName, currentProjectName)
 		} else {
@@ -55,7 +56,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 		}
 
 		// If not in current namespace, try finding imagestream from openshift namespace
-		openshiftNSImageStream, e := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(imageName, metav1.GetOptions{})
+		openshiftNSImageStream, e := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(context.TODO(), imageName, metav1.GetOptions{})
 		if e != nil {
 			// The image is not available in current Namespace.
 			err = errors.Wrapf(e, "no match found for : %s in namespace %s", imageName, OpenShiftNameSpace)
@@ -74,7 +75,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 	}
 
 	// Fetch imagestream from requested namespace
-	imageStream, err = c.imageClient.ImageStreams(imageNS).Get(imageName, metav1.GetOptions{})
+	imageStream, err = c.imageClient.ImageStreams(imageNS).Get(context.TODO(), imageName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(
 			err, "no match found for %s in namespace %s", imageName, imageNS,
@@ -102,7 +103,7 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
 
 				// look for imageStreamImage for given tag (reference by digest)
-				imageStreamImage, err := c.imageClient.ImageStreamImages(imageNS).Get(imageStreamImageName, metav1.GetOptions{})
+				imageStreamImage, err := c.imageClient.ImageStreamImages(imageNS).Get(context.TODO(), imageStreamImageName, metav1.GetOptions{})
 				if err != nil {
 					return nil, errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
 				}
@@ -120,7 +121,7 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 
 // GetImageStreamTags returns all the ImageStreamTag objects in the given namespace
 func (c *Client) GetImageStreamTags(namespace string) ([]imagev1.ImageStreamTag, error) {
-	imageStreamTagList, err := c.imageClient.ImageStreamTags(namespace).List(metav1.ListOptions{})
+	imageStreamTagList, err := c.imageClient.ImageStreamTags(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list imagestreamtags")
 	}
@@ -159,7 +160,7 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 
 // ListImageStreams returns the Image Stream objects in the given namespace
 func (c *Client) ListImageStreams(namespace string) ([]imagev1.ImageStream, error) {
-	imageStreamList, err := c.imageClient.ImageStreams(namespace).List(metav1.ListOptions{})
+	imageStreamList, err := c.imageClient.ImageStreams(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list imagestreams")
 	}

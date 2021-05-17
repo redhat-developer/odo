@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const FieldManager = "odo"
+
 // GetInputEnvVarsFromStrings generates corev1.EnvVar values from the array of string key=value pairs
 // envVars is the array containing the key=value pairs
 func GetInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {

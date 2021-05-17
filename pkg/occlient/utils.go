@@ -2,6 +2,7 @@ package occlient
 
 import (
 	"fmt"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/library-go/pkg/apps/appsutil"

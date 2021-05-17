@@ -2,8 +2,21 @@
 // This includes functions for retrieval, listing and storage of credentials as well as Go structures for convenient access to the credential data.
 //
 // A more detailed description of Windows Credentials Management can be found on
-// MSDN: https://msdn.microsoft.com/en-us/library/windows/desktop/aa374789(v=vs.85).aspx
+// Docs: https://docs.microsoft.com/en-us/windows/desktop/SecAuthN/credentials-management
 package wincred
+
+import "errors"
+
+const (
+	// ErrElementNotFound is the error that is returned if a requested element cannot be found.
+	// This error constant can be used to check if a credential could not be found.
+	ErrElementNotFound = sysERROR_NOT_FOUND
+
+	// ErrInvalidParameter is the error that is returned for invalid parameters.
+	// This error constant can be used to check if the given function parameters were invalid.
+	// For example when trying to create a new generic credential with an empty target name.
+	ErrInvalidParameter = sysERROR_INVALID_PARAMETER
+)
 
 // GetGenericCredential fetches the generic credential with the given name from Windows credential manager.
 // It returns nil and an error if the credential could not be found or an error occurred.
@@ -77,7 +90,19 @@ func (t *DomainPassword) SetPassword(pw string) {
 // List retrieves all credentials of the Credentials store.
 func List() ([]*Credential, error) {
 	creds, err := sysCredEnumerate("", true)
-	if err != nil && err.Error() == sysERROR_NOT_FOUND {
+	if err != nil && errors.Is(err, ErrElementNotFound) {
+		// Ignore ERROR_NOT_FOUND and return an empty list instead
+		creds = []*Credential{}
+		err = nil
+	}
+	return creds, err
+}
+
+// FilteredList retrieves the list of credentials from the Credentials store that match the given filter.
+// The filter string defines the prefix followed by an asterisk for the `TargetName` attribute of the credentials.
+func FilteredList(filter string) ([]*Credential, error) {
+	creds, err := sysCredEnumerate(filter, false)
+	if err != nil && errors.Is(err, ErrElementNotFound) {
 		// Ignore ERROR_NOT_FOUND and return an empty list instead
 		creds = []*Credential{}
 		err = nil

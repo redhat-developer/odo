@@ -8,7 +8,6 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
@@ -223,31 +222,6 @@ func overrideContainerArgs(container *corev1.Container) {
 	klog.V(2).Infof("Updating container %v entrypoint with supervisord", container.Name)
 	container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
 	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
-}
-
-// UpdateContainerWithEnvFromSecrets adds Secrets to "EnvFrom" of the runtime container
-func UpdateContainerWithEnvFromSecrets(containers []corev1.Container, devfile devfileParser.DevfileObj, devfileRunCmd string, ei envinfo.EnvSpecificInfo, secrets []string) ([]corev1.Container, error) {
-	runCommand, err := adaptersCommon.GetRunCommand(devfile.Data, devfileRunCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range containers {
-		c := &containers[i]
-		if c.Name == runCommand.Exec.Component {
-			for _, secret := range secrets {
-				c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{
-					SecretRef: &corev1.SecretEnvSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: secret,
-						},
-					},
-				})
-			}
-		}
-	}
-
-	return containers, nil
 }
 
 // GetPreStartInitContainers gets the init container for every preStart devfile event

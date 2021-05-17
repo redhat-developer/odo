@@ -52,13 +52,13 @@ func kubeConfigSolution(isExplicitFile bool) string {
 }
 
 // NoProjectsExistMessage returns a message indicating that no projects have been created by the current user.
-func NoProjectsExistMessage(canRequestProjects bool, commandName string) string {
+func NoProjectsExistMessage(canRequestProjects bool) string {
 	if !canRequestProjects {
 		return fmt.Sprintf("You don't have any projects. Contact your system administrator to request a project.\n")
 	}
 	return fmt.Sprintf(`You don't have any projects. You can try to create a new project, by running
 
-    %s new-project <projectname>
+    oc new-project <projectname>
 
-`, commandName)
+`)
 }

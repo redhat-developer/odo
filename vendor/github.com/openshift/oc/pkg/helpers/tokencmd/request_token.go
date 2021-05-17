@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/library-go/pkg/oauth/oauthdiscovery"
 )
@@ -43,6 +43,9 @@ const (
 
 	// token fakes the missing osin.TOKEN const
 	token osincli.AuthorizeRequestType = "token"
+
+	// BasicAuthNoUsernameMessage will differentiate unauthorized errors from basic login with no username
+	BasicAuthNoUsernameMessage = "BasicChallengeNoUsername"
 )
 
 // ChallengeHandler handles responses to WWW-Authenticate challenges.
@@ -225,13 +228,23 @@ func (o *RequestTokenOptions) RequestToken() (string, error) {
 		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusUnauthorized {
-			if resp.Header.Get("WWW-Authenticate") != "" {
+			if len(resp.Header.Get("WWW-Authenticate")) > 0 {
 				if !o.Handler.CanHandle(resp.Header) {
 					return "", apierrs.NewUnauthorized("unhandled challenge")
 				}
 				// Handle the challenge
 				newRequestHeaders, shouldRetry, err := o.Handler.HandleChallenge(requestURL, resp.Header)
 				if err != nil {
+					if _, ok := err.(*BasicAuthNoUsernameError); ok {
+						tokenPromptErr := apierrs.NewUnauthorized(BasicAuthNoUsernameMessage)
+						klog.V(4).Infof("%v", err)
+						tokenPromptErr.ErrStatus.Details = &metav1.StatusDetails{
+							Causes: []metav1.StatusCause{
+								{Message: fmt.Sprintf("You must obtain an API token by visiting %s/request", o.OsinConfig.TokenUrl)},
+							},
+						}
+						return "", tokenPromptErr
+					}
 					return "", err
 				}
 				if !shouldRetry {
@@ -397,39 +410,58 @@ func request(rt http.RoundTripper, requestURL string, requestHeaders http.Header
 	return rt.RoundTrip(req)
 }
 
+// transportWithSystemRoots tries to retrieve the serving certificate from the
+// issuer, validates it against the system roots and if the validation passes,
+// returns transport using just system roots, otherwise it returns a transport
+// that uses the CA from kubeconfig
 func transportWithSystemRoots(issuer string, clientConfig *restclient.Config) (http.RoundTripper, error) {
-	// copy the config so we can freely mutate it
-	configWithSystemRoots := restclient.CopyConfig(clientConfig)
-
-	// explicitly unset CA cert information
-	// this will make the transport use the system roots or OS specific verification
-	// this is required to have reasonable behavior on windows (cannot get system roots)
-	// in general there is no good with to say "I want system roots plus this CA bundle"
-	// so we just try system roots first before using the kubeconfig CA bundle
-	configWithSystemRoots.CAFile = ""
-	configWithSystemRoots.CAData = nil
-
-	systemRootsRT, err := restclient.TransportFor(configWithSystemRoots)
+	issuerURL, err := url.Parse(issuer)
 	if err != nil {
 		return nil, err
 	}
 
-	// build a request to probe the OAuth server CA
-	req, err := http.NewRequest(http.MethodHead, issuer, nil)
+	port := issuerURL.Port()
+	if len(port) == 0 {
+		port = "443"
+	}
+	// perform the retrieval with insecure transport, otherwise oauth-server
+	// logs remote tls error which is confusing during troubleshooting
+	client := http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				Certificates:       []tls.Certificate{},
+				InsecureSkipVerify: true,
+				ServerName:         issuerURL.Hostname(),
+			},
+		},
+	}
+	resp, err := client.Head(issuer)
 	if err != nil {
 		return nil, err
 	}
+	resp.Body.Close()
 
-	// see if get a certificate error when using the system roots
-	// we perform the check using this transport (instead of the kubeconfig based one)
-	// because it is most likely to work with a route (which is what the OAuth server uses in 4.0+)
-	// note that both transports are "safe" to use (in the sense that they have valid TLS configurations)
-	// thus the fallback case is not an "unsafe" operation
-	_, err = systemRootsRT.RoundTrip(req)
+	_, err = verifyServerCertChain(issuerURL.Hostname(), resp.TLS.PeerCertificates)
 	switch err.(type) {
 	case nil:
+		// copy the config so we can freely mutate it
+		configWithSystemRoots := restclient.CopyConfig(clientConfig)
+
+		// explicitly unset CA cert information
+		// this will make the transport use the system roots or OS specific verification
+		// this is required to have reasonable behavior on windows (cannot get system roots)
+		// in general there is no good with to say "I want system roots plus this CA bundle"
+		// so we just try system roots first before using the kubeconfig CA bundle
+		configWithSystemRoots.CAFile = ""
+		configWithSystemRoots.CAData = nil
+
 		// no error meaning the system roots work with the OAuth server
 		klog.V(4).Info("using system roots as no error was encountered")
+		systemRootsRT, err := restclient.TransportFor(configWithSystemRoots)
+		if err != nil {
+			return nil, err
+		}
 		return systemRootsRT, nil
 	case x509.UnknownAuthorityError, x509.HostnameError, x509.CertificateInvalidError, x509.SystemRootsError,
 		tls.RecordHeaderError, *net.OpError:
@@ -448,4 +480,22 @@ func transportWithSystemRoots(issuer string, clientConfig *restclient.Config) (h
 		klog.V(4).Infof("unexpected error during system roots probe: %v", err)
 		return nil, err
 	}
+}
+
+// verifyCertChain uses the system trust bundle in order to perform validation
+// of a certificate chain
+func verifyServerCertChain(dnsName string, chain []*x509.Certificate) ([][]*x509.Certificate, error) {
+	if len(chain) == 0 {
+		return nil, fmt.Errorf("the server presented an empty certificate chain")
+	}
+	intermediates := x509.NewCertPool()
+
+	for _, c := range chain[1:] {
+		intermediates.AddCert(c)
+	}
+
+	return chain[0].Verify(x509.VerifyOptions{
+		Intermediates: intermediates,
+		DNSName:       dnsName,
+	})
 }

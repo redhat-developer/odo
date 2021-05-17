@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/cli-runtime/pkg/genericclioptions/openshiftpatch"
 	"k8s.io/client-go/discovery"
 	diskcached "k8s.io/client-go/discovery/cached/disk"
 	"k8s.io/client-go/rest"
@@ -42,6 +41,7 @@ const (
 	flagContext          = "context"
 	flagNamespace        = "namespace"
 	flagAPIServer        = "server"
+	flagTLSServerName    = "tls-server-name"
 	flagInsecure         = "insecure-skip-tls-verify"
 	flagCertFile         = "client-certificate"
 	flagKeyFile          = "client-key"
@@ -52,10 +52,12 @@ const (
 	flagUsername         = "username"
 	flagPassword         = "password"
 	flagTimeout          = "request-timeout"
-	flagHTTPCacheDir     = "cache-dir"
+	flagCacheDir         = "cache-dir"
 )
 
-var defaultCacheDir = filepath.Join(homedir.HomeDir(), ".kube", "http-cache")
+var (
+	defaultCacheDir = filepath.Join(homedir.HomeDir(), ".kube", "cache")
+)
 
 // RESTClientGetter is an interface that the ConfigFlags describe to provide an easier way to mock for commands
 // and eliminate the direct coupling to a struct type.  Users may wish to duplicate this type in their own packages
@@ -85,6 +87,7 @@ type ConfigFlags struct {
 	Context          *string
 	Namespace        *string
 	APIServer        *string
+	TLSServerName    *string
 	Insecure         *bool
 	CertFile         *string
 	KeyFile          *string
@@ -102,6 +105,9 @@ type ConfigFlags struct {
 	// propagate the config to the places that need it, rather than
 	// loading the config multiple times
 	usePersistentConfig bool
+	// Allows increasing burst used for discovery, this is useful
+	// in clusters with many registered resources
+	discoveryBurst int
 }
 
 // ToRESTConfig implements RESTClientGetter.
@@ -161,6 +167,9 @@ func (f *ConfigFlags) toRawKubeConfigLoader() clientcmd.ClientConfig {
 	if f.APIServer != nil {
 		overrides.ClusterInfo.Server = *f.APIServer
 	}
+	if f.TLSServerName != nil {
+		overrides.ClusterInfo.TLSServerName = *f.TLSServerName
+	}
 	if f.CAFile != nil {
 		overrides.ClusterInfo.CertificateAuthority = *f.CAFile
 	}
@@ -186,16 +195,11 @@ func (f *ConfigFlags) toRawKubeConfigLoader() clientcmd.ClientConfig {
 		overrides.Timeout = *f.Timeout
 	}
 
-	var clientConfig clientcmd.ClientConfig
-
 	// we only have an interactive prompt when a password is allowed
 	if f.Password == nil {
-		clientConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides)
-	} else {
-		clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, overrides, os.Stdin)
+		return &clientConfig{clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides)}
 	}
-
-	return clientConfig
+	return &clientConfig{clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, overrides, os.Stdin)}
 }
 
 // toRawKubePersistentConfigLoader binds config flag values to config overrides
@@ -223,16 +227,18 @@ func (f *ConfigFlags) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, e
 	// The more groups you have, the more discovery requests you need to make.
 	// given 25 groups (our groups + a few custom resources) with one-ish version each, discovery needs to make 50 requests
 	// double it just so we don't end up here again for a while.  This config is only used for discovery.
-	config.Burst = 100
+	config.Burst = f.discoveryBurst
+
+	cacheDir := defaultCacheDir
 
 	// retrieve a user-provided value for the "cache-dir"
-	// defaulting to ~/.kube/http-cache if no user-value is given.
-	httpCacheDir := defaultCacheDir
+	// override httpCacheDir and discoveryCacheDir if user-value is given.
 	if f.CacheDir != nil {
-		httpCacheDir = *f.CacheDir
+		cacheDir = *f.CacheDir
 	}
+	httpCacheDir := filepath.Join(cacheDir, "http")
+	discoveryCacheDir := computeDiscoverCacheDir(filepath.Join(cacheDir, "discovery"), config.Host)
 
-	discoveryCacheDir := computeDiscoverCacheDir(filepath.Join(homedir.HomeDir(), ".kube", "cache", "discovery"), config.Host)
 	return diskcached.NewCachedDiscoveryClientForConfig(config, discoveryCacheDir, httpCacheDir, time.Duration(10*time.Minute))
 }
 
@@ -251,16 +257,10 @@ func (f *ConfigFlags) ToRESTMapper() (meta.RESTMapper, error) {
 // AddFlags binds client configuration flags to a given flagset
 func (f *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
 	if f.KubeConfig != nil {
-		if !openshiftpatch.IsOC {
-			flags.StringVar(f.KubeConfig, "kubeconfig", *f.KubeConfig, "Path to the kubeconfig file to use for CLI requests.")
-		} else {
-			flags.StringVar(f.KubeConfig, "kubeconfig", *f.KubeConfig, "Path to the kubeconfig file to use for CLI requests.")
-			flags.StringVar(f.KubeConfig, OpenShiftKubeConfigFlagName, *f.KubeConfig, "Path to the kubeconfig file to use for CLI requests.")
-			flags.MarkDeprecated(OpenShiftKubeConfigFlagName, "use --kubeconfig instead")
-		}
+		flags.StringVar(f.KubeConfig, "kubeconfig", *f.KubeConfig, "Path to the kubeconfig file to use for CLI requests.")
 	}
 	if f.CacheDir != nil {
-		flags.StringVar(f.CacheDir, flagHTTPCacheDir, *f.CacheDir, "Default HTTP cache directory")
+		flags.StringVar(f.CacheDir, flagCacheDir, *f.CacheDir, "Default cache directory")
 	}
 
 	// add config options
@@ -301,6 +301,9 @@ func (f *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
 	if f.APIServer != nil {
 		flags.StringVarP(f.APIServer, flagAPIServer, "s", *f.APIServer, "The address and port of the Kubernetes API server")
 	}
+	if f.TLSServerName != nil {
+		flags.StringVar(f.TLSServerName, flagTLSServerName, *f.TLSServerName, "Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used")
+	}
 	if f.Insecure != nil {
 		flags.BoolVar(f.Insecure, flagInsecure, *f.Insecure, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
 	}
@@ -320,6 +323,12 @@ func (f *ConfigFlags) WithDeprecatedPasswordFlag() *ConfigFlags {
 	return f
 }
 
+// WithDiscoveryBurst sets the RESTClient burst for discovery.
+func (f *ConfigFlags) WithDiscoveryBurst(discoveryBurst int) *ConfigFlags {
+	f.discoveryBurst = discoveryBurst
+	return f
+}
+
 // NewConfigFlags returns ConfigFlags with default values set
 func NewConfigFlags(usePersistentConfig bool) *ConfigFlags {
 	impersonateGroup := []string{}
@@ -336,6 +345,7 @@ func NewConfigFlags(usePersistentConfig bool) *ConfigFlags {
 		Context:          stringptr(""),
 		Namespace:        stringptr(""),
 		APIServer:        stringptr(""),
+		TLSServerName:    stringptr(""),
 		CertFile:         stringptr(""),
 		KeyFile:          stringptr(""),
 		CAFile:           stringptr(""),
@@ -344,6 +354,10 @@ func NewConfigFlags(usePersistentConfig bool) *ConfigFlags {
 		ImpersonateGroup: &impersonateGroup,
 
 		usePersistentConfig: usePersistentConfig,
+		// The more groups you have, the more discovery requests you need to make.
+		// given 25 groups (our groups + a few custom resources) with one-ish version each, discovery needs to make 50 requests
+		// double it just so we don't end up here again for a while.  This config is only used for discovery.
+		discoveryBurst: 100,
 	}
 }
 

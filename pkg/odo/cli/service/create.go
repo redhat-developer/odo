@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
-
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 

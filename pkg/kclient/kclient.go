@@ -1,9 +1,11 @@
 package kclient
 
 import (
+	"context"
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -49,6 +51,9 @@ type Client struct {
 	DynamicClient      dynamic.Interface
 	discoveryClient    discovery.DiscoveryInterface
 	supportedResources map[string]bool
+	// Is server side apply supported by cluster
+	// Use IsSSASupported()
+	isSSASupported *bool
 }
 
 // New creates a new client
@@ -127,7 +132,7 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 	}
 	// Delete Deployments
 	klog.V(3).Info("Deleting Deployments")
-	err := c.appsClient.Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
+	err := c.appsClient.Deployments(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deployments")
 	}
@@ -156,7 +161,7 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 
 	klog.V(3).Infof("Waiting for component to get deleted")
 
-	watcher, err := c.appsClient.Deployments(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
+	watcher, err := c.appsClient.Deployments(c.Namespace).Watch(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
@@ -227,4 +232,39 @@ func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) 
 		c.supportedResources[groupVersion] = supported
 	}
 	return supported, nil
+}
+
+// IsSSASupported checks if Server Side Apply is supported by cluster
+// SSA was introduced in Kubernetes 1.16
+// If there is an error while parsing versions, it assumes that SSA is supported by cluster.
+// Most of clusters these days are 1.16 and up
+func (c *Client) IsSSASupported() bool {
+	// check if this was done before so we don't query cluster multiple times for the same info
+	if c.isSSASupported == nil {
+		versionWithSSA, err := semver.Make("1.16.0")
+		if err != nil {
+			klog.Warningf("unable to parse version %q", err)
+		}
+
+		kVersion, err := c.discoveryClient.ServerVersion()
+		if err != nil {
+			klog.Warningf("unable to get k8s server version %q", err)
+			return true
+		}
+		klog.V(4).Infof("Kubernetes version is %q", kVersion.String())
+
+		cleanupVersion := strings.TrimLeft(kVersion.String(), "v")
+		serverVersion, err := semver.Make(cleanupVersion)
+		if err != nil {
+			klog.Warningf("unable to parse k8s server version %q", err)
+			return true
+		}
+
+		isSSASupported := versionWithSSA.LE(serverVersion)
+		c.isSSASupported = &isSSASupported
+
+		klog.V(4).Infof("Cluster has support for SSA: %t", *c.isSSASupported)
+	}
+	return *c.isSSASupported
+
 }
