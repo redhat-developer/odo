@@ -86,6 +86,11 @@ func TestIsGitBasedRegistry(t *testing.T) {
 			registryURL: " https://registry.devfile.io",
 			want:        false,
 		},
+		{
+			name:        "Case 3: Returns false if URL git based on raw.githubusercontent",
+			registryURL: "https://raw.githubusercontent.com/odo-devfiles/registry",
+			want:        true,
+		},
 	}
 
 	for _, tt := range tests {
