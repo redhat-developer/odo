@@ -151,15 +151,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 					return err
 				}
 			}
-			almExample, _ := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
-
-			fmt.Printf("%+v\n", b.group)
-			fmt.Printf("%+v\n", b.version)
-			fmt.Printf("%+v\n", b.resource)
-
-			fmt.Printf("%+v\n", almExample)
-
-			fmt.Print("---------------\n")
 
 			builtCRD, err := crBuilder.Map()
 			if err != nil {

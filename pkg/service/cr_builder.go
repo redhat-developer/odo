@@ -19,8 +19,13 @@ func NewCRBuilder(crd *olm.CRDDescription) *CRBuilder {
 }
 
 func (crb *CRBuilder) Map() (map[string]interface{}, error) {
-	crb.cr["apiVersion"] = crb.crd.Version
+	group, version, _, err := GetGVRFromCR(crb.crd)
+	if err != nil {
+		return nil, err
+	}
+	crb.cr["apiVersion"] = group + "/" + version
 	crb.cr["kind"] = crb.crd.Kind
+	crb.cr["metadata"] = make(map[string]interface{})
 	specMap, err := crb.CRSpecBuilder.Map()
 	if err != nil {
 		return nil, err
