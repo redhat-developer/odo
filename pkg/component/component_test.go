@@ -539,9 +539,9 @@ func TestList(t *testing.T) {
 			})
 
 			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				getAction, ok := action.(ktesting.ListAction)
+				listAction, ok := action.(ktesting.ListAction)
 				if !ok {
-					return false, nil, fmt.Errorf("expected a GetAction, got %v", action)
+					return false, nil, fmt.Errorf("expected a ListAction, got %v", action)
 				}
 				if len(tt.deploymentList.Items) <= 0 {
 					return true, &tt.deploymentList, nil
@@ -550,10 +550,17 @@ func TestList(t *testing.T) {
 					// simulate unavailable cluster
 					return true, nil, errors.NewUnauthorized("user unauthorized")
 				}
-				switch getAction.GetListRestrictions().Labels.String() {
-				case util.ConvertLabelsToSelector(tt.deploymentList.Items[0].Labels):
+
+				var deploymentLabels0 map[string]string
+				var deploymentLabels1 map[string]string
+				if len(tt.deploymentList.Items) == 2 {
+					deploymentLabels0 = tt.deploymentList.Items[0].Labels
+					deploymentLabels1 = tt.deploymentList.Items[1].Labels
+				}
+				switch listAction.GetListRestrictions().Labels.String() {
+				case util.ConvertLabelsToSelector(deploymentLabels0):
 					return true, &tt.deploymentList.Items[0], nil
-				case util.ConvertLabelsToSelector(tt.deploymentList.Items[1].Labels):
+				case util.ConvertLabelsToSelector(deploymentLabels1):
 					return true, &tt.deploymentList.Items[1], nil
 				default:
 					return true, &tt.deploymentList, nil

@@ -233,14 +233,12 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Return test cases's replicasets, or pods, when requested
 			fkclientset.Kubernetes.PrependReactor("list", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if action.GetResource().Resource == "replicasets" {
+				switch action.GetResource().Resource {
+				case "replicasets":
 					return true, &tt.replicaSet, nil
-				}
-				if action.GetResource().Resource == "pods" {
+				case "pods":
 					return true, &tt.podSet, nil
-				}
-
-				if action.GetResource().Resource == "deployments" {
+				case "deployments":
 					return true, &v1.DeploymentList{Items: []v1.Deployment{tt.deployment}}, nil
 				}
 				return false, nil, nil
