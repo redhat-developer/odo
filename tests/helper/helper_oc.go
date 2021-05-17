@@ -14,6 +14,7 @@ import (
 
 const (
 	ResourceTypeDeploymentConfig = "dc"
+	ResourceTypeRoute            = "route"
 )
 
 type OcRunner struct {
@@ -669,4 +670,10 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 // and checks if the given resource type has been deleted on the cluster or is in the terminating state
 func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
+}
+
+//GetURLClusterResourceType gets the default cluster resource type for URL which is ingress for kubernetes and route for openshift
+//use the constants if you want to be explicit for some reason
+func (oc OcRunner) GetURLClusterResourceType() string {
+	return ResourceTypeRoute
 }

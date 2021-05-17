@@ -12,6 +12,9 @@ import (
 
 const (
 	ResourceTypeDeployment = "deployment"
+	ResourceTypePVC        = "pvc"
+	ResourceTypeIngress    = "ingress"
+	ResourceTypeService    = "service"
 )
 
 type KubectlRunner struct {
@@ -206,4 +209,17 @@ func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
 // and checks if the given resource type has been deleted on the cluster or is in the terminating state
 func (kubectl KubectlRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(kubectl.path, resourceType, namespace, timeoutMinutes)
+}
+
+func (kubectl KubectlRunner) VerifyResourceDeleted(resourceType, resourceName, namespace string)  {
+	session := CmdRunner(kubectl.path, "get", resourceType, "--namespace", namespace)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	Expect(output).NotTo(ContainSubstring(resourceName))
+}
+
+//GetURLClusterResourceType gets the default cluster resource type for URL which is ingress for kubernetes and route for openshift
+//use the constants if you want to be explicit for some reason
+func (kubectl KubectlRunner) GetURLClusterResourceType() string  {
+	return ResourceTypeIngress
 }

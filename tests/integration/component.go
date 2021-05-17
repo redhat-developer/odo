@@ -629,12 +629,12 @@ func componentTests(args ...string) {
 			// delete with --wait flag
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
 
-			oc.VerifyResourceDeleted("routes", "example", commonVar.Project)
-			oc.VerifyResourceDeleted("service", cmpName, commonVar.Project)
+			oc.VerifyResourceDeleted(helper.ResourceTypeRoute, "example", commonVar.Project)
+			oc.VerifyResourceDeleted(helper.ResourceTypeService, cmpName, commonVar.Project)
 			// verify s2i pvc is delete
-			oc.VerifyResourceDeleted("pvc", "s2idata", commonVar.Project)
-			oc.VerifyResourceDeleted("pvc", "storage-1", commonVar.Project)
-			oc.VerifyResourceDeleted("pvc", "storage-2", commonVar.Project)
+			oc.VerifyResourceDeleted(helper.ResourceTypePVC, "s2idata", commonVar.Project)
+			oc.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-1", commonVar.Project)
+			oc.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-2", commonVar.Project)
 			oc.VerifyResourceDeleted(helper.ResourceTypeDeploymentConfig, cmpName, commonVar.Project)
 		})
 	})
