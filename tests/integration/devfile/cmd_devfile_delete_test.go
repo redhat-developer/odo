@@ -153,7 +153,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		It("should delete the devfile component and the owned resources with wait flag", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com")
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com", "--ingress")
 
 			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
 			info := helper.LocalEnvInfo(commonVar.Context)
@@ -161,7 +161,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			Expect(info.GetName(), componentName)
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
-			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context, "--host", "com")
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context, "--host", "com", "--ingress")
 			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
