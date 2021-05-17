@@ -1,7 +1,6 @@
 package segment
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -11,8 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
-	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/pborman/uuid"
@@ -218,9 +215,4 @@ func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
 		return true
 	}
 	return false
-}
-
-// SetComponentType sets componentType property for telemetry data when a new component is created
-func SetComponentType(ctx context.Context, value string) {
-	scontext.SetContextProperty(ctx, "componentType", value)
 }

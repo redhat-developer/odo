@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/segment"
+	segment "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

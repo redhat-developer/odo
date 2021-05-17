@@ -334,7 +334,7 @@ func TestClientUploadWithContext(t *testing.T) {
 	for k, v := range map[string]string{"componentType": "nodejs"} {
 		switch k {
 		case "componentType":
-			SetComponentType(ctx, v)
+			scontext.SetComponentType(ctx, v)
 			uploadData = fakeTelemetryData("odo create", nil, ctx)
 		}
 		c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
