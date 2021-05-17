@@ -11,7 +11,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
+
+	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/pborman/uuid"
@@ -219,58 +220,7 @@ func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
 	return false
 }
 
-type contextKey struct{}
-
-var key = contextKey{}
-
-type Properties struct {
-	lock    sync.Mutex
-	storage map[string]interface{}
-}
-
-func (p *Properties) set(name string, value interface{}) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	p.storage[name] = value
-}
-
-func (p *Properties) values() map[string]interface{} {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	ret := make(map[string]interface{})
-	for k, v := range p.storage {
-		ret[k] = v
-	}
-	return ret
-}
-
-func NewContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, key, &Properties{storage: make(map[string]interface{})})
-}
-
-func propertiesFromContext(ctx context.Context) *Properties {
-	value := ctx.Value(key)
-	if cast, ok := value.(*Properties); ok {
-		return cast
-	}
-	return nil
-}
-
-func setContextProperty(ctx context.Context, key string, value interface{}) {
-	properties := propertiesFromContext(ctx)
-	if properties != nil {
-		properties.set(key, value)
-	}
-}
-
+// SetComponentType sets componentType property for telemetry data when a new component is created
 func SetComponentType(ctx context.Context, value string) {
-	setContextProperty(ctx, "componentType", value)
-}
-
-func GetContextProperties(ctx context.Context) map[string]interface{} {
-	properties := propertiesFromContext(ctx)
-	if properties == nil {
-		return make(map[string]interface{})
-	}
-	return properties.values()
+	scontext.SetContextProperty(ctx, "componentType", value)
 }

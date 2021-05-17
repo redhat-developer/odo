@@ -17,6 +17,7 @@ import (
 
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/segment"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/log"
@@ -96,7 +97,7 @@ func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err erro
 				Success:       err == nil,
 				Tty:           segment.RunningInTerminal(),
 				Version:       fmt.Sprintf("odo %v (%v)", version.VERSION, version.GITCOMMIT),
-				CmdProperties: segment.GetContextProperties(cmd.Context()),
+				CmdProperties: scontext.GetContextProperties(cmd.Context()),
 			},
 		}
 		if err != nil {

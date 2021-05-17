@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/segment"
+	segment "github.com/openshift/odo/pkg/segment/context"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

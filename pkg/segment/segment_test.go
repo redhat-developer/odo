@@ -19,6 +19,7 @@ import (
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 	"github.com/openshift/odo/pkg/version"
 )
 
@@ -328,7 +329,7 @@ func TestClientUploadWithContext(t *testing.T) {
 			},
 		},
 	}
-	ctx := NewContext(context.Background())
+	ctx := scontext.NewContext(context.Background())
 
 	for k, v := range map[string]string{"componentType": "nodejs"} {
 		switch k {
@@ -389,7 +390,7 @@ func fakeTelemetryData(cmd string, err error, ctx context.Context) TelemetryData
 			Success:       err == nil,
 			Tty:           RunningInTerminal(),
 			Version:       version.VERSION,
-			CmdProperties: GetContextProperties(ctx),
+			CmdProperties: scontext.GetContextProperties(ctx),
 		},
 	}
 }
