@@ -1,15 +1,15 @@
 # Using the odo.dev.push.path related attributes
 
-`odo` uses the `odo.dev.push.path` related attribute from the devfile's run commands to push only specific files and folders to the component. The format of the attribute is `odo.dev.push.path:<local_relative_path>:<remote_relative_path>`
+`odo` uses the `odo.dev.push.path` related attribute from the devfile's run commands to push only the specified files and folders to the component. The format of the attribute is `"odo.dev.push.path:<local_relative_path>": "<remote_relative_path>"`
 
 ```yaml
 commands:
   - id: dev-run
     attributes:
-      "dev.odo.push.path:target/quarkus-app": "target/quarkus-app"
+      "dev.odo.push.path:target/quarkus-app": "remote-target/quarkus-app"
     exec:
       component: tools
-      commandLine: "java -jar target/quarkus-app/quarkus-run.jar -Dquarkus.http.host=0.0.0.0"
+      commandLine: "java -jar remote-target/quarkus-app/quarkus-run.jar -Dquarkus.http.host=0.0.0.0"
       hotReloadCapable: true
       group:
         kind: run
@@ -18,7 +18,7 @@ commands:
   - id: dev-debug
     exec:
       component: tools
-      commandLine: "java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n -jar target/quarkus-app/quarkus-run.jar -Dquarkus.http.host=0.0.0.0"
+      commandLine: "java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n -jar remote-target/quarkus-app/quarkus-run.jar -Dquarkus.http.host=0.0.0.0"
       hotReloadCapable: true
       group:
         kind: debug
