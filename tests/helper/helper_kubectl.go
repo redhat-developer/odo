@@ -211,7 +211,7 @@ func (kubectl KubectlRunner) WaitAndCheckForTerminatingState(resourceType, names
 	return WaitAndCheckForTerminatingState(kubectl.path, resourceType, namespace, timeoutMinutes)
 }
 
-func (kubectl KubectlRunner) VerifyResourceDeleted(resourceType, resourceName, namespace string)  {
+func (kubectl KubectlRunner) VerifyResourceDeleted(resourceType, resourceName, namespace string) {
 	session := CmdRunner(kubectl.path, "get", resourceType, "--namespace", namespace)
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
@@ -220,6 +220,6 @@ func (kubectl KubectlRunner) VerifyResourceDeleted(resourceType, resourceName, n
 
 //GetURLClusterResourceType gets the default cluster resource type for URL which is ingress for kubernetes and route for openshift
 //use the constants if you want to be explicit for some reason
-func (kubectl KubectlRunner) GetURLClusterResourceType() string  {
+func (kubectl KubectlRunner) GetURLClusterResourceType() string {
 	return ResourceTypeIngress
 }
