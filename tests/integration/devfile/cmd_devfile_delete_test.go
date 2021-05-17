@@ -17,11 +17,13 @@ var _ = Describe("odo devfile delete command tests", func() {
 	const devfile = "devfile.yaml"
 	var devfilePath string
 	var componentName, invalidNamespace string
+	var oc helper.OcRunner
 
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
+		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
 
 		componentName = helper.RandString(6)
@@ -147,6 +149,35 @@ var _ = Describe("odo devfile delete command tests", func() {
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
 		})
 
+	})
+
+	Context("odo component delete should clean owned resources", func() {
+		appName := helper.RandString(5)
+		cmpName := helper.RandString(5)
+		It("should delete the devfile component and the owned resources with wait flag", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+
+			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+			info := helper.LocalEnvInfo(commonVar.Context)
+			Expect(info.GetApplication(), appName)
+			Expect(info.GetName(), cmpName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			// delete with --wait flag
+			helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
+
+			oc.VerifyResourceDeleted("routes", "example", commonVar.Project)
+			oc.VerifyResourceDeleted("service", cmpName, commonVar.Project)
+			oc.VerifyResourceDeleted("pvc", "storage-1", commonVar.Project)
+			oc.VerifyResourceDeleted("pvc", "storage-2", commonVar.Project)
+			oc.VerifyResourceDeleted(helper.ResourceTypeDeployment, cmpName, commonVar.Project)
+		})
 	})
 
 })

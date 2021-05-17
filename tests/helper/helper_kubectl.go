@@ -10,6 +10,10 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+const (
+	ResourceTypeDeployment = "deployment"
+)
+
 type KubectlRunner struct {
 	// path to kubectl binary
 	path string

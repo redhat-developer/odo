@@ -12,6 +12,10 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+const (
+	ResourceTypeDeploymentConfig = "dc"
+)
+
 type OcRunner struct {
 	// path to oc binary
 	path string
