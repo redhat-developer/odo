@@ -439,6 +439,16 @@ func (ei *EnvInfo) GetLink() []EnvInfoLink {
 	return *ei.componentSettings.Link
 }
 
+func (ei *EnvInfo) SearchLinkName(kind, name string) (string, error) {
+	links := ei.GetLink()
+	for _, link := range links {
+		if link.ServiceKind == kind && link.ServiceName == name {
+			return link.Name, nil
+		}
+	}
+	return "", errors.Errorf("Link with type %s and name %s not found", kind, name)
+}
+
 const (
 	// Name is the name of the setting controlling the component name
 	Name = "Name"

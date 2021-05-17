@@ -30,6 +30,7 @@ type commonLinkOptions struct {
 	port             string
 	secretName       string
 	isTargetAService bool
+	name             string
 
 	devfilePath string
 
@@ -121,7 +122,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 				Kind:       kclient.ServiceBindingKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      getServiceBindingName(componentName, o.serviceType, o.serviceName),
+				Name:      o.getServiceBindingName(componentName),
 				Namespace: o.EnvSpecificInfo.GetNamespace(),
 			},
 			Spec: servicebinding.ServiceBindingSpec{
@@ -189,14 +190,9 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 		}
 
 		if o.operationName == unlink {
-			componentName := o.EnvSpecificInfo.GetName()
-			serviceBindingName := getServiceBindingName(componentName, o.serviceType, o.serviceName)
-			links := o.EnvSpecificInfo.GetLink()
-
-			linked := isComponentLinked(serviceBindingName, links)
-			if !linked {
-				// user's trying to unlink a service that's not linked with the component
-				return fmt.Errorf("failed to unlink the service %q since it's not linked with the component %q", svcFullName, componentName)
+			serviceBindingName, err := o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
+			if err != nil {
+				return fmt.Errorf("failed to unlink the service %q since no link found in env file", svcFullName)
 			}
 
 			// Verify if the underlying service binding request actually exists
@@ -277,7 +273,11 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 func (o *commonLinkOptions) run() (err error) {
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
-			serviceBindingName := getServiceBindingName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
+			var serviceBindingName string
+			serviceBindingName, err = o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
+			if err != nil {
+				return err
+			}
 			svcFullName := getSvcFullName(kclient.ServiceBindingKind, serviceBindingName)
 			err = svc.DeleteServiceBindingRequest(o.KClient, svcFullName)
 			if err != nil {
@@ -429,14 +429,17 @@ func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
 	return err
 }
 
+// getServiceBindingName creates a name to be used for creation/deletion of SBR during link/unlink operations
+func (o *commonLinkOptions) getServiceBindingName(componentName string) string {
+	if len(o.name) > 0 {
+		return o.name
+	}
+	return strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
+}
+
 // getSvcFullName returns service name in the format <service-type>/<service-name>
 func getSvcFullName(serviceType, serviceName string) string {
 	return strings.Join([]string{serviceType, serviceName}, "/")
-}
-
-// getServiceBindingName creates a name to be used for creation/deletion of SBR during link/unlink operations
-func getServiceBindingName(componentName, serviceType, serviceName string) string {
-	return strings.Join([]string{componentName, strings.ToLower(serviceType), serviceName}, "-")
 }
 
 // isComponentLinked checks if link with "serviceBindingName" exists in the component's
