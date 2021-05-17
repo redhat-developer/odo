@@ -161,7 +161,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			Expect(info.GetName(), componentName)
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
-			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context, "--host", "com")
 			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
