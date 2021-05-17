@@ -671,9 +671,3 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
 }
-
-//GetURLClusterResourceType gets the default cluster resource type for URL which is ingress for kubernetes and route for openshift
-//use the constants if you want to be explicit for some reason
-func (oc OcRunner) GetURLClusterResourceType() string {
-	return ResourceTypeRoute
-}

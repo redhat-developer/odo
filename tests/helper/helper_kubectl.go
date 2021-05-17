@@ -217,9 +217,3 @@ func (kubectl KubectlRunner) VerifyResourceDeleted(resourceType, resourceName, n
 	output := string(session.Wait().Out.Contents())
 	Expect(output).NotTo(ContainSubstring(resourceName))
 }
-
-//GetURLClusterResourceType gets the default cluster resource type for URL which is ingress for kubernetes and route for openshift
-//use the constants if you want to be explicit for some reason
-func (kubectl KubectlRunner) GetURLClusterResourceType() string {
-	return ResourceTypeIngress
-}

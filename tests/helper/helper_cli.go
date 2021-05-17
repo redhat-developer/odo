@@ -24,5 +24,4 @@ type CliRunner interface {
 	GetContainerEnv(podName, containerName, namespace string) string
 	WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool
 	VerifyResourceDeleted(resourceType, cmpName, namespace string)
-	GetURLClusterResourceType() string
 }

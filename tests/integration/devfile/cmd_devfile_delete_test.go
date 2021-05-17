@@ -153,7 +153,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		It("should delete the devfile component and the owned resources with wait flag", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com")
 
 			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
 			info := helper.LocalEnvInfo(commonVar.Context)
@@ -168,7 +168,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			// delete with --wait flag
 			helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
 
-			commonVar.CliRunner.VerifyResourceDeleted(commonVar.CliRunner.GetURLClusterResourceType(), "example", commonVar.Project)
+			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypeIngress, "example", commonVar.Project)
 			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypeService, componentName, commonVar.Project)
 			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-1", commonVar.Project)
 			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-2", commonVar.Project)
