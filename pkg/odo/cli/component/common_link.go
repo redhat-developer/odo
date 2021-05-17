@@ -31,6 +31,7 @@ type commonLinkOptions struct {
 	secretName       string
 	isTargetAService bool
 	name             string
+	bindAsFiles      bool
 
 	devfilePath string
 
@@ -127,7 +128,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 			},
 			Spec: servicebinding.ServiceBindingSpec{
 				DetectBindingResources: true,
-				BindAsFiles:            false,
+				BindAsFiles:            o.bindAsFiles,
 				Application: &servicebinding.Application{
 					Ref: servicebinding.Ref{
 						Name:     componentName,
