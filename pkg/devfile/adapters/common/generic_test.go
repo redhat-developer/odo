@@ -302,7 +302,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 
 func adapter(fakeExecClient ExecClient, commands []devfilev1.Command, cif func(command devfilev1.Command) (ComponentInfo, error)) *GenericAdapter {
 	data := func() data.DevfileData {
-		devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+		devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 		return devfileData
 	}()
 	_ = data.AddCommands(commands)

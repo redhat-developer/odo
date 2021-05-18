@@ -101,7 +101,10 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		wo.componentName = wo.EnvSpecificInfo.GetName()
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
+		// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+		// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+		// We can start using it, if odo wants to utilize this feature as well.
+		devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
 		if err != nil {
 			return err
 		}
@@ -322,7 +325,10 @@ func (wo *WatchOptions) regenerateAdapterAndPush(pushParams common.PushParameter
 func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
+	// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+	// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+	// We can start using it, if odo wants to utilize this feature as well.
+	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: wo.devfilePath})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse and validate '%s'", wo.devfilePath)
 	}

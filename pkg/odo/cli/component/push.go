@@ -90,7 +90,10 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	if util.CheckPathExists(po.DevfilePath) {
 
-		po.Devfile, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
+		// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+		// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+		// We can start using it, if odo wants to utilize this feature as well.
+		po.Devfile, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
 		if err != nil {
 			return errors.Wrap(err, "unable to parse devfile")
 		}

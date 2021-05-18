@@ -71,7 +71,11 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
+
+		// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+		// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+		// We can start using it, if odo wants to utilize this feature as well.
+		devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
 		if err != nil {
 			return err
 		}

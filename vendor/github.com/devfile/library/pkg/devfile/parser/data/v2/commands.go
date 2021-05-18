@@ -1,11 +1,10 @@
 package v2
 
 import (
-	"reflect"
-	"strings"
-
+	"fmt"
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"reflect"
 )
 
 // GetCommands returns the slice of Command objects parsed from the Devfile
@@ -65,13 +64,15 @@ func (d *DevfileV2) AddCommands(commands []v1.Command) error {
 }
 
 // UpdateCommand updates the command with the given id
-func (d *DevfileV2) UpdateCommand(command v1.Command) {
+// return an error if the command is not found
+func (d *DevfileV2) UpdateCommand(command v1.Command) error {
 	for i := range d.Commands {
-		if strings.ToLower(d.Commands[i].Id) == strings.ToLower(command.Id) {
+		if d.Commands[i].Id == command.Id {
 			d.Commands[i] = command
-			d.Commands[i].Id = strings.ToLower(d.Commands[i].Id)
+			return nil
 		}
 	}
+	return fmt.Errorf("update command failed: command %s not found", command.Id)
 }
 
 // DeleteCommand removes the specified command

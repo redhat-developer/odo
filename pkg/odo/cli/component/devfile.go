@@ -82,7 +82,10 @@ func (po *PushOptions) DevfilePush() error {
 func (po *PushOptions) devfilePushInner() (err error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
+	// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+	// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+	// We can start using it, if odo wants to utilize this feature as well.
+	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
 	if err != nil {
 		return err
 	}
@@ -153,7 +156,10 @@ func (po *PushOptions) devfilePushInner() (err error) {
 // DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
 	// Parse devfile
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
+	// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+	// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+	// We can start using it, if odo wants to utilize this feature as well.
+	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
 	if err != nil {
 		return err
 	}
@@ -209,7 +215,10 @@ func (lo LogOptions) DevfileComponentLog() error {
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile and validate
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: do.devfilePath})
+	// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+	// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+	// We can start using it, if odo wants to utilize this feature as well.
+	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: do.devfilePath})
 	if err != nil {
 		return err
 	}
@@ -254,7 +263,10 @@ func (to *TestOptions) RunTestCommand() error {
 // DevfileComponentExec executes the given user command inside the component
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 	// Parse devfile
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: eo.devfilePath})
+	// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+	// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+	// We can start using it, if odo wants to utilize this feature as well.
+	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: eo.devfilePath})
 	if err != nil {
 		return err
 	}

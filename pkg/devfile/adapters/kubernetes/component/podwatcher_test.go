@@ -3,10 +3,11 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -278,7 +279,7 @@ func TestStatusReconciler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}

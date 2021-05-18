@@ -4,13 +4,22 @@ import (
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
-// GetDevfileWorkspace returns the workspace content for the devfile
-func (d *DevfileV2) GetDevfileWorkspace() *v1.DevWorkspaceTemplateSpecContent {
+// GetDevfileWorkspaceSpecContent returns the workspace spec content for the devfile
+func (d *DevfileV2) GetDevfileWorkspaceSpecContent() *v1.DevWorkspaceTemplateSpecContent {
 
 	return &d.DevWorkspaceTemplateSpecContent
 }
 
-// SetDevfileWorkspace sets the workspace content
-func (d *DevfileV2) SetDevfileWorkspace(content v1.DevWorkspaceTemplateSpecContent) {
+// SetDevfileWorkspaceSpecContent sets the workspace spec content
+func (d *DevfileV2) SetDevfileWorkspaceSpecContent(content v1.DevWorkspaceTemplateSpecContent) {
 	d.DevWorkspaceTemplateSpecContent = content
+}
+
+func (d *DevfileV2) GetDevfileWorkspaceSpec() *v1.DevWorkspaceTemplateSpec {
+	return &d.DevWorkspaceTemplateSpec
+}
+
+// SetDevfileWorkspaceSpec sets the workspace spec
+func (d *DevfileV2) SetDevfileWorkspaceSpec(spec v1.DevWorkspaceTemplateSpec) {
+	d.DevWorkspaceTemplateSpec = spec
 }

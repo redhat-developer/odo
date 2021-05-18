@@ -27,7 +27,7 @@ type DevfileMetadata struct {
 	// +kubebuilder:validation:Pattern=^([0-9]+)\.([0-9]+)\.([0-9]+)(\-[0-9a-z-]+(\.[0-9a-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$
 	Version string `json:"version,omitempty"`
 
-	// Map of implementation-dependant free-form YAML attributes.
+	// Map of implementation-dependant free-form YAML attributes. Deprecated, use the top-level attributes field instead.
 	// +optional
 	Attributes attributes.Attributes `json:"attributes,omitempty"`
 
