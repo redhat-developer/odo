@@ -360,7 +360,10 @@ func addEndpointInDevfile(devObj parser.DevfileObj, endpoint devfilev1.Endpoint,
 	for _, component := range components {
 		if component.Container != nil && component.Name == container {
 			component.Container.Endpoints = append(component.Container.Endpoints, endpoint)
-			devObj.Data.UpdateComponent(component)
+			err := devObj.Data.UpdateComponent(component)
+			if err != nil {
+				return err
+			}
 			break
 		}
 	}
@@ -379,7 +382,10 @@ func removeEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
 		for index, enpoint := range component.Container.Endpoints {
 			if enpoint.Name == urlName {
 				component.Container.Endpoints = append(component.Container.Endpoints[:index], component.Container.Endpoints[index+1:]...)
-				devObj.Data.UpdateComponent(component)
+				err := devObj.Data.UpdateComponent(component)
+				if err != nil {
+					return err
+				}
 				found = true
 				break
 			}
@@ -429,7 +435,10 @@ func updateEndpointInDevfile(devObj parser.DevfileObj, url localConfigProvider.L
 							Protocol:   devfilev1.EndpointProtocol(strings.ToLower(url.Protocol)),
 						}
 						component.ComponentUnion.Container.Endpoints[j] = endpoint
-						devObj.Data.UpdateComponent(component)
+						err := devObj.Data.UpdateComponent(component)
+						if err != nil {
+							return err
+						}
 						return devObj.WriteYamlDevfile()
 					}
 					return nil
