@@ -32,7 +32,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 		t.Run("get platform adapter", func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}

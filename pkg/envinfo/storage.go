@@ -2,6 +2,8 @@ package envinfo
 
 import (
 	"fmt"
+
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog/v2"
 
@@ -171,7 +173,7 @@ func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 				storageList = append(storageList, localConfigProvider.LocalStorage{
 					Name:      volumeMount.Name,
 					Size:      size,
-					Path:      GetVolumeMountPath(volumeMount),
+					Path:      generator.GetVolumeMountPath(volumeMount),
 					Container: component.Name,
 				})
 			}
@@ -223,15 +225,4 @@ func (ei *EnvInfo) GetStorageMountPath(storageName string) (string, error) {
 	}
 	// TODO: Below "if" storage needs to be mounted on multiple containers, then the return will have to be an array.
 	return "", nil
-}
-
-// GetVolumeMountPath gets the volume mount's path.
-// To be moved to devfile/library.
-func GetVolumeMountPath(volumeMount devfilev1.VolumeMount) string {
-	// if there is no volume mount path, default to volume mount name as per devfile schema
-	if volumeMount.Path == "" {
-		volumeMount.Path = "/" + volumeMount.Name
-	}
-
-	return volumeMount.Path
 }

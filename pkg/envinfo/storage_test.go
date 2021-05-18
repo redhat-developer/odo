@@ -13,41 +13,6 @@ import (
 	"github.com/openshift/odo/pkg/localConfigProvider"
 )
 
-func TestGetVolumeMountPath(t *testing.T) {
-
-	tests := []struct {
-		name        string
-		volumeMount devfilev1.VolumeMount
-		wantPath    string
-	}{
-		{
-			name: "Case 1: Mount Path is present",
-			volumeMount: devfilev1.VolumeMount{
-				Name: "name1",
-				Path: "/path1",
-			},
-			wantPath: "/path1",
-		},
-		{
-			name: "Case 2: Mount Path is absent",
-			volumeMount: devfilev1.VolumeMount{
-				Name: "name1",
-			},
-			wantPath: "/name1",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			path := GetVolumeMountPath(tt.volumeMount)
-
-			if path != tt.wantPath {
-				t.Errorf("TestGetVolumeMountPath error: mount path mismatch, expected: %v got: %v", tt.wantPath, path)
-			}
-		})
-	}
-
-}
-
 func TestEnvInfo_CompleteStorage(t *testing.T) {
 	type args struct {
 		storage *localConfigProvider.LocalStorage
@@ -127,7 +92,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -202,7 +167,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -256,7 +221,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -298,7 +263,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -358,7 +323,7 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -392,7 +357,7 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -479,7 +444,7 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -510,7 +475,7 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}

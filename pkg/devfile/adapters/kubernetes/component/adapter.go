@@ -428,7 +428,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	volumeNameToVolInfo := make(map[string]storage.VolumeInfo)
+	volumeNameToVolInfo := make(map[string]generator.VolumeInfo)
 	for _, pvc := range pvcs {
 		// check if the pvc is in the terminating state
 		if pvc.DeletionTimestamp != nil {
@@ -440,14 +440,18 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 			return errors.Wrapf(err, "Unable to generate volume name from pvc name")
 		}
 
-		volumeNameToVolInfo[pvc.Labels[storagelabels.StorageLabel]] = storage.VolumeInfo{
+		volumeNameToVolInfo[pvc.Labels[storagelabels.StorageLabel]] = generator.VolumeInfo{
 			PVCName:    pvc.Name,
 			VolumeName: generatedVolumeName,
 		}
 	}
 
 	// Get PVC volumes and Volume Mounts
-	pvcVolumes, err := storage.GetVolumesAndVolumeMounts(a.Devfile, containers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
+	volParams := generator.VolumeParams{
+		Containers:             containers,
+		VolumeNameToVolumeInfo: volumeNameToVolInfo,
+	}
+	pvcVolumes, err := generator.GetVolumesAndVolumeMounts(a.Devfile, volParams, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}

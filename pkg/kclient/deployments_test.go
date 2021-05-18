@@ -26,7 +26,7 @@ import (
 // createFakeDeployment creates a fake deployment with the given pod name and labels
 func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName string, labels map[string]string) (*appsv1.Deployment, error) {
 	fakeUID := types.UID("12345")
-	devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+	devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func TestUpdateDeployment(t *testing.T) {
 
 	devObj := devfileParser.DevfileObj{
 		Data: func() data.DevfileData {
-			devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+			devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 			_ = devfileData.AddComponents([]devfilev1.Component{
 				testingutil.GetFakeContainerComponent("container1"),
 			})

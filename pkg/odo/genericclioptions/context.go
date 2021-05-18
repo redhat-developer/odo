@@ -79,7 +79,10 @@ func New(parameters CreateParameters, toggles ...bool) (context *Context, err er
 		}
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: parameters.DevfilePath})
+		// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+		// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+		// We can start using it, if odo wants to utilize this feature as well.
+		devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: parameters.DevfilePath})
 		if err != nil {
 			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}

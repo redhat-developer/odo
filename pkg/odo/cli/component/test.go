@@ -61,7 +61,10 @@ func (to *TestOptions) Validate() (err error) {
 		return fmt.Errorf("unable to find devfile, odo test command is only supported by devfile components")
 	}
 
-	devObj, err := devfile.ParseDevfileAndValidate(devfileParser.ParserArgs{Path: to.devfilePath})
+	// NOTE: the second return value is variable warning where occurences of {{variable-key}} are not replaced
+	// by their value in devfile. FYI - https://github.com/devfile/api/pull/352
+	// We can start using it, if odo wants to utilize this feature as well.
+	devObj, _, err := devfile.ParseDevfileAndValidate(devfileParser.ParserArgs{Path: to.devfilePath})
 	if err != nil {
 		return errors.Wrap(err, "fail to parse devfile")
 	}

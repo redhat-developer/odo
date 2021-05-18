@@ -9,6 +9,11 @@ const JsonSchema210 = `{
     "schemaVersion"
   ],
   "properties": {
+    "attributes": {
+      "description": "Map of implementation-dependant free-form YAML attributes.",
+      "type": "object",
+      "additionalProperties": true
+    },
     "commands": {
       "description": "Predefined, ready-to-use, devworkspace-related commands",
       "type": "array",
@@ -635,7 +640,7 @@ const JsonSchema210 = `{
       "type": "object",
       "properties": {
         "attributes": {
-          "description": "Map of implementation-dependant free-form YAML attributes.",
+          "description": "Map of implementation-dependant free-form YAML attributes. Deprecated, use the top-level attributes field instead.",
           "type": "object",
           "additionalProperties": true
         },
@@ -707,6 +712,11 @@ const JsonSchema210 = `{
         }
       ],
       "properties": {
+        "attributes": {
+          "description": "Overrides of attributes encapsulated in a parent devfile. Overriding is done according to K8S strategic merge patch standard rules.",
+          "type": "object",
+          "additionalProperties": true
+        },
         "commands": {
           "description": "Overrides of commands encapsulated in a parent devfile or a plugin. Overriding is done according to K8S strategic merge patch standard rules.",
           "type": "array",
@@ -1527,6 +1537,13 @@ const JsonSchema210 = `{
         "uri": {
           "description": "Uri of a Devfile yaml file",
           "type": "string"
+        },
+        "variables": {
+          "description": "Overrides of variables encapsulated in a parent devfile. Overriding is done according to K8S strategic merge patch standard rules.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false
@@ -1785,6 +1802,13 @@ const JsonSchema210 = `{
           }
         },
         "additionalProperties": false
+      }
+    },
+    "variables": {
+      "description": "Map of key-value variables used for string replacement in the devfile. Values can can be referenced via {{variable-key}} to replace the corresponding value in string fields in the devfile. Replacement cannot be used for\n\n - schemaVersion, metadata, parent source  - element identifiers, e.g. command id, component name, endpoint name, project name  - references to identifiers, e.g. in events, a command's component, container's volume mount name  - string enums, e.g. command group kind, endpoint exposure",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
       }
     }
   },

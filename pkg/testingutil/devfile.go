@@ -87,7 +87,7 @@ func GetFakeVolumeMount(name, path string) v1.VolumeMount {
 
 // GetTestDevfileObj returns a devfile object for testing
 func GetTestDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
-	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 	_ = devfileData.AddCommands([]v1.Command{
 		{
 			Id: "devbuild",
@@ -135,7 +135,7 @@ func GetTestDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
 
 // GetTestDevfileObjWithMultipleEndpoints returns a devfile object with multiple endpoints for testing
 func GetTestDevfileObjWithMultipleEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
-	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 	_ = devfileData.AddComponents([]v1.Component{
 		{
 			Name: "runtime",
@@ -176,7 +176,7 @@ func GetTestDevfileObjWithMultipleEndpoints(fs devfilefs.Filesystem) parser.Devf
 
 // DevfileObjWithInternalNoneEndpoints returns a devfile object with internal endpoints for testing
 func DevfileObjWithInternalNoneEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
-	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 
 	_ = devfileData.AddComponents([]v1.Component{
 		{
@@ -221,7 +221,7 @@ func DevfileObjWithInternalNoneEndpoints(fs devfilefs.Filesystem) parser.Devfile
 
 // DevfileObjWithSecureEndpoints returns a devfile object with internal endpoints for testing
 func DevfileObjWithSecureEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
-	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 
 	_ = devfileData.AddComponents([]v1.Component{
 		{
@@ -266,7 +266,7 @@ func DevfileObjWithSecureEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
 
 // GetTestDevfileObjWithPath returns a devfile object for testing
 func GetTestDevfileObjWithPath(fs devfilefs.Filesystem) parser.DevfileObj {
-	devfileData, _ := data.NewDevfileData(string(data.APIVersion200))
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 
 	_ = devfileData.AddCommands([]v1.Command{
 		{

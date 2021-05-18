@@ -1,11 +1,10 @@
 package v2
 
 import (
-	"reflect"
-	"strings"
-
+	"fmt"
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"reflect"
 )
 
 // GetProjects returns the Project Object parsed from devfile
@@ -59,12 +58,15 @@ func (d *DevfileV2) AddProjects(projects []v1.Project) error {
 }
 
 // UpdateProject updates the slice of Devfile projects parsed from the Devfile
-func (d *DevfileV2) UpdateProject(project v1.Project) {
+// return an error if the project is not found
+func (d *DevfileV2) UpdateProject(project v1.Project) error {
 	for i := range d.Projects {
-		if d.Projects[i].Name == strings.ToLower(project.Name) {
+		if d.Projects[i].Name == project.Name {
 			d.Projects[i] = project
+			return nil
 		}
 	}
+	return fmt.Errorf("update project failed: project %s not found", project.Name)
 }
 
 // DeleteProject removes the specified project
@@ -134,12 +136,14 @@ func (d *DevfileV2) AddStarterProjects(projects []v1.StarterProject) error {
 }
 
 // UpdateStarterProject updates the slice of Devfile starter projects parsed from the Devfile
-func (d *DevfileV2) UpdateStarterProject(project v1.StarterProject) {
+func (d *DevfileV2) UpdateStarterProject(project v1.StarterProject) error {
 	for i := range d.StarterProjects {
-		if d.StarterProjects[i].Name == strings.ToLower(project.Name) {
+		if d.StarterProjects[i].Name == project.Name {
 			d.StarterProjects[i] = project
+			return nil
 		}
 	}
+	return fmt.Errorf("update starter project failed: starter project %s not found", project.Name)
 }
 
 // DeleteStarterProject removes the specified starter project
