@@ -295,10 +295,13 @@ func (o *commonLinkOptions) run() (err error) {
 			return
 		}
 
-		// convert service binding request into a ma[string]interface{} type so
+		// convert service binding request into a map[string]interface{} type so
 		// as to use it with dynamic client
 		serviceBindingMap := make(map[string]interface{})
-		intermediate, _ := json.Marshal(o.serviceBinding)
+		intermediate, err := json.Marshal(o.serviceBinding)
+		if err != nil {
+			return err
+		}
 		err = json.Unmarshal(intermediate, &serviceBindingMap)
 		if err != nil {
 			return err
