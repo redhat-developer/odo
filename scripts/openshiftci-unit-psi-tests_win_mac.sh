@@ -8,7 +8,7 @@ case $1 in
     export SENDTOPIC=amqp.ci.topic.win.unit.send
     export SETUPSCRIPT="scripts/setup_script_unit.sh"
     export RUNSCRIPT="scripts/run_script_unit.sh"
-    export JOBNAME=odo-mac-unit-pr-build
+    export JOB_NAME=odo-windows-unit-pr-build
     export SENDEXCHANGE=amqp.ci.exchange.win.unit.send 
     ;;
 

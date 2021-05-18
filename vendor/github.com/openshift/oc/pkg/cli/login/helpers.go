@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	restclient "k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	kclientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	kterm "k8s.io/kubectl/pkg/util/term"
 
 	"github.com/openshift/oc/pkg/helpers/term"
@@ -110,7 +109,7 @@ func promptForInsecureTLS(reader io.Reader, out io.Writer, reason error) bool {
 	return input
 }
 
-func hasExistingInsecureCluster(clientConfigToTest restclient.Config, kubeconfig kclientcmdapi.Config) bool {
+func hasExistingInsecureCluster(clientConfigToTest restclient.Config, kubeconfig clientcmdapi.Config) bool {
 	clientConfigToTest.Insecure = true
 	matchingClusters := getMatchingClusters(clientConfigToTest, kubeconfig)
 	return len(matchingClusters) > 0

@@ -1,6 +1,7 @@
 package genericclioptions
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -63,7 +64,7 @@ func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalC
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
+		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(context.TODO(), projectFlag, metav1.GetOptions{})
 		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
 			util.LogErrorAndExit(err, "")
@@ -80,7 +81,7 @@ func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalC
 		}
 
 		// check that the specified namespace exists
-		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		_, err := o.KClient.KubeClient.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 		if err != nil {
 			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")

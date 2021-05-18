@@ -1145,4 +1145,32 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.DontMatchAllInOutput(stdout, []string{"odo may not work as expected in the default project"})
 		})
 	})
+
+	Context("Testing Push with remote attributes", func() {
+		It("should push only the mentioned files at the appropriate remote destination", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+			// create a folder and file which shouldn't be pushed
+			helper.MakeDir(filepath.Join(commonVar.Context, "views"))
+			_, _ = helper.CreateSimpleFile(filepath.Join(commonVar.Context, "views"), "view", ".html")
+
+			helper.ReplaceString("package.json", "node server.js", "node server/server.js")
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+			stdOut := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
+			helper.MatchAllInOutput(stdOut, []string{"package.json", "server"})
+			helper.DontMatchAllInOutput(stdOut, []string{"test", "views", "devfile.yaml"})
+
+			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath+"/server")
+			helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
+
+			stdOut = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			Expect(stdOut).To(ContainSubstring("No file changes detected"))
+		})
+	})
 })

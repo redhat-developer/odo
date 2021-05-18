@@ -67,6 +67,8 @@ const (
 // EnvInfo holds all the env specific information relevant to a specific Component.
 type EnvInfo struct {
 	devfileObj        parser.DevfileObj
+	isRouteSupported  bool
+	updateURL         bool              // this indicates that the URL create operation should be an update operation
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
@@ -422,6 +424,11 @@ func (ei *EnvInfo) SetDevfileObj(devfileObj parser.DevfileObj) {
 // GetDevfileObj returns devfileObj of the envinfo
 func (ei *EnvInfo) GetDevfileObj() parser.DevfileObj {
 	return ei.devfileObj
+}
+
+// SetIsRouteSupported sets the isRouteSupported value for the envinfo
+func (ei *EnvInfo) SetIsRouteSupported(isRouteSupported bool) {
+	ei.isRouteSupported = isRouteSupported
 }
 
 // GetLink returns the EnvInfoLink, returns default if nil

@@ -138,7 +138,7 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 *Test guidelines:*
 
-Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`]. For better understanding of writing test please refer Ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation] and Ginkgo's preferred matcher library Gomega link:http://onsi.github.io/gomega/[documentation].
+Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/main/tests[`odo tests`]. For better understanding of writing test please refer Ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation] and Ginkgo's preferred matcher library Gomega link:http://onsi.github.io/gomega/[documentation].
 
 * Before writing tests (Integration/e2e) scenario make sure that the test scenario (Integration or e2e) is identified properly.
 +
@@ -247,7 +247,7 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 * If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. Avoid unnecessary function implementation within test files. Check to see if there is a helper function already implemented.
 +
 
-* If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the link:https://github.com/openshift/odo/tree/master/tests/helper[`helper package`] for more such reference.
+* If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the link:https://github.com/openshift/odo/tree/main/tests/helper[`helper package`] for more such reference.
 +
 
 ----
@@ -313,7 +313,7 @@ NOTE: To see the number of available integration test file for validation, press
 
 *Running integration tests on Kubernetes:*
 
-By default, the link:https://github.com/openshift/odo/tree/master/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
+By default, the link:https://github.com/openshift/odo/tree/main/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
 
 The tests are run against the `odo` binary placed in the PATH which is created by the command `make`. Integration tests can be run in two ways (parallel and sequential). To control the parallel run use environment variable `TEST_EXEC_NODES`. For example, the devfile tests can be run
 

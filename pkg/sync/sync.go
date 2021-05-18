@@ -2,13 +2,14 @@ package sync
 
 import (
 	taro "archive/tar"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/util"
 
 	"k8s.io/klog"
@@ -24,7 +25,7 @@ type SyncClient interface {
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func CopyFile(client SyncClient, localPath string, compInfo common.ComponentInfo, targetPath string, copyFiles []string, globExps []string) error {
+func CopyFile(client SyncClient, localPath string, compInfo common.ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
 
 	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
 	// Linux based and thus: "\opt\app-root\src" would not work correctly.
@@ -37,7 +38,7 @@ func CopyFile(client SyncClient, localPath string, compInfo common.ComponentInfo
 	go func() {
 		defer writer.Close()
 
-		err := makeTar(localPath, dest, writer, copyFiles, globExps)
+		err := makeTar(localPath, dest, writer, copyFiles, globExps, ret, filesystem.DefaultFs{})
 		if err != nil {
 			log.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
@@ -54,14 +55,14 @@ func CopyFile(client SyncClient, localPath string, compInfo common.ComponentInfo
 }
 
 // checkFileExist check if given file exists or not
-func checkFileExist(fileName string) bool {
-	_, err := os.Stat(fileName)
+func checkFileExistWithFS(fileName string, fs filesystem.Filesystem) bool {
+	_, err := fs.Stat(fileName)
 	return !os.IsNotExist(err)
 }
 
 // makeTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L309
 // srcPath is ignored if files is set
-func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExps []string) error {
+func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExps []string, ret util.IndexerRet, fs filesystem.Filesystem) error {
 	// TODO: use compression here?
 	tarWriter := taro.NewWriter(writer)
 	defer tarWriter.Close()
@@ -71,12 +72,28 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 	// and thus \opt\app-root\src would be an invalid path. Backward slashes
 	// are converted to forward.
 	destPath = filepath.ToSlash(filepath.Clean(destPath))
-
+	uniquePaths := make(map[string]bool)
 	klog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
 		//watchTar
 		for _, fileName := range files {
-			if checkFileExist(fileName) {
+
+			if _, ok := uniquePaths[fileName]; ok {
+				continue
+			} else {
+				uniquePaths[fileName] = true
+			}
+
+			if checkFileExistWithFS(fileName, fs) {
+
+				matched, err := util.IsGlobExpMatch(fileName, globExps)
+				if err != nil {
+					return err
+				}
+				if matched {
+					continue
+				}
+
 				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
 				// which uses path relative to base path for taro header to correctly identify file location when untarred
 
@@ -99,25 +116,31 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 				// Now we get the source file and join it to the base directory.
 				srcFile := filepath.Join(filepath.Base(srcPath), destFile)
 
+				if value, ok := ret.NewFileMap[destFile]; ok && value.RemoteAttribute != "" {
+					destFile = value.RemoteAttribute
+				}
+
 				klog.V(4).Infof("makeTar srcFile: %s", srcFile)
 				klog.V(4).Infof("makeTar destFile: %s", destFile)
 
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				err = recursiveTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), destFile, tarWriter, globExps)
+				err = linearTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), destFile, tarWriter, fs)
 				if err != nil {
 					return err
 				}
 			}
 		}
-	} else {
-		return recursiveTar(filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), "", tarWriter, globExps)
 	}
 
 	return nil
 }
 
-// recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
-func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, globExps []string) error {
+// linearTar function is a modified version of https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
+func linearTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, fs filesystem.Filesystem) error {
+	if destFile == "" {
+		return fmt.Errorf("linear Tar error, destFile cannot be empty")
+	}
+
 	klog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
 
 	// The destination is a LINUX container and thus we *must* use ToSlash in order
@@ -127,86 +150,62 @@ func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, 
 	klog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
 
 	joinedPath := filepath.Join(srcBase, srcFile)
-	matchedPathsDir, err := filepath.Glob(joinedPath)
+
+	stat, err := fs.Stat(joinedPath)
 	if err != nil {
 		return err
 	}
 
-	matchedPaths := []string{}
-
-	// checking the files which are allowed by glob matching
-	for _, path := range matchedPathsDir {
-		matched, err := util.IsGlobExpMatch(path, globExps)
+	if stat.IsDir() {
+		files, err := fs.ReadDir(joinedPath)
 		if err != nil {
 			return err
 		}
-		if !matched {
-			matchedPaths = append(matchedPaths, path)
-		}
-	}
-
-	// adding the files for taring
-	for _, matchedPath := range matchedPaths {
-		stat, err := os.Lstat(matchedPath)
-		if err != nil {
-			return err
-		}
-		if stat.IsDir() {
-			files, err := ioutil.ReadDir(matchedPath)
-			if err != nil {
-				return err
-			}
-			if len(files) == 0 {
-				//case empty directory
-				hdr, _ := taro.FileInfoHeader(stat, matchedPath)
-				hdr.Name = destFile
-				if err := tw.WriteHeader(hdr); err != nil {
-					return err
-				}
-			}
-			for _, f := range files {
-				if err := recursiveTar(srcBase, filepath.Join(srcFile, f.Name()), destBase, filepath.Join(destFile, f.Name()), tw, globExps); err != nil {
-					return err
-				}
-			}
-			return nil
-		} else if stat.Mode()&os.ModeSymlink != 0 {
-			//case soft link
+		if len(files) == 0 {
+			//case empty directory
 			hdr, _ := taro.FileInfoHeader(stat, joinedPath)
-			target, err := os.Readlink(joinedPath)
-			if err != nil {
-				return err
-			}
-
-			hdr.Linkname = target
 			hdr.Name = destFile
 			if err := tw.WriteHeader(hdr); err != nil {
 				return err
 			}
-		} else {
-			//case regular file or other file type like pipe
-			hdr, err := taro.FileInfoHeader(stat, joinedPath)
-			if err != nil {
-				return err
-			}
-			hdr.Name = destFile
-
-			if err := tw.WriteHeader(hdr); err != nil {
-				return err
-			}
-
-			f, err := os.Open(joinedPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close() // #nosec G307
-
-			if _, err := io.Copy(tw, f); err != nil {
-				return err
-			}
-
-			return f.Close()
 		}
+		return nil
+	} else if stat.Mode()&os.ModeSymlink != 0 {
+		//case soft link
+		hdr, _ := taro.FileInfoHeader(stat, joinedPath)
+		target, err := os.Readlink(joinedPath)
+		if err != nil {
+			return err
+		}
+
+		hdr.Linkname = target
+		hdr.Name = destFile
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+	} else {
+		//case regular file or other file type like pipe
+		hdr, err := taro.FileInfoHeader(stat, joinedPath)
+		if err != nil {
+			return err
+		}
+		hdr.Name = destFile
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		f, err := fs.Open(joinedPath)
+		if err != nil {
+			return err
+		}
+		defer f.Close() // #nosec G307
+
+		if _, err := io.Copy(tw, f); err != nil {
+			return err
+		}
+
+		return f.Close()
 	}
 
 	return nil

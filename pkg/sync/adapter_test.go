@@ -90,6 +90,11 @@ func TestSyncFiles(t *testing.T) {
 		t.Errorf("TestSyncFiles error: error creating temporary directory for the indexer: %v", err)
 	}
 
+	jsFile, err := os.Create(filepath.Join(directory, "red.js"))
+	if err != nil {
+		t.Errorf("TestSyncFiles error: error creating temporary file for the indexer: %v", err)
+	}
+
 	ctrl := gomock.NewController(t)
 
 	// Assert that Bar() is invoked.
@@ -218,10 +223,14 @@ func TestSyncFiles(t *testing.T) {
 		})
 	}
 
+	err = jsFile.Close()
+	if err != nil {
+		t.Errorf("TestSyncFiles error: error deleting the temp dir %s, err: %v", directory, err)
+	}
 	// Remove the temp dir created for the file indexer
 	err = os.RemoveAll(directory)
 	if err != nil {
-		t.Errorf("TestSyncFiles error: error deleting the temp dir %s", directory)
+		t.Errorf("TestSyncFiles error: error deleting the temp dir %s, err: %v", directory, err)
 	}
 }
 
@@ -359,7 +368,7 @@ func TestPushLocal(t *testing.T) {
 			}
 
 			syncAdapter := New(adapterCtx, syncClient)
-			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo)
+			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, util.IndexerRet{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)
 			}

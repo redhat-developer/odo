@@ -7,7 +7,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/service"
 	svc "github.com/openshift/odo/pkg/service"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )

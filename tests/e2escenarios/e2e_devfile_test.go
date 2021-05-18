@@ -18,7 +18,6 @@ import (
 //    - nodejs
 //    - java-springboot
 //    - java-quarkus
-//    - java-openliberty
 //    - java-maven
 
 var _ = Describe("odo devfile supported tests", func() {
@@ -69,9 +68,6 @@ var _ = Describe("odo devfile supported tests", func() {
 		})
 		It("Verify output debug information for java-springboot works", func() {
 			createStarterProjAndSetDebug("java-springboot", "5860")
-		})
-		It("Verify output debug information for java-openliberty debug works", func() {
-			createStarterProjAndSetDebug("java-openliberty", "5861")
 		})
 		It("Verify output debug information for java-quarkus debug works", func() {
 			createStarterProjAndSetDebug("java-quarkus", "5862")

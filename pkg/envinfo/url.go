@@ -42,6 +42,14 @@ func (ei *EnvInfo) GetPorts() ([]string, error) {
 
 // CompleteURL completes the given URL with default values
 func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
+	if url.Kind == "" {
+		if !ei.isRouteSupported {
+			url.Kind = localConfigProvider.INGRESS
+		} else {
+			url.Kind = localConfigProvider.ROUTE
+		}
+	}
+
 	if len(url.Path) > 0 && (strings.HasPrefix(url.Path, "/") || strings.HasPrefix(url.Path, "\\")) {
 		if len(url.Path) <= 1 {
 			url.Path = ""
@@ -59,16 +67,32 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 		return err
 	}
 	if url.Port == -1 {
-		var err error
-		url.Port, err = util.GetValidPortNumber(ei.GetName(), url.Port, ports)
-		if err != nil {
-			return err
+		if len(ports) > 1 {
+			return fmt.Errorf("port for the component %s is required as it exposes %d ports: %s", ei.GetName(), len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
+		} else if len(ports) <= 0 {
+			return fmt.Errorf("no port is exposed by the component %s, please specify a port", ei.GetName())
+		} else {
+			url.Port, err = strconv.Atoi(strings.Split(ports[0], "/")[0])
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	// get the name for the URL if not provided
 	if len(url.Name) == 0 {
-		url.Name = util.GetURLName(ei.GetName(), url.Port)
+		foundURL, err := findInvalidEndpoint(ei, url.Port)
+		if err != nil {
+			return err
+		}
+
+		if foundURL.Name != "" {
+			// found an URL that can be overridden or more info can be added to it
+			url.Name = foundURL.Name
+			ei.updateURL = true
+		} else {
+			url.Name = util.GetURLName(ei.GetName(), url.Port)
+		}
 	}
 
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
@@ -131,7 +155,7 @@ func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 			}
 		}
 		for _, endpoint := range component.Container.Endpoints {
-			if endpoint.Name == url.Name {
+			if endpoint.Name == url.Name && !ei.updateURL {
 				return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", url.Name, component.Name)
 			}
 			containerPortMap[endpoint.TargetPort] = component.Name
@@ -184,13 +208,15 @@ func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 		}
 	}
 
-	urls, err := ei.ListURLs()
-	if err != nil {
-		return err
-	}
-	for _, localURL := range urls {
-		if url.Name == localURL.Name {
-			errorList = append(errorList, fmt.Sprintf("URL %s already exists", url.Name))
+	if !ei.updateURL {
+		urls, err := ei.ListURLs()
+		if err != nil {
+			return err
+		}
+		for _, localURL := range urls {
+			if url.Name == localURL.Name {
+				errorList = append(errorList, fmt.Sprintf("URL %s already exists", url.Name))
+			}
 		}
 	}
 
@@ -216,20 +242,29 @@ func (ei *EnvInfo) GetURL(name string) (*localConfigProvider.LocalURL, error) {
 
 // CreateURL write the given url to the env.yaml and devfile
 func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
-	newEndpointEntry := devfilev1.Endpoint{
-		Name:       url.Name,
-		Path:       url.Path,
-		Secure:     url.Secure,
-		Exposure:   devfilev1.PublicEndpointExposure,
-		TargetPort: url.Port,
-		Protocol:   devfilev1.EndpointProtocol(strings.ToLower(url.Protocol)),
+
+	if !esi.updateURL {
+		newEndpointEntry := devfilev1.Endpoint{
+			Name:       url.Name,
+			Path:       url.Path,
+			Secure:     url.Secure,
+			Exposure:   devfilev1.PublicEndpointExposure,
+			TargetPort: url.Port,
+			Protocol:   devfilev1.EndpointProtocol(strings.ToLower(url.Protocol)),
+		}
+
+		err := addEndpointInDevfile(esi.devfileObj, newEndpointEntry, url.Container)
+		if err != nil {
+			return errors.Wrapf(err, "failed to write endpoints information into devfile")
+		}
+	} else {
+		err := updateEndpointInDevfile(esi.devfileObj, url)
+		if err != nil {
+			return err
+		}
 	}
 
-	err := addEndpointInDevfile(esi.devfileObj, newEndpointEntry, url.Container)
-	if err != nil {
-		return errors.Wrapf(err, "failed to write endpoints information into devfile")
-	}
-	err = esi.SetConfiguration("url", localConfigProvider.LocalURL{Name: url.Name, Host: url.Host, TLSSecret: url.TLSSecret, Kind: url.Kind})
+	err := esi.SetConfiguration("url", localConfigProvider.LocalURL{Name: url.Name, Host: url.Host, TLSSecret: url.TLSSecret, Kind: url.Kind})
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to env file")
 	}
@@ -357,4 +392,66 @@ func removeEndpointInDevfile(devObj parser.DevfileObj, urlName string) error {
 		return fmt.Errorf("the URL %s does not exist", urlName)
 	}
 	return devObj.WriteYamlDevfile()
+}
+
+// updateEndpointInDevfile updates the endpoint of the given URL in the devfile
+func updateEndpointInDevfile(devObj parser.DevfileObj, url localConfigProvider.LocalURL) error {
+	components, err := devObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	for _, component := range components {
+		if component.Container != nil && component.Name == url.Container {
+			for j := range component.ComponentUnion.Container.Endpoints {
+				endpoint := component.ComponentUnion.Container.Endpoints[j]
+
+				if endpoint.Name == url.Name {
+					// fill the default values
+					if endpoint.Exposure == "" {
+						endpoint.Exposure = devfilev1.PublicEndpointExposure
+					}
+					if endpoint.Path == "" {
+						endpoint.Path = "/"
+					}
+					if endpoint.Protocol == "" {
+						endpoint.Protocol = devfilev1.HTTPEndpointProtocol
+					}
+
+					// prevent write unless required
+					if endpoint.Exposure != devfilev1.PublicEndpointExposure || url.Secure != endpoint.Secure ||
+						url.Path != endpoint.Path || url.Protocol != string(endpoint.Protocol) {
+						endpoint = devfilev1.Endpoint{
+							Name:       url.Name,
+							Path:       url.Path,
+							Secure:     url.Secure,
+							Exposure:   devfilev1.PublicEndpointExposure,
+							TargetPort: url.Port,
+							Protocol:   devfilev1.EndpointProtocol(strings.ToLower(url.Protocol)),
+						}
+						component.ComponentUnion.Container.Endpoints[j] = endpoint
+						devObj.Data.UpdateComponent(component)
+						return devObj.WriteYamlDevfile()
+					}
+					return nil
+				}
+			}
+		}
+	}
+	return fmt.Errorf("url %s not found for updating", url.Name)
+}
+
+// findInvalidEndpoint finds the URLs which are invalid for the current cluster e.g
+// route urls on a vanilla k8s based cluster
+// urls with no host information on a vanilla k8s based cluster
+func findInvalidEndpoint(ei *EnvInfo, port int) (localConfigProvider.LocalURL, error) {
+	urls, err := ei.ListURLs()
+	if err != nil {
+		return localConfigProvider.LocalURL{}, err
+	}
+	for _, url := range urls {
+		if url.Kind == localConfigProvider.ROUTE && url.Port == port && !ei.isRouteSupported {
+			return url, nil
+		}
+	}
+	return localConfigProvider.LocalURL{}, nil
 }

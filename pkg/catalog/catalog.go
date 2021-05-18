@@ -20,7 +20,7 @@ import (
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
