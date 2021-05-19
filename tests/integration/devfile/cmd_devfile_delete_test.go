@@ -167,12 +167,34 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			// delete with --wait flag
 			helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
+			helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+				{
+					ResourceType: helper.ResourceTypeIngress,
+					ResourceName: "example",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypeService,
+					ResourceName: componentName,
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypePVC,
+					ResourceName: "storage-1",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypePVC,
+					ResourceName: "storage-2",
+					Namespace:    commonVar.Project,
+				},
+				{
 
-			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypeIngress, "example", commonVar.Project)
-			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypeService, componentName, commonVar.Project)
-			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-1", commonVar.Project)
-			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-2", commonVar.Project)
-			commonVar.CliRunner.VerifyResourceDeleted(helper.ResourceTypeDeployment, componentName, commonVar.Project)
+					ResourceType: helper.ResourceTypeDeployment,
+					ResourceName: componentName,
+					Namespace:    commonVar.Project,
+				},
+			})
 		})
 	})
 

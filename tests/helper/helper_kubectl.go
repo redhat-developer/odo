@@ -211,9 +211,9 @@ func (kubectl KubectlRunner) WaitAndCheckForTerminatingState(resourceType, names
 	return WaitAndCheckForTerminatingState(kubectl.path, resourceType, namespace, timeoutMinutes)
 }
 
-func (kubectl KubectlRunner) VerifyResourceDeleted(resourceType, resourceName, namespace string) {
-	session := CmdRunner(kubectl.path, "get", resourceType, "--namespace", namespace)
+func (kubectl KubectlRunner) VerifyResourceDeleted(ri ResourceInfo) {
+	session := CmdRunner(kubectl.path, "get", ri.ResourceType, "--namespace", ri.Namespace)
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
-	Expect(output).NotTo(ContainSubstring(resourceName))
+	Expect(output).NotTo(ContainSubstring(ri.ResourceName))
 }

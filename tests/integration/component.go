@@ -629,13 +629,39 @@ func componentTests(args ...string) {
 			// delete with --wait flag
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
 
-			oc.VerifyResourceDeleted(helper.ResourceTypeRoute, "example", commonVar.Project)
-			oc.VerifyResourceDeleted(helper.ResourceTypeService, cmpName, commonVar.Project)
-			// verify s2i pvc is delete
-			oc.VerifyResourceDeleted(helper.ResourceTypePVC, "s2idata", commonVar.Project)
-			oc.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-1", commonVar.Project)
-			oc.VerifyResourceDeleted(helper.ResourceTypePVC, "storage-2", commonVar.Project)
-			oc.VerifyResourceDeleted(helper.ResourceTypeDeploymentConfig, cmpName, commonVar.Project)
+			helper.VerifyResourcesDeleted(oc, []helper.ResourceInfo{
+				{
+					ResourceType: helper.ResourceTypeRoute,
+					ResourceName: "example",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypeService,
+					ResourceName: "example",
+					Namespace:    commonVar.Project,
+				},
+				{
+					// verify s2i pvc is delete
+					ResourceType: helper.ResourceTypePVC,
+					ResourceName: "s2idata",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypePVC,
+					ResourceName: "storage-1",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypePVC,
+					ResourceName: "storage-2",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypeDeploymentConfig,
+					ResourceName: cmpName,
+					Namespace: commonVar.Project,
+				},
+			})
 		})
 	})
 

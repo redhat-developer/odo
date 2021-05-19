@@ -355,3 +355,15 @@ func RunTestSpecs(t *testing.T, description string) {
 func IsKubernetesCluster() bool {
 	return os.Getenv("KUBERNETES") == "true"
 }
+
+type ResourceInfo struct {
+	ResourceType string
+	ResourceName string
+	Namespace    string
+}
+
+func VerifyResourcesDeleted(runner CliRunner, resources []ResourceInfo) {
+	for _, item := range resources {
+		runner.VerifyResourceDeleted(item)
+	}
+}

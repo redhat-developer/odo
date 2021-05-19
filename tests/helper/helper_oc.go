@@ -583,11 +583,11 @@ func (oc OcRunner) GetServices(namespace string) string {
 }
 
 // VerifyResourceDeleted verifies if the given resource is deleted from cluster
-func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace string) {
-	session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
+func (oc OcRunner) VerifyResourceDeleted(ri ResourceInfo) {
+	session := CmdRunner(oc.path, "get", ri.ResourceType, "--namespace", ri.Namespace)
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
-	Expect(output).NotTo(ContainSubstring(resourceName))
+	Expect(output).NotTo(ContainSubstring(ri.ResourceName))
 }
 
 // CreateRandNamespaceProject create new project
