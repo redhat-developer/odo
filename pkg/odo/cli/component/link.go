@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
@@ -14,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -87,7 +87,7 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
-	options.commonLinkOptions.serviceBinding = unstructured.Unstructured{}
+	options.commonLinkOptions.serviceBinding = &servicebinding.ServiceBinding{}
 	return &options
 }
 
