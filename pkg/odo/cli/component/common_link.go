@@ -442,14 +442,3 @@ func (o *commonLinkOptions) getServiceBindingName(componentName string) string {
 func getSvcFullName(serviceType, serviceName string) string {
 	return strings.Join([]string{serviceType, serviceName}, "/")
 }
-
-// isComponentLinked checks if link with "serviceBindingName" exists in the component's
-// config. It confirms if the component is linked with the service
-func isComponentLinked(serviceBindingName string, links []envinfo.EnvInfoLink) bool {
-	for _, link := range links {
-		if link.Name == serviceBindingName {
-			return true
-		}
-	}
-	return false
-}
