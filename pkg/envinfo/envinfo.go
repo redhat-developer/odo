@@ -439,14 +439,16 @@ func (ei *EnvInfo) GetLink() []EnvInfoLink {
 	return *ei.componentSettings.Link
 }
 
-func (ei *EnvInfo) SearchLinkName(kind, name string) (string, error) {
+// SearchLinkName searches for a Link with given service kind and service name
+// and returns its name if found
+func (ei *EnvInfo) SearchLinkName(serviceKind, serviceName string) (string, bool) {
 	links := ei.GetLink()
 	for _, link := range links {
-		if link.ServiceKind == kind && link.ServiceName == name {
-			return link.Name, nil
+		if link.ServiceKind == serviceKind && link.ServiceName == serviceName {
+			return link.Name, true
 		}
 	}
-	return "", errors.Errorf("Link with type %s and name %s not found", kind, name)
+	return "", false
 }
 
 const (

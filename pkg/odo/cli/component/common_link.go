@@ -191,8 +191,8 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 		}
 
 		if o.operationName == unlink {
-			serviceBindingName, err := o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
-			if err != nil {
+			serviceBindingName, found := o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
+			if !found {
 				return fmt.Errorf("failed to unlink the service %q since no link found in env file", svcFullName)
 			}
 
@@ -274,10 +274,9 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 func (o *commonLinkOptions) run() (err error) {
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
-			var serviceBindingName string
-			serviceBindingName, err = o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
-			if err != nil {
-				return err
+			serviceBindingName, found := o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
+			if !found {
+				return fmt.Errorf("failed to unlink the service %q of type %q since no link found in env file", o.serviceName, o.serviceType)
 			}
 			svcFullName := getSvcFullName(kclient.ServiceBindingKind, serviceBindingName)
 			err = svc.DeleteServiceBindingRequest(o.KClient, svcFullName)
