@@ -23,7 +23,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
-
 		componentName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
 	})
@@ -147,6 +146,56 @@ var _ = Describe("odo devfile delete command tests", func() {
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
 		})
 
+	})
+
+	Context("odo component delete should clean owned resources", func() {
+		appName := helper.RandString(5)
+		It("should delete the devfile component and the owned resources with wait flag", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com", "--ingress")
+
+			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+			info := helper.LocalEnvInfo(commonVar.Context)
+			Expect(info.GetApplication(), appName)
+			Expect(info.GetName(), componentName)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context, "--host", "com", "--ingress")
+			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+
+			// delete with --wait flag
+			helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
+			helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+				{
+					ResourceType: helper.ResourceTypeIngress,
+					ResourceName: "example",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypeService,
+					ResourceName: componentName,
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypePVC,
+					ResourceName: "storage-1",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypePVC,
+					ResourceName: "storage-2",
+					Namespace:    commonVar.Project,
+				},
+				{
+
+					ResourceType: helper.ResourceTypeDeployment,
+					ResourceName: componentName,
+					Namespace:    commonVar.Project,
+				},
+			})
+		})
 	})
 
 })

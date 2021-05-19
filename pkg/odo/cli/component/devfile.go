@@ -231,7 +231,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	return devfileHandler.Delete(labels, do.show)
+	return devfileHandler.Delete(labels, do.show, do.componentDeleteWaitFlag)
 }
 
 // RunTestCommand runs the specific test command in devfile

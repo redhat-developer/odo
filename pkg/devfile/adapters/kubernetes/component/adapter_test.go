@@ -550,7 +550,7 @@ func TestAdapterDelete(t *testing.T) {
 				return true, tt.existingPod, nil
 			})
 
-			if err := a.Delete(tt.args.labels, false); (err != nil) != tt.wantErr {
+			if err := a.Delete(tt.args.labels, false, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
