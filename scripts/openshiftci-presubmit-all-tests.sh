@@ -27,9 +27,6 @@ cp $KUBECONFIG $TMP_DIR/kubeconfig
 chmod 640 $TMP_DIR/kubeconfig
 export KUBECONFIG=$TMP_DIR/kubeconfig
 
-# Login as developer
-oc login -u developer -p password@123
-
 # Check login user name for debugging purpose
 oc whoami
 

@@ -7,5 +7,6 @@ import (
 )
 
 func TestLoginlogout(t *testing.T) {
+	helper.CmdShouldPass("oc", "login", "-u", "developer", "-p", "password@123")
 	helper.RunTestSpecs(t, "Login Logout Suite")
 }

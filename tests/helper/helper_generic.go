@@ -291,14 +291,15 @@ func CommonBeforeEach() CommonVar {
 	SetDefaultConsistentlyDuration(30 * time.Second)
 
 	commonVar := CommonVar{}
-	commonVar.Context = CreateNewContext()
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
 	commonVar.CliRunner = GetCliRunner()
-	LocalKubeconfigSet(commonVar.Context)
 	commonVar.Project = commonVar.CliRunner.CreateRandNamespaceProject()
 	if os.Getenv("CI") == "openshift" {
 		commonVar.CliRunner.ApplyClusterSecrets("pull-secret", "openshift-config", commonVar.Project)
+		CmdShouldPass("oc", "login", "-u", "developer", "-p", "password@123")
 	}
+	commonVar.Context = CreateNewContext()
+	LocalKubeconfigSet(commonVar.Context)
 	commonVar.OriginalWorkingDirectory = Getwd()
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "preference.yaml"))
 	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
