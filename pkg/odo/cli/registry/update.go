@@ -58,7 +58,9 @@ func (o *UpdateOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-
+	if registryUtil.IsGitBasedRegistry(o.registryURL) {
+		registryUtil.PrintGitRegistryDeprecationWarning()
+	}
 	return
 }
 

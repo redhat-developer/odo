@@ -69,3 +69,35 @@ func TestIsSecure(t *testing.T) {
 		})
 	}
 }
+
+func TestIsGitBasedRegistry(t *testing.T) {
+	tests := []struct {
+		name        string
+		registryURL string
+		want        bool
+	}{
+		{
+			name:        "Case 1: Returns true if URL contains github",
+			registryURL: "https://github.com/odo-devfiles/registry",
+			want:        true,
+		},
+		{
+			name:        "Case 2: Returns false if URL does not contain github",
+			registryURL: " https://registry.devfile.io",
+			want:        false,
+		},
+		{
+			name:        "Case 3: Returns false if URL git based on raw.githubusercontent",
+			registryURL: "https://raw.githubusercontent.com/odo-devfiles/registry",
+			want:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if actual := IsGitBasedRegistry(tt.registryURL); actual != tt.want {
+				t.Errorf("failed checking if registry is git based, got %t want %t", actual, tt.want)
+			}
+		})
+	}
+}

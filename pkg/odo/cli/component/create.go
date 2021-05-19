@@ -621,7 +621,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if co.devfileMetadata.devfileSupport && !co.forceS2i {
 			registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
-
+			if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
+				registryUtil.PrintGitRegistryDeprecationWarning()
+			}
 			// Initialize envinfo
 			err = co.InitEnvInfoFromContext()
 			if err != nil {

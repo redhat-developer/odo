@@ -3,6 +3,7 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
+	util2 "github.com/openshift/odo/pkg/odo/cli/registry/util"
 
 	// Third-party packages
 	"github.com/pkg/errors"
@@ -60,7 +61,9 @@ func (o *AddOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-
+	if util2.IsGitBasedRegistry(o.registryURL) {
+		util2.PrintGitRegistryDeprecationWarning()
+	}
 	return
 }
 

@@ -6,6 +6,7 @@
 ### Feature/Enhancements
 
 - implement `odo catalog describe service` for operator backed services
+- add deprecation warning for old git style devfile registries ([#4707](https://github.com/openshift/odo/pull/4707))
 
 ### Bug Fixes
 
