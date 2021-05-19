@@ -64,9 +64,9 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 }
 
 func (cw *CmdWrapper) WithRetry(maxRetry int, intervalSeconds time.Duration) string {
+	cw.maxRetry = maxRetry
 	for i := 0; i < cw.maxRetry; i++ {
 		fmt.Fprintf(GinkgoWriter, "try %d of %d\n", i, cw.maxRetry)
-
 		cw.Runner()
 		cw.session.Wait()
 		// if exit code is 0 which means the program succeeded and hence we retry
@@ -90,19 +90,20 @@ func (cw *CmdWrapper) ShouldPass() *CmdWrapper {
 
 func (cw *CmdWrapper) ShouldFail() *CmdWrapper {
 	cw.Runner()
-	Expect(cw.err).To(HaveOccurred())
 	Consistently(cw.session).ShouldNot(gexec.Exit(0), runningCmd(cw.session.Command))
 	return cw
 }
 
-func (cw *CmdWrapper) WithTerminate(timeoutAfter time.Duration, stop <-chan bool) *CmdWrapper {
+func (cw *CmdWrapper) WithTerminate(timeoutAfter time.Duration, stop chan bool) *CmdWrapper {
 	cw.timeout = time.Duration(timeoutAfter) * time.Second
-	cw.stopChan <- <-stop
+	cw.stopChan = stop
+	cw.Runner()
 	return cw
 }
 
 func (cw *CmdWrapper) WithTimeout(timeoutAfter time.Duration) *CmdWrapper {
 	cw.timeout = time.Duration(timeoutAfter) * time.Second
+	cw.Runner()
 	return cw
 }
 
