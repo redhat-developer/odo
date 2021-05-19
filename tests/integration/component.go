@@ -659,7 +659,7 @@ func componentTests(args ...string) {
 				{
 					ResourceType: helper.ResourceTypeDeploymentConfig,
 					ResourceName: cmpName,
-					Namespace: commonVar.Project,
+					Namespace:    commonVar.Project,
 				},
 			})
 		})
