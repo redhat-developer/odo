@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/pkg/devfile/convert"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 	"github.com/openshift/odo/tests/integration/devfile/utils"
 )
@@ -126,33 +125,28 @@ var _ = Describe("odo supported images e2e tests", func() {
 		})
 
 		It("Should be able to verify the nodejs-12 image", func() {
-			redhatNodejs12UBI8Project := util.GetEnvWithDefault("REDHAT_NODEJS12_UBI8_PROJECT", "nodejs-12")
-			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/nodejs-12:latest", "nodejs:latest", redhatNodejs12UBI8Project)
-			verifySupportedImage("ubi8/nodejs-12:latest", "nodejs", "nodejs:latest", redhatNodejs12UBI8Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/nodejs-12:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("ubi8/nodejs-12:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-12-rhel7 image", func() {
-			redhatNodejs12RHEL7Project := util.GetEnvWithDefault("REDHAT_NODEJS12_RHEL7_PROJECT", "nodejs-12-rhel7")
-			oc.ImportImageFromRegistry("registry.redhat.io", "rhscl/nodejs-12-rhel7:latest", "nodejs:latest", redhatNodejs12RHEL7Project)
-			verifySupportedImage("rhscl/nodejs-12-rhel7:latest", "nodejs", "nodejs:latest", redhatNodejs12RHEL7Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", "rhscl/nodejs-12-rhel7:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("rhscl/nodejs-12-rhel7:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the openjdk-11 image", func() {
-			redhatOpenjdk11UBI8Project := util.GetEnvWithDefault("REDHAT_OPENJDK11_UBI8_PROJECT", "openjdk-11")
-			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/openjdk-11:latest", "java:8", redhatOpenjdk11UBI8Project)
-			verifySupportedImage("ubi8/openjdk-11:latest", "openjdk", "java:8", redhatOpenjdk11UBI8Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/openjdk-11:latest", "java:8", commonVar.Project)
+			verifySupportedImage("ubi8/openjdk-11:latest", "openjdk", "java:8", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the openjdk-11-rhel8 image", func() {
-			redhatOpenjdk12RHEL8Project := util.GetEnvWithDefault("REDHAT_OPENJDK11_RHEL8_PROJECT", "openjdk-11-rhel8")
-			oc.ImportImageFromRegistry("registry.redhat.io", "openjdk/openjdk-11-rhel8:latest", "java:8", redhatOpenjdk12RHEL8Project)
-			verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", redhatOpenjdk12RHEL8Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", "openjdk/openjdk-11-rhel8:latest", "java:8", commonVar.Project)
+			verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", commonVar.Project, appName, commonVar.Context)
 		})
 
 		It("Should be able to verify the nodejs-14 image", func() {
-			redhatNodeJS14UBI8Project := util.GetEnvWithDefault("REDHAT_NODEJS14_UBI8_PROJECT", "nodejs-14")
-			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/nodejs-14:latest", "nodejs:latest", redhatNodeJS14UBI8Project)
-			verifySupportedImage("ubi8/nodejs-14:latest", "nodejs", "nodejs:latest", redhatNodeJS14UBI8Project, appName, commonVar.Context)
+			oc.ImportImageFromRegistry("registry.redhat.io", "ubi8/nodejs-14:latest", "nodejs:latest", commonVar.Project)
+			verifySupportedImage("ubi8/nodejs-14:latest", "nodejs", "nodejs:latest", commonVar.Project, appName, commonVar.Context)
 		})
 	})
 

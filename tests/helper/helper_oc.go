@@ -671,3 +671,10 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
 }
+
+// ApplyClusterSecrets applying pull secret to the namespace which will be used for pulling images from authenticated registry
+func (oc OcRunner) ApplyClusterSecrets(secretName, SourceNS, DestinationNS string) {
+	CmdShouldPass(oc.path, "get", "secret", secretName, "-n", SourceNS, "-o", "yaml | sed 's/"+SourceNS+"/"+DestinationNS+"/g' | oc apply -f -")
+	// Let developer user have access to the project
+	CmdShouldPass(oc.path, "adm", "policy", "add-role-to-user", "edit developer")
+}
