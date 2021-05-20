@@ -611,6 +611,7 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 	type fields struct {
 		devfileObj        parser.DevfileObj
 		componentSettings ComponentSettings
+		container         string
 	}
 	tests := []struct {
 		name    string
@@ -640,7 +641,7 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 				componentSettings: tt.fields.componentSettings,
 			}
 
-			got, err := ei.GetPorts()
+			got, err := ei.GetPorts(tt.fields.container)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPorts() error = %v, wantErr %v", err, tt.wantErr)
 			}

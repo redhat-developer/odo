@@ -984,7 +984,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 			}
 		}
 
-		componentDesc.Spec.Ports, err = co.LocalConfigInfo.GetPorts()
+		componentDesc.Spec.Ports, err = co.LocalConfigInfo.GetPorts("")
 		if err != nil {
 			return err
 		}

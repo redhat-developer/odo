@@ -63,7 +63,7 @@ type LocalConfigProvider interface {
 	ValidateURL(url LocalURL) error
 	CreateURL(url LocalURL) error
 	DeleteURL(name string) error
-	GetPorts() ([]string, error)
+	GetPorts(container string) ([]string, error)
 	ListURLs() ([]LocalURL, error)
 
 	GetStorage(name string) (*LocalStorage, error)

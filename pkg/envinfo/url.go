@@ -16,7 +16,7 @@ import (
 )
 
 // GetPorts returns the ports, returns default if nil
-func (ei *EnvInfo) GetPorts() ([]string, error) {
+func (ei *EnvInfo) GetPorts(container string) ([]string, error) {
 	var portList []string
 
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
@@ -27,8 +27,10 @@ func (ei *EnvInfo) GetPorts() ([]string, error) {
 	portMap := make(map[string]bool)
 
 	for _, component := range containerComponents {
-		for _, endpoint := range component.Container.Endpoints {
-			portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
+		if container == "" || (container != "" && component.Name == container) {
+			for _, endpoint := range component.Container.Endpoints {
+				portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
+			}
 		}
 	}
 
@@ -62,7 +64,7 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	url.Path = "/" + url.Path
 
 	// get the port if not provided
-	ports, err := ei.GetPorts()
+	ports, err := ei.GetPorts(url.Container)
 	if err != nil {
 		return err
 	}
