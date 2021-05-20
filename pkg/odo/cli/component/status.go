@@ -123,7 +123,7 @@ func (so *StatusOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (so *StatusOptions) Run() (err error) {
+func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
 
 	if !so.isDevfile {
 		return errors.New("the status command is only supported for devfiles")

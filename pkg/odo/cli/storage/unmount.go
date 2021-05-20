@@ -76,7 +76,7 @@ func (o *StorageUnMountOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo storage unmount command
-func (o *StorageUnMountOptions) Run() (err error) {
+func (o *StorageUnMountOptions) Run(cmd *cobra.Command) (err error) {
 	err = storage.Unmount(o.Client, o.storageName, o.Component(), o.Application, true)
 	if err != nil {
 		return fmt.Errorf("unable to unmount storage %v from component %v", o.storageName, o.Component())

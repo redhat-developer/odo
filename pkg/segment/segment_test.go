@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 	"github.com/openshift/odo/pkg/version"
 )
 
@@ -29,10 +31,11 @@ type segmentResponse struct {
 			OS string `json:"os"`
 		} `json:"traits"`
 		Properties struct {
-			Error     string `json:"error"`
-			ErrorType string `json:"error-type"`
-			Success   bool   `json:"success"`
-			Version   string `json:"version"`
+			Error         string `json:"error"`
+			ErrorType     string `json:"error-type"`
+			Success       bool   `json:"success"`
+			Version       string `json:"version"`
+			ComponentType string `json:"componentType"`
 		} `json:"properties"`
 		Type string `json:"type"`
 	} `json:"batch"`
@@ -71,12 +74,15 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer c.Close()
 
 	testError := errors.New("error occurred")
-	uploadData := fakeTelemetryData("odo preference view", testError)
+	uploadData := fakeTelemetryData("odo preference view", testError, context.Background())
 	// run a command, odo preference view
 	if err = c.Upload(uploadData); err != nil {
+		t.Error(err)
+	}
+
+	if err = c.Close(); err != nil {
 		t.Error(err)
 	}
 
@@ -131,7 +137,7 @@ func TestClientUploadWithConsent(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			uploadData := fakeTelemetryData("odo create", tt.err)
+			uploadData := fakeTelemetryData("odo create", tt.err, context.Background())
 			// upload the data to Segment
 			if err = c.Upload(uploadData); err != nil {
 				t.Error(err)
@@ -309,6 +315,60 @@ func TestIsTelemetryEnabled(t *testing.T) {
 	}
 }
 
+func TestClientUploadWithContext(t *testing.T) {
+	var uploadData TelemetryData
+	body, server := mockServer()
+	defer server.Close()
+	defer close(body)
+	trueValue := true
+
+	cfg := &preference.PreferenceInfo{
+		Preference: preference.Preference{
+			OdoSettings: preference.OdoSettings{
+				ConsentTelemetry: &trueValue,
+			},
+		},
+	}
+	ctx := scontext.NewContext(context.Background())
+
+	for k, v := range map[string]string{"componentType": "nodejs"} {
+		switch k {
+		case "componentType":
+			scontext.SetComponentType(ctx, v)
+			uploadData = fakeTelemetryData("odo create", nil, ctx)
+		}
+		c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
+		if err != nil {
+			t.Error(err)
+		}
+		// upload the data to Segment
+		if err = c.Upload(uploadData); err != nil {
+			t.Error(err)
+		}
+		if err = c.Close(); err != nil {
+			t.Error(err)
+		}
+		select {
+		case x := <-body:
+			s := segmentResponse{}
+			if err1 := json.Unmarshal(x, &s); err1 != nil {
+				t.Error(err1)
+			}
+			if s.Batch[1].Type == "identify" {
+				switch k {
+				case "componentType":
+					if s.Batch[1].Properties.ComponentType != v {
+						t.Errorf("componentType did not match. Want: %q Got: %q", v, s.Batch[1].Properties.ComponentType)
+					}
+
+				}
+			}
+		default:
+			t.Error("Server should receive some data")
+		}
+	}
+}
+
 // createConfigDir creates a mock filesystem
 func createConfigDir(t *testing.T) string {
 	fs := filesystem.NewFakeFs()
@@ -320,16 +380,17 @@ func createConfigDir(t *testing.T) string {
 }
 
 // fakeTelemetryData returns fake data to test segment client Upload
-func fakeTelemetryData(cmd string, err error) TelemetryData {
+func fakeTelemetryData(cmd string, err error, ctx context.Context) TelemetryData {
 	return TelemetryData{
 		Event: cmd,
 		Properties: TelemetryProperties{
-			Duration:  time.Second.Milliseconds(),
-			Error:     SetError(err),
-			ErrorType: ErrorType(err),
-			Success:   err == nil,
-			Tty:       RunningInTerminal(),
-			Version:   version.VERSION,
+			Duration:      time.Second.Milliseconds(),
+			Error:         SetError(err),
+			ErrorType:     ErrorType(err),
+			Success:       err == nil,
+			Tty:           RunningInTerminal(),
+			Version:       version.VERSION,
+			CmdProperties: scontext.GetContextProperties(ctx),
 		},
 	}
 }

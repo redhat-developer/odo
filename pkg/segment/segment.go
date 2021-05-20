@@ -30,12 +30,13 @@ const Sanitizer = "XXXX"
 const DisableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
 
 type TelemetryProperties struct {
-	Duration  int64  `json:"duration"`
-	Error     string `json:"error"`
-	ErrorType string `json:"errortype"`
-	Success   bool   `json:"success"`
-	Tty       bool   `json:"tty"`
-	Version   string `json:"version"`
+	Duration      int64                  `json:"duration"`
+	Error         string                 `json:"error"`
+	ErrorType     string                 `json:"errortype"`
+	Success       bool                   `json:"success"`
+	Tty           bool                   `json:"tty"`
+	Version       string                 `json:"version"`
+	CmdProperties map[string]interface{} `json:"cmdProperties"`
 }
 
 type TelemetryData struct {
@@ -101,6 +102,10 @@ func (c *Client) Upload(data TelemetryData) error {
 
 	// add information to the data
 	properties := analytics.NewProperties()
+	for k, v := range data.Properties.CmdProperties {
+		properties = properties.Set(k, v)
+	}
+
 	properties = properties.Set("version", data.Properties.Version).
 		Set("success", data.Properties.Success).
 		Set("duration(ms)", data.Properties.Duration).

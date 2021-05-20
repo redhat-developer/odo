@@ -82,7 +82,7 @@ func (o InfoOptions) Validate() error {
 }
 
 // Run implements all the necessary functionality for port-forward cmd.
-func (o InfoOptions) Run() error {
+func (o InfoOptions) Run(cmd *cobra.Command) error {
 	if debugFileInfo, debugging := debug.GetDebugInfo(o.PortForwarder); debugging {
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(debugFileInfo)

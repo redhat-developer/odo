@@ -130,7 +130,7 @@ func (do *DeleteOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (do *DeleteOptions) Run() (err error) {
+func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 

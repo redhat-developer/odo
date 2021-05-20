@@ -67,7 +67,7 @@ func (o *ListOptions) Validate() (err error) {
 	return nil
 }
 
-func (o *ListOptions) Run() (err error) {
+func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	storageList, err := o.client.List()
 	if err != nil {
 		return err
