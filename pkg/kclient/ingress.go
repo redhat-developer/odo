@@ -43,6 +43,24 @@ func (c *Client) ListIngresses(labelSelector string) ([]extensionsv1.Ingress, er
 	return ingressList.Items, nil
 }
 
+// GetOneIngressFromSelector gets one ingress with the given selector
+// if no or multiple ingresses are found with the given selector, it throws an error
+func (c *Client) GetOneIngressFromSelector(selector string) (*extensionsv1.Ingress, error) {
+	ingresses, err := c.ListIngresses(selector)
+	if err != nil {
+		return nil, err
+	}
+
+	num := len(ingresses)
+	if num == 0 {
+		return nil, fmt.Errorf("no ingress was found for the selector: %v", selector)
+	} else if num > 1 {
+		return nil, fmt.Errorf("multiple ingresses exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &ingresses[0], nil
+}
+
 // GetIngress gets an ingress based on the given name
 func (c *Client) GetIngress(name string) (*extensionsv1.Ingress, error) {
 	ingress, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})

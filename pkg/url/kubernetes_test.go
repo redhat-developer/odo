@@ -1,20 +1,30 @@
 package url
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
 	routev1 "github.com/openshift/api/route/v1"
+	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/fake"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
+	urlLabels "github.com/openshift/odo/pkg/url/labels"
+	"github.com/openshift/odo/pkg/version"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -418,6 +428,540 @@ func Test_kubernetesClient_List(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("List() error: %v", pretty.Compare(got, tt.want))
+			}
+		})
+	}
+}
+
+func Test_kubernetesClient_createIngress(t *testing.T) {
+	type fields struct {
+		generic          generic
+		isRouteSupported bool
+		client           occlient.Client
+	}
+	type args struct {
+		url    URL
+		labels map[string]string
+	}
+	tests := []struct {
+		name               string
+		fields             fields
+		args               args
+		createdIngress     *extensionsv1.Ingress
+		defaultTLSExists   bool
+		userGivenTLSExists bool
+		want               string
+		wantErr            bool
+	}{
+		{
+			name:   "Case 1: Create a ingress, with same name as component",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: getFakeURL("nodejs", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
+			},
+			createdIngress: fake.GetSingleIngress("nodejs-nodejs-app", "nodejs", "app"),
+			want:           "http://nodejs.com",
+			wantErr:        false,
+		},
+		{
+			name:   "Case 2: Create a ingress, with different name as component",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
+			},
+			createdIngress: fake.GetSingleIngress("example-nodejs-app", "nodejs", "app"),
+			want:           "http://example.com",
+			wantErr:        false,
+		},
+		{
+			name:   "Case 3: Create a secure ingress, default tls exists",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+					url.Spec.Secure = true
+					return url
+				}(),
+			},
+			createdIngress:   fake.GetSingleIngress("example-nodejs-app", "nodejs", "app"),
+			defaultTLSExists: true,
+			want:             "https://example.com",
+			wantErr:          false,
+		},
+		{
+			name:   "Case 4: Create a secure ingress and default tls doesn't exist",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+					url.Spec.Secure = true
+					return url
+				}(),
+			},
+			createdIngress:   fake.GetSingleIngress("example-nodejs-app", "nodejs", "app"),
+			defaultTLSExists: false,
+			want:             "https://example.com",
+			wantErr:          false,
+		},
+		{
+			name:   "Case 5: Fail when while creating ingress when user given tls secret doesn't exists",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+					url.Spec.Secure = true
+					url.Spec.TLSSecret = "user-secret"
+					return url
+				}(),
+			},
+			defaultTLSExists:   false,
+			userGivenTLSExists: false,
+			want:               "http://example.com",
+			wantErr:            true,
+		},
+		{
+			name:   "Case 6: Create a secure ingress, user tls secret does exists",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+					url.Spec.Secure = true
+					url.Spec.TLSSecret = "user-secret"
+					return url
+				}(),
+			},
+			createdIngress:     fake.GetSingleIngress("example-nodejs-app", "nodejs", "app"),
+			defaultTLSExists:   false,
+			userGivenTLSExists: true,
+			want:               "https://example.com",
+			wantErr:            false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var serviceName string
+			if tt.args.url.Spec.Kind == localConfigProvider.INGRESS {
+				serviceName = tt.fields.generic.componentName
+
+			}
+
+			client, fakeClientSet := occlient.FakeNew()
+			fakeKClient, fakeKClientSet := kclient.FakeNew()
+			client.SetKubeClient(fakeKClient)
+
+			k := kubernetesClient{
+				generic:          tt.fields.generic,
+				isRouteSupported: tt.fields.isRouteSupported,
+				client:           *client,
+			}
+
+			fakeKClientSet.Kubernetes.PrependReactor("get", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
+				var secretName string
+				if tt.args.url.Spec.TLSSecret == "" {
+					secretName = tt.fields.generic.componentName + "-tlssecret"
+					if action.(ktesting.GetAction).GetName() != secretName {
+						return true, nil, fmt.Errorf("get for secrets called with invalid name, want: %s,got: %s", secretName, action.(ktesting.GetAction).GetName())
+					}
+				} else {
+					secretName = tt.args.url.Spec.TLSSecret
+					if action.(ktesting.GetAction).GetName() != tt.args.url.Spec.TLSSecret {
+						return true, nil, fmt.Errorf("get for secrets called with invalid name, want: %s,got: %s", tt.args.url.Spec.TLSSecret, action.(ktesting.GetAction).GetName())
+					}
+				}
+				if tt.args.url.Spec.TLSSecret != "" {
+					if !tt.userGivenTLSExists {
+						return true, nil, kerrors.NewNotFound(schema.GroupResource{}, "")
+					}
+				} else if !tt.defaultTLSExists {
+					return true, nil, kerrors.NewNotFound(schema.GroupResource{}, "")
+				}
+				return true, fake.GetSecret(secretName), nil
+			})
+
+			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &appsv1.DeploymentList{Items: []appsv1.Deployment{*testingutil.CreateFakeDeployment("nodejs")}}, nil
+			})
+
+			got, err := k.createIngress(tt.args.url, urlLabels.GetLabels(tt.args.url.Name, k.componentName, k.appName, true))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createIngress() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if err != nil {
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("createIngress() got = %v, want %v", got, tt.want)
+			}
+
+			wantKubernetesActionLength := 0
+			if !tt.args.url.Spec.Secure {
+				wantKubernetesActionLength = 2
+			} else {
+				if tt.args.url.Spec.TLSSecret != "" && tt.userGivenTLSExists {
+					wantKubernetesActionLength = 3
+				} else if !tt.defaultTLSExists {
+					wantKubernetesActionLength = 4
+				} else {
+					wantKubernetesActionLength = 3
+				}
+			}
+			if len(fakeKClientSet.Kubernetes.Actions()) != wantKubernetesActionLength {
+				t.Errorf("expected %v Kubernetes.Actions() in Create, got: %v", wantKubernetesActionLength, len(fakeKClientSet.Kubernetes.Actions()))
+			}
+
+			if len(fakeClientSet.RouteClientset.Actions()) != 0 {
+				t.Errorf("expected 0 RouteClientset.Actions() in CreateService, got: %v", fakeClientSet.RouteClientset.Actions())
+			}
+
+			var createdIngress *extensionsv1.Ingress
+			createIngressActionNo := 0
+			if !tt.args.url.Spec.Secure {
+				createIngressActionNo = 1
+			} else {
+				if tt.args.url.Spec.TLSSecret != "" {
+					createIngressActionNo = 2
+				} else if !tt.defaultTLSExists {
+					createdDefaultTLS := fakeKClientSet.Kubernetes.Actions()[2].(ktesting.CreateAction).GetObject().(*corev1.Secret)
+					if createdDefaultTLS.Name != tt.fields.generic.componentName+"-tlssecret" {
+						t.Errorf("default tls created with different name, want: %s,got: %s", tt.fields.generic.componentName+"-tlssecret", createdDefaultTLS.Name)
+					}
+					createIngressActionNo = 3
+				} else {
+					createIngressActionNo = 2
+				}
+			}
+			createdIngress = fakeKClientSet.Kubernetes.Actions()[createIngressActionNo].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
+			tt.createdIngress.Labels["odo.openshift.io/url-name"] = tt.args.url.Name
+			if !reflect.DeepEqual(createdIngress.Name, tt.createdIngress.Name) {
+				t.Errorf("ingress name not matching, expected: %s, got %s", tt.createdIngress.Name, createdIngress.Name)
+			}
+			if !reflect.DeepEqual(createdIngress.Labels, tt.createdIngress.Labels) {
+				t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.createdIngress.Labels, createdIngress.Labels))
+			}
+
+			wantedIngressSpecParams := generator.IngressSpecParams{
+				ServiceName:   serviceName,
+				IngressDomain: tt.args.url.Spec.Host,
+				PortNumber:    intstr.FromInt(tt.args.url.Spec.Port),
+				TLSSecretName: tt.args.url.Spec.TLSSecret,
+			}
+
+			if tt.args.url.Spec.Secure {
+				if wantedIngressSpecParams.TLSSecretName == "" {
+					wantedIngressSpecParams.TLSSecretName = tt.fields.generic.componentName + "-tlssecret"
+				}
+				if !reflect.DeepEqual(createdIngress.Spec.TLS[0].SecretName, wantedIngressSpecParams.TLSSecretName) {
+					t.Errorf("ingress tls name not matching, expected: %s, got %s", wantedIngressSpecParams.TLSSecretName, createdIngress.Spec.TLS)
+				}
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Create() = %#v, want %#v", got, tt.want)
+			}
+
+		})
+	}
+}
+
+func Test_kubernetesClient_createRoute(t *testing.T) {
+	type fields struct {
+		generic          generic
+		isRouteSupported bool
+		client           occlient.Client
+	}
+	type args struct {
+		url    URL
+		labels map[string]string
+	}
+	tests := []struct {
+		name          string
+		fields        fields
+		args          args
+		returnedRoute *routev1.Route
+		want          string
+		wantErr       bool
+	}{
+		{
+			name:   "Case 1: Component name same as urlName",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: getFakeURL("nodejs", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "nodejs-nodejs-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/instance": "nodejs",
+						applabels.App:                "app",
+						applabels.OdoManagedBy:       "odo",
+						applabels.OdoVersion:         version.VERSION,
+						"odo.openshift.io/url-name":  "nodejs",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(8080),
+					},
+				},
+			},
+			want:    "http://host",
+			wantErr: false,
+		},
+		{
+			name:   "Case 2: Component name different than urlName",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: getFakeURL("example-url", "com", 9100, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "example-url-nodejs-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/instance": "nodejs",
+						applabels.App:                "app",
+						applabels.OdoManagedBy:       "odo",
+						applabels.OdoVersion:         version.VERSION,
+						"odo.openshift.io/url-name":  "example-url",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(9100),
+					},
+				},
+			},
+			want:    "http://host",
+			wantErr: false,
+		},
+		{
+			name:   "Case 3: a secure URL",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example-url", "com", 9100, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed)
+					url.Spec.Secure = true
+					return url
+				}(),
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "example-url-nodejs-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/instance": "nodejs",
+						applabels.App:                "app",
+						applabels.OdoManagedBy:       "odo",
+						applabels.OdoVersion:         version.VERSION,
+						"odo.openshift.io/url-name":  "example-url",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:                   routev1.TLSTerminationEdge,
+						InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+					},
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(9100),
+					},
+				},
+			},
+			want:    "https://host",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := occlient.FakeNew()
+			fakeKClient, fakeKClientSet := kclient.FakeNew()
+			client.SetKubeClient(fakeKClient)
+
+			fakeClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+				route := action.(ktesting.CreateAction).GetObject().(*routev1.Route)
+				route.Spec.Host = "host"
+				return true, route, nil
+			})
+
+			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &appsv1.DeploymentList{Items: []appsv1.Deployment{*testingutil.CreateFakeDeployment("nodejs")}}, nil
+			})
+
+			k := kubernetesClient{
+				generic:          tt.fields.generic,
+				isRouteSupported: tt.fields.isRouteSupported,
+				client:           *client,
+			}
+			got, err := k.createRoute(tt.args.url, urlLabels.GetLabels(tt.args.url.Name, k.componentName, k.appName, true))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createRoute() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("createRoute() got = %v, want %v", got, tt.want)
+			}
+
+			if len(fakeClientSet.RouteClientset.Actions()) != 1 {
+				t.Errorf("expected 1 RouteClientset.Actions() in CreateService, got: %v", fakeClientSet.RouteClientset.Actions())
+			}
+
+			createdRoute := fakeClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
+			if !reflect.DeepEqual(createdRoute.Name, tt.returnedRoute.Name) {
+				t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Name, createdRoute.Name)
+			}
+			if !reflect.DeepEqual(createdRoute.Labels, tt.returnedRoute.Labels) {
+				t.Errorf("route labels not matching, %v", pretty.Compare(tt.returnedRoute.Labels, createdRoute.Labels))
+			}
+			if !reflect.DeepEqual(createdRoute.Spec.Port, tt.returnedRoute.Spec.Port) {
+				t.Errorf("route port not matching, expected: %s, got %s", tt.returnedRoute.Spec.Port, createdRoute.Spec.Port)
+			}
+			if !reflect.DeepEqual(createdRoute.Spec.To.Name, tt.returnedRoute.Spec.To.Name) {
+				t.Errorf("route spec not matching, expected: %s, got %s", tt.returnedRoute.Spec.To.Name, createdRoute.Spec.To.Name)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Create() = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_kubernetesClient_Create(t *testing.T) {
+	type fields struct {
+		generic          generic
+		isRouteSupported bool
+		client           occlient.Client
+	}
+	type args struct {
+		url URL
+	}
+	tests := []struct {
+		name            string
+		fields          fields
+		args            args
+		returnedIngress *extensionsv1.Ingress
+		want            string
+		wantErr         bool
+	}{
+		{
+			name:   "Case 1: invalid url kind",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
+			args: args{
+				url: getFakeURL("nodejs", "com", 8080, "/", "http", "blah", StateTypeNotPushed),
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Case 2: route is not supported on the cluster",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: false},
+			args: args{
+				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Case 3: secretName used without secure flag",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: false},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed)
+					url.Spec.TLSSecret = "secret"
+					return url
+				}(),
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Case 4: create a route",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: true},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed)
+					return url
+				}(),
+			},
+			want:    "http://host",
+			wantErr: false,
+		},
+		{
+			name:   "Case 5: create a ingress",
+			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: true},
+			args: args{
+				url: func() URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+					return url
+				}(),
+			},
+			want:    "http://example.com",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := occlient.FakeNew()
+			fakeKClient, fakeKClientSet := kclient.FakeNew()
+			client.SetKubeClient(fakeKClient)
+
+			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &appsv1.DeploymentList{Items: []appsv1.Deployment{*testingutil.CreateFakeDeployment("nodejs")}}, nil
+			})
+
+			fakeClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+				route := action.(ktesting.CreateAction).GetObject().(*routev1.Route)
+				route.Spec.Host = "host"
+				return true, route, nil
+			})
+
+			k := kubernetesClient{
+				generic:          tt.fields.generic,
+				isRouteSupported: tt.fields.isRouteSupported,
+				client:           *client,
+			}
+			got, err := k.Create(tt.args.url)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if err != nil {
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("Create() got = %v, want %v", got, tt.want)
+			}
+
+			if tt.args.url.Spec.Kind == localConfigProvider.INGRESS {
+				requiredIngress := fake.GetSingleIngress(tt.args.url.Name, tt.fields.generic.componentName, tt.fields.generic.appName)
+
+				createdIngress := fakeKClientSet.Kubernetes.Actions()[1].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
+				requiredIngress.Labels["odo.openshift.io/url-name"] = tt.args.url.Name
+				if !reflect.DeepEqual(createdIngress.Labels, requiredIngress.Labels) {
+					t.Errorf("ingress name not matching, expected: %s, got %s", requiredIngress.Labels, createdIngress.Labels)
+				}
+			} else if tt.args.url.Spec.Kind == localConfigProvider.ROUTE {
+				requiredRoute := testingutil.GetSingleRoute(tt.args.url.Name, tt.args.url.Spec.Port, tt.fields.generic.componentName, tt.fields.generic.appName)
+				requiredRoute.Labels["app"] = tt.fields.generic.appName
+
+				createdRoute := fakeClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
+				if !reflect.DeepEqual(createdRoute.Labels, requiredRoute.Labels) {
+					t.Errorf("route labels not matching, %v", pretty.Compare(requiredRoute.Labels, createdRoute.Labels))
+				}
 			}
 		})
 	}

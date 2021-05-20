@@ -4,11 +4,20 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
+	urlLabels "github.com/openshift/odo/pkg/url/labels"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	iextensionsv1 "k8s.io/api/extensions/v1beta1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
 )
 
@@ -19,7 +28,7 @@ type kubernetesClient struct {
 	client           occlient.Client
 }
 
-// ListCluster lists both route and ingress based URLs from the cluster
+// ListFromCluster lists both route and ingress based URLs from the cluster
 func (k kubernetesClient) ListFromCluster() (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, k.componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
@@ -118,4 +127,176 @@ func (k kubernetesClient) List() (URLList, error) {
 	sort.Sort(urls)
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
+}
+
+// Delete deletes the URL with the given name and kind
+func (k kubernetesClient) Delete(name string) error {
+	url, err := k.localConfig.GetURL(name)
+	if err != nil {
+		return err
+	}
+	selector := util.ConvertLabelsToSelector(urlLabels.GetLabels(name, k.componentName, k.appName, false))
+	if url.Kind == localConfigProvider.INGRESS {
+		ingress, err := k.client.GetKubeClient().GetOneIngressFromSelector(selector)
+		if err != nil {
+			return err
+		}
+		return k.client.GetKubeClient().DeleteIngress(ingress.Name)
+	} else if url.Kind == localConfigProvider.ROUTE {
+		route, err := k.client.GetOneRouteFromSelector(selector)
+		if err != nil {
+			return err
+		}
+		return k.client.DeleteRoute(route.Name)
+	}
+	return errors.New("url type is not supported")
+}
+
+// Create creates a route or ingress based on the given URL
+func (k kubernetesClient) Create(url URL) (string, error) {
+	if url.Spec.Kind != localConfigProvider.INGRESS && url.Spec.Kind != localConfigProvider.ROUTE {
+		return "", fmt.Errorf("urlKind %s is not supported for URL creation", url.Spec.Kind)
+	}
+
+	if !url.Spec.Secure && url.Spec.TLSSecret != "" {
+		return "", fmt.Errorf("secret name can only be used for secure URLs")
+	}
+
+	labels := urlLabels.GetLabels(url.Name, k.componentName, k.appName, true)
+
+	if url.Spec.Kind == localConfigProvider.INGRESS {
+		return k.createIngress(url, labels)
+	} else {
+		if !k.isRouteSupported {
+			return "", errors.Errorf("routes are not available on non OpenShift clusters")
+		}
+
+		return k.createRoute(url, labels)
+	}
+
+}
+
+// createIngress creates a ingress for the given URL with the given labels
+func (k kubernetesClient) createIngress(url URL, labels map[string]string) (string, error) {
+	if url.Spec.Host == "" {
+		return "", errors.Errorf("the host cannot be empty")
+	}
+	serviceName := k.componentName
+	ingressDomain := fmt.Sprintf("%v.%v", url.Name, url.Spec.Host)
+
+	// generate the owner reference
+	deployment, err := k.client.GetKubeClient().GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(componentlabels.GetLabels(k.componentName, k.appName, false)))
+	if err != nil {
+		return "", err
+	}
+	ownerReference := generator.GetOwnerReference(deployment)
+
+	if url.Spec.Secure {
+		if len(url.Spec.TLSSecret) != 0 {
+			// get the user given secret
+			_, err := k.client.GetKubeClient().GetSecret(url.Spec.TLSSecret, k.client.Namespace)
+			if err != nil {
+				return "", errors.Wrap(err, "unable to get the provided secret: "+url.Spec.TLSSecret)
+			}
+		}
+
+		if len(url.Spec.TLSSecret) == 0 {
+			// get the default secret
+			defaultTLSSecretName := k.componentName + "-tlssecret"
+			_, err := k.client.GetKubeClient().GetSecret(defaultTLSSecretName, k.client.Namespace)
+
+			// create tls secret if it does not exist
+			if kerrors.IsNotFound(err) {
+				selfSignedCert, err := kclient.GenerateSelfSignedCertificate(url.Spec.Host)
+				if err != nil {
+					return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+url.Spec.Host)
+				}
+				// create tls secret
+				secretLabels := componentlabels.GetLabels(k.componentName, k.appName, true)
+				objectMeta := metav1.ObjectMeta{
+					Name:   defaultTLSSecretName,
+					Labels: secretLabels,
+					OwnerReferences: []v1.OwnerReference{
+						ownerReference,
+					},
+				}
+				secret, err := k.client.GetKubeClient().CreateTLSSecret(selfSignedCert.CertPem, selfSignedCert.KeyPem, objectMeta)
+				if err != nil {
+					return "", errors.Wrap(err, "unable to create tls secret")
+				}
+				url.Spec.TLSSecret = secret.Name
+			} else if err != nil {
+				return "", err
+			} else {
+				// tls secret found for this component
+				url.Spec.TLSSecret = defaultTLSSecretName
+			}
+
+		}
+
+	}
+
+	ingressName, err := getResourceName(url.Name, k.componentName, k.appName)
+	if err != nil {
+		return "", err
+	}
+	objectMeta := generator.GetObjectMeta(k.componentName, k.client.Namespace, labels, nil)
+	// to avoid error due to duplicate ingress name defined in different devfile components
+	objectMeta.Name = ingressName
+	objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+
+	ingressParam := generator.IngressParams{
+		ObjectMeta: objectMeta,
+		IngressSpecParams: generator.IngressSpecParams{
+			ServiceName:   serviceName,
+			IngressDomain: ingressDomain,
+			PortNumber:    intstr.FromInt(url.Spec.Port),
+			TLSSecretName: url.Spec.TLSSecret,
+			Path:          url.Spec.Path,
+		},
+	}
+	ingress := generator.GetIngress(ingressParam)
+	// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
+	i, err := k.client.GetKubeClient().CreateIngress(*ingress)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to create ingress")
+	}
+	return GetURLString(GetProtocol(routev1.Route{}, *i), "", ingressDomain, false), nil
+}
+
+// createRoute creates a route for the given URL with the given labels
+func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string, error) {
+	// to avoid error due to duplicate ingress name defined in different devfile components
+	routeName, err := getResourceName(url.Name, k.componentName, k.appName)
+	if err != nil {
+		return "", err
+	}
+	serviceName := k.componentName
+
+	deployment, err := k.client.GetKubeClient().GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(componentlabels.GetLabels(k.componentName, k.appName, false)))
+	if err != nil {
+		return "", err
+	}
+	ownerReference := generator.GetOwnerReference(deployment)
+
+	// Pass in the namespace name, link to the service (componentName) and labels to create a route
+	route, err := k.client.CreateRoute(routeName, serviceName, intstr.FromInt(url.Spec.Port), labels, url.Spec.Secure, url.Spec.Path, ownerReference)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to create route")
+	}
+	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", true), nil
+}
+
+// getResourceName gets the route/ingress resource name
+func getResourceName(urlName, componentName, appName string) (string, error) {
+	resourceName, err := util.NamespaceKubernetesObject(urlName, componentName)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	resourceName, err = util.NamespaceKubernetesObject(resourceName, appName)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+	return resourceName, nil
 }

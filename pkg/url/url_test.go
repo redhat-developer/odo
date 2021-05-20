@@ -3,13 +3,9 @@ package url
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
-	"github.com/kylelemons/godebug/pretty"
-	appsv1 "github.com/openshift/api/apps/v1"
 	kappsv1 "k8s.io/api/apps/v1"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -21,12 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/url/labels"
-	"github.com/openshift/odo/pkg/util"
-	v1 "k8s.io/api/core/v1"
-	extensionsv1 "k8s.io/api/extensions/v1beta1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/openshift/odo/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +24,7 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
+<<<<<<< HEAD
 func TestCreate(t *testing.T) {
 	type args struct {
 		componentName    string
@@ -524,6 +515,8 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+=======
+>>>>>>> Changes the route and ingress names to include the app name and also refactors the URL package code
 func TestExists(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -675,7 +668,6 @@ func TestExists(t *testing.T) {
 func TestPush(t *testing.T) {
 	type args struct {
 		isRouteSupported bool
-		isS2I            bool
 	}
 	tests := []struct {
 		name                string
@@ -684,6 +676,7 @@ func TestPush(t *testing.T) {
 		applicationName     string
 		existingLocalURLs   []localConfigProvider.LocalURL
 		existingClusterURLs URLList
+		deletedItems        []string
 		deletedURLs         []URL
 		createdURLs         []URL
 		wantErr             bool
@@ -692,7 +685,6 @@ func TestPush(t *testing.T) {
 			name: "no urls on local config and cluster",
 			args: args{
 				isRouteSupported: true,
-				isS2I:            true,
 			},
 			componentName:   "nodejs",
 			applicationName: "app",
@@ -703,7 +695,6 @@ func TestPush(t *testing.T) {
 			applicationName: "app",
 			args: args{
 				isRouteSupported: true,
-				isS2I:            true,
 			},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
@@ -720,47 +711,36 @@ func TestPush(t *testing.T) {
 				},
 			},
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-app",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1-app",
-					},
-					Spec: URLSpec{
-						Port:   9090,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example",
+					Port:   8080,
+					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
+				}),
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example-1",
+					Port:   9090,
+					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
+				}),
 			},
 		},
 		{
 			name:            "0 url on local config and 2 on openshift cluster",
 			componentName:   "wildfly",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, isS2I: true},
+			args:            args{isRouteSupported: true},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
 			}),
-			deletedURLs: []URL{
-				getMachineReadableFormat(testingutil.GetSingleRoute("example-app", 8080, "nodejs", "app")),
-				getMachineReadableFormat(testingutil.GetSingleRoute("example-1-app", 9100, "nodejs", "app")),
-			},
+			deletedItems: []string{"example", "example-1"},
 		},
 		{
 			name:            "2 url on local config and 2 on openshift cluster, but they are different",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, isS2I: true},
+			args:            args{isRouteSupported: true},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example-local-0",
@@ -779,38 +759,27 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
 			}),
-			deletedURLs: []URL{
-				getMachineReadableFormat(testingutil.GetSingleRoute("example-app", 8080, "nodejs", "app")),
-				getMachineReadableFormat(testingutil.GetSingleRoute("example-1-app", 9100, "nodejs", "app")),
-			},
+			deletedItems: []string{"example", "example-1"},
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-app",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1-app",
-					},
-					Spec: URLSpec{
-						Port:   9090,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example-local-0",
+					Port:   8080,
+					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
+				}),
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example-local-1",
+					Port:   9090,
+					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
+				}),
 			},
 		},
 		{
 			name:            "2 url on local config and openshift cluster are in sync",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, isS2I: true},
+			args:            args{isRouteSupported: true},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
@@ -861,28 +830,18 @@ func TestPush(t *testing.T) {
 				},
 			},
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   9090,
-						Secure: false,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example",
+					Host: "com",
+					Port: 8080,
+					Kind: localConfigProvider.INGRESS,
+				}),
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example-1",
+					Host: "com",
+					Port: 9090,
+					Kind: localConfigProvider.INGRESS,
+				}),
 			},
 		},
 		{
@@ -895,18 +854,7 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
 				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
 			}),
-			deletedURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0-nodejs",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1-nodejs",
-					},
-				},
-			},
+			deletedItems: []string{"example-0", "example-1"},
 		},
 		{
 			name:            "2 urls on env file and 2 on openshift cluster, but they are different",
@@ -932,41 +880,20 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
 			}),
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-wildfly",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1-wildfly",
-					},
-					Spec: URLSpec{
-						Port:   9090,
-						Secure: false,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example-local-0",
+					Host: "com",
+					Port: 8080,
+					Kind: localConfigProvider.INGRESS,
+				}),
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example-local-1",
+					Host: "com",
+					Port: 9090,
+					Kind: localConfigProvider.INGRESS,
+				}),
 			},
-			deletedURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0-wildfly",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1-wildfly",
-					},
-				},
-			},
+			deletedItems: []string{"example-0", "example-1"},
 		},
 		{
 			name:            "2 urls on env file and openshift cluster are in sync",
@@ -979,17 +906,19 @@ func TestPush(t *testing.T) {
 					Host: "com",
 					Port: 8080,
 					Kind: localConfigProvider.INGRESS,
+					Path: "/",
 				},
 				{
 					Name: "example-1",
 					Host: "com",
 					Port: 9090,
 					Kind: localConfigProvider.INGRESS,
+					Path: "/",
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "wildfly", "app")),
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "wildfly", "app")),
+				getMachineReadableFormatIngress((*fake.GetIngressListWithMultiple("wildfly", "app")).Items[0]),
+				getMachineReadableFormatIngress((*fake.GetIngressListWithMultiple("wildfly", "app")).Items[1]),
 			}),
 			createdURLs: []URL{},
 			deletedURLs: []URL{},
@@ -1014,43 +943,22 @@ func TestPush(t *testing.T) {
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
+				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9090, "nodejs", "app")),
 			}),
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   9090,
-						Secure: false,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example-local-0",
+					Port: 8080,
+					Kind: localConfigProvider.ROUTE,
+				}),
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example-local-1",
+					Host: "com",
+					Port: 9090,
+					Kind: localConfigProvider.INGRESS,
+				}),
 			},
-			deletedURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-0-nodejs",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1-nodejs",
-					},
-				},
-			},
+			deletedItems: []string{"example-0", "example-1"},
 		},
 		{
 			name:            "create a ingress on a kubernetes cluster",
@@ -1068,18 +976,14 @@ func TestPush(t *testing.T) {
 				},
 			},
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:      8080,
-						Secure:    true,
-						Host:      "com",
-						TLSSecret: "secret",
-						Kind:      localConfigProvider.INGRESS,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:      "example",
+					Host:      "com",
+					TLSSecret: "secret",
+					Port:      8080,
+					Secure:    true,
+					Kind:      localConfigProvider.INGRESS,
+				}),
 			},
 		},
 		{
@@ -1100,31 +1004,20 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-local-0", "nodejs", "app")),
 			}),
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example-local-0",
+					Port: 8080,
+					Kind: localConfigProvider.ROUTE,
+				}),
 			},
-			deletedURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-nodejs",
-					},
-				},
-			},
-			wantErr: false,
+			deletedItems: []string{"example-local-0"},
+			wantErr:      false,
 		},
 		{
 			name:            "url with same name exists on config and cluster but with different specs",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, isS2I: true},
+			args:            args{isRouteSupported: true},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example-local-0",
@@ -1134,28 +1027,18 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormat(testingutil.GetSingleRoute("example-local-0", 9090, "nodejs", "app")),
+				getMachineReadableFormat(testingutil.GetSingleRoute("example-local-0-app", 9090, "nodejs", "app")),
 			}),
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-app",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example-local-0",
+					Port:   8080,
+					Secure: false,
+					Kind:   localConfigProvider.ROUTE,
+				}),
 			},
-			deletedURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-app",
-					},
-				},
-			},
-			wantErr: false,
+			deletedItems: []string{"example-local-0-app"},
+			wantErr:      false,
 		},
 		{
 			name:            "create a secure route url",
@@ -1171,16 +1054,12 @@ func TestPush(t *testing.T) {
 				},
 			},
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: true,
-						Kind:   localConfigProvider.ROUTE,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example",
+					Port:   8080,
+					Secure: true,
+					Kind:   localConfigProvider.ROUTE,
+				}),
 			},
 		},
 		{
@@ -1198,17 +1077,13 @@ func TestPush(t *testing.T) {
 				},
 			},
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: true,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example",
+					Host:   "com",
+					Secure: true,
+					Port:   8080,
+					Kind:   localConfigProvider.INGRESS,
+				}),
 			},
 		},
 		{
@@ -1227,18 +1102,14 @@ func TestPush(t *testing.T) {
 				},
 			},
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:      8080,
-						Secure:    true,
-						Host:      "com",
-						TLSSecret: "secret",
-						Kind:      localConfigProvider.INGRESS,
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:      "example",
+					Host:      "com",
+					TLSSecret: "secret",
+					Port:      8080,
+					Secure:    true,
+					Kind:      localConfigProvider.INGRESS,
+				}),
 			},
 		},
 		{
@@ -1270,17 +1141,12 @@ func TestPush(t *testing.T) {
 			},
 			wantErr: false,
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-						Path:   "/",
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example",
+					Port:   8080,
+					Kind:   localConfigProvider.ROUTE,
+					Secure: false,
+				}),
 			},
 		},
 		{
@@ -1298,18 +1164,12 @@ func TestPush(t *testing.T) {
 			},
 			wantErr: false,
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-						Path:   "/",
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name: "example",
+					Host: "com",
+					Port: 8080,
+					Kind: localConfigProvider.INGRESS,
+				}),
 			},
 		},
 		{
@@ -1328,17 +1188,13 @@ func TestPush(t *testing.T) {
 			},
 			wantErr: false,
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Kind:   localConfigProvider.ROUTE,
-						Path:   "/testpath",
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example",
+					Port:   8080,
+					Secure: false,
+					Path:   "/testpath",
+					Kind:   localConfigProvider.ROUTE,
+				}),
 			},
 		},
 		{
@@ -1358,23 +1214,19 @@ func TestPush(t *testing.T) {
 			},
 			wantErr: false,
 			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-nodejs",
-					},
-					Spec: URLSpec{
-						Port:   8080,
-						Secure: false,
-						Host:   "com",
-						Kind:   localConfigProvider.INGRESS,
-						Path:   "/testpath",
-					},
-				},
+				ConvertLocalURL(localConfigProvider.LocalURL{
+					Name:   "example",
+					Host:   "com",
+					Port:   8080,
+					Secure: false,
+					Path:   "/testpath",
+					Kind:   localConfigProvider.INGRESS,
+				}),
 			},
 		},
 	}
-	for testNum, tt := range tests {
-		tt.name = fmt.Sprintf("case %d: ", testNum+1) + tt.name
+	for _, tt := range tests {
+		//tt.name = fmt.Sprintf("case %d: ", testNum+1) + tt.name
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -1387,29 +1239,16 @@ func TestPush(t *testing.T) {
 			mockURLClient := NewMockClient(ctrl)
 			mockURLClient.EXPECT().ListFromCluster().Return(tt.existingClusterURLs, nil)
 
-			fakeClient, fakeClientSet := occlient.FakeNew()
+			for i := range tt.createdURLs {
+				mockURLClient.EXPECT().Create(tt.createdURLs[i]).Times(1)
+			}
+
+			for i := range tt.deletedItems {
+				mockURLClient.EXPECT().Delete(gomock.Eq(tt.deletedItems[i])).Times(1)
+			}
+
+			fakeClient, _ := occlient.FakeNew()
 			fakeKClient, fakeKClientSet := kclient.FakeNew()
-
-			fakeClient.SetKubeClient(fakeKClient)
-
-			fakeKClientSet.Kubernetes.PrependReactor("delete", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, nil, nil
-			})
-
-			fakeClientSet.RouteClientset.PrependReactor("delete", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, nil, nil
-			})
-
-			fakeKClientSet.Kubernetes.PrependReactor("get", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if tt.existingLocalURLs[0].TLSSecret != "" {
-					return true, fake.GetSecret(tt.existingLocalURLs[0].TLSSecret), nil
-				}
-				return true, fake.GetSecret(tt.componentName + "-tlssecret"), nil
-			})
-
-			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, testingutil.OneFakeDeploymentConfigWithMounts(tt.componentName, "local", tt.applicationName, map[string]*v1.PersistentVolumeClaim{}), nil
-			})
 
 			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &kappsv1.DeploymentList{
@@ -1419,121 +1258,14 @@ func TestPush(t *testing.T) {
 				}, nil
 			})
 
-			if err := Push(fakeClient, PushParameters{
+			fakeClient.SetKubeClient(fakeKClient)
+
+			if err := Push(PushParameters{
 				LocalConfig:      mockLocalConfigProvider,
 				URLClient:        mockURLClient,
 				IsRouteSupported: tt.args.isRouteSupported,
-				IsS2I:            tt.args.isS2I,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
-			} else {
-				deletedURLMap := make(map[string]bool)
-				for _, url := range tt.deletedURLs {
-					found := false
-					for _, action := range fakeKClientSet.Kubernetes.Actions() {
-						value, ok := action.(ktesting.DeleteAction)
-						if ok && value.GetVerb() == "delete" {
-							deletedURLMap[value.GetName()] = true
-							if value.GetName() == url.Name {
-								found = true
-								break
-							}
-						}
-					}
-
-					for _, action := range fakeClientSet.RouteClientset.Actions() {
-						value, ok := action.(ktesting.DeleteAction)
-						if ok && value.GetVerb() == "delete" {
-							deletedURLMap[value.GetName()] = true
-							if value.GetName() == url.Name {
-								found = true
-								break
-							}
-						}
-					}
-					if !found {
-						t.Errorf("the url %s was not deleted", url.Name)
-					}
-				}
-
-				if len(deletedURLMap) != len(tt.deletedURLs) {
-					t.Errorf("number of deleted urls is different, want: %d,got: %d", len(tt.deletedURLs), len(deletedURLMap))
-				}
-
-				createdURLMap := make(map[string]bool)
-				for _, url := range tt.createdURLs {
-					found := false
-					for _, action := range fakeKClientSet.Kubernetes.Actions() {
-						value, ok := action.(ktesting.CreateAction)
-						if ok {
-							createdObject, ok := value.GetObject().(*extensionsv1.Ingress)
-							if ok {
-								createdURLMap[createdObject.Name] = true
-								expectedHost := fmt.Sprintf("%v.%v", strings.Split(url.Name, "-"+tt.componentName)[0], url.Spec.Host)
-								if createdObject.Name == url.Name &&
-									(createdObject.Spec.TLS != nil) == url.Spec.Secure &&
-									int(createdObject.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal) == url.Spec.Port &&
-									localConfigProvider.INGRESS == url.Spec.Kind &&
-									expectedHost == createdObject.Spec.Rules[0].Host {
-
-									if url.Spec.Secure {
-										secretName := tt.componentName + "-tlssecret"
-										if url.Spec.TLSSecret != "" {
-											secretName = url.Spec.TLSSecret
-										}
-										if createdObject.Spec.TLS[0].SecretName == secretName {
-											found = true
-											break
-										}
-									} else {
-										found = true
-										break
-									}
-								}
-							}
-						}
-					}
-
-					for _, action := range fakeClientSet.RouteClientset.Actions() {
-						value, ok := action.(ktesting.CreateAction)
-						if ok {
-							createdObject, ok := value.GetObject().(*routev1.Route)
-							if ok {
-								createdURLMap[createdObject.Name] = true
-								if createdObject.Name == url.Name &&
-									(createdObject.Spec.TLS != nil) == url.Spec.Secure &&
-									int(createdObject.Spec.Port.TargetPort.IntVal) == url.Spec.Port &&
-									localConfigProvider.ROUTE == url.Spec.Kind {
-									found = true
-									break
-								}
-							}
-						}
-					}
-					if !found {
-						t.Errorf("the url %s was not created with proper specs", url.Name)
-					}
-				}
-
-				if len(createdURLMap) != len(tt.createdURLs) {
-					t.Errorf("number of created urls is different, want: %d,got: %d", len(tt.createdURLs), len(createdURLMap))
-				}
-
-				if !tt.args.isRouteSupported {
-					if len(fakeClientSet.RouteClientset.Actions()) > 0 {
-						t.Errorf("route is not supproted, total actions on the routeClient should be 0")
-					}
-				}
-
-				if len(tt.createdURLs) == 0 && len(tt.deletedURLs) == 0 {
-					if len(fakeClientSet.RouteClientset.Actions()) > 1 {
-						t.Errorf("when urls are in sync, total action for route client set should be less than 1")
-					}
-
-					if len(fakeClientSet.Kubernetes.Actions()) > 1 {
-						t.Errorf("when urls are in snyc, total action for kubernetes client set should be less than 1")
-					}
-				}
 			}
 		})
 	}

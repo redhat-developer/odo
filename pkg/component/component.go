@@ -631,11 +631,10 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 		LocalConfigProvider: configProvider,
 	})
 
-	return urlpkg.Push(client, urlpkg.PushParameters{
+	return urlpkg.Push(urlpkg.PushParameters{
 		LocalConfig:      configProvider,
 		URLClient:        urlClient,
 		IsRouteSupported: isRouteSupported,
-		IsS2I:            isS2I,
 	})
 }
 
