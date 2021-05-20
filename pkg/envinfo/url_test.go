@@ -1,6 +1,7 @@
 package envinfo
 
 import (
+	"fmt"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
@@ -343,6 +344,31 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Container: "runtime",
 			},
 		},
+		{
+			name: "case 15: Does not error out if no port is specified, but container will single port is specified in multi container devfile",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+				isRouteSupported: false,
+			},
+			args: args{url: localConfigProvider.LocalURL{
+				Secure:    false,
+				Port:      -1,
+				Container: "runtime-debug",
+			}},
+			wantErr:   false,
+			updateURL: true,
+			wantedURL: localConfigProvider.LocalURL{
+				Name:      "port-8080",
+				Port:      8080,
+				Secure:    false,
+				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
+				Container: "runtime-debug",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -364,7 +390,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			if tt.wantErr && err != nil {
 				return
 			}
-
+			fmt.Printf("%#v\n", tt.args.url)
 			if !reflect.DeepEqual(tt.args.url, tt.wantedURL) {
 				t.Errorf("url doesn't match the required url: %v", pretty.Compare(tt.args.url, tt.wantedURL))
 			}
@@ -632,6 +658,14 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 			},
 			want: []string{"3000"},
+		},
+		{
+			name: "case 3: Returns ports of specified container in multi container devfile",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				container:  "runtime-debug",
+			},
+			want: []string{"8080"},
 		},
 	}
 	for _, tt := range tests {
