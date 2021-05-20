@@ -674,7 +674,7 @@ func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace strin
 
 // ApplyClusterSecrets applying pull secret to the namespace which will be used for pulling images from authenticated registry
 func (oc OcRunner) ApplyClusterSecrets(secretName, SourceNS, DestinationNS string) {
-	CmdShouldPass(oc.path, "get", "secret", secretName, "-n", SourceNS, "-o", "yaml | sed 's/"+SourceNS+"/"+DestinationNS+"/g' | oc apply -f -")
+	CmdShouldPass(oc.path, "get", "secret/"+secretName, "-n", SourceNS, "-o", "yaml", "|", "sed", "'s/"+SourceNS+"/"+DestinationNS+"/g'", "|", "oc", "apply", "-f", "-")
 	// Let developer user have access to the project
-	CmdShouldPass(oc.path, "adm", "policy", "add-role-to-user", "edit developer")
+	CmdShouldPass(oc.path, "adm", "policy", "add-role-to-user", "edit", "developer")
 }

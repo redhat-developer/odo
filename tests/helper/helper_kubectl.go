@@ -220,5 +220,5 @@ func (kubectl KubectlRunner) VerifyResourceDeleted(ri ResourceInfo) {
 
 // ApplyClusterSecrets applying pull secret to the namespace which will be used for pulling images from authenticated registry
 func (kubectl KubectlRunner) ApplyClusterSecrets(secretName, SourceNS, DestinationNS string) {
-	CmdShouldPass(kubectl.path, "get", "secret", secretName, "-n", SourceNS, "-o", "yaml | sed 's/"+SourceNS+"/"+DestinationNS+"/g' | kubectl apply -n "+DestinationNS+" -f -")
+	CmdShouldPass(kubectl.path, "get", "secret/"+secretName, "-n", SourceNS, "-o", "yaml | sed 's/"+SourceNS+"/"+DestinationNS+"/g' | kubectl apply -n "+DestinationNS+" -f -")
 }
