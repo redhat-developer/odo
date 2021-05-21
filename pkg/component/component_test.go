@@ -860,7 +860,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	localExistingConfigInfoPorts, err := localExistingConfigInfoValue.GetPorts("")
+	localExistingConfigInfoPorts, err := localExistingConfigInfoValue.GetComponentPorts()
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -874,7 +874,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	gitExistingConfigInfoPorts, err := gitExistingConfigInfoValue.GetPorts("")
+	gitExistingConfigInfoPorts, err := gitExistingConfigInfoValue.GetComponentPorts()
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
