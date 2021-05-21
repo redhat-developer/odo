@@ -1,7 +1,6 @@
 package envinfo
 
 import (
-	"fmt"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
@@ -390,7 +389,6 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			if tt.wantErr && err != nil {
 				return
 			}
-			fmt.Printf("%#v\n", tt.args.url)
 			if !reflect.DeepEqual(tt.args.url, tt.wantedURL) {
 				t.Errorf("url doesn't match the required url: %v", pretty.Compare(tt.args.url, tt.wantedURL))
 			}
