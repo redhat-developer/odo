@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+//getDevfilePorts returns a mapping of devfile containers to their ports
 func (ei *EnvInfo) getDevfilePorts() (map[string][]string, error) {
 	containerPorts := make(map[string][]string)
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
@@ -33,6 +34,7 @@ func (ei *EnvInfo) getDevfilePorts() (map[string][]string, error) {
 	return containerPorts, nil
 }
 
+//GetContainerPorts returns list of the ports of specified container, if it exists
 func (ei *EnvInfo) GetContainerPorts(container string) ([]string, error) {
 	if container == "" {
 		return nil, fmt.Errorf("please provide a container")
@@ -47,6 +49,7 @@ func (ei *EnvInfo) GetContainerPorts(container string) ([]string, error) {
 	return nil, fmt.Errorf("container named %s does not exist", container)
 }
 
+//GetComponentPorts returns all unique ports declared in all the containers
 func (ei *EnvInfo) GetComponentPorts() ([]string, error) {
 	cp, err := ei.getDevfilePorts()
 	if err != nil {
