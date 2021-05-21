@@ -2,6 +2,7 @@ package envinfo
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -37,6 +38,7 @@ func (ei *EnvInfo) getPorts(container string) ([]string, error) {
 	for port := range portMap {
 		portList = append(portList, port)
 	}
+	sort.Strings(portList)
 	return portList, nil
 }
 
