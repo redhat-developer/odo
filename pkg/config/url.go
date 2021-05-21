@@ -18,7 +18,7 @@ func (lc *LocalConfig) GetComponentPorts() ([]string, error) {
 }
 
 func (lc *LocalConfig) GetContainerPorts(container string) ([]string, error) {
-	return nil, fmt.Errorf("Not implemented for local config")
+	return nil, fmt.Errorf("getting specific container ports not implemented for local config")
 }
 
 // CompleteURL completes the given URL with default values
