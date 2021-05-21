@@ -18,12 +18,12 @@ import (
 //getPorts gets the ports from devfile
 func (ei *EnvInfo) getPorts(container string) ([]string, error) {
 	var portList []string
-	portMap := make(map[string]bool)
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
 	if err != nil {
 		return nil, err
 	}
 	containerExists := false
+	portMap := make(map[string]bool)
 	for _, component := range containerComponents {
 		if container == "" || container == component.Name {
 			containerExists = true
