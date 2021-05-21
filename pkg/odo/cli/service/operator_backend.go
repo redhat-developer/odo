@@ -157,8 +157,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 				return err
 			}
 
-			fmt.Printf("%+v\n", builtCRD)
-
 			d.OriginalCRD = builtCRD
 		} else {
 			almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
