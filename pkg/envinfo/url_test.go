@@ -649,7 +649,7 @@ func TestEnvInfo_GetComponentPorts(t *testing.T) {
 			fields: fields{
 				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
 			},
-			want: []string{"3030", "3000", "8080"},
+			want: []string{"3000", "3030", "8080"},
 		},
 		{
 			name: "case 2: single port from a container",
