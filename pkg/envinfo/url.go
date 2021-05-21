@@ -25,8 +25,8 @@ func (ei *EnvInfo) getPorts(container string) ([]string, error) {
 	containerExists := false
 	for _, component := range containerComponents {
 		if container == "" || container == component.Name {
+			containerExists = true
 			for _, endpoint := range component.Container.Endpoints {
-				containerExists = true
 				portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
 			}
 		}
