@@ -383,7 +383,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	cmpName := componentConfig.GetName()
 	cmpType := componentConfig.GetType()
 	cmpSrcType := componentConfig.GetSourceType()
-	cmpPorts, err := componentConfig.GetPorts("")
+	cmpPorts, err := componentConfig.GetComponentPorts()
 	if err != nil {
 		return err
 	}
@@ -997,7 +997,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 	if len(component.Name) > 0 {
 		location := localConfig.GetSourceLocation()
 		sourceType := localConfig.GetSourceType()
-		component.Spec.Ports, err = localConfig.GetPorts("")
+		component.Spec.Ports, err = localConfig.GetComponentPorts()
 		if err != nil {
 			return Component{}, err
 		}
@@ -1101,7 +1101,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, erro
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
 				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
-				a.Spec.Ports, err = data.GetPorts("")
+				a.Spec.Ports, err = data.GetComponentPorts()
 				if err != nil {
 					return err
 				}
@@ -1208,7 +1208,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 	newSourceType := componentConfig.GetSourceType()
 	newSourceRef := componentConfig.GetRef()
 	componentImageType := componentConfig.GetType()
-	cmpPorts, err := componentConfig.GetPorts("")
+	cmpPorts, err := componentConfig.GetComponentPorts()
 	if err != nil {
 		return err
 	}

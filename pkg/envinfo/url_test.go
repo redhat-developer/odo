@@ -164,7 +164,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				url: localConfigProvider.LocalURL{
 					Name:      "url-1",
 					Port:      8080,
-					Container: "runtime-debug",
+					Container: "runtime",
 				},
 			},
 			wantedURL: localConfigProvider.LocalURL{
@@ -173,7 +173,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Secure:    false,
 				Path:      "/",
 				Kind:      localConfigProvider.INGRESS,
-				Container: "runtime-debug",
+				Container: "runtime",
 			},
 		},
 		{
@@ -631,13 +631,12 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 	}
 }
 
-func TestEnvInfo_GetPorts(t *testing.T) {
+func TestEnvInfo_GetComponentPorts(t *testing.T) {
 	fs := filesystem.NewFakeFs()
 
 	type fields struct {
 		devfileObj        parser.DevfileObj
 		componentSettings ComponentSettings
-		container         string
 	}
 	tests := []struct {
 		name    string
@@ -650,7 +649,7 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 			fields: fields{
 				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
 			},
-			want: []string{"3000", "3030", "8080"},
+			want: []string{"3030", "3000", "8080"},
 		},
 		{
 			name: "case 2: single port from a container",
@@ -659,13 +658,60 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 			},
 			want: []string{"3000"},
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ei := &EnvInfo{
+				devfileObj:        tt.fields.devfileObj,
+				componentSettings: tt.fields.componentSettings,
+			}
+			got, err := ei.GetComponentPorts()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetComponentPorts() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetComponentPorts() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnvInfo_GetContainerPorts(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+
+	type fields struct {
+		devfileObj        parser.DevfileObj
+		componentSettings ComponentSettings
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		container string
+		want      []string
+		wantErr   bool
+	}{
 		{
-			name: "case 3: Returns ports of specified container in multi container devfile",
+			name: "case 1: Returns ports of specified container in multi container devfile",
 			fields: fields{
 				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
-				container:  "runtime-debug",
 			},
-			want: []string{"8080"},
+			want:      []string{"8080"},
+			container: "runtime-debug",
+		},
+		{
+			name: "case 2: Returns error if no container is provided",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 3: Returns error if invalid container is specified",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			container: "invalidcontainer",
+			wantErr:   true,
 		},
 	}
 	for _, tt := range tests {
@@ -674,13 +720,12 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 				devfileObj:        tt.fields.devfileObj,
 				componentSettings: tt.fields.componentSettings,
 			}
-
-			got, err := ei.GetPorts(tt.fields.container)
+			got, err := ei.GetContainerPorts(tt.container)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPorts() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetContainerPorts() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPorts() = %v, want %v", got, tt.want)
+				t.Errorf("GetContainerPorts() = %v, want %v", got, tt.want)
 			}
 		})
 	}

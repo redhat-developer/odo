@@ -2,7 +2,6 @@ package envinfo
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -15,30 +14,54 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetPorts returns the ports, returns default if nil
-func (ei *EnvInfo) GetPorts(container string) ([]string, error) {
-	var portList []string
-
+func (ei *EnvInfo) getDevfilePorts() (map[string][]string, error) {
+	containerPorts := make(map[string][]string)
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
 	if err != nil {
-		return portList, err
+		return containerPorts, err
 	}
-
-	portMap := make(map[string]bool)
-
 	for _, component := range containerComponents {
-		if container == "" || (container != "" && component.Name == container) {
-			for _, endpoint := range component.Container.Endpoints {
-				portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
-			}
+		containerPorts[component.Name] = make([]string, 0)
+		portMap := make(map[string]bool)
+		for _, endpoint := range component.Container.Endpoints {
+			portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
+		}
+		for port := range portMap {
+			containerPorts[component.Name] = append(containerPorts[component.Name], port)
 		}
 	}
+	return containerPorts, nil
+}
 
+func (ei *EnvInfo) GetContainerPorts(container string) ([]string, error) {
+	if container == "" {
+		return nil, fmt.Errorf("please provide a container")
+	}
+	cp, err := ei.getDevfilePorts()
+	if err != nil {
+		return nil, err
+	}
+	if portList, ok := cp[container]; ok {
+		return portList, nil
+	}
+	return nil, fmt.Errorf("container named %s does not exist", container)
+}
+
+func (ei *EnvInfo) GetComponentPorts() ([]string, error) {
+	cp, err := ei.getDevfilePorts()
+	if err != nil {
+		return nil, err
+	}
+	var portList []string
+	portMap := make(map[string]bool)
+	for _, v := range cp {
+		for _, port := range v {
+			portMap[port] = true
+		}
+	}
 	for port := range portMap {
 		portList = append(portList, port)
 	}
-
-	sort.Strings(portList)
 	return portList, nil
 }
 
@@ -64,9 +87,18 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	url.Path = "/" + url.Path
 
 	// get the port if not provided
-	ports, err := ei.GetPorts(url.Container)
-	if err != nil {
-		return err
+	var ports []string
+	var err error
+	if url.Container == "" {
+		ports, err = ei.GetComponentPorts()
+		if err != nil {
+			return err
+		}
+	} else {
+		ports, err = ei.GetContainerPorts(url.Container)
+		if err != nil {
+			return err
+		}
 	}
 	if url.Port == -1 {
 		if len(ports) > 1 {
