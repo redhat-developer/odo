@@ -14,24 +14,30 @@ import (
 	"github.com/pkg/errors"
 )
 
-//getDevfilePorts returns a mapping of devfile containers to their ports
-func (ei *EnvInfo) getDevfilePorts() (map[string][]string, error) {
-	containerPorts := make(map[string][]string)
+//getPorts gets the ports from devfile
+func (ei *EnvInfo) getPorts(container string) ([]string, error) {
+	var portList []string
+	portMap := make(map[string]bool)
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
 	if err != nil {
-		return containerPorts, err
+		return nil, err
 	}
+	containerExists := false
 	for _, component := range containerComponents {
-		containerPorts[component.Name] = make([]string, 0)
-		portMap := make(map[string]bool)
-		for _, endpoint := range component.Container.Endpoints {
-			portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
-		}
-		for port := range portMap {
-			containerPorts[component.Name] = append(containerPorts[component.Name], port)
+		if container == "" || container == component.Name {
+			for _, endpoint := range component.Container.Endpoints {
+				containerExists = true
+				portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
+			}
 		}
 	}
-	return containerPorts, nil
+	if !containerExists {
+		return portList, fmt.Errorf("container named %s does not exist", container)
+	}
+	for port := range portMap {
+		portList = append(portList, port)
+	}
+	return portList, nil
 }
 
 //GetContainerPorts returns list of the ports of specified container, if it exists
@@ -39,33 +45,12 @@ func (ei *EnvInfo) GetContainerPorts(container string) ([]string, error) {
 	if container == "" {
 		return nil, fmt.Errorf("please provide a container")
 	}
-	cp, err := ei.getDevfilePorts()
-	if err != nil {
-		return nil, err
-	}
-	if portList, ok := cp[container]; ok {
-		return portList, nil
-	}
-	return nil, fmt.Errorf("container named %s does not exist", container)
+	return ei.getPorts(container)
 }
 
 //GetComponentPorts returns all unique ports declared in all the containers
 func (ei *EnvInfo) GetComponentPorts() ([]string, error) {
-	cp, err := ei.getDevfilePorts()
-	if err != nil {
-		return nil, err
-	}
-	var portList []string
-	portMap := make(map[string]bool)
-	for _, v := range cp {
-		for _, port := range v {
-			portMap[port] = true
-		}
-	}
-	for port := range portMap {
-		portList = append(portList, port)
-	}
-	return portList, nil
+	return ei.getPorts("")
 }
 
 // CompleteURL completes the given URL with default values
