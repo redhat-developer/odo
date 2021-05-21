@@ -344,7 +344,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			},
 		},
 		{
-			name: "case 15: Does not error out if no port is specified, but container will single port is specified in multi container devfile",
+			name: "case 15: Does not error out if no port is specified, but container with single port is specified in multi container devfile",
 			fields: fields{
 				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
 				componentSettings: ComponentSettings{
