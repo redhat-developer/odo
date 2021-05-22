@@ -26,7 +26,8 @@ func NewCRSpecBuilder(descriptors []olm.SpecDescriptor) *CRSpecBuilder {
 	}
 }
 
-// set sets the param. The param is provided in json path format. e.g. "first.name"
+// set sets the param. The param is provided in json path format. e.g. "first.name".
+// It is also responsible for parsing the values from string to an appropriate type.
 func (pb *CRSpecBuilder) set(param string, value string) error {
 	pb.params[param] = value
 	tJsonStr, err := sjson.Set(pb.builtJsonStr, param, value)

@@ -151,7 +151,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 					return err
 				}
 			}
-
+			fmt.Printf("%+v\n", cr)
 			builtCRD, err := crBuilder.Map()
 			if err != nil {
 				return err
