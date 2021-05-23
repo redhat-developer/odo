@@ -13,15 +13,17 @@ import (
 )
 
 type CmdWrapper struct {
-	Cmd      *exec.Cmd
-	program  string
-	args     []string
-	writer   *gexec.PrefixedWriter
-	session  *gexec.Session
-	timeout  time.Duration
-	stopChan chan bool
-	err      error
-	maxRetry int
+	Cmd             *exec.Cmd
+	program         string
+	args            []string
+	writer          *gexec.PrefixedWriter
+	session         *gexec.Session
+	timeout         time.Duration
+	intervalSeconds time.Duration
+	stopChan        chan bool
+	err             error
+	maxRetry        int
+	pass            bool
 }
 
 func Cmd(program string, args ...string) *CmdWrapper {
@@ -59,29 +61,38 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 				}
 			}
 		}
+	} else if cw.maxRetry > 0 {
+		cw.session.Wait()
+		// if exit code is 0 which means the program succeeded and hence we retry
+		if cw.pass == false {
+			if cw.session.ExitCode() == 0 {
+				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
+				cw.maxRetry = cw.maxRetry - 1
+				cw.Runner()
+			} else {
+				return cw
+			}
+		} else {
+			if cw.session.ExitCode() != 0 {
+				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
+				cw.maxRetry = cw.maxRetry - 1
+				cw.Runner()
+			} else {
+				return cw
+			}
+		}
 	}
 	return cw
 }
 
-func (cw *CmdWrapper) WithRetry(maxRetry int, intervalSeconds time.Duration) string {
+func (cw *CmdWrapper) WithRetry(maxRetry int, intervalSeconds time.Duration) *CmdWrapper {
 	cw.maxRetry = maxRetry
-	for i := 0; i < cw.maxRetry; i++ {
-		fmt.Fprintf(GinkgoWriter, "try %d of %d\n", i, cw.maxRetry)
-		cw.Runner()
-		cw.session.Wait()
-		// if exit code is 0 which means the program succeeded and hence we retry
-		if cw.session.ExitCode() == 0 {
-			time.Sleep(time.Duration(intervalSeconds) * time.Second)
-		} else {
-			Consistently(cw.session).ShouldNot(gexec.Exit(0), runningCmd(cw.session.Command))
-			return string(cw.session.Err.Contents())
-		}
-	}
-	Fail(fmt.Sprintf("Failed after %d retries", maxRetry))
-	return ""
+	cw.intervalSeconds = intervalSeconds
+	return cw
 }
 
 func (cw *CmdWrapper) ShouldPass() *CmdWrapper {
+	cw.pass = true
 	cw.Runner()
 	Expect(cw.err).NotTo(HaveOccurred())
 	Eventually(cw.session).Should(gexec.Exit(0), runningCmd(cw.session.Command))
@@ -89,6 +100,7 @@ func (cw *CmdWrapper) ShouldPass() *CmdWrapper {
 }
 
 func (cw *CmdWrapper) ShouldFail() *CmdWrapper {
+	cw.pass = false
 	cw.Runner()
 	Consistently(cw.session).ShouldNot(gexec.Exit(0), runningCmd(cw.session.Command))
 	return cw
