@@ -40,7 +40,7 @@ func GetLabels(application string, additional bool) map[string]string {
 	return labels
 }
 
-// GetSelector are supposed to be used for selection of any resource part of an application
+// GetSelector are supposed to be used for selection of any resource part of an application that is managed by odo
 func GetSelector(application string) string {
 	labels := map[string]string{
 		ApplicationLabel: application,
@@ -48,5 +48,14 @@ func GetSelector(application string) string {
 		OdoManagedBy:     "odo",
 	}
 
+	return util.ConvertLabelsToSelector(labels)
+}
+
+// GetNonOdoSelector are supposed to be used for selection of any resource part of an application that is not managed by odo
+func GetNonOdoSelector(application string) string {
+	labels := map[string]string{
+		ApplicationLabel: application,
+		OdoManagedBy:     "!odo",
+	}
 	return util.ConvertLabelsToSelector(labels)
 }

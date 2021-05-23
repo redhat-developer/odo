@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
+
 	odoutil "github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/application"
@@ -81,7 +83,11 @@ func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
 		machineoutput.OutputSuccess(appDef)
 	} else {
-		componentList, err := component.List(o.Client, o.appName, nil)
+		var selector string
+		if o.appName != "" {
+			selector = applabels.GetSelector(o.appName)
+		}
+		componentList, err := component.List(o.Client, selector, nil)
 		if err != nil {
 			return err
 		}

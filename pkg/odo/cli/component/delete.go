@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/openshift/odo/pkg/util"
@@ -155,7 +156,11 @@ func (do *DeleteOptions) s2iRun() (err error) {
 			// 1. Get list of active components in the cluster
 			// 2. Use this list to find the components to which our component is linked and generate secret names that are linked
 			// 3. Unlink these secrets from the components
-			compoList, err := component.List(do.Client, do.Context.Application, do.LocalConfigInfo)
+			var selector string
+			if do.Context.Application != "" {
+				selector = applabels.GetSelector(do.Context.Application)
+			}
+			compoList, err := component.List(do.Client, selector, do.LocalConfigInfo)
 			if err != nil {
 				return err
 			}

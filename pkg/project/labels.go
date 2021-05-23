@@ -13,3 +13,11 @@ func GetSelector() string {
 
 	return util.ConvertLabelsToSelector(labels)
 }
+
+func GetNonOdoSelector() string {
+	labels := map[string]string{
+		applabels.OdoManagedBy: "!odo",
+	}
+
+	return util.ConvertLabelsToSelector(labels)
+}

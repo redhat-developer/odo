@@ -159,6 +159,25 @@ func componentTests(args ...string) {
 			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "Not Pushed"})
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
 		})
+		Context("when components are not created/managed by odo", func() {
+			var appName, compName string
+			JustBeforeEach(func() {
+				//CreateNonOdoComponent
+			})
+			JustAfterEach(func() {
+				//DeleteNonOdoComponent
+			})
+			It("should list the component with --app flag", func() {
+				output := helper.CmdShouldPass("odo", "list", "--app", appName)
+				Expect(output).To(ContainSubstring(compName))
+				Expect(output).To(ContainSubstring(appName))
+			})
+			It("should list the component with --all-apps flag", func() {
+				output := helper.CmdShouldPass("odo", "list", "--all-apps")
+				Expect(output).To(ContainSubstring(compName))
+				Expect(output).To(ContainSubstring(appName))
+			})
+		})
 
 		// It("should list the state as unknown for disconnected cluster", func() {
 		// 	helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)

@@ -85,7 +85,11 @@ func AddProjectFlag(cmd *cobra.Command) {
 // 			log.Info("Application", app)
 
 // 			// List the components
-// 			componentList, err := component.List(client, app, nil)
+//			var selector string
+//			if app != "" {
+//				selector = applabels.GetSelector(app)
+//			}
+// 			componentList, err := component.List(client, selector, nil)
 // 			if err != nil {
 // 				return errors.Wrap(err, "failed to get Component list")
 // 			}

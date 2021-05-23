@@ -2,6 +2,8 @@ package application
 
 import (
 	"fmt"
+
+	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
@@ -55,8 +57,11 @@ func AddApplicationFlag(cmd *cobra.Command) {
 
 // printAppInfo will print things which will be deleted
 func printAppInfo(client *occlient.Client, kClient *kclient.Client, appName string, projectName string) error {
-
-	componentList, err := component.List(client, appName, nil)
+	var selector string
+	if appName != "" {
+		selector = applabels.GetSelector(appName)
+	}
+	componentList, err := component.List(client, selector, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Component list")
 	}
