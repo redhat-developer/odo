@@ -32,3 +32,6 @@ After each release, binaries are synced to [mirror.openshift.com]($MIRROR)" > /t
 
 echo "The changelog is located at: /tmp/changelog"
 echo ""
+echo "Contents of changelog : "
+cat /tmp/changelog
+echo ""
