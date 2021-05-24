@@ -39,8 +39,8 @@ func TestGetLabels(t *testing.T) {
 			want: map[string]string{
 				ApplicationLabel: "applicationame",
 				App:              "applicationame",
-				OdoManagedBy:     "odo",
-				OdoVersion:       version.VERSION,
+				ManagedBy:        "odo",
+				ManagerVersion:   version.VERSION,
 			},
 		},
 	}
@@ -56,7 +56,7 @@ func TestGetLabels(t *testing.T) {
 func TestGetSelector(t *testing.T) {
 	app := "sample-app"
 	got := GetSelector(app)
-	wants := []string{fmt.Sprintf("%v=%v", ApplicationLabel, app), fmt.Sprintf("%v=odo", OdoManagedBy)}
+	wants := []string{fmt.Sprintf("%v=%v", ApplicationLabel, app), fmt.Sprintf("%v=odo", ManagedBy)}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {
 			t.Errorf("got: %q, want: %q", got, want)
@@ -67,7 +67,7 @@ func TestGetSelector(t *testing.T) {
 func TestGetNonOdoSelector(t *testing.T) {
 	app := "sample-app"
 	got := GetNonOdoSelector(app)
-	wants := []string{fmt.Sprintf("%v=%v", ApplicationLabel, app), fmt.Sprintf("%v!=odo", OdoManagedBy)}
+	wants := []string{fmt.Sprintf("%v=%v", ApplicationLabel, app), fmt.Sprintf("%v!=odo", ManagedBy)}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {
 			t.Errorf("got: %q, want: %q", got, want)

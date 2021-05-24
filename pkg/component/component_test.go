@@ -1053,7 +1053,7 @@ func getFakeDC(name, namespace, appName, componentType string) appsv1.Deployment
 			Namespace: namespace,
 			Labels: map[string]string{
 				applabels.App:                      appName,
-				applabels.OdoManagedBy:             "odo",
+				applabels.ManagedBy:                "odo",
 				applabels.ApplicationLabel:         appName,
 				componentlabels.ComponentLabel:     name,
 				componentlabels.ComponentTypeLabel: componentType,

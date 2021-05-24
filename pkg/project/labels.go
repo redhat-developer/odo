@@ -8,7 +8,7 @@ import (
 // GetSelector returns a selector to filter resource under the current project created by odo
 func GetSelector() string {
 	labels := map[string]string{
-		applabels.OdoManagedBy: "odo",
+		applabels.ManagedBy: "odo",
 	}
 
 	return util.ConvertLabelsToSelector(labels)
@@ -16,7 +16,7 @@ func GetSelector() string {
 
 func GetNonOdoSelector() string {
 	labels := map[string]string{
-		applabels.OdoManagedBy: "!odo",
+		applabels.ManagedBy: "!odo",
 	}
 
 	return util.ConvertLabelsToSelector(labels)

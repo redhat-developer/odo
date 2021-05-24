@@ -64,8 +64,8 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						applabels.ApplicationLabel:         "myapp",
 						componentlabels.ComponentLabel:     "frontend",
 						componentlabels.ComponentTypeLabel: "nodejs",
-						applabels.OdoManagedBy:             "odo",
-						applabels.OdoVersion:               version.VERSION,
+						applabels.ManagedBy:                "odo",
+						applabels.ManagerVersion:           version.VERSION,
 					},
 					Annotations: map[string]string{
 						component.ComponentSourceTypeAnnotation: "local",
@@ -91,8 +91,8 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						applabels.ApplicationLabel:         "app",
 						componentlabels.ComponentLabel:     "backend",
 						componentlabels.ComponentTypeLabel: "java",
-						applabels.OdoManagedBy:             "odo",
-						applabels.OdoVersion:               version.VERSION,
+						applabels.ManagedBy:                "odo",
+						applabels.ManagerVersion:           version.VERSION,
 					},
 					Annotations: map[string]string{
 						component.ComponentSourceTypeAnnotation: "local",

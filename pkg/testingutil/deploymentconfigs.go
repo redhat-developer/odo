@@ -35,7 +35,7 @@ func getDeploymentConfig(namespace string, componentName string, componentType s
 				"app.kubernetes.io/instance": componentName,
 				"app.kubernetes.io/name":     componentType,
 				"app.kubernetes.io/part-of":  applicationName,
-				applabels.OdoManagedBy:       "odo",
+				applabels.ManagedBy:          "odo",
 			},
 			Annotations: map[string]string{ // Convert into separate function when other source types required in tests
 				"app.kubernetes.io/component-source-type": "git",
