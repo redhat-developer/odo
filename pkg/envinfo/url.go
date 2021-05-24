@@ -15,29 +15,61 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetPorts returns the ports, returns default if nil
-func (ei *EnvInfo) GetPorts() ([]string, error) {
+//getPorts gets the ports from devfile
+func (ei *EnvInfo) getPorts(container string) ([]string, error) {
 	var portList []string
-
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
 	if err != nil {
-		return portList, err
+		return nil, err
 	}
-
+	containerExists := false
 	portMap := make(map[string]bool)
-
 	for _, component := range containerComponents {
-		for _, endpoint := range component.Container.Endpoints {
-			portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
+		if container == "" || container == component.Name {
+			containerExists = true
+			for _, endpoint := range component.Container.Endpoints {
+				portMap[strconv.FormatInt(int64(endpoint.TargetPort), 10)] = true
+			}
 		}
 	}
-
+	if !containerExists {
+		return portList, fmt.Errorf("the container specified: %s does not exist in devfile", container)
+	}
 	for port := range portMap {
 		portList = append(portList, port)
 	}
-
 	sort.Strings(portList)
 	return portList, nil
+}
+
+//GetContainerPorts returns list of the ports of specified container, if it exists
+func (ei *EnvInfo) GetContainerPorts(container string) ([]string, error) {
+	if container == "" {
+		return nil, fmt.Errorf("please provide a container")
+	}
+	return ei.getPorts(container)
+}
+
+//GetComponentPorts returns all unique ports declared in all the containers
+func (ei *EnvInfo) GetComponentPorts() ([]string, error) {
+	return ei.getPorts("")
+}
+
+//checkValidPort checks and retrieves valid port from devfile when no port is specified
+func (ei *EnvInfo) checkValidPort(url *localConfigProvider.LocalURL, portsOf string, ports []string) (err error) {
+	if url.Port == -1 {
+		if len(ports) > 1 {
+			return fmt.Errorf("port for the %s is required as it exposes %d ports: %s", portsOf, len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
+		} else if len(ports) <= 0 {
+			return fmt.Errorf("no port is exposed by the %s, please specify a port", portsOf)
+		} else {
+			url.Port, err = strconv.Atoi(strings.Split(ports[0], "/")[0])
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // CompleteURL completes the given URL with default values
@@ -62,20 +94,25 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	url.Path = "/" + url.Path
 
 	// get the port if not provided
-	ports, err := ei.GetPorts()
-	if err != nil {
-		return err
-	}
-	if url.Port == -1 {
-		if len(ports) > 1 {
-			return fmt.Errorf("port for the component %s is required as it exposes %d ports: %s", ei.GetName(), len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
-		} else if len(ports) <= 0 {
-			return fmt.Errorf("no port is exposed by the component %s, please specify a port", ei.GetName())
-		} else {
-			url.Port, err = strconv.Atoi(strings.Split(ports[0], "/")[0])
-			if err != nil {
-				return err
-			}
+	var ports []string
+	var err error
+	if url.Container == "" {
+		ports, err = ei.GetComponentPorts()
+		if err != nil {
+			return err
+		}
+		err = ei.checkValidPort(url, fmt.Sprintf("component %s", ei.GetName()), ports)
+		if err != nil {
+			return err
+		}
+	} else {
+		ports, err = ei.GetContainerPorts(url.Container)
+		if err != nil {
+			return err
+		}
+		err = ei.checkValidPort(url, fmt.Sprintf("container %s", url.Container), ports)
+		if err != nil {
+			return err
 		}
 	}
 

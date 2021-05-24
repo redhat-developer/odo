@@ -207,7 +207,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			containerName := helper.RandString(5)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "com", "--port", "3000", "--container", containerName, "--ingress")
-			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("the container specified: %s does not exist in devfile", containerName)))
+			helper.MatchAllInOutput(stdOut, []string{"container", containerName, "not exist"})
 		})
 
 		It("should not allow creating an endpoint with same name", func() {
