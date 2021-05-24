@@ -166,12 +166,14 @@ To release a new version on GitHub:
 
 There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above.
 
+Also, ensure you cut the version in the link:Changelog.md['Changelog.md'] i.e create a new version on top of current version.
+
 . Merge the above PR.
 . Once the PR is merged create and push the new git tag for the version.
 . Create a new release using the GitHub site (this must be a proper release and NOT a draft).
 +
 
-. Update the release description (changelog) on GitHub. To make things easier, a script was created to automatically generate a CHANGELOG and output to `/tmp/changelog`. This script will require a GitHub authentication token which will prompt you when running the script.
+. Update the release description (changelog) on GitHub. Run the script below to get the baseline template of release changelog and then copy and paste the content from the link:Changelog.md['Changelog.md'] into appropriately marked location in generated `/tmp/changelog.md`.
 +
 ----
 $ export GITHUB_TOKEN=yoursupersecretgithubtoken
