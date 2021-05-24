@@ -299,7 +299,6 @@ func CommonBeforeEach() CommonVar {
 	commonVar.OriginalWorkingDirectory = Getwd()
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "preference.yaml"))
 	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
-	CmdShouldPass("odo", "preference", "set", "BuildTimeout", "630")
 	cfg, _ := preference.New()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
@@ -308,6 +307,8 @@ func CommonBeforeEach() CommonVar {
 
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
+	CmdShouldPass("oc", "describe", "pods", "-n", commonVar.Project)
+	CmdShouldPass("oc", "get", "--all", "-n", commonVar.Project)
 	// delete the random project/namespace created in CommonBeforeEach
 	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
 
