@@ -33,7 +33,7 @@ func (ei *EnvInfo) getPorts(container string) ([]string, error) {
 		}
 	}
 	if !containerExists {
-		return portList, fmt.Errorf("container named %s does not exist", container)
+		return portList, fmt.Errorf("the container specified: %s does not exist in devfile", container)
 	}
 	for port := range portMap {
 		portList = append(portList, port)
