@@ -131,3 +131,7 @@ func (cw *CmdWrapper) OutAndErr() (string, string) {
 func (cw *CmdWrapper) Out() string {
 	return string(cw.session.Wait().Out.Contents())
 }
+
+func (cw *CmdWrapper) Err() string {
+	return string(cw.session.Wait().Err.Contents())
+}
