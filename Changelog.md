@@ -7,6 +7,7 @@
 
 - implement `odo catalog describe service` for operator backed services
 - add deprecation warning for old git style devfile registries ([#4707](https://github.com/openshift/odo/pull/4707))
+- adds dev.odo.push.path attribute support for pushing only mentioned files ([#4588](https://github.com/openshift/odo/pull/4588))
 
 ### Bug Fixes
 
