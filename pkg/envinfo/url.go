@@ -78,23 +78,26 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 
 	// get the port if not provided
 	var ports []string
+	var portsOf string
 	var err error
 	if url.Container == "" {
 		ports, err = ei.GetComponentPorts()
 		if err != nil {
 			return err
 		}
+		portsOf = fmt.Sprintf("component %s", ei.GetName())
 	} else {
 		ports, err = ei.GetContainerPorts(url.Container)
 		if err != nil {
 			return err
 		}
+		portsOf = fmt.Sprintf("container %s", url.Container)
 	}
 	if url.Port == -1 {
 		if len(ports) > 1 {
-			return fmt.Errorf("port for the component %s is required as it exposes %d ports: %s", ei.GetName(), len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
+			return fmt.Errorf("port for the %s is required as it exposes %d ports: %s", portsOf, len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
 		} else if len(ports) <= 0 {
-			return fmt.Errorf("no port is exposed by the component %s, please specify a port", ei.GetName())
+			return fmt.Errorf("no port is exposed by the %s, please specify a port", portsOf)
 		} else {
 			url.Port, err = strconv.Atoi(strings.Split(ports[0], "/")[0])
 			if err != nil {
