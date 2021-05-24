@@ -55,6 +55,22 @@ func (ei *EnvInfo) GetComponentPorts() ([]string, error) {
 	return ei.getPorts("")
 }
 
+func (ei *EnvInfo) completeNoPortSpecified(url *localConfigProvider.LocalURL, portsOf string, ports []string) (err error) {
+	if url.Port == -1 {
+		if len(ports) > 1 {
+			return fmt.Errorf("port for the %s is required as it exposes %d ports: %s", portsOf, len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
+		} else if len(ports) <= 0 {
+			return fmt.Errorf("no port is exposed by the %s, please specify a port", portsOf)
+		} else {
+			url.Port, err = strconv.Atoi(strings.Split(ports[0], "/")[0])
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // CompleteURL completes the given URL with default values
 func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	if url.Kind == "" {
@@ -85,13 +101,19 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 		if err != nil {
 			return err
 		}
-		portsOf = fmt.Sprintf("component %s", ei.GetName())
+		err = ei.completeNoPortSpecified(url, fmt.Sprintf("component %s", ei.GetName()), ports)
+		if err != nil {
+			return err
+		}
 	} else {
 		ports, err = ei.GetContainerPorts(url.Container)
 		if err != nil {
 			return err
 		}
-		portsOf = fmt.Sprintf("container %s", url.Container)
+		err = ei.completeNoPortSpecified(url, fmt.Sprintf("container %s", ei.GetName()), ports)
+		if err != nil {
+			return err
+		}
 	}
 	if url.Port == -1 {
 		if len(ports) > 1 {
