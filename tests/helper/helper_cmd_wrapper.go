@@ -64,7 +64,7 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 	} else if cw.maxRetry > 0 {
 		cw.session.Wait()
 		// if exit code is 0 which means the program succeeded and hence we retry
-		if cw.pass == false {
+		if !cw.pass {
 			if cw.session.ExitCode() == 0 {
 				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
 				cw.maxRetry = cw.maxRetry - 1
