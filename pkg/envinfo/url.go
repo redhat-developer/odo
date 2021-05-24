@@ -110,7 +110,7 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 		if err != nil {
 			return err
 		}
-		err = ei.checkValidPort(url, fmt.Sprintf("container %s", ei.GetName()), ports)
+		err = ei.checkValidPort(url, fmt.Sprintf("container %s", url.Container), ports)
 		if err != nil {
 			return err
 		}
