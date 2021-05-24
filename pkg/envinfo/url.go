@@ -55,7 +55,8 @@ func (ei *EnvInfo) GetComponentPorts() ([]string, error) {
 	return ei.getPorts("")
 }
 
-func (ei *EnvInfo) completeNoPortSpecified(url *localConfigProvider.LocalURL, portsOf string, ports []string) (err error) {
+//checkValidPort checks and retrieves valid port from devfile when no port is specified
+func (ei *EnvInfo) checkValidPort(url *localConfigProvider.LocalURL, portsOf string, ports []string) (err error) {
 	if url.Port == -1 {
 		if len(ports) > 1 {
 			return fmt.Errorf("port for the %s is required as it exposes %d ports: %s", portsOf, len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
@@ -94,14 +95,13 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 
 	// get the port if not provided
 	var ports []string
-	var portsOf string
 	var err error
 	if url.Container == "" {
 		ports, err = ei.GetComponentPorts()
 		if err != nil {
 			return err
 		}
-		err = ei.completeNoPortSpecified(url, fmt.Sprintf("component %s", ei.GetName()), ports)
+		err = ei.checkValidPort(url, fmt.Sprintf("component %s", ei.GetName()), ports)
 		if err != nil {
 			return err
 		}
@@ -110,21 +110,9 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 		if err != nil {
 			return err
 		}
-		err = ei.completeNoPortSpecified(url, fmt.Sprintf("container %s", ei.GetName()), ports)
+		err = ei.checkValidPort(url, fmt.Sprintf("container %s", ei.GetName()), ports)
 		if err != nil {
 			return err
-		}
-	}
-	if url.Port == -1 {
-		if len(ports) > 1 {
-			return fmt.Errorf("port for the %s is required as it exposes %d ports: %s", portsOf, len(ports), strings.Trim(strings.Replace(fmt.Sprint(ports), " ", ",", -1), "[]"))
-		} else if len(ports) <= 0 {
-			return fmt.Errorf("no port is exposed by the %s, please specify a port", portsOf)
-		} else {
-			url.Port, err = strconv.Atoi(strings.Split(ports[0], "/")[0])
-			if err != nil {
-				return err
-			}
 		}
 	}
 
