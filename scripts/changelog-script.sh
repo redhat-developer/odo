@@ -1,16 +1,8 @@
 #!/bin/bash
 
-# This script uses github_changelog_generator to generate a changelog
-# by using the kind labels that we use..
-# 
-# Then outputs it to STDOUT. This helps generate a changelog when doing a release.
-
-# Get the variables we're going to use..
-#if [ -z "$GITHUB_TOKEN" ]
-#then
-#  echo -e "GITHUB_TOKEN environment variable is blank..\nGet your GitHub token and then:\nexport GITHUB_TOKEN=yourtoken"
-#  exit 1
-#fi
+# This script generates the baseline release notes without the changelog
+# User must copy contents of `Changelog.md` into appropriate location in
+# release notes
 
 if [ -z "$1" ]  || [ -z "$2" ]
 then
