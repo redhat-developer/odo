@@ -69,17 +69,15 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
 				cw.maxRetry = cw.maxRetry - 1
 				cw.Runner()
-			} else {
-				return cw
 			}
+			return cw
 		} else {
 			if cw.session.ExitCode() != 0 {
 				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
 				cw.maxRetry = cw.maxRetry - 1
 				cw.Runner()
-			} else {
-				return cw
 			}
+			return cw
 		}
 	}
 	return cw
@@ -106,16 +104,19 @@ func (cw *CmdWrapper) ShouldFail() *CmdWrapper {
 	return cw
 }
 
+func (cw *CmdWrapper) ShouldRun() *CmdWrapper {
+	cw.Runner()
+	return cw
+}
+
 func (cw *CmdWrapper) WithTerminate(timeoutAfter time.Duration, stop chan bool) *CmdWrapper {
 	cw.timeout = time.Duration(timeoutAfter) * time.Second
 	cw.stopChan = stop
-	cw.Runner()
 	return cw
 }
 
 func (cw *CmdWrapper) WithTimeout(timeoutAfter time.Duration) *CmdWrapper {
 	cw.timeout = time.Duration(timeoutAfter) * time.Second
-	cw.Runner()
 	return cw
 }
 
