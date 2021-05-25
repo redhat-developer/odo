@@ -60,10 +60,9 @@ make test-operator-hub || error=true
 #remove comments from test-integration & test-integration-devfile once #4606 https://github.com/openshift/odo/issues/4606 is resolved 
 #make test-integration || error=true
 #make test-integration-devfile || error=true 
-make test-cmd-devfile-catalog
-make test-cmd-devfile-create
-make test-cmd-devfile-exec
-make test-cmd-devfile-registry
+make test-cmd-devfile-catalog || error=true
+make test-cmd-devfile-exec || error=true
+make test-cmd-devfile-registry || error=true
 make test-cmd-login-logout || error=true
 make test-cmd-project || error=true
 
