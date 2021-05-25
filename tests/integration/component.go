@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -8,6 +9,16 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/openshift/odo/pkg/occlient"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+
+	"github.com/devfile/library/pkg/devfile/generator"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/kclient"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -161,11 +172,48 @@ func componentTests(args ...string) {
 		})
 		Context("when components are not created/managed by odo", func() {
 			var appName, compName string
+			var kc *kclient.Client
+			var c *occlient.Client
+			var err error
+			var labels map[string]string
 			JustBeforeEach(func() {
+				compName = "nodejs-ex"
+				application := "sample-app"
+				appName = application
+				labels = map[string]string{
+					applabels.ApplicationLabel:         application,
+					applabels.App:                      application,
+					applabels.ManagerVersion:           "v4.7",
+					applabels.ManagedBy:                "console",
+					"component":                        compName,
+					componentlabels.ComponentTypeLabel: "smh",
+				}
+				selectorLabels := map[string]string{
+					"component": compName,
+				}
+				objectMeta := generator.GetObjectMeta(compName, commonVar.Project, labels, nil)
+				deployParams := generator.DeploymentParams{
+					TypeMeta:          generator.GetTypeMeta(kclient.DeploymentKind, kclient.DeploymentAPIVersion),
+					ObjectMeta:        objectMeta,
+					PodSelectorLabels: selectorLabels,
+				}
+
+				deploy := generator.GetDeployment(deployParams)
+				c, err = occlient.New()
+				kc = c.GetKubeClient()
+				if err != nil {
+					return
+				}
+				_, err = kc.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), deploy, metav1.CreateOptions{FieldManager: "console"})
+				if err != nil {
+					return
+				}
 				//CreateNonOdoComponent
 			})
 			JustAfterEach(func() {
+
 				//DeleteNonOdoComponent
+				kc.DeleteDeployment(labels)
 			})
 			It("should list the component with --app flag", func() {
 				output := helper.CmdShouldPass("odo", "list", "--app", appName)
