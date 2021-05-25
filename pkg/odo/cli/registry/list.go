@@ -3,6 +3,7 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
+	util2 "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"io"
 	"os"
 	"text/tabwriter"
@@ -32,11 +33,14 @@ var (
 
 // ListOptions encapsulates the options for "odo registry list" command
 type ListOptions struct {
+	printGitRegistryDeprecationWarning bool
 }
 
 // NewListOptions creates a new ListOptions instance
 func NewListOptions() *ListOptions {
-	return &ListOptions{}
+	return &ListOptions{
+		printGitRegistryDeprecationWarning: false,
+	}
 }
 
 // Complete completes ListOptions after they've been created
@@ -50,7 +54,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry list" command
-func (o *ListOptions) Run() (err error) {
+func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	cfg, err := preference.New()
 	if err != nil {
 		util.LogErrorAndExit(err, "")
@@ -70,6 +74,9 @@ func (o *ListOptions) Run() (err error) {
 	fmt.Fprintln(w, "NAME", "\t", "URL", "\t", "SECURE")
 	o.printRegistryList(w, registryList)
 	w.Flush()
+	if o.printGitRegistryDeprecationWarning {
+		util2.PrintGitRegistryDeprecationWarning()
+	}
 	return
 }
 
@@ -87,6 +94,9 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 			secure = "Yes"
 		}
 		fmt.Fprintln(w, registry.Name, "\t", registry.URL, "\t", secure)
+		if util2.IsGitBasedRegistry(registry.URL) {
+			o.printGitRegistryDeprecationWarning = true
+		}
 	}
 }
 

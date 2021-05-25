@@ -1,10 +1,12 @@
 package occlient
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	appsv1 "github.com/openshift/api/apps/v1"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -142,7 +144,7 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 			return err
 		}
 
-		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
+		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{FieldManager: kclient.FieldManager})
 		return updateErr
 	})
 	if retryErr != nil {

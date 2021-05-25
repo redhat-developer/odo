@@ -174,19 +174,34 @@ func (mr *MockLocalConfigProviderMockRecorder) DeleteURL(name interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).DeleteURL), name)
 }
 
-// GetPorts mocks base method
-func (m *MockLocalConfigProvider) GetPorts() ([]string, error) {
+// GetContainerPorts mocks base method
+func (m *MockLocalConfigProvider) GetContainerPorts(container string) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPorts")
+	ret := m.ctrl.Call(m, "GetContainerPorts", container)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPorts indicates an expected call of GetPorts
-func (mr *MockLocalConfigProviderMockRecorder) GetPorts() *gomock.Call {
+// GetContainerPorts indicates an expected call of GetContainerPorts
+func (mr *MockLocalConfigProviderMockRecorder) GetContainerPorts(container interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPorts", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetPorts))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainerPorts", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetContainerPorts), container)
+}
+
+// GetComponentPorts mocks base method
+func (m *MockLocalConfigProvider) GetComponentPorts() ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetComponentPorts")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetComponentPorts indicates an expected call of GetComponentPorts
+func (mr *MockLocalConfigProviderMockRecorder) GetComponentPorts() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponentPorts", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetComponentPorts))
 }
 
 // ListURLs mocks base method

@@ -1,6 +1,7 @@
 package url
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"reflect"
@@ -101,14 +102,14 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		ownerReference := generator.GetOwnerReference(deployment)
 		if parameters.secureURL {
 			if len(parameters.secretName) != 0 {
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, metav1.GetOptions{})
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(context.TODO(), parameters.secretName, metav1.GetOptions{})
 				if err != nil {
 					return "", errors.Wrap(err, "unable to get the provided secret: "+parameters.secretName)
 				}
 			}
 			if len(parameters.secretName) == 0 {
 				defaultTLSSecretName := parameters.componentName + "-tlssecret"
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(context.TODO(), defaultTLSSecretName, metav1.GetOptions{})
 				// create tls secret if it does not exist
 				if kerrors.IsNotFound(err) {
 					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(parameters.host)

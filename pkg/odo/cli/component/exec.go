@@ -83,7 +83,7 @@ func (eo *ExecOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (eo *ExecOptions) Run() (err error) {
+func (eo *ExecOptions) Run(cmd *cobra.Command) (err error) {
 	return eo.DevfileComponentExec(eo.command)
 }
 

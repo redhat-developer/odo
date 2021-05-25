@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +18,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -253,7 +253,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
 		PodChanged:      podChanged,
+		Files:           common.GetSyncFilesFromAttributes(pushDevfileCommands),
 	}
+
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
@@ -410,29 +412,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		return err
 	}
 
-	// Get ServiceBinding Secret name for each Link
-	var sbSecrets []string
-	for _, link := range ei.GetLink() {
-		sb, err := a.Client.GetKubeClient().GetDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource, link.Name)
-		if err != nil {
-			return err
-		}
-		secret, found, err := unstructured.NestedString(sb.Object, "status", "secret")
-		if err != nil {
-			return err
-		}
-		if !found {
-			return fmt.Errorf("unable to find secret in ServiceBinding %s", link.Name)
-		}
-		sbSecrets = append(sbSecrets, secret)
-	}
-
-	// set EnvFrom to the container that's supposed to have link to the Operator backed service
-	containers, err = utils.UpdateContainerWithEnvFromSecrets(containers, a.Devfile, a.devfileRunCmd, ei, sbSecrets)
-	if err != nil {
-		return err
-	}
-
 	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
 	initContainers, err := utils.GetPreStartInitContainers(a.Devfile, containers)
@@ -500,16 +479,19 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 	klog.V(2).Infof("Creating deployment %v", deployment.Spec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
-
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
+		if a.Client.GetKubeClient().IsSSASupported() {
+			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		} else {
+			deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
+		}
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
-		oldSvc, err := a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
+		oldSvc, err := a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Get(context.TODO(), componentName, metav1.GetOptions{})
 		ownerReference := generator.GetOwnerReference(deployment)
 		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 		if err != nil {
@@ -531,14 +513,19 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 				}
 				klog.V(2).Infof("Successfully update Service for component %s", componentName)
 			} else {
-				err = a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
+				err = a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Delete(context.TODO(), componentName, metav1.DeleteOptions{})
 				if err != nil {
 					return err
 				}
 			}
 		}
 	} else {
-		deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
+		if a.Client.GetKubeClient().IsSSASupported() {
+			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		} else {
+			deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
+		}
+
 		if err != nil {
 			return err
 		}
@@ -576,8 +563,10 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 }
 
 // Delete deletes the component
-func (a Adapter) Delete(labels map[string]string, show bool) error {
-
+func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
+	if labels == nil {
+		return fmt.Errorf("cannot delete with labels being nil")
+	}
 	log.Infof("\nGathering information for component %s", a.ComponentName)
 	podSpinner := log.Spinner("Checking status for component")
 	defer podSpinner.End(false)
@@ -616,7 +605,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 	spinner := log.Spinner("Deleting Kubernetes resources for component")
 	defer spinner.End(false)
 
-	err = a.Client.GetKubeClient().DeleteDeployment(labels)
+	err = a.Client.GetKubeClient().Delete(labels, wait)
 	if err != nil {
 		return err
 	}

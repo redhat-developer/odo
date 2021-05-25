@@ -8,7 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 // DisplayServices displays the specified services

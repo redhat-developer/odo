@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -78,7 +79,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo storage create command
-func (o *CreateOptions) Run() (err error) {
+func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	err = o.Context.LocalConfigProvider.CreateStorage(o.storage)
 	if err != nil {
 		return err

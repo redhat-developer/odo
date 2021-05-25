@@ -10,6 +10,13 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+const (
+	ResourceTypeDeployment = "deployment"
+	ResourceTypePVC        = "pvc"
+	ResourceTypeIngress    = "ingress"
+	ResourceTypeService    = "service"
+)
+
 type KubectlRunner struct {
 	// path to kubectl binary
 	path string
@@ -202,4 +209,11 @@ func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
 // and checks if the given resource type has been deleted on the cluster or is in the terminating state
 func (kubectl KubectlRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(kubectl.path, resourceType, namespace, timeoutMinutes)
+}
+
+func (kubectl KubectlRunner) VerifyResourceDeleted(ri ResourceInfo) {
+	session := CmdRunner(kubectl.path, "get", ri.ResourceType, "--namespace", ri.Namespace)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	Expect(output).NotTo(ContainSubstring(ri.ResourceName))
 }

@@ -57,31 +57,31 @@ Devfiles describe your development environment link. link:https://odo.dev/docs/d
 | Java
 | java-maven
 | Upstream Maven and OpenJDK 11
-| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-maven/devfile.yaml[java-maven/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/master/stacks/java-maven/devfile.yaml[java-maven/devfile.yaml]
 | amd64
 
 | Java
 | java-openliberty
 | Open Liberty microservice in Java      
-| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-openliberty/devfile.yaml[java-openliberty/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/master/stacks/java-openliberty/devfile.yaml[java-openliberty/devfile.yaml]
 | amd64
 
 | Java
 | java-quarkus
 | Upstream Quarkus with Java+GraalVM
-| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-quarkus/devfile.yaml[java-quarkus/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/master/stacks/java-quarkus/devfile.yaml[java-quarkus/devfile.yaml]
 | amd64
 
 | Java
 | java-springboot
 | Spring Boot® using Java 
-| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/java-springboot/devfile.yaml[java-springboot/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/master/stacks/java-springboot/devfile.yaml[java-springboot/devfile.yaml]
 | amd64
 
 | Node.JS
 | nodejs
 | Stack with NodeJS 12
-| link:https://github.com/odo-devfiles/registry/blob/master/devfiles/nodejs/devfile.yaml[nodejs/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/master/stacks/nodejs/devfile.yaml[nodejs/devfile.yaml]
 | amd64, s390x, ppc64le
 
 |===
@@ -90,7 +90,7 @@ Devfiles describe your development environment link. link:https://odo.dev/docs/d
 
 [NOTE]
 ====
-The list of available Devfiles is sourced from the official link:https://github.com/odo-devfiles/registry[odo registry] as well as any other registries added via `odo registry add`.
+The list of available Devfiles is sourced from the official link:https://github.com/devfile/registry[devfile registry] as well as any other registries added via `odo registry add`.
 ====
 
 To list the available Devfiles:

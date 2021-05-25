@@ -48,7 +48,7 @@ func (o *UnsetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run() (err error) {
+func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
 
 	cfg, err := preference.New()
 

@@ -13,7 +13,7 @@ func RelativizeClientConfigPaths(cfg *clientcmdapi.Config, base string) (err err
 			if cluster.CertificateAuthority, err = clientcmdapi.MakeAbs(cluster.CertificateAuthority, ""); err != nil {
 				return err
 			}
-			if cluster.CertificateAuthority, err = MakeRelative(cluster.CertificateAuthority, base); err != nil {
+			if cluster.CertificateAuthority, err = makeRelative(cluster.CertificateAuthority, base); err != nil {
 				return err
 			}
 			cfg.Clusters[k] = cluster
@@ -24,7 +24,7 @@ func RelativizeClientConfigPaths(cfg *clientcmdapi.Config, base string) (err err
 			if authInfo.ClientCertificate, err = clientcmdapi.MakeAbs(authInfo.ClientCertificate, ""); err != nil {
 				return err
 			}
-			if authInfo.ClientCertificate, err = MakeRelative(authInfo.ClientCertificate, base); err != nil {
+			if authInfo.ClientCertificate, err = makeRelative(authInfo.ClientCertificate, base); err != nil {
 				return err
 			}
 		}
@@ -32,7 +32,7 @@ func RelativizeClientConfigPaths(cfg *clientcmdapi.Config, base string) (err err
 			if authInfo.ClientKey, err = clientcmdapi.MakeAbs(authInfo.ClientKey, ""); err != nil {
 				return err
 			}
-			if authInfo.ClientKey, err = MakeRelative(authInfo.ClientKey, base); err != nil {
+			if authInfo.ClientKey, err = makeRelative(authInfo.ClientKey, base); err != nil {
 				return err
 			}
 		}
@@ -41,8 +41,7 @@ func RelativizeClientConfigPaths(cfg *clientcmdapi.Config, base string) (err err
 	return nil
 }
 
-// TODO should use library-go's version or even better upstream above
-func MakeRelative(path, base string) (string, error) {
+func makeRelative(path, base string) (string, error) {
 	if len(path) > 0 {
 		rel, err := filepath.Rel(base, path)
 		if err != nil {

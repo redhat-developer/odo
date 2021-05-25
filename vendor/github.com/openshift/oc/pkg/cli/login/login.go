@@ -17,7 +17,7 @@ import (
 	"k8s.io/kubectl/pkg/util/term"
 
 	"github.com/openshift/oc/pkg/helpers/flagtypes"
-	kubeconfiglib "github.com/openshift/oc/pkg/helpers/kubeconfig"
+	"github.com/openshift/oc/pkg/helpers/tokencmd"
 )
 
 var (
@@ -31,36 +31,39 @@ var (
 
 		The information required to login -- like username and password, a session token, or
 		the server details -- can be provided through flags. If not provided, the command will
-		prompt for user input as needed.`)
+		prompt for user input as needed.
+	`)
 
 	loginExample = templates.Examples(`
 		# Log in interactively
-	  %[1]s login
+		oc login --username=myuser
 
-	  # Log in to the given server with the given certificate authority file
-	  %[1]s login localhost:8443 --certificate-authority=/path/to/cert.crt
+		# Log in to the given server with the given certificate authority file
+		oc login localhost:8443 --certificate-authority=/path/to/cert.crt
 
-	  # Log in to the given server with the given credentials (will not prompt interactively)
-	  %[1]s login localhost:8443 --username=myuser --password=mypass`)
+		# Log in to the given server with the given credentials (will not prompt interactively)
+		oc login localhost:8443 --username=myuser --password=mypass
+	`)
 )
 
 // NewCmdLogin implements the OpenShift cli login command
-func NewCmdLogin(fullName string, f kcmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdLogin(f kcmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := NewLoginOptions(streams)
 	cmds := &cobra.Command{
 		Use:     "login [URL]",
 		Short:   "Log in to a server",
 		Long:    loginLong,
-		Example: fmt.Sprintf(loginExample, fullName),
+		Example: loginExample,
 		Run: func(cmd *cobra.Command, args []string) {
-			kcmdutil.CheckErr(o.Complete(f, cmd, args, fullName))
+			kcmdutil.CheckErr(o.Complete(f, cmd, args))
 			kcmdutil.CheckErr(o.Validate(cmd, kcmdutil.GetFlagString(cmd, "server"), args))
 
 			if err := o.Run(); kapierrors.IsUnauthorized(err) {
-				fmt.Fprintln(streams.Out, "Login failed (401 Unauthorized)")
-				fmt.Fprintln(streams.Out, "Verify you have provided correct credentials.")
-
 				if err, isStatusErr := err.(*kapierrors.StatusError); isStatusErr {
+					if err.Status().Message != tokencmd.BasicAuthNoUsernameMessage {
+						fmt.Fprintln(streams.Out, "Login failed (401 Unauthorized)")
+						fmt.Fprintln(streams.Out, "Verify you have provided correct credentials.")
+					}
 					if details := err.Status().Details; details != nil {
 						for _, cause := range details.Causes {
 							fmt.Fprintln(streams.Out, cause.Message)
@@ -77,13 +80,13 @@ func NewCmdLogin(fullName string, f kcmdutil.Factory, streams genericclioptions.
 	}
 
 	// Login is the only command that can negotiate a session token against the auth server using basic auth
-	cmds.Flags().StringVarP(&o.Username, "username", "u", o.Username, "Username, will prompt if not provided")
-	cmds.Flags().StringVarP(&o.Password, "password", "p", o.Password, "Password, will prompt if not provided")
+	cmds.Flags().StringVarP(&o.Username, "username", "u", o.Username, "Username for server")
+	cmds.Flags().StringVarP(&o.Password, "password", "p", o.Password, "Password for server")
 
 	return cmds
 }
 
-func (o *LoginOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []string, commandName string) error {
+func (o *LoginOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []string) error {
 	kubeconfig, err := f.ToRawKubeConfigLoader().RawConfig()
 	o.StartingKubeConfig = &kubeconfig
 	if err != nil {
@@ -100,11 +103,6 @@ func (o *LoginOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []s
 		return err
 	}
 	o.RequestTimeout = timeout
-
-	o.CommandName = commandName
-	if o.CommandName == "" {
-		o.CommandName = "oc"
-	}
 
 	parsedDefaultClusterURL, err := url.Parse(defaultClusterURL)
 	if err != nil {
@@ -141,7 +139,9 @@ func (o *LoginOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []s
 
 	o.DefaultNamespace, _, _ = f.ToRawKubeConfigLoader().Namespace()
 
-	o.PathOptions = kubeconfiglib.NewPathOptions(cmd)
+	o.PathOptions = kclientcmd.NewDefaultPathOptions()
+	// we need to set explicit path if one was specified, since NewDefaultPathOptions doesn't do it for us
+	o.PathOptions.LoadingRules.ExplicitPath = kcmdutil.GetFlagString(cmd, kclientcmd.RecommendedConfigPathFlag)
 
 	return nil
 }
@@ -182,7 +182,7 @@ func (o LoginOptions) Run() error {
 	}
 
 	if newFileCreated {
-		fmt.Fprintf(o.Out, "Welcome! See '%s help' to get started.\n", o.CommandName)
+		fmt.Fprintf(o.Out, "Welcome! See 'oc help' to get started.\n")
 	}
 	return nil
 }

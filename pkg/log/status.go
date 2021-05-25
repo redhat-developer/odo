@@ -214,8 +214,8 @@ func (s *Status) End(success bool) {
 
 // Namef will output the name of the component / application / project in a *bolded* manner
 func Namef(format string, a ...interface{}) {
-	bold := color.New(color.Bold).SprintFunc()
 	if !IsJSON() {
+		bold := color.New(color.Bold).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
 	}
 }
@@ -229,24 +229,24 @@ func Progressf(format string, a ...interface{}) {
 
 // Success will output in an appropriate "success" manner
 func Success(a ...interface{}) {
-	green := color.New(color.FgGreen).SprintFunc()
 	if !IsJSON() {
+		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s%s%s%s", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintln(a...))
 	}
 }
 
 // Successf will output in an appropriate "progress" manner
 func Successf(format string, a ...interface{}) {
-	green := color.New(color.FgGreen).SprintFunc()
 	if !IsJSON() {
+		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s%s%s%s\n", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintf(format, a...))
 	}
 }
 
 // Warningf will output in an appropriate "warning" manner
 func Warningf(format string, a ...interface{}) {
-	yellow := color.New(color.FgYellow).SprintFunc()
 	if !IsJSON() {
+		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 	}
 }
@@ -257,42 +257,50 @@ func Swarningf(format string, a ...interface{}) string {
 	return fmt.Sprintf(" %s%s%s", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
+func Deprecate(what, nextAction string) {
+	if !IsJSON() {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		msg1 := fmt.Sprintf("%s%s%s%s%s", yellow(getWarningString()), suffixSpacing, yellow(fmt.Sprintf("%s Deprecated", what)), suffixSpacing, nextAction)
+		fmt.Fprintf(GetStderr(), " %s\n", msg1)
+	}
+}
+
 // Experimental will output in an appropriate "progress" manner
 func Experimental(a ...interface{}) {
-	yellow := color.New(color.FgYellow).SprintFunc()
 	if !IsJSON() {
+		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s\n", yellow(fmt.Sprintln(a...)))
 	}
 }
 
 // Warning will output in an appropriate "progress" manner
 func Warning(a ...interface{}) {
-	yellow := color.New(color.FgYellow).SprintFunc()
 	if !IsJSON() {
+		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
 	}
 }
 
 // Errorf will output in an appropriate "progress" manner
 func Errorf(format string, a ...interface{}) {
-	red := color.New(color.FgRed).SprintFunc()
 	if !IsJSON() {
+		red := color.New(color.FgRed).SprintFunc()
 		fmt.Fprintf(GetStderr(), " %s%s%s\n", red(getErrString()), suffixSpacing, fmt.Sprintf(format, a...))
 	}
 }
 
 // Error will output in an appropriate "progress" manner
 func Error(a ...interface{}) {
-	red := color.New(color.FgRed).SprintFunc()
 	if !IsJSON() {
+		red := color.New(color.FgRed).SprintFunc()
 		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
 	}
 }
 
 // Italic will simply print out information on a new italic line
 func Italic(a ...interface{}) {
-	italic := color.New(color.Italic).SprintFunc()
 	if !IsJSON() {
+		italic := color.New(color.Italic).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s", italic(fmt.Sprintln(a...)))
 	}
 }
@@ -300,8 +308,8 @@ func Italic(a ...interface{}) {
 // Italicf will simply print out information on a new italic line
 // this is **normally** used as a way to describe what's next within odo.
 func Italicf(format string, a ...interface{}) {
-	italic := color.New(color.Italic).SprintFunc()
 	if !IsJSON() {
+		italic := color.New(color.Italic).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s\n", italic(fmt.Sprintf(format, a...)))
 	}
 }
@@ -309,8 +317,8 @@ func Italicf(format string, a ...interface{}) {
 // Info will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Info(a ...interface{}) {
-	bold := color.New(color.Bold).SprintFunc()
 	if !IsJSON() {
+		bold := color.New(color.Bold).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintln(a...)))
 	}
 }
@@ -318,8 +326,8 @@ func Info(a ...interface{}) {
 // Infof will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Infof(format string, a ...interface{}) {
-	bold := color.New(color.Bold).SprintFunc()
 	if !IsJSON() {
+		bold := color.New(color.Bold).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
 	}
 }
@@ -328,16 +336,16 @@ func Infof(format string, a ...interface{}) {
 // this is intended to be used with `odo describe` and other outputs that list
 // a lot of information
 func Describef(title string, format string, a ...interface{}) {
-	bold := color.New(color.Bold).SprintFunc()
 	if !IsJSON() {
+		bold := color.New(color.Bold).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s%s\n", bold(title), fmt.Sprintf(format, a...))
 	}
 }
 
 // Askf will print out information, but in an "Ask" way (without newline)
 func Askf(format string, a ...interface{}) {
-	bold := color.New(color.Bold).SprintFunc()
 	if !IsJSON() {
+		bold := color.New(color.Bold).SprintFunc()
 		fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintf(format, a...)))
 	}
 }

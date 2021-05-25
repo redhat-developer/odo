@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +19,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 )
+
+func boolPtr(b bool) *bool {
+	return &b
+}
 
 // IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
 func (c *Client) IsDeploymentConfigSupported() (bool, error) {
@@ -30,7 +36,7 @@ func (c *Client) IsDeploymentConfigSupported() (bool, error) {
 // the Deployment Config name
 func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
 	klog.V(3).Infof("Getting DeploymentConfig: %s", name)
-	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
+	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +73,7 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 	}
 
 	dc.Annotations = annotations
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
 	}
@@ -94,7 +100,7 @@ func (c *Client) patchDC(dcName string, dcPatchProvider dcPatchProvider) error {
 		}
 
 		// patch the DeploymentConfig with the secret
-		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(dcName, types.JSONPatchType, []byte(patch))
+		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(context.TODO(), dcName, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: kclient.FieldManager, Force: boolPtr(true)})
 		if err != nil {
 			return errors.Wrapf(err, "DeploymentConfig not patched %s", dc.Name)
 		}
@@ -112,11 +118,11 @@ func (c *Client) ListDeploymentConfigs(selector string) ([]appsv1.DeploymentConf
 	var err error
 
 	if selector != "" {
-		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
+		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: selector,
 		})
 	} else {
-		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
+		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(context.TODO(), metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
 		})
 	}
@@ -135,7 +141,7 @@ func (c *Client) ListDeploymentConfigs(selector string) ([]appsv1.DeploymentConf
 //	Updated DC and errors if any
 func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.Duration, waitCond func(*appsv1.DeploymentConfig, int64) bool) (*appsv1.DeploymentConfig, error) {
 
-	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{
+	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(context.TODO(), metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
 	})
 	defer w.Stop()
@@ -180,7 +186,7 @@ func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.D
 func (c *Client) GetDeploymentConfigLabelValues(label string, selector string) ([]string, error) {
 
 	// List DeploymentConfig according to selectors
-	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
@@ -223,7 +229,7 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 		Resource("deploymentconfigs").
 		SubResource("log").
 		VersionedParams(&deploymentLogOptions, appsschema.ParameterCodec).
-		Stream()
+		Stream(context.TODO())
 	if err != nil {
 		return errors.Wrapf(err, "unable get deploymentconfigs log %s", deploymentConfigName)
 	}
@@ -248,7 +254,7 @@ func (c *Client) StartDeployment(deploymentName string) (string, error) {
 		Latest: true,
 		Force:  true,
 	}
-	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(deploymentName, &deploymentRequest)
+	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(context.TODO(), deploymentName, &deploymentRequest, metav1.CreateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate Deployment for %s", deploymentName)
 	}
@@ -297,7 +303,7 @@ func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar,
 
 	dc.Spec.Template.Spec.Containers[0].Env = append(dc.Spec.Template.Spec.Containers[0].Env, envs...)
 
-	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
+	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(context.TODO(), dc, metav1.UpdateOptions{FieldManager: kclient.FieldManager})
 	if err != nil {
 		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
 	}

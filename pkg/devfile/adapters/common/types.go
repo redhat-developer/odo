@@ -39,6 +39,7 @@ type SyncParameters struct {
 	CompInfo        ComponentInfo
 	PodChanged      bool
 	ComponentExists bool
+	Files           map[string]string
 }
 
 // ComponentInfo is a struct that holds information about a component i.e.; pod name, container name, and source mount (if applicable)
