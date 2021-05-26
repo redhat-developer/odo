@@ -150,6 +150,10 @@ At this stage the user either has access to the `openAPIV3Schema` or `ClusterSer
 
 ### User has access to openAPIV3Schema
 
+We would use a json schema validator to validate the user provided params with the schema.
+	
+A similar approach is followed when validating devfile against devfile schema and we would use the same package https://github.com/santhosh-tekuri/jsonschema for validation for consistency.
+
 <details>
 <summary> Below is an extract of an example `openAPIV3Schema` which would be used for explaination </summary>
 
@@ -374,6 +378,9 @@ The approach is to go through the keys provided by the user against the ones pre
 ## "odo catalog describe service"
 
 ### Approach where user has access to the CustomResourceDefinition
+`odo catalog service describe strimzi-cluster-operator.v0.21.1/Kafka -o json` would show the whole `openAPIV3Schema` as an output.
+
+For human readable output -
 TODO
 
 ### Approach where user only has access to ClusterServiceVersion 
