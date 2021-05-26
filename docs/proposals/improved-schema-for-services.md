@@ -1,7 +1,6 @@
 
 # Improved schema for operator backed services
 
-# Abstract
 This proposal is about improving the experience for a user of the operator backed services. Currently a user doesn't know exaustively which fields are available in a CR as we depend on optional metadata present in CRDs, to improve this we are considering using the metadata available from the cluster about the CRDs.
 Getting that metadata from the cluster is challenging because a normal cluster user ( plain vanilla ) doesn't have access to that metadata so we are gonna follow a 3 tiered approach
 
@@ -149,7 +148,7 @@ this would yield into a map that looks like this
 
 At this stage the user either has access to the `openAPIV3Schema` or `ClusterServiceVersion` and also the user has provided the service parameters they want to set as well.
 
-### We have access to openAPIV3Schema
+### User has access to openAPIV3Schema
 
 <details open>
 <summary> Below is an extract of an example `openAPIV3Schema` which would be used for explaination </summary>
@@ -364,9 +363,9 @@ Note - removed `description` fields to make the sample concise.
 
 
 
-### We have access to ClusterServiceVersion
+### User has access to ClusterServiceVersion
 
-The approach is to just go through the keys provided by the user against the ones present in the ClusterServiceVersion's CRDDescription. if the user has provided parameters which aren't present in the Description ( SpecDescriptors ) then we show an error with all the parameters that are incorrectly provided.
+The approach is to go through the keys provided by the user against the ones present in the ClusterServiceVersion's CRDDescription. if the user has provided parameters which aren't present in the Description ( SpecDescriptors ) then we show an error with all the parameters that are incorrectly provided.
 
 ## "odo catalog list services"
 
