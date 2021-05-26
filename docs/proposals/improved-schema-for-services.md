@@ -25,9 +25,10 @@ Below is the step wise plan for implementing this feature -
 
 #### Admin Access/Access to CRD API path
 First we would consider the scenerio where the user has admin access or privileges to access the CRD API to the cluster.
-Cluster provides an api to get metadata for any CRD needed. The url is of `<cluster-url>/api/kubernetes/apis/apiextensions.k8s.io/v1/customresourcedefinitions`. 
+Cluster provides an api to get metadata for any CRD needed. URL - `<cluster-url>/api/kubernetes/apis/apiextensions.k8s.io/v1/customresourcedefinitions`. 
 
-<script src="https://gist.github.com/girishramnani/cbb4400e463efe89c13f1386e0788793.js"></script>
+Sample output - 
+https://gist.github.com/girishramnani/cbb4400e463efe89c13f1386e0788793
 
 We care about the `openAPIV3Schema` as that would be used to build the CRD struct. 
 
