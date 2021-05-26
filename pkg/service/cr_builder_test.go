@@ -38,8 +38,32 @@ func MockCRDescriptionOne() *olm.CRDDescription {
 	}
 }
 
+// MockCRDescriptionTwo a mock description
 func MockCRDescriptionTwo() *olm.CRDDescription {
-	return &olm.CRDDescription{}
+	return &olm.CRDDescription{
+		Name:        "pgclusters.crunchydata.com",
+		Version:     "v1",
+		Kind:        "Pgcluster",
+		DisplayName: "Postgres Primary Cluster Member",
+		Description: "Represents a Postgres primary cluster member",
+		Resources: []olm.APIResourceReference{
+			{Kind: "Pgcluster", Version: "v1"},
+			{Kind: "ConfigMap", Version: "v1"},
+			{Kind: "Deployment", Version: "v1"},
+			{Kind: "Job", Version: "v1"},
+			{Kind: "Pod", Version: "v1"},
+			{Kind: "ReplicaSet", Version: "v1"},
+			{Kind: "Secret", Version: "v1"},
+			{Kind: "Service", Version: "v1"},
+			{Kind: "PersistentVolumeClaim", Version: "v1"},
+		},
+		SpecDescriptors: []olm.SpecDescriptor{
+			{
+				Path:        "ccpimage",
+				DisplayName: "PostgreSQL Image",
+			},
+		},
+	}
 }
 func TestCRBuilderMap(t *testing.T) {
 
