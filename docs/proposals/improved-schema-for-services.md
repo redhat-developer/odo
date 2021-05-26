@@ -32,10 +32,11 @@ https://gist.github.com/girishramnani/cbb4400e463efe89c13f1386e0788793
 
 We care about the `openAPIV3Schema` as that would be used to build the CRD struct. 
 
-
 #### Kuberenetes cluster Swagger has the schema
 
-TODO
+If the User doesn't have CRD access then we fetch the cluster's `swagger.json` from the endpoint `<cluster-url>/api/kubernetes/openapi/v2`. This is a very large document as it holds all the definitions present on the cluster.
+
+So this needs to be cached and refreshed whenever a new operator is installed.
 
 
 #### Fetch ClusterServiceVersion to generate the information
@@ -364,7 +365,8 @@ Note - removed `description` fields to make the sample concise.
 
 
 #### We have access to ClusterServiceVersion
-TODO
+
+The approach is to just go through the keys provided by the user against the ones present in the ClusterServiceVersion's CRDDescription. if the user has provided parameters which aren't present in the Description ( SpecDescriptors ) then we show an error with all the parameters that are incorrectly provided.
 
 ### "odo catalog list services"
 
