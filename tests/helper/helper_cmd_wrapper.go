@@ -63,8 +63,10 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 		}
 	} else if cw.maxRetry > 0 {
 		cw.session.Wait()
-		// if exit code is 0 which means the program succeeded and hence we retry
+		// cw.pass is to check if it is used with ShouldPass Or ShouldFail
 		if !cw.pass {
+			// we retry on success because the user has set “ShouldFail” as true
+			// if exit code is 0 which means the program succeeded and hence we retry
 			if cw.session.ExitCode() == 0 {
 				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
 				cw.maxRetry = cw.maxRetry - 1
@@ -72,6 +74,7 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 			}
 			return cw
 		} else {
+			// if exit code is not 0 which means the program Failed and hence we retry
 			if cw.session.ExitCode() != 0 {
 				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
 				cw.maxRetry = cw.maxRetry - 1
