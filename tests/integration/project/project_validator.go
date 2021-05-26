@@ -8,8 +8,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var commonVar helper.CommonVar
-
 func HelpCommand() {
 	output := helper.CmdShouldPass("odo", "project", "list", "--help")
 	Expect(output).To(ContainSubstring("Specify output format, supported format: json"))

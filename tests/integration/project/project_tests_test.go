@@ -5,9 +5,10 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
+var commonVar helper.CommonVar
+
 var _ = Describe("odo project command tests", func() {
 
-	var commonVar helper.CommonVar
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 	})
