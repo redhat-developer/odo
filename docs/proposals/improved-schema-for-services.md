@@ -33,7 +33,7 @@ We care about the `openAPIV3Schema` as that would be used to build the CRD struc
 
 ### Kuberenetes cluster Swagger has the schema
 
-If the User doesn't have CRD access then we fetch the cluster's `swagger.json` from the endpoint `<cluster-url>/api/kubernetes/openapi/v2`. This is a very large document as it holds all the definitions present on the cluster.
+If the user doesn't have CRD access then we fetch try to fetch the same `openAPIV3Schema` from the cluster's `swagger.json` from the endpoint `<cluster-url>/api/kubernetes/openapi/v2`. This is a very large document as it holds all the definitions present on the cluster.
 
 So this needs to be cached and refreshed whenever a new operator is installed.
 
@@ -43,7 +43,7 @@ So this needs to be cached and refreshed whenever a new operator is installed.
 If none of the above approaches work, we finally fallback to getting the information from `ClusterServiceVersion`
 
 We generate the description in this approach based on `spec.customresourcedefinitions` present in the ClusterServiceVersion.
-This CRD def is different then whats provided by the `CustomResourceDefinition` as it has less information.
+This CRD def is different from what is provided by the `CustomResourceDefinition` as it has less information.
 
 This is how one of the `customresourcedefinition` looks like ( Kafka from strimzi )
 ```
