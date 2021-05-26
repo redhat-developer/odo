@@ -150,7 +150,7 @@ At this stage the user either has access to the `openAPIV3Schema` or `ClusterSer
 
 ### User has access to openAPIV3Schema
 
-<details open>
+<details>
 <summary> Below is an extract of an example `openAPIV3Schema` which would be used for explaination </summary>
 
 ```
