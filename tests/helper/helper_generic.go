@@ -308,7 +308,6 @@ func CommonBeforeEach() CommonVar {
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
 	CmdShouldPass("oc", "describe", "pods", "-n", commonVar.Project)
-	CmdShouldPass("oc", "get", "pv", "-n", commonVar.Project)
 	// delete the random project/namespace created in CommonBeforeEach
 	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
 
