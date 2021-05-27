@@ -1421,9 +1421,9 @@ func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem
 			return err
 		}
 		defer func() {
-			err1 := outputDirRead.Close()
-			if err1 != nil {
+			if err1 := outputDirRead.Close(); err1 != nil {
 				klog.V(4).Infof("err occurred while closing file: %v", err1)
+
 			}
 		}()
 		// Call Readdir to get all files.
