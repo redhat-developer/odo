@@ -1422,7 +1422,7 @@ func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem
 		}
 		defer func() {
 			if err1 := outputDirRead.Close(); err1 != nil {
-				klog.V(4).Infof("err occurred while closing file: %v", err1)
+				klog.V(4).Infof("err occurred while closing temp dir: %v", err1)
 
 			}
 		}()
