@@ -150,7 +150,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 	Context("odo component delete should clean owned resources", func() {
 		appName := helper.RandString(5)
-		FIt("should delete the devfile component and the owned resources with wait flag", func() {
+		It("should delete the devfile component and the owned resources with wait flag", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com", "--ingress")
