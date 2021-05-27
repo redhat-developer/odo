@@ -150,7 +150,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 	Context("odo component delete should clean owned resources", func() {
 		appName := helper.RandString(5)
-		It("should delete the devfile component and the owned resources with wait flag", func() {
+		FIt("should delete the devfile component and the owned resources with wait flag", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context, "--host", "com", "--ingress")
@@ -165,8 +165,14 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
 			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
 
+			// Pod should exist
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+			Expect(podName).NotTo(BeEmpty())
+
 			// delete with --wait flag
 			helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
+
+			// Deployment and Pod should be deleted
 			helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
 				{
 
@@ -174,7 +180,15 @@ var _ = Describe("odo devfile delete command tests", func() {
 					ResourceName: componentName,
 					Namespace:    commonVar.Project,
 				},
+				{
+
+					ResourceType: helper.ResourceTypePod,
+					ResourceName: podName,
+					Namespace:    commonVar.Project,
+				},
 			})
+
+			// Dependent resources should be marked to be deleted (see https://github.com/openshift/odo/issues/4593)
 			helper.VerifyResourcesToBeDeleted(commonVar.CliRunner, []helper.ResourceInfo{
 				{
 					ResourceType: helper.ResourceTypeIngress,

@@ -12,6 +12,7 @@ import (
 
 const (
 	ResourceTypeDeployment = "deployment"
+	ResourceTypePod        = "pod"
 	ResourceTypePVC        = "pvc"
 	ResourceTypeIngress    = "ingress"
 	ResourceTypeService    = "service"
