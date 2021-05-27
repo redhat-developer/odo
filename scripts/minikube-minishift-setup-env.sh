@@ -64,7 +64,7 @@ case ${1} in
         minikube version
         # Setup to find nessasary data from cluster setup
         ## Constants
-        SETUP_OPERATORS="./scripts/configure-cluster/setup-kube-operators.sh"
+        SETUP_OPERATORS="./scripts/configure-cluster/common/setup-kube-operators.sh"
 
         # Enable OLM for running operator tests
         curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.17.0/install.sh | bash -s v0.17.0
