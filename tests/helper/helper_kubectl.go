@@ -251,3 +251,53 @@ func (kubectl KubectlRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 func (kubectl KubectlRunner) GetAnnotationsDeployment(componentName, appName, projectName string) map[string]string {
 	return GetAnnotationsDeployment(kubectl.path, componentName, appName, projectName)
 }
+
+//GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
+func (kubectl KubectlRunner) GetAllPodsInNs(namespace string) string {
+	args := []string{"get", "pods", "-n", namespace}
+	noResourcesMsg := fmt.Sprintf("No resources found in %s namespace", namespace)
+	kubectl.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
+		return !strings.Contains(output, noResourcesMsg)
+	}, true)
+	return CmdShouldPass(kubectl.path, args...)
+}
+
+// WaitForCmdOut runs "kubectl" command until it gets
+// the expected output.
+// It accepts 4 arguments
+// args (arguments to the program)
+// timeout (the time to wait for the output)
+// errOnFail (flag to set if test should fail if command fails)
+// check (function with output check logic)
+// It times out if the command doesn't fetch the
+// expected output  within the timeout period.
+func (kubectl KubectlRunner) WaitForRunnerCmdOut(args []string, timeout int, errOnFail bool, check func(output string) bool, includeStdErr ...bool) bool {
+	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
+	// this is a test package so time.Tick() is acceptable
+	// nolint
+	tick := time.Tick(time.Second)
+	for {
+		select {
+		case <-pingTimeout:
+			Fail(fmt.Sprintf("Timeout after %v minutes", timeout))
+
+		case <-tick:
+			session := CmdRunner(kubectl.path, args...)
+			if errOnFail {
+				Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
+			} else {
+				Eventually(session).Should(gexec.Exit(), runningCmd(session.Command))
+			}
+			session.Wait()
+			output := string(session.Out.Contents())
+
+			if len(includeStdErr) > 0 && includeStdErr[0] {
+				output += "\n"
+				output += string(session.Err.Contents())
+			}
+			if check(strings.TrimSpace(string(output))) {
+				return true
+			}
+		}
+	}
+}
