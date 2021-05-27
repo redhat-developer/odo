@@ -592,7 +592,7 @@ func (oc OcRunner) VerifyResourceDeleted(ri ResourceInfo) {
 
 func (oc OcRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 	deletedOrMarkedToDelete := func() bool {
-		session := CmdRunner(oc.path, "get", ri.ResourceType, ri.ResourceName, "--namespace", ri.Namespace, "-o", "yaml")
+		session := CmdRunner(oc.path, "get", ri.ResourceType, ri.ResourceName, "--namespace", ri.Namespace, "-o", "jsonpath='{.metadata.deletionTimestamp}'")
 		exit := session.Wait().ExitCode()
 		if exit == 1 {
 			// resources does not exist
@@ -600,7 +600,7 @@ func (oc OcRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 		}
 		content := session.Wait().Out.Contents()
 		// resource is marked for deletion
-		return strings.Contains(string(content), "deletionTimestamp")
+		return len(content) > 0
 	}
 	Expect(deletedOrMarkedToDelete()).To(BeTrue())
 }
