@@ -26,7 +26,7 @@ kubectl create -f - << EOF
     metadata: 
       name: my-service-binding-operator 
       namespace: operators 
-  spec: 
+    spec: 
       channel: beta 
       name: service-binding-operator 
       source: operatorhubio-catalog 
