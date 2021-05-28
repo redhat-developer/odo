@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/segment"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -259,11 +259,7 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
-	client, err := genericclioptions.Client()
-	if err != nil {
-		client = nil
-	}
-	segment.SetClusterType(cmd.Context(), client)
+	scontext.SetClusterType(cmd.Context(), po.Client)
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
 		// Return Devfile push

@@ -3,6 +3,8 @@ package project
 import (
 	"fmt"
 
+	scontext "github.com/openshift/odo/pkg/segment/context"
+
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
@@ -55,7 +57,7 @@ func (pco *ProjectCreateOptions) Validate() (err error) {
 
 // Run runs the project create command
 func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
-
+	scontext.SetClusterType(cmd.Context(), pco.Client)
 	successMessage := fmt.Sprintf(`Project '%s' is ready for use`, pco.projectName)
 
 	// Create the "spinner"

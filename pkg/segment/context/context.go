@@ -3,6 +3,8 @@ package context
 import (
 	"context"
 	"sync"
+
+	"github.com/openshift/odo/pkg/occlient"
 )
 
 type contextKey struct{}
@@ -67,4 +69,22 @@ func setContextProperty(ctx context.Context, key string, value interface{}) {
 	if properties != nil {
 		properties.set(key, value)
 	}
+}
+
+func SetClusterType(ctx context.Context, client *occlient.Client) {
+	var value string
+	if client == nil {
+		value = "not-found"
+	} else {
+		if isOC, _ := client.IsProjectSupported(); isOC {
+			if isOC4, _ := client.IsOpenshift4(); isOC4 {
+				value = "openshift4"
+			} else {
+				value = "openshift3"
+			}
+		} else {
+			value = "vanilla-kubernetes"
+		}
+	}
+	setContextProperty(ctx, "clusterType", value)
 }
