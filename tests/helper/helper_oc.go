@@ -590,6 +590,21 @@ func (oc OcRunner) VerifyResourceDeleted(ri ResourceInfo) {
 	Expect(output).NotTo(ContainSubstring(ri.ResourceName))
 }
 
+func (oc OcRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
+	deletedOrMarkedToDelete := func() bool {
+		session := CmdRunner(oc.path, "get", ri.ResourceType, ri.ResourceName, "--namespace", ri.Namespace, "-o", "jsonpath='{.metadata.deletionTimestamp}'")
+		exit := session.Wait().ExitCode()
+		if exit == 1 {
+			// resources does not exist
+			return true
+		}
+		content := session.Wait().Out.Contents()
+		// resource is marked for deletion
+		return len(content) > 0
+	}
+	Expect(deletedOrMarkedToDelete()).To(BeTrue())
+}
+
 // CreateRandNamespaceProject create new project
 func (oc OcRunner) CreateRandNamespaceProject() string {
 	projectName := SetProjectName()

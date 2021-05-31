@@ -367,3 +367,9 @@ func VerifyResourcesDeleted(runner CliRunner, resources []ResourceInfo) {
 		runner.VerifyResourceDeleted(item)
 	}
 }
+
+func VerifyResourcesToBeDeleted(runner CliRunner, resources []ResourceInfo) {
+	for _, item := range resources {
+		runner.VerifyResourceToBeDeleted(item)
+	}
+}
