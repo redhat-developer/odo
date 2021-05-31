@@ -18,10 +18,12 @@ import (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
+	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
+		oc = helper.NewOcRunner("oc")
 	})
 
 	AfterEach(func() {
