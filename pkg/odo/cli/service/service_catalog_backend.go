@@ -169,17 +169,16 @@ func (b *ServiceCatalogBackend) RunServiceCreate(o *CreateOptions) (err error) {
 	return
 }
 
+func (b *ServiceCatalogBackend) ServiceDefined(o *DeleteOptions) (bool, error) {
+	return svc.IsDefined(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
+}
+
 func (b *ServiceCatalogBackend) ServiceExists(o *DeleteOptions) (bool, error) {
 	return svc.SvcExists(o.Client, o.serviceName, o.Application)
 }
 
 func (b *ServiceCatalogBackend) DeleteService(o *DeleteOptions, name string, application string) error {
-	err := svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
-	if err != nil {
-		return err
-	}
-
-	err = svc.DeleteKubernetesComponentFromDevfile(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
+	err := svc.DeleteKubernetesComponentFromDevfile(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}

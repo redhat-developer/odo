@@ -66,13 +66,13 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	svcExists, err := o.Backend.ServiceExists(o)
+	svcDefined, err := o.Backend.ServiceDefined(o)
 	if err != nil {
 		return err
 	}
 
-	if !svcExists {
-		return fmt.Errorf("couldn't find service named %q. Refer %q to see list of running services", o.serviceName, "odo service list")
+	if !svcDefined {
+		return fmt.Errorf("couldn't find service named %q. Refer %q to see list of defined services", o.serviceName, "odo service list")
 	}
 	return
 }
@@ -80,16 +80,10 @@ func (o *DeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo service delete command
 func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
-		s := log.Spinner("Waiting for service to be deleted")
-		defer s.End(false)
-
 		err = o.Backend.DeleteService(o, o.serviceName, o.Application)
 		if err != nil {
 			return err
 		}
-
-		s.End(true)
-
 		log.Infof("Service %q has been successfully deleted", o.serviceName)
 	} else {
 		log.Errorf("Aborting deletion of service: %v", o.serviceName)

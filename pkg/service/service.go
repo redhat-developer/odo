@@ -692,6 +692,19 @@ func IsCSVSupported() (bool, error) {
 	return client.GetKubeClient().IsCSVSupported()
 }
 
+func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return false, err
+	}
+	for _, c := range components {
+		if c.Name == name {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // AddKubernetesComponentToDevfile adds service definition to devfile as an inlined Kubernetes component
 func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
 	err := devfileObj.Data.AddComponents([]devfile.Component{{
