@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"encoding/json"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,6 +46,14 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"DefaultDevfileRegistry",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
+		})
+		It("should list components successfully even with an invalid kubeconfig path or path points to existing directory", func() {
+			err := os.Setenv("KUBECONFIG", "/idonotexist")
+			Expect(err).ToNot(HaveOccurred())
+			helper.CmdShouldPass("odo", "catalog", "list", "components")
+			err = os.Setenv("KUBECONFIG", commonVar.Context)
+			Expect(err).ToNot(HaveOccurred())
+			helper.CmdShouldPass("odo", "catalog", "list", "components")
 		})
 	})
 
