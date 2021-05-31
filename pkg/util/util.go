@@ -1414,36 +1414,47 @@ func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem
 		}
 	})
 
-	// Open the directory.
-	outputDirRead, err := fs.Open(filepath.Join(srcPath, subDir))
-	if err != nil {
-		return err
-	}
-
-	// Call Readdir to get all files.
-	outputDirFiles, err := outputDirRead.Readdir(0)
-	if err != nil {
-		return err
-	}
-
-	// Loop over files.
-	for outputIndex := range outputDirFiles {
-		outputFileHere := outputDirFiles[outputIndex]
-
-		// Get name of file.
-		fileName := outputFileHere.Name()
-
-		oldPath := filepath.Join(srcPath, subDir, fileName)
-
-		if outputFileHere.IsDir() {
-			err = copyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
-		} else {
-			err = copyFileWithFs(oldPath, filepath.Join(destinationPath, fileName), fs)
-		}
-
+	err := func() error {
+		// Open the directory.
+		outputDirRead, err := fs.Open(filepath.Join(srcPath, subDir))
 		if err != nil {
 			return err
 		}
+		defer func() {
+			if err1 := outputDirRead.Close(); err1 != nil {
+				klog.V(4).Infof("err occurred while closing temp dir: %v", err1)
+
+			}
+		}()
+		// Call Readdir to get all files.
+		outputDirFiles, err := outputDirRead.Readdir(0)
+		if err != nil {
+			return err
+		}
+
+		// Loop over files.
+		for outputIndex := range outputDirFiles {
+			outputFileHere := outputDirFiles[outputIndex]
+
+			// Get name of file.
+			fileName := outputFileHere.Name()
+
+			oldPath := filepath.Join(srcPath, subDir, fileName)
+
+			if outputFileHere.IsDir() {
+				err = copyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
+			} else {
+				err = copyFileWithFs(oldPath, filepath.Join(destinationPath, fileName), fs)
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}()
+	if err != nil {
+		return err
 	}
 	return fs.RemoveAll(srcPath)
 }
