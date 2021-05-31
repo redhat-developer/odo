@@ -74,7 +74,7 @@ func (to *TestOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (to *TestOptions) Run() (err error) {
+func (to *TestOptions) Run(cmd *cobra.Command) (err error) {
 	return to.RunTestCommand()
 }
 

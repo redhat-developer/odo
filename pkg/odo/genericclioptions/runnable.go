@@ -1,17 +1,23 @@
 package genericclioptions
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/version"
 
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"gopkg.in/AlecAivazis/survey.v1"
 
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/segment"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/log"
@@ -20,25 +26,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var (
-	segmentClient *segment.Client
-)
-
-// disableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely
-// hiding even the question
-const disableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
-
 type Runnable interface {
 	Complete(name string, cmd *cobra.Command, args []string) error
 	Validate() error
-	Run() error
+	Run(cmd *cobra.Command) error
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	var startTime time.Time
 	cfg, _ := preference.New()
-	disableTelemetry := os.Getenv(disableTelemetryEnv)
+	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
 
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
@@ -47,8 +45,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
-		} else if disableTelemetry == "true" {
-			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", disableTelemetryEnv, disableTelemetry)
+		} else if disableTelemetry {
+			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else {
 			var consentTelemetry bool
 			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
@@ -61,18 +59,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			}
 		}
 	}
-	// Initiate the segment client if ConsentTelemetry preference is set to true
-	if cfg.GetConsentTelemetry() {
-		if disableTelemetry == "true" {
-			log.Warningf("Sending telemetry disabled by %s=%s\n", disableTelemetryEnv, disableTelemetry)
-		} else {
-			if segmentClient, err = segment.NewClient(cfg); err != nil {
-				klog.V(4).Infof("Cannot create a segment client, will not send any data: %s", err.Error())
-			}
-			defer segmentClient.Close()
-			startTime = time.Now()
-		}
-	}
+	startTime = time.Now()
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions
@@ -84,29 +71,53 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
 	err = o.Complete(cmd.Name(), cmd, args)
 	if err != nil {
-		uploadToSegmentAndLog(cmd, err, startTime)
-	}
-	err = o.Validate()
-	if err != nil {
-		uploadToSegmentAndLog(cmd, err, startTime)
-	}
-	err = o.Run()
-	uploadToSegmentAndLog(cmd, err, startTime)
-
-}
-
-// uploadToSegmentAndLog uploads the data to segment and logs the error
-func uploadToSegmentAndLog(cmd *cobra.Command, err error, startTime time.Time) {
-	if segmentClient != nil {
-		if serr := segmentClient.Upload(cmd.CommandPath(), time.Since(startTime), err); serr != nil {
-			klog.Errorf("Cannot send data to telemetry: %v", serr)
-		}
-		// If the error is not nil, client will be closed so that data can be sent before the program exits.
-		if err != nil {
-			segmentClient.Close()
-		}
+		startTelemetry(cfg, cmd, err, startTime)
 	}
 	util.LogErrorAndExit(err, "")
+
+	err = o.Validate()
+	if err != nil {
+		startTelemetry(cfg, cmd, err, startTime)
+	}
+	util.LogErrorAndExit(err, "")
+
+	err = o.Run(cmd)
+	startTelemetry(cfg, cmd, err, startTime)
+	util.LogErrorAndExit(err, "")
+}
+
+// startTelemetry uploads the data to segment if user has consented to usage data collection and the command is not telemetry
+// TODO: move this function to a more suitable place, preferably pkg/segment
+func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err error, startTime time.Time) {
+	if segment.IsTelemetryEnabled(cfg) && !strings.Contains(cmd.CommandPath(), "telemetry") {
+		uploadData := &segment.TelemetryData{
+			Event: cmd.CommandPath(),
+			Properties: segment.TelemetryProperties{
+				Duration:      time.Since(startTime).Milliseconds(),
+				Success:       err == nil,
+				Tty:           segment.RunningInTerminal(),
+				Version:       fmt.Sprintf("odo %v (%v)", version.VERSION, version.GITCOMMIT),
+				CmdProperties: scontext.GetContextProperties(cmd.Context()),
+			},
+		}
+		if err != nil {
+			uploadData.Properties.Error = segment.SetError(err)
+			uploadData.Properties.ErrorType = segment.ErrorType(err)
+		}
+		data, err1 := json.Marshal(uploadData)
+		if err1 != nil {
+			klog.V(4).Infof("Failed to marshall telemetry data. %q", err1.Error())
+		}
+		command := exec.Command(os.Args[0], "telemetry", string(data))
+		if err1 = command.Start(); err1 != nil {
+			klog.V(4).Infof("Failed to start the telemetry process. Error: %q", err1.Error())
+			return
+		}
+		if err1 = command.Process.Release(); err1 != nil {
+			klog.V(4).Infof("Failed to release the process. %q", err1.Error())
+			return
+		}
+	}
 }
 
 // checkConflictingFlags checks for conflicting flags. Currently --context cannot be provided
@@ -131,6 +142,7 @@ func checkConflictingFlags(cmd *cobra.Command) error {
 	}
 	return nil
 }
+
 func stringFlagLookup(cmd *cobra.Command, flagName string) string {
 	flag := cmd.Flags().Lookup(flagName)
 	// a check to make sure if the flag is not defined we return blank

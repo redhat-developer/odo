@@ -66,9 +66,9 @@ $ odo service create postgresql-operator.v0.1.1/Database --dry-run > db.yaml
 ----
   name: sampledatabase
   annotations:
-    service.binding/db.name: 'path={.spec.databaseName}'
-    service.binding/db.password: 'path={.spec.databasePassword}'
-    service.binding/db.user: 'path={.spec.databaseUser}'
+    service.binding/db_name: 'path={.spec.databaseName}'
+    service.binding/db_password: 'path={.spec.databasePassword}'
+    service.binding/db_user: 'path={.spec.databaseUser}'
 ----
 +
 This configuration ensures that when a database service is started using this file, appropriate annotations are added to it. Annotations help the Service Binding Operator in injecting those values into the application. Hence, the above configuration will help Service Binding Operator inject the values for `databaseName`, `databasePassword` and `databaseUser` into the application.

@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
-
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -126,6 +125,35 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	return o.Backend.CompleteServiceCreate(o, cmd, args)
 }
 
+// Validate validates the CreateOptions based on completed values
+func (o *CreateOptions) Validate() (err error) {
+	// if we are in interactive mode, all values are already valid
+	if o.interactive {
+		return nil
+	}
+
+	return o.Backend.ValidateServiceCreate(o)
+}
+
+// Run contains the logic for the odo service create command
+func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
+	err = o.Backend.RunServiceCreate(o)
+	if err != nil {
+		return err
+	}
+
+	// Information on what to do next; don't do this if "--dry-run" was requested as it gets appended to the file
+	if !o.DryRun {
+		log.Info("Successfully added service to the configuration; do 'odo push' to create service on the cluster")
+	}
+
+	equivalent := o.outputNonInteractiveEquivalent()
+	if len(equivalent) > 0 {
+		log.Info("Equivalent command:\n" + ui.StyledOutput(equivalent, "cyan"))
+	}
+	return
+}
+
 // outputNonInteractiveEquivalent outputs the populated options as the equivalent command that would be used in non-interactive mode
 func (o *CreateOptions) outputNonInteractiveEquivalent() string {
 	if o.outputCLI {
@@ -138,35 +166,6 @@ func (o *CreateOptions) outputNonInteractiveEquivalent() string {
 		return strings.TrimSpace(tpl.String())
 	}
 	return ""
-}
-
-// Validate validates the CreateOptions based on completed values
-func (o *CreateOptions) Validate() (err error) {
-	// if we are in interactive mode, all values are already valid
-	if o.interactive {
-		return nil
-	}
-
-	return o.Backend.ValidateServiceCreate(o)
-}
-
-// Run contains the logic for the odo service create command
-func (o *CreateOptions) Run() (err error) {
-	err = o.Backend.RunServiceCreate(o)
-	if err != nil {
-		return err
-	}
-
-	// Information on what to do next; don't do this if "--dry-run" was requested as it gets appended to the file
-	if !o.DryRun {
-		log.Infof("You can now link the service to a component using 'odo link'; check 'odo link -h'")
-	}
-
-	equivalent := o.outputNonInteractiveEquivalent()
-	if len(equivalent) > 0 {
-		log.Info("Equivalent command:\n" + ui.StyledOutput(equivalent, "cyan"))
-	}
-	return
 }
 
 // NewCmdServiceCreate implements the odo service create command.

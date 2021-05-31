@@ -5,7 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -18,6 +21,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 	type fields struct {
 		devfileObj        parser.DevfileObj
 		componentSettings ComponentSettings
+		isRouteSupported  bool
 	}
 	type args struct {
 		url localConfigProvider.LocalURL
@@ -27,6 +31,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 		fields    fields
 		args      args
 		wantedURL localConfigProvider.LocalURL
+		updateURL bool
 		wantErr   bool
 	}{
 		{
@@ -45,6 +50,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      0,
 				Secure:    false,
 				Path:      "/data",
+				Kind:      localConfigProvider.INGRESS,
 				Container: "runtime",
 			},
 		},
@@ -64,6 +70,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      0,
 				Secure:    false,
 				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
 				Container: "runtime",
 			},
 		},
@@ -83,6 +90,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      0,
 				Secure:    false,
 				Path:      "/data",
+				Kind:      localConfigProvider.INGRESS,
 				Container: "runtime",
 			},
 		},
@@ -101,6 +109,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      0,
 				Secure:    false,
 				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
 				Container: "runtime",
 			},
 		},
@@ -121,10 +130,10 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      3000,
 				Secure:    false,
 				Path:      "/data",
+				Kind:      localConfigProvider.INGRESS,
 				Container: "runtime",
 			},
 		},
-
 		{
 			name: "case 6: complete the container based on the matching port in the devfile",
 			fields: fields{
@@ -141,6 +150,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      8080,
 				Secure:    false,
 				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
 				Container: "runtime-debug",
 			},
 		},
@@ -153,7 +163,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				url: localConfigProvider.LocalURL{
 					Name:      "url-1",
 					Port:      8080,
-					Container: "runtime-debug",
+					Container: "runtime",
 				},
 			},
 			wantedURL: localConfigProvider.LocalURL{
@@ -161,7 +171,8 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      8080,
 				Secure:    false,
 				Path:      "/",
-				Container: "runtime-debug",
+				Kind:      localConfigProvider.INGRESS,
+				Container: "runtime",
 			},
 		},
 		{
@@ -187,6 +198,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Name:   "url-1",
 				Port:   8080,
 				Secure: false,
+				Kind:   localConfigProvider.INGRESS,
 				Path:   "/",
 			},
 			wantErr: true,
@@ -209,7 +221,151 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Port:      8080,
 				Secure:    false,
 				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
 				Container: "runtime",
+			},
+		},
+		{
+			name: "case 10: user doesn't provide an port and no ports are exposed by the devfile",
+			fields: fields{
+				devfileObj: parser.DevfileObj{
+					Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
+					Data: func() data.DevfileData {
+						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						if err != nil {
+							t.Error(err)
+						}
+						err = devfileData.AddComponents([]v1.Component{
+							odoTestingUtil.GetFakeContainerComponent("runtime"),
+						})
+						if err != nil {
+							t.Error(err)
+						}
+						return devfileData
+					}(),
+				},
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Port: -1,
+				},
+			},
+			wantedURL: localConfigProvider.LocalURL{},
+			wantErr:   true,
+		},
+		{
+			name: "case 11: user doesn't provide an port and multiple ports are exposed by the devfile",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Port: -1,
+				},
+			},
+			wantedURL: localConfigProvider.LocalURL{},
+			wantErr:   true,
+		},
+		{
+			name: "case 12: complete the url kind if not provided and route is supported",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+				isRouteSupported: true,
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Port: 8080,
+				},
+			},
+			wantedURL: localConfigProvider.LocalURL{
+				Name:      "nodejs-8080",
+				Port:      8080,
+				Secure:    false,
+				Path:      "/",
+				Kind:      localConfigProvider.ROUTE,
+				Container: "runtime",
+			},
+		},
+		{
+			name: "case 13: use an existing url when an invalid URL exists and no name and port is provided",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+				isRouteSupported: false,
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Port: -1,
+				},
+			},
+			updateURL: true,
+			wantedURL: localConfigProvider.LocalURL{
+				Name:      "port-3030",
+				Port:      3000,
+				Secure:    false,
+				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
+				Container: "runtime",
+			},
+		},
+		{
+			name: "case 14: use an existing url when an invalid URL exists and no name is provided but port is provided",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+				isRouteSupported: false,
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Port: 3030,
+				},
+			},
+			updateURL: true,
+			wantedURL: localConfigProvider.LocalURL{
+				Name:      "port-3030",
+				Port:      3030,
+				Secure:    false,
+				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
+				Container: "runtime",
+			},
+		},
+		{
+			name: "case 15: Does not error out if no port is specified, but container with single port is specified in multi container devfile",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+				isRouteSupported: false,
+			},
+			args: args{url: localConfigProvider.LocalURL{
+				Secure:    false,
+				Port:      -1,
+				Container: "runtime-debug",
+			}},
+			wantErr:   false,
+			updateURL: true,
+			wantedURL: localConfigProvider.LocalURL{
+				Name:      "port-8080",
+				Port:      8080,
+				Secure:    false,
+				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
+				Container: "runtime-debug",
 			},
 		},
 	}
@@ -218,6 +374,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			ei := &EnvInfo{
 				devfileObj:        tt.fields.devfileObj,
 				componentSettings: tt.fields.componentSettings,
+				isRouteSupported:  tt.fields.isRouteSupported,
 			}
 
 			err := ei.CompleteURL(&tt.args.url)
@@ -232,9 +389,12 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			if tt.wantErr && err != nil {
 				return
 			}
-
 			if !reflect.DeepEqual(tt.args.url, tt.wantedURL) {
 				t.Errorf("url doesn't match the required url: %v", pretty.Compare(tt.args.url, tt.wantedURL))
+			}
+
+			if tt.updateURL != ei.updateURL {
+				t.Errorf("url update property doesn't match the required: %v", tt.updateURL)
 			}
 		})
 	}
@@ -251,10 +411,11 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 		url localConfigProvider.LocalURL
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name      string
+		fields    fields
+		args      args
+		updateURL bool
+		wantErr   bool
 	}{
 		{
 			name: "case 1: container not found",
@@ -436,12 +597,30 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "case 13: url exists but we are updating it",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Name:      "port-3030",
+					TLSSecret: "blah",
+					Secure:    true,
+					Host:      "com",
+					Kind:      localConfigProvider.INGRESS,
+				},
+			},
+			updateURL: true,
+			wantErr:   false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ei := &EnvInfo{
 				devfileObj:        tt.fields.devfileObj,
 				componentSettings: tt.fields.componentSettings,
+				updateURL:         tt.updateURL,
 			}
 			if err := ei.ValidateURL(tt.args.url); (err != nil) != tt.wantErr {
 				t.Errorf("ValidateURL() error = %v, wantErr %v", err, tt.wantErr)
@@ -450,7 +629,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 	}
 }
 
-func TestEnvInfo_GetPorts(t *testing.T) {
+func TestEnvInfo_GetComponentPorts(t *testing.T) {
 	fs := filesystem.NewFakeFs()
 
 	type fields struct {
@@ -484,13 +663,67 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 				devfileObj:        tt.fields.devfileObj,
 				componentSettings: tt.fields.componentSettings,
 			}
-
-			got, err := ei.GetPorts()
+			got, err := ei.GetComponentPorts()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPorts() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetComponentPorts() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPorts() = %v, want %v", got, tt.want)
+				t.Errorf("GetComponentPorts() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnvInfo_GetContainerPorts(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+
+	type fields struct {
+		devfileObj        parser.DevfileObj
+		componentSettings ComponentSettings
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		container string
+		want      []string
+		wantErr   bool
+	}{
+		{
+			name: "case 1: Returns ports of specified container in multi container devfile",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			want:      []string{"8080"},
+			container: "runtime-debug",
+		},
+		{
+			name: "case 2: Returns error if no container is provided",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 3: Returns error if invalid container is specified",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			container: "invalidcontainer",
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ei := &EnvInfo{
+				devfileObj:        tt.fields.devfileObj,
+				componentSettings: tt.fields.componentSettings,
+			}
+			got, err := ei.GetContainerPorts(tt.container)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetContainerPorts() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetContainerPorts() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -740,6 +973,216 @@ func TestEnvInfo_ListURLs(t *testing.T) {
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListURLs() error: %v", pretty.Compare(got, tt.want))
+			}
+		})
+	}
+}
+
+func Test_findInvalidEndpoint(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+
+	type args struct {
+		ei   *EnvInfo
+		port int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    localConfigProvider.LocalURL
+		wantErr bool
+	}{
+		{
+			name: "case 1: find an invalid URL when route resources are not available",
+			args: args{
+				ei: &EnvInfo{
+					isRouteSupported: false,
+					devfileObj:       odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				},
+				port: 3030,
+			},
+			want: localConfigProvider.LocalURL{
+				Name:      "port-3030",
+				Port:      3030,
+				Secure:    false,
+				Kind:      localConfigProvider.ROUTE,
+				Path:      "/",
+				Container: "runtime",
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 2: route resources are available",
+			args: args{
+				ei: &EnvInfo{
+					isRouteSupported: true,
+					devfileObj:       odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				},
+				port: 3030,
+			},
+			want:    localConfigProvider.LocalURL{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := findInvalidEndpoint(tt.args.ei, tt.args.port)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("findInvalidEndpoint() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("findInvalidEndpoint() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_updateEndpointInDevfile(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+
+	type args struct {
+		devObj parser.DevfileObj
+		url    localConfigProvider.LocalURL
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantEndpoint v1.Endpoint
+		wantErr      bool
+	}{
+		{
+			name: "case 1: update the endpoint when protocol is different",
+			args: args{
+				devObj: odoTestingUtil.DevfileObjWithSecureEndpoints(fs),
+				url: localConfigProvider.LocalURL{
+					Name:      "port-3030",
+					Port:      3030,
+					Protocol:  string(v1.WSSEndpointProtocol),
+					Container: "runtime",
+				},
+			},
+			wantEndpoint: v1.Endpoint{
+				Name:       "port-3030",
+				TargetPort: 3030,
+				Protocol:   v1.WSSEndpointProtocol,
+				Exposure:   v1.PublicEndpointExposure,
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 2: update the endpoint when exposure is different",
+			args: args{
+				devObj: odoTestingUtil.DevfileObjWithInternalNoneEndpoints(fs),
+				url: localConfigProvider.LocalURL{
+					Name:      "port-3030",
+					Port:      3030,
+					Container: "runtime",
+				},
+			},
+			wantEndpoint: v1.Endpoint{
+				Name:       "port-3030",
+				TargetPort: 3030,
+				Exposure:   v1.PublicEndpointExposure,
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 3: update the endpoint when path is different",
+			args: args{
+				devObj: odoTestingUtil.GetTestDevfileObjWithPath(fs),
+				url: localConfigProvider.LocalURL{
+					Name:      "port-3030",
+					Port:      3000,
+					Path:      "/user",
+					Container: "runtime",
+				},
+			},
+			wantEndpoint: v1.Endpoint{
+				Name:       "port-3030",
+				TargetPort: 3000,
+				Path:       "/user",
+				Exposure:   v1.PublicEndpointExposure,
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 4: update the endpoint when secure is different",
+			args: args{
+				devObj: odoTestingUtil.GetTestDevfileObj(fs),
+				url: localConfigProvider.LocalURL{
+					Name:      "port-3030",
+					Port:      3000,
+					Secure:    true,
+					Container: "runtime",
+				},
+			},
+			wantEndpoint: v1.Endpoint{
+				Name:       "port-3030",
+				TargetPort: 3000,
+				Secure:     true,
+				Exposure:   v1.PublicEndpointExposure,
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 5: avoid a write when values are default",
+			args: args{
+				devObj: odoTestingUtil.GetTestDevfileObj(fs),
+				url: localConfigProvider.LocalURL{
+					Name:      "port-3030",
+					Port:      3000,
+					Container: "runtime",
+					Protocol:  string(v1.HTTPEndpointProtocol),
+					Path:      "/",
+				},
+			},
+			wantEndpoint: v1.Endpoint{
+				Name:       "port-3030",
+				TargetPort: 3000,
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 6: url not found",
+			args: args{
+				devObj: odoTestingUtil.GetTestDevfileObj(fs),
+				url: localConfigProvider.LocalURL{
+					Name:      "port-303",
+					Port:      3000,
+					Container: "runtime",
+					Protocol:  string(v1.HTTPEndpointProtocol),
+					Path:      "/",
+				},
+			},
+			wantEndpoint: v1.Endpoint{
+				Name:       "port-3030",
+				TargetPort: 3000,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := updateEndpointInDevfile(tt.args.devObj, tt.args.url); (err != nil) != tt.wantErr {
+				t.Errorf("updateEndpointInDevfile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			components, err := tt.args.devObj.Data.GetComponents(parsercommon.DevfileOptions{})
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			for _, component := range components {
+				if component.Container != nil {
+					for _, endpoint := range component.Container.Endpoints {
+						if endpoint.Name == tt.args.url.Name {
+							// prevent write unless required
+							if !reflect.DeepEqual(tt.wantEndpoint, endpoint) {
+								t.Errorf("expected endpoint doesn't match got: %v", pretty.Compare(tt.wantEndpoint, endpoint))
+							}
+						}
+					}
+				}
 			}
 		})
 	}

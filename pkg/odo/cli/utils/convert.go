@@ -93,7 +93,7 @@ func (co *ConvertOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (co *ConvertOptions) Run() (err error) {
+func (co *ConvertOptions) Run(cmd *cobra.Command) (err error) {
 
 	/* NOTE: This data is not used in devfile currently so cannot be converted
 	   minMemory := context.LocalConfigInfo.GetMinMemory()

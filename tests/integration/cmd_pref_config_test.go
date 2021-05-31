@@ -10,11 +10,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-const promtMessageSubString = "Help odo improve by allowing it to collect usage data."
+const promptMessageSubString = "Help odo improve by allowing it to collect usage data."
 
 var _ = Describe("odo preference and config command tests", func() {
-	// TODO: A neater way to provide odo path. Currently we assume \
-	// odo and oc in $PATH already.
+	// TODO: A neater way to provide odo path. Currently we assume odo and oc in $PATH already.
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
@@ -125,65 +124,66 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 	})
 
-	Context("when creating odo local config in the same config dir", func() {
+	Context("when setting or unsetting odo local config", func() {
 		JustBeforeEach(func() {
 			helper.Chdir(commonVar.Context)
-		})
-		It("should set, unset local config successfully", func() {
-			cases := []struct {
-				paramName  string
-				paramValue string
-			}{
-				{
-					paramName:  "Type",
-					paramValue: "java",
-				},
-				{
-					paramName:  "Name",
-					paramValue: "odo-java",
-				},
-				{
-					paramName:  "MinCPU",
-					paramValue: "0.2",
-				},
-				{
-					paramName:  "MaxCPU",
-					paramValue: "2",
-				},
-				{
-					paramName:  "MinMemory",
-					paramValue: "100M",
-				},
-				{
-					paramName:  "MaxMemory",
-					paramValue: "500M",
-				},
-				{
-					paramName:  "Ports",
-					paramValue: "8080/TCP,45/UDP",
-				},
-				{
-					paramName:  "Application",
-					paramValue: "odotestapp",
-				},
-				{
-					paramName:  "Project",
-					paramValue: "odotestproject",
-				},
-				{
-					paramName:  "SourceType",
-					paramValue: "git",
-				},
-				{
-					paramName:  "Ref",
-					paramValue: "develop",
-				},
-				{
-					paramName:  "SourceLocation",
-					paramValue: "https://github.com/sclorg/nodejs-ex",
-				},
-			}
 			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--git", "https://github.com/sclorg/nodejs-ex")
+		})
+		cases := []struct {
+			paramName  string
+			paramValue string
+		}{
+			{
+				paramName:  "Type",
+				paramValue: "java",
+			},
+			{
+				paramName:  "Name",
+				paramValue: "odo-java",
+			},
+			{
+				paramName:  "MinCPU",
+				paramValue: "0.2",
+			},
+			{
+				paramName:  "MaxCPU",
+				paramValue: "2",
+			},
+			{
+				paramName:  "MinMemory",
+				paramValue: "100M",
+			},
+			{
+				paramName:  "MaxMemory",
+				paramValue: "500M",
+			},
+			{
+				paramName:  "Ports",
+				paramValue: "8080/TCP,45/UDP",
+			},
+			{
+				paramName:  "Application",
+				paramValue: "odotestapp",
+			},
+			{
+				paramName:  "Project",
+				paramValue: "odotestproject",
+			},
+			{
+				paramName:  "SourceType",
+				paramValue: "git",
+			},
+			{
+				paramName:  "Ref",
+				paramValue: "develop",
+			},
+			{
+				paramName:  "SourceLocation",
+				paramValue: "https://github.com/sclorg/nodejs-ex",
+			},
+		}
+
+		It("should run successfully", func() {
 			for _, testCase := range cases {
 				helper.CmdShouldPass("odo", "config", "set", testCase.paramName, testCase.paramValue, "-f")
 				setValue := helper.GetConfigValue(testCase.paramName)
@@ -194,66 +194,9 @@ var _ = Describe("odo preference and config command tests", func() {
 				Expect(UnsetValue).To(BeEmpty())
 			}
 		})
-	})
-
-	Context("when creating odo local config with context flag", func() {
-		It("should allow setting and unsetting a config locally with context", func() {
-			cases := []struct {
-				paramName  string
-				paramValue string
-			}{
-				{
-					paramName:  "Type",
-					paramValue: "java",
-				},
-				{
-					paramName:  "Name",
-					paramValue: "odo-java",
-				},
-				{
-					paramName:  "MinCPU",
-					paramValue: "0.2",
-				},
-				{
-					paramName:  "MaxCPU",
-					paramValue: "2",
-				},
-				{
-					paramName:  "MinMemory",
-					paramValue: "100M",
-				},
-				{
-					paramName:  "MaxMemory",
-					paramValue: "500M",
-				},
-				{
-					paramName:  "Ports",
-					paramValue: "8080/TCP,45/UDP",
-				},
-				{
-					paramName:  "Application",
-					paramValue: "odotestapp",
-				},
-				{
-					paramName:  "Project",
-					paramValue: "odotestproject",
-				},
-				{
-					paramName:  "SourceType",
-					paramValue: "git",
-				},
-				{
-					paramName:  "Ref",
-					paramValue: "develop",
-				},
-				{
-					paramName:  "SourceLocation",
-					paramValue: "https://github.com/sclorg/nodejs-ex",
-				},
-			}
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--git", "https://github.com/sclorg/nodejs-ex.git")
+		It("should run successfully with context", func() {
+			helper.Chdir(commonVar.OriginalWorkingDirectory)
 			for _, testCase := range cases {
-
 				helper.CmdShouldPass("odo", "config", "set", "-f", "--context", commonVar.Context, testCase.paramName, testCase.paramValue)
 				configOutput := helper.CmdShouldPass("odo", "config", "unset", "-f", "--context", commonVar.Context, testCase.paramName)
 				Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
@@ -313,7 +256,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 	})
 
-	// issue https://github.com/openshift/odo/issues/4594
+	// TODO: issue https://github.com/openshift/odo/issues/4594
 	// Context("when using --now with config command", func() {
 	// 	It("should successfully set and unset variables", func() {
 	// 		//set env var
@@ -343,30 +286,30 @@ var _ = Describe("odo preference and config command tests", func() {
 			// unset the preference in case it is already set
 			helper.CmdShouldPass("odo", "preference", "unset", "ConsentTelemetry", "-f")
 		})
-		It("prompt should not appear when user calls for help", func() {
+
+		It("should not prompt when user calls for help", func() {
 			output := helper.CmdShouldPass("odo", "create", "--help")
-			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 		})
 
-		It("prompt should not appear when preference command is run", func() {
+		It("should not prompt when preference command is run", func() {
 			output := helper.CmdShouldPass("odo", "preference", "view")
-			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 
 			output = helper.CmdShouldPass("odo", "preference", "set", "buildtimeout", "5", "-f")
-			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 
 			output = helper.CmdShouldPass("odo", "preference", "unset", "buildtimeout", "-f")
-			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 		})
 	})
 
-	Context("Prompt should not appear when", func() {
-
+	Context("When ConsentTelemetry preference value is set", func() {
 		// !! Do not test with true because it sends out the telemetry data and messes up the statistics !!
-		It("ConsentTelemetry is set", func() {
+		It("should not prompt the user", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "ConsentTelemetry", "false", "-f")
 			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", commonVar.Context)
-			Expect(output).ToNot(ContainSubstring(promtMessageSubString))
+			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 		})
 	})
 

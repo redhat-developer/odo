@@ -255,7 +255,7 @@ func LocalKubeconfigSet(context string) {
 
 // GetCliRunner gets the running cli against Kubernetes or OpenShift
 func GetCliRunner() CliRunner {
-	if os.Getenv("KUBERNETES") == "true" {
+	if IsKubernetesCluster() {
 		return NewKubectlRunner("kubectl")
 	}
 	return NewOcRunner("oc")
@@ -350,4 +350,26 @@ func RunTestSpecs(t *testing.T, description string) {
 	os.Setenv("ODO_DISABLE_TELEMETRY", "true")
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport(t, "../../reports/")})
+}
+
+func IsKubernetesCluster() bool {
+	return os.Getenv("KUBERNETES") == "true"
+}
+
+type ResourceInfo struct {
+	ResourceType string
+	ResourceName string
+	Namespace    string
+}
+
+func VerifyResourcesDeleted(runner CliRunner, resources []ResourceInfo) {
+	for _, item := range resources {
+		runner.VerifyResourceDeleted(item)
+	}
+}
+
+func VerifyResourcesToBeDeleted(runner CliRunner, resources []ResourceInfo) {
+	for _, item := range resources {
+		runner.VerifyResourceToBeDeleted(item)
+	}
 }

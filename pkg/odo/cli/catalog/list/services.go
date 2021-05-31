@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +63,7 @@ func (o *ServiceOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command associated with ListServicesOptions
-func (o *ServiceOptions) Run() (err error) {
+func (o *ServiceOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(newCatalogListOutput(&o.services, o.csvs))
 	} else {

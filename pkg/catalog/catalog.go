@@ -20,7 +20,7 @@ import (
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -130,7 +130,7 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 		// Github-based registry
 		URL, err := convertURL(registry.URL)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to convert URL %s", registry.URL)
+			return nil, errors.Wrapf(err, "unable to convert URL %s", registry.URL)
 		}
 		registry.URL = URL
 		indexLink := registry.URL + indexPath
@@ -140,7 +140,7 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 		if registryUtil.IsSecure(registry.Name) {
 			token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 			if err != nil {
-				return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
+				return nil, errors.Wrap(err, "unable to get secure registry credential from keyring")
 			}
 			request.Token = token
 		}
@@ -152,12 +152,24 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 
 		jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
+			return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
 		}
 
 		err = json.Unmarshal(jsonBytes, &devfileIndex)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
+			if err := util.CleanDefaultHTTPCacheDir(); err != nil {
+				log.Warning("Error while cleaning up cache dir.")
+			}
+			// we try once again
+			jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+			}
+
+			err = json.Unmarshal(jsonBytes, &devfileIndex)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to unmarshal the devfile index.json from %s", indexLink)
+			}
 		}
 	} else {
 		// OCI-based registry

@@ -77,31 +77,20 @@ func NewURLCreateOptions() *CreateOptions {
 // Complete completes CreateOptions after they've been Created
 func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      o.DevfilePath,
-		ComponentContext: o.GetComponentContext(),
-		IsNow:            o.now,
+		Cmd:                    cmd,
+		DevfilePath:            o.DevfilePath,
+		ComponentContext:       o.GetComponentContext(),
+		IsNow:                  o.now,
+		CheckRouteAvailability: true,
 	})
 
 	if err != nil {
 		return err
 	}
 
-	o.Client, err = genericclioptions.Client()
-	if err != nil {
-		return err
-	}
-
-	isRouteSupported, err := o.Client.IsRouteSupported()
-	if err != nil {
-		return err
-	}
-
 	var urlType localConfigProvider.URLKind
-	if o.wantIngress || (!isRouteSupported) {
+	if o.wantIngress {
 		urlType = localConfigProvider.INGRESS
-	} else {
-		urlType = localConfigProvider.ROUTE
 	}
 
 	// get the name
@@ -176,7 +165,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url create command
-func (o *CreateOptions) Run() (err error) {
+func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 
 	// create the URL and write it to the local config
 	err = o.Context.LocalConfigProvider.CreateURL(o.url)

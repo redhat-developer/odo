@@ -1,6 +1,9 @@
 package project
 
 import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	restclient "k8s.io/client-go/rest"
 
 	authorizationv1 "github.com/openshift/api/authorization/v1"
@@ -21,7 +24,7 @@ func CanRequestProjects(config *restclient.Config, defaultNamespace string) (boo
 		},
 	}
 
-	listResponse, err := oClient.SubjectAccessReviews().Create(sar)
+	listResponse, err := oClient.SubjectAccessReviews().Create(context.TODO(), sar, metav1.CreateOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -34,7 +37,7 @@ func CanRequestProjects(config *restclient.Config, defaultNamespace string) (boo
 		},
 	}
 
-	createResponse, err := oClient.SubjectAccessReviews().Create(sar)
+	createResponse, err := oClient.SubjectAccessReviews().Create(context.TODO(), sar, metav1.CreateOptions{})
 	if err != nil {
 		return false, err
 	}

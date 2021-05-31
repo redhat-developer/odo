@@ -203,6 +203,20 @@ var _ = Describe("odo devfile storage command tests", func() {
 			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
 			helper.MatchAllInOutput(stdOut, []string{storageNames[0], pathNames[0], sizes[0], "Locally Deleted"})
 			helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
+
+			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
+
+			// since we don't have `wait` for `odo delete` at this moment
+			// we need to wait for the pod to be in the terminating state or it has been deleted from the cluster
+			commonVar.CliRunner.WaitAndCheckForTerminatingState("pods", commonVar.Project, 1)
+
+			stdOut = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+
+			helper.MatchAllInOutput(stdOut, []string{"Not Pushed"})
+			// since `Pushed` is a sub string of `Not Pushed`, we count the occurrence of `Pushed`
+			count := strings.Count(stdOut, "Pushed")
+			Expect(count).To(Equal(1))
 		})
 
 		It("should list the storage with the proper states and container names", func() {

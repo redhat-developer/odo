@@ -56,7 +56,7 @@ func (do *DescribeOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (do *DescribeOptions) Run() (err error) {
+func (do *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 
 	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, do.Context.Project)
 	if err != nil {

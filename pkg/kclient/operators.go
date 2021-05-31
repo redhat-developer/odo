@@ -1,10 +1,11 @@
 package kclient
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +34,7 @@ func (c *Client) IsCSVSupported() (bool, error) {
 // It is equivalent to doing `oc get csvs` using oc cli
 func (c *Client) ListClusterServiceVersions() (*olm.ClusterServiceVersionList, error) {
 	klog.V(3).Infof("Fetching list of operators installed in cluster")
-	csvs, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).List(v1.ListOptions{})
+	csvs, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return &olm.ClusterServiceVersionList{}, ErrNoSuchOperator
@@ -45,7 +46,7 @@ func (c *Client) ListClusterServiceVersions() (*olm.ClusterServiceVersionList, e
 
 // GetClusterServiceVersion returns a particular CSV from a list of CSVs
 func (c *Client) GetClusterServiceVersion(name string) (olm.ClusterServiceVersion, error) {
-	csv, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).Get(name, v1.GetOptions{})
+	csv, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).Get(context.TODO(), name, v1.GetOptions{})
 	if err != nil {
 		return olm.ClusterServiceVersion{}, err
 	}

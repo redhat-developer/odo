@@ -50,6 +50,7 @@ elif  [ "${ARCH}" == "ppc64le" ]; then
     make test-cmd-project
     # E2e tests
     make test-e2e-all
+	make test-operator-hub
 else
     # Integration tests
     make test-integration || error=true

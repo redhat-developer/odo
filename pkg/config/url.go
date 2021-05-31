@@ -10,18 +10,24 @@ import (
 
 // GetPorts returns the ports stored in the config for the component
 // returns default i.e nil if nil
-func (lc *LocalConfig) GetPorts() ([]string, error) {
+func (lc *LocalConfig) GetComponentPorts() ([]string, error) {
 	if lc.componentSettings.Ports == nil {
 		return nil, nil
 	}
 	return *lc.componentSettings.Ports, nil
 }
 
+func (lc *LocalConfig) GetContainerPorts(container string) ([]string, error) {
+	return nil, fmt.Errorf("getting specific container ports not implemented for local config")
+}
+
 // CompleteURL completes the given URL with default values
 func (lc *LocalConfig) CompleteURL(url *localConfigProvider.LocalURL) error {
 	var err error
 
-	ports, err := lc.GetPorts()
+	url.Kind = localConfigProvider.ROUTE
+
+	ports, err := lc.GetComponentPorts()
 	if err != nil {
 		return err
 	}

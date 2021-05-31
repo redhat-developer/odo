@@ -1,12 +1,15 @@
 package component
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/service"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -15,7 +18,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -172,6 +174,27 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "unable to create or update component")
 	}
 
+	// fetch the "kubernetes inlined components" to create them on cluster
+	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
+	k8sComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
+	})
+	if err != nil {
+		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
+	}
+	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
+	// create the Kubernetes objects from the manifest
+	services, err := service.CreateServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
+	if err != nil {
+		return errors.Wrap(err, "failed to create service(s) associated with the component")
+	}
+
+	if len(services) == 1 {
+		log.Infof("Created service %q on the cluster; refer %q to know how to link it to the component", services[0], "odo link -h")
+	} else if len(services) > 1 {
+		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(services, ", "), "odo link -h")
+	}
+
 	deployment, err := a.Client.GetKubeClient().WaitForDeploymentRollout(a.ComponentName)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
@@ -230,7 +253,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
 		PodChanged:      podChanged,
+		Files:           common.GetSyncFilesFromAttributes(pushDevfileCommands),
 	}
+
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
@@ -376,36 +401,13 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	if len(containers) == 0 {
-		return fmt.Errorf("No valid components found in the devfile")
+		return fmt.Errorf("no valid components found in the devfile")
 	}
 
 	// Add the project volume before generating init containers
 	utils.AddOdoProjectVolume(&containers)
 
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
-	if err != nil {
-		return err
-	}
-
-	// Get ServiceBinding Secret name for each Link
-	var sbSecrets []string
-	for _, link := range ei.GetLink() {
-		sb, err := a.Client.GetKubeClient().GetDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource, link.Name)
-		if err != nil {
-			return err
-		}
-		secret, found, err := unstructured.NestedString(sb.Object, "status", "secret")
-		if err != nil {
-			return err
-		}
-		if !found {
-			return fmt.Errorf("unable to find secret in ServiceBinding %s", link.Name)
-		}
-		sbSecrets = append(sbSecrets, secret)
-	}
-
-	// set EnvFrom to the container that's supposed to have link to the Operator backed service
-	containers, err = utils.UpdateContainerWithEnvFromSecrets(containers, a.Devfile, a.devfileRunCmd, ei, sbSecrets)
 	if err != nil {
 		return err
 	}
@@ -471,59 +473,67 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		ObjectMeta:     objectMeta,
 		SelectorLabels: selectorLabels,
 	}
-	service, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
+	svc, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}
 	klog.V(2).Infof("Creating deployment %v", deployment.Spec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
-
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
+		if a.Client.GetKubeClient().IsSSASupported() {
+			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		} else {
+			deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
+		}
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
-		oldSvc, err := a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
+		oldSvc, err := a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Get(context.TODO(), componentName, metav1.GetOptions{})
 		ownerReference := generator.GetOwnerReference(deployment)
-		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
+		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
-			if len(service.Spec.Ports) > 0 {
-				_, err = a.Client.GetKubeClient().CreateService(*service)
+			if len(svc.Spec.Ports) > 0 {
+				_, err = a.Client.GetKubeClient().CreateService(*svc)
 				if err != nil {
 					return err
 				}
 				klog.V(2).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
-			if len(service.Spec.Ports) > 0 {
-				service.Spec.ClusterIP = oldSvc.Spec.ClusterIP
-				service.ResourceVersion = oldSvc.GetResourceVersion()
-				_, err = a.Client.GetKubeClient().UpdateService(*service)
+			if len(svc.Spec.Ports) > 0 {
+				svc.Spec.ClusterIP = oldSvc.Spec.ClusterIP
+				svc.ResourceVersion = oldSvc.GetResourceVersion()
+				_, err = a.Client.GetKubeClient().UpdateService(*svc)
 				if err != nil {
 					return err
 				}
 				klog.V(2).Infof("Successfully update Service for component %s", componentName)
 			} else {
-				err = a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
+				err = a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Delete(context.TODO(), componentName, metav1.DeleteOptions{})
 				if err != nil {
 					return err
 				}
 			}
 		}
 	} else {
-		deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
+		if a.Client.GetKubeClient().IsSSASupported() {
+			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+		} else {
+			deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
+		}
+
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
 		ownerReference := generator.GetOwnerReference(deployment)
-		service.OwnerReferences = append(service.OwnerReferences, ownerReference)
-		if len(service.Spec.Ports) > 0 {
-			_, err = a.Client.GetKubeClient().CreateService(*service)
+		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
+		if len(svc.Spec.Ports) > 0 {
+			_, err = a.Client.GetKubeClient().CreateService(*svc)
 			if err != nil {
 				return err
 			}
@@ -549,12 +559,14 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 		}
 	}
 
-	return "", "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // Delete deletes the component
-func (a Adapter) Delete(labels map[string]string, show bool) error {
-
+func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
+	if labels == nil {
+		return fmt.Errorf("cannot delete with labels being nil")
+	}
 	log.Infof("\nGathering information for component %s", a.ComponentName)
 	podSpinner := log.Spinner("Checking status for component")
 	defer podSpinner.End(false)
@@ -593,7 +605,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 	spinner := log.Spinner("Deleting Kubernetes resources for component")
 	defer spinner.End(false)
 
-	err = a.Client.GetKubeClient().DeleteDeployment(labels)
+	err = a.Client.GetKubeClient().Delete(labels, wait)
 	if err != nil {
 		return err
 	}

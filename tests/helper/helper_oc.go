@@ -12,6 +12,11 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+const (
+	ResourceTypeDeploymentConfig = "dc"
+	ResourceTypeRoute            = "route"
+)
+
 type OcRunner struct {
 	// path to oc binary
 	path string
@@ -578,11 +583,26 @@ func (oc OcRunner) GetServices(namespace string) string {
 }
 
 // VerifyResourceDeleted verifies if the given resource is deleted from cluster
-func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace string) {
-	session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
+func (oc OcRunner) VerifyResourceDeleted(ri ResourceInfo) {
+	session := CmdRunner(oc.path, "get", ri.ResourceType, "--namespace", ri.Namespace)
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
-	Expect(output).NotTo(ContainSubstring(resourceName))
+	Expect(output).NotTo(ContainSubstring(ri.ResourceName))
+}
+
+func (oc OcRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
+	deletedOrMarkedToDelete := func() bool {
+		session := CmdRunner(oc.path, "get", ri.ResourceType, ri.ResourceName, "--namespace", ri.Namespace, "-o", "jsonpath='{.metadata.deletionTimestamp}'")
+		exit := session.Wait().ExitCode()
+		if exit == 1 {
+			// resources does not exist
+			return true
+		}
+		content := session.Wait().Out.Contents()
+		// resource is marked for deletion
+		return len(content) > 0
+	}
+	Expect(deletedOrMarkedToDelete()).To(BeTrue())
 }
 
 // CreateRandNamespaceProject create new project
@@ -659,4 +679,10 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 		},
 	)
 	return result
+}
+
+// WaitAndCheckForTerminatingState waits for the given interval
+// and checks if the given resource type has been deleted on the cluster or is in the terminating state
+func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
+	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
 }

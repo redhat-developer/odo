@@ -27,7 +27,7 @@ To install Operators on an OpenShift cluster, contact your cluster administrator
 
 ===== Prerequisites
 
-* You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes]. If you're running a link:https://minikube.sigs.k8s.io/docs/[minikube] cluster, you can refer link:operators-on-minikube.adoc[this guide] to install Operators required to run example mentioned in this document.
+* You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/latest/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes]. If you're running a link:https://minikube.sigs.k8s.io/docs/[minikube] cluster, you can refer to link:https://odo.dev/docs/operators-on-minikube[this guide] to install Operators required to run example mentioned in this document.
 
 === Creating a project
 
@@ -62,7 +62,7 @@ Each Operator we install refers to the built-in `metadata.annotations.alm-exampl
 
 ==== Kubernetes installation
 
-For Kubernetes installation, you must need to install the Operator Lifecycle Manager and etcd Operator from the link:https://operatorhub.io/operator/etcd[etcd installation guide on Operator Hub]. You can refer link:operators-on-minikube.adoc[this document] for steps setup Operator Lifecycle Manager and etcd Operator on a link:https://minikube.sigs.k8s.io/[minikube] cluster.
+For Kubernetes installation, you must need to install the Operator Lifecycle Manager and etcd Operator from the link:https://operatorhub.io/operator/etcd[etcd installation guide on Operator Hub]. You can refer to link:https://odo.dev/docs/operators-on-minikube[this document] for steps setup Operator Lifecycle Manager and etcd Operator on a link:https://minikube.sigs.k8s.io/[minikube] cluster.
 
 ==== OpenShift installation
 
@@ -151,7 +151,7 @@ $ odo service list
 
 === Linking an odo component with an Operator backed service
 
-Linking a component to a service means, in simplest terms, to make a service usable from the component. odo uses link:https://github.com/redhat-developer/service-binding-operator/tree/v0.3.0[Service Binding Operator v0.3.0] to provide the linking feature. Please refer link:install-service-binding-operator.adoc[this document] to install it on OpenShift or Kubernetes.
+Linking a component to a service means, in simplest terms, to make a service usable from the component. odo uses link:https://github.com/redhat-developer/service-binding-operator/[Service Binding Operator] to provide the linking feature. Please refer to link:https://odo.dev/docs/install-service-binding-operator.adoc[this document] to install it on OpenShift or Kubernetes.
 
 For example, once you link an EtcdCluster service with your Node.js application, you can use (or, interact with) the EtcdCluster from within your node app. The way odo facilitates linking is by making sure that specific environment variables from the pod in which the service is running are configured in the pod of the component as well.
 
