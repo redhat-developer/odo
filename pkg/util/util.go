@@ -1479,3 +1479,17 @@ func GetEnvWithDefault(key string, defaultval string) string {
 	}
 	return val
 }
+
+//IsValidKubeConfigPath checks if specified `KUBECONFIG` value is valid i.e it returs true if `KUBECONFIG` env is not set
+// or if it is set, it points to a valid file
+func IsValidKubeConfigPath() bool {
+	v := os.Getenv("KUBECONFIG")
+	if v != "" {
+		f1, err := os.Stat(v)
+		if os.IsNotExist(err) || f1.IsDir() {
+			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s", v)
+			return false
+		}
+	}
+	return true
+}

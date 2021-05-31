@@ -2,7 +2,9 @@ package list
 
 import (
 	"fmt"
+	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"io"
+	"k8s.io/klog"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -10,12 +12,10 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
-	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -40,27 +40,28 @@ func NewListComponentsOptions() *ListComponentsOptions {
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-
 	tasks := util.NewConcurrentTasks(2)
 
-	o.Context, err = genericclioptions.NewContext(cmd)
-	if err != nil {
-		return err
-	}
-	supported, err := o.Client.IsImageStreamSupported()
-	if err != nil {
-		klog.V(4).Info("ignoring error while checking imagestream support:", err.Error())
-	}
+	if util.IsValidKubeConfigPath() {
+		o.Context, err = genericclioptions.NewContext(cmd)
+		if err != nil {
+			return err
+		}
+		supported, err := o.Client.IsImageStreamSupported()
+		if err != nil {
+			klog.V(4).Info("ignoring error while checking imagestream support:", err.Error())
+		}
 
-	if supported {
-		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			o.catalogList, err = catalog.ListComponents(o.Client)
-			if err != nil {
-				errChannel <- err
-			} else {
-				o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
-			}
-		}})
+		if supported {
+			tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+				o.catalogList, err = catalog.ListComponents(o.Client)
+				if err != nil {
+					errChannel <- err
+				} else {
+					o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
+				}
+			}})
+		}
 	}
 
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
