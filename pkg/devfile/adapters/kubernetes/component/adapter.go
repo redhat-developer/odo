@@ -421,15 +421,9 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	var deploymentObjectMeta metav1.ObjectMeta
-	if a.deployment != nil {
-		deploymentObjectMeta = generator.GetObjectMeta(a.deployment.Name, a.Client.Namespace, labels, nil)
-	} else {
-		deploymentName, err := util.NamespaceKubernetesObject(a.ComponentName, a.AppName)
-		if err != nil {
-			return err
-		}
-		deploymentObjectMeta = generator.GetObjectMeta(deploymentName, a.Client.Namespace, labels, nil)
+	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels)
+	if err != nil {
+		return err
 	}
 
 	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
@@ -563,6 +557,20 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	}
 
 	return nil
+}
+
+// getDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name and labels
+// if no deployment exists, it creates a new deployment name
+func (a Adapter) generateDeploymentObjectMeta(labels map[string]string) (metav1.ObjectMeta, error) {
+	if a.deployment != nil {
+		return generator.GetObjectMeta(a.deployment.Name, a.Client.Namespace, labels, nil), nil
+	} else {
+		deploymentName, err := util.NamespaceKubernetesObject(a.ComponentName, a.AppName)
+		if err != nil {
+			return metav1.ObjectMeta{}, err
+		}
+		return generator.GetObjectMeta(deploymentName, a.Client.Namespace, labels, nil), nil
+	}
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well

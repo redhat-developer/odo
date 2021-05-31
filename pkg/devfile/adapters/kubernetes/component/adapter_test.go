@@ -2,6 +2,7 @@ package component
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -592,4 +593,79 @@ func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Comma
 		},
 	}
 
+}
+
+func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
+	namespacedKubernetesName, err := util.NamespaceKubernetesObject("nodejs", "app")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	type fields struct {
+		componentName string
+		appName       string
+		deployment    *v1.Deployment
+	}
+	type args struct {
+		labels map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    metav1.ObjectMeta
+		wantErr bool
+	}{
+		{
+			name: "case 1: deployment exists",
+			fields: fields{
+				componentName: "nodejs",
+				appName:       "app",
+				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs"),
+			},
+			args: args{
+				labels: odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+			},
+			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
+			wantErr: false,
+		},
+		{
+			name: "case 2: deployment doesn't exists",
+			fields: fields{
+				componentName: "nodejs",
+				appName:       "app",
+				deployment:    nil,
+			},
+			args: args{
+				labels: odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+			},
+			want:    generator.GetObjectMeta(namespacedKubernetesName, "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, _ := occlient.FakeNew()
+			fakeClient.Namespace = "project-0"
+
+			a := Adapter{
+				Client: *fakeClient,
+				GenericAdapter: &adaptersCommon.GenericAdapter{
+					AdapterContext: adaptersCommon.AdapterContext{
+						ComponentName: tt.fields.componentName,
+						AppName:       tt.fields.appName,
+					},
+				},
+				deployment: tt.fields.deployment,
+			}
+			got, err := a.generateDeploymentObjectMeta(tt.args.labels)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("generateDeploymentObjectMeta() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
