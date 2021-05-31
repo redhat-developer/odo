@@ -48,12 +48,15 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, wantOutput)
 		})
 		It("should list components successfully even with an invalid kubeconfig path or path points to existing directory", func() {
+			projectKC := os.Getenv("KUBECONFIG")
 			err := os.Setenv("KUBECONFIG", "/idonotexist")
 			Expect(err).ToNot(HaveOccurred())
 			helper.CmdShouldPass("odo", "catalog", "list", "components")
 			err = os.Setenv("KUBECONFIG", commonVar.Context)
 			Expect(err).ToNot(HaveOccurred())
 			helper.CmdShouldPass("odo", "catalog", "list", "components")
+			err = os.Setenv("KUBECONFIG", projectKC)
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
