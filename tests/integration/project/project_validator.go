@@ -33,6 +33,7 @@ func CommandWithQFlag() {
 }
 
 func CommandWaitFlag() {
+	projectName := helper.RandString(6)
 	// Create the project
 	helper.CmdShouldPass("odo", "project", "create", projectName)
 
@@ -42,6 +43,7 @@ func CommandWaitFlag() {
 }
 
 func CommandDeleteWithJsonFlag() {
+	projectName := helper.RandString(6)
 	helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
 
 	actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
