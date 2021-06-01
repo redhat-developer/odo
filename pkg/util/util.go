@@ -1485,7 +1485,6 @@ func GetEnvWithDefault(key string, defaultval string) string {
 // or if it is set, it points to a valid file
 func IsValidKubeConfigPath() bool {
 	v := os.Getenv("KUBECONFIG")
-	homedir.HomeDir()
 	if v == "" {
 		if home := homedir.HomeDir(); home != "" {
 			v = filepath.Join(home, ".kube", "config")
