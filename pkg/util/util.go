@@ -37,6 +37,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog"
 )
 
@@ -1066,8 +1067,13 @@ func CheckKubeConfigExist() bool {
 	if os.Getenv("KUBECONFIG") != "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 	} else {
-		home, _ := os.UserHomeDir()
-		kubeconfig = fmt.Sprintf("%s/.kube/config", home)
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = filepath.Join(home, ".kube", "config")
+			klog.V(4).Infof("using default kubeconfig path %s", kubeconfig)
+		} else {
+			klog.V(4).Infof("no KUBECONFIG provided and cannot fallback to default")
+			return false
+		}
 	}
 
 	if CheckPathExists(kubeconfig) {
