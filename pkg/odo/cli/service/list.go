@@ -68,7 +68,7 @@ func (o *ServiceListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service list command
-func (o *ServiceListOptions) Run() (err error) {
+func (o *ServiceListOptions) Run(cmd *cobra.Command) (err error) {
 	if o.csvSupport {
 		// if cluster supports Operators, we list only operator backed services
 		// and not service catalog ones

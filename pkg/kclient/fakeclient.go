@@ -26,6 +26,7 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
 	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.ServicecatalogV1beta1()
+	client.appsClient = fkclientset.Kubernetes.AppsV1()
 
 	return &client, &fkclientset
 }

@@ -48,8 +48,8 @@ func (d Adapter) DoesComponentExist(cmpName string) (bool, error) {
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
-func (d Adapter) Delete(labels map[string]string, show bool) error {
-	return d.componentAdapter.Delete(labels, show)
+func (d Adapter) Delete(labels map[string]string, show bool, wait bool) error {
+	return d.componentAdapter.Delete(labels, show, wait)
 }
 
 // Test runs devfile test command

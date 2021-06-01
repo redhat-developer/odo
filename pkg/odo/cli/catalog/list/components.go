@@ -93,7 +93,7 @@ type combinedCatalogList struct {
 }
 
 // Run contains the logic for the command associated with ListComponentsOptions
-func (o *ListComponentsOptions) Run() (err error) {
+func (o *ListComponentsOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		for i, image := range o.catalogList.Items {
 			// here we don't care about the unsupported tags (second return value)

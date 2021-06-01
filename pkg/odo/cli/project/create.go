@@ -54,7 +54,7 @@ func (pco *ProjectCreateOptions) Validate() (err error) {
 }
 
 // Run runs the project create command
-func (pco *ProjectCreateOptions) Run() (err error) {
+func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 
 	successMessage := fmt.Sprintf(`Project '%s' is ready for use`, pco.projectName)
 

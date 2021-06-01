@@ -5,7 +5,6 @@
 :toclevels: 1
 
 https://github.com/openshift/odo/releases/latest[image:https://img.shields.io/github/v/release/openshift/odo?style=for-the-badge[GitHub release]]
-https://travis-ci.com/openshift/odo[image:https://img.shields.io/travis/com/openshift/odo?style=for-the-badge[Build Status]]
 image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[License]
 
 

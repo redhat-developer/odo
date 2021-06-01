@@ -284,7 +284,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		endpoints = append(endpoints, endpoint)
 	}
 
-	ports, err := localConfig.GetPorts()
+	ports, err := localConfig.GetComponentPorts()
 	if err != nil {
 		return err
 	}

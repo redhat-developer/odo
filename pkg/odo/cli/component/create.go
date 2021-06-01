@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	scontext "github.com/openshift/odo/pkg/segment/context"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -621,7 +623,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if co.devfileMetadata.devfileSupport && !co.forceS2i {
 			registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
-
+			if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
+				registryUtil.PrintGitRegistryDeprecationWarning()
+			}
 			// Initialize envinfo
 			err = co.InitEnvInfoFromContext()
 			if err != nil {
@@ -905,8 +909,8 @@ func (co *CreateOptions) devfileRun() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (co *CreateOptions) Run() (err error) {
-
+func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+	scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
 		err := co.devfileRun()
@@ -980,7 +984,7 @@ func (co *CreateOptions) Run() (err error) {
 			}
 		}
 
-		componentDesc.Spec.Ports, err = co.LocalConfigInfo.GetPorts()
+		componentDesc.Spec.Ports, err = co.LocalConfigInfo.GetComponentPorts()
 		if err != nil {
 			return err
 		}

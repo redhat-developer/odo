@@ -56,7 +56,7 @@ func (o *LoginOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *LoginOptions) Run() (err error) {
+func (o *LoginOptions) Run(cmd *cobra.Command) (err error) {
 	return auth.Login(o.server, o.userName, o.password, o.token, o.caAuth, o.skipTLS)
 }
 

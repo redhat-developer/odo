@@ -10,6 +10,14 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+const (
+	ResourceTypeDeployment = "deployment"
+	ResourceTypePod        = "pod"
+	ResourceTypePVC        = "pvc"
+	ResourceTypeIngress    = "ingress"
+	ResourceTypeService    = "service"
+)
+
 type KubectlRunner struct {
 	// path to kubectl binary
 	path string
@@ -202,4 +210,28 @@ func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
 // and checks if the given resource type has been deleted on the cluster or is in the terminating state
 func (kubectl KubectlRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(kubectl.path, resourceType, namespace, timeoutMinutes)
+}
+
+// VerifyResourceDeleted verifies if the given resource is deleted from cluster.
+func (kubectl KubectlRunner) VerifyResourceDeleted(ri ResourceInfo) {
+	session := CmdRunner(kubectl.path, "get", ri.ResourceType, "--namespace", ri.Namespace)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	Expect(output).NotTo(ContainSubstring(ri.ResourceName))
+}
+
+// VerifyResourceToBeDeleted verifies if a resource if deleted, or if not, if it is marked for deletion
+func (kubectl KubectlRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
+	deletedOrMarkedToDelete := func() bool {
+		session := CmdRunner(kubectl.path, "get", ri.ResourceType, ri.ResourceName, "--namespace", ri.Namespace, "-o", "jsonpath='{.metadata.deletionTimestamp}'")
+		exit := session.Wait().ExitCode()
+		if exit == 1 {
+			// resources does not exist
+			return true
+		}
+		content := session.Wait().Out.Contents()
+		// resource is marked for deletion
+		return len(content) > 0
+	}
+	Expect(deletedOrMarkedToDelete()).To(BeTrue())
 }

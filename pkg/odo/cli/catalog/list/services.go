@@ -63,7 +63,7 @@ func (o *ServiceOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command associated with ListServicesOptions
-func (o *ServiceOptions) Run() (err error) {
+func (o *ServiceOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(newCatalogListOutput(&o.services, o.csvs))
 	} else {

@@ -139,7 +139,7 @@ func (lo *ListOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (lo *ListOptions) Run() (err error) {
+func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 
 	// --path workflow
 

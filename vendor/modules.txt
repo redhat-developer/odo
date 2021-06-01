@@ -489,6 +489,8 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/redhat-developer/service-binding-operator v0.7.1
+github.com/redhat-developer/service-binding-operator/api/v1alpha1
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
 # github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -15,9 +16,10 @@ import (
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
+	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -36,7 +38,7 @@ type commonLinkOptions struct {
 	operationName string
 
 	// Service Binding Operator options
-	serviceBinding unstructured.Unstructured
+	serviceBinding *servicebinding.ServiceBinding
 	serviceType    string
 	serviceName    string
 	*genericclioptions.Context
@@ -113,37 +115,29 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 			return err
 		}
 
-		o.serviceBinding.SetAPIVersion(strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"))
-		o.serviceBinding.SetKind(kclient.ServiceBindingKind)
-		o.serviceBinding.SetName(getServiceBindingName(componentName, o.serviceType, o.serviceName))
+		o.serviceBinding = &servicebinding.ServiceBinding{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"),
+				Kind:       kclient.ServiceBindingKind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      getServiceBindingName(componentName, o.serviceType, o.serviceName),
+				Namespace: o.EnvSpecificInfo.GetNamespace(),
+			},
+			Spec: servicebinding.ServiceBindingSpec{
+				DetectBindingResources: true,
+				BindAsFiles:            false,
+				Application: &servicebinding.Application{
+					Ref: servicebinding.Ref{
+						Name:     componentName,
+						Group:    deploymentGVR.Group,
+						Version:  deploymentGVR.Version,
+						Resource: deploymentGVR.Resource,
+					},
+				},
+			},
+		}
 		o.serviceBinding.SetOwnerReferences(append(o.serviceBinding.GetOwnerReferences(), ownerReference))
-		o.serviceBinding.SetNamespace(o.EnvSpecificInfo.GetNamespace())
-
-		err = unstructured.SetNestedField(o.serviceBinding.Object, true, "spec", "detectBindingResources")
-		if err != nil {
-			return err
-		}
-		err = unstructured.SetNestedField(o.serviceBinding.Object, false, "spec", "bindAsFiles")
-		if err != nil {
-			return err
-		}
-		err = unstructured.SetNestedField(o.serviceBinding.Object, componentName, "spec", "application", "name")
-		if err != nil {
-			return err
-		}
-		err = unstructured.SetNestedField(o.serviceBinding.Object, deploymentGVR.Group, "spec", "application", "group")
-		if err != nil {
-			return err
-		}
-		err = unstructured.SetNestedField(o.serviceBinding.Object, deploymentGVR.Version, "spec", "application", "version")
-		if err != nil {
-			return err
-		}
-		err = unstructured.SetNestedField(o.serviceBinding.Object, deploymentGVR.Resource, "spec", "application", "resource")
-		if err != nil {
-			return err
-		}
-
 		return nil
 	}
 
@@ -236,18 +230,18 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			return err
 		}
 
-		service := map[string]interface{}{
-			"name":      o.serviceName,
-			"group":     group,
-			"version":   version,
-			"kind":      kind,
-			"namespace": o.KClient.Namespace,
+		service := servicebinding.Service{
+			NamespacedRef: servicebinding.NamespacedRef{
+				Ref: servicebinding.Ref{
+					Group:   group,
+					Version: version,
+					Kind:    kind,
+					Name:    o.serviceName,
+				},
+				Namespace: &o.KClient.Namespace,
+			},
 		}
-
-		err = unstructured.SetNestedSlice(o.serviceBinding.Object, []interface{}{service}, "spec", "services")
-		if err != nil {
-			return err
-		}
+		o.serviceBinding.Spec.Services = []servicebinding.Service{service}
 
 		return nil
 	}
@@ -301,9 +295,21 @@ func (o *commonLinkOptions) run() (err error) {
 			return
 		}
 
+		// convert service binding request into a map[string]interface{} type so
+		// as to use it with dynamic client
+		serviceBindingMap := make(map[string]interface{})
+		intermediate, err := json.Marshal(o.serviceBinding)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(intermediate, &serviceBindingMap)
+		if err != nil {
+			return err
+		}
+
 		// this creates a link by creating a service of type
 		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
-		err = o.KClient.CreateDynamicResource(o.serviceBinding.Object, kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+		err = o.KClient.CreateDynamicResource(serviceBindingMap, kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				return fmt.Errorf("component %q is already linked with the service %q", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)

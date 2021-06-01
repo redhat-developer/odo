@@ -3,6 +3,7 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
+	util2 "github.com/openshift/odo/pkg/odo/cli/registry/util"
 
 	// Third-party packages
 	"github.com/pkg/errors"
@@ -60,12 +61,14 @@ func (o *AddOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-
+	if util2.IsGitBasedRegistry(o.registryURL) {
+		util2.PrintGitRegistryDeprecationWarning()
+	}
 	return
 }
 
 // Run contains the logic for "odo registry add" command
-func (o *AddOptions) Run() (err error) {
+func (o *AddOptions) Run(cmd *cobra.Command) (err error) {
 	isSecure := false
 	if o.token != "" {
 		isSecure = true

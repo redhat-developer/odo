@@ -163,7 +163,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				url: localConfigProvider.LocalURL{
 					Name:      "url-1",
 					Port:      8080,
-					Container: "runtime-debug",
+					Container: "runtime",
 				},
 			},
 			wantedURL: localConfigProvider.LocalURL{
@@ -172,7 +172,7 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Secure:    false,
 				Path:      "/",
 				Kind:      localConfigProvider.INGRESS,
-				Container: "runtime-debug",
+				Container: "runtime",
 			},
 		},
 		{
@@ -343,6 +343,31 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 				Container: "runtime",
 			},
 		},
+		{
+			name: "case 15: Does not error out if no port is specified, but container with single port is specified in multi container devfile",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+				componentSettings: ComponentSettings{
+					Name: "nodejs",
+				},
+				isRouteSupported: false,
+			},
+			args: args{url: localConfigProvider.LocalURL{
+				Secure:    false,
+				Port:      -1,
+				Container: "runtime-debug",
+			}},
+			wantErr:   false,
+			updateURL: true,
+			wantedURL: localConfigProvider.LocalURL{
+				Name:      "port-8080",
+				Port:      8080,
+				Secure:    false,
+				Path:      "/",
+				Kind:      localConfigProvider.INGRESS,
+				Container: "runtime-debug",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -364,7 +389,6 @@ func TestEnvInfo_CompleteURL(t *testing.T) {
 			if tt.wantErr && err != nil {
 				return
 			}
-
 			if !reflect.DeepEqual(tt.args.url, tt.wantedURL) {
 				t.Errorf("url doesn't match the required url: %v", pretty.Compare(tt.args.url, tt.wantedURL))
 			}
@@ -605,7 +629,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 	}
 }
 
-func TestEnvInfo_GetPorts(t *testing.T) {
+func TestEnvInfo_GetComponentPorts(t *testing.T) {
 	fs := filesystem.NewFakeFs()
 
 	type fields struct {
@@ -639,13 +663,67 @@ func TestEnvInfo_GetPorts(t *testing.T) {
 				devfileObj:        tt.fields.devfileObj,
 				componentSettings: tt.fields.componentSettings,
 			}
-
-			got, err := ei.GetPorts()
+			got, err := ei.GetComponentPorts()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPorts() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetComponentPorts() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPorts() = %v, want %v", got, tt.want)
+				t.Errorf("GetComponentPorts() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnvInfo_GetContainerPorts(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+
+	type fields struct {
+		devfileObj        parser.DevfileObj
+		componentSettings ComponentSettings
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		container string
+		want      []string
+		wantErr   bool
+	}{
+		{
+			name: "case 1: Returns ports of specified container in multi container devfile",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			want:      []string{"8080"},
+			container: "runtime-debug",
+		},
+		{
+			name: "case 2: Returns error if no container is provided",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 3: Returns error if invalid container is specified",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObjWithMultipleEndpoints(fs),
+			},
+			container: "invalidcontainer",
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ei := &EnvInfo{
+				devfileObj:        tt.fields.devfileObj,
+				componentSettings: tt.fields.componentSettings,
+			}
+			got, err := ei.GetContainerPorts(tt.container)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetContainerPorts() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetContainerPorts() = %v, want %v", got, tt.want)
 			}
 		})
 	}

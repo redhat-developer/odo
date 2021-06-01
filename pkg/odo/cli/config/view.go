@@ -96,7 +96,7 @@ func (o *ViewOptions) DevfileRun() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *ViewOptions) Run() (err error) {
+func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
 
 	if o.IsDevfile {
 		return o.DevfileRun()

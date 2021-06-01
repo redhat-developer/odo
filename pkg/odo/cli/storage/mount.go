@@ -59,7 +59,7 @@ func (o *StorageMountOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo storage mount command
-func (o *StorageMountOptions) Run() (err error) {
+func (o *StorageMountOptions) Run(cmd *cobra.Command) (err error) {
 	err = storage.Mount(o.Client, o.storagePath, o.storageName, o.Component(), o.Application)
 	if err != nil {
 		return
