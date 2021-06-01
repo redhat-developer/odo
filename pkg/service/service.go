@@ -9,6 +9,7 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -704,6 +705,30 @@ func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// IsDefined checks if a service with the given name is defined in a DevFile
+func ListDevfileServices(devfileObj parser.DevfileObj) ([]string, error) {
+	if devfileObj.Data == nil {
+		return nil, nil
+	}
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfile.KubernetesComponentType},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var services []string
+	for _, c := range components {
+		var u unstructured.Unstructured
+		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
+		if err != nil {
+			// TODO log
+			continue
+		}
+		services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
+	}
+	return services, nil
 }
 
 // AddKubernetesComponentToDevfile adds service definition to devfile as an inlined Kubernetes component

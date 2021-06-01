@@ -3,17 +3,15 @@ package service
 import (
 	"fmt"
 	"os"
-	"strings"
 	"text/tabwriter"
-	"time"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -47,7 +45,14 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
 		return err
 	} else if o.csvSupport {
-		o.Context, err = genericclioptions.NewDevfileContext(cmd)
+		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+			Cmd:              cmd,
+			DevfilePath:      component.DevfilePath,
+			ComponentContext: o.componentContext,
+		})
+		if err != nil {
+			return err
+		}
 	} else {
 		o.Context, err = genericclioptions.NewContext(cmd)
 	}
@@ -72,43 +77,13 @@ func (o *ServiceListOptions) Run(cmd *cobra.Command) (err error) {
 	if o.csvSupport {
 		// if cluster supports Operators, we list only operator backed services
 		// and not service catalog ones
-		var list []unstructured.Unstructured
-		list, failedListingCR, err := svc.ListOperatorServices(o.KClient)
-		if err != nil {
-			return err
-		}
-
-		if len(list) == 0 {
-			if len(failedListingCR) > 0 {
-				fmt.Printf("Failed to fetch services for operator(s): %q\n\n", strings.Join(failedListingCR, ", "))
-			}
-			return fmt.Errorf("no operator backed services found in namespace: %s", o.KClient.Namespace)
-		}
-
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(list)
-			return nil
-		} else {
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-
-			fmt.Fprintln(w, "NAME", "\t", "AGE")
-
-			for _, item := range list {
-				duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Second).String()
-				fmt.Fprintln(w, strings.Join([]string{item.GetKind(), item.GetName()}, "/"), "\t", duration)
-			}
-
-			w.Flush()
-
-		}
-
-		if len(failedListingCR) > 0 {
-			fmt.Printf("\nFailed to fetch services for operator(s): %q\n", strings.Join(failedListingCR, ", "))
-		}
-
-		return err
+		return o.listOperatorServices(cmd)
 	}
 
+	return o.listServiceCatalogServices(cmd)
+}
+
+func (o *ServiceListOptions) listServiceCatalogServices(cmd *cobra.Command) (err error) {
 	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {
 		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
