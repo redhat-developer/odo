@@ -25,4 +25,5 @@ type CliRunner interface {
 	WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool
 	VerifyResourceDeleted(ri ResourceInfo)
 	VerifyResourceToBeDeleted(ri ResourceInfo)
+	GetAnnotationsDeployment(cmpName, appName, projectName string) map[string]string
 }

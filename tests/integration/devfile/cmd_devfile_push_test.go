@@ -88,8 +88,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
+			helper.CmdShouldPass("git", "init")
+			remote := "origin"
+			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
+			helper.CmdShouldPass("git", "remote", "add", remote, remoteURL)
+
 			output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
+			var valueFound bool
+			for key, value := range annotations {
+				if key == "app.openshift.io/vcs-uri" && value == remoteURL {
+					valueFound = true
+				}
+			}
+			Expect(valueFound).To(BeTrue())
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
