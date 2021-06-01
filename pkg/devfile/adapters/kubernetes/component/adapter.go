@@ -559,7 +559,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	return nil
 }
 
-// getDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name and labels
+// generateDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name and labels
 // if no deployment exists, it creates a new deployment name
 func (a Adapter) generateDeploymentObjectMeta(labels map[string]string) (metav1.ObjectMeta, error) {
 	if a.deployment != nil {
