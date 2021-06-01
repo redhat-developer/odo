@@ -692,6 +692,7 @@ func IsCSVSupported() (bool, error) {
 	return client.GetKubeClient().IsCSVSupported()
 }
 
+// IsDefined checks if a service with the given name is defined in a DevFile
 func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
 	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
 	if err != nil {
