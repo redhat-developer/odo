@@ -4,6 +4,8 @@
 
 ### Feature/Enhancements
 
+- Custom link name and bind-as-files option for `odo link` ([#4729](https://github.com/openshift/odo/pull/4729))
+
 ### Bug Fixes
 
 ### Tests
