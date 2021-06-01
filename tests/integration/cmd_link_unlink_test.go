@@ -134,8 +134,8 @@ var _ = Describe("odo link and unlink command tests", func() {
 			// deploy the component and service
 			helper.CmdShouldPass("odo", "push")
 
-			// create the link with a specific name and with bindAsFiles
-			helper.CmdShouldPass("odo", "link", "EtcdCluster/etcd", "--name", "etcd-config", "--bindAsFiles")
+			// create the link with a specific name and with bind-as-files
+			helper.CmdShouldPass("odo", "link", "EtcdCluster/etcd", "--name", "etcd-config", "--bind-as-files")
 
 			// for the moment, odo push is not necessary
 
