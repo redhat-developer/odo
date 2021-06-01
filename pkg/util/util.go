@@ -1484,12 +1484,19 @@ func GetEnvWithDefault(key string, defaultval string) string {
 // or if it is set, it points to a valid file
 func IsValidKubeConfigPath() bool {
 	v := os.Getenv("KUBECONFIG")
-	if v != "" {
-		f1, err := os.Stat(v)
-		if os.IsNotExist(err) || f1.IsDir() {
-			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s", v)
+	if v == "" {
+		u, err := user.Current()
+		if err != nil {
+			klog.V(4).Infof("failed to get user from os %s", err.Error())
 			return false
 		}
+		v = fmt.Sprintf("%s%c.kube%cconfig", u.HomeDir, os.PathSeparator, os.PathSeparator)
+		klog.V(4).Infof("Using default kubeconfig path %s", v)
+	}
+	f1, err := os.Stat(v)
+	if os.IsNotExist(err) || f1.IsDir() {
+		klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s", v)
+		return false
 	}
 	return true
 }
