@@ -1481,8 +1481,8 @@ func GetEnvWithDefault(key string, defaultval string) string {
 	return val
 }
 
-//IsValidKubeConfigPath checks if specified `KUBECONFIG` value is valid i.e it returs true if `KUBECONFIG` env is not set
-// or if it is set, it points to a valid file
+//IsValidKubeConfigPath checks if specified `KUBECONFIG` value is a valid file i.e the path should exist and be a file
+//if env `KUBECONFIG` is set then that is used or default `KUBECONFIG` is checked
 func IsValidKubeConfigPath() bool {
 	v := os.Getenv("KUBECONFIG")
 	if v == "" {
