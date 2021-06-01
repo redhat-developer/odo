@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/client-go/util/homedir"
 	"math/big"
 	"net"
 	"net/http"
@@ -1478,4 +1479,29 @@ func GetEnvWithDefault(key string, defaultval string) string {
 		return defaultval
 	}
 	return val
+}
+
+//IsValidKubeConfigPath checks if specified `KUBECONFIG` value is a valid file i.e the path should exist and be a file
+//if env `KUBECONFIG` is set then that is used or default `KUBECONFIG` is checked
+func IsValidKubeConfigPath() bool {
+	v := os.Getenv("KUBECONFIG")
+	if v == "" {
+		if home := homedir.HomeDir(); home != "" {
+			v = filepath.Join(home, ".kube", "config")
+			klog.V(4).Infof("using default kubeconfig path %s", v)
+		} else {
+			klog.V(4).Infof("no KUBECONFIG provided and cannot fallback to default")
+			return false
+		}
+	}
+	f1, err := os.Stat(v)
+	if os.IsNotExist(err) {
+		klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which does no exist", v)
+		return false
+	}
+	if f1.IsDir() {
+		klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which is a directory", v)
+		return false
+	}
+	return true
 }

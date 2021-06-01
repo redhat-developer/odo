@@ -6,6 +6,8 @@
 
 ### Bug Fixes
 
+- Adding KUBECONFIG checks in odo catalog list components ([#4756](https://github.com/openshift/odo/pull/4756))
+
 ### Tests
 
 ### Documentation
