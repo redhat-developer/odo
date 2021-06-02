@@ -12,7 +12,7 @@
 > /kind flake
 > /kind code-refactoring
 >
-> Documentation changes: CI would automatically not run tests based on which files have been edited.
+> Documentation changes: CI will automatically skip test runs if it is a doc related change.
 > /kind documentation
 
 **What does this PR do / why we need it**:
