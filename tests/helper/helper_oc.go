@@ -612,7 +612,7 @@ func (oc OcRunner) CreateRandNamespaceProject() string {
 	return projectName
 }
 
-// CreateRandNamespaceProject creates a new project with name of length i
+// CreateRandNamespaceProjectOfLength creates a new project with name of length i
 func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)
 	oc.createRandNamespaceProject(projectName)
@@ -685,4 +685,10 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 // and checks if the given resource type has been deleted on the cluster or is in the terminating state
 func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
+}
+
+// GetAnnotationsDeployment gets the annotations from the deployment
+// belonging to the given component, app and project
+func (oc OcRunner) GetAnnotationsDeployment(componentName, appName, projectName string) map[string]string {
+	return GetAnnotationsDeployment(oc.path, componentName, appName, projectName)
 }

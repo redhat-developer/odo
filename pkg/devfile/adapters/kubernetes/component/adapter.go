@@ -468,6 +468,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	deployment := generator.GetDeployment(deployParams)
+	if vcsUri := util.GetGitOriginPath(a.Context); vcsUri != "" {
+		if deployment.Annotations == nil {
+			deployment.Annotations = make(map[string]string)
+		}
+		deployment.Annotations["app.openshift.io/vcs-uri"] = vcsUri
+	}
 
 	serviceParams := generator.ServiceParams{
 		ObjectMeta:     objectMeta,
