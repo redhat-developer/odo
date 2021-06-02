@@ -10,8 +10,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/component/labels"
 )
 
 const (
@@ -614,7 +612,7 @@ func (oc OcRunner) CreateRandNamespaceProject() string {
 	return projectName
 }
 
-// CreateRandNamespaceProject creates a new project with name of length i
+// CreateRandNamespaceProjectOfLength creates a new project with name of length i
 func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)
 	oc.createRandNamespaceProject(projectName)
@@ -692,21 +690,5 @@ func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace strin
 // GetAnnotationsDeployment gets the annotations from the deployment
 // belonging to the given component, app and project
 func (oc OcRunner) GetAnnotationsDeployment(componentName, appName, projectName string) map[string]string {
-	var mapOutput = make(map[string]string)
-
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
-	output := CmdShouldPass(oc.path, "get", "deployment", selector, "--namespace", projectName,
-		"-o", "go-template='{{ range $k, $v := (index .items 0).metadata.annotations}}{{$k}}:{{$v}}{{\"\\n\"}}{{end}}'")
-
-	for _, line := range strings.Split(output, "\n") {
-		line = strings.TrimPrefix(line, "'")
-		splits := strings.Split(line, ":")
-		if len(splits) < 2 {
-			continue
-		}
-		name := splits[0]
-		value := strings.Join(splits[1:], ":")
-		mapOutput[name] = value
-	}
-	return mapOutput
+	return GetAnnotationsDeployment(oc.path, componentName, appName, projectName)
 }
