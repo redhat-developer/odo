@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/client-go/util/homedir"
 	"math/big"
 	"net"
 	"net/http"
@@ -26,6 +25,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"k8s.io/client-go/util/homedir"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
