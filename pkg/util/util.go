@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/client-go/util/homedir"
 	"math/big"
 	"net"
 	"net/http"
@@ -26,6 +25,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"k8s.io/client-go/util/homedir"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
@@ -1066,8 +1067,13 @@ func CheckKubeConfigExist() bool {
 	if os.Getenv("KUBECONFIG") != "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 	} else {
-		home, _ := os.UserHomeDir()
-		kubeconfig = fmt.Sprintf("%s/.kube/config", home)
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = filepath.Join(home, ".kube", "config")
+			klog.V(4).Infof("using default kubeconfig path %s", kubeconfig)
+		} else {
+			klog.V(4).Infof("no KUBECONFIG provided and cannot fallback to default")
+			return false
+		}
 	}
 
 	if CheckPathExists(kubeconfig) {
