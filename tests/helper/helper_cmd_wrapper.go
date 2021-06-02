@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,11 +13,17 @@ import (
 )
 
 type CmdWrapper struct {
-	Cmd     *exec.Cmd
-	program string
-	args    []string
-	writer  *gexec.PrefixedWriter
-	session *gexec.Session
+	Cmd             *exec.Cmd
+	program         string
+	args            []string
+	writer          *gexec.PrefixedWriter
+	session         *gexec.Session
+	timeout         time.Duration
+	intervalSeconds time.Duration
+	stopChan        chan bool
+	err             error
+	maxRetry        int
+	pass            bool
 }
 
 func Cmd(program string, args ...string) *CmdWrapper {
@@ -30,11 +38,88 @@ func Cmd(program string, args ...string) *CmdWrapper {
 	}
 }
 
-func (cw *CmdWrapper) ShouldPass() *CmdWrapper {
+func (cw *CmdWrapper) Runner() *CmdWrapper {
 	fmt.Fprintln(GinkgoWriter, runningCmd(cw.Cmd))
-	session, err := gexec.Start(cw.Cmd, cw.writer, cw.writer)
-	Expect(err).NotTo(HaveOccurred())
-	cw.session = session
+	cw.session, cw.err = gexec.Start(cw.Cmd, cw.writer, cw.writer)
+	timeout := time.After(cw.timeout)
+	if cw.timeout > 0 {
+		select {
+		case <-cw.stopChan:
+			if cw.session != nil {
+				if runtime.GOOS == "windows" {
+					cw.session.Kill()
+				} else {
+					cw.session.Terminate()
+				}
+			}
+		case <-timeout:
+			if cw.session != nil {
+				if runtime.GOOS == "windows" {
+					cw.session.Kill()
+				} else {
+					cw.session.Terminate()
+				}
+			}
+		}
+	} else if cw.maxRetry > 0 {
+		cw.session.Wait()
+		// cw.pass is to check if it is used with ShouldPass Or ShouldFail
+		if !cw.pass {
+			// we retry on success because the user has set “ShouldFail” as true
+			// if exit code is 0 which means the program succeeded and hence we retry
+			if cw.session.ExitCode() == 0 {
+				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
+				cw.maxRetry = cw.maxRetry - 1
+				cw.Runner()
+			}
+			return cw
+		} else {
+			// if exit code is not 0 which means the program Failed and hence we retry
+			if cw.session.ExitCode() != 0 {
+				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
+				cw.maxRetry = cw.maxRetry - 1
+				cw.Runner()
+			}
+			return cw
+		}
+	}
+	return cw
+}
+
+func (cw *CmdWrapper) WithRetry(maxRetry int, intervalSeconds time.Duration) *CmdWrapper {
+	cw.maxRetry = maxRetry
+	cw.intervalSeconds = intervalSeconds
+	return cw
+}
+
+func (cw *CmdWrapper) ShouldPass() *CmdWrapper {
+	cw.pass = true
+	cw.Runner()
+	Expect(cw.err).NotTo(HaveOccurred())
+	Eventually(cw.session).Should(gexec.Exit(0), runningCmd(cw.session.Command))
+	return cw
+}
+
+func (cw *CmdWrapper) ShouldFail() *CmdWrapper {
+	cw.pass = false
+	cw.Runner()
+	Consistently(cw.session).ShouldNot(gexec.Exit(0), runningCmd(cw.session.Command))
+	return cw
+}
+
+func (cw *CmdWrapper) ShouldRun() *CmdWrapper {
+	cw.Runner()
+	return cw
+}
+
+func (cw *CmdWrapper) WithTerminate(timeoutAfter time.Duration, stop chan bool) *CmdWrapper {
+	cw.timeout = time.Duration(timeoutAfter) * time.Second
+	cw.stopChan = stop
+	return cw
+}
+
+func (cw *CmdWrapper) WithTimeout(timeoutAfter time.Duration) *CmdWrapper {
+	cw.timeout = time.Duration(timeoutAfter) * time.Second
 	return cw
 }
 
@@ -49,4 +134,8 @@ func (cw *CmdWrapper) OutAndErr() (string, string) {
 
 func (cw *CmdWrapper) Out() string {
 	return string(cw.session.Wait().Out.Contents())
+}
+
+func (cw *CmdWrapper) Err() string {
+	return string(cw.session.Wait().Err.Contents())
 }
