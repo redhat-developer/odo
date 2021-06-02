@@ -6,11 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -22,20 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/log"
 )
-
-/*
-Devfile support is an experimental feature which extends the support for the
-use of Che devfiles in odo for performing various odo operations.
-
-The devfile support progress can be tracked by:
-https://github.com/openshift/odo/issues/2467
-
-Please note that this feature is currently under development,
-the feature will be available with experimental mode enabled.
-
-The behaviour of this feature is subject to change as development for this
-feature progresses.
-*/
 
 // Constants for devfile component
 const (
@@ -81,17 +65,11 @@ func (po *PushOptions) DevfilePush() error {
 
 func (po *PushOptions) devfilePushInner() (err error) {
 
-	// Parse devfile and validate
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
+	devObj, err := devfile.ParseFromFile(po.DevfilePath)
 	if err != nil {
 		return err
 	}
 
-	// odo specific validations
-	err = validate.ValidateDevfileData(devObj.Data)
-	if err != nil {
-		return err
-	}
 	componentName := po.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)
@@ -152,15 +130,11 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 // DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
-	// Parse devfile
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
+	devObj, err := devfile.ParseFromFile(lo.devfilePath)
 	if err != nil {
 		return err
 	}
-	err = validate.ValidateDevfileData(devObj.Data)
-	if err != nil {
-		return err
-	}
+
 	componentName := lo.Context.EnvSpecificInfo.GetName()
 
 	var platformContext interface{}
@@ -208,15 +182,11 @@ func (lo LogOptions) DevfileComponentLog() error {
 
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
-	// Parse devfile and validate
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: do.devfilePath})
+	devObj, err := devfile.ParseFromFile(do.devfilePath)
 	if err != nil {
 		return err
 	}
-	err = validate.ValidateDevfileData(devObj.Data)
-	if err != nil {
-		return err
-	}
+
 	componentName := do.EnvSpecificInfo.GetName()
 
 	kc := kubernetes.KubernetesContext{
@@ -253,12 +223,7 @@ func (to *TestOptions) RunTestCommand() error {
 
 // DevfileComponentExec executes the given user command inside the component
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
-	// Parse devfile
-	devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: eo.devfilePath})
-	if err != nil {
-		return err
-	}
-	err = validate.ValidateDevfileData(devObj.Data)
+	devObj, err := devfile.ParseFromFile(eo.devfilePath)
 	if err != nil {
 		return err
 	}
