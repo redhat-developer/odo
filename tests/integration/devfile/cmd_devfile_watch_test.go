@@ -204,7 +204,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
 
 			// check that the --debug-command fails when the component is not pushed using debug mode
-			output = helper.CmdShouldFailWithRetry(1, 1, "odo", "watch", "--debug-command", "debug")
+			output = helper.Cmd("odo", "watch", "--debug-command", "debug").WithRetry(1, 1).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("please start the component in debug mode"))
 		})
 	})
