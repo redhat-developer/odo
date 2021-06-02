@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/client-go/util/homedir"
 	"math/big"
 	"net"
 	"net/http"
@@ -27,6 +26,8 @@ import (
 	"syscall"
 	"time"
 
+	"k8s.io/client-go/util/homedir"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
@@ -37,7 +38,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog"
 )
 
