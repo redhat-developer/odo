@@ -306,8 +306,14 @@ func CommonBeforeEach() CommonVar {
 }
 
 // CommonAfterEach is common function that cleans up after every test Spec (It)
-func CommonAfterEach(commonVar CommonVar) {
-	CmdShouldPass("oc", "describe", "pods", "-n", commonVar.Project)
+func CommonAfterEach(commonVar CommonVar) bool {
+	session := CmdRunner("oc", "describe", "pods", "-n", commonVar.Project)
+	session.Wait()
+	output := string(session.Out.Contents())
+	if CurrentGinkgoTestDescription().Failed && strings.Contains(string(output), "AttachVolume.Attach failed for volume") {
+		fmt.Println("volume error with project", commonVar.Project)
+		return false
+	}
 	// delete the random project/namespace created in CommonBeforeEach
 	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
 
@@ -320,6 +326,7 @@ func CommonAfterEach(commonVar CommonVar) {
 	DeleteDir(commonVar.Context)
 
 	os.Unsetenv("GLOBALODOCONFIG")
+	return true
 }
 
 // GjsonMatcher validates if []results from gjson.GetMany match the expected values for each json path requested
