@@ -1,10 +1,6 @@
 package integration
 
 import (
-	"fmt"
-	"regexp"
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -25,7 +21,6 @@ var _ = Describe("odo link and unlink command tests", func() {
 	var _ = BeforeEach(func() {
 		// oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
-		helper.Chdir(commonVar.Context)
 	})
 
 	// Clean up after the test
@@ -33,17 +28,6 @@ var _ = Describe("odo link and unlink command tests", func() {
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
-
-	preSetup := func() {
-		// wait till oc can see the all operators installed by setup script in the namespace
-		odoArgs := []string{"catalog", "list", "services"}
-		operators := []string{"etcdoperator", "service-binding-operator"}
-		for _, operator := range operators {
-			helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
-				return strings.Contains(output, operator)
-			})
-		}
-	}
 
 	Context("when running help for link and unlink command", func() {
 		It("should display the help", func() {
@@ -54,104 +38,6 @@ var _ = Describe("odo link and unlink command tests", func() {
 		})
 	})
 
-	Context("When running an etcd operator backed service", func() {
-
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		It("should be able to link the component to the etcd service", func() {
-
-			// create a component and deploy it
-			helper.CmdShouldPass("odo", "create", "nodejs")
-
-			// create an etcd service
-			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "etcd")
-
-			// deploy the component and service
-			helper.CmdShouldPass("odo", "push")
-
-			// create the link
-			helper.CmdShouldPass("odo", "link", "EtcdCluster/etcd")
-
-			// for the moment, odo push is not necessary
-
-			// check the link exists
-			ocArgs := []string{"get", "servicebinding", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "etcdcluster-etcd")
-			})
-
-			helper.CmdShouldPass("odo", "unlink", "EtcdCluster/etcd")
-
-			// delete the service using odo
-			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcd", "-f")
-		})
-
-		It("should be able to link the component to the etcd service with a specific name", func() {
-
-			// create a component and deploy it
-			helper.CmdShouldPass("odo", "create", "nodejs")
-
-			// create an etcd service
-			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "etcd")
-
-			// deploy the component and service
-			helper.CmdShouldPass("odo", "push")
-
-			// create the link with a specific name
-			helper.CmdShouldPass("odo", "link", "EtcdCluster/etcd", "--name", "etcd-config")
-
-			// for the moment, odo push is not necessary
-
-			// check the link exists with the specific name
-			ocArgs := []string{"get", "servicebinding", "etcd-config", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "etcd-config")
-			})
-
-			// delete the link
-			helper.CmdShouldPass("odo", "unlink", "EtcdCluster/etcd")
-
-			// delete the etcd service
-			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcd", "-f")
-		})
-
-		It("should be able to link the component to the etcd service with a specific name and activating bindAsFiles", func() {
-
-			// create a component and deploy it
-			helper.CmdShouldPass("odo", "create", "nodejs")
-
-			// create an etcd service
-			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "etcd")
-
-			// deploy the component and service
-			helper.CmdShouldPass("odo", "push")
-
-			// create the link with a specific name and with bind-as-files
-			helper.CmdShouldPass("odo", "link", "EtcdCluster/etcd", "--name", "etcd-config", "--bind-as-files")
-
-			// for the moment, odo push is not necessary
-
-			// check the link exists with the specific name
-			ocArgs := []string{"get", "servicebinding", "etcd-config", "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "true")
-			})
-
-			// delete the link
-			helper.CmdShouldPass("odo", "unlink", "EtcdCluster/etcd")
-
-			// delete the etcd service
-			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcd", "-f")
-		})
-	})
 	/*
 		Context("When link between components using wrong port", func() {
 			JustBeforeEach(func() {
