@@ -895,6 +895,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 
 func TestSearchLinkName(t *testing.T) {
 	tests := []struct {
+		name        string
 		ei          *EnvInfo
 		serviceKind string
 		serviceName string
@@ -902,6 +903,7 @@ func TestSearchLinkName(t *testing.T) {
 		wantFound   bool
 	}{
 		{
+			name: "Case 1: Existing link",
 			ei: &EnvInfo{
 				componentSettings: ComponentSettings{
 					Link: &[]EnvInfoLink{
@@ -924,6 +926,7 @@ func TestSearchLinkName(t *testing.T) {
 			wantFound:   true,
 		},
 		{
+			name: "Case 2: Non existing link",
 			ei: &EnvInfo{
 				componentSettings: ComponentSettings{
 					Link: &[]EnvInfoLink{
@@ -947,13 +950,15 @@ func TestSearchLinkName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result, found := tt.ei.SearchLinkName(tt.serviceKind, tt.serviceName)
-		if found != tt.wantFound {
-			t.Errorf("Expected found %v, got %v", tt.wantFound, found)
-		}
-		if found && result != tt.want {
-			t.Errorf("Expected %q, got %q", tt.want, result)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			result, found := tt.ei.SearchLinkName(tt.serviceKind, tt.serviceName)
+			if found != tt.wantFound {
+				t.Errorf("Expected found %v, got %v", tt.wantFound, found)
+			}
+			if found && result != tt.want {
+				t.Errorf("Expected %q, got %q", tt.want, result)
+			}
+		})
 	}
 }
 
