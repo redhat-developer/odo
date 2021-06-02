@@ -24,7 +24,7 @@ type clusterInfo struct {
 
 type serviceItem struct {
 	ClusterInfo *clusterInfo
-	DevfileInfo *string
+	InDevfile   bool
 }
 
 // listOperatorServices lists the operator backed services
@@ -105,12 +105,12 @@ func mixServices(clusterList []unstructured.Unstructured, devfileList []string) 
 		}
 	}
 
-	for i, item := range devfileList {
+	for _, item := range devfileList {
 		name := item
 		if _, ok := servicesItems[name]; !ok {
 			servicesItems[name] = &serviceItem{}
 		}
-		servicesItems[name].DevfileInfo = &devfileList[i]
+		servicesItems[name].InDevfile = true
 	}
 	return
 
@@ -131,7 +131,7 @@ func getOrderedServicesNames(servicesItems map[string]*serviceItem) (orderedName
 // getTabularInfo returns information to be displayed in the output for a specific service and a specific current devfile component
 func getTabularInfo(serviceItem *serviceItem, devfileComponent string) (managedByOdo, state, duration string) {
 	clusterItem := serviceItem.ClusterInfo
-	devfileItem := serviceItem.DevfileInfo
+	inDevfile := serviceItem.InDevfile
 	if clusterItem != nil {
 		// service deployed into cluster
 		var component string
@@ -144,7 +144,7 @@ func getTabularInfo(serviceItem *serviceItem, devfileComponent string) (managedB
 			managedByOdo = "No"
 		}
 		duration = time.Since(clusterItem.CreationTimestamp).Truncate(time.Second).String()
-		if devfileItem != nil {
+		if inDevfile {
 			// service deployed into cluster and defined in devfile
 			state = "Pushed"
 		} else {
@@ -160,7 +160,7 @@ func getTabularInfo(serviceItem *serviceItem, devfileComponent string) (managedB
 			}
 		}
 	} else {
-		if devfileItem != nil {
+		if inDevfile {
 			// service not deployed into cluster and defined in devfile
 			state = "Not pushed"
 			managedByOdo = fmt.Sprintf("Yes (%s)", devfileComponent)
