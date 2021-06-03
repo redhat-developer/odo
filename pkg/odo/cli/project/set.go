@@ -3,6 +3,8 @@ package project
 import (
 	"fmt"
 
+	scontext "github.com/openshift/odo/pkg/segment/context"
+
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
@@ -66,6 +68,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 
 // Run runs the project set command
 func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
+	scontext.SetClusterType(cmd.Context(), pso.Client)
 	current := pso.Project
 	err = project.SetCurrent(pso.Context, pso.projectName)
 	if err != nil {

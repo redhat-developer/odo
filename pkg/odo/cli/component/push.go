@@ -259,6 +259,7 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
+	scontext.SetComponentType(cmd.Context(), po.Devfile.Data.GetMetadata().Name)
 	scontext.SetClusterType(cmd.Context(), po.Client)
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
