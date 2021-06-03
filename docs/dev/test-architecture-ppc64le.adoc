@@ -1,6 +1,6 @@
 = test-architecture-ppc64le
 For all tests on ppc64le arch, the openshift cluster version is 4.3 or newer.
-The prerequisites, please refer to default https://github.com/openshift/odo/blob/master/docs/dev/test-architecture.adoc[test-architecture]!
+The prerequisites, please refer to default https://github.com/openshift/odo/blob/main/docs/dev/test-architecture.adoc[test-architecture]!
 
 == Running integration and e2e tests locally
 
