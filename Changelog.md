@@ -10,6 +10,7 @@
 
 - Adding KUBECONFIG checks in odo catalog list components ([#4756](https://github.com/openshift/odo/pull/4756))
 - use filepath Join instead of / while constructing kubeconfig path ([#4765](https://github.com/openshift/odo/pull/4765))
+- `odo push` can deploy new services when a service is already deployed ([#4772](https://github.com/openshift/odo/pull/4772))
 
 ### Tests
 
