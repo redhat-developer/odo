@@ -40,14 +40,14 @@ var _ = Describe("odo supported images e2e tests", func() {
 		cmpName := srcType + "-app"
 		// create the component
 		helper.CopyExample(filepath.Join("source", srcType), commonVar.Context)
-		helper.CmdShouldPass("odo", "create", "--s2i", cmpType, cmpName, "--project", project, "--context", context, "--app", appName)
+		helper.Cmd("odo", "create", "--s2i", cmpType, cmpName, "--project", project, "--context", context, "--app", appName).ShouldPass()
 
 		// push component and validate
-		helper.CmdShouldPass("odo", "push", "--context", context)
-		cmpList := helper.CmdShouldPass("odo", "list", "--context", context)
+		helper.Cmd("odo", "push", "--context", context).ShouldPass()
+		cmpList := helper.Cmd("odo", "list", "--context", context).ShouldPass().Out()
 		Expect(cmpList).To(ContainSubstring(srcType + "-app"))
 		// push again just to confirm it works
-		helper.CmdShouldPass("odo", "push", "--context", context)
+		helper.Cmd("odo", "push", "--context", context).ShouldPass()
 		// get the url
 		routeURL := helper.DetermineRouteURL(context)
 
@@ -57,11 +57,11 @@ var _ = Describe("odo supported images e2e tests", func() {
 		// edit source and validate
 		if srcType == "openjdk" {
 			helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello Java UPDATED")
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.Cmd("odo", "push", "--context", context).ShouldPass()
 			helper.HttpWaitFor(routeURL, "Hello Java UPDATED", 90, 1)
 		} else {
 			helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello nodejs UPDATED")
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.Cmd("odo", "push", "--context", context).ShouldPass()
 			helper.HttpWaitFor(routeURL, "Hello nodejs UPDATED", 90, 1)
 		}
 
@@ -77,8 +77,8 @@ var _ = Describe("odo supported images e2e tests", func() {
 			}, project, context, watchFlag, oc, "kube")
 
 		// delete the component and validate
-		helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")
-		cmpLst := helper.CmdShouldPass("odo", "list", "--context", context)
+		helper.Cmd("odo", "app", "delete", "app", "--project", project, "-f").ShouldPass()
+		cmpLst := helper.Cmd("odo", "list", "--context", context).ShouldPass().Out()
 		Expect(cmpLst).To(ContainSubstring("Not Pushed"))
 	}
 
