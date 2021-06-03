@@ -7,5 +7,5 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	helper.RunTestSpecs(t, "Project Suite")
+	helper.RunTestSpecs(t, "Devfile Debug Suite")
 }

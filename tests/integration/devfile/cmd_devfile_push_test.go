@@ -1022,7 +1022,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		var freePort int
 		var parentTmpFolder string
 
-		var _ = BeforeSuite(func() {
+		var _ = BeforeEach(func() {
 			// get a free port
 			var err error
 			freePort, err = util.HTTPGetFreePort()
@@ -1041,7 +1041,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
 		})
 
-		var _ = AfterSuite(func() {
+		var _ = AfterEach(func() {
 			helper.DeleteDir(parentTmpFolder)
 			err := server.Close()
 			Expect(err).To(BeNil())
