@@ -208,7 +208,10 @@ metadata:
 		t.Run(tt.name, func(t *testing.T) {
 			us := make([]unstructured.Unstructured, len(tt.clusterListInlined))
 			for i, clusterInlined := range tt.clusterListInlined {
-				yaml.Unmarshal([]byte(clusterInlined), &us[i])
+				err := yaml.Unmarshal([]byte(clusterInlined), &us[i])
+				if err != nil {
+					t.Errorf("Fail to unmarshal spec manifest")
+				}
 			}
 			result := mixServices(us, tt.devfileList)
 			if !reflect.DeepEqual(result, tt.want) {

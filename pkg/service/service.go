@@ -309,6 +309,10 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 
 	// First let's get the list of all the operators in the namespace
 	csvs, err := client.ListClusterServiceVersions()
+	if err == kclient.ErrNoSuchOperator {
+		return nil, nil, err
+	}
+
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Unable to list operator backed services")
 	}
@@ -707,7 +711,7 @@ func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
 	return false, nil
 }
 
-// IsDefined checks if a service with the given name is defined in a DevFile
+// ListDevfileServices returns the names of the services defined in a Devfile
 func ListDevfileServices(devfileObj parser.DevfileObj) ([]string, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
@@ -723,8 +727,7 @@ func ListDevfileServices(devfileObj parser.DevfileObj) ([]string, error) {
 		var u unstructured.Unstructured
 		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
 		if err != nil {
-			// TODO log
-			continue
+			return nil, err
 		}
 		services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
 	}
@@ -853,15 +856,29 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 	metaMap["labels"] = labels
 }
 
-// CreateServiceFromKubernetesInlineComponents creates service(s) from Kubernetes Inlined component in a devfile
-func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) ([]string, error) {
-	if len(k8sComponents) == 0 {
-		// if there's no Kubernetes Inlined component, there's nothing to do.
-		return []string{}, nil
+// PushServiceFromKubernetesInlineComponents updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
+func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) ([]string, []string, error) {
+
+	created := []string{}
+	deleted := []string{}
+
+	deployed := map[string]struct{}{}
+
+	deployedServices, _, err := ListOperatorServices(client)
+	if err != nil && err != kclient.ErrNoSuchOperator {
+		// We ignore ErrNoSuchOperator error as we can deduce Operator Services are not installed
+		return nil, nil, err
+	}
+	for _, svc := range deployedServices {
+		name := svc.GetName()
+		kind := svc.GetKind()
+		deployedLabels := svc.GetLabels()
+		if deployedLabels[applabels.OdoManagedBy] == "odo" && deployedLabels[componentlabels.ComponentLabel] == labels[componentlabels.ComponentLabel] {
+			deployed[kind+"/"+name] = struct{}{}
+		}
 	}
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
-	var services []string
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
 		strCRD := c.Kubernetes.Inlined
@@ -870,12 +887,12 @@ func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComp
 		d := NewDynamicCRD()
 		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
 		if err != nil {
-			return []string{}, err
+			return nil, nil, err
 		}
 
 		cr, csv, err := GetCSV(client, d.OriginalCRD)
 		if err != nil {
-			return []string{}, err
+			return nil, nil, err
 		}
 
 		var group, version, kind, resource string
@@ -883,7 +900,7 @@ func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComp
 			if crd.Kind == cr {
 				group, version, kind, resource, err = getGVKRFromCR(crd)
 				if err != nil {
-					return []string{}, err
+					return nil, nil, err
 				}
 				break
 			}
@@ -891,6 +908,13 @@ func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComp
 
 		// add labels to the CRD before creation
 		d.AddComponentLabelsToCRD(labels)
+
+		crdName, ok := getCRDName(d.OriginalCRD)
+		if !ok {
+			continue
+		}
+
+		delete(deployed, cr+"/"+crdName)
 
 		// create the service on cluster
 		err = client.CreateDynamicResource(d.OriginalCRD, group, version, resource)
@@ -901,13 +925,33 @@ func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComp
 				err = nil
 				continue // this ensures that services slice is not updated
 			} else {
-				return []string{}, err
+				return nil, nil, err
 			}
 		}
 
 		name, _ := d.GetServiceNameFromCRD() // ignoring error because invalid yaml won't be inserted into devfile through odo
-		services = append(services, strings.Join([]string{kind, name}, "/"))
+		created = append(created, strings.Join([]string{kind, name}, "/"))
 	}
 
-	return services, nil
+	for key := range deployed {
+		err = DeleteOperatorService(client, key)
+		if err != nil {
+			return nil, nil, err
+
+		}
+		deleted = append(deleted, key)
+	}
+	return created, deleted, nil
+}
+
+func getCRDName(crd map[string]interface{}) (string, bool) {
+	metadata, ok := crd["metadata"].(map[string]interface{})
+	if !ok {
+		return "", false
+	}
+	name, ok := metadata["name"].(string)
+	if !ok {
+		return "", false
+	}
+	return name, true
 }
