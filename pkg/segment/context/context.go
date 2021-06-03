@@ -24,11 +24,11 @@ func NewContext(ctx context.Context) context.Context {
 
 // GetContextProperties retrieves all the values set in a given context
 func GetContextProperties(ctx context.Context) map[string]interface{} {
-	properties := propertiesFromContext(ctx)
-	if properties == nil {
+	cProperties := propertiesFromContext(ctx)
+	if cProperties == nil {
 		return make(map[string]interface{})
 	}
-	return properties.values()
+	return cProperties.values()
 }
 
 // SetComponentType sets componentType property for telemetry data when a new component is created
@@ -65,9 +65,9 @@ func propertiesFromContext(ctx context.Context) *properties {
 
 // setContextProperty sets the value of a key in given context for telemetry data
 func setContextProperty(ctx context.Context, key string, value interface{}) {
-	properties := propertiesFromContext(ctx)
-	if properties != nil {
-		properties.set(key, value)
+	cProperties := propertiesFromContext(ctx)
+	if cProperties != nil {
+		cProperties.set(key, value)
 	}
 }
 
@@ -76,6 +76,8 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 	if client == nil {
 		value = "not-found"
 	} else {
+		// We are not checking ServerVersion to decide the cluster type because it does not always return the version,
+		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
 		if isOC, _ := client.IsProjectSupported(); isOC {
 			if isOC4, _ := client.IsOpenshift4(); isOC4 {
 				value = "openshift4"
@@ -83,7 +85,7 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 				value = "openshift3"
 			}
 		} else {
-			value = "vanilla-kubernetes"
+			value = "kubernetes"
 		}
 	}
 	setContextProperty(ctx, "clusterType", value)

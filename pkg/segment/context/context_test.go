@@ -3,14 +3,16 @@ package context
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 
-	projectv1 "github.com/openshift/api/project/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ktesting "k8s.io/client-go/testing"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"k8s.io/client-go/discovery/fake"
 
 	"github.com/openshift/odo/pkg/occlient"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGetContextProperties(t *testing.T) {
@@ -37,49 +39,119 @@ func TestSetComponentType(t *testing.T) {
 }
 
 func TestSetClusterType(t *testing.T) {
-	ckey := "clusterType"
-	fakeClient, fakeClientset := occlient.FakeNew()
-	ctx := NewContext(context.Background())
-	cases := []struct {
+	tests := []struct {
 		want  string
-		setup func(*occlient.FakeClientset)
+		setup func(client *occlient.Client)
 	}{
 		{
-			"openshift3",
-			nil,
+			want:  "openshift3",
+			setup: fakeProjects,
 		},
 		{
-			"openshift4",
-			fakeClusterVersion,
+			want:  "openshift4",
+			setup: setupOCP4,
 		},
 		{
-			"vanilla-kubernetes",
-			fakeProjects,
+			want:  "kubernetes",
+			setup: nil,
+		},
+		{
+			want:  "not-found",
+			setup: nil,
 		},
 	}
-	for _, c := range cases {
-		if c.setup != nil {
-			c.setup(fakeClientset)
+
+	ckey := "clusterType"
+	for _, tt := range tests {
+		var fakeClient *occlient.Client
+		if tt.want != "not-found" {
+			fakeClient, _ = occlient.FakeNew()
 		}
+		if tt.setup != nil {
+			tt.setup(fakeClient)
+		}
+
+		ctx := NewContext(context.Background())
 		SetClusterType(ctx, fakeClient)
-		got, _ := GetContextProperties(ctx)[ckey]
-		if got != c.want {
-			t.Errorf("got: %q, want%q", got, c.want)
+
+		got := GetContextProperties(ctx)[ckey]
+		if got != tt.want {
+			t.Errorf("got: %q, want: %q", got, tt.want)
 		}
 	}
 }
 
-func fakeClusterVersion(fakeClientset *occlient.FakeClientset) {
-
+type resourceMapEntry struct {
+	list *metav1.APIResourceList
+	err  error
 }
 
-func fakeProjects(fakeClientset *occlient.FakeClientset) {
-	fakeClientset.ProjClientset.PrependReactor("list", "projectrequests", func(action ktesting.Action) (bool, runtime.Object, error) {
-		proj := projectv1.Project{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "default",
+type fakeDiscovery struct {
+	*fake.FakeDiscovery
+
+	lock        sync.Mutex
+	resourceMap map[string]*resourceMapEntry
+}
+
+var fakeDiscoveryWithProject = &fakeDiscovery{
+	resourceMap: map[string]*resourceMapEntry{
+		"project.openshift.io/v1": {
+			list: &metav1.APIResourceList{
+				GroupVersion: "project.openshift.io/v1",
+				APIResources: []metav1.APIResource{{
+					Name:         "projects",
+					SingularName: "project",
+					Namespaced:   false,
+					Kind:         "Project",
+					ShortNames:   []string{"proj"},
+				}},
 			},
-		}
-		return true, &proj, nil
-	})
+		},
+	},
+}
+
+var fakeDiscoveryOCP4 = &fakeDiscovery{
+	resourceMap: map[string]*resourceMapEntry{
+		"config.openshift.io/v1": {
+			list: &metav1.APIResourceList{
+				GroupVersion: "config.openshift.io/v1",
+				APIResources: []metav1.APIResource{{
+					Name:         "clusterversions",
+					SingularName: "clusterversion",
+					Namespaced:   false,
+					Kind:         "ClusterVersion",
+				}},
+			},
+		},
+		"project.openshift.io/v1": {
+			list: &metav1.APIResourceList{
+				GroupVersion: "project.openshift.io/v1",
+				APIResources: []metav1.APIResource{{
+					Name:         "projects",
+					SingularName: "project",
+					Namespaced:   false,
+					Kind:         "Project",
+					ShortNames:   []string{"proj"},
+				}},
+			},
+		},
+	},
+}
+
+func fakeProjects(fakeClient *occlient.Client) {
+	fakeClient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithProject)
+}
+
+// setupOCP4 adds fakeDiscovery with clusterversion and project
+func setupOCP4(fakeClient *occlient.Client) {
+	fakeClient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryOCP4)
+}
+
+func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if rl, ok := c.resourceMap[groupVersion]; ok {
+		return rl.list, rl.err
+	}
+	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
 }

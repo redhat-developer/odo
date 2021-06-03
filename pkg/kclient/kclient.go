@@ -244,6 +244,21 @@ func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) 
 	return supported, nil
 }
 
+func (c *Client) IsResourceGroupSupported(apiGroup string) (bool, error) {
+	var found bool
+	list, err := c.discoveryClient.ServerGroups()
+	if err != nil {
+		return found, err
+	}
+	for _, group := range list.Groups {
+		if group.Name == apiGroup {
+			found = true
+			break
+		}
+	}
+	return found, nil
+}
+
 // IsSSASupported checks if Server Side Apply is supported by cluster
 // SSA was introduced in Kubernetes 1.16
 // If there is an error while parsing versions, it assumes that SSA is supported by cluster.
