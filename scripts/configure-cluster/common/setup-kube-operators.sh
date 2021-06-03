@@ -2,14 +2,13 @@
 set -x
 
 install_mongodb_enterprise_operator(){
-  # Create subscription
-  oc create -f - <<EOF
+  kubectl create -f - << EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
-  metadata:
+  metadata: 
     name: my-mongodb-enterprise
     namespace: operators
-  spec:
+  spec: 
     channel: stable
     name: mongodb-enterprise
     source: operatorhubio-catalog
@@ -18,17 +17,17 @@ EOF
 }
 
 install_service_binding_operator(){
-kubectl create -f - << EOF
-    apiVersion: operators.coreos.com/v1alpha1 
-    kind: Subscription 
-    metadata: 
-      name: my-service-binding-operator 
-      namespace: operators 
-    spec: 
-      channel: beta 
-      name: service-binding-operator 
-      source: operatorhubio-catalog 
-      sourceNamespace: olm
+  kubectl create -f - << EOF
+  apiVersion: operators.coreos.com/v1alpha1 
+  kind: Subscription 
+  metadata: 
+    name: my-service-binding-operator 
+    namespace: operators 
+  spec: 
+    channel: beta 
+    name: service-binding-operator 
+    source: operatorhubio-catalog 
+    sourceNamespace: olm
 EOF
 }
 
