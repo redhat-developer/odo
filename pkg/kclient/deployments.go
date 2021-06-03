@@ -317,7 +317,7 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 
-	return c.jsonPatchDeployment(util.ConvertLabelsToSelector(componentlabels.GetLabels(componentName, applicationName, false)), deploymentPatchProvider)
+	return c.jsonPatchDeployment(componentlabels.GetSelector(componentName, applicationName), deploymentPatchProvider)
 }
 
 // UnlinkSecret unlinks a secret to the Deployment of a component
@@ -339,7 +339,7 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
 	}
 
-	return c.jsonPatchDeployment(util.ConvertLabelsToSelector(componentlabels.GetLabels(componentName, applicationName, false)), deploymentPatchProvider)
+	return c.jsonPatchDeployment(componentlabels.GetSelector(componentName, applicationName), deploymentPatchProvider)
 }
 
 // this function will look up the appropriate DC, and execute the specified patch

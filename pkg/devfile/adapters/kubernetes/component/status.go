@@ -18,7 +18,6 @@ import (
 	componentLabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/util"
 )
 
 // KubernetesDeploymentStatus is a simplified representation of the component's cluster resources
@@ -43,7 +42,7 @@ type KubernetesPodStatus struct {
 func (a Adapter) getDeploymentStatus() (*KubernetesDeploymentStatus, error) {
 
 	// 1) Retrieve the deployment
-	deployment, err := a.Client.GetKubeClient().GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(componentLabels.GetLabels(a.ComponentName, a.AppName, false)))
+	deployment, err := a.Client.GetKubeClient().GetOneDeploymentFromSelector(componentLabels.GetSelector(a.ComponentName, a.AppName))
 	if err != nil {
 		klog.V(4).Infof("Unable to retrieve deployment %s in %s ", a.ComponentName, a.Client.Namespace)
 		return nil, err

@@ -55,7 +55,7 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 
 // ComponentExists checks whether a deployment by the given name exists in the given app
 func ComponentExists(client kclient.Client, name string, app string) (bool, error) {
-	deployment, err := client.GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(componentlabels.GetLabels(name, app, false)))
+	deployment, err := client.GetOneDeploymentFromSelector(componentlabels.GetSelector(name, app))
 	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
 		klog.V(2).Infof("Deployment %s not found for belonging to the %s app ", name, app)
 		return false, nil

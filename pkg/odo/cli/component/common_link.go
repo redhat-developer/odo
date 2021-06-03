@@ -102,7 +102,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		componentName := o.EnvSpecificInfo.GetName()
 
-		deployment, err := o.KClient.GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(componentlabels.GetLabels(componentName, o.EnvSpecificInfo.GetApplication(), false)))
+		deployment, err := o.KClient.GetOneDeploymentFromSelector(componentlabels.GetSelector(componentName, o.EnvSpecificInfo.GetApplication()))
 		if err != nil {
 			return err
 		}
