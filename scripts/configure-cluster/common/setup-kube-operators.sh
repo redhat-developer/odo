@@ -1,21 +1,19 @@
 #!/bin/bash
 set -x
 
-install_etcd_operator() {
-    # Create subscription
-    kubectl create -f - << EOF
-    apiVersion: operators.coreos.com/v1alpha1
-    kind: Subscription
-    metadata:
-        name: etcd
-        namespace: operators
-    spec:
-        channel: clusterwide-alpha
-        name: etcd
-        source: operatorhubio-catalog
-        sourceNamespace: olm
-        startingCSV: etcdoperator.v0.9.4-clusterwide
-        installPlanApproval: Automatic
+install_mongodb_enterprise_operator(){
+  # Create subscription
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: my-mongodb-enterprise
+    namespace: operators
+  spec:
+    channel: stable
+    name: mongodb-enterprise
+    source: operatorhubio-catalog
+    sourceNamespace: olm
 EOF
 }
 
@@ -34,9 +32,9 @@ kubectl create -f - << EOF
 EOF
 }
 
-# install etcd operator
+# install mongodb-enterprise operator
 
-install_etcd_operator
+install_mongodb_enterprise_operator
 
 # install service-binding-operator
 

@@ -1,20 +1,23 @@
 #!/bin/bash
 set -x
 
-install_etcd_operator(){
+install_mongodb_enterprise_operator(){
   # Create subscription
   oc create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    name: etcd
+    labels:
+      operators.coreos.com/mongodb-enterprise-rhmp.openshift-operators: ''
+    name: mongodb-enterprise-rhmp
     namespace: openshift-operators
   spec:
-    channel: clusterwide-alpha
+    channel: stable
     installPlanApproval: Automatic
-    name: etcd
-    source: community-operators
+    name: mongodb-enterprise-rhmp
+    source: redhat-marketplace
     sourceNamespace: openshift-marketplace
+    startingCSV: mongodb-enterprise.v1.10.0
 EOF
 }
 
@@ -37,9 +40,9 @@ EOF
 }
 
 
-# install etcd operator
+# install mongodb-enterprise operator
 
-install_etcd_operator
+install_mongodb_enterprise_operator
 
 # install service-binding-operator
 
