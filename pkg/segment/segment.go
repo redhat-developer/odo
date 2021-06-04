@@ -207,8 +207,13 @@ func RunningInTerminal() bool {
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
 func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
+	var err error
 	if cfg == nil {
-		cfg, _ = preference.New()
+		cfg, err = preference.New()
+		if err != nil {
+			klog.V(3).Info(errors.Wrap(err, "unable to read config file"))
+			return false
+		}
 	}
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it

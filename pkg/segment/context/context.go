@@ -31,9 +31,36 @@ func GetContextProperties(ctx context.Context) map[string]interface{} {
 	return cProperties.values()
 }
 
-// SetComponentType sets componentType property for telemetry data when a new component is created
+// SetComponentType sets componentType property for telemetry data when a component is created/pushed
 func SetComponentType(ctx context.Context, value string) {
 	setContextProperty(ctx, "componentType", value)
+}
+
+// SetClusterType sets clusterType property for telemetry data when a component is pushed or a project is created/set
+func SetClusterType(ctx context.Context, client *occlient.Client) {
+	var value string
+	if client == nil {
+		value = "not-found"
+	} else {
+		// We are not checking ServerVersion to decide the cluster type because it does not always return the version,
+		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
+		isOC, err := client.IsProjectSupported()
+		if err != nil {
+			value = "not-found"
+		} else {
+			// if there is an error in obtaining the value of isOC, its value will be a default bool(false)
+			if isOC {
+				if isOC4, _ := client.IsOpenshift4(); isOC4 {
+					value = "openshift4"
+				} else {
+					value = "openshift3"
+				}
+			} else {
+				value = "kubernetes"
+			}
+		}
+	}
+	setContextProperty(ctx, "clusterType", value)
 }
 
 // set safely sets value for a key in storage
@@ -69,24 +96,4 @@ func setContextProperty(ctx context.Context, key string, value interface{}) {
 	if cProperties != nil {
 		cProperties.set(key, value)
 	}
-}
-
-func SetClusterType(ctx context.Context, client *occlient.Client) {
-	var value string
-	if client == nil {
-		value = "not-found"
-	} else {
-		// We are not checking ServerVersion to decide the cluster type because it does not always return the version,
-		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
-		if isOC, _ := client.IsProjectSupported(); isOC {
-			if isOC4, _ := client.IsOpenshift4(); isOC4 {
-				value = "openshift4"
-			} else {
-				value = "openshift3"
-			}
-		} else {
-			value = "kubernetes"
-		}
-	}
-	setContextProperty(ctx, "clusterType", value)
 }
