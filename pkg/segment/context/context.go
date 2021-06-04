@@ -4,6 +4,9 @@ import (
 	"context"
 	"sync"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog"
+
 	"github.com/openshift/odo/pkg/occlient"
 )
 
@@ -46,11 +49,11 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
 		isOC, err := client.IsProjectSupported()
 		if err != nil {
+			klog.V(3).Info(errors.Wrap(err, "unable to detect project support"))
 			value = "not-found"
 		} else {
-			// if there is an error in obtaining the value of isOC, its value will be a default bool(false)
 			if isOC {
-				if isOC4, _ := client.IsOpenshift4(); isOC4 {
+				if isOC4, _ := client.IsClusterVersionSupported(); isOC4 {
 					value = "openshift4"
 				} else {
 					value = "openshift3"
