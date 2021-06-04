@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
-
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"

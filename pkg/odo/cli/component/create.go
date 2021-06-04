@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -30,6 +29,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/preference"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 	"github.com/openshift/odo/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"

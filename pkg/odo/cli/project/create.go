@@ -3,11 +3,11 @@ package project
 import (
 	"fmt"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
-
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
+	scontext "github.com/openshift/odo/pkg/segment/context"
+
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
