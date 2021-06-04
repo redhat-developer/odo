@@ -6,9 +6,9 @@ install_mongodb_enterprise_operator(){
   oc create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
-  metadata:
-    labels:
-      operators.coreos.com/mongodb-enterprise-rhmp.openshift-operators: ''
+  metadata: 
+    labels: 
+      operators.coreos.com/mongodb-enterprise-rhmp.openshift-operators: ""
     name: mongodb-enterprise-rhmp
     namespace: openshift-operators
   spec:
