@@ -61,10 +61,24 @@ func MockCRDescriptionTwo() *olm.CRDDescription {
 			{
 				Path:        "ccpimage",
 				DisplayName: "PostgreSQL Image",
+				Description: "The Crunchy PostgreSQL image to use. Possible values are \"crunchy-postgres-ha\" and \"crunchy-postgres-gis-ha\"",
+			},
+			{
+				Path:        "cppimagetag",
+				DisplayName: "PostgresSQL Image Tag",
+				Description: "The tag of the PostgreSQL image to use. Example is \"ubi7-12.4-4.5.0\"",
+			},
+			{
+				Path:        "host",
+				DisplayName: "PostgreSQL Host",
 			},
 		},
 	}
 }
 func TestCRBuilderMap(t *testing.T) {
-
+	builder := NewCRBuilder(MockCRDescriptionTwo())
+	builder.SetAndValidate("host", "10.1.10.2")
+	builder.SetAndValidate("ccpimage", "crunchy-postgres-ha")
+	builder.SetAndValidate("ccpimagetag", "2.5")
+	builder.Map()
 }

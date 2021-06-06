@@ -5,9 +5,9 @@ import (
 )
 
 type CRBuilder struct {
-	*CRSpecBuilder
-	crd *olm.CRDDescription
-	cr  map[string]interface{}
+	CRSpecBuilder *CRSpecBuilder
+	crd           *olm.CRDDescription
+	cr            map[string]interface{}
 }
 
 func NewCRBuilder(crd *olm.CRDDescription) *CRBuilder {
@@ -16,6 +16,10 @@ func NewCRBuilder(crd *olm.CRDDescription) *CRBuilder {
 		crd:           crd,
 		cr:            make(map[string]interface{}),
 	}
+}
+
+func (crb *CRBuilder) SetAndValidate(param string, value string) error {
+	return crb.CRSpecBuilder.SetAndValidate(param, value)
 }
 
 func (crb *CRBuilder) Map() (map[string]interface{}, error) {
