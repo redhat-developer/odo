@@ -1,8 +1,10 @@
 package v2
 
 import (
+	"fmt"
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"strings"
 )
 
 // GetEvents returns the Events Object parsed from devfile
@@ -14,41 +16,48 @@ func (d *DevfileV2) GetEvents() v1.Events {
 }
 
 // AddEvents adds the Events Object to the devfile's events
-// if the event is already defined in the devfile, error out
+// an event field is considered as invalid if it is already defined
+// all event fields will be checked and processed, and returns a total error of all event fields
 func (d *DevfileV2) AddEvents(events v1.Events) error {
 
 	if d.Events == nil {
 		d.Events = &v1.Events{}
 	}
-
+	var errorsList []string
 	if len(events.PreStop) > 0 {
 		if len(d.Events.PreStop) > 0 {
-			return &common.FieldAlreadyExistError{Field: "pre stop"}
+			errorsList = append(errorsList, (&common.FieldAlreadyExistError{Field: "event field", Name: "pre stop"}).Error())
+		} else {
+			d.Events.PreStop = events.PreStop
 		}
-		d.Events.PreStop = events.PreStop
 	}
 
 	if len(events.PreStart) > 0 {
 		if len(d.Events.PreStart) > 0 {
-			return &common.FieldAlreadyExistError{Field: "pre start"}
+			errorsList = append(errorsList, (&common.FieldAlreadyExistError{Field: "event field", Name: "pre start"}).Error())
+		} else {
+			d.Events.PreStart = events.PreStart
 		}
-		d.Events.PreStart = events.PreStart
 	}
 
 	if len(events.PostStop) > 0 {
 		if len(d.Events.PostStop) > 0 {
-			return &common.FieldAlreadyExistError{Field: "post stop"}
+			errorsList = append(errorsList, (&common.FieldAlreadyExistError{Field: "event field", Name: "post stop"}).Error())
+		} else {
+			d.Events.PostStop = events.PostStop
 		}
-		d.Events.PostStop = events.PostStop
 	}
 
 	if len(events.PostStart) > 0 {
 		if len(d.Events.PostStart) > 0 {
-			return &common.FieldAlreadyExistError{Field: "post start"}
+			errorsList = append(errorsList, (&common.FieldAlreadyExistError{Field: "event field", Name: "post start"}).Error())
+		} else {
+			d.Events.PostStart = events.PostStart
 		}
-		d.Events.PostStart = events.PostStart
 	}
-
+	if len(errorsList) > 0 {
+		return fmt.Errorf("errors while adding events:\n%s", strings.Join(errorsList, "\n"))
+	}
 	return nil
 }
 

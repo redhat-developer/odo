@@ -7,6 +7,17 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
+// attribute keys for imported and overridden elements
+// the value of those keys is the resource information
+const (
+	// attribute key of the imported element resource information
+	ImportSourceAttribute = "api.devfile.io/imported-from"
+	// attribute key of the parent overridden element resource information
+	ParentOverrideAttribute = "api.devfile.io/parent-override-from"
+	// attribute key of the plugin overridden element resource information
+	PluginOverrideAttribute = "api.devfile.io/plugin-override-from"
+)
+
 // getCommandsMap iterates through the commands and returns a map of command
 func getCommandsMap(commands []v1alpha2.Command) map[string]v1alpha2.Command {
 	commandMap := make(map[string]v1alpha2.Command, len(commands))

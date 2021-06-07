@@ -17,34 +17,34 @@ const (
 // ValidateEvents validates all the devfile events
 func ValidateEvents(events v1alpha2.Events, commands []v1alpha2.Command) error {
 
-	eventErrors := ""
-
 	commandMap := getCommandsMap(commands)
+	var eventErrorsList []string
 
 	switch {
 	case len(events.PreStart) > 0:
 		if preStartErr := isEventValid(events.PreStart, preStart, commandMap); preStartErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", preStartErr.Error())
+			eventErrorsList = append(eventErrorsList, preStartErr.Error())
 		}
 		fallthrough
 	case len(events.PostStart) > 0:
 		if postStartErr := isEventValid(events.PostStart, postStart, commandMap); postStartErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", postStartErr.Error())
+			eventErrorsList = append(eventErrorsList, postStartErr.Error())
 		}
 		fallthrough
 	case len(events.PreStop) > 0:
 		if preStopErr := isEventValid(events.PreStop, preStop, commandMap); preStopErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", preStopErr.Error())
+			eventErrorsList = append(eventErrorsList, preStopErr.Error())
 		}
 		fallthrough
 	case len(events.PostStop) > 0:
 		if postStopErr := isEventValid(events.PostStop, postStop, commandMap); postStopErr != nil {
-			eventErrors += fmt.Sprintf("\n%s", postStopErr.Error())
+			eventErrorsList = append(eventErrorsList, postStopErr.Error())
 		}
 	}
 
 	// if there is any validation error, return it
-	if len(eventErrors) > 0 {
+	if len(eventErrorsList) > 0 {
+		eventErrors := fmt.Sprintf("\n%s", strings.Join(eventErrorsList, "\n"))
 		return fmt.Errorf("devfile events validation error: %s", eventErrors)
 	}
 
@@ -83,22 +83,23 @@ func isEventValid(eventNames []string, eventType string, commandMap map[string]v
 		}
 	}
 
-	var eventErrors string
 	var err error
+	var eventErrorsList []string
 
 	if len(invalidCommand) > 0 {
-		eventErrors = fmt.Sprintf("\n%s does not map to a valid devfile command", strings.Join(invalidCommand, ", "))
+		eventErrorsList = append(eventErrorsList, fmt.Sprintf("%s does not map to a valid devfile command", strings.Join(invalidCommand, ", ")))
 	}
 
 	if len(invalidApplyEvents) > 0 {
-		eventErrors += fmt.Sprintf("\n%s should either map to an apply command or a composite command with apply commands", strings.Join(invalidApplyEvents, ", "))
+		eventErrorsList = append(eventErrorsList, fmt.Sprintf("%s should either map to an apply command or a composite command with apply commands", strings.Join(invalidApplyEvents, ", ")))
 	}
 
 	if len(invalidExecEvents) > 0 {
-		eventErrors += fmt.Sprintf("\n%s should either map to an exec command or a composite command with exec commands", strings.Join(invalidExecEvents, ", "))
+		eventErrorsList = append(eventErrorsList, fmt.Sprintf("%s should either map to an exec command or a composite command with exec commands", strings.Join(invalidExecEvents, ", ")))
 	}
 
-	if len(eventErrors) != 0 {
+	if len(eventErrorsList) != 0 {
+		eventErrors := fmt.Sprintf("\n%s", strings.Join(eventErrorsList, "\n"))
 		err = &InvalidEventError{eventType: eventType, errorMsg: eventErrors}
 	}
 

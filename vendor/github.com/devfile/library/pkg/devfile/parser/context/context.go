@@ -35,12 +35,6 @@ type DevfileCtx struct {
 
 	// filesystem for devfile
 	fs filesystem.Filesystem
-
-	// trace of all url referenced
-	uriMap map[string]bool
-
-	// registry URLs list
-	registryURLs []string
 }
 
 // NewDevfileCtx returns a new DevfileCtx type object
@@ -56,6 +50,15 @@ func NewURLDevfileCtx(url string) DevfileCtx {
 	return DevfileCtx{
 		url: url,
 	}
+}
+
+// NewByteContentDevfileCtx set devfile content from byte data and returns a new DevfileCtx type object and error
+func NewByteContentDevfileCtx(data []byte) (d DevfileCtx, err error) {
+	err = d.SetDevfileContentFromBytes(data)
+	if err != nil {
+		return DevfileCtx{}, err
+	}
+	return d, nil
 }
 
 // populateDevfile checks the API version is supported and returns the JSON schema for the given devfile API Version
@@ -87,13 +90,6 @@ func (d *DevfileCtx) Populate() (err error) {
 		return err
 	}
 	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
-	if d.uriMap == nil {
-		d.uriMap = make(map[string]bool)
-	}
-	if d.uriMap[d.absPath] {
-		return fmt.Errorf("URI %v is recursively referenced", d.absPath)
-	}
-	d.uriMap[d.absPath] = true
 	// Read and save devfile content
 	if err := d.SetDevfileContent(); err != nil {
 		return err
@@ -107,13 +103,6 @@ func (d *DevfileCtx) PopulateFromURL() (err error) {
 	if err != nil {
 		return err
 	}
-	if d.uriMap == nil {
-		d.uriMap = make(map[string]bool)
-	}
-	if d.uriMap[d.url] {
-		return fmt.Errorf("URI %v is recursively referenced", d.url)
-	}
-	d.uriMap[d.url] = true
 	// Read and save devfile content
 	if err := d.SetDevfileContent(); err != nil {
 		return err
@@ -153,24 +142,4 @@ func (d *DevfileCtx) SetAbsPath() (err error) {
 
 	return nil
 
-}
-
-// GetURIMap func returns current devfile uri map
-func (d *DevfileCtx) GetURIMap() map[string]bool {
-	return d.uriMap
-}
-
-// SetURIMap set uri map in the devfile ctx
-func (d *DevfileCtx) SetURIMap(uriMap map[string]bool) {
-	d.uriMap = uriMap
-}
-
-// GetRegistryURLs func returns current devfile registry URLs
-func (d *DevfileCtx) GetRegistryURLs() []string {
-	return d.registryURLs
-}
-
-// SetRegistryURLs set registry URLs in the devfile ctx
-func (d *DevfileCtx) SetRegistryURLs(registryURLs []string) {
-	d.registryURLs = registryURLs
 }

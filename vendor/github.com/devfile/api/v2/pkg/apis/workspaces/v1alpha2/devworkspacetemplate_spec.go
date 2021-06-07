@@ -1,5 +1,7 @@
 package v1alpha2
 
+import attributes "github.com/devfile/api/v2/pkg/attributes"
+
 // Structure of the devworkspace. This is also the specification of a devworkspace template.
 // +devfile:jsonschema:generate
 type DevWorkspaceTemplateSpec struct {
@@ -12,6 +14,24 @@ type DevWorkspaceTemplateSpec struct {
 
 // +devfile:overrides:generate
 type DevWorkspaceTemplateSpecContent struct {
+	// Map of key-value variables used for string replacement in the devfile. Values can can be referenced via {{variable-key}}
+	// to replace the corresponding value in string fields in the devfile. Replacement cannot be used for
+	//
+	//  - schemaVersion, metadata, parent source
+	//  - element identifiers, e.g. command id, component name, endpoint name, project name
+	//  - references to identifiers, e.g. in events, a command's component, container's volume mount name
+	//  - string enums, e.g. command group kind, endpoint exposure
+	// +optional
+	// +patchStrategy=merge
+	// +devfile:overrides:include:omitInPlugin=true,description=Overrides of variables encapsulated in a parent devfile.
+	Variables map[string]string `json:"variables,omitempty" patchStrategy:"merge"`
+
+	// Map of implementation-dependant free-form YAML attributes.
+	// +optional
+	// +patchStrategy=merge
+	// +devfile:overrides:include:omitInPlugin=true,description=Overrides of attributes encapsulated in a parent devfile.
+	Attributes attributes.Attributes `json:"attributes,omitempty" patchStrategy:"merge"`
+
 	// List of the devworkspace components, such as editor and plugins,
 	// user-provided containers, or other types of components
 	// +optional

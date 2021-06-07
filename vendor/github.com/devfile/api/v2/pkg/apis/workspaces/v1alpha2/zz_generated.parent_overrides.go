@@ -8,6 +8,18 @@ import (
 type ParentOverrides struct {
 	OverridesBase `json:",inline"`
 
+	// Overrides of variables encapsulated in a parent devfile.
+	// Overriding is done according to K8S strategic merge patch standard rules.
+	// +optional
+	// +patchStrategy=merge
+	Variables map[string]string `json:"variables,omitempty" patchStrategy:"merge"`
+
+	// Overrides of attributes encapsulated in a parent devfile.
+	// Overriding is done according to K8S strategic merge patch standard rules.
+	// +optional
+	// +patchStrategy=merge
+	Attributes attributes.Attributes `json:"attributes,omitempty" patchStrategy:"merge"`
+
 	// Overrides of components encapsulated in a parent devfile or a plugin.
 	// Overriding is done according to K8S strategic merge patch standard rules.
 	// +optional
@@ -71,10 +83,6 @@ type ProjectParentOverride struct {
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
 	// +optional
 	ClonePath string `json:"clonePath,omitempty"`
-
-	// Populate the project sparsely with selected directories.
-	// +optional
-	SparseCheckoutDirs []string `json:"sparseCheckoutDirs,omitempty"`
 
 	ProjectSourceParentOverride `json:",inline"`
 }
@@ -163,7 +171,7 @@ type ComponentUnionParentOverride struct {
 // +union
 type ProjectSourceParentOverride struct {
 
-	// +kubebuilder:validation:Enum=Git;Github;Zip
+	// +kubebuilder:validation:Enum=Git;Zip
 	// Type of project source
 	// +
 	// +unionDiscriminator
@@ -173,10 +181,6 @@ type ProjectSourceParentOverride struct {
 	// Project's Git source
 	// +optional
 	Git *GitProjectSourceParentOverride `json:"git,omitempty"`
-
-	// Project's GitHub source. Deprecated, use `Git` instead
-	// +optional
-	Github *GithubProjectSourceParentOverride `json:"github,omitempty"`
 
 	// Project's Zip source
 	// +optional
@@ -256,10 +260,6 @@ type PluginComponentParentOverride struct {
 type ProjectSourceTypeParentOverride string
 
 type GitProjectSourceParentOverride struct {
-	GitLikeProjectSourceParentOverride `json:",inline"`
-}
-
-type GithubProjectSourceParentOverride struct {
 	GitLikeProjectSourceParentOverride `json:",inline"`
 }
 
@@ -495,6 +495,9 @@ type VolumeParentOverride struct {
 type ImportReferenceParentOverride struct {
 	ImportReferenceUnionParentOverride `json:",inline"`
 
+	// Registry URL to pull the parent devfile from when using id in the parent reference.
+	// To ensure the parent devfile gets resolved consistently in different environments,
+	// it is recommended to always specify the `regsitryURL` when `Id` is used.
 	// +optional
 	RegistryUrl string `json:"registryUrl,omitempty"`
 }
@@ -605,7 +608,8 @@ type ImportReferenceUnionParentOverride struct {
 	// +optional
 	ImportReferenceType ImportReferenceTypeParentOverride `json:"importReferenceType,omitempty"`
 
-	// Uri of a Devfile yaml file
+	// URI Reference of a parent devfile YAML file.
+	// It can be a full URL or a relative URI with the current devfile as the base URI.
 	// +optional
 	Uri string `json:"uri,omitempty"`
 

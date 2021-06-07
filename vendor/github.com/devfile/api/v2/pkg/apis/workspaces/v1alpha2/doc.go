@@ -2,5 +2,5 @@
 // +k8s:deepcopy-gen=package,register
 // +k8s:openapi-gen=true
 // +groupName=workspace.devfile.io
-// +devfile:jsonschema:version=2.1.0-alpha
+// +devfile:jsonschema:version=2.1.0
 package v1alpha2

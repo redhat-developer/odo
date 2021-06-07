@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"github.com/devfile/api/v2/pkg/validation/variables"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/validate"
 )
@@ -69,21 +70,25 @@ func ParseAndValidate(path string) (d parser.DevfileObj, err error) {
 	return d, err
 }
 
-// ParseDevfileAndValidate func parses the devfile data
-// and validates the devfile integrity with the schema
-// and validates the devfile data.
-// Creates devfile context and runtime objects.
-func ParseDevfileAndValidate(args parser.ParserArgs) (d parser.DevfileObj, err error) {
+// ParseDevfileAndValidate func parses the devfile data, validates the devfile integrity with the schema
+// replaces the top-level variable keys if present and validates the devfile data.
+// It returns devfile context and runtime objects, variable substitution warning if any and an error.
+func ParseDevfileAndValidate(args parser.ParserArgs) (d parser.DevfileObj, varWarning variables.VariableWarning, err error) {
 	d, err = parser.ParseDevfile(args)
 	if err != nil {
-		return d, err
+		return d, varWarning, err
+	}
+
+	if d.Data.GetSchemaVersion() != "2.0.0" {
+		// replace the top level variable keys with their values in the devfile
+		varWarning = variables.ValidateAndReplaceGlobalVariable(d.Data.GetDevfileWorkspaceSpec())
 	}
 
 	// generic validation on devfile content
 	err = validate.ValidateDevfileData(d.Data)
 	if err != nil {
-		return d, err
+		return d, varWarning, err
 	}
 
-	return d, err
+	return d, varWarning, err
 }
