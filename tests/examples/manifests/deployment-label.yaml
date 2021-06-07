@@ -1,0 +1,33 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: example
+  labels:
+    app: httpd
+    app.kubernetes.io/instance: example
+    app.kubernetes.io/managed-by: console
+    app.kubernetes.io/managed-by-version: v4.7.0
+    app.kubernetes.io/name: example
+    app.kubernetes.io/part-of: httpd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpd
+  template:
+    metadata:
+      labels:
+        app: httpd
+        app.kubernetes.io/instance: example
+        app.kubernetes.io/managed-by: console
+        app.kubernetes.io/managed-by-version: v4.7.0
+        app.kubernetes.io/name: example
+        app.kubernetes.io/part-of: httpd
+    spec:
+      containers:
+        - name: httpd
+          image: >-
+            image-registry.openshift-image-registry.svc:5000/openshift/httpd:latest
+          ports:
+            - containerPort: 8080
+
