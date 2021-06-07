@@ -20,18 +20,18 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/kubernetes-sigs/service-catalog v0.3.1
-	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348
-	github.com/mattn/go-colorable v0.1.6
+	github.com/kylelemons/godebug v1.1.0
+	github.com/mattn/go-colorable v0.1.7
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/olekukonko/tablewriter v0.0.1
-	github.com/onsi/ginkgo v1.14.1
-	github.com/onsi/gomega v1.10.2
+	github.com/olekukonko/tablewriter v0.0.2
+	github.com/onsi/ginkgo v1.16.1
+	github.com/onsi/gomega v1.11.0
 	github.com/openshift/api v0.0.0-20201216151826-78a19e96f9eb
 	github.com/openshift/client-go v0.0.0-20201214125552-e615e336eb49
 	github.com/openshift/library-go v0.0.0-20210106214821-c4d0b9c8d55f
 	github.com/openshift/oc v0.0.0-alpha.0.0.20210325095525-2513fdbb36e2
-	github.com/operator-framework/api v0.3.20
-	github.com/operator-framework/operator-lifecycle-manager v0.17.0
+	github.com/operator-framework/api v0.9.2
+	github.com/operator-framework/operator-lifecycle-manager v0.18.1
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.1
@@ -47,11 +47,11 @@ require (
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
-	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.20.1
-	k8s.io/apimachinery v0.20.1
+	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/api v0.20.6
+	k8s.io/apimachinery v0.20.6
 	k8s.io/cli-runtime v0.20.1
-	k8s.io/client-go v0.20.1
+	k8s.io/client-go v0.20.6
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.4.0
 	k8s.io/kubectl v0.20.1
