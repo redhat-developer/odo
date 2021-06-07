@@ -62,8 +62,7 @@ func (pb *CRSpecBuilder) convertType(value string) interface{} {
 // SetAndValidate validates if a param is part of the operand schema and then sets it.
 func (pb *CRSpecBuilder) SetAndValidate(param string, value string) error {
 	if pb.hasParam(param) {
-		pb.set(param, value)
-		return nil
+		return pb.set(param, value)
 	}
 	return fmt.Errorf("the parameter %s is not present in the Operand Schema", param)
 }
