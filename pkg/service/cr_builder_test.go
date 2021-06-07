@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/stretchr/testify/require"
 )
 
 // MockCRDescriptionOne a mock description
@@ -59,7 +60,7 @@ func MockCRDescriptionTwo() *olm.CRDDescription {
 		},
 		SpecDescriptors: []olm.SpecDescriptor{
 			{
-				Path:        "ccpimage",
+				Path:        "cppimage",
 				DisplayName: "PostgreSQL Image",
 				Description: "The Crunchy PostgreSQL image to use. Possible values are \"crunchy-postgres-ha\" and \"crunchy-postgres-gis-ha\"",
 			},
@@ -77,8 +78,20 @@ func MockCRDescriptionTwo() *olm.CRDDescription {
 }
 func TestCRBuilderMap(t *testing.T) {
 	builder := NewCRBuilder(MockCRDescriptionTwo())
-	builder.SetAndValidate("host", "10.1.10.2")
-	builder.SetAndValidate("ccpimage", "crunchy-postgres-ha")
-	builder.SetAndValidate("ccpimagetag", "2.5")
-	builder.Map()
+	require.Nil(t, builder.SetAndValidate("host", "10.1.10.2"), "set shouldn't fail")
+	require.Nil(t, builder.SetAndValidate("cppimage", "crunchy-postgres-ha"), "set shouldn't fail")
+	require.Nil(t, builder.SetAndValidate("cppimagetag", "2.5"), "set shouldn't fail")
+	outMap, err := builder.Map()
+	require.Nil(t, err, "error shouldn't be nil")
+	expected := map[string]interface{}{
+		"apiVersion": "crunchydata.com/v1",
+		"kind":       "Pgcluster",
+		"metadata":   map[string]interface{}{},
+		"spec": map[string]interface{}{
+			"cppimage":    "crunchy-postgres-ha",
+			"cppimagetag": 2.5,
+			"host":        "10.1.10.2",
+		},
+	}
+	require.Equal(t, outMap, expected, "The map output doesn't match the expected out")
 }

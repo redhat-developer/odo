@@ -1,7 +1,5 @@
 package service
 
-import "github.com/openshift/odo/pkg/service"
-
 //OperatorBackend implements the interface ServiceProviderBackend and contains methods that help create a service from Operators
 type OperatorBackend struct {
 	// Custom Resrouce to create service from
@@ -14,8 +12,6 @@ type OperatorBackend struct {
 	version string
 	// Resource of the GVR
 	resource string
-
-	paramBuilder *service.CRSpecBuilder
 }
 
 func NewOperatorBackend() *OperatorBackend {

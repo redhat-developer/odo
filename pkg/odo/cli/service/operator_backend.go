@@ -144,14 +144,19 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			}
 
 			crBuilder := service.NewCRBuilder(cr)
+			var errorStrs []string
 
 			for key, value := range o.ParametersMap {
 				err := crBuilder.SetAndValidate(key, value)
 				if err != nil {
-					return err
+					errorStrs = append(errorStrs, err.Error())
 				}
 			}
-			fmt.Printf("%+v\n", cr)
+
+			if len(errorStrs) > 0 {
+				return errors.New(strings.Join(errorStrs, "\n"))
+			}
+
 			builtCRD, err := crBuilder.Map()
 			if err != nil {
 				return err
