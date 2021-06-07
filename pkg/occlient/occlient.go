@@ -1222,11 +1222,6 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	return &info, nil
 }
 
-// IsClusterVersionSupported checks if clusterversion resource is supported, if it is, we assume that the cluster is openshift4
-func (c *Client) IsClusterVersionSupported() (bool, error) {
-	return c.GetKubeClient().IsResourceSupported("config.openshift.io", "v1", "clusterversions")
-}
-
 func (c *Client) GetKubeClient() *kclient.Client {
 	return c.kubeClient
 }

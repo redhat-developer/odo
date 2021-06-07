@@ -112,14 +112,15 @@ var fakeDiscoveryWithProject = &fakeDiscovery{
 
 var fakeDiscoveryOCP4 = &fakeDiscovery{
 	resourceMap: map[string]*resourceMapEntry{
-		"config.openshift.io/v1": {
+		"operators.coreos.com/v1alpha1": {
 			list: &metav1.APIResourceList{
-				GroupVersion: "config.openshift.io/v1",
+				GroupVersion: "operators.coreos.com/v1alpha1",
 				APIResources: []metav1.APIResource{{
-					Name:         "clusterversions",
-					SingularName: "clusterversion",
+					Name:         "clusterserviceversions",
+					SingularName: "clusterserviceversion",
 					Namespaced:   false,
-					Kind:         "ClusterVersion",
+					Kind:         "ClusterServiceVersion",
+					ShortNames:   []string{"csv", "csvs"},
 				}},
 			},
 		},
@@ -142,7 +143,7 @@ func fakeProjects(fakeClient *occlient.Client) {
 	fakeClient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithProject)
 }
 
-// setupOCP4 adds fakeDiscovery with clusterversion and project
+// setupOCP4 adds fakeDiscovery with clusterserviceversion and project
 func setupOCP4(fakeClient *occlient.Client) {
 	fakeClient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryOCP4)
 }
