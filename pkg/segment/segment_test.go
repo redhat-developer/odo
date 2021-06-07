@@ -355,6 +355,9 @@ func Test_sanitizeURL(t *testing.T) {
 	cases := []error{
 		fmt.Errorf("resource project validation check failed.: Get https://my-cluster.project.local request cancelled"),
 		fmt.Errorf("resource project validation check failed.: Get http://my-cluster.project.local request cancelled"),
+		fmt.Errorf("resource project validation check failed.: Get http://192.168.0.1:6443 request cancelled"),
+		fmt.Errorf("resource project validation check failed.: Get 10.18.25.1 request cancelled"),
+		fmt.Errorf("resource project validation check failed.: Get www.sample.com request cancelled"),
 	}
 
 	for _, err := range cases {

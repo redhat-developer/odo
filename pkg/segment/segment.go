@@ -241,7 +241,13 @@ func sanitizeFilePath(errString string) string {
 
 // sanitizeURL sanitizes URLs from the error string
 func sanitizeURL(errString string) string {
-	urlPattern, _ := regexp.Compile(`(http)\S*`)
+	// the following regex parses hostnames and ip addresses
+	// references - https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch07s16.html
+	// https://www.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/ch08s15.html
+	urlPattern, err := regexp.Compile(`((https?|ftp|smtp)://)?((?:[0-9]{1,3}\.){3}[0-9]{1,3}(:([0-9]{1,5}))?|([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,})`)
+	if err != nil {
+		return errString
+	}
 	errString = urlPattern.ReplaceAllString(errString, Sanitizer)
 	return errString
 }
