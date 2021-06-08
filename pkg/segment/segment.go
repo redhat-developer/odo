@@ -223,7 +223,7 @@ func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
 func sanitizeUserInfo(errString string) string {
 	user1, err1 := user.Current()
 	if err1 != nil {
-		return errors.Wrapf(err1, err1.Error()).Error()
+		return err1.Error()
 	}
 	errString = strings.ReplaceAll(errString, user1.Username, Sanitizer)
 	return errString
