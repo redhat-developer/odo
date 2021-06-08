@@ -9,10 +9,11 @@ Getting that metadata from the cluster is challenging because a normal cluster u
 - finally if we cannot get the openapi data as well then use the `ClusterServiceVersion` to get the parameters.
 
 This change would affect multiple service commands and the changes are described briefly below -
-- `odo catalog describe service` should include the metadata fields with description so the users can provide then when doing `odo service create`
+- `odo catalog describe service` should include the metadata fields with description so the users can provide then when doing `odo service create`. 
 - `odo catalog list service` shouldn't change much other then listing CRDs per operator
 - `odo service create` should take flags and dynamically fill the CRD structs - metadata would be used for validation
 - `odo service create --from-file` would be used by adapter team or whoever wants to provide the whole CRD themselves as a file. this feature is already present and working.
+- `json` output for all commands.
 
 # Implementation plan
 
