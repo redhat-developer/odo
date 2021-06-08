@@ -5,7 +5,7 @@ import "github.com/onsi/gomega/gexec"
 // CliRunner requires functions which are common for oc and kubectl
 // By abstracting these functions into an interface, it handles the cli runner and calls the functions specified to particular cluster only
 type CliRunner interface {
-	Run(cmd string) *gexec.Session
+	Run(args ...string) *gexec.Session
 	ExecListDir(podName string, projectName string, dir string) string
 	Exec(podName string, projectName string, args ...string) string
 	CheckCmdOpInRemoteDevfilePod(podName string, containerName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool

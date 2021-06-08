@@ -31,8 +31,8 @@ func NewKubectlRunner(kubectlPath string) KubectlRunner {
 }
 
 // Run kubectl with given arguments
-func (kubectl KubectlRunner) Run(cmd string) *gexec.Session {
-	session := CmdRunner(cmd)
+func (kubectl KubectlRunner) Run(args ...string) *gexec.Session {
+	session := CmdRunner(kubectl.path, args...)
 	Eventually(session).Should(gexec.Exit(0))
 	return session
 }
