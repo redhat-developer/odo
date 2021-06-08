@@ -52,8 +52,8 @@ var _ = Describe("odo push command tests", func() {
 
 		It("Push, modify a file and then push outside of the working directory", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			// Create a new file to test propagating changes
 			newFilePath := filepath.Join(commonVar.Context, "foobar.txt")
@@ -62,13 +62,13 @@ var _ = Describe("odo push command tests", func() {
 			}
 
 			// Test propagating changes
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			// Delete the file and check that the file is deleted
 			helper.DeleteDir(newFilePath)
 
 			// Test propagating deletions
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 		})
 
 	})
@@ -77,9 +77,9 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions and build", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+			output := helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// Create a new file that we plan on deleting later...
@@ -93,7 +93,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.MakeDir(newDirPath)
 
 			// Push
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -104,7 +104,7 @@ var _ = Describe("odo push command tests", func() {
 			// Now we delete the file and dir and push
 			helper.DeleteDir(newFilePath)
 			helper.DeleteDir(newDirPath)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context, "-v4")
+			helper.Cmd("odo", "push", "--context", commonVar.Context, "-v4").ShouldPass()
 
 			// Then check to see if it's truly been deleted
 			stdOut = oc.ExecListDir(podName, commonVar.Project, convert.DefaultSourceMappingS2i)
@@ -113,7 +113,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should build when a file and a folder is renamed in the directory", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
 
 			// create a file and folder then push
 			err := os.MkdirAll(filepath.Join(commonVar.Context, "tests"), 0750)
@@ -121,13 +121,13 @@ var _ = Describe("odo push command tests", func() {
 			_, err = os.Create(filepath.Join(commonVar.Context, "README.md"))
 			Expect(err).To(BeNil())
 
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+			output := helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// rename a file and push
 			helper.RenameFile(filepath.Join(commonVar.Context, "README.md"), filepath.Join(commonVar.Context, "NEW-FILE.md"))
-			output = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			output = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// get the name of running pod
@@ -142,7 +142,7 @@ var _ = Describe("odo push command tests", func() {
 
 			// rename a folder and push
 			helper.RenameFile(filepath.Join(commonVar.Context, "tests"), filepath.Join(commonVar.Context, "testing"))
-			output = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			output = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// verify that the new file was pushed
@@ -155,8 +155,8 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should push only the modified files", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs:latest", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			url := oc.GetFirstURL(cmpName, appName, commonVar.Project)
 
@@ -170,7 +170,7 @@ var _ = Describe("odo push command tests", func() {
 			earlierCatPackageFile = helper.StatFileInPodContainer(oc, cmpName, convert.ContainerName, appName, commonVar.Project, filepath.ToSlash(filepath.Join(convert.DefaultSourceMappingS2i, "package.json")))
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello world from node.js!", "UPDATED!")
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 
 			modifiedCatPackageFile := ""
@@ -197,8 +197,8 @@ var _ = Describe("odo push command tests", func() {
 			_, err := os.Create(filepath.Join(commonVar.Context, "README.md"))
 			Expect(err).To(BeNil())
 
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			// get the name of running pod
 			podName := oc.GetRunningPodNameByComponent("nodejs", commonVar.Project)
@@ -213,11 +213,11 @@ var _ = Describe("odo push command tests", func() {
 
 			// modify a ignored file and push
 			helper.ReplaceString(filepath.Join(commonVar.Context, "README.md"), "", "This is a example welcome page!")
-			output := helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			output := helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// test ignores using the flag
-			output = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context, "--ignore", "*.md")
+			output = helper.Cmd("odo", "push", "--context", commonVar.Context, "--ignore", "*.md").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 		})
 	})
@@ -225,10 +225,10 @@ var _ = Describe("odo push command tests", func() {
 	Context("when .gitignore file exists or not", func() {
 		It("should create and push the contents of a named component and include odo-file-index.json path to .gitignore file to exclude the contents, if does not exists create one", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
 
 			// push and include the odo-file-index.json path to .gitignore file
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			ignoreFilePath := filepath.Join(commonVar.Context, ".gitignore")
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
 		})
@@ -237,14 +237,14 @@ var _ = Describe("odo push command tests", func() {
 	Context("when running odo push with flag --show-log", func() {
 		It("should be able to execute odo push consecutively without breaking anything", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
 
 			// Run odo push in consecutive iteration
-			output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context)
+			output := helper.Cmd("odo", "push", "--show-log", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			for i := 0; i <= 1; i++ {
-				output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context)
+				output := helper.Cmd("odo", "push", "--show-log", "--context", commonVar.Context).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 			}
 		})

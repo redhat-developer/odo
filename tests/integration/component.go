@@ -34,12 +34,12 @@ func componentTests(args ...string) {
 	Context("Generic machine readable output tests", func() {
 
 		It("Command should fail if json is non-existent for a command", func() {
-			output := helper.CmdShouldFail("odo", "version", "-o", "json")
+			output := helper.Cmd("odo", "version", "-o", "json").ShouldFail().Err()
 			Expect(output).To(ContainSubstring("Machine readable output is not yet implemented for this command"))
 		})
 
 		It("Help for odo version should not contain machine output", func() {
-			output := helper.CmdShouldPass("odo", "version", "--help")
+			output := helper.Cmd("odo", "version", "--help").ShouldPass().Out()
 			Expect(output).NotTo(ContainSubstring("Specify output format, supported format: json"))
 		})
 
@@ -52,22 +52,22 @@ func componentTests(args ...string) {
 
 		It("should create but not list component even in new project with --project and --context at the same time", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...).ShouldPass()
 
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context, "-v4")...)
-			projectList := helper.CmdShouldPass("odo", "project", "list")
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context, "-v4")...).ShouldPass()
+			projectList := helper.Cmd("odo", "project", "list").ShouldPass().Out()
 			Expect(projectList).To(ContainSubstring(commonVar.Project))
-			helper.CmdShouldFail("odo", "list", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.Cmd("odo", "list", "--project", commonVar.Project, "--context", commonVar.Context).ShouldFail()
 		})
 
 		// works
 		It("should create default named component when passed same context differently", func() {
 			dir := filepath.Base(commonVar.Context)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", ".", "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", ".", "--app", "testing")...).ShouldPass()
 			componentName := helper.GetLocalEnvInfoValueWithContext("Name", commonVar.Context)
 			Expect(componentName).To(ContainSubstring("nodejs"))
 			Expect(componentName).To(ContainSubstring(dir))
@@ -77,20 +77,20 @@ func componentTests(args ...string) {
 			Expect(info.GetName(), componentName)
 
 			helper.DeleteDir(filepath.Join(commonVar.Context, ".odo"))
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...).ShouldPass()
 			newComponentName := helper.GetLocalEnvInfoValueWithContext("Name", commonVar.Context)
 			Expect(newComponentName).To(ContainSubstring("nodejs"))
 			Expect(newComponentName).To(ContainSubstring(dir))
 		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
-			outputErr := helper.CmdShouldFail("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "cmp-git", "--ref", "test")...)
+			outputErr := helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "cmp-git", "--ref", "test")...).ShouldFail().Err()
 			Expect(outputErr).To(ContainSubstring("the --ref flag is only valid for --git flag"))
 		})
 
 		It("create component twice fails from same directory", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project)...)
-			output := helper.CmdShouldFail("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project)...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project)...).ShouldPass()
+			output := helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project)...).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("this directory already contains a component"))
 		})
 
@@ -130,34 +130,34 @@ func componentTests(args ...string) {
 
 		It("should list the component", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
-			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project)...)
+			cmpList := helper.Cmd("odo", append(args, "list", "--project", commonVar.Project)...).ShouldPass().Out()
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
-			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...)
+			actualCompListJSON := helper.Cmd("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...).ShouldPass().Out()
 			valuesCList := gjson.GetMany(actualCompListJSON, "kind", "devfileComponents.0.kind", "devfileComponents.0.metadata.name", "devfileComponents.0.spec.app")
 			expectedCList := []string{"List", "Component", "cmp-git", "testing"}
 			Expect(helper.GjsonMatcher(valuesCList, expectedCList)).To(Equal(true))
 
-			cmpAllList := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
+			cmpAllList := helper.Cmd("odo", append(args, "list", "--all-apps")...).ShouldPass().Out()
 			Expect(cmpAllList).To(ContainSubstring("cmp-git"))
-			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
+			helper.Cmd("odo", append(args, "delete", "cmp-git", "-f")...).ShouldPass()
 		})
 
 		It("should list the component when it is not pushed", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...).ShouldPass()
 
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
-			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", commonVar.Context)...)
+			cmpList := helper.Cmd("odo", append(args, "list", "--context", commonVar.Context)...).ShouldPass().Out()
 			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "Not Pushed"})
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...).ShouldPass()
 		})
 
 		// It("should list the state as unknown for disconnected cluster", func() {
@@ -191,14 +191,14 @@ func componentTests(args ...string) {
 
 		It("should describe the component when it is not pushed", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
-			helper.CmdShouldPass("odo", "url", "create", "url-1", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "url", "create", "url-2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...).ShouldPass()
+			helper.Cmd("odo", "url", "create", "url-1", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "url", "create", "url-2", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
-			cmpDescribe := helper.CmdShouldPass("odo", append(args, "describe", "--context", commonVar.Context)...)
+			cmpDescribe := helper.Cmd("odo", append(args, "describe", "--context", commonVar.Context)...).ShouldPass().Out()
 			helper.MatchAllInOutput(cmpDescribe, []string{
 				"cmp-git",
 				"nodejs",
@@ -214,10 +214,10 @@ func componentTests(args ...string) {
 			helper.MakeDir(newContext)
 			helper.Chdir(newContext)
 			cmpName2 := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "--starter", "nodejs")
+			helper.Cmd("odo", "create", "--starter", "nodejs").ShouldPass()
 			context2 := helper.CreateNewContext()
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--context", context2, cmpName2)
-			output := helper.CmdShouldPass("odo", "describe", "--context", context2)
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "--context", context2, cmpName2).ShouldPass()
+			output := helper.Cmd("odo", "describe", "--context", context2).ShouldPass().Out()
 			Expect(output).To(ContainSubstring(fmt.Sprint("Component Name: ", cmpName2)))
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
 			helper.DeleteDir(context2)
@@ -226,37 +226,37 @@ func componentTests(args ...string) {
 		It("should list the component in the same app when one is pushed and the other one is not pushed", func() {
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing")...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git")
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
 			context2 := helper.CreateNewContext()
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "cmp-git-2", "--project", commonVar.Project, "--context", context2, "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "cmp-git-2", "--project", commonVar.Project, "--context", context2, "--app", "testing")...).ShouldPass()
 			info = helper.LocalEnvInfo(context2)
 			Expect(info.GetApplication(), "testing")
 			Expect(info.GetName(), "cmp-git-2")
-			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context2)...)
+			cmpList := helper.Cmd("odo", append(args, "list", "--context", context2)...).ShouldPass().Out()
 			helper.MatchAllInOutput(cmpList, []string{"cmp-git", "cmp-git-2", "Not Pushed", "Pushed"})
 
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context2)...)
+			helper.Cmd("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...).ShouldPass()
+			helper.Cmd("odo", append(args, "delete", "-f", "--all", "--context", context2)...).ShouldPass()
 			helper.DeleteDir(context2)
 		})
 
 		It("should succeed listing catalog components", func() {
 			// Since components catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
-			helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			helper.Cmd("odo", "catalog", "list", "components", "-o", "json").ShouldPass()
 		})
 
 		It("binary component should not fail when --context is not set", func() {
 			oc.ImportJavaIS(commonVar.Project)
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
 			// Was failing due to https://github.com/openshift/odo/issues/1969
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"))...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"))...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetName(), "sb-jar-test")
 		})
@@ -268,8 +268,8 @@ func componentTests(args ...string) {
 			newContext := helper.CreateNewContext()
 			defer helper.DeleteDir(newContext)
 
-			output := helper.CmdShouldFail("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", newContext)...)
+			output := helper.Cmd("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", newContext)...).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("inside of the context directory"))
 		})
 
@@ -281,11 +281,11 @@ func componentTests(args ...string) {
 			fmt.Printf("relativeContext = %#v\n", relativeContext)
 
 			if runtime.GOOS == "darwin" {
-				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
-					commonVar.Project, "--binary", filepath.Join("/private", commonVar.Context, "sb.jar"), "--context", relativeContext)...)
+				helper.Cmd("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+					commonVar.Project, "--binary", filepath.Join("/private", commonVar.Context, "sb.jar"), "--context", relativeContext)...).ShouldPass()
 			} else {
-				helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
-					commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", relativeContext)...)
+				helper.Cmd("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+					commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", relativeContext)...).ShouldPass()
 			}
 			info := helper.LocalEnvInfo(relativeContext)
 			Expect(info.GetApplication(), "app")
@@ -293,14 +293,14 @@ func componentTests(args ...string) {
 		})
 
 		It("should fail the create command as --git flag, which is specific to s2i component creation, is used without --s2i flag", func() {
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing")
+			output := helper.Cmd("odo", "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--context", commonVar.Context, "--app", "testing").ShouldFail().Err()
 			Expect(output).Should(ContainSubstring("flag --git, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components"))
 		})
 
 		It("should fail the create command as --binary flag, which is specific to s2i component creation, is used without --s2i flag", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
 
-			output := helper.CmdShouldFail("odo", "create", "java:8", "sb-jar-test", "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", commonVar.Context)
+			output := helper.Cmd("odo", "create", "java:8", "sb-jar-test", "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).Should(ContainSubstring("flag --binary, requires --s2i flag to be set, when deploying S2I (Source-to-Image) components"))
 		})
 	})
@@ -316,20 +316,20 @@ func componentTests(args ...string) {
 
 		It("create local nodejs component twice and fail", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--env", "key=value,key1=value1")...)
-			output := helper.CmdShouldFail("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--env", "key=value,key1=value1")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--env", "key=value,key1=value1")...).ShouldPass()
+			output := helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--env", "key=value,key1=value1")...).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("this directory already contains a component"))
 		})
 
 		It("creates and pushes local nodejs component and then deletes --all", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--env", "key=value,key1=value1")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--env", "key=value,key1=value1")...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), componentName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", append(args, "delete", "--context", commonVar.Context, "-f", "--all")...)
-			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
+			helper.Cmd("odo", append(args, "delete", "--context", commonVar.Context, "-f", "--all")...).ShouldPass()
+			componentList := helper.Cmd("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...).ShouldPass().Out()
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(files).NotTo(ContainElement(".odo"))
@@ -337,14 +337,14 @@ func componentTests(args ...string) {
 
 		It("creates a local python component, pushes it and then deletes it using --all flag", func() {
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "python", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "python", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), componentName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", append(args, "delete", "--context", commonVar.Context, "-f")...)
-			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f", "--context", commonVar.Context)...)
-			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
+			helper.Cmd("odo", append(args, "delete", "--context", commonVar.Context, "-f")...).ShouldPass()
+			helper.Cmd("odo", append(args, "delete", "--all", "-f", "--context", commonVar.Context)...).ShouldPass()
+			componentList := helper.Cmd("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...).ShouldPass().Out()
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(files).NotTo(ContainElement(".odo"))
@@ -352,13 +352,13 @@ func componentTests(args ...string) {
 
 		It("creates a local python component, pushes it and then deletes it using --all flag in local directory", func() {
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "python", componentName, "--app", appName, "--project", commonVar.Project)...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "python", componentName, "--app", appName, "--project", commonVar.Project)...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), componentName)
-			helper.CmdShouldPass("odo", append(args, "push")...)
-			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f")...)
-			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...)
+			helper.Cmd("odo", append(args, "push")...).ShouldPass()
+			helper.Cmd("odo", append(args, "delete", "--all", "-f")...).ShouldPass()
+			componentList := helper.Cmd("odo", append(args, "list", "--app", appName, "--project", commonVar.Project)...).ShouldPass().Out()
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(files).NotTo(ContainElement(".odo"))
@@ -366,19 +366,19 @@ func componentTests(args ...string) {
 
 		It("creates a local python component and check for unsupported warning", func() {
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			output := helper.CmdShouldPass("odo", append(args, "create", "--s2i", "python", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			output := helper.Cmd("odo", append(args, "create", "--s2i", "python", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Warning: python is not fully supported by odo, and it is not guaranteed to work"))
 		})
 
 		It("creates a local nodejs component and check unsupported warning hasn't occurred", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			output := helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs:latest", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			output := helper.Cmd("odo", append(args, "create", "--s2i", "nodejs:latest", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass().Out()
 			Expect(output).NotTo(ContainSubstring("Warning"))
 		})
 
 		It("creates a local java component and check unsupported warning hasn't occurred", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
-			output := helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:latest", componentName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			output := helper.Cmd("odo", append(args, "create", "--s2i", "java:latest", componentName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass().Out()
 			Expect(output).NotTo(ContainSubstring("Warning"))
 		})
 	})
@@ -422,37 +422,37 @@ func componentTests(args ...string) {
 
 		It("should pass inside a odo directory without component name as parameter", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", "url", "create", "example", "--context", commonVar.Context)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass()
+			helper.Cmd("odo", "url", "create", "example", "--context", commonVar.Context).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), cmpName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
 			// changing directory to the context directory
 			helper.Chdir(commonVar.Context)
-			cmpListOutput := helper.CmdShouldPass("odo", append(args, "list")...)
+			cmpListOutput := helper.Cmd("odo", append(args, "list")...).ShouldPass().Out()
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
-			cmpDescribe := helper.CmdShouldPass("odo", append(args, "describe")...)
+			cmpDescribe := helper.Cmd("odo", append(args, "describe")...).ShouldPass().Out()
 			helper.MatchAllInOutput(cmpDescribe, []string{cmpName, "nodejs"})
 
 			url := helper.DetermineRouteURL(commonVar.Context)
 			Expect(cmpDescribe).To(ContainSubstring(url))
 
-			helper.CmdShouldPass("odo", append(args, "delete", "-f")...)
+			helper.Cmd("odo", append(args, "delete", "-f")...).ShouldPass()
 		})
 
 		It("should fail outside a odo directory without component name as parameter", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), cmpName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
 			// commands should fail as the component name is missing
-			helper.CmdShouldFail("odo", append(args, "describe", "--app", appName, "--project", commonVar.Project)...)
-			helper.CmdShouldFail("odo", append(args, "delete", "-f", "--app", appName, "--project", commonVar.Project)...)
+			helper.Cmd("odo", append(args, "describe", "--app", appName, "--project", commonVar.Project)...).ShouldFail()
+			helper.Cmd("odo", append(args, "delete", "-f", "--app", appName, "--project", commonVar.Project)...).ShouldFail()
 		})
 
 		// issue https://github.com/openshift/odo/issues/4451
@@ -481,12 +481,12 @@ func componentTests(args ...string) {
 			componentName := helper.RandString(6)
 			appName := helper.RandString(6)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", componentName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass()
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
 			helper.Chdir(commonVar.Context)
-			helper.CmdShouldPass("odo", "config", "set", "--env", "FOO=BAR")
-			helper.CmdShouldPass("odo", append(args, "push")...)
+			helper.Cmd("odo", "config", "set", "--env", "FOO=BAR").ShouldPass()
+			helper.Cmd("odo", append(args, "push")...).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), componentName)
@@ -511,10 +511,10 @@ func componentTests(args ...string) {
 
 		It("should create default named component in a directory with numeric name", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), contextNumeric)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", contextNumeric, "--app", "testing")...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", contextNumeric, "--app", "testing")...).ShouldPass()
 			info := helper.LocalEnvInfo(contextNumeric)
 			Expect(info.GetApplication(), "testing")
-			helper.CmdShouldPass("odo", append(args, "push", "--context", contextNumeric, "-v4")...)
+			helper.Cmd("odo", append(args, "push", "--context", contextNumeric, "-v4")...).ShouldPass()
 		})
 	})
 
@@ -542,43 +542,43 @@ func componentTests(args ...string) {
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
 
 			// create the component using symlink
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(symLinkPath, "sb.jar"), "--context", symLinkPath)...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "java:8", "sb-jar-test", "--project",
+				commonVar.Project, "--binary", filepath.Join(symLinkPath, "sb.jar"), "--context", symLinkPath)...).ShouldPass()
 
 			// Create a URL and push without using the symlink
-			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", symLinkPath)
+			helper.Cmd("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", symLinkPath).ShouldPass()
 			info := helper.LocalEnvInfo(symLinkPath)
 			Expect(info.GetApplication(), "app")
 			Expect(info.GetName(), "sb-jar-test")
 
-			helper.CmdShouldPass("odo", append(args, "push", "--context", symLinkPath)...)
+			helper.Cmd("odo", append(args, "push", "--context", symLinkPath)...).ShouldPass()
 			routeURL := helper.DetermineRouteURL(symLinkPath)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "HTTP Booster", 300, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", append(args, "delete", "sb-jar-test", "-f", "--context", symLinkPath)...)
+			helper.Cmd("odo", append(args, "delete", "sb-jar-test", "-f", "--context", symLinkPath)...).ShouldPass()
 		})
 
 		It("Should be able to deploy a wildfly war file using symlinks in some odo commands", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "wildfly"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "wildfly", "javaee-war-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(symLinkPath, "ROOT.war"), "--context", symLinkPath)...)
+			helper.Cmd("odo", append(args, "create", "--s2i", "wildfly", "javaee-war-test", "--project",
+				commonVar.Project, "--binary", filepath.Join(symLinkPath, "ROOT.war"), "--context", symLinkPath)...).ShouldPass()
 
 			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "warfile", "--port", "8080", "--context", commonVar.Context)
+			helper.Cmd("odo", "url", "create", "warfile", "--port", "8080", "--context", commonVar.Context).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), "app")
 			Expect(info.GetName(), "javaee-war-test")
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 			routeURL := helper.DetermineRouteURL(commonVar.Context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", append(args, "delete", "javaee-war-test", "-f", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "delete", "javaee-war-test", "-f", "--context", commonVar.Context)...).ShouldPass()
 		})
 	})
 
@@ -588,20 +588,20 @@ func componentTests(args ...string) {
 
 		It("should delete the component and the owned resources", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass()
+			helper.Cmd("odo", "url", "create", "example-1", "--context", commonVar.Context).ShouldPass()
 
-			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+			helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), cmpName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
-			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", "url", "create", "example-2", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "delete", "-f", "--context", commonVar.Context)...).ShouldPass()
 
 			oc.WaitAndCheckForExistence("routes", commonVar.Project, 1)
 			oc.WaitAndCheckForExistence("dc", commonVar.Project, 1)
@@ -613,21 +613,21 @@ func componentTests(args ...string) {
 
 		It("should delete the component and the owned resources with wait flag", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...)
-			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", commonVar.Context)
+			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass()
+			helper.Cmd("odo", "url", "create", "example-1", "--context", commonVar.Context).ShouldPass()
 
-			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+			helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), cmpName)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
-			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", append(args, "push", "--context", commonVar.Context)...)
+			helper.Cmd("odo", "url", "create", "example-2", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 
 			// delete with --wait flag
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...)
+			helper.Cmd("odo", append(args, "delete", "-f", "-w", "--context", commonVar.Context)...).ShouldPass()
 
 			helper.VerifyResourcesDeleted(oc, []helper.ResourceInfo{
 				{
@@ -683,21 +683,21 @@ func componentTests(args ...string) {
 
 			// create a s2i component using --s2i that generates a devfile
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName)
-			helper.CmdShouldPass("odo", "url", "create", urlName, "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "storage", "create", storageName, "--path", "/data1", "--size", "1Gi", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
+			helper.Cmd("odo", "url", "create", urlName, "--port", "8080", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "storage", "create", storageName, "--path", "/data1", "--size", "1Gi", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			// check the status of devfile component
-			stdout := helper.CmdShouldPass("odo", "list", "--context", commonVar.Context)
+			stdout := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{cmpName, "Devfile Components", "Pushed"})
 
 			// verify the url
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", commonVar.Context)
+			stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()
 
 			helper.MatchAllInOutput(stdout, []string{urlName, "Pushed", "false", "route"})
 			//verify storage
-			stdout = helper.CmdShouldPass("odo", "storage", "list", "--context", commonVar.Context)
+			stdout = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{storageName, "Pushed"})
 
 		})
