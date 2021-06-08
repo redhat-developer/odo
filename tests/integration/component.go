@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/openshift/odo/pkg/occlient"
+
 	"github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
@@ -707,70 +709,91 @@ func componentTests(args ...string) {
 	})
 
 	Context("when components are not created/managed by odo", func() {
-		var expectedComponents = []struct {
-			App, Name string
-		}{
-			{"app", "example-dc"},
-			{"httpd", "example-deployment"},
+		var runner helper.CliRunner
+		var client *occlient.Client
+		var label = map[string]string{
+			labels.ManagedBy: "!odo",
 		}
+		type compStruct struct {
+			App, Name string
+		}
+		var compList = []compStruct{
+			{"app", "example-dc"},
+		}
+
 		JustBeforeEach(func() {
 			/*
 				Copy the deployment-label.yaml and dc-label.yaml file.
 				Create a deployment with deployment-label.yaml.
 				Create a dc with dc-label.yaml.
 			*/
-			var runner = helper.GetCliRunner()
+			runner = helper.GetCliRunner()
 			dcfile := filepath.Join(commonVar.Context, "dc-label.yaml")
-			dfile := filepath.Join(commonVar.Context, "deployment-label.yaml")
 			helper.CopyManifestFile("dc-label.yaml", dcfile)
-			helper.CopyManifestFile("deployment-label.yaml", dfile)
 			runner.Run("apply", "-f", dcfile).Wait()
-			runner.Run("apply", "-f", dfile).Wait()
-			//helper.CmdShouldPass("oc", "apply", "-f", "dc-label.yaml")
-			//helper.CmdShouldPass("oc", "apply", "-f", "deployment-label.yaml")
 		})
 		JustAfterEach(func() {
 			//DeleteNonOdoComponent
-			client, _ := genericclioptions.Client()
-			label := map[string]string{
-				labels.ManagedBy: "!odo",
-			}
+			client, _ = genericclioptions.Client()
 			Expect(client.Delete(label, true)).To(BeNil())
-			Expect(client.GetKubeClient().DeleteDeployment(label)).To(BeNil())
 		})
-		var verify = func(output string) {
+
+		var verify = func(output string, componentList []compStruct) {
 			Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
-			for _, comp := range expectedComponents {
+			for _, comp := range componentList {
 				Expect(output).To(ContainSubstring(comp.Name))
+				Expect(output).To(ContainSubstring(comp.App))
 			}
 		}
+
 		It("should list the components", func() {
 			output := helper.CmdShouldPass("odo", append(args, "list")...)
-			verify(output)
+			verify(output, compList)
 		})
-		It("should list the components with --all-apps flag", func() {
-			output := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
-			verify(output)
 
+		Context("The component has a different app name than the default 'app'", func() {
+			JustBeforeEach(func() {
+				dfile := filepath.Join(commonVar.Context, "deployment-label.yaml")
+				helper.CopyManifestFile("deployment-label.yaml", dfile)
+				runner.Run("apply", "-f", dfile).Wait()
+			})
+			JustAfterEach(func() {
+				Expect(client.GetKubeClient().DeleteDeployment(label)).To(BeNil())
+			})
+
+			It("should list the components with --all-apps flag", func() {
+				output := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
+				verify(output, append(compList, compStruct{"httpd", "example-deployment"}))
+			})
+
+			It("should list the components with --app flag", func() {
+				output := helper.CmdShouldPass("odo", append(args, "list", "--app", "httpd")...)
+				verify(output, []compStruct{{"httpd", "example-deployment"}})
+			})
 		})
-		It("should list the components with --app flag", func() {
-			output := helper.CmdShouldPass("odo", append(args, "list", "--app", "httpd")...)
-			Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
-		})
+
 		It("should list the components in json format with -o json flag", func() {
 			output := helper.CmdShouldPass("odo", append(args, "list", "-o", "json")...)
 			Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
+			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...)
+			valuesCList := gjson.GetMany(actualCompListJSON, "kind", "devfileComponents.0.kind", "devfileComponents.0.metadata.name", "devfileComponents.0.spec.app")
+			expectedCList := []string{"List", "Component", "example-dc", "app"}
+			Expect(helper.GjsonMatcher(valuesCList, expectedCList)).To(Equal(true))
 		})
+
 		When("executing odo list from other project", func() {
 			JustBeforeEach(func() {
+				output := helper.CmdShouldPass("odo", "project", "get")
+				Expect(output).To(ContainSubstring(commonVar.Project))
 				helper.CmdShouldPass("odo", "project", "set", "default")
 			})
 			JustAfterEach(func() {
 				helper.CmdShouldPass("odo", "project", "set", commonVar.Project)
 			})
+
 			It("should list the components with --project flag", func() {
 				output := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project)...)
-				Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
+				verify(output, compList)
 			})
 
 		})
