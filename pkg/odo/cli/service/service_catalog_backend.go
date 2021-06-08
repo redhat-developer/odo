@@ -178,7 +178,12 @@ func (b *ServiceCatalogBackend) ServiceExists(o *DeleteOptions) (bool, error) {
 }
 
 func (b *ServiceCatalogBackend) DeleteService(o *DeleteOptions, name string, application string) error {
-	err := svc.DeleteKubernetesComponentFromDevfile(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
+	err := svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
+	if err != nil {
+		return err
+	}
+
+	err = svc.DeleteKubernetesComponentFromDevfile(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}
