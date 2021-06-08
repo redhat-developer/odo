@@ -434,6 +434,52 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							stdOut := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
 							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
 						})
+
+						When("a link is created with a specific name", func() {
+
+							var linkName string
+
+							JustBeforeEach(func() {
+								linkName = "link-" + helper.RandString(6)
+								helper.CmdShouldPass("odo", "link", "EtcdCluster/"+name, "--name", linkName)
+								// for the moment, odo push is not necessary to deploy the link
+							})
+
+							JustAfterEach(func() {
+								// delete the link
+								helper.CmdShouldPass("odo", "unlink", "EtcdCluster/"+name)
+							})
+
+							It("should create the link with the specified name", func() {
+								ocArgs := []string{"get", "servicebinding", linkName, "-n", commonVar.Project}
+								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+									return strings.Contains(output, linkName)
+								})
+							})
+						})
+
+						When("a link is created with a specific name and bind-as-files flag", func() {
+
+							var linkName string
+
+							JustBeforeEach(func() {
+								linkName = "link-" + helper.RandString(6)
+								helper.CmdShouldPass("odo", "link", "EtcdCluster/"+name, "--name", linkName, "--bind-as-files")
+								// for the moment, odo push is not necessary to deploy the link
+							})
+
+							JustAfterEach(func() {
+								// delete the link
+								helper.CmdShouldPass("odo", "unlink", "EtcdCluster/"+name)
+							})
+
+							It("should create a servicebinding resource with bindAsFiles set to true", func() {
+								ocArgs := []string{"get", "servicebinding", linkName, "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
+								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+									return strings.Contains(output, "true")
+								})
+							})
+						})
 					})
 				})
 
@@ -492,66 +538,5 @@ spec:
 			})
 		})
 
-		It("should successfully link the component to the service with a specific name", func() {
-
-			// create a component and deploy it
-			helper.CmdShouldPass("odo", "create", "nodejs")
-
-			// create an etcd service
-			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "etcd")
-
-			// deploy the component and service
-			helper.CmdShouldPass("odo", "push")
-
-			// create the link with a specific name
-			helper.CmdShouldPass("odo", "link", "EtcdCluster/etcd", "--name", "etcd-config")
-
-			// for the moment, odo push is not necessary
-
-			// check the link exists with the specific name
-			ocArgs := []string{"get", "servicebinding", "etcd-config", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "etcd-config")
-			})
-
-			// delete the link
-			helper.CmdShouldPass("odo", "unlink", "EtcdCluster/etcd")
-
-			// delete the etcd service
-			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcd", "-f")
-		})
-
-		It("should successfully link the component to the service with a specific name and activating bindAsFiles", func() {
-
-			// create a component and deploy it
-			helper.CmdShouldPass("odo", "create", "nodejs")
-
-			// create an etcd service
-			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "etcd")
-
-			// deploy the component and service
-			helper.CmdShouldPass("odo", "push")
-
-			// create the link with a specific name and with bind-as-files
-			helper.CmdShouldPass("odo", "link", "EtcdCluster/etcd", "--name", "etcd-config", "--bind-as-files")
-
-			// for the moment, odo push is not necessary
-
-			// check the link exists with the specific name
-			ocArgs := []string{"get", "servicebinding", "etcd-config", "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "true")
-			})
-
-			// delete the link
-			helper.CmdShouldPass("odo", "unlink", "EtcdCluster/etcd")
-
-			// delete the etcd service
-			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcd", "-f")
-		})
 	})
 })
