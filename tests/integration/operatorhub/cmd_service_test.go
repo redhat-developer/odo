@@ -283,7 +283,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						JustAfterEach(func() {
 						})
 
-						It("should create a pod in the namespace in Running state", func() {
+						It("should create pods in running state", func() {
 							// now create the service on cluster and verify if the pods for the operator have started
 							pods := oc.GetAllPodsInNs(commonVar.Project)
 							// Look for pod with example name because that's the name etcd will give to the pods.
@@ -419,7 +419,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						JustAfterEach(func() {
 						})
 
-						It("should create a pod in the namespace in Running state", func() {
+						It("should create pods in running state", func() {
 							pods := oc.GetAllPodsInNs(commonVar.Project)
 							compileString := name + `-.[a-z0-9]*`
 							etcdPod = regexp.MustCompile(compileString).FindString(pods)
