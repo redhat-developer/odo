@@ -4,10 +4,12 @@ ifdef GITCOMMIT
 else
         GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 endif
-PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests)
+
+COMMON_GOFLAGS := -mod=vendor
 COMMON_LDFLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
-BUILD_FLAGS := -mod=vendor -ldflags="$(COMMON_LDFLAGS)"
-CROSS_BUILD_FLAGS := -mod=vendor -ldflags="-s -w -X $(PROJECT)/pkg/segment.writeKey=R1Z79HadJIrphLoeONZy5uqOjusljSwN $(COMMON_LDFLAGS)"
+BUILD_FLAGS := $(COMMON_GOFLAGS) -ldflags="$(COMMON_LDFLAGS)"
+CROSS_BUILD_FLAGS := $(COMMON_GOFLAGS) -ldflags="-s -w -X $(PROJECT)/pkg/segment.writeKey=R1Z79HadJIrphLoeONZy5uqOjusljSwN $(COMMON_LDFLAGS)"
+PKGS := $(shell go list $(COMMON_GOFLAGS)  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests)
 FILES := odo dist
 TIMEOUT ?= 14400s
 
@@ -34,7 +36,7 @@ export ODO_LOG_LEVEL ?= 4
 # To enable verbosity export or set env GINKGO_TEST_ARGS like "GINKGO_TEST_ARGS=-v"
 UNIT_TEST_ARGS ?=
 
-GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
+GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) $(COMMON_GOFLAGS) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
 
 # Flags for tests that must not be run in parallel.
 GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
