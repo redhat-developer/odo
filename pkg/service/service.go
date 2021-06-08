@@ -922,7 +922,6 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
 				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
-				err = nil
 				continue // this ensures that services slice is not updated
 			} else {
 				return nil, nil, err
