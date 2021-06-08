@@ -38,6 +38,13 @@ If the user doesn't have CRD access then we fetch try to fetch the same `openAPI
 
 So this needs to be cached and refreshed whenever a new operator is installed.
 
+The caching would be per cluster as the `swagger.json` would change for different clusters. The approach would be as follows -
+
+- when the users executes `odo catalog list services`, if there is no cache then we would fetch the `swagger.json`, odo wouldn't exit until download. 
+- we would store the `swagger.json` in the `~/.odo` as `<cluster-url>-swagger.json` to avoid conflicts.
+- We would also create a `operator-listing-cache.json` in the `~/.odo` which would hold a key value mapping of `cluser-url` => `hash of the latest "odo catalog list services"`.
+- now when the user runs `odo catalog list services` we would check if there is a cache present, if there is then it would compare the hash of the current `odo catalog list services` for the cluster with the one present in `operator-listing-cache.json`. If its different we redownload the swagger.json and update the hash of `odo catalog list services` in `operator-listing-cache.json`.
+
 
 ### Fetch ClusterServiceVersion to generate the information
 
@@ -121,7 +128,11 @@ The current approach of sending map values via cli are as follows -
 - we would add a `-p` cobra param as a list
 - each of the parameter would represent the key in a map and value in a map `e.g. -p "key"="value"`
 - we would allow json path in the key for the user to specific any field in the map that they want to set e.g. `services[0].namespace`.
-- we will pass all values as string. 
+- we optimistically try to convert the type of param values in the below order
+    - try to parse as integer, if it goes through then we assume it as an integer
+    - try to parse as a float and if it goes through the we assume the value as float
+    - try to parse as a boolean
+    - then everything else becomes string.
 
 Sample - `odo service create servicebinding.coreos.io/Servicebinding/<version> -p  "services[0].envVarPrefix"="SVC" -p "services[0].namespace"="openshift"`
 
@@ -147,7 +158,18 @@ this would yield into a map that looks like this
 
 ## Using the metadata to validate the user input
 
-At this stage the user either has access to the `openAPIV3Schema` or `ClusterServiceVersion` and also the user has provided the service parameters they want to set as well.
+At this stage the user either has access to the `openAPIV3Schema` or `ClusterServiceVersion` and also the user has provided the service parameters they want to set as well. To hide the difference between these implementation from the user the `catalog describe` output would follow the same format. e.g.
+```
+- FieldPath: zookeeper.resources
+  DisplayName: Zookeeper Resource Requirements
+  Description: Limits describes the minimum/maximum amount of compute resources required/allowed (optional)
+  Type: <type> (optional)
+   
+- FieldPath: zookeeper.storage.type
+  Type: <type> (optional)
+```
+
+Observe that `Description` and `Type` are optional as for some scenerios that information is not present.
 
 ### User has access to openAPIV3Schema
 
@@ -379,10 +401,18 @@ The approach is to go through the keys provided by the user against the ones pre
 ## "odo catalog describe service"
 
 ### Approach where user has access to the CustomResourceDefinition
-`odo catalog service describe strimzi-cluster-operator.v0.21.1/Kafka -o json` would show the whole `openAPIV3Schema` as an output.
+`odo catalog service describe strimzi-cluster-operator.v0.21.1/Kafka -o json` would show a flat converted version of `openAPIv3schema` with same structure as `ClusterServiceVersion` with an extra addition of `type` information being present.
 
 For human readable output -
-TODO
+```
+- FieldPath: zookeeper.resources.limit.min
+  DisplayName: Limit Min
+  Description: <description>
+  Type: string
+   
+- FieldPath: zookeeper.storage.type
+  Type: string
+```
 
 ### Approach where user only has access to ClusterServiceVersion 
 
@@ -406,5 +436,6 @@ For human readable output a non tablular approach would be used.
 
 ### --input-file flag
 
+Input file would work as it does now with just a difference where we would validate the file against the jsonschema using the validator implemented.
 
 
