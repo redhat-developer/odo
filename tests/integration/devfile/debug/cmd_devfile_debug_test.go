@@ -40,15 +40,15 @@ var _ = Describe("odo devfile debug command serial tests", func() {
 		helper.MakeDir(projectDirPath)
 		helper.Chdir(projectDirPath)
 
-		helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, componentName)
+		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 		helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
-		helper.CmdShouldPass("odo", "push", "--debug")
+		helper.Cmd("odo", "push", "--debug").ShouldPass()
 
 		stopChannel := make(chan bool)
 		go func() {
-			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward")
+			helper.Cmd("odo", "debug", "port-forward").WithTerminate(60*time.Second, stopChannel).ShouldRun()
 		}()
 
 		stopListenerChan := make(chan bool)

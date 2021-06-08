@@ -65,49 +65,49 @@ func runner(namespace string, s2i bool) {
 	storage00 := helper.RandString(4)
 	url00 := helper.RandString(4)
 
-	helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, component0, "--context", context0, "--app", app0)
+	helper.Cmd("odo", "create", "nodejs", "--project", namespace, component0, "--context", context0, "--app", app0).ShouldPass()
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context0)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context0, "devfile.yaml"))
-	helper.CmdShouldPass("odo", "push", "--context", context0)
+	helper.Cmd("odo", "push", "--context", context0).ShouldPass()
 
 	if s2i {
 		helper.CopyExample(filepath.Join("source", "nodejs"), context00)
-		helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", component00, "--app", app0, "--project", namespace, "--context", context00)
-		helper.CmdShouldPass("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00)
-		helper.CmdShouldPass("odo", "url", "create", url00, "--port", "8080", "--context", context00)
+		helper.Cmd("odo", "component", "create", "--s2i", "nodejs", component00, "--app", app0, "--project", namespace, "--context", context00).ShouldPass()
+		helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
+		helper.Cmd("odo", "url", "create", url00, "--port", "8080", "--context", context00).ShouldPass()
 	} else {
-		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, component00, "--context", context00, "--app", app0)
+		helper.Cmd("odo", "create", "nodejs", "--project", namespace, component00, "--context", context00, "--app", app0).ShouldPass()
 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context00)
 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context00, "devfile.yaml"))
-		helper.CmdShouldPass("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00)
-		helper.CmdShouldPass("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress")
+		helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
+		helper.Cmd("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress").ShouldPass()
 	}
-	helper.CmdShouldPass("odo", "push", "--context", context00)
+	helper.Cmd("odo", "push", "--context", context00)
 
-	helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, component1, "--context", context1, "--app", app1)
+	helper.Cmd("odo", "create", "nodejs", "--project", namespace, component1, "--context", context1, "--app", app1).ShouldPass()
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context1)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context1, "devfile.yaml"))
-	helper.CmdShouldPass("odo", "push", "--context", context1)
+	helper.Cmd("odo", "push", "--context", context1).ShouldPass()
 
-	stdOut := helper.CmdShouldPass("odo", "app", "list", "--project", namespace)
+	stdOut := helper.Cmd("odo", "app", "list", "--project", namespace).ShouldPass().Out()
 	helper.MatchAllInOutput(stdOut, []string{app0, app1})
 
 	// test the json output
-	stdOut = helper.CmdShouldPass("odo", "app", "list", "--project", namespace, "-o", "json")
+	stdOut = helper.Cmd("odo", "app", "list", "--project", namespace, "-o", "json").ShouldPass().Out()
 	helper.MatchAllInOutput(stdOut, []string{app0, app1})
 	Expect(helper.IsJSON(stdOut)).To(BeTrue())
 
-	stdOut = helper.CmdShouldPass("odo", "app", "describe", app0, "--project", namespace)
+	stdOut = helper.Cmd("odo", "app", "describe", app0, "--project", namespace).ShouldPass().Out()
 	helper.MatchAllInOutput(stdOut, []string{app0, component0, component00, storage00, url00})
 
 	// test the json output
-	stdOut = helper.CmdShouldPass("odo", "app", "describe", app0, "--project", namespace, "-o", "json")
+	stdOut = helper.Cmd("odo", "app", "describe", app0, "--project", namespace, "-o", "json").ShouldPass().Out()
 	helper.MatchAllInOutput(stdOut, []string{app0, component0, component00})
 	Expect(helper.IsJSON(stdOut)).To(BeTrue())
 
-	stdOut = helper.CmdShouldPass("odo", "app", "delete", app0, "--project", namespace, "-f")
+	stdOut = helper.Cmd("odo", "app", "delete", app0, "--project", namespace, "-f").ShouldPass().Out()
 	helper.MatchAllInOutput(stdOut, []string{app0, component0, component00, url00, storage00})
 
-	stdOut = helper.CmdShouldPass("odo", "app", "list", "--project", namespace)
+	stdOut = helper.Cmd("odo", "app", "list", "--project", namespace).ShouldPass().Out()
 	helper.MatchAllInOutput(stdOut, []string{app1})
 }

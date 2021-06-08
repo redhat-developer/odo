@@ -36,12 +36,12 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component with valid component name", func() {
-			helper.CmdShouldPass("odo", "create", "java-openliberty", cmpName)
+			helper.Cmd("odo", "create", "java-openliberty", cmpName).ShouldPass()
 		})
 
 		It("should fail to create the devfile component with invalid component type", func() {
 			fakeComponentName := "fake-component"
-			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
+			output := helper.Cmd("odo", "create", fakeComponentName).ShouldFail().Err()
 			var expectedString string
 			if os.Getenv("KUBERNETES") == "true" {
 				expectedString = "component type not found"
@@ -55,7 +55,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component type argument and --project flag", func() {
 		It("should successfully create the devfile component", func() {
 			componentNamespace := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "java-openliberty", "--project", componentNamespace)
+			helper.Cmd("odo", "create", "java-openliberty", "--project", componentNamespace).ShouldPass()
 			fileContents, err := helper.ReadFile(filepath.Join(commonVar.Context, ".odo/env/env.yaml"))
 			Expect(err).To(BeNil())
 			Expect(fileContents).To(ContainSubstring(componentNamespace))
@@ -66,12 +66,12 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component type argument and --registry flag", func() {
 		It("should successfully create the devfile component if specified registry is valid", func() {
 			componentRegistry := "DefaultDevfileRegistry"
-			helper.CmdShouldPass("odo", "create", "java-openliberty", "--registry", componentRegistry)
+			helper.Cmd("odo", "create", "java-openliberty", "--registry", componentRegistry).ShouldPass()
 		})
 
 		It("should fail to create the devfile component if specified registry is invalid", func() {
 			componentRegistry := "fake"
-			output := helper.CmdShouldFail("odo", "create", "java-openliberty", "--registry", componentRegistry)
+			output := helper.Cmd("odo", "create", "java-openliberty", "--registry", componentRegistry).ShouldFail().Err()
 			helper.MatchAllInOutput(output, []string{"registry fake doesn't exist, please specify a valid registry via --registry"})
 		})
 	})
@@ -90,7 +90,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should successfully create the devfile component in the context", func() {
 			envFilePath = filepath.Join(newContext, envFile)
-			helper.CmdShouldPass("odo", "create", "java-openliberty", "--context", newContext)
+			helper.Cmd("odo", "create", "java-openliberty", "--context", newContext).ShouldPass()
 			output := util.CheckPathExists(devfilePath)
 			Expect(output).Should(BeTrue())
 			output = util.CheckPathExists(envFilePath)
@@ -99,13 +99,13 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should successfully create the devfile component and download the source when used with --starter flag", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext)
+			helper.Cmd("odo", "create", "nodejs", "--starter", "--context", newContext).ShouldPass()
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 		})
 
 		It("should successfully create the devfile component with auto generated name", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", newContext)
+			helper.Cmd("odo", "create", "nodejs", "--context", newContext).ShouldPass()
 			output := helper.Cmd("odo", "env", "view", "--context", newContext, "-o", "json").ShouldPass().Out()
 			value := gjson.Get(output, "spec.name")
 			Expect(strings.TrimSpace(value.String())).To(ContainSubstring(strings.TrimSpace("nodejs-" + filepath.Base(strings.ToLower(newContext)))))
@@ -113,14 +113,14 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should successfully create the devfile component and show json output for working cluster", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
-			output := helper.CmdShouldPass("odo", "create", "nodejs", "--context", newContext, "-o", "json")
+			output := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json").ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
 		})
 
 		It("should successfully create and push the devfile component and show json output for working cluster", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(devfilePath))
-			output := helper.CmdShouldPass("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json", "--now")
+			output := helper.Cmd("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json", "--now").ShouldPass().Out()
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(newContext, expectedFiles)).To(Equal(true))
 			helper.MatchAllInOutput(output, []string{"Pushed", "nodejs", "Component"})
@@ -169,27 +169,27 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 
 			It("should successfully create the devfile component", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs")
+				helper.Cmd("odo", "create", "nodejs").ShouldPass()
 			})
 
 			It("should successfully create the devfile component with --devfile points to the same devfile", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "./devfile.yaml")
+				helper.Cmd("odo", "create", "nodejs", "--devfile", "./devfile.yaml").ShouldPass()
 				fileIsEmpty, err := helper.FileIsEmpty("./devfile.yaml")
 				Expect(err).Should(BeNil())
 				Expect(fileIsEmpty).Should(BeFalse())
 			})
 
 			It("should fail to create the devfile component with more than 1 arguments are passed in", func() {
-				helper.CmdShouldFail("odo", "create", "nodejs", "nodejs")
+				helper.Cmd("odo", "create", "nodejs", "nodejs").ShouldFail()
 			})
 
 			It("should fail to create the devfile component with --devfile points to different devfile", func() {
-				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "/path/to/file")
+				helper.Cmd("odo", "create", "nodejs", "--devfile", "/path/to/file").ShouldFail()
 			})
 
 			It("should fail when we create the devfile component multiple times", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs")
-				output := helper.CmdShouldFail("odo", "create", "nodejs")
+				helper.Cmd("odo", "create", "nodejs").ShouldPass()
+				output := helper.Cmd("odo", "create", "nodejs").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("this directory already contains a component"))
 			})
 		})
@@ -203,8 +203,8 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should fail when we create the devfile or s2i component multiple times", func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(commonVar.Context, devfile))
-				helper.CmdShouldPass("odo", "create", "nodejs")
-				output := helper.CmdShouldFail("odo", "create", "nodejs", "--s2i")
+				helper.Cmd("odo", "create", "nodejs").ShouldPass()
+				output := helper.Cmd("odo", "create", "nodejs", "--s2i").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("this directory already contains a component"))
 			})
 		})
@@ -218,27 +218,27 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 
 			It("should successfully create the devfile component with valid file system path", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", devfilePath)
+				helper.Cmd("odo", "create", "nodejs", "--devfile", devfilePath).ShouldPass()
 			})
 
 			It("should successfully create the devfile component with valid specifies URL path", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml")
+				helper.Cmd("odo", "create", "nodejs", "--devfile", "https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml").ShouldPass()
 			})
 
 			It("should fail to create the devfile component with invalid file system path", func() {
-				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "#@!")
+				helper.Cmd("odo", "create", "nodejs", "--devfile", "#@!").ShouldFail()
 			})
 
 			It("should fail to create the devfile component with invalid URL path", func() {
-				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", "://www.example.com/")
+				helper.Cmd("odo", "create", "nodejs", "--devfile", "://www.example.com/").ShouldFail()
 			})
 
 			It("should fail to create the devfile component with more than 1 arguments are passed in", func() {
-				helper.CmdShouldFail("odo", "create", "nodejs", "nodejs", "--devfile", devfilePath)
+				helper.Cmd("odo", "create", "nodejs", "nodejs", "--devfile", devfilePath).ShouldFail()
 			})
 
 			It("should fail to create the devfile component with --registry specified", func() {
-				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", devfilePath, "--registry", "DefaultDevfileRegistry")
+				helper.Cmd("odo", "create", "nodejs", "--devfile", devfilePath, "--registry", "DefaultDevfileRegistry").ShouldFail()
 			})
 		})
 	})
@@ -256,13 +256,13 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should successfully create the component and download the source", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
+			helper.Cmd("odo", "create", "nodejs", "--starter").ShouldPass()
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 		})
 
 		It("should successfully create the component specified with valid project and download the source", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter=nodejs-starter")
+			helper.Cmd("odo", "create", "nodejs", "--starter=nodejs-starter").ShouldPass()
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 		})
@@ -272,7 +272,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail with please run 'The project: invalid-project-name specified in --starter does not exist'", func() {
 			invalidProjectName := "invalid-project-name"
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter=invalid-project-name")
+			output := helper.Cmd("odo", "create", "nodejs", "--starter=invalid-project-name").ShouldFail().Err()
 			expectedString := "the project: " + invalidProjectName + " specified in --starter does not exist"
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
@@ -282,7 +282,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail with please run 'no starter project found in devfile.'", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-starterProject.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter")
+			output := helper.Cmd("odo", "create", "nodejs", "--starter").ShouldFail().Err()
 			expectedString := "no starter project found in devfile."
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
@@ -301,14 +301,14 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should successfully create the component and download the source from the specified branch", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
+			helper.Cmd("odo", "create", "nodejs", "--starter").ShouldPass()
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 		})
 
 		It("should successfully create the component and download the source from the specified tag", func() {
 			helper.ReplaceString(filepath.Join(contextDevfile, "devfile.yaml"), "revision: test-branch", "revision: 0.0.1")
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
+			helper.Cmd("odo", "create", "nodejs", "--starter").ShouldPass()
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 		})
@@ -320,7 +320,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			output := helper.CmdShouldPass("odo", "create", "java-quarkus")
 			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
 			helper.DeleteFile("devfile.yaml")
-			out, outerr := helper.CmdShouldPassIncludeErrStream("odo", "create", "nodejs")
+			out, outerr := helper.Cmd("odo", "create", "nodejs").ShouldPass().OutAndErr()
 			helper.MatchAllInOutput(out, []string{
 				"Please use `odo push` command to create the component with source deployed"})
 			helper.MatchAllInOutput(outerr, []string{
@@ -333,7 +333,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		context2 := helper.CreateNewContext()
 		helper.Chdir(context2)
 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
-		output := helper.CmdShouldPass("odo", "create", "--starter", "nodejs", "--now")
+		output := helper.Cmd("odo", "create", "--starter", "nodejs", "--now").ShouldPass().Out()
 		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		helper.Chdir(commonVar.OriginalWorkingDirectory)
 		helper.DeleteDir(context2)
@@ -354,7 +354,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
 			componentName := helper.RandString(6)
 
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			output := helper.Cmd("odo", "catalog", "list", "components", "-o", "json").ShouldPass().Out()
 
 			wantOutput := []string{"java-openliberty"}
 
@@ -379,21 +379,21 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			helper.MatchAllInOutput(output, wantOutput)
 
-			helper.CmdShouldFail("odo", "create", "java-openliberty", componentName, "--s2i")
+			helper.Cmd("odo", "create", "java-openliberty", componentName, "--s2i").ShouldFail().Err()
 		})
 
 		It("should fail to create the devfile component with valid file system path", func() {
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "--s2i", "--devfile", devfilePath)
+			output := helper.Cmd("odo", "create", "nodejs", "--s2i", "--devfile", devfilePath).ShouldFail().Err()
 			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the devfile via --devfile flag"})
 		})
 
 		It("should fail to create the component specified with valid project and download the source", func() {
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter=nodejs-starter", "--s2i")
+			output := helper.Cmd("odo", "create", "nodejs", "--starter=nodejs-starter", "--s2i").ShouldFail().Err()
 			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the starter via --starter flag"})
 		})
 
 		It("should fail to create the devfile component with --registry specified", func() {
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry", "--s2i")
+			output := helper.Cmd("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry", "--s2i").ShouldFail().Err()
 			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the registry via --registry flag"})
 		})
 
@@ -462,7 +462,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-with-subDir.yaml"), filepath.Join(contextDevfile, "devfile.yaml"))
 			helper.Chdir(contextDevfile)
-			helper.CmdShouldPass("odo", "create", cmpName, "--project", commonVar.Project, "--starter")
+			helper.Cmd("odo", "create", cmpName, "--project", commonVar.Project, "--starter").ShouldPass()
 
 			pathsToValidate := map[string]bool{
 				filepath.Join(contextDevfile, "java", "com"):                                            true,
