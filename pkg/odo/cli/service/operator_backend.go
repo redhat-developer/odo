@@ -127,6 +127,11 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
+		// if the service name is blank then we set it to custom resource name
+		if o.ServiceName == "" {
+			o.ServiceName = strings.ToLower(b.CustomResource)
+		}
+
 		if len(o.parameters) != 0 {
 			var cr *olm.CRDDescription
 			hasCR := false
@@ -185,7 +190,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 
 			d.SetServiceName(o.ServiceName)
 		}
-
 		err = d.ValidateMetadataInCRD()
 		if err != nil {
 			return err
