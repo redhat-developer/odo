@@ -1,13 +1,13 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: example
+  name: example-deployment
   labels:
     app: httpd
-    app.kubernetes.io/instance: example
+    app.kubernetes.io/instance: example-deployment
     app.kubernetes.io/managed-by: console
     app.kubernetes.io/managed-by-version: v4.7.0
-    app.kubernetes.io/name: example
+    app.kubernetes.io/name: example-deployment
     app.kubernetes.io/part-of: httpd
 spec:
   replicas: 1
@@ -18,10 +18,10 @@ spec:
     metadata:
       labels:
         app: httpd
-        app.kubernetes.io/instance: example
+        app.kubernetes.io/instance: example-deployment
         app.kubernetes.io/managed-by: console
         app.kubernetes.io/managed-by-version: v4.7.0
-        app.kubernetes.io/name: example
+        app.kubernetes.io/name: example-deployment
         app.kubernetes.io/part-of: httpd
     spec:
       containers:
