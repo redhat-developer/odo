@@ -33,12 +33,10 @@ var _ = Describe("odo debug command tests", func() {
 		It("should expect a ws connection when tried to connect on different debug port locally and remotely", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "node", "--project", projName, "--context", commonVar.Context)
-			// need to set this twice because of https://github.com/openshift/odo/issues/4615
 			helper.CmdShouldPass("odo", "env", "set", "--force", "DebugPort", "9292", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "config", "set", "--env", "DEBUG_PORT=9292", "--context", commonVar.Context)
 			dbgPort := helper.GetLocalEnvInfoValueWithContext("DebugPort", commonVar.Context)
 			Expect(dbgPort).To(Equal("9292"))
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.CmdShouldPass("odo", "push", "--debug", "--context", commonVar.Context)
 
 			stopChannel := make(chan bool)
 			go func() {
