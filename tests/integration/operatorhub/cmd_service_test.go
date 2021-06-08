@@ -57,7 +57,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			helper.MatchAllInOutput(operators, []string{"Services available through Operators", "etcdoperator"})
 		})
 
-		Context("the etcd operator is installed", func() {
+		Context("a specific operator is installed", func() {
 			var etcdOperator string
 			var etcdCluster string
 
@@ -70,12 +70,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			JustAfterEach(func() {
 			})
 
-			It("should describe the etcd operator with human-readable output", func() {
+			It("should describe the operator with human-readable output", func() {
 				output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster)
 				Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
 			})
 
-			It("should describe the etcd operator with json output", func() {
+			It("should describe the operator with json output", func() {
 				outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "-o", "json")
 				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
 				expected := []string{"EtcdCluster", "etcd Cluster"}
@@ -93,7 +93,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				Expect(stdOut).To(ContainSubstring("no service matched the query: dummy"))
 			})
 
-			It("should list the etcd operator", func() {
+			It("should list the operator", func() {
 				jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
 				helper.MatchAllInOutput(jsonOut, []string{"etcdoperator"})
 			})
@@ -492,7 +492,7 @@ spec:
 			})
 		})
 
-		It("should successfully link the component to the etcd service with a specific name", func() {
+		It("should successfully link the component to the service with a specific name", func() {
 
 			// create a component and deploy it
 			helper.CmdShouldPass("odo", "create", "nodejs")
@@ -523,7 +523,7 @@ spec:
 			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcd", "-f")
 		})
 
-		It("should successfully link the component to the etcd service with a specific name and activating bindAsFiles", func() {
+		It("should successfully link the component to the service with a specific name and activating bindAsFiles", func() {
 
 			// create a component and deploy it
 			helper.CmdShouldPass("odo", "create", "nodejs")
