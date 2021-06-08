@@ -48,6 +48,6 @@ If the command, for example `odo create xyz` is unsuccessful, the following data
 
 Before sending the data to the server, error message is sanitized of any PII(Personally Identifiable Information) data which includes username, file paths, URLs, and pod exec commands executed via odo commands.
 
-Note that these commands does not include --help commands. We do not collect data about help commands.
+Note that these commands do not include --help commands. We do not collect data about help commands.
 
 We use link:{https://segment.io}[Segment] as our data platform and link:{https://www.woopra.com}[Woopra] as our analytics tool.

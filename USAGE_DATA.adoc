@@ -13,7 +13,7 @@ If the user has consented to `odo` collecting usage data, the following data wil
 * OS type
 * `odo` version in use
 
-Note that these commands does not include `--help` commands. We do not collect data about help commands.
+Note that these commands do not include `--help` commands. We do not collect data about help commands.
 
 ---
 [[enable-disable]]
