@@ -64,7 +64,7 @@ case ${1} in
         minikube version
         # Setup to find nessasary data from cluster setup
         ## Constants
-        SETUP_OPERATORS="./scripts/configure-cluster/common/setup-kube-operators.sh"
+        SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
 
         # Enable OLM for running operator tests
         curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.17.0/install.sh | bash -s v0.17.0
@@ -72,7 +72,11 @@ case ${1} in
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
-
+        # Configure docker secrets into the cluster
+        kubectl create secret docker-registry dockerregcred --docker-server="https://index.docker.io/v2/" --docker-username=$HOME/username.txt --docker-password=$HOME/password.txt --docker-email=$HOME/email.txt
+        # Enable OLM for running operator tests
+        curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.17.0/install.sh | bash -s v0.17.0
+        
         set -x
         # Set kubernetes env var as true, to distinguish the platform inside the tests
         export KUBERNETES=true
