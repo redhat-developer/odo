@@ -53,10 +53,16 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 			value = "not-found"
 		} else {
 			if isOC {
-				if isOC4, _ := client.GetKubeClient().IsCSVSupported(); isOC4 {
-					value = "openshift4"
+				isOC4, err := client.GetKubeClient().IsCSVSupported()
+				// TODO: Add a unit test for this case
+				if err != nil {
+					value = "openshift"
 				} else {
-					value = "openshift3"
+					if isOC4 {
+						value = "openshift4"
+					} else {
+						value = "openshift3"
+					}
 				}
 			} else {
 				value = "kubernetes"
