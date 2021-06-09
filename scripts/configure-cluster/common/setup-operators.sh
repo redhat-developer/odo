@@ -1,15 +1,9 @@
 #!/bin/bash
 set -x
 
-# By default the runner 
-export RUNNER="oc"
-if [ $KUBERNETES == "true" ]; then
-  RUNNER="kubectl"
-fi
-
 install_etcd_operator(){
   # Create subscription
-  $RUNNER create -f - <<EOF
+  oc create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
@@ -25,7 +19,7 @@ EOF
 }
 
 install_service_binding_operator(){
-  $RUNNER create -f - <<EOF
+  oc create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
