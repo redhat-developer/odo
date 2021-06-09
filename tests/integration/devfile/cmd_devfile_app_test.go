@@ -82,7 +82,7 @@ func runner(namespace string, s2i bool) {
 		helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
 		helper.Cmd("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress").ShouldPass()
 	}
-	helper.Cmd("odo", "push", "--context", context00)
+	helper.Cmd("odo", "push", "--context", context00).ShouldPass()
 
 	helper.Cmd("odo", "create", "nodejs", "--project", namespace, component1, "--context", context1, "--app", app1).ShouldPass()
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context1)

@@ -43,7 +43,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), subFolderContext)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(subFolderContext, "devfile.yaml"))
 
-			stdout := helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--ingress", "--context", subFolderContext).ShouldFail().Out()
+			stdout := helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--ingress", "--context", subFolderContext).ShouldFail().Err()
 			Expect(stdout).To(ContainSubstring("host must be provided"))
 
 			stdout = helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress").ShouldFail().Err()
@@ -193,13 +193,13 @@ var _ = Describe("odo devfile url command tests", func() {
 
 		It("should not allow using tls secret if url is not secure", func() {
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
-			stdOut := helper.Cmd("odo", "url", "create", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail()
+			stdOut := helper.Cmd("odo", "url", "create", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
 		})
 
 		It("should report multiple issues when it's the case", func() {
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
-			stdOut := helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail()
+			stdOut := helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
 		})
 
@@ -214,7 +214,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			stdOut := helper.Cmd("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress").ShouldPass().Out()
+			stdOut := helper.Cmd("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdOut).To(ContainSubstring("url 3000-tcp already exist in devfile endpoint entry"))
 		})
 

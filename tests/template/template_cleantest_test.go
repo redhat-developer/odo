@@ -52,29 +52,29 @@ var _ = Describe("Example of a clean test", func() {
 
 		It("create local nodejs component and push code", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project)
+			helper.Cmd("odo", "component", "create", "nodejs", cmpName, "--project", project).ShouldPass()
 			// verify that config was properly created
 			info := helper.LocalEnvInfo(context)
 			Expect(info.GetApplication(), "app")
 			Expect(info.GetName(), cmpName)
 
-			output := helper.CmdShouldPass("odo", "push")
+			output := helper.Cmd("odo", "push").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
 		It("create, push and list local nodejs component", func() {
 			appName := "testing"
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.Cmd("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context).ShouldPass()
 
 			// verify that config was properly created
 			info := helper.LocalEnvInfo(context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), cmpName)
-			helper.CmdShouldPass("odo", "push")
+			helper.Cmd("odo", "push").ShouldPass()
 
 			// list the component name
-			cmpListOutput := helper.CmdShouldPass("odo", "list", "--app", appName, "--project", project)
+			cmpListOutput := helper.Cmd("odo", "list", "--app", appName, "--project", project).ShouldPass().Out()
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
 		})
 

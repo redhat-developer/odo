@@ -230,7 +230,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("cannot indirectly reference itself"))
 		})
 
-		FIt("should throw a validation error for composite command that has invalid exec subcommand", func() {
+		It("should throw a validation error for composite command that has invalid exec subcommand", func() {
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -935,14 +935,14 @@ var _ = Describe("odo devfile push command tests", func() {
 			cmpName2 := helper.RandString(6)
 			appName := helper.RandString(6)
 
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--app", appName, "--context", context2, cmpName2)
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--app", appName, "--context", context2, cmpName2).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
 
 			output = helper.Cmd("odo", "list", "--context", context2).ShouldPass().Out()
 			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sNotPushed", appName, cmpName2, commonVar.Project, "nodejs"))))
-			output2 := helper.Cmd("odo", "push", "--context", context2)
+			output2 := helper.Cmd("odo", "push", "--context", context2).ShouldPass().Out()
 			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
 
 			output = helper.Cmd("odo", "list", "--project", commonVar.Project).ShouldPass().Out()

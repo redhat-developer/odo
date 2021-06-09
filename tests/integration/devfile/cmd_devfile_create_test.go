@@ -317,7 +317,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with component with no devBuild command", func() {
 		It("should successfully create the devfile component and remove a dangling env file", func() {
 			// Quarkus devfile has no devBuild command
-			output := helper.CmdShouldPass("odo", "create", "java-quarkus")
+			output := helper.Cmd("odo", "create", "java-quarkus").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
 			helper.DeleteFile("devfile.yaml")
 			out, outerr := helper.Cmd("odo", "create", "nodejs").ShouldPass().OutAndErr()

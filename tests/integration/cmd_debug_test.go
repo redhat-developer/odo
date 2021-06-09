@@ -42,7 +42,7 @@ var _ = Describe("odo debug command tests", func() {
 
 			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5050", "--context", commonVar.Context)
+				helper.Cmd("odo", "debug", "port-forward", "--local-port", "5050", "--context", commonVar.Context).WithTerminate(60*time.Second, stopChannel).ShouldRun()
 			}()
 
 			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET

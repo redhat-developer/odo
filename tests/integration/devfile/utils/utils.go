@@ -666,7 +666,7 @@ func ExecWithoutCommand(context, cmpName string) {
 
 	args = []string{"exec", "--context", context}
 	args = append(args, "--")
-	output := helper.Cmd("odo", args...).ShouldFail()
+	output := helper.Cmd("odo", args...).ShouldFail().Err()
 
 	Expect(output).To(ContainSubstring("no command was given"))
 
