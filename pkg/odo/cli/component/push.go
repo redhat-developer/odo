@@ -261,8 +261,17 @@ func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
 	scontext.SetClusterType(cmd.Context(), po.Client)
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
+		var componentType string
+		metadata := po.Devfile.Data.GetMetadata()
+		if metadata.ProjectType != "" {
+			componentType = metadata.ProjectType
+		} else if metadata.Language != "" {
+			componentType = metadata.Language
+		} else {
+			componentType = metadata.Name
+		}
+		scontext.SetComponentType(cmd.Context(), componentType)
 		// Return Devfile push
-		scontext.SetComponentType(cmd.Context(), po.Devfile.Data.GetMetadata().Name)
 		return po.DevfilePush()
 	}
 
