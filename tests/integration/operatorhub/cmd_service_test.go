@@ -33,7 +33,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		var operators string
 		JustBeforeEach(func() {
-			// wait till oc can see the all operators installed by setup script in the namespace
+			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
 			operators := []string{"etcdoperator", "service-binding-operator"}
 			for _, operator := range operators {
@@ -52,11 +52,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			Expect(stdOut).To(ContainSubstring("service can be created/deleted from a valid component directory only"))
 		})
 
-		It("should list operators installed in the namespace", func() {
-			operators = helper.CmdShouldPass("odo", "catalog", "list", "services")
-			helper.MatchAllInOutput(operators, []string{"Services available through Operators", "etcdoperator"})
-		})
-
 		Context("a specific operator is installed", func() {
 			var etcdOperator string
 			var etcdCluster string
@@ -65,9 +60,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 				etcdOperator = regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 				etcdCluster = fmt.Sprintf("%s/EtcdCluster", etcdOperator)
-			})
-
-			JustAfterEach(func() {
 			})
 
 			It("should describe the operator with human-readable output", func() {
@@ -82,7 +74,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 			})
 
-			It("should only output the definition of the CR that will be used to start service", func() {
+			It("should find the services by keyword", func() {
 				stdOut := helper.CmdShouldPass("odo", "catalog", "search", "service", "etcd")
 				helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
 
@@ -93,7 +85,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				Expect(stdOut).To(ContainSubstring("no service matched the query: dummy"))
 			})
 
-			It("should list the operator", func() {
+			It("should list the operator in JSON output", func() {
 				jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
 				helper.MatchAllInOutput(jsonOut, []string{"etcdoperator"})
 			})
@@ -102,9 +94,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 				JustBeforeEach(func() {
 					helper.CmdShouldPass("odo", "create", "nodejs")
-				})
-
-				JustAfterEach(func() {
 				})
 
 				It("should fail for interactive mode", func() {
@@ -132,8 +121,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						helper.CmdShouldPass("odo", "push")
 					})
 
-					JustAfterEach(func() {
-					})
 					It("should fail if the provided service doesn't exist in the namespace", func() {
 						if os.Getenv("KUBERNETES") == "true" {
 							Skip("This is a OpenShift specific scenario, skipping")
@@ -149,9 +136,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 					JustBeforeEach(func() {
 						stdOut = helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", commonVar.Project)
-					})
-
-					JustAfterEach(func() {
 					})
 
 					It("should only output the definition of the CR that will be used to start service", func() {
@@ -186,9 +170,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							When("odo push is executed", func() {
 								JustBeforeEach(func() {
 									helper.CmdShouldPass("odo", "push")
-								})
-
-								JustAfterEach(func() {
 								})
 
 								It("should create pods in running state", func() {
@@ -226,9 +207,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									helper.CmdShouldPass("odo", "push")
 								})
 
-								JustAfterEach(func() {
-								})
-
 								It("should fail to create a service again with the same name", func() {
 									stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project)
 									Expect(stdOut).To(ContainSubstring("please provide a different name or delete the existing service first"))
@@ -255,12 +233,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					var stdOut string
 					JustBeforeEach(func() {
 						stdOut = helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
-					})
-
-					JustAfterEach(func() {
-					})
-
-					It("should create the EtcdCluster instance", func() {
 						Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
 					})
 
@@ -278,9 +250,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						JustBeforeEach(func() {
 							helper.CmdShouldPass("odo", "push")
-						})
-
-						JustAfterEach(func() {
 						})
 
 						It("should create pods in running state", func() {
@@ -312,9 +281,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								stdOut = helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
 							})
 
-							JustAfterEach(func() {
-							})
-
 							It("should display a successful message", func() {
 								if os.Getenv("KUBERNETES") == "true" {
 									Skip("This is a OpenShift specific scenario, skipping")
@@ -333,9 +299,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							When("the link is deleted", func() {
 								JustBeforeEach(func() {
 									stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
-								})
-
-								JustAfterEach(func() {
 								})
 
 								It("should display a successful message", func() {
@@ -358,9 +321,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						When("the service is deleted", func() {
 							JustBeforeEach(func() {
 								helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
-							})
-
-							JustAfterEach(func() {
 							})
 
 							It("should delete service definition from devfile.yaml", func() {
@@ -414,9 +374,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						JustBeforeEach(func() {
 							helper.CmdShouldPass("odo", "push")
-						})
-
-						JustAfterEach(func() {
 						})
 
 						It("should create pods in running state", func() {
