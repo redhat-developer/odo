@@ -979,24 +979,6 @@ func List(client *occlient.Client, applicationSelector string, localConfigInfo *
 	return GetMachineReadableFormatForList(components), nil
 }
 
-//func ListNonOdoComponents(client *occlient.Client, applicationName string, allApps bool) ComponentList {
-//	var selector string
-//	if applicationName != "" {
-//		selector = applabels.GetNonOdoSelector(applicationName)
-//	} else if allApps {
-//		selector = project.GetNonOdoSelector()
-//	} else {
-//		selector = applabels.GetNonOdoSelector(applabels.App)
-//	}
-//
-//	var components []Component
-//	deploymentList, _ := ListDevfileComponents(client, selector)
-//	components = append(components, deploymentList.Items...)
-//	deploymentConfigList, _ := ListS2IComponents(client, selector, "", nil)
-//	components = append(components, deploymentConfigList.Items...)
-//	return GetMachineReadableFormatForList(components)
-//}
-
 // GetComponentFromConfig returns the component on the config if it exists
 func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, error) {
 	component, err := getComponentFrom(localConfig, localConfig.GetType())

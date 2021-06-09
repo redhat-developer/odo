@@ -561,7 +561,7 @@ func TestList(t *testing.T) {
 				}
 			})
 
-			results, err := List(client, "app", tt.existingLocalConfigInfo)
+			results, err := List(client, applabels.GetSelector("app"), tt.existingLocalConfigInfo)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)

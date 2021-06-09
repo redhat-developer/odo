@@ -775,10 +775,8 @@ func componentTests(args ...string) {
 		})
 
 		It("should list the components in json format with -o json flag", func() {
-			output := helper.CmdShouldPass("odo", append(args, "list", "-o", "json")...)
-			Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
-			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...)
-			valuesCList := gjson.GetMany(actualCompListJSON, "kind", "devfileComponents.0.kind", "devfileComponents.0.metadata.name", "devfileComponents.0.spec.app")
+			output := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...)
+			valuesCList := gjson.GetMany(output, "kind", "otherComponents.0.kind", "otherComponents.0.metadata.name", "otherComponents.0.spec.app")
 			expectedCList := []string{"List", "Component", "example-dc", "app"}
 			Expect(helper.GjsonMatcher(valuesCList, expectedCList)).To(Equal(true))
 		})
