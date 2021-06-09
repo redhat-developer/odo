@@ -31,7 +31,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	Context("Operators are installed in the cluster", func() {
 
-		var operators string
 		JustBeforeEach(func() {
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
