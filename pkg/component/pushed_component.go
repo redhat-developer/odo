@@ -269,7 +269,7 @@ func newPushedComponent(applicationName string, p provider, c *occlient.Client) 
 
 // GetPushedComponent returns an abstraction over the cluster representation of the component
 func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
-	d, err := c.GetKubeClient().GetOneDeploymentFromSelector(componentlabels.GetSelector(componentName, applicationName))
+	d, err := c.GetKubeClient().GetOneDeployment(componentName, applicationName)
 	if err != nil {
 		if isIgnorableError(err) {
 			// if it's not found, check if there's a deploymentconfig

@@ -49,6 +49,11 @@ func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	return deployment, err
 }
 
+// GetOneDeployment returns the Deployment object associated with the given component and app
+func (c *Client) GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error) {
+	return c.GetOneDeploymentFromSelector(componentlabels.GetSelector(componentName, appName))
+}
+
 // GetOneDeploymentFromSelector returns the Deployment object associated
 // with the given selector.
 // An error is thrown when exactly one Deployment is not found for the

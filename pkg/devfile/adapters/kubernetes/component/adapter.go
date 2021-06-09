@@ -111,7 +111,7 @@ type Adapter struct {
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
-	a.deployment, err = a.Client.GetKubeClient().GetOneDeploymentFromSelector(componentlabels.GetSelector(a.ComponentName, a.AppName))
+	a.deployment, err = a.Client.GetKubeClient().GetOneDeployment(a.ComponentName, a.AppName)
 	if err != nil {
 		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
 			return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)

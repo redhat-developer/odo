@@ -1159,7 +1159,7 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Comp
 				// since the config file maybe belong to a component of a different project
 				if client != nil {
 					client.Namespace = data.GetNamespace()
-					deployment, err := client.GetOneDeploymentFromSelector(componentlabels.GetSelector(comp.Name, comp.Spec.App))
+					deployment, err := client.GetOneDeployment(comp.Name, comp.Spec.App)
 					if err != nil {
 						comp.Status.State = StateTypeNotPushed
 					} else if deployment != nil {
