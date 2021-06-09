@@ -717,28 +717,28 @@ func componentTests(args ...string) {
 		type compStruct struct {
 			App, Name string
 		}
+		// This array will contain static data taken from tests/examples/manifests/dc-label.yaml and
+		// tests/examples/manifests/deployment-label.yaml.
+		// If this test breaks, check that the data here matches with that of the manifest files
 		var compList = []compStruct{
 			{"app", "example-dc"},
 		}
 
 		JustBeforeEach(func() {
-			/*
-				Copy the deployment-label.yaml and dc-label.yaml file.
-				Create a deployment with deployment-label.yaml.
-				Create a dc with dc-label.yaml.
-			*/
+			// Create resources that are not managed by odo
 			runner = helper.GetCliRunner()
 			dcfile := filepath.Join(commonVar.Context, "dc-label.yaml")
 			helper.CopyManifestFile("dc-label.yaml", dcfile)
 			runner.Run("apply", "-f", dcfile).Wait()
 		})
 		JustAfterEach(func() {
-			//DeleteNonOdoComponent
+			// Delete resources not managed by odo
 			client, _ = genericclioptions.Client()
 			Expect(client.Delete(label, true)).To(BeNil())
 		})
 
-		var verify = func(output string, componentList []compStruct) {
+		// verifyListOutput verifies if the components not managed by odo are listed
+		var verifyListOutput = func(output string, componentList []compStruct) {
 			Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
 			for _, comp := range componentList {
 				Expect(output).To(ContainSubstring(comp.Name))
@@ -748,27 +748,29 @@ func componentTests(args ...string) {
 
 		It("should list the components", func() {
 			output := helper.CmdShouldPass("odo", append(args, "list")...)
-			verify(output, compList)
+			verifyListOutput(output, compList)
 		})
 
 		Context("The component has a different app name than the default 'app'", func() {
 			JustBeforeEach(func() {
+				// Create resources that are not managed by odo
 				dfile := filepath.Join(commonVar.Context, "deployment-label.yaml")
 				helper.CopyManifestFile("deployment-label.yaml", dfile)
 				runner.Run("apply", "-f", dfile).Wait()
 			})
 			JustAfterEach(func() {
+				// Delete the deployments not managed by odo
 				Expect(client.GetKubeClient().DeleteDeployment(label)).To(BeNil())
 			})
 
 			It("should list the components with --all-apps flag", func() {
 				output := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
-				verify(output, append(compList, compStruct{"httpd", "example-deployment"}))
+				verifyListOutput(output, append(compList, compStruct{"httpd", "example-deployment"}))
 			})
 
 			It("should list the components with --app flag", func() {
 				output := helper.CmdShouldPass("odo", append(args, "list", "--app", "httpd")...)
-				verify(output, []compStruct{{"httpd", "example-deployment"}})
+				verifyListOutput(output, []compStruct{{"httpd", "example-deployment"}})
 			})
 		})
 
@@ -793,7 +795,7 @@ func componentTests(args ...string) {
 
 			It("should list the components with --project flag", func() {
 				output := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project)...)
-				verify(output, compList)
+				verifyListOutput(output, compList)
 			})
 
 		})
