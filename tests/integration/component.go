@@ -611,7 +611,7 @@ func componentTests(args ...string) {
 			oc.WaitAndCheckForExistence("service", commonVar.Project, 1)
 		})
 
-		FIt("should delete the component and the owned resources with wait flag", func() {
+		It("should delete the component and the owned resources with wait flag", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.Cmd("odo", append(args, "create", "--s2i", "nodejs", cmpName, "--app", appName, "--project", commonVar.Project, "--context", commonVar.Context)...).ShouldPass()
 			helper.Cmd("odo", "url", "create", "example-1", "--context", commonVar.Context).ShouldPass()
