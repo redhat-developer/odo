@@ -7,10 +7,14 @@ shout() {
 }
 
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
-mkdir bin artifacts
+mkdir -p go/bin artifacts
 # Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
 # for eg go get ginkgo later on will produce ginkgo binary in GOBIN
-export GOBIN="`pwd`/bin"
+export GOPATH="`pwd`/go"
+export GOBIN="$GOPATH/bin"
+
+# Set kubeconfig to current dir. This ensures no clashes with other test runs
+export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
@@ -47,9 +51,6 @@ case ${1} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
         export PATH="$PATH:/usr/local/go/bin/"
-        export GOPATH=$HOME/go
-        mkdir -p $GOPATH/bin
-        export PATH="$PATH:$(pwd):$GOPATH/bin"
         sh .scripts/minishift-start-if-required.sh
         ;;
     minikube)
