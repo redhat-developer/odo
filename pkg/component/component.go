@@ -1641,7 +1641,7 @@ func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
 	}
 }
 
-// GetMachineReadableFormatForCombinedCompList returns list of devfile and s2i components in machine readable format
+// GetMachineReadableFormatForCombinedCompList returns list of devfile, s2i components and other components(not managed by odo) in machine readable format
 func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []Component, otherComps []Component) CombinedComponentList {
 	if len(s2iComps) == 0 {
 		s2iComps = []Component{}
