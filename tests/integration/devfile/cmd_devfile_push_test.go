@@ -75,7 +75,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).NotTo(ContainSubstring(cmpName))
 
 			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
-			output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldFail().Err()
+			output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 			output = commonVar.CliRunner.GetServices(commonVar.Project)
