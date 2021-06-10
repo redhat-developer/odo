@@ -3,26 +3,26 @@ apiVersion: apps/v1
 metadata:
   name: example-deployment
   labels:
-    app: httpd
+    app: app
     app.kubernetes.io/instance: example-deployment
     app.kubernetes.io/managed-by: console
     app.kubernetes.io/managed-by-version: v4.7.0
     app.kubernetes.io/name: example-deployment
-    app.kubernetes.io/part-of: httpd
+    app.kubernetes.io/part-of: app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: httpd
+      app: app
   template:
     metadata:
       labels:
-        app: httpd
+        app: app
         app.kubernetes.io/instance: example-deployment
         app.kubernetes.io/managed-by: console
         app.kubernetes.io/managed-by-version: v4.7.0
         app.kubernetes.io/name: example-deployment
-        app.kubernetes.io/part-of: httpd
+        app.kubernetes.io/part-of: app
     spec:
       containers:
         - name: httpd
