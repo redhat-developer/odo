@@ -64,13 +64,13 @@ EOF
 EOF
 }
 
-# # install etcd operator
+# install etcd operator
 
-# install_etcd_operator
+install_etcd_operator
 
-# # install service-binding-operator
+# install service-binding-operator
 
-# install_service_binding_operator
+install_service_binding_operator
 
 # install postgres operator
 
