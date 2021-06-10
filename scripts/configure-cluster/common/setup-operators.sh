@@ -36,10 +36,42 @@ install_service_binding_operator(){
 EOF
 }
 
-# install etcd operator
+install_postgres_operator(){
+  oc create namespace odo-operator-tests
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1
+  kind: OperatorGroup
+  metadata:
+    generateName: odo-operator-tests-
+    namespace: odo-operator-tests
+  spec:
+    targetNamespaces:
+    - odo-operator-tests
+EOF
 
-install_etcd_operator
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: postgresql-operator-dev4devs-com
+    namespace: odo-operator-tests
+  spec:
+    channel: alpha
+    name: postgresql-operator-dev4devs-com
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: "Automatic"
+EOF
+}
 
-# install service-binding-operator
+# # install etcd operator
 
-install_service_binding_operator
+# install_etcd_operator
+
+# # install service-binding-operator
+
+# install_service_binding_operator
+
+# install postgres operator
+
+install_postgres_operator
