@@ -66,7 +66,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	CheckMachineReadableOutputCommand(cmd)
 
 	// LogErrorAndExit is used so that we get -o (jsonoutput) for cmds which have json output implemented
-	util.LogErrorAndExit(checkConflictingFlags(cmd), "")
+	util.LogErrorAndExit(checkConflictingFlags(cmd, args), "")
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
 	err = o.Complete(cmd.Name(), cmd, args)
@@ -123,7 +123,7 @@ func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err erro
 // checkConflictingFlags checks for conflicting flags. Currently --context cannot be provided
 // with either --app, --project and --component as that information can be fetched from the local
 // config.
-func checkConflictingFlags(cmd *cobra.Command) error {
+func checkConflictingFlags(cmd *cobra.Command, args []string) error {
 
 	// we allow providing --context with --app and --project in case of `odo create` or `odo component create`
 	if cmd.Name() == "create" {
@@ -137,6 +137,26 @@ func checkConflictingFlags(cmd *cobra.Command) error {
 	project := stringFlagLookup(cmd, "project")
 	context := stringFlagLookup(cmd, "context")
 	component := stringFlagLookup(cmd, "component")
+	all, _ := strconv.ParseBool(stringFlagLookup(cmd, "all"))
+	if cmd.Name() == "delete" {
+		if cmd.HasParent() {
+			if cmd.Parent().Name() == "odo" || cmd.Parent().Name() == "component" {
+				var componentName string
+				if len(args) > 0 {
+					componentName = args[0]
+				}
+				if (context != "") && (project != "" || componentName != "") {
+					return fmt.Errorf("cannot provide --project or component name when --context is provided")
+				}
+				if project != "" && componentName == "" && app == "" {
+					return fmt.Errorf("cannot provide --project without --app and component name")
+				}
+				if all && ((componentName != "" && app != "" && project != "") || (componentName != "")) {
+					return fmt.Errorf("cannot provide --all when component name, --app and --project are provided")
+				}
+			}
+		}
+	}
 	if (context != "") && (app != "" || project != "" || component != "") {
 		return fmt.Errorf("cannot provide --app, --project or --component flag when --context is provided")
 	}
