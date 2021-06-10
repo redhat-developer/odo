@@ -558,7 +558,7 @@ func componentTests(args ...string) {
 			helper.HttpWaitFor(routeURL, "HTTP Booster", 300, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", append(args, "delete", "sb-jar-test", "-f", "--context", symLinkPath)...)
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--context", symLinkPath)...)
 		})
 
 		It("Should be able to deploy a wildfly war file using symlinks in some odo commands", func() {
@@ -578,7 +578,7 @@ func componentTests(args ...string) {
 			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", append(args, "delete", "javaee-war-test", "-f", "--context", commonVar.Context)...)
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--context", commonVar.Context)...)
 		})
 	})
 
