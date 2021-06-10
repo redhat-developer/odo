@@ -494,13 +494,15 @@ func GetMachineFormatWithContainer(storageName, storageSize, storagePath string,
 	return storage
 }
 
-// GeneratePVCName generates a PVC name from the Devfile volume name and component name
-func GeneratePVCName(volName, componentName string) (string, error) {
+// generatePVCName generates a PVC name from the Devfile volume name, component name and app name
+func generatePVCName(volName, componentName, appName string) (string, error) {
 
-	pvcName := fmt.Sprintf("%s-%s", volName, componentName)
-	pvcName = util.TruncateString(pvcName, 45)
-	randomChars := util.GenerateRandomString(4)
-	pvcName, err := util.NamespaceOpenShiftObject(pvcName, randomChars)
+	pvcName, err := util.NamespaceKubernetesObject(volName, componentName)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	pvcName, err = util.NamespaceKubernetesObject(pvcName, appName)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}

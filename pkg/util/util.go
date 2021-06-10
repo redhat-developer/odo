@@ -151,6 +151,23 @@ func NamespaceOpenShiftObject(componentName string, applicationName string) (str
 	return truncatedName, nil
 }
 
+// NamespaceKubernetesObject hyphenates applicationName and componentName
+func NamespaceKubernetesObject(componentName string, applicationName string) (string, error) {
+
+	// Error if it's blank
+	if componentName == "" {
+		return "", errors.New("namespacing: component name cannot be blank")
+	}
+
+	// Error if it's blank
+	if applicationName == "" {
+		return "", errors.New("namespacing: application name cannot be blank")
+	}
+
+	// Return the hyphenated namespaced name
+	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
+}
+
 // ExtractComponentType returns only component type part from passed component type(default unqualified, fully qualified, versioned, etc...and their combinations) for use as component name
 // Possible types of parameters:
 // 1. "myproject/python:3.5" -- Return python

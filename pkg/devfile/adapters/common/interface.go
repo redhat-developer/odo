@@ -10,7 +10,7 @@ import (
 type ComponentAdapter interface {
 	commandExecutor
 	Push(parameters PushParameters) error
-	DoesComponentExist(cmpName string) (bool, error)
+	DoesComponentExist(cmpName string, app string) (bool, error)
 	Delete(labels map[string]string, show bool, wait bool) error
 	Test(testCmd string, show bool) error
 	CheckSupervisordCtlStatus(command devfilev1.Command) error

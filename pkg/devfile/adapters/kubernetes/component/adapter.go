@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/util"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -104,14 +105,22 @@ type Adapter struct {
 	devfileDebugCmd  string
 	devfileDebugPort int
 	pod              *corev1.Pod
+	deployment       *appsv1.Deployment
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
-	componentExists, err := utils.ComponentExists(*a.Client.GetKubeClient(), a.ComponentName)
+	a.deployment, err = a.Client.GetKubeClient().GetOneDeployment(a.ComponentName, a.AppName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
+			return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+		}
+	}
+
+	componentExists := false
+	if a.deployment != nil {
+		componentExists = true
 	}
 
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
@@ -195,7 +204,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(services, ", "), "odo link -h")
 	}
 
-	deployment, err := a.Client.GetKubeClient().WaitForDeploymentRollout(a.ComponentName)
+	a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
@@ -217,7 +226,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
 			continue
 		}
-		err = a.Client.GetKubeClient().UpdateStorageOwnerReference(&pvcs[i], generator.GetOwnerReference(deployment))
+		err = a.Client.GetKubeClient().UpdateStorageOwnerReference(&pvcs[i], generator.GetOwnerReference(a.deployment))
 		if err != nil {
 			return err
 		}
@@ -364,11 +373,11 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
-	return utils.ComponentExists(*a.Client.GetKubeClient(), cmpName)
+func (a Adapter) DoesComponentExist(cmpName string, appName string) (bool, error) {
+	return utils.ComponentExists(*a.Client.GetKubeClient(), cmpName, appName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
+func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
 	ei.SetDevfileObj(a.Devfile)
 
 	storageClient := storagepkg.NewClient(storagepkg.ClientOptions{
@@ -408,6 +417,11 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	utils.AddOdoProjectVolume(&containers)
 
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
+	if err != nil {
+		return err
+	}
+
+	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels)
 	if err != nil {
 		return err
 	}
@@ -460,7 +474,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	deployParams := generator.DeploymentParams{
 		TypeMeta:          generator.GetTypeMeta(kclient.DeploymentKind, kclient.DeploymentAPIVersion),
-		ObjectMeta:        objectMeta,
+		ObjectMeta:        deploymentObjectMeta,
 		InitContainers:    initContainers,
 		Containers:        containers,
 		Volumes:           append(pvcVolumes, odoMandatoryVolumes...),
@@ -489,16 +503,16 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
 		if a.Client.GetKubeClient().IsSSASupported() {
-			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+			a.deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
 		} else {
-			deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
+			a.deployment, err = a.Client.GetKubeClient().UpdateDeployment(*deployment)
 		}
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Get(context.TODO(), componentName, metav1.GetOptions{})
-		ownerReference := generator.GetOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(a.deployment)
 		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 		if err != nil {
 			// no old service was found, create a new one
@@ -527,16 +541,16 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		}
 	} else {
 		if a.Client.GetKubeClient().IsSSASupported() {
-			deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
+			a.deployment, err = a.Client.GetKubeClient().ApplyDeployment(*deployment)
 		} else {
-			deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
+			a.deployment, err = a.Client.GetKubeClient().CreateDeployment(*deployment)
 		}
 
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully created component %v", componentName)
-		ownerReference := generator.GetOwnerReference(deployment)
+		ownerReference := generator.GetOwnerReference(a.deployment)
 		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 		if len(svc.Spec.Ports) > 0 {
 			_, err = a.Client.GetKubeClient().CreateService(*svc)
@@ -549,6 +563,20 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	return nil
+}
+
+// generateDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name and labels
+// if no deployment exists, it creates a new deployment name
+func (a Adapter) generateDeploymentObjectMeta(labels map[string]string) (metav1.ObjectMeta, error) {
+	if a.deployment != nil {
+		return generator.GetObjectMeta(a.deployment.Name, a.Client.Namespace, labels, nil), nil
+	} else {
+		deploymentName, err := util.NamespaceKubernetesObject(a.ComponentName, a.AppName)
+		if err != nil {
+			return metav1.ObjectMeta{}, err
+		}
+		return generator.GetObjectMeta(deploymentName, a.Client.Namespace, labels, nil), nil
+	}
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well
@@ -640,7 +668,7 @@ func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, err
 
 // Exec executes a command in the component
 func (a Adapter) Exec(command []string) error {
-	exists, err := utils.ComponentExists(*a.Client.GetKubeClient(), a.ComponentName)
+	exists, err := utils.ComponentExists(*a.Client.GetKubeClient(), a.ComponentName, a.AppName)
 	if err != nil {
 		return err
 	}
