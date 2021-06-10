@@ -112,7 +112,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	}
 	platformContext = kc
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.sourcePath, po.Application, devObj, platformContext)
 	if err != nil {
 		return err
 	}

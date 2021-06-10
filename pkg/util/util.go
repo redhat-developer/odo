@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/client-go/util/homedir"
 	"math/big"
 	"net"
 	"net/http"
@@ -27,8 +26,11 @@ import (
 	"syscall"
 	"time"
 
+	"k8s.io/client-go/util/homedir"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
+	"github.com/go-git/go-git/v5"
 	"github.com/gobwas/glob"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
@@ -1023,7 +1025,7 @@ func DownloadFileInMemory(params HTTPRequestParams) ([]byte, error) {
 	return data, nil
 }
 
-// DownloadFileInMemory uses the url to download the file and return bytes
+// DownloadFileInMemoryWithCache uses the url to download the file and return bytes
 func DownloadFileInMemoryWithCache(params HTTPRequestParams, cacheFor int) ([]byte, error) {
 	data, err := HTTPGetRequest(params, cacheFor)
 
@@ -1066,8 +1068,13 @@ func CheckKubeConfigExist() bool {
 	if os.Getenv("KUBECONFIG") != "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 	} else {
-		home, _ := os.UserHomeDir()
-		kubeconfig = fmt.Sprintf("%s/.kube/config", home)
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = filepath.Join(home, ".kube", "config")
+			klog.V(4).Infof("using default kubeconfig path %s", kubeconfig)
+		} else {
+			klog.V(4).Infof("no KUBECONFIG provided and cannot fallback to default")
+			return false
+		}
 	}
 
 	if CheckPathExists(kubeconfig) {
@@ -1504,4 +1511,29 @@ func IsValidKubeConfigPath() bool {
 		return false
 	}
 	return true
+}
+
+// GetGitOriginPath gets the remote fetch URL from the given git repo
+// if the repo is not a git repo, the error is ignored
+func GetGitOriginPath(path string) string {
+	open, err := git.PlainOpen(path)
+	if err != nil {
+		return ""
+	}
+
+	remotes, err := open.Remotes()
+	if err != nil {
+		return ""
+	}
+
+	for _, remote := range remotes {
+		if remote.Config().Name == "origin" {
+			if len(remote.Config().URLs) > 0 {
+				// https://github.com/go-git/go-git/blob/db4233e9e8b3b2e37259ed4e7952faaed16218b9/config/config.go#L549-L550
+				// the first URL is the fetch URL
+				return remote.Config().URLs[0]
+			}
+		}
+	}
+	return ""
 }

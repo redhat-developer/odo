@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -170,19 +171,20 @@ func SetError(err error) (errString string) {
 	if err == nil {
 		return ""
 	}
-	// sanitize user information
-	user1, err1 := user.Current()
-	if err1 != nil {
-		return errors.Wrapf(err1, err1.Error()).Error()
-	}
-	errString = strings.ReplaceAll(err.Error(), user1.Username, Sanitizer)
+	errString = err.Error()
 
-	// sanitize file path
-	for _, str := range strings.Split(errString, " ") {
-		if strings.Count(str, string(os.PathSeparator)) > 1 {
-			errString = strings.ReplaceAll(errString, str, Sanitizer)
-		}
-	}
+	// Sanitize user information
+	errString = sanitizeUserInfo(errString)
+
+	// Sanitize file path
+	errString = sanitizeFilePath(errString)
+
+	// Sanitize exec commands: For errors when a command exec fails in cases like odo exec or odo test, we do not want to know the command that the user executed, so we simply return
+	errString = sanitizeExec(errString)
+
+	// Sanitize URL
+	errString = sanitizeURL(errString)
+
 	return errString
 }
 
@@ -215,4 +217,44 @@ func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
 		return true
 	}
 	return false
+}
+
+// sanitizeUserInfo sanitizes username from the error string
+func sanitizeUserInfo(errString string) string {
+	user1, err1 := user.Current()
+	if err1 != nil {
+		return err1.Error()
+	}
+	errString = strings.ReplaceAll(errString, user1.Username, Sanitizer)
+	return errString
+}
+
+// sanitizeFilePath sanitizes file paths from error string
+func sanitizeFilePath(errString string) string {
+	for _, str := range strings.Split(errString, " ") {
+		if strings.Count(str, string(os.PathSeparator)) > 1 {
+			errString = strings.ReplaceAll(errString, str, Sanitizer)
+		}
+	}
+	return errString
+}
+
+// sanitizeURL sanitizes URLs from the error string
+func sanitizeURL(errString string) string {
+	// the following regex parses hostnames and ip addresses
+	// references - https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch07s16.html
+	// https://www.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/ch08s15.html
+	urlPattern, err := regexp.Compile(`((https?|ftp|smtp)://)?((?:[0-9]{1,3}\.){3}[0-9]{1,3}(:([0-9]{1,5}))?|([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,})`)
+	if err != nil {
+		return errString
+	}
+	errString = urlPattern.ReplaceAllString(errString, Sanitizer)
+	return errString
+}
+
+// sanitizeExec sanitizes commands from the error string that might have been executed by users while running commands like odo test or odo exec
+func sanitizeExec(errString string) string {
+	pattern, _ := regexp.Compile("exec command.*")
+	errString = pattern.ReplaceAllString(errString, fmt.Sprintf("exec command %s", Sanitizer))
+	return errString
 }

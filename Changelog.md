@@ -4,9 +4,12 @@
 
 ### Feature/Enhancements
 
+- Custom link name and bind-as-files option for `odo link` ([#4729](https://github.com/openshift/odo/pull/4729))
+
 ### Bug Fixes
 
 - Adding KUBECONFIG checks in odo catalog list components ([#4756](https://github.com/openshift/odo/pull/4756))
+- use filepath Join instead of / while constructing kubeconfig path ([#4765](https://github.com/openshift/odo/pull/4765))
 
 ### Tests
 

@@ -88,8 +88,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
+			helper.Cmd("git", "init").ShouldPass()
+			remote := "origin"
+			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
+			helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
+
 			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
+			var valueFound bool
+			for key, value := range annotations {
+				if key == "app.openshift.io/vcs-uri" && value == remoteURL {
+					valueFound = true
+				}
+			}
+			Expect(valueFound).To(BeTrue())
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
@@ -1008,7 +1022,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		var freePort int
 		var parentTmpFolder string
 
-		var _ = BeforeSuite(func() {
+		var _ = BeforeEach(func() {
 			// get a free port
 			var err error
 			freePort, err = util.HTTPGetFreePort()
@@ -1027,7 +1041,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
 		})
 
-		var _ = AfterSuite(func() {
+		var _ = AfterEach(func() {
 			helper.DeleteDir(parentTmpFolder)
 			err := server.Close()
 			Expect(err).To(BeNil())

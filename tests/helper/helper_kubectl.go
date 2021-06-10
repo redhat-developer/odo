@@ -235,3 +235,9 @@ func (kubectl KubectlRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 	}
 	Expect(deletedOrMarkedToDelete()).To(BeTrue())
 }
+
+// GetAnnotationsDeployment gets the annotations from the deployment
+// belonging to the given component, app and project
+func (kubectl KubectlRunner) GetAnnotationsDeployment(componentName, appName, projectName string) map[string]string {
+	return GetAnnotationsDeployment(kubectl.path, componentName, appName, projectName)
+}

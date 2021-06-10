@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -2598,6 +2600,86 @@ func TestGetCommandStringFromEnvs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := GetCommandStringFromEnvs(tt.args.envVars); got != tt.want {
 				t.Errorf("GetCommandStringFromEnvs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetGitOriginPath(t *testing.T) {
+	tempGitDirWithOrigin, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	defer os.RemoveAll(tempGitDirWithOrigin)
+
+	repoWithOrigin, err := git.PlainInit(tempGitDirWithOrigin, true)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	_, err = repoWithOrigin.CreateRemote(&config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{"git@github.com:openshift/odo.git"},
+	})
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	tempGitDirWithoutOrigin, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	defer os.RemoveAll(tempGitDirWithoutOrigin)
+
+	repoWithoutOrigin, err := git.PlainInit(tempGitDirWithoutOrigin, true)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	_, err = repoWithoutOrigin.CreateRemote(&config.RemoteConfig{
+		Name: "upstream",
+		URLs: []string{"git@github.com:openshift/odo.git"},
+	})
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "case 1: remote named origin exists",
+			args: args{
+				path: tempGitDirWithOrigin,
+			},
+			want: "git@github.com:openshift/odo.git",
+		},
+		{
+			name: "case 2: remote named origin doesn't exists",
+			args: args{
+				path: tempGitDirWithoutOrigin,
+			},
+			want: "",
+		},
+		{
+			name: "case 3: not a git repo",
+			args: args{
+				path: "",
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetGitOriginPath(tt.args.path); got != tt.want {
+				t.Errorf("GetGitOriginPath() = %v, want %v", got, tt.want)
 			}
 		})
 	}
