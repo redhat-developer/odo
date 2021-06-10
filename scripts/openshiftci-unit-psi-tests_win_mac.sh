@@ -10,6 +10,7 @@ case $1 in
     export RUNSCRIPT="scripts/run_script_unit.sh"
     export JOB_NAME=odo-windows-unit-pr-build
     export SENDEXCHANGE=amqp.ci.exchange.win.unit.send 
+    export TIMEOUT="20m"
     ;;
 
   mac)
@@ -19,6 +20,7 @@ case $1 in
     export RUNSCRIPT="scripts/run_script_unit.sh"
     export JOB_NAME=odo-mac-unit-pr-build
     export SENDEXCHANGE=amqp.ci.exchange.mac.unit.send 
+    export TIMEOUT="20m"
     ;;
 esac
 
