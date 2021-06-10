@@ -66,11 +66,50 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
 			})
 
+<<<<<<< HEAD
 			It("should describe the operator with json output", func() {
 				outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "-o", "json")
 				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
 				expected := []string{"EtcdCluster", "etcd Cluster"}
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+=======
+			// now try creating service with same name again. it should fail
+			stdOut := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
+			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
+
+			helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
+		})
+
+		It("should fail to create operand if a non existing param is provided", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs")
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+			stdErr := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "-p", "unknown-param=4", "--project", commonVar.Project)
+			Expect(stdErr).To(ContainSubstring("the parameter unknown-param is not present in the Operand Schema"))
+		})
+
+		It("should be able to create a postgres database with parameters", func() {
+			// this project has the operator group installed hence we shouldn't delete it and
+			// use it for all namespace bound operators
+			projectName := "odo-operator-tests"
+			name := helper.RandString(6)
+			oc.SetProject(projectName)
+			helper.CmdShouldPass("odo", "create", "nodejs")
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			postgresOperator := regexp.MustCompile(`postgresql-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/Database", postgresOperator), name,
+				"-p", "databaseName=odo", "-p", "size=1", "-p", "databaseUser=odo", "-p", "databaseStorageRequest=1Gi", "--project", projectName)
+			helper.CmdShouldPass("odo", "push")
+			// now verify if the pods for the operator have started
+			pods := oc.GetAllPodsInNs(projectName)
+			// Look for pod with custom name because that's the name etcd will give to the pods.
+			compileString := name + `-.[a-z0-9\-]*`
+			postgresPod := regexp.MustCompile(compileString).FindString(pods)
+
+			ocArgs := []string{"get", "pods", postgresPod, "-o", "template=\"{{.status.phase}}\"", "-n", projectName}
+			helper.WaitForCmdOut("oc", ocArgs, 2, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+>>>>>>> 720c04520... fix some tests
 			})
 
 			It("should find the services by keyword", func() {
@@ -475,6 +514,7 @@ metadata:
   noname: noname
 spec:
   size: 3
+<<<<<<< HEAD
   version: 3.2.13`
 						invalidMetaFile := helper.RandString(6) + ".yaml"
 						invalidFileName = filepath.Join(tmpContext, invalidMetaFile)
@@ -498,6 +538,76 @@ spec:
 						Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
 					})
 				})
+=======
+  version: 3.2.13
+`
+
+			noMetaFile := helper.RandString(6) + ".yaml"
+			fileName := filepath.Join(tmpContext, noMetaFile)
+			if err := ioutil.WriteFile(fileName, []byte(noMetadata), 0644); err != nil {
+				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+			}
+
+			// now create operator backed service
+			stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project)
+			Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
+
+			invalidMetaFile := helper.RandString(6) + ".yaml"
+			fileName = filepath.Join(tmpContext, invalidMetaFile)
+			if err := ioutil.WriteFile(fileName, []byte(invalidMetadata), 0644); err != nil {
+				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+			}
+
+			// now create operator backed service
+			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project)
+			Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
+
+		})
+	})
+
+	Context("JSON output", func() {
+
+		JustBeforeEach(func() {
+			preSetup()
+		})
+
+		JustAfterEach(func() {
+			cleanPreSetup()
+		})
+
+		It("listing catalog of services", func() {
+			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+			helper.MatchAllInOutput(jsonOut, []string{"etcdoperator"})
+		})
+	})
+
+	Context("When operator backed services are created", func() {
+
+		JustBeforeEach(func() {
+			preSetup()
+		})
+
+		JustAfterEach(func() {
+			cleanPreSetup()
+		})
+
+		It("should list the services if they exist", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs")
+
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
+			helper.CmdShouldPass("odo", "push")
+
+			// now verify if the pods for the operator have started
+			pods := oc.GetAllPodsInNs(commonVar.Project)
+			// Look for pod with example name because that's the name etcd will give to the pods.
+			etcdPod := regexp.MustCompile(`etcdcluster-.[a-z0-9]*`).FindString(pods)
+
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+>>>>>>> 720c04520... fix some tests
 			})
 		})
 

@@ -631,6 +631,12 @@ func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	return projectName
 }
 
+func (oc OcRunner) SetProject(namespace string) string {
+	fmt.Fprintf(GinkgoWriter, "Setting project: %s\n", namespace)
+	CmdShouldPass("odo", "project", "set", namespace, "-w", "-v4")
+	return namespace
+}
+
 // DeleteNamespaceProject deletes a specified project in oc cluster
 func (oc OcRunner) DeleteNamespaceProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
