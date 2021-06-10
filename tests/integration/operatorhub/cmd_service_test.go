@@ -474,62 +474,66 @@ spec:
 
 	})
 
-	Context("When linking devfile component with another component", func() {
+	When("one component is deployed", func() {
 		var context0 string
-		var context1 string
 		var cmp0 string
-		var cmp1 string
 
 		JustBeforeEach(func() {
-			context0 = helper.CreateNewContext()
-			context1 = helper.CreateNewContext()
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
 
+			context0 = helper.CreateNewContext()
 			cmp0 = helper.RandString(5)
-			cmp1 = helper.RandString(5)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmp0, "--context", context0)
-			helper.CmdShouldPass("odo", "create", "nodejs", cmp1, "--context", context1)
-
 			helper.CmdShouldPass("odo", "push", "--context", context0)
-			helper.CmdShouldPass("odo", "push", "--context", context1)
 		})
 
 		JustAfterEach(func() {
 			helper.CmdShouldPass("odo", "delete", "-f", "--context", context0)
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", context1)
-
 			helper.DeleteDir(context0)
-			helper.DeleteDir(context1)
-
 			cleanPreSetup()
 		})
 
-		It("should fail when component is getting linked with itself", func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
-
+		It("should fail when linking to itself", func() {
 			stdOut := helper.CmdShouldFail("odo", "link", cmp0, "--context", context0)
 			helper.MatchAllInOutput(stdOut, []string{cmp0, "cannot be linked with itself"})
 		})
 
-		It("should successfully link and unlink a component with another", func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
+		When("another component is deployed", func() {
+			var context1 string
+			var cmp1 string
 
-			helper.CmdShouldPass("odo", "link", cmp1, "--context", context0)
+			JustBeforeEach(func() {
+				context1 = helper.CreateNewContext()
+				cmp1 = helper.RandString(5)
 
-			// check the link exists with the specific name
-			ocArgs := []string{"get", "servicebinding", strings.Join([]string{cmp0, cmp1}, "-"), "-o", "jsonpath='{.status.secret}'", "-n", commonVar.Project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, strings.Join([]string{cmp0, cmp1}, "-"))
+				helper.CmdShouldPass("odo", "create", "nodejs", cmp1, "--context", context1)
+				helper.CmdShouldPass("odo", "push", "--context", context1)
 			})
 
-			// delete the link
-			helper.CmdShouldPass("odo", "unlink", cmp1, "--context", context0)
+			JustAfterEach(func() {
+				helper.CmdShouldPass("odo", "delete", "-f", "--context", context1)
+				helper.DeleteDir(context1)
+				cleanPreSetup()
+			})
 
-			commonVar.CliRunner.WaitAndCheckForTerminatingState("servicebinding", commonVar.Project, 1)
+			It("should link the two components successfully", func() {
+
+				helper.CmdShouldPass("odo", "link", cmp1, "--context", context0)
+
+				// check the link exists with the specific name
+				ocArgs := []string{"get", "servicebinding", strings.Join([]string{cmp0, cmp1}, "-"), "-o", "jsonpath='{.status.secret}'", "-n", commonVar.Project}
+				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+					return strings.Contains(output, strings.Join([]string{cmp0, cmp1}, "-"))
+				})
+
+				// delete the link
+				helper.CmdShouldPass("odo", "unlink", cmp1, "--context", context0)
+
+				commonVar.CliRunner.WaitAndCheckForTerminatingState("servicebinding", commonVar.Project, 1)
+			})
 		})
 	})
 })

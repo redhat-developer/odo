@@ -424,9 +424,7 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 				Namespace: &o.KClient.Namespace,
 			},
 		}
-	}
-
-	if !o.isTargetAService {
+	} else {
 		service = servicebinding.Service{
 			NamespacedRef: servicebinding.NamespacedRef{
 				Ref: servicebinding.Ref{
