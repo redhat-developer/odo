@@ -45,7 +45,7 @@ require (
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.7.5
 	github.com/tidwall/sjson v1.1.6
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
