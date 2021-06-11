@@ -1142,7 +1142,9 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Comp
 				}
 
 				// we just want to confirm if the devfile is correct
-				_, err = parser.Parse(filepath.Join(dir, "devfile.yaml"))
+				_, err = parser.ParseDevfile(parser.ParserArgs{
+					Path: filepath.Join(dir, "devfile.yaml"),
+				})
 				if err != nil {
 					return err
 				}
@@ -1157,7 +1159,7 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Comp
 				// since the config file maybe belong to a component of a different project
 				if client != nil {
 					client.Namespace = data.GetNamespace()
-					deployment, err := client.GetDeploymentByName(data.GetName())
+					deployment, err := client.GetOneDeployment(comp.Name, comp.Spec.App)
 					if err != nil {
 						comp.Status.State = StateTypeNotPushed
 					} else if deployment != nil {

@@ -104,7 +104,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		componentName := o.EnvSpecificInfo.GetName()
 
-		deployment, err := o.KClient.GetDeploymentByName(componentName)
+		deployment, err := o.KClient.GetOneDeployment(componentName, o.EnvSpecificInfo.GetApplication())
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 				BindAsFiles:            o.bindAsFiles,
 				Application: &servicebinding.Application{
 					Ref: servicebinding.Ref{
-						Name:     componentName,
+						Name:     deployment.Name,
 						Group:    deploymentGVR.Group,
 						Version:  deploymentGVR.Version,
 						Resource: deploymentGVR.Resource,

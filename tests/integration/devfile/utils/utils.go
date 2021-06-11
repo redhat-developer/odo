@@ -201,8 +201,8 @@ func ExecPushToTestParent(projectDirPath, cmpName, namespace string) {
 	helper.MatchAllInOutput(output, []string{"Executing devbuild command", "touch blah.js"})
 }
 
-func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string, freePort int) {
-	args := []string{"create", "nodejs", cmpName}
+func ExecPushWithParentOverride(projectDirPath, cmpName, appName, namespace string, freePort int) {
+	args := []string{"create", "nodejs", cmpName, "--app", appName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.Cmd("odo", args...).ShouldPass()
 
@@ -235,8 +235,8 @@ func ExecPushWithCompositeOverride(projectDirPath, cmpName, namespace string, fr
 	helper.MatchAllInOutput(output, []string{"Executing createfile command", "touch /projects/testfile"})
 }
 
-func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string, freePort int) {
-	args := []string{"create", "nodejs", cmpName}
+func ExecPushWithMultiLayerParent(projectDirPath, cmpName, appName, namespace string, freePort int) {
+	args := []string{"create", "nodejs", cmpName, "--app", appName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.Cmd("odo", args...).ShouldPass()
 

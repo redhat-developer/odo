@@ -490,7 +490,7 @@ func componentTests(args ...string) {
 			info := helper.LocalEnvInfo(commonVar.Context)
 			Expect(info.GetApplication(), appName)
 			Expect(info.GetName(), componentName)
-			envVars := oc.GetEnvsDevFileDeployment(componentName, commonVar.Project)
+			envVars := oc.GetEnvsDevFileDeployment(componentName, appName, commonVar.Project)
 			val, ok := envVars["FOO"]
 			Expect(ok).To(BeTrue())
 			Expect(val).To(Equal("BAR"))

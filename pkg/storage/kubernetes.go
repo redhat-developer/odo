@@ -25,7 +25,7 @@ type kubernetesClient struct {
 // Create creates a pvc from the given Storage
 func (k kubernetesClient) Create(storage Storage) error {
 
-	pvcName, err := GeneratePVCName(storage.Name, k.componentName)
+	pvcName, err := generatePVCName(storage.Name, k.componentName, k.appName)
 	if err != nil {
 		return err
 	}

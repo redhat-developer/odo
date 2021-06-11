@@ -14,6 +14,7 @@ export SENDTOPIC=${SENDTOPIC:-"amqp.ci.topic.send"}
 export SETUPSCRIPT=${SETUPSCRIPT:-"scripts/setup_script_e2e.sh"}
 export RUNSCRIPT=${RUNSCRIPT:-"scripts/run_script_e2e.sh"}
 export SENDEXCHANGE=${SENDEXCHANGE:-"amqp.ci.exchange.send"}
+export TIMEOUT=${TIMEOUT:-"4h00m"}
 
 # show commands
 set -x
@@ -32,5 +33,5 @@ echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 curl -kLO https://github.com/mohammedzee1000/ci-firewall/releases/download/$CI_FIREWALL_VERSION/ci-firewall-linux-amd64.tar.gz
 tar -xzf ci-firewall-linux-amd64.tar.gz
 
-./ci-firewall request --mainbranch main --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --sendexchange $SENDEXCHANGE --setupscript $SETUPSCRIPT --jenkinsproject $JOB_NAME --runscript $RUNSCRIPT  --timeout 4h00m 
+./ci-firewall request --mainbranch main --sendqueue $SENDQUEUE --sendtopic $SENDTOPIC --sendexchange $SENDEXCHANGE --setupscript $SETUPSCRIPT --jenkinsproject $JOB_NAME --runscript $RUNSCRIPT  --timeout $TIMEOUT 
 

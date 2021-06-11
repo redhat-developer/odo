@@ -12,6 +12,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
+	"github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -517,11 +518,6 @@ func TestList(t *testing.T) {
 				return true, &tt.dcList, nil
 			})
 
-			//fake the deployments
-			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &tt.deploymentList, nil
-			})
-
 			// Prepend reactor returns the last matched reactor added
 			// We need to return errorNotFound for localconfig only component
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -542,22 +538,32 @@ func TestList(t *testing.T) {
 				}
 			})
 
-			fakeClientSet.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				listAction, ok := action.(ktesting.ListAction)
+				if !ok {
+					return false, nil, fmt.Errorf("expected a ListAction, got %v", action)
+				}
+				if len(tt.deploymentList.Items) <= 0 {
+					return true, &tt.deploymentList, nil
+				}
 				if tt.name == caseName {
 					// simulate unavailable cluster
 					return true, nil, errors.NewUnauthorized("user unauthorized")
 				}
-				getAction, ok := action.(ktesting.GetAction)
-				if !ok {
-					return false, nil, fmt.Errorf("expected a GetAction, got %v", action)
+
+				var deploymentLabels0 map[string]string
+				var deploymentLabels1 map[string]string
+				if len(tt.deploymentList.Items) == 2 {
+					deploymentLabels0 = tt.deploymentList.Items[0].Labels
+					deploymentLabels1 = tt.deploymentList.Items[1].Labels
 				}
-				switch getAction.GetName() {
-				case "comp0":
+				switch listAction.GetListRestrictions().Labels.String() {
+				case util.ConvertLabelsToSelector(deploymentLabels0):
 					return true, &tt.deploymentList.Items[0], nil
-				case "comp1":
+				case util.ConvertLabelsToSelector(deploymentLabels1):
 					return true, &tt.deploymentList.Items[1], nil
 				default:
-					return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deploymentconfigs"}, "")
+					return true, &tt.deploymentList, nil
 				}
 			})
 

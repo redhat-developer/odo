@@ -52,9 +52,9 @@ func (k Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 	return nil
 }
 
-// DoesComponentExist returns true if a component with the specified name exists
-func (k Adapter) DoesComponentExist(cmpName string) (bool, error) {
-	return k.componentAdapter.DoesComponentExist(cmpName)
+// DoesComponentExist returns true if a component with the specified name exists in the given app
+func (k Adapter) DoesComponentExist(cmpName, appName string) (bool, error) {
+	return k.componentAdapter.DoesComponentExist(cmpName, appName)
 }
 
 // Delete deletes the Kubernetes resources that correspond to the devfile

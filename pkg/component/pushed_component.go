@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/kclient"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -186,7 +187,7 @@ func (d devfileComponent) GetAnnotations() map[string]string {
 }
 
 func (d devfileComponent) GetName() string {
-	return d.d.Name
+	return d.d.Labels[componentlabels.ComponentLabel]
 }
 
 func (d devfileComponent) GetType() (string, error) {
@@ -268,7 +269,7 @@ func newPushedComponent(applicationName string, p provider, c *occlient.Client) 
 
 // GetPushedComponent returns an abstraction over the cluster representation of the component
 func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
-	d, err := c.GetKubeClient().GetDeploymentByName(componentName)
+	d, err := c.GetKubeClient().GetOneDeployment(componentName, applicationName)
 	if err != nil {
 		if isIgnorableError(err) {
 			// if it's not found, check if there's a deploymentconfig
@@ -294,6 +295,9 @@ func isIgnorableError(err error) bool {
 	e := errors.Cause(err)
 	if e != nil {
 		err = e
+	}
+	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
+		return true
 	}
 	return kerrors.IsNotFound(err) || kerrors.IsForbidden(err) || kerrors.IsUnauthorized(err)
 }

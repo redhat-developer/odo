@@ -8,6 +8,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/component/labels"
 )
 
 const (
@@ -175,11 +178,11 @@ func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 	Cmd("kubectl", "delete", "namespaces", projectName).ShouldPass()
 }
 
-func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
-
-	output := Cmd(kubectl.path, "get", "deployment", componentName, "--namespace", projectName,
-		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
+	output := Cmd(kubectl.path, "get", "deployment", selector, "--namespace", projectName,
+		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
 
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimPrefix(line, "'")

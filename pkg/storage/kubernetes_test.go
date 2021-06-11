@@ -736,6 +736,14 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			if !reflect.DeepEqual(createdPVC.Spec.Resources.Requests["storage"], quantity) {
 				t.Errorf("size of PVC is not matching to expected size, expected: %v, got %v", quantity, createdPVC.Spec.Resources.Requests["storage"])
 			}
+
+			wantedPVCName, err := generatePVCName(tt.args.storage.Name, tt.fields.generic.componentName, tt.fields.generic.appName)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(createdPVC.Name, wantedPVCName) {
+				t.Errorf("name of the PVC is not matching to expected name, expected: %v, got %v", wantedPVCName, createdPVC.Name)
+			}
 		})
 	}
 }
