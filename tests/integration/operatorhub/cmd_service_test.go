@@ -100,15 +100,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
 				})
 
-				It("should fail if service name doesn't adhere to <service-type>/<service-name> format", func() {
-					if os.Getenv("KUBERNETES") == "true" {
-						Skip("This is a OpenShift specific scenario, skipping")
-					}
-					helper.CmdShouldFail("odo", "link", "EtcdCluster")
-					helper.CmdShouldFail("odo", "link", "EtcdCluster/")
-					helper.CmdShouldFail("odo", "link", "/example")
-				})
-
 				When("odo push is executed", func() {
 					JustBeforeEach(func() {
 						helper.CmdShouldPass("odo", "push")
@@ -496,6 +487,15 @@ spec:
 			It("should fail when linking to itself", func() {
 				stdOut := helper.CmdShouldFail("odo", "link", cmp0, "--context", context0)
 				helper.MatchAllInOutput(stdOut, []string{cmp0, "cannot be linked with itself"})
+			})
+
+			It("should fail if the component doesn't exist and the service name doesn't adhere to the <service-type>/<service-name> format", func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
+				helper.CmdShouldFail("odo", "link", "EtcdCluster")
+				helper.CmdShouldFail("odo", "link", "EtcdCluster/")
+				helper.CmdShouldFail("odo", "link", "/example")
 			})
 
 			When("another component is deployed", func() {
