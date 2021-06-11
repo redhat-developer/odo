@@ -315,6 +315,27 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								Expect(stdOut).To(ContainSubstring("couldn't find service named"))
 							})
 						})
+
+						When("a second service is created", func() {
+							JustBeforeEach(func() {
+								stdOut = helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "myetcd2", "--project", commonVar.Project)
+								Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
+							})
+
+							When("odo push is executed", func() {
+								JustBeforeEach(func() {
+									helper.CmdShouldPass("odo", "push")
+								})
+
+								It("should list both services", func() {
+									stdOut = helper.CmdShouldPass("odo", "service", "list")
+									// first service still here
+									Expect(stdOut).To(ContainSubstring("EtcdCluster/example"))
+									// second service created
+									Expect(stdOut).To(ContainSubstring("EtcdCluster/myetcd2"))
+								})
+							})
+						})
 					})
 				})
 
