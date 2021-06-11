@@ -104,15 +104,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					if os.Getenv("KUBERNETES") == "true" {
 						Skip("This is a OpenShift specific scenario, skipping")
 					}
-
-					stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster")
-					Expect(stdOut).To(ContainSubstring("invalid service name"))
-
-					stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/")
-					Expect(stdOut).To(ContainSubstring("invalid service name"))
-
-					stdOut = helper.CmdShouldFail("odo", "link", "/example")
-					Expect(stdOut).To(ContainSubstring("invalid service name"))
+					helper.CmdShouldFail("odo", "link", "EtcdCluster")
+					helper.CmdShouldFail("odo", "link", "EtcdCluster/")
+					helper.CmdShouldFail("odo", "link", "/example")
 				})
 
 				When("odo push is executed", func() {
@@ -125,7 +119,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							Skip("This is a OpenShift specific scenario, skipping")
 						}
 						stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
-						Expect(stdOut).To(ContainSubstring("Couldn't find service named %q", "EtcdCluster/example"))
+						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", "EtcdCluster/example"))
 					})
 				})
 
@@ -154,7 +148,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						JustAfterEach(func() {
-							// TODO delete file
+							os.Remove(fileName)
 						})
 
 						When("a service is created from the output of the dryRun command with no name", func() {
@@ -172,16 +166,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								})
 
 								It("should create pods in running state", func() {
-									// now verify if the pods for the operator have started
-									pods := oc.GetAllPodsInNs(commonVar.Project)
-									// Look for pod with example name because that's the name etcd will give to the pods.
-									etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
-
-									ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
-									helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-										return strings.Contains(output, "Running")
-									})
-
+									oc.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
 								})
 							})
 						})
@@ -212,16 +197,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								})
 
 								It("should create pods in running state", func() {
-									// now verify if the pods for the operator have started
-									pods := oc.GetAllPodsInNs(commonVar.Project)
-									// Look for pod with example name because that's the name etcd will give to the pods.
-									etcdPod := regexp.MustCompile(name + `-.[a-z0-9]*`).FindString(pods)
-
-									ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
-									helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-										return strings.Contains(output, "Running")
-									})
-
+									oc.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
 								})
 							})
 						})
@@ -245,22 +221,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 					When("odo push is executed", func() {
 
-						var etcdPod string
-
 						JustBeforeEach(func() {
 							helper.CmdShouldPass("odo", "push")
 						})
 
 						It("should create pods in running state", func() {
-							// now create the service on cluster and verify if the pods for the operator have started
-							pods := oc.GetAllPodsInNs(commonVar.Project)
-							// Look for pod with example name because that's the name etcd will give to the pods.
-							etcdPod = regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
-
-							ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
-							helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-								return strings.Contains(output, "Running")
-							})
+							oc.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
 						})
 
 						It("should list the service", func() {
@@ -369,21 +335,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 					When("odo push is executed", func() {
 
-						var etcdPod string
-
 						JustBeforeEach(func() {
 							helper.CmdShouldPass("odo", "push")
 						})
 
 						It("should create pods in running state", func() {
-							pods := oc.GetAllPodsInNs(commonVar.Project)
-							compileString := name + `-.[a-z0-9]*`
-							etcdPod = regexp.MustCompile(compileString).FindString(pods)
-
-							ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", commonVar.Project}
-							helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-								return strings.Contains(output, "Running")
-							})
+							oc.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
 						})
 
 						It("should fail to create a service again with the same name", func() {
