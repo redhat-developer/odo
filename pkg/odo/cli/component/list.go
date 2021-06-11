@@ -295,9 +295,10 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	otherComponents, err := component.List(lo.Client, selector, lo.LocalConfigInfo)
-	if err == nil {
-		otherComps = otherComponents.Items
+	if err != nil {
+		return fmt.Errorf("failed to fetch components not managed by odo: %w", err)
 	}
+	otherComps = otherComponents.Items
 
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
