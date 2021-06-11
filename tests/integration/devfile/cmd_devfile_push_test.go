@@ -70,7 +70,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-endpoints.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldFail()
+			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 			output := commonVar.CliRunner.GetServices(commonVar.Project)
 			Expect(output).NotTo(ContainSubstring(cmpName))
 
