@@ -102,6 +102,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// deploy it
 			helper.CmdShouldPass("odo", "push")
 			stdOut = helper.CmdShouldPass("odo", "service", "list")
+			// first service still here
+			Expect(stdOut).To(ContainSubstring("EtcdCluster/myetcd1"))
+			// second service created
 			Expect(stdOut).To(ContainSubstring("EtcdCluster/myetcd2"))
 		})
 	})
