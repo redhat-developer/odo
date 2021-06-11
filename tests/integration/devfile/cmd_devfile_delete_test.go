@@ -61,14 +61,14 @@ var _ = Describe("odo devfile delete command tests", func() {
 				Expect(files).To(Not(ContainElement("devfile.yaml")))
 			})
 
-			Context("deleting a component from other component directory", func() {
-				var secondComp = helper.RandString(6)
-				var firstComp, firstDir, secondDir string
+			Describe("deleting a component from other component directory", func() {
+				var firstComp, firstDir, secondComp, secondDir string
 
 				JustBeforeEach(func() {
 					// for the sake of verbosity
 					firstComp = componentName
 					firstDir = commonVar.Context
+					secondComp = helper.RandString(6)
 					secondDir = createNewContext()
 					helper.Chdir(secondDir)
 				})
@@ -85,7 +85,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 							helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 						})
 						JustAfterEach(func() {})
-						Context("delete with --context flag", func() {
+						Context("deleting outside a component directory", func() {
 							It("should delete the context directory's component", func() {
 								output := helper.CmdShouldPass("odo", "delete", "--context", firstDir, "-f")
 								Expect(output).To(ContainSubstring(firstComp))
@@ -116,23 +116,21 @@ var _ = Describe("odo devfile delete command tests", func() {
 				})
 			})
 		})
+		It("should throw an error on an invalid delete command", func() {
+			By("--project flag")
+			helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "-f")
 
-		Context("invalid delete commands", func() {
-			It("should throw an error when only --project flag is passed", func() {
-				helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "-f")
-			})
-			It("should throw an error with component name and --all flag", func() {
-				helper.CmdShouldFail("odo", "delete", componentName, "--all", "-f")
-			})
-			It("should throw an error with component name, --app, --project and --all flag", func() {
-				helper.CmdShouldFail("odo", "delete", componentName, "--app", appName, "--project", commonVar.Project, "--all", "-f")
-			})
-			It("should throw an error with component name and --context flag", func() {
-				helper.CmdShouldFail("odo", "delete", componentName, "--context", commonVar.Context, "-f")
-			})
-			It("should throw an error with --project and --context flag", func() {
-				helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--context", commonVar.Context, "-f")
-			})
+			By("component name, --app, --project and --all flag")
+			helper.CmdShouldFail("odo", "delete", componentName, "--app", appName, "--project", commonVar.Project, "--all", "-f")
+
+			By("component name and --all flag")
+			helper.CmdShouldFail("odo", "delete", componentName, "--all", "-f")
+
+			By("component name and --context flag")
+			helper.CmdShouldFail("odo", "delete", componentName, "--context", commonVar.Context, "-f")
+
+			By("--project and --context flag")
+			helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--context", commonVar.Context, "-f")
 		})
 
 		When("the component has resources attached to it", func() {
@@ -243,7 +241,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			// DeleteLocalConfig appends -a flag
 			utils.DeleteLocalConfig("delete")
 		})
-		When("--context flag is used", func() {
+		When("deleting outside a component directory", func() {
 			JustBeforeEach(func() {
 				helper.Chdir(createNewContext())
 
