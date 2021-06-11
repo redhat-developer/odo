@@ -85,26 +85,24 @@ var _ = Describe("odo devfile delete command tests", func() {
 							helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 						})
 						JustAfterEach(func() {})
-						Context("deleting outside a component directory", func() {
-							It("should delete the context directory's component", func() {
-								output := helper.CmdShouldPass("odo", "delete", "--context", firstDir, "-f")
-								Expect(output).To(ContainSubstring(firstComp))
-								Expect(output).ToNot(ContainSubstring(secondComp))
-							})
+						It("should delete the context directory's component", func() {
+							output := helper.CmdShouldPass("odo", "delete", "--context", firstDir, "-f")
+							Expect(output).To(ContainSubstring(firstComp))
+							Expect(output).ToNot(ContainSubstring(secondComp))
+						})
 
-							It("should delete all the config files and component of the context directory with --all flag", func() {
-								output := helper.CmdShouldPass("odo", "delete", "--all", "--context", firstDir, "-f")
-								Expect(output).ToNot(ContainSubstring(secondComp))
-								Expect(output).To(ContainSubstring(firstComp))
+						It("should delete all the config files and component of the context directory with --all flag", func() {
+							output := helper.CmdShouldPass("odo", "delete", "--all", "--context", firstDir, "-f")
+							Expect(output).ToNot(ContainSubstring(secondComp))
+							Expect(output).To(ContainSubstring(firstComp))
 
-								files := helper.ListFilesInDir(firstDir)
-								Expect(files).To(Not(ContainElement(".odo")))
-								Expect(files).To(Not(ContainElement("devfile.yaml")))
+							files := helper.ListFilesInDir(firstDir)
+							Expect(files).To(Not(ContainElement(".odo")))
+							Expect(files).To(Not(ContainElement("devfile.yaml")))
 
-								files = helper.ListFilesInDir(secondDir)
-								Expect(files).To(ContainElement(".odo"))
-								Expect(files).To(ContainElement("devfile.yaml"))
-							})
+							files = helper.ListFilesInDir(secondDir)
+							Expect(files).To(ContainElement(".odo"))
+							Expect(files).To(ContainElement("devfile.yaml"))
 						})
 						// Marked as pending because it does not work at the moment. It takes the component in current directory into account while deleting.
 						XIt("should delete with the component name", func() {
