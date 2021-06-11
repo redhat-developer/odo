@@ -393,7 +393,7 @@ func Push(parameters PushParameters) error {
 
 		if !ok || configMismatch {
 			// delete the url
-			err := parameters.URLClient.Delete(urlName)
+			err := parameters.URLClient.Delete(urlName, urlSpec.Spec.Kind)
 			if err != nil {
 				return err
 			}
@@ -432,7 +432,7 @@ type ClientOptions struct {
 
 type Client interface {
 	Create(url URL) (string, error)
-	Delete(string) error
+	Delete(string, localConfigProvider.URLKind) error
 	ListFromCluster() (URLList, error)
 	List() (URLList, error)
 }

@@ -6,6 +6,7 @@ package url
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	localConfigProvider "github.com/openshift/odo/pkg/localConfigProvider"
 	reflect "reflect"
 )
 
@@ -48,17 +49,17 @@ func (mr *MockClientMockRecorder) Create(url interface{}) *gomock.Call {
 }
 
 // Delete mocks base method
-func (m *MockClient) Delete(arg0 string) error {
+func (m *MockClient) Delete(arg0 string, arg1 localConfigProvider.URLKind) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0)
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete
-func (mr *MockClientMockRecorder) Delete(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClient)(nil).Delete), arg0, arg1)
 }
 
 // ListFromCluster mocks base method

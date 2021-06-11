@@ -130,26 +130,22 @@ func (k kubernetesClient) List() (URLList, error) {
 }
 
 // Delete deletes the URL with the given name and kind
-func (k kubernetesClient) Delete(name string) error {
-	url, err := k.localConfig.GetURL(name)
-	if err != nil {
-		return err
-	}
+func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) error {
 	selector := util.ConvertLabelsToSelector(urlLabels.GetLabels(name, k.componentName, k.appName, false))
-	if url.Kind == localConfigProvider.INGRESS {
+	if kind == localConfigProvider.INGRESS {
 		ingress, err := k.client.GetKubeClient().GetOneIngressFromSelector(selector)
 		if err != nil {
 			return err
 		}
 		return k.client.GetKubeClient().DeleteIngress(ingress.Name)
-	} else if url.Kind == localConfigProvider.ROUTE {
+	} else if kind == localConfigProvider.ROUTE {
 		route, err := k.client.GetOneRouteFromSelector(selector)
 		if err != nil {
 			return err
 		}
 		return k.client.DeleteRoute(route.Name)
 	}
-	return errors.New("url type is not supported")
+	return fmt.Errorf("url type is not supported")
 }
 
 // Create creates a route or ingress based on the given URL
@@ -185,7 +181,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	ingressDomain := fmt.Sprintf("%v.%v", url.Name, url.Spec.Host)
 
 	// generate the owner reference
-	deployment, err := k.client.GetKubeClient().GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(componentlabels.GetLabels(k.componentName, k.appName, false)))
+	deployment, err := k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
 	if err != nil {
 		return "", err
 	}
@@ -267,13 +263,16 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 // createRoute creates a route for the given URL with the given labels
 func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string, error) {
 	// to avoid error due to duplicate ingress name defined in different devfile components
-	routeName, err := getResourceName(url.Name, k.componentName, k.appName)
+	// we avoid using the getResourceName() and use the previous method from s2i
+	// as the host name, which is automatically created on openshift,
+	// can become more than 63 chars, which is invalid
+	routeName, err := util.NamespaceOpenShiftObject(url.Name, k.appName)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}
 	serviceName := k.componentName
 
-	deployment, err := k.client.GetKubeClient().GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(componentlabels.GetLabels(k.componentName, k.appName, false)))
+	deployment, err := k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
 	if err != nil {
 		return "", err
 	}

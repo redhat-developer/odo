@@ -5,6 +5,7 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
@@ -98,7 +99,7 @@ func (s s2iClient) List() (URLList, error) {
 }
 
 // Delete deletes the URL with the given name and kind
-func (s s2iClient) Delete(name string) error {
+func (s s2iClient) Delete(name string, kind localConfigProvider.URLKind) error {
 	// Namespace the URL name
 	routeName, err := util.NamespaceOpenShiftObject(name, s.appName)
 	if err != nil {

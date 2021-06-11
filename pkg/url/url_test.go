@@ -666,6 +666,10 @@ func TestExists(t *testing.T) {
 }
 
 func TestPush(t *testing.T) {
+	type deleteParameters struct {
+		string
+		localConfigProvider.URLKind
+	}
 	type args struct {
 		isRouteSupported bool
 	}
@@ -676,8 +680,7 @@ func TestPush(t *testing.T) {
 		applicationName     string
 		existingLocalURLs   []localConfigProvider.LocalURL
 		existingClusterURLs URLList
-		deletedItems        []string
-		deletedURLs         []URL
+		deletedItems        []deleteParameters
 		createdURLs         []URL
 		wantErr             bool
 	}{
@@ -734,7 +737,10 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
 			}),
-			deletedItems: []string{"example", "example-1"},
+			deletedItems: []deleteParameters{
+				{"example", localConfigProvider.ROUTE},
+				{"example-1", localConfigProvider.ROUTE},
+			},
 		},
 		{
 			name:            "2 url on local config and 2 on openshift cluster, but they are different",
@@ -759,7 +765,10 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
 			}),
-			deletedItems: []string{"example", "example-1"},
+			deletedItems: []deleteParameters{
+				{"example", localConfigProvider.ROUTE},
+				{"example-1", localConfigProvider.ROUTE},
+			},
 			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example-local-0",
@@ -800,7 +809,6 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
 			}),
-			deletedURLs: []URL{},
 			createdURLs: []URL{},
 		},
 		{
@@ -854,7 +862,10 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
 				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
 			}),
-			deletedItems: []string{"example-0", "example-1"},
+			deletedItems: []deleteParameters{
+				{"example-0", localConfigProvider.INGRESS},
+				{"example-1", localConfigProvider.INGRESS},
+			},
 		},
 		{
 			name:            "2 urls on env file and 2 on openshift cluster, but they are different",
@@ -893,7 +904,10 @@ func TestPush(t *testing.T) {
 					Kind: localConfigProvider.INGRESS,
 				}),
 			},
-			deletedItems: []string{"example-0", "example-1"},
+			deletedItems: []deleteParameters{
+				{"example-0", localConfigProvider.INGRESS},
+				{"example-1", localConfigProvider.INGRESS},
+			},
 		},
 		{
 			name:            "2 urls on env file and openshift cluster are in sync",
@@ -921,7 +935,6 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormatIngress((*fake.GetIngressListWithMultiple("wildfly", "app")).Items[1]),
 			}),
 			createdURLs: []URL{},
-			deletedURLs: []URL{},
 		},
 		{
 			name:            "2 (1 ingress,1 route) urls on env file and 2 on openshift cluster (1 ingress,1 route), but they are different",
@@ -958,7 +971,10 @@ func TestPush(t *testing.T) {
 					Kind: localConfigProvider.INGRESS,
 				}),
 			},
-			deletedItems: []string{"example-0", "example-1"},
+			deletedItems: []deleteParameters{
+				{"example-0", localConfigProvider.INGRESS},
+				{"example-1", localConfigProvider.ROUTE},
+			},
 		},
 		{
 			name:            "create a ingress on a kubernetes cluster",
@@ -1010,8 +1026,10 @@ func TestPush(t *testing.T) {
 					Kind: localConfigProvider.ROUTE,
 				}),
 			},
-			deletedItems: []string{"example-local-0"},
-			wantErr:      false,
+			deletedItems: []deleteParameters{
+				{"example-local-0", localConfigProvider.INGRESS},
+			},
+			wantErr: false,
 		},
 		{
 			name:            "url with same name exists on config and cluster but with different specs",
@@ -1037,8 +1055,10 @@ func TestPush(t *testing.T) {
 					Kind:   localConfigProvider.ROUTE,
 				}),
 			},
-			deletedItems: []string{"example-local-0-app"},
-			wantErr:      false,
+			deletedItems: []deleteParameters{
+				{"example-local-0-app", localConfigProvider.ROUTE},
+			},
+			wantErr: false,
 		},
 		{
 			name:            "create a secure route url",
@@ -1244,7 +1264,7 @@ func TestPush(t *testing.T) {
 			}
 
 			for i := range tt.deletedItems {
-				mockURLClient.EXPECT().Delete(gomock.Eq(tt.deletedItems[i])).Times(1)
+				mockURLClient.EXPECT().Delete(gomock.Eq(tt.deletedItems[i].string), gomock.Eq(tt.deletedItems[i].URLKind)).Times(1)
 			}
 
 			fakeClient, _ := occlient.FakeNew()
