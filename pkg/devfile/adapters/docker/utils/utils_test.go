@@ -5,13 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/parser/data"
-
 	"github.com/docker/go-connections/nat"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -19,100 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/util"
 )
-
-func TestComponentExists(t *testing.T) {
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-
-	tests := []struct {
-		name          string
-		componentName string
-		client        *lclient.Client
-		components    []devfilev1.Component
-		want          bool
-		wantErr       bool
-	}{
-		{
-			name:          "Case 1: Component exists",
-			componentName: "golang",
-			client:        fakeClient,
-			components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("alias1"),
-				testingutil.GetFakeContainerComponent("alias2"),
-			},
-			want:    true,
-			wantErr: false,
-		},
-		{
-			name:          "Case 2: Component doesn't exist",
-			componentName: "fakecomponent",
-			client:        fakeClient,
-			components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("alias1"),
-			},
-			want:    false,
-			wantErr: false,
-		},
-		{
-			name:          "Case 3: Error with docker client",
-			componentName: "golang",
-			client:        fakeErrorClient,
-			components: []devfilev1.Component{
-				testingutil.GetFakeContainerComponent("alias1"),
-			},
-			want:    false,
-			wantErr: true,
-		},
-		{
-			name:          "Case 4: Container and devfile component mismatch",
-			componentName: "test",
-			client:        fakeClient,
-			components:    []devfilev1.Component{},
-			want:          true,
-			wantErr:       true,
-		},
-		{
-			name:          "Case 5: Devfile does not have supported components",
-			componentName: "abc",
-			client:        fakeClient,
-			components: []devfilev1.Component{
-				{
-					ComponentUnion: devfilev1.ComponentUnion{
-						Kubernetes: &devfilev1.KubernetesComponent{},
-					},
-				},
-			},
-			want:    false,
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
-					if err != nil {
-						t.Error()
-					}
-					err = devfileData.AddComponents(tt.components)
-					if err != nil {
-						t.Error()
-					}
-					return devfileData
-				}(),
-			}
-			cmpExists, err := ComponentExists(*tt.client, devObj.Data, tt.componentName)
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestComponentExists error, unexpected error - %v", err)
-			} else if !tt.wantErr && tt.want != cmpExists {
-				t.Errorf("expected %v, wanted %v", cmpExists, tt.want)
-			} else if tt.wantErr && tt.want != cmpExists {
-				t.Errorf("expected %v, wanted %v, err %v", cmpExists, tt.want, err)
-			}
-		})
-	}
-}
 
 func TestGetComponentContainers(t *testing.T) {
 	fakeClient := lclient.FakeNew()

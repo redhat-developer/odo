@@ -79,7 +79,7 @@ Devfiles describe your development environment link. link:https://odo.dev/docs/d
 
 | Node.JS
 | nodejs
-| Stack with NodeJS 12
+| Stack with NodeJS 14
 | link:https://github.com/devfile/registry/blob/master/stacks/nodejs/devfile.yaml[nodejs/devfile.yaml]
 | amd64, s390x, ppc64le
 
@@ -102,8 +102,15 @@ java-maven           Upstream Maven and OpenJDK 11          DefaultDevfileRegist
 java-openliberty     Open Liberty microservice in Java      DefaultDevfileRegistry
 java-quarkus         Upstream Quarkus with Java+GraalVM     DefaultDevfileRegistry
 java-springboot      Spring Boot® using Java                DefaultDevfileRegistry
-nodejs               Stack with NodeJS 12                   DefaultDevfileRegistry
+nodejs               Stack with NodeJS 14                   DefaultDevfileRegistry
 ----------------------------------------------------
+
+[[usage-data]]
+== Usage data
+
+When odo is run the first time, you will be asked to opt-in to Red Hat's telemetry collection program.
+
+With your approval, odo will collect pseudonymized usage data and send it to Red Hat servers to help improve our products and services. Read our link:https://developers.redhat.com/article/tool-data-collection[privacy statement] to learn more about it. For the specific data being collected and to configure this data collection process, see link:USAGE_DATA.adoc[Usage data].
 
 [[official-documentation]]
 == Official documentation

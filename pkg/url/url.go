@@ -95,7 +95,8 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		}
 		serviceName := parameters.componentName
 		ingressDomain := fmt.Sprintf("%v.%v", parameters.urlName, parameters.host)
-		deployment, err := kClient.GetDeploymentByName(parameters.componentName)
+
+		deployment, err := kClient.GetOneDeployment(parameters.componentName, parameters.applicationName)
 		if err != nil {
 			return "", err
 		}
@@ -194,7 +195,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 			parameters.urlName = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
 			serviceName = parameters.componentName
 
-			deployment, err := kClient.GetDeploymentByName(parameters.componentName)
+			deployment, err := kClient.GetOneDeployment(parameters.componentName, parameters.applicationName)
 			if err != nil {
 				return "", err
 			}

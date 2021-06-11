@@ -17,7 +17,7 @@ type CliRunner interface {
 	CreateRandNamespaceProjectOfLength(i int) string
 	DeleteNamespaceProject(projectName string)
 	DeletePod(podName string, projectName string)
-	GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string
+	GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string
 	GetPVCSize(compName, storageName, namespace string) string
 	GetAllPVCNames(namespace string) []string
 	GetPodInitContainers(compName, namespace string) []string
@@ -25,4 +25,5 @@ type CliRunner interface {
 	WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool
 	VerifyResourceDeleted(ri ResourceInfo)
 	VerifyResourceToBeDeleted(ri ResourceInfo)
+	GetAnnotationsDeployment(cmpName, appName, projectName string) map[string]string
 }

@@ -11,6 +11,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/component/labels"
 )
 
 func runningCmd(cmd *exec.Cmd) string {
@@ -151,4 +153,26 @@ func WaitAndCheckForTerminatingState(path, resourceType, namespace string, timeo
 			}
 		}
 	}
+}
+
+// GetAnnotationsDeployment gets the annotations from the deployment
+// belonging to the given component, app and project
+func GetAnnotationsDeployment(path, componentName, appName, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
+	output := CmdShouldPass(path, "get", "deployment", selector, "--namespace", projectName,
+		"-o", "go-template='{{ range $k, $v := (index .items 0).metadata.annotations}}{{$k}}:{{$v}}{{\"\\n\"}}{{end}}'")
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, ":")
+		if len(splits) < 2 {
+			continue
+		}
+		name := splits[0]
+		value := strings.Join(splits[1:], ":")
+		mapOutput[name] = value
+	}
+	return mapOutput
 }

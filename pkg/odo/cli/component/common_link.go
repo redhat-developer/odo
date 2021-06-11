@@ -30,6 +30,8 @@ type commonLinkOptions struct {
 	port             string
 	secretName       string
 	isTargetAService bool
+	name             string
+	bindAsFiles      bool
 
 	devfilePath string
 
@@ -102,7 +104,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		componentName := o.EnvSpecificInfo.GetName()
 
-		deployment, err := o.KClient.GetDeploymentByName(componentName)
+		deployment, err := o.KClient.GetOneDeployment(componentName, o.EnvSpecificInfo.GetApplication())
 		if err != nil {
 			return err
 		}
@@ -121,15 +123,15 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 				Kind:       kclient.ServiceBindingKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      getServiceBindingName(componentName, o.serviceType, o.serviceName),
+				Name:      o.getServiceBindingName(componentName),
 				Namespace: o.EnvSpecificInfo.GetNamespace(),
 			},
 			Spec: servicebinding.ServiceBindingSpec{
 				DetectBindingResources: true,
-				BindAsFiles:            false,
+				BindAsFiles:            o.bindAsFiles,
 				Application: &servicebinding.Application{
 					Ref: servicebinding.Ref{
-						Name:     componentName,
+						Name:     deployment.Name,
 						Group:    deploymentGVR.Group,
 						Version:  deploymentGVR.Version,
 						Resource: deploymentGVR.Resource,
@@ -189,14 +191,9 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 		}
 
 		if o.operationName == unlink {
-			componentName := o.EnvSpecificInfo.GetName()
-			serviceBindingName := getServiceBindingName(componentName, o.serviceType, o.serviceName)
-			links := o.EnvSpecificInfo.GetLink()
-
-			linked := isComponentLinked(serviceBindingName, links)
-			if !linked {
-				// user's trying to unlink a service that's not linked with the component
-				return fmt.Errorf("failed to unlink the service %q since it's not linked with the component %q", svcFullName, componentName)
+			serviceBindingName, found := o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
+			if !found {
+				return fmt.Errorf("failed to unlink the service %q since no link found in env file", svcFullName)
 			}
 
 			// Verify if the underlying service binding request actually exists
@@ -277,7 +274,10 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 func (o *commonLinkOptions) run() (err error) {
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
-			serviceBindingName := getServiceBindingName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
+			serviceBindingName, found := o.EnvSpecificInfo.SearchLinkName(o.serviceType, o.serviceName)
+			if !found {
+				return fmt.Errorf("failed to unlink the service %q of type %q since no link found in env file", o.serviceName, o.serviceType)
+			}
 			svcFullName := getSvcFullName(kclient.ServiceBindingKind, serviceBindingName)
 			err = svc.DeleteServiceBindingRequest(o.KClient, svcFullName)
 			if err != nil {
@@ -429,23 +429,15 @@ func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
 	return err
 }
 
+// getServiceBindingName creates a name to be used for creation/deletion of SBR during link/unlink operations
+func (o *commonLinkOptions) getServiceBindingName(componentName string) string {
+	if len(o.name) > 0 {
+		return o.name
+	}
+	return strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
+}
+
 // getSvcFullName returns service name in the format <service-type>/<service-name>
 func getSvcFullName(serviceType, serviceName string) string {
 	return strings.Join([]string{serviceType, serviceName}, "/")
-}
-
-// getServiceBindingName creates a name to be used for creation/deletion of SBR during link/unlink operations
-func getServiceBindingName(componentName, serviceType, serviceName string) string {
-	return strings.Join([]string{componentName, strings.ToLower(serviceType), serviceName}, "-")
-}
-
-// isComponentLinked checks if link with "serviceBindingName" exists in the component's
-// config. It confirms if the component is linked with the service
-func isComponentLinked(serviceBindingName string, links []envinfo.EnvInfoLink) bool {
-	for _, link := range links {
-		if link.Name == serviceBindingName {
-			return true
-		}
-	}
-	return false
 }

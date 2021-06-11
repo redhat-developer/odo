@@ -8,6 +8,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/component/labels"
 )
 
 const (
@@ -175,11 +178,11 @@ func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 	CmdShouldPass("kubectl", "delete", "namespaces", projectName)
 }
 
-func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
-
-	output := CmdShouldPass(kubectl.path, "get", "deployment", componentName, "--namespace", projectName,
-		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
+	output := CmdShouldPass(kubectl.path, "get", "deployment", selector, "--namespace", projectName,
+		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
 
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimPrefix(line, "'")
@@ -234,4 +237,10 @@ func (kubectl KubectlRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 		return len(content) > 0
 	}
 	Expect(deletedOrMarkedToDelete()).To(BeTrue())
+}
+
+// GetAnnotationsDeployment gets the annotations from the deployment
+// belonging to the given component, app and project
+func (kubectl KubectlRunner) GetAnnotationsDeployment(componentName, appName, projectName string) map[string]string {
+	return GetAnnotationsDeployment(kubectl.path, componentName, appName, projectName)
 }

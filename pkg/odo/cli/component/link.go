@@ -38,13 +38,20 @@ var (
 %[1]s backend --component nodejs
 
 # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
-%[1]s backend --port 8080`)
+%[1]s backend --port 8080
+
+# Link the current component to the 'EtcdCluster' named 'myetcd'
+# and make the secrets accessible as files in the '/bindings/etcd/' directory
+%[1]s EtcdCluster/myetcd  --bind-as-files --name etcd`)
 
 	linkLongDesc = `Link component to a service (backed by an Operator or Service Catalog) or component (works only with s2i components)
 
 If the source component is not provided, the current active component is assumed.
 In both use cases, link adds the appropriate secret to the environment of the source component. 
 The source component can then consume the entries of the secret as environment variables.
+
+Using the '--bind-as-files' flag, secrets will be accessible as files instead of environment variables.
+The value of the '--name' flag indicates the name of the directory under '/bindings/' containing the secrets files.
 
 For example:
 
@@ -161,7 +168,8 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to link")
 	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
-
+	linkCmd.PersistentFlags().StringVar(&o.name, "name", "", "Name of the created ServiceBinding resource")
+	linkCmd.PersistentFlags().BoolVar(&o.bindAsFiles, "bind-as-files", false, "If enabled, configuration values will be mounted as files, instead of declared as environment variables")
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag

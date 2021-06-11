@@ -41,7 +41,7 @@ type KubernetesPodStatus struct {
 func (a Adapter) getDeploymentStatus() (*KubernetesDeploymentStatus, error) {
 
 	// 1) Retrieve the deployment
-	deployment, err := a.Client.GetKubeClient().KubeClient.AppsV1().Deployments(a.Client.Namespace).Get(context.TODO(), a.ComponentName, metav1.GetOptions{})
+	deployment, err := a.Client.GetKubeClient().GetOneDeployment(a.ComponentName, a.AppName)
 	if err != nil {
 		klog.V(4).Infof("Unable to retrieve deployment %s in %s ", a.ComponentName, a.Client.Namespace)
 		return nil, err

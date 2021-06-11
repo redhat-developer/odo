@@ -14,7 +14,6 @@ import (
 
 	"github.com/openshift/odo/pkg/storage"
 	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
 )
 
@@ -52,11 +51,11 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 	}
 }
 
-// ComponentExists checks whether a deployment by the given name exists
-func ComponentExists(client kclient.Client, name string) (bool, error) {
-	deployment, err := client.GetDeploymentByName(name)
-	if kerrors.IsNotFound(err) {
-		klog.V(2).Infof("Deployment %s not found", name)
+// ComponentExists checks whether a deployment by the given name exists in the given app
+func ComponentExists(client kclient.Client, name string, app string) (bool, error) {
+	deployment, err := client.GetOneDeployment(name, app)
+	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
+		klog.V(2).Infof("Deployment %s not found for belonging to the %s app ", name, app)
 		return false, nil
 	}
 	return deployment != nil, err

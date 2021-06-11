@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/openshift/odo/pkg/util"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -10,6 +11,8 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
@@ -25,6 +28,12 @@ import (
 func TestGetDeploymentStatus(t *testing.T) {
 
 	testComponentName := "component"
+	testAppName := "app"
+
+	deploymentName, err := util.NamespaceKubernetesObject(testComponentName, testAppName)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	tests := []struct {
 		name                  string
@@ -49,8 +58,12 @@ func TestGetDeploymentStatus(t *testing.T) {
 					APIVersion: kclient.DeploymentAPIVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: testComponentName,
+					Name: deploymentName,
 					UID:  types.UID("deployment-uid"),
+					Labels: map[string]string{
+						componentlabels.ComponentLabel: testComponentName,
+						applabels.ApplicationLabel:     testAppName,
+					},
 				},
 			},
 			replicaSet: v1.ReplicaSetList{
@@ -101,8 +114,12 @@ func TestGetDeploymentStatus(t *testing.T) {
 					APIVersion: kclient.DeploymentAPIVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: testComponentName,
+					Name: deploymentName,
 					UID:  types.UID("deployment-uid"),
+					Labels: map[string]string{
+						componentlabels.ComponentLabel: testComponentName,
+						applabels.ApplicationLabel:     testAppName,
+					},
 				},
 			},
 			replicaSet: v1.ReplicaSetList{
@@ -184,6 +201,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			adapterCtx := adaptersCommon.AdapterContext{
 				ComponentName: testComponentName,
+				AppName:       testAppName,
 				Devfile:       devObj,
 			}
 
@@ -191,7 +209,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Return test case's deployment, when requested
 			fkclientset.Kubernetes.PrependReactor("get", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if getAction, is := action.(ktesting.GetAction); is && getAction.GetName() == testComponentName {
+				if getAction, is := action.(ktesting.GetAction); is && getAction.GetName() == deploymentName {
 					return true, &tt.deployment, nil
 				}
 				return false, nil, nil
@@ -199,7 +217,15 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Return test case's deployment, when requested
 			fkclientset.Kubernetes.PrependReactor("patch", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if patchAction, is := action.(ktesting.PatchAction); is && patchAction.GetName() == testComponentName {
+				if patchAction, is := action.(ktesting.PatchAction); is && patchAction.GetName() == deploymentName {
+					return true, &tt.deployment, nil
+				}
+				return false, nil, nil
+			})
+
+			// Return test case's deployment, when requested
+			fkclientset.Kubernetes.PrependReactor("apply", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if patchAction, is := action.(ktesting.PatchAction); is && patchAction.GetName() == deploymentName {
 					return true, &tt.deployment, nil
 				}
 				return false, nil, nil
@@ -207,11 +233,13 @@ func TestGetDeploymentStatus(t *testing.T) {
 
 			// Return test cases's replicasets, or pods, when requested
 			fkclientset.Kubernetes.PrependReactor("list", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if action.GetResource().Resource == "replicasets" {
+				switch action.GetResource().Resource {
+				case "replicasets":
 					return true, &tt.replicaSet, nil
-				}
-				if action.GetResource().Resource == "pods" {
+				case "pods":
 					return true, &tt.podSet, nil
+				case "deployments":
+					return true, &v1.DeploymentList{Items: []v1.Deployment{tt.deployment}}, nil
 				}
 				return false, nil, nil
 			})

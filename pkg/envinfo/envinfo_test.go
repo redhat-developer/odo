@@ -893,6 +893,75 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 	}
 }
 
+func TestSearchLinkName(t *testing.T) {
+	tests := []struct {
+		name        string
+		ei          *EnvInfo
+		serviceKind string
+		serviceName string
+		want        string
+		wantFound   bool
+	}{
+		{
+			name: "Case 1: Existing link",
+			ei: &EnvInfo{
+				componentSettings: ComponentSettings{
+					Link: &[]EnvInfoLink{
+						{
+							Name:        "a first name",
+							ServiceKind: "a first kind",
+							ServiceName: "a first service name",
+						},
+						{
+							Name:        "a name",
+							ServiceKind: "a kind",
+							ServiceName: "a service name",
+						},
+					},
+				},
+			},
+			serviceKind: "a kind",
+			serviceName: "a service name",
+			want:        "a name",
+			wantFound:   true,
+		},
+		{
+			name: "Case 2: Non existing link",
+			ei: &EnvInfo{
+				componentSettings: ComponentSettings{
+					Link: &[]EnvInfoLink{
+						{
+							Name:        "a first name",
+							ServiceKind: "a first kind",
+							ServiceName: "a first service name",
+						},
+						{
+							Name:        "a name",
+							ServiceKind: "a kind",
+							ServiceName: "a service name",
+						},
+					},
+				},
+			},
+			serviceKind: "an unknown kind",
+			serviceName: "a service name",
+			wantFound:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, found := tt.ei.SearchLinkName(tt.serviceKind, tt.serviceName)
+			if found != tt.wantFound {
+				t.Errorf("Expected found %v, got %v", tt.wantFound, found)
+			}
+			if found && result != tt.want {
+				t.Errorf("Expected %q, got %q", tt.want, result)
+			}
+		})
+	}
+}
+
 func createDirectoryAndFile(create bool, fs filesystem.Filesystem, odoDir string) error {
 	if !create {
 		return nil

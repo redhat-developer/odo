@@ -32,7 +32,7 @@ const (
 // returns true, if the number of containers equals the number of unique devfile container components
 // returns false, if number of containers is zero
 // returns an error, if number of containers is more than zero but does not equal the number of unique devfile container components
-func ComponentExists(client lclient.Client, data data.DevfileData, name string) (bool, error) {
+func ComponentExists(client lclient.Client, data data.DevfileData, name, appName string) (bool, error) {
 	containers, err := GetComponentContainers(client, name)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to get the containers for component %s", name)

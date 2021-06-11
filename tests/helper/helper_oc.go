@@ -10,6 +10,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/component/labels"
 )
 
 const (
@@ -522,11 +525,12 @@ func (oc OcRunner) GetEnvs(componentName string, appName string, projectName str
 	return mapOutput
 }
 
-func (oc OcRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+func (oc OcRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
 
-	output := CmdShouldPass(oc.path, "get", "deployment", componentName, "--namespace", projectName,
-		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
+	output := CmdShouldPass(oc.path, "get", "deployment", selector, "--namespace", projectName,
+		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
 
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimPrefix(line, "'")
@@ -612,7 +616,7 @@ func (oc OcRunner) CreateRandNamespaceProject() string {
 	return projectName
 }
 
-// CreateRandNamespaceProject creates a new project with name of length i
+// CreateRandNamespaceProjectOfLength creates a new project with name of length i
 func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)
 	oc.createRandNamespaceProject(projectName)
@@ -685,4 +689,10 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 // and checks if the given resource type has been deleted on the cluster or is in the terminating state
 func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace string, timeoutMinutes int) bool {
 	return WaitAndCheckForTerminatingState(oc.path, resourceType, namespace, timeoutMinutes)
+}
+
+// GetAnnotationsDeployment gets the annotations from the deployment
+// belonging to the given component, app and project
+func (oc OcRunner) GetAnnotationsDeployment(componentName, appName, projectName string) map[string]string {
+	return GetAnnotationsDeployment(oc.path, componentName, appName, projectName)
 }

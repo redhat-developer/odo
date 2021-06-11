@@ -12,9 +12,8 @@
 > /kind flake
 > /kind code-refactoring
 >
-> Documentation changes: Please include [skip ci] in your commit message as well
+> Documentation changes: CI will automatically skip test runs if it is a doc related change.
 > /kind documentation
-> [skip ci]
 
 **What does this PR do / why we need it**:
 

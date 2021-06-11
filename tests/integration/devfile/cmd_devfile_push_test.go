@@ -88,8 +88,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
+			helper.CmdShouldPass("git", "init")
+			remote := "origin"
+			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
+			helper.CmdShouldPass("git", "remote", "add", remote, remoteURL)
+
 			output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
+			var valueFound bool
+			for key, value := range annotations {
+				if key == "app.openshift.io/vcs-uri" && value == remoteURL {
+					valueFound = true
+				}
+			}
+			Expect(valueFound).To(BeTrue())
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
@@ -601,10 +615,13 @@ var _ = Describe("odo devfile push command tests", func() {
 			)
 			Expect(statErr).ToNot(HaveOccurred())
 
+			deploymentName, err := util.NamespaceKubernetesObject(cmpName, "app")
+			Expect(err).To(BeNil())
+
 			volumesMatched := false
 
 			// check the volume name and mount paths for the containers
-			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", commonVar.Project)
+			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(deploymentName, "runtime", commonVar.Project)
 			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
 			for _, volNamesAndPath := range volNamesAndPathsArr {
 				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
@@ -1008,7 +1025,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		var freePort int
 		var parentTmpFolder string
 
-		var _ = BeforeSuite(func() {
+		var _ = BeforeEach(func() {
 			// get a free port
 			var err error
 			freePort, err = util.HTTPGetFreePort()
@@ -1027,7 +1044,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.HttpWaitFor("http://localhost:"+strconv.Itoa(freePort), "devfile", 10, 1)
 		})
 
-		var _ = AfterSuite(func() {
+		var _ = AfterEach(func() {
 			helper.DeleteDir(parentTmpFolder)
 			err := server.Close()
 			Expect(err).To(BeNil())
@@ -1048,9 +1065,9 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should handle a parent and override/append it's envs", func() {
-			utils.ExecPushWithParentOverride(commonVar.Context, cmpName, commonVar.Project, freePort)
+			utils.ExecPushWithParentOverride(commonVar.Context, cmpName, "app", commonVar.Project, freePort)
 
-			envMap := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, commonVar.Project)
+			envMap := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, "app", commonVar.Project)
 
 			value, ok := envMap["ODO_TEST_ENV_0"]
 			Expect(ok).To(BeTrue())
@@ -1062,13 +1079,13 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should handle a multi layer parent", func() {
-			utils.ExecPushWithMultiLayerParent(commonVar.Context, cmpName, commonVar.Project, freePort)
+			utils.ExecPushWithMultiLayerParent(commonVar.Context, cmpName, "app", commonVar.Project, freePort)
 
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 			listDir := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/project")
 			helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
 
-			envMap := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, commonVar.Project)
+			envMap := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, "app", commonVar.Project)
 
 			value, ok := envMap["ODO_TEST_ENV_1"]
 			Expect(ok).To(BeTrue())
