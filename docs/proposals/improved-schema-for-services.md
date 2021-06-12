@@ -46,7 +46,7 @@ So this needs to be cached and refreshed whenever a new operator is installed.
 
 The caching would be per cluster as the `swagger.json` would change for different clusters. The approach would be as follows -
 
-- when the users executes `odo catalog list services`, if there is no cache then we would fetch the `swagger.json`, odo wouldn't exit until download. 
+- when the users executes `odo catalog list services`, if there is no cache then we would fetch the `swagger.json`, odo wouldn't exit until download. We will show the user "Downloading service information from the cluster ........" while the swagger is downloaded. Also if we the feedback after releasing that the experience is not great then we will consider a non-blocking approach where the user doesn't have to wait the swagger to be downloaded. We aren't doing that for the beginning because non-blocking approach has some more complexities which might not be needed.
 - we would store the `swagger.json` in the `~/.odo` as `<cluster-url>-swagger.json` to avoid conflicts.
 - We would also create a `operator-listing-cache.json` in the `~/.odo` which would hold a key value mapping of `cluser-url` => `hash of the latest "odo catalog list services"`.
 - now when the user runs `odo catalog list services` we would check if there is a cache present, if there is then it would compare the hash of the current `odo catalog list services` for the cluster with the one present in `operator-listing-cache.json`. If its different we redownload the swagger.json and update the hash of `odo catalog list services` in `operator-listing-cache.json`.
@@ -137,7 +137,7 @@ The current approach of sending map values via cli are as follows -
 - we optimistically try to convert the type of param values in the below order
     - try to parse as integer, if it goes through then we assume it as an integer
     - try to parse as a float and if it goes through the we assume the value as float
-    - try to parse as a boolean
+    - try to parse as a boolean and if goes through then we assume the value as boolean
     - then everything else becomes string.
 
 Sample - `odo service create servicebinding.coreos.io/Servicebinding/<version> -p  "services[0].envVarPrefix"="SVC" -p "services[0].namespace"="openshift"`
