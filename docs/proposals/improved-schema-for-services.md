@@ -2,15 +2,15 @@
 # Improved schema for operator backed services
 
 This proposal is about improving the experience for a user of the operator backed services. Currently a user doesn't know exaustively which fields are available in a CR as we depend on optional metadata present in CRDs, to improve this we are considering using the metadata available from the cluster about the CRDs.
-Getting that metadata from the cluster is challenging because a normal cluster user ( plain vanilla ) doesn't have access to that metadata so we are gonna follow a 3 tiered approach
+Getting that metadata from the cluster is challenging because a normal cluster user (which is a normal user in vanilla k8s or non-admin admin user for openshift) doesn't have access to that metadata so we are gonna follow a 3 tiered approach
 
-- check if the user has access to the CRD, if so then use that.
+- check if the user has access to the CRD, if so then use that. The reason we are doing this is because a non-admin user can still have access to CRDs because they might be given explict permissions by the admin.
 - get the `swagger.json` from the openapi endpoint provided by kubernetes. a sample can be found here https://gist.github.com/girishramnani/f29949d5cb8c6547102776437e05ac19
 - finally if we cannot get the openapi data as well then use the `ClusterServiceVersion` to get the parameters.
 
 This change would affect multiple service commands and the changes are described briefly below -
 - `odo catalog describe service` should include the metadata fields with description so the users can provide then when doing `odo service create`. 
-- `odo catalog list service` shouldn't change much other then listing CRDs per operator
+- `odo catalog list service` wouldn't change at all.
 - `odo service create` should take flags and dynamically fill the CRD structs - metadata would be used for validation
 - `odo service create --from-file` would be used by adapter team or whoever wants to provide the whole CRD themselves as a file. this feature is already present and working.
 - `json` output for all commands.
@@ -18,8 +18,14 @@ This change would affect multiple service commands and the changes are described
 # Implementation plan
 
 Note - Below I would mention `cluster` manytimes and that means both openshift and kuberenetes. If there is something specific to one or the other then I would mention it.
+The actually order in which these features would be implemented in odo would as follows -
 
-Below is the step wise plan for implementing this feature - 
+- [ ] `ClusterServiceVersion` approach 
+- [ ] using `swagger.json` to get `openAPIv3schema`
+- [ ] admin-only approach of using `CRD` api from the cluster.
+
+
+Below explains the flow, that is how the code would get executed - 
 
 ## Getting the metadata
 
@@ -34,7 +40,7 @@ We care about the `openAPIV3Schema` as that would be used to build the CRD struc
 
 ### Kuberenetes cluster Swagger has the schema
 
-If the user doesn't have CRD access then we fetch try to fetch the same `openAPIV3Schema` from the cluster's `swagger.json` from the endpoint `<cluster-url>/api/kubernetes/openapi/v2`. This is a very large document as it holds all the definitions present on the cluster.
+If the user doesn't have CRD access or that portion is not implemented yet then we fetch try to fetch the same `openAPIV3Schema` from the cluster's `swagger.json` from the endpoint `<cluster-url>/api/kubernetes/openapi/v2`. This is a very large document as it holds all the definitions present on the cluster.
 
 So this needs to be cached and refreshed whenever a new operator is installed.
 
@@ -48,7 +54,7 @@ The caching would be per cluster as the `swagger.json` would change for differen
 
 ### Fetch ClusterServiceVersion to generate the information
 
-If none of the above approaches work, we finally fallback to getting the information from `ClusterServiceVersion`
+If none of the above approaches work or are not implemented yet then we fallback to getting the information from `ClusterServiceVersion`
 
 We generate the description in this approach based on `spec.customresourcedefinitions` present in the ClusterServiceVersion.
 This CRD def is different from what is provided by the `CustomResourceDefinition` as it has less information.
@@ -393,10 +399,6 @@ Note - removed `description` fields to make the sample concise.
 ### User has access to ClusterServiceVersion
 
 The approach is to go through the keys provided by the user against the ones present in the ClusterServiceVersion's CRDDescription. if the user has provided parameters which aren't present in the Description ( SpecDescriptors ) then we show an error with all the parameters that are incorrectly provided.
-
-## "odo catalog list services"
-
-- We need to show the different versions for the service when you execute `odo catalog list services`. it already shows the `Operators` and the respective CRs they provide for the user to `describe` on.
 
 ## "odo catalog describe service"
 
