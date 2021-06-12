@@ -402,6 +402,26 @@ The approach is to go through the keys provided by the user against the ones pre
 
 ## "odo catalog describe service"
 
+The json output for all the approaches below would be -
+
+```
+{
+  "kind": ...
+
+  "spec":[
+    {
+      "fieldPath": "zookeeper.resources.limit.min",
+      "displayName": "Limit Min",
+      "Description": "<description>",
+      "type":"string"
+    },
+    ....
+  ],
+}
+
+```
+Note - this is not "openAPIv3schema" format.
+
 ### Approach where user has access to the CustomResourceDefinition
 `odo catalog service describe strimzi-cluster-operator.v0.21.1/Kafka -o json` would show a flat converted version of `openAPIv3schema` with same structure as `ClusterServiceVersion` with an extra addition of `type` information being present.
 
@@ -431,7 +451,8 @@ For human readable output a non tablular approach would be used.
    ...
 
 ```
- 
+
+
 
 ## "odo service create"
 
