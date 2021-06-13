@@ -252,7 +252,7 @@ personal access token.
 
 == Licenses
 
-`odo` uses link:https://github.com/frapposelli/wwhrd[wwhrd] to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in link:https://github.com/openshift/odo/blob/master/.wwhrd.yml[`.wwhrd.yml`].
+`odo` uses link:https://github.com/frapposelli/wwhrd[wwhrd] to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in link:https://github.com/openshift/odo/blob/main/.wwhrd.yml[`.wwhrd.yml`].
 
 The `whitelist` section is for licenses that are always allowed. The `blacklist` section is for licenses that are never allowed and will always fail a build. Any licenses that are not explicitly mentioned come under the `exceptions` section and need to be explicitly allowed by adding the import path to the exceptions.
 

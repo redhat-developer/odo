@@ -193,71 +193,6 @@ func TestClientUploadWithConsent(t *testing.T) {
 	}
 }
 
-func TestSetError(t *testing.T) {
-	user, err := user.Current()
-	if err != nil {
-		t.Error(err.Error())
-	}
-	unixPath := "/home/xyz/.odo/preference.yaml"
-	windowsPath := "C:\\User\\XYZ\\preference.yaml"
-
-	tests := []struct {
-		name   string
-		err    error
-		hasPII bool
-	}{
-		{
-			name:   "no PII information",
-			err:    errors.New("this is an error string"),
-			hasPII: false,
-		},
-		{
-			name:   "username",
-			err:    fmt.Errorf("cannot create component name with %s", user.Username),
-			hasPII: true,
-		},
-		{
-			name:   "filepath-unix",
-			err:    fmt.Errorf("cannot find the preference file at %s", unixPath),
-			hasPII: true,
-		},
-		{
-			name:   "filepath-windows",
-			err:    fmt.Errorf("cannot find the preference file at %s", windowsPath),
-			hasPII: true,
-		},
-	}
-
-	for _, tt := range tests {
-		if tt.name == "filepath-windows" && os.Getenv("GOOS") != "windows" {
-			t.Skip("Cannot run windows test on a unix system")
-		} else if tt.name == "filepath-unix" && os.Getenv("GOOS") != "linux" {
-			t.Skip("Cannot run unix test on a windows system")
-		}
-		var want string
-		got := SetError(tt.err)
-
-		// if error has PII, string returned by SetError must not be the same as the error since it was sanitized
-		// else it will be the same.
-		if (tt.hasPII && got == tt.err.Error()) || (!tt.hasPII && got != tt.err.Error()) {
-			if tt.hasPII {
-				switch tt.name {
-				case "username":
-					want = strings.ReplaceAll(tt.err.Error(), user.Username, Sanitizer)
-				case "filepath-unix":
-					want = strings.ReplaceAll(tt.err.Error(), unixPath, Sanitizer)
-				case "filepath-windows":
-					want = strings.ReplaceAll(tt.err.Error(), windowsPath, Sanitizer)
-				default:
-				}
-				t.Errorf("got: %q, want: %q", got, want)
-			} else {
-				t.Errorf("got: %s, want: %s", got, tt.err.Error())
-			}
-		}
-	}
-}
-
 func TestIsTelemetryEnabled(t *testing.T) {
 	tests := []struct {
 		errMesssage, envVar   string
@@ -366,6 +301,117 @@ func TestClientUploadWithContext(t *testing.T) {
 		default:
 			t.Error("Server should receive some data")
 		}
+	}
+}
+
+func TestSetError(t *testing.T) {
+	user, err := user.Current()
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	tests := []struct {
+		err    error
+		hasPII bool
+	}{
+		{
+			err:    errors.New("this is an error string"),
+			hasPII: false,
+		},
+		{
+			err:    fmt.Errorf("failed to execute devfile commands for component %s-comp. failed to Get https://my-cluster.project.local cannot run exec command [curl https://mycluster.domain.local -u foo -p password 123]", user.Username),
+			hasPII: true,
+		},
+	}
+
+	for _, tt := range tests {
+		var want string
+		got := SetError(tt.err)
+
+		// if error has PII, string returned by SetError must not be the same as the error since it was sanitized
+		// else it will be the same.
+		if tt.hasPII {
+			want = fmt.Sprintf("failed to execute devfile commands for component %s-comp. failed to Get %s cannot run exec command %s", Sanitizer, Sanitizer, Sanitizer)
+		} else {
+			want = tt.err.Error()
+		}
+		if got != want {
+			t.Errorf("got: %q\nwant:%q", got, want)
+		}
+
+	}
+}
+
+func Test_sanitizeExec(t *testing.T) {
+	err := fmt.Errorf("unable to execute the run command: unable to exec command [curl -K localhost:8080 -u user1 -p pwd123]")
+	got := sanitizeExec(err.Error())
+	want := fmt.Sprintf("unable to execute the run command: unable to exec command %s", Sanitizer)
+	if got != want {
+		t.Errorf("got: %q\nwant:%q", got, want)
+	}
+}
+
+func Test_sanitizeURL(t *testing.T) {
+	cases := []error{
+		fmt.Errorf("resource project validation check failed.: Get https://my-cluster.project.local request cancelled"),
+		fmt.Errorf("resource project validation check failed.: Get http://my-cluster.project.local request cancelled"),
+		fmt.Errorf("resource project validation check failed.: Get http://192.168.0.1:6443 request cancelled"),
+		fmt.Errorf("resource project validation check failed.: Get 10.18.25.1 request cancelled"),
+		fmt.Errorf("resource project validation check failed.: Get www.sample.com request cancelled"),
+	}
+
+	for _, err := range cases {
+		got := sanitizeURL(err.Error())
+		want := fmt.Sprintf("resource project validation check failed.: Get %s request cancelled", Sanitizer)
+		if got != want {
+			t.Errorf("got: %q\nwant:%q", got, want)
+		}
+	}
+}
+
+func Test_sanitizeFilePath(t *testing.T) {
+	unixPath := "/home/xyz/.odo/preference.yaml"
+	windowsPath := "C:\\User\\XYZ\\preference.yaml"
+
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "filepath-unix",
+			err:  fmt.Errorf("cannot find the preference file at %s", unixPath),
+		},
+		{
+			name: "filepath-windows",
+			err:  fmt.Errorf("cannot find the preference file at %s", windowsPath),
+		},
+	}
+	for _, tt := range cases {
+		if tt.name == "filepath-windows" && os.Getenv("GOOS") != "windows" {
+			t.Skip("Cannot run a windows test on a unix system")
+		} else if tt.name == "filepath-unix" && os.Getenv("GOOS") != "linux" {
+			t.Skip("Cannot run a unix test on a windows system")
+		}
+
+		got := sanitizeFilePath(tt.err.Error())
+		want := fmt.Sprintf("cannot find the preference file at %s", Sanitizer)
+		if got != want {
+			t.Errorf("got: %q\nwant:%q", got, want)
+		}
+	}
+}
+
+func Test_sanitizeUserInfo(t *testing.T) {
+	user, err1 := user.Current()
+	if err1 != nil {
+		t.Error(err1.Error())
+	}
+
+	err := fmt.Errorf("cannot create component name with %s", user.Username)
+	got := sanitizeUserInfo(err.Error())
+	want := fmt.Sprintf("cannot create component name with %s", Sanitizer)
+	if got != want {
+		t.Errorf("got: %q\nwant:%q", got, want)
 	}
 }
 

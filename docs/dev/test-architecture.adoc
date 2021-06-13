@@ -30,7 +30,7 @@ The tests are written in golang using the https://golang.org/pkg/testing/[pkg/te
 . Initialize the fake client along with the relevant client sets.
 The following example explains the initialization of fake clients and the creation of fake objects.
 +
-The function `GetImageStreams` in https://github.com/openshift/odo/blob/master/pkg/occlient/occlient.go[`pkg/occlient.go`] fetches imagestream objects through the API:
+The function `GetImageStreams` in https://github.com/openshift/odo/blob/main/pkg/occlient/occlient.go[`pkg/occlient.go`] fetches imagestream objects through the API:
 +
 [source,go]
 ----
@@ -81,7 +81,7 @@ func (c *FakeImageStreams) List(opts v1.ListOptions) (result *image_v1.ImageStre
 The `List` function internally calls `NewListAction` defined in link:https://github.com/kubernetes/client-go/blob/master/testing/actions.go[`k8s.io/client-go/testing/actions.go`].
 From these functions, we see that the `resource` and `verb` to be passed into the `PrependReactor` interface are `imagestreams` and `list` respectively.
 +
-You can see the entire test function `TestGetImageStream` in link:https://github.com/openshift/odo/blob/master/pkg/occlient/occlient_test.go[`pkg/occlient/occlient_test.go`].
+You can see the entire test function `TestGetImageStream` in link:https://github.com/openshift/odo/blob/main/pkg/occlient/occlient_test.go[`pkg/occlient/occlient_test.go`].
 +
 NOTE: You can use environment variable `CUSTOM_HOMEDIR` to specify a custom home directory. It can be used in environments where a user and home directory are not resolvable.
 
@@ -134,7 +134,7 @@ E2e (End to end) uses the same library as integration test. E2e tests and test s
 
 *How to write:*
 
-Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/tests/template/template_cleantest_test.go[`template`].
+Refer to the odo clean test link:https://github.com/openshift/odo/blob/main/tests/template/template_cleantest_test.go[`template`].
 
 *Test guidelines:*
 
@@ -313,7 +313,7 @@ NOTE: To see the number of available integration test file for validation, press
 
 *Running integration tests on Kubernetes:*
 
-By default, the link:https://github.com/openshift/odo/tree/main/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
+By default, the link:https://github.com/openshift/odo/tree/main/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/main/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
 
 The tests are run against the `odo` binary placed in the PATH which is created by the command `make`. Integration tests can be run in two ways (parallel and sequential). To control the parallel run use environment variable `TEST_EXEC_NODES`. For example, the devfile tests can be run
 

@@ -2,6 +2,7 @@ package labels
 
 import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // ComponentLabel is a label key used to identify the component name
@@ -21,4 +22,9 @@ func GetLabels(componentName string, applicationName string, additional bool) ma
 	labels := applabels.GetLabels(applicationName, additional)
 	labels[ComponentLabel] = componentName
 	return labels
+}
+
+// GetSelector are supposed to be used for selection of resources which are a part of the given component
+func GetSelector(componentName string, applicationName string) string {
+	return util.ConvertLabelsToSelector(GetLabels(componentName, applicationName, false))
 }

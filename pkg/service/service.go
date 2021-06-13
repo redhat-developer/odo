@@ -860,7 +860,7 @@ func CreateServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComp
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
 				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
 				err = nil
-				break // this ensures that services slice is not updated
+				continue // this ensures that services slice is not updated
 			} else {
 				return []string{}, err
 			}

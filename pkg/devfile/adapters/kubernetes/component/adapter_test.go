@@ -2,6 +2,7 @@ package component
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -14,6 +15,8 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentLabels "github.com/openshift/odo/pkg/component/labels"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
@@ -32,6 +35,7 @@ import (
 func TestCreateOrUpdateComponent(t *testing.T) {
 
 	testComponentName := "test"
+	testAppName := "app"
 	deployment := v1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       kclient.DeploymentKind,
@@ -39,6 +43,10 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testComponentName,
+			Labels: map[string]string{
+				applabels.ApplicationLabel:     testAppName,
+				componentLabels.ComponentLabel: testComponentName,
+			},
 		},
 	}
 
@@ -104,6 +112,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 			adapterCtx := adaptersCommon.AdapterContext{
 				ComponentName: testComponentName,
+				AppName:       testAppName,
 				Devfile:       devObj,
 			}
 
@@ -240,6 +249,7 @@ func TestDoesComponentExist(t *testing.T) {
 		name             string
 		componentType    devfilev1.ComponentType
 		componentName    string
+		appName          string
 		getComponentName string
 		envInfo          envinfo.EnvSpecificInfo
 		want             bool
@@ -248,6 +258,7 @@ func TestDoesComponentExist(t *testing.T) {
 		{
 			name:             "Case 1: Valid component name",
 			componentName:    "test-name",
+			appName:          "app",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             true,
@@ -256,6 +267,7 @@ func TestDoesComponentExist(t *testing.T) {
 		{
 			name:             "Case 2: Non-existent component name",
 			componentName:    "test-name",
+			appName:          "app",
 			getComponentName: "fake-component",
 			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             false,
@@ -264,6 +276,7 @@ func TestDoesComponentExist(t *testing.T) {
 		{
 			name:             "Case 3: Error condition",
 			componentName:    "test-name",
+			appName:          "app",
 			getComponentName: "test-name",
 			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             false,
@@ -292,6 +305,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			adapterCtx := adaptersCommon.AdapterContext{
 				ComponentName: tt.componentName,
+				AppName:       tt.appName,
 				Devfile:       devObj,
 			}
 
@@ -324,21 +338,21 @@ func TestDoesComponentExist(t *testing.T) {
 				t.Errorf("component adapter start unexpected error %v", err)
 			}
 
-			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fkclientset.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
 				deployment := odoTestingUtil.CreateFakeDeployment(tt.getComponentName)
 
 				if tt.wantErr {
-					return true, emptyDeployment, errors.Errorf("deployment get error")
+					return true, &v1.DeploymentList{Items: []v1.Deployment{*emptyDeployment}}, errors.Errorf("deployment get error")
 				} else if tt.getComponentName == tt.componentName {
-					return true, deployment, nil
+					return true, &v1.DeploymentList{Items: []v1.Deployment{*deployment}}, nil
 				}
 
-				return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+				return true, &v1.DeploymentList{Items: []v1.Deployment{}}, nil
 			})
 
 			// Verify that a component with the specified name exists
-			componentExists, err := componentAdapter.DoesComponentExist(tt.getComponentName)
+			componentExists, err := componentAdapter.DoesComponentExist(tt.getComponentName, "")
 			if !tt.wantErr && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else if !tt.wantErr && componentExists != tt.want {
@@ -579,4 +593,79 @@ func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Comma
 		},
 	}
 
+}
+
+func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
+	namespacedKubernetesName, err := util.NamespaceKubernetesObject("nodejs", "app")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	type fields struct {
+		componentName string
+		appName       string
+		deployment    *v1.Deployment
+	}
+	type args struct {
+		labels map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    metav1.ObjectMeta
+		wantErr bool
+	}{
+		{
+			name: "case 1: deployment exists",
+			fields: fields{
+				componentName: "nodejs",
+				appName:       "app",
+				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs"),
+			},
+			args: args{
+				labels: odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+			},
+			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
+			wantErr: false,
+		},
+		{
+			name: "case 2: deployment doesn't exists",
+			fields: fields{
+				componentName: "nodejs",
+				appName:       "app",
+				deployment:    nil,
+			},
+			args: args{
+				labels: odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+			},
+			want:    generator.GetObjectMeta(namespacedKubernetesName, "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, _ := occlient.FakeNew()
+			fakeClient.Namespace = "project-0"
+
+			a := Adapter{
+				Client: *fakeClient,
+				GenericAdapter: &adaptersCommon.GenericAdapter{
+					AdapterContext: adaptersCommon.AdapterContext{
+						ComponentName: tt.fields.componentName,
+						AppName:       tt.fields.appName,
+					},
+				},
+				deployment: tt.fields.deployment,
+			}
+			got, err := a.generateDeploymentObjectMeta(tt.args.labels)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("generateDeploymentObjectMeta() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

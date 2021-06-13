@@ -80,6 +80,33 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			stdOut = helper.CmdShouldFail("odo", "service", "create")
 			Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
 		})
+
+		It("should successfully push a second service after a first service is deployed", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs")
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+
+			// create a first service
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "myetcd1", "--project", commonVar.Project)
+			Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
+
+			// deploy it
+			helper.CmdShouldPass("odo", "push")
+			stdOut = helper.CmdShouldPass("odo", "service", "list")
+			Expect(stdOut).To(ContainSubstring("EtcdCluster/myetcd1"))
+
+			// create a second service
+			stdOut = helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "myetcd2", "--project", commonVar.Project)
+			Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
+
+			// deploy it
+			helper.CmdShouldPass("odo", "push")
+			stdOut = helper.CmdShouldPass("odo", "service", "list")
+			// first service still here
+			Expect(stdOut).To(ContainSubstring("EtcdCluster/myetcd1"))
+			// second service created
+			Expect(stdOut).To(ContainSubstring("EtcdCluster/myetcd2"))
+		})
 	})
 
 	Context("When creating and deleting an operator backed service", func() {
