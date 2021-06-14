@@ -81,8 +81,7 @@ func (c *Client) GetOneRouteFromSelector(selector string) (*routev1.Route, error
 		return nil, err
 	}
 
-	num := len(routes)
-	if num == 0 {
+	if num := len(routes); num == 0 {
 		return nil, fmt.Errorf("no ingress was found for the selector: %v", selector)
 	} else if num > 1 {
 		return nil, fmt.Errorf("multiple ingresses exist for the selector: %v. Only one must be present", selector)

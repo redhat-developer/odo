@@ -132,20 +132,23 @@ func (k kubernetesClient) List() (URLList, error) {
 // Delete deletes the URL with the given name and kind
 func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) error {
 	selector := util.ConvertLabelsToSelector(urlLabels.GetLabels(name, k.componentName, k.appName, false))
-	if kind == localConfigProvider.INGRESS {
+
+	switch kind {
+	case localConfigProvider.INGRESS:
 		ingress, err := k.client.GetKubeClient().GetOneIngressFromSelector(selector)
 		if err != nil {
 			return err
 		}
 		return k.client.GetKubeClient().DeleteIngress(ingress.Name)
-	} else if kind == localConfigProvider.ROUTE {
+	case localConfigProvider.ROUTE:
 		route, err := k.client.GetOneRouteFromSelector(selector)
 		if err != nil {
 			return err
 		}
 		return k.client.DeleteRoute(route.Name)
+	default:
+		return fmt.Errorf("url type is not supported")
 	}
-	return fmt.Errorf("url type is not supported")
 }
 
 // Create creates a route or ingress based on the given URL
@@ -194,9 +197,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 			if err != nil {
 				return "", errors.Wrap(err, "unable to get the provided secret: "+url.Spec.TLSSecret)
 			}
-		}
-
-		if len(url.Spec.TLSSecret) == 0 {
+		} else {
 			// get the default secret
 			defaultTLSSecretName := k.componentName + "-tlssecret"
 			_, err := k.client.GetKubeClient().GetSecret(defaultTLSSecretName, k.client.Namespace)

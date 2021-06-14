@@ -51,8 +51,7 @@ func (c *Client) GetOneIngressFromSelector(selector string) (*extensionsv1.Ingre
 		return nil, err
 	}
 
-	num := len(ingresses)
-	if num == 0 {
+	if num := len(ingresses); num == 0 {
 		return nil, fmt.Errorf("no ingress was found for the selector: %v", selector)
 	} else if num > 1 {
 		return nil, fmt.Errorf("multiple ingresses exist for the selector: %v. Only one must be present", selector)
