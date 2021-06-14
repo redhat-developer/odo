@@ -480,6 +480,62 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			wantErr:                 false,
 		},
 		{
+			name:         "Case: custom debug command with DEBUG_PORT env already set",
+			runCommand:   emptyString,
+			debugCommand: "customdebugcommand",
+			debugPort:    3000,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env: []corev1.EnvVar{
+						{
+							Name:  "DEBUG_PORT",
+							Value: "5858",
+						},
+					},
+				},
+			},
+			execCommands: []devfilev1.Command{
+				{
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &execRunGroup,
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+				{
+					Id: "customdebugcommand",
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &execDebugGroup,
+								},
+							},
+							CommandLine: debugCommand,
+							Component:   component,
+							WorkingDir:  workDir,
+							Env:         []devfilev1.EnvVar{},
+						},
+					},
+				},
+			},
+			componentType:           devfilev1.ContainerComponentType,
+			expectDebugCommand:      debugCommand,
+			expectRunCommand:        command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
 			name:         "Case: wrong custom debug command",
 			runCommand:   emptyString,
 			debugCommand: "customdebugcommand123",
