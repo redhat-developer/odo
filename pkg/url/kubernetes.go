@@ -281,6 +281,9 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	// Pass in the namespace name, link to the service (componentName) and labels to create a route
 	route, err := k.client.CreateRoute(routeName, serviceName, intstr.FromInt(url.Spec.Port), labels, url.Spec.Secure, url.Spec.Path, ownerReference)
 	if err != nil {
+		if kerrors.IsAlreadyExists(err) {
+			return "", fmt.Errorf("url named %q already exists in the same app named %q", url.Name, k.appName)
+		}
 		return "", errors.Wrap(err, "unable to create route")
 	}
 	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", true), nil
