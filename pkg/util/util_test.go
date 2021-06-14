@@ -2684,3 +2684,46 @@ func TestGetGitOriginPath(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertLabelsToSelector(t *testing.T) {
+	cases := []struct {
+		labels map[string]string
+		want   string
+	}{
+		{
+			labels: map[string]string{
+				"app":                                  "app",
+				"app.kubernetes.io/managed-by":         "odo",
+				"app.kubernetes.io/managed-by-version": "v2.1",
+			},
+			want: "app=app,app.kubernetes.io/managed-by=odo,app.kubernetes.io/managed-by-version=v2.1",
+		},
+		{
+			labels: map[string]string{
+				"app":                                  "app",
+				"app.kubernetes.io/managed-by":         "!odo",
+				"app.kubernetes.io/managed-by-version": "4.8",
+			},
+			want: "app=app,app.kubernetes.io/managed-by!=odo,app.kubernetes.io/managed-by-version=4.8",
+		},
+		{
+			labels: map[string]string{
+				"app.kubernetes.io/managed-by": "odo",
+			},
+			want: "app.kubernetes.io/managed-by=odo",
+		},
+		{
+			labels: map[string]string{
+				"app.kubernetes.io/managed-by": "!odo",
+			},
+			want: "app.kubernetes.io/managed-by!=odo",
+		},
+	}
+
+	for _, tt := range cases {
+		got := ConvertLabelsToSelector(tt.labels)
+		if got != tt.want {
+			t.Errorf("got: %q\nwant:%q", got, tt.want)
+		}
+	}
+}
