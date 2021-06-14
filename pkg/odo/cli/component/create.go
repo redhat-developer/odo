@@ -844,16 +844,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 	}
 	// Add component type in case it is not already added or is empty
 	if value, ok := scontext.GetContextProperties(cmd.Context())[scontext.ComponentType]; !ok || value == "" {
-		metadata := devObj.Data.GetMetadata()
-		var componentType string
-		if metadata.ProjectType != "" {
-			componentType = metadata.ProjectType
-		} else if metadata.Language != "" {
-			componentType = metadata.Language
-		} else {
-			componentType = metadata.Name
-		}
-		scontext.SetComponentType(cmd.Context(), componentType)
+		scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(devObj.Data.GetMetadata()))
 	}
 	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {

@@ -2,6 +2,7 @@ package component
 
 import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
@@ -90,4 +91,17 @@ func (co *CreateOptions) DevfileJSON() error {
 	}
 	machineoutput.OutputSuccess(cfd.GetComponent())
 	return nil
+}
+
+// GetComponentTypeFromDevfile returns component type from the devfile metadata
+func GetComponentTypeFromDevfile(metadata devfile.DevfileMetadata) string {
+	var componentType string
+	if metadata.ProjectType != "" {
+		componentType = metadata.ProjectType
+	} else if metadata.Language != "" {
+		componentType = metadata.Language
+	} else {
+		componentType = metadata.Name
+	}
+	return componentType
 }
