@@ -30,6 +30,8 @@ const (
 	runCommandID = "s2i-run"
 	// run command to be used in s2i devfile
 	runCommandS2i = "/opt/odo/bin/run"
+	// debug command id to be used in devfile
+	debugCommandID = "s2i-debug"
 	// ContainerName is component name to be used in devfile
 	ContainerName = "s2i-builder"
 	// DefaultSourceMappingS2i is the directory to sync s2i source code
@@ -209,8 +211,26 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 			},
 		},
 	}
+
+	debugCommand := devfilev1.Command{
+		Id: debugCommandID,
+		CommandUnion: devfilev1.CommandUnion{
+			Exec: &devfilev1.ExecCommand{
+				Component:   ContainerName,
+				CommandLine: runCommandS2i,
+				LabeledCommand: devfilev1.LabeledCommand{
+					BaseCommand: devfilev1.BaseCommand{
+						Group: &devfilev1.CommandGroup{
+							Kind:      devfilev1.DebugCommandGroupKind,
+							IsDefault: true,
+						},
+					},
+				},
+			},
+		},
+	}
 	// Ignoring error as we are writing new file
-	_ = d.AddCommands([]devfilev1.Command{buildCommand, runCommand})
+	_ = d.AddCommands([]devfilev1.Command{buildCommand, runCommand, debugCommand})
 
 }
 

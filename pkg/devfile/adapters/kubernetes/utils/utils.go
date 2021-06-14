@@ -208,6 +208,17 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 						Name:  adaptersCommon.EnvDebugPort,
 						Value: strconv.Itoa(devfileDebugPort),
 					})
+			} else {
+				// if the env has the debug port but if its value is different then we change it
+				// this way the value of env info is given more importance then whats there on the devfile
+				for i, envVar := range container.Env {
+					if envVar.Name == adaptersCommon.EnvDebugPort {
+						if envVar.ValueFrom == nil && (envVar.Value != strconv.Itoa(devfileDebugPort)) {
+							container.Env[i].Value = strconv.Itoa(devfileDebugPort)
+							break
+						}
+					}
+				}
 			}
 		}
 	}
