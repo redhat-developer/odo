@@ -7,17 +7,10 @@ shout() {
 }
 
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
-mkdir -p go/bin artifacts
-# Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
-# for eg go get ginkgo later on will produce ginkgo binary in GOBIN
-export GOPATH="`pwd`/go"
+export HOME=`pwd`/home
+export GOPATH="`pwd`/home/go"
 export GOBIN="$GOPATH/bin"
-
-# Set kubeconfig to current dir. This ensures no clashes with other test runs
-export KUBECONFIG="`pwd`/config"
-export ARTIFACTS_DIR="`pwd`/artifacts"
-export HOME="`pwd`/home"
-
+mkdir -p $GOBIN
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
