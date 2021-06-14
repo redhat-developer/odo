@@ -458,8 +458,8 @@ For human readable output a non tablular approach would be used.
 
 For any scenerio the user would provide the parameters in flat format i.e. `odo service create -p zookeeper.storage.type=ephemeral`. We would build the full parameters map using these flat key values then in case of `openapiv3schema`, validate it against the jsonschema. For `ClusterServiceVersion` we already have the flat path values so we validate them before building the parameters map.
 
-### --input-file flag
+### --from-file flag
 
-Input file would work as it does now with just a difference where we would validate the file against the jsonschema using the validator implemented.
+`from-file` would work as it does now with just a difference where we would validate the file against the jsonschema using the validator implemented.
 
 
