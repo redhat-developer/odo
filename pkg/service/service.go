@@ -943,15 +943,15 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 	}
 
 	if len(created) == 1 {
-		log.Infof("Created service %q on the cluster; refer %q to know how to link it to the component", created[0], "odo link -h")
+		log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", created[0], "odo link -h")
 	} else if len(created) > 1 {
-		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(created, ", "), "odo link -h")
+		log.Successf("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(created, ", "), "odo link -h")
 	}
 
 	if len(deleted) == 1 {
-		log.Infof("Deleted service %q from the cluster", deleted[0])
+		log.Successf("Deleted service %q from the cluster", deleted[0])
 	} else if len(deleted) > 1 {
-		log.Infof("Deleted services %q from the cluster", strings.Join(deleted, ", "))
+		log.Successf("Deleted services %q from the cluster", strings.Join(deleted, ", "))
 	}
 
 	return nil
