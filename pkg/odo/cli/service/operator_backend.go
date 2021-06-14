@@ -212,6 +212,7 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 	return
 }
 
+// ServiceDefined returns true if the service is defined in the devfile
 func (b *OperatorBackend) ServiceDefined(o *DeleteOptions) (bool, error) {
 	_, instanceName, err := svc.SplitServiceKindName(o.serviceName)
 	if err != nil {

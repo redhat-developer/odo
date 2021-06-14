@@ -193,21 +193,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	createdServices, deletedServices, err := service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
+	err = service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
-	}
-
-	if len(createdServices) == 1 {
-		log.Infof("Created service %q on the cluster; refer %q to know how to link it to the component", createdServices[0], "odo link -h")
-	} else if len(createdServices) > 1 {
-		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(createdServices, ", "), "odo link -h")
-	}
-
-	if len(deletedServices) == 1 {
-		log.Infof("Deleted service %q from the cluster", deletedServices[0])
-	} else if len(deletedServices) > 1 {
-		log.Infof("Deleted services %q from the cluster", strings.Join(deletedServices, ", "))
 	}
 
 	a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)

@@ -77,13 +77,13 @@ func (o *ServiceListOptions) Run(cmd *cobra.Command) (err error) {
 	if o.csvSupport {
 		// if cluster supports Operators, we list only operator backed services
 		// and not service catalog ones
-		return o.listOperatorServices(cmd)
+		return o.listOperatorServices()
 	}
 
-	return o.listServiceCatalogServices(cmd)
+	return o.listServiceCatalogServices()
 }
 
-func (o *ServiceListOptions) listServiceCatalogServices(cmd *cobra.Command) (err error) {
+func (o *ServiceListOptions) listServiceCatalogServices() (err error) {
 	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {
 		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)

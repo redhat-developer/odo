@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	svc "github.com/openshift/odo/pkg/service"
-	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -30,7 +29,7 @@ type serviceItem struct {
 // listOperatorServices lists the operator backed services
 // - deployed in the cluster
 // - defined in the current devfile
-func (o *ServiceListOptions) listOperatorServices(cmd *cobra.Command) (err error) {
+func (o *ServiceListOptions) listOperatorServices() (err error) {
 
 	// get the services deployed
 	var clusterList []unstructured.Unstructured

@@ -11,6 +11,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -857,7 +858,7 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 }
 
 // PushServiceFromKubernetesInlineComponents updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) ([]string, []string, error) {
+func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) error {
 
 	created := []string{}
 	deleted := []string{}
@@ -867,7 +868,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 	deployedServices, _, err := ListOperatorServices(client)
 	if err != nil && err != kclient.ErrNoSuchOperator {
 		// We ignore ErrNoSuchOperator error as we can deduce Operator Services are not installed
-		return nil, nil, err
+		return err
 	}
 	for _, svc := range deployedServices {
 		name := svc.GetName()
@@ -887,12 +888,12 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		d := NewDynamicCRD()
 		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 
 		cr, csv, err := GetCSV(client, d.OriginalCRD)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 
 		var group, version, kind, resource string
@@ -900,7 +901,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 			if crd.Kind == cr {
 				group, version, kind, resource, err = getGVKRFromCR(crd)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				break
 			}
@@ -924,7 +925,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
 				continue // this ensures that services slice is not updated
 			} else {
-				return nil, nil, err
+				return err
 			}
 		}
 
@@ -935,12 +936,25 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 	for key := range deployed {
 		err = DeleteOperatorService(client, key)
 		if err != nil {
-			return nil, nil, err
+			return err
 
 		}
 		deleted = append(deleted, key)
 	}
-	return created, deleted, nil
+
+	if len(created) == 1 {
+		log.Infof("Created service %q on the cluster; refer %q to know how to link it to the component", created[0], "odo link -h")
+	} else if len(created) > 1 {
+		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(created, ", "), "odo link -h")
+	}
+
+	if len(deleted) == 1 {
+		log.Infof("Deleted service %q from the cluster", deleted[0])
+	} else if len(deleted) > 1 {
+		log.Infof("Deleted services %q from the cluster", strings.Join(deleted, ", "))
+	}
+
+	return nil
 }
 
 func getCRDName(crd map[string]interface{}) (string, bool) {
