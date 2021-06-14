@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/openshift/odo/pkg/util"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -40,7 +42,7 @@ func GetContextProperties(ctx context.Context) map[string]interface{} {
 
 // SetComponentType sets componentType property for telemetry data when a component is created/pushed
 func SetComponentType(ctx context.Context, value string) {
-	setContextProperty(ctx, ComponentType, value)
+	setContextProperty(ctx, ComponentType, util.ExtractComponentType(value))
 }
 
 // SetClusterType sets clusterType property for telemetry data when a component is pushed or a project is created/set

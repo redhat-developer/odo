@@ -29,12 +29,14 @@ func TestGetContextProperties(t *testing.T) {
 }
 
 func TestSetComponentType(t *testing.T) {
-	value := "maven"
-	ctx := NewContext(context.Background())
-	SetComponentType(ctx, value)
+	want := "java"
+	for _, value := range []string{"java", "java:8", "myproject/java:8"} {
+		ctx := NewContext(context.Background())
+		SetComponentType(ctx, value)
 
-	if _, contains := GetContextProperties(ctx)[ComponentType]; !contains {
-		t.Errorf("component type was not set.")
+		if got, contains := GetContextProperties(ctx)[ComponentType]; !contains || got != want {
+			t.Errorf("component type was not set. Got: %q, Want: %q", got, want)
+		}
 	}
 }
 
