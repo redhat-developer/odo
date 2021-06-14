@@ -10,6 +10,10 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 )
 
+const ComponentType = "componentType"
+
+const ClusterType = "clusterType"
+
 type contextKey struct{}
 
 var key = contextKey{}
@@ -36,7 +40,7 @@ func GetContextProperties(ctx context.Context) map[string]interface{} {
 
 // SetComponentType sets componentType property for telemetry data when a component is created/pushed
 func SetComponentType(ctx context.Context, value string) {
-	setContextProperty(ctx, "componentType", value)
+	setContextProperty(ctx, ComponentType, value)
 }
 
 // SetClusterType sets clusterType property for telemetry data when a component is pushed or a project is created/set
@@ -69,7 +73,7 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 			}
 		}
 	}
-	setContextProperty(ctx, "clusterType", value)
+	setContextProperty(ctx, ClusterType, value)
 }
 
 // set safely sets value for a key in storage

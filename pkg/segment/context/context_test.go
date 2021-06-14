@@ -29,11 +29,11 @@ func TestGetContextProperties(t *testing.T) {
 }
 
 func TestSetComponentType(t *testing.T) {
-	ckey, value := "componentType", "maven"
+	value := "maven"
 	ctx := NewContext(context.Background())
 	SetComponentType(ctx, value)
 
-	if _, contains := GetContextProperties(ctx)[ckey]; !contains {
+	if _, contains := GetContextProperties(ctx)[ComponentType]; !contains {
 		t.Errorf("component type was not set.")
 	}
 }
@@ -61,7 +61,6 @@ func TestSetClusterType(t *testing.T) {
 		},
 	}
 
-	ckey := "clusterType"
 	for _, tt := range tests {
 		var fakeClient *occlient.Client
 		if tt.want != "not-found" {
@@ -74,7 +73,7 @@ func TestSetClusterType(t *testing.T) {
 		ctx := NewContext(context.Background())
 		SetClusterType(ctx, fakeClient)
 
-		got := GetContextProperties(ctx)[ckey]
+		got := GetContextProperties(ctx)[ClusterType]
 		if got != tt.want {
 			t.Errorf("got: %q, want: %q", got, tt.want)
 		}
