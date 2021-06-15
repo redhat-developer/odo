@@ -192,16 +192,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
-	// create the Kubernetes objects from the manifest
-	services, err := service.CreateServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
+	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
+	err = service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
-	}
-
-	if len(services) == 1 {
-		log.Infof("Created service %q on the cluster; refer %q to know how to link it to the component", services[0], "odo link -h")
-	} else if len(services) > 1 {
-		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(services, ", "), "odo link -h")
 	}
 
 	a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)

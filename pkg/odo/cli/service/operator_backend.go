@@ -212,19 +212,26 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 	return
 }
 
+// ServiceDefined returns true if the service is defined in the devfile
+func (b *OperatorBackend) ServiceDefined(o *DeleteOptions) (bool, error) {
+	_, instanceName, err := svc.SplitServiceKindName(o.serviceName)
+	if err != nil {
+		return false, err
+	}
+
+	return svc.IsDefined(instanceName, o.EnvSpecificInfo.GetDevfileObj())
+}
+
 func (b *OperatorBackend) ServiceExists(o *DeleteOptions) (bool, error) {
 	return svc.OperatorSvcExists(o.KClient, o.serviceName)
 }
 
 func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, application string) error {
-	err := svc.DeleteOperatorService(o.KClient, o.serviceName)
+	// "name" is of the form CR-Name/Instance-Name so we split it
+	_, instanceName, err := svc.SplitServiceKindName(name)
 	if err != nil {
 		return err
 	}
-
-	// "name" is of the form CR-Name/Instance-Name so we split it
-	// we ignore the error because the function used below is called in the call to "DeleteOperatorService" above.
-	_, instanceName, _ := svc.SplitServiceKindName(name)
 
 	err = svc.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {

@@ -139,7 +139,7 @@ func (o *CreateOptions) Validate() (err error) {
 func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	err = o.Backend.RunServiceCreate(o)
 	if err != nil {
-		return err
+		return fmt.Errorf("service %q already exists in configuration", o.ServiceName)
 	}
 
 	// Information on what to do next; don't do this if "--dry-run" was requested as it gets appended to the file

@@ -9,6 +9,7 @@ type ServiceProviderBackend interface {
 	ValidateServiceCreate(options *CreateOptions) error
 	RunServiceCreate(options *CreateOptions) error
 
+	ServiceDefined(options *DeleteOptions) (bool, error)
 	ServiceExists(options *DeleteOptions) (bool, error)
 	DeleteService(options *DeleteOptions, serviceName, app string) error
 }
