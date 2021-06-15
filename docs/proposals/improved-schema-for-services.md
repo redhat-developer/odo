@@ -134,6 +134,7 @@ The current approach of sending map values via cli are as follows -
 - we would add a `-p` cobra param as a list
 - each of the parameter would represent the key in a map and value in a map `e.g. -p "key"="value"`
 - we would allow json path in the key for the user to specific any field in the map that they want to set e.g. `services[0].namespace`.
+- array params are gonna be passed using `[i]` syntax. `-p spec.env[0].name FOO -p spec.env[0].value BAR`
 - we optimistically try to convert the type of param values in the below order
     - try to parse as integer, if it goes through then we assume it as an integer
     - try to parse as a float and if it goes through the we assume the value as float
@@ -423,7 +424,12 @@ The json output for all the approaches below would be -
 Note - this is not "openAPIv3schema" format.
 
 ### Approach where user has access to the CustomResourceDefinition
-`odo catalog service describe strimzi-cluster-operator.v0.21.1/Kafka -o json` would show a flat converted version of `openAPIv3schema` with same structure as `ClusterServiceVersion` with an extra addition of `type` information being present.
+`odo catalog service describe strimzi-cluster-operator.v0.21.1/Kafka -o json` would show a flat converted version of `openAPIv3schema` with same structure as `ClusterServiceVersion` with an extra addition of `type` information being present. 
+
+The conversion approach would be 
+- traverse the `openAPIv3schema` and if we find standard types (like string, integer) we add it to the descriptor listing with its path
+- while traversing if we find any complex types like `object` or `array` we dont add then to the listing but traverse deeper.
+- if we find an array we add `[*]` as a suffix of the path traversed so far, so that its obvious to the user that they need to add an index there. i.e. `zookeeper.env[*].key`
 
 For human readable output -
 ```
@@ -431,8 +437,9 @@ For human readable output -
   DisplayName: Limit Min
   Description: <description>
   Type: string
-   
 - FieldPath: zookeeper.storage.type
+  Type: string
+- FieldPath: zookeeper.env[*].key
   Type: string
 ```
 
