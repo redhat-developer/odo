@@ -84,7 +84,7 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 		if err != nil {
 			return err
 		}
-		log.Infof("Service %q has been successfully deleted", o.serviceName)
+		log.Infof("Service %q has been successfully deleted; do 'odo push' to delete service from the cluster", o.serviceName)
 	} else {
 		log.Errorf("Aborting deletion of service: %v", o.serviceName)
 	}
