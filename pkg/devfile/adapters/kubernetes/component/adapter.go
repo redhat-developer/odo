@@ -421,12 +421,6 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels)
-	if err != nil {
-		return err
-	}
-
-	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
 	initContainers, err := utils.GetPreStartInitContainers(a.Devfile, containers)
 	if err != nil {
@@ -472,6 +466,11 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		"component": componentName,
 	}
 
+	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels)
+	if err != nil {
+		return err
+	}
+
 	deployParams := generator.DeploymentParams{
 		TypeMeta:          generator.GetTypeMeta(kclient.DeploymentKind, kclient.DeploymentAPIVersion),
 		ObjectMeta:        deploymentObjectMeta,
@@ -489,11 +488,18 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		deployment.Annotations["app.openshift.io/vcs-uri"] = vcsUri
 	}
 
+	// add the annotations to the service for linking
+	serviceAnnotations := make(map[string]string)
+	serviceAnnotations["service.binding/backend_ip"] = "path={.spec.clusterIP}"
+	serviceAnnotations["service.binding/backend_port"] = "path={.spec.ports},elementType=sliceOfMaps,sourceKey=name,sourceValue=port"
+
+	serviceObjectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, serviceAnnotations)
 	serviceParams := generator.ServiceParams{
-		ObjectMeta:     objectMeta,
+		ObjectMeta:     serviceObjectMeta,
 		SelectorLabels: selectorLabels,
 	}
 	svc, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
+
 	if err != nil {
 		return err
 	}
