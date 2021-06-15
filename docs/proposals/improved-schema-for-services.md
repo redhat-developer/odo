@@ -460,6 +460,6 @@ For any scenerio the user would provide the parameters in flat format i.e. `odo 
 
 ### --from-file flag
 
-`from-file` would work as it does now with just a difference where we would validate the file against the jsonschema using the validator implemented.
+`from-file` would work as it does now with just a difference where we would validate the file against jsonschema using the validator implemented.
 
 
