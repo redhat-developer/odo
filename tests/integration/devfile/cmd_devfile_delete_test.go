@@ -41,6 +41,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 	When("a component is created", func() {
 		JustBeforeEach(func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project, "--app", appName)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
 		JustAfterEach(func() {})
@@ -78,6 +79,8 @@ var _ = Describe("odo devfile delete command tests", func() {
 				When("the second component is created", func() {
 					JustBeforeEach(func() {
 						helper.CmdShouldPass("odo", "create", "nodejs", secondComp, "--project", commonVar.Project)
+						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-endpoints.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					})
 					JustAfterEach(func() {})
 					When("the second component is pushed", func() {
