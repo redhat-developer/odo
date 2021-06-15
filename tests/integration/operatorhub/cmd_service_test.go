@@ -110,7 +110,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							Skip("This is a OpenShift specific scenario, skipping")
 						}
 						stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
-						Expect(stdOut).To(ContainSubstring("Couldn't find service named %q", "EtcdCluster/example"))
+						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", "EtcdCluster/example"))
 					})
 				})
 
