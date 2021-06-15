@@ -1,45 +1,46 @@
 #!/bin/bash
 set -x
 
-install_etcd_operator(){
-  # Create subscription
-  oc create -f - <<EOF
+install_redis_operator(){
+  $1 create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    name: etcd
-    namespace: openshift-operators
+    name: my-redis-operator
+    namespace: $2
   spec:
-    channel: clusterwide-alpha
-    installPlanApproval: Automatic
-    name: etcd
-    source: community-operators
-    sourceNamespace: openshift-marketplace
+    channel: stable
+    name: redis-operator
+    source: $3
+    sourceNamespace: $4
 EOF
 }
 
 install_service_binding_operator(){
-  oc create -f - <<EOF
+  $1 create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    labels:
-      operators.coreos.com/rh-service-binding-operator.openshift-operators: ""
-    name: rh-service-binding-operator
-    namespace: openshift-operators
+    name: my-service-binding-operator
+    namespace: $2
   spec:
     channel: beta
-    installPlanApproval: Automatic
-    name: rh-service-binding-operator
-    source: redhat-operators
-    sourceNamespace: openshift-marketplace
+    name: $3
+    source: $4
+    sourceNamespace: $5
 EOF
 }
 
-# install etcd operator
+if [ $KUBERNETES == "true" ]; then
+  # install redis-oprator
+  install_redis_operator kubectl operators operatorhubio-catalog olm
 
-install_etcd_operator
+  # install service-binding-operator
+  install_service_binding_operator kubectl operators service-binding-operator operatorhubio-catalog olm
+else
+  # install redis-oprator
+  install_redis_operator oc openshift-operators community-operators openshift-marketplace
 
-# install service-binding-operator
-
-install_service_binding_operator
+  # install service-binding-operator
+  install_service_binding_operator oc openshift-operators rh-service-binding-operator redhat-operators openshift-marketplace
+fi
