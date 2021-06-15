@@ -196,7 +196,7 @@ func TestSyncFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -350,7 +350,7 @@ func TestPushLocal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}

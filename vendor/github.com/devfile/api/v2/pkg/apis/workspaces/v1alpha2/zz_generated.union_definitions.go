@@ -113,7 +113,6 @@ func (union *ProjectSource) Simplify() {
 // +k8s:deepcopy-gen=false
 type ProjectSourceVisitor struct {
 	Git    func(*GitProjectSource) error
-	Github func(*GithubProjectSource) error
 	Zip    func(*ZipProjectSource) error
 	Custom func(*CustomProjectSource) error
 }
@@ -159,9 +158,8 @@ func (union *ProjectSourceParentOverride) Simplify() {
 
 // +k8s:deepcopy-gen=false
 type ProjectSourceParentOverrideVisitor struct {
-	Git    func(*GitProjectSourceParentOverride) error
-	Github func(*GithubProjectSourceParentOverride) error
-	Zip    func(*ZipProjectSourceParentOverride) error
+	Git func(*GitProjectSourceParentOverride) error
+	Zip func(*ZipProjectSourceParentOverride) error
 }
 
 var commandUnionParentOverride reflect.Type = reflect.TypeOf(CommandUnionParentOverrideVisitor{})

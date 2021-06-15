@@ -6,11 +6,8 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/devfile/library/pkg/devfile/parser"
-
-	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/devfile/validate"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
@@ -71,11 +68,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
-		if err != nil {
-			return err
-		}
-		err = validate.ValidateDevfileData(devObj.Data)
+		devObj, err := devfile.ParseFromFile(lo.devfilePath)
 		if err != nil {
 			return err
 		}

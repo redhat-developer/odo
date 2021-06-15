@@ -1,6 +1,11 @@
 package generator
 
 import (
+	"fmt"
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/pkg/util"
 	buildv1 "github.com/openshift/api/build/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -9,9 +14,6 @@ import (
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
 const (
@@ -26,6 +28,8 @@ const (
 
 	deploymentKind       = "Deployment"
 	deploymentAPIVersion = "apps/v1"
+
+	containerNameMaxLen = 55
 )
 
 // GetTypeMeta gets a type meta of the specified kind and version
@@ -88,6 +92,56 @@ func GetContainers(devfileObj parser.DevfileObj, options common.DevfileOptions) 
 		containers = append(containers, *container)
 	}
 	return containers, nil
+}
+
+// GetInitContainers gets the init container for every preStart devfile event
+func GetInitContainers(devfileObj parser.DevfileObj) ([]corev1.Container, error) {
+	containers, err := GetContainers(devfileObj, common.DevfileOptions{})
+	if err != nil {
+		return nil, err
+	}
+	preStartEvents := devfileObj.Data.GetEvents().PreStart
+	var initContainers []corev1.Container
+	if len(preStartEvents) > 0 {
+		var eventCommands []string
+		commands, err := devfileObj.Data.GetCommands(common.DevfileOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		commandsMap := common.GetCommandsMap(commands)
+
+		for _, event := range preStartEvents {
+			eventSubCommands := common.GetCommandsFromEvent(commandsMap, event)
+			eventCommands = append(eventCommands, eventSubCommands...)
+		}
+
+		for i, commandName := range eventCommands {
+			if command, ok := commandsMap[commandName]; ok {
+				component := common.GetApplyComponent(command)
+
+				// Get the container info for the given component
+				for _, container := range containers {
+					if container.Name == component {
+						// Override the init container name since there cannot be two containers with the same
+						// name in a pod. This applies to pod containers and pod init containers. The convention
+						// for init container name here is, containername-eventname-<position of command in prestart events>
+						// If there are two events referencing the same devfile component, then we will have
+						// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
+						// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
+						initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
+						initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
+						initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
+						container.Name = initContainerName
+
+						initContainers = append(initContainers, container)
+					}
+				}
+			}
+		}
+	}
+
+	return initContainers, nil
 }
 
 // DeploymentParams is a struct that contains the required data to create a deployment object
@@ -283,4 +337,56 @@ func GetImageStream(imageStreamParams ImageStreamParams) imagev1.ImageStream {
 		ObjectMeta: imageStreamParams.ObjectMeta,
 	}
 	return imageStream
+}
+
+// VolumeInfo is a struct to hold the pvc name and the volume name to create a volume.
+type VolumeInfo struct {
+	PVCName    string
+	VolumeName string
+}
+
+// VolumeParams is a struct that contains the required data to create Kubernetes Volumes and mount Volumes in Containers
+type VolumeParams struct {
+	// Containers is a list of containers that needs to be updated for the volume mounts
+	Containers []corev1.Container
+
+	// VolumeNameToVolumeInfo is a map of the devfile volume name to the volume info containing the pvc name and the volume name.
+	VolumeNameToVolumeInfo map[string]VolumeInfo
+}
+
+// GetVolumesAndVolumeMounts gets the PVC volumes and updates the containers with the volume mounts.
+func GetVolumesAndVolumeMounts(devfileObj parser.DevfileObj, volumeParams VolumeParams, options common.DevfileOptions) ([]corev1.Volume, error) {
+
+	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
+	if err != nil {
+		return nil, err
+	}
+
+	var pvcVols []corev1.Volume
+	for volName, volInfo := range volumeParams.VolumeNameToVolumeInfo {
+		pvcVols = append(pvcVols, getPVC(volInfo.VolumeName, volInfo.PVCName))
+
+		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
+		containerNameToMountPaths := make(map[string][]string)
+		for _, containerComp := range containerComponents {
+			for _, volumeMount := range containerComp.Container.VolumeMounts {
+				if volName == volumeMount.Name {
+					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], GetVolumeMountPath(volumeMount))
+				}
+			}
+		}
+
+		addVolumeMountToContainers(volumeParams.Containers, volInfo.VolumeName, containerNameToMountPaths)
+	}
+	return pvcVols, nil
+}
+
+// GetVolumeMountPath gets the volume mount's path.
+func GetVolumeMountPath(volumeMount v1.VolumeMount) string {
+	// if there is no volume mount path, default to volume mount name as per devfile schema
+	if volumeMount.Path == "" {
+		volumeMount.Path = "/" + volumeMount.Name
+	}
+
+	return volumeMount.Path
 }

@@ -186,7 +186,7 @@ func TestGetCommand(t *testing.T) {
 			components := []devfilev1.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -466,7 +466,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 			components := []devfilev1.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -763,7 +763,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -930,7 +930,7 @@ func TestGetBuildCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -1053,7 +1053,7 @@ func TestGetDebugCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -1178,7 +1178,7 @@ func TestGetTestCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -1309,7 +1309,7 @@ func TestGetRunCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -1412,7 +1412,7 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -1596,7 +1596,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -1702,7 +1702,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}

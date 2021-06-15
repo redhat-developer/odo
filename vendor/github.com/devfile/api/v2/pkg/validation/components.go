@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -26,6 +27,7 @@ func ValidateComponents(components []v1alpha2.Component) error {
 	processedVolumeMounts := make(map[string][]string)
 	processedEndPointName := make(map[string]bool)
 	processedEndPointPort := make(map[int]bool)
+	processedComponentWithVolumeMounts := make(map[string]v1alpha2.Component)
 
 	err := v1alpha2.CheckDuplicateKeys(components)
 	if err != nil {
@@ -38,6 +40,7 @@ func ValidateComponents(components []v1alpha2.Component) error {
 			// Process all the volume mounts in container components to validate them later
 			for _, volumeMount := range component.Container.VolumeMounts {
 				processedVolumeMounts[component.Name] = append(processedVolumeMounts[component.Name], volumeMount.Name)
+				processedComponentWithVolumeMounts[component.Name] = component
 
 			}
 
@@ -52,7 +55,7 @@ func ValidateComponents(components []v1alpha2.Component) error {
 
 			err := validateEndpoints(component.Container.Endpoints, processedEndPointPort, processedEndPointName)
 			if err != nil {
-				return err
+				return resolveErrorMessageWithImportAttributes(err, component.Attributes)
 			}
 		case component.Volume != nil:
 			processedVolumes[component.Name] = true
@@ -61,37 +64,38 @@ func ValidateComponents(components []v1alpha2.Component) error {
 				// express storage in Kubernetes. For reference, you may check doc
 				// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 				if _, err := resource.ParseQuantity(component.Volume.Size); err != nil {
-					return &InvalidVolumeError{name: component.Name, reason: fmt.Sprintf("size %s for volume component is invalid, %v. Example - 2Gi, 1024Mi", component.Volume.Size, err)}
+					invalidVolErr := &InvalidVolumeError{name: component.Name, reason: fmt.Sprintf("size %s for volume component is invalid, %v. Example - 2Gi, 1024Mi", component.Volume.Size, err)}
+					return resolveErrorMessageWithImportAttributes(invalidVolErr, component.Attributes)
 				}
 			}
 		case component.Openshift != nil:
 			if component.Openshift.Uri != "" {
 				err := ValidateURI(component.Openshift.Uri)
 				if err != nil {
-					return err
+					return resolveErrorMessageWithImportAttributes(err, component.Attributes)
 				}
 			}
 
 			err := validateEndpoints(component.Openshift.Endpoints, processedEndPointPort, processedEndPointName)
 			if err != nil {
-				return err
+				return resolveErrorMessageWithImportAttributes(err, component.Attributes)
 			}
 		case component.Kubernetes != nil:
 			if component.Kubernetes.Uri != "" {
 				err := ValidateURI(component.Kubernetes.Uri)
 				if err != nil {
-					return err
+					return resolveErrorMessageWithImportAttributes(err, component.Attributes)
 				}
 			}
 			err := validateEndpoints(component.Kubernetes.Endpoints, processedEndPointPort, processedEndPointName)
 			if err != nil {
-				return err
+				return resolveErrorMessageWithImportAttributes(err, component.Attributes)
 			}
 		case component.Plugin != nil:
 			if component.Plugin.RegistryUrl != "" {
 				err := ValidateURI(component.Plugin.RegistryUrl)
 				if err != nil {
-					return err
+					return resolveErrorMessageWithImportAttributes(err, component.Attributes)
 				}
 			}
 		}
@@ -99,16 +103,19 @@ func ValidateComponents(components []v1alpha2.Component) error {
 	}
 
 	// Check if the volume mounts mentioned in the containers are referenced by a volume component
-	var invalidVolumeMountsErr string
+	var invalidVolumeMountsErrList []string
 	for componentName, volumeMountNames := range processedVolumeMounts {
 		for _, volumeMountName := range volumeMountNames {
 			if !processedVolumes[volumeMountName] {
-				invalidVolumeMountsErr += fmt.Sprintf("\nvolume mount %s belonging to the container component %s", volumeMountName, componentName)
+				missingVolumeMountErr := fmt.Errorf("volume mount %s belonging to the container component %s", volumeMountName, componentName)
+				newErr := resolveErrorMessageWithImportAttributes(missingVolumeMountErr, processedComponentWithVolumeMounts[componentName].Attributes)
+				invalidVolumeMountsErrList = append(invalidVolumeMountsErrList, newErr.Error())
 			}
 		}
 	}
 
-	if len(invalidVolumeMountsErr) > 0 {
+	if len(invalidVolumeMountsErrList) > 0 {
+		invalidVolumeMountsErr := fmt.Sprintf("\n%s", strings.Join(invalidVolumeMountsErrList, "\n"))
 		return &MissingVolumeMountError{errMsg: invalidVolumeMountsErr}
 	}
 

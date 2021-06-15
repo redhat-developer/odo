@@ -20,10 +20,10 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/devfile"
 
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -199,7 +199,7 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 	var err error
 
 	if strings.Contains(devfileComponent.Registry.URL, "github") {
-		devObj, err = devfile.ParseFromURLAndValidate(devfileComponent.Registry.URL + devfileComponent.Link)
+		devObj, err = devfile.ParseFromURL(devfileComponent.Registry.URL + devfileComponent.Link)
 		if err != nil {
 			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from Github-based registry for devfile component: %s", devfileComponent.Name)
 		}
@@ -209,7 +209,7 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 			return devObj, errors.Wrapf(err, "Failed to parse registry URL for devfile component: %s", devfileComponent.Name)
 		}
 		registryURL.Path = path.Join(registryURL.Path, "devfiles", devfileComponent.Name)
-		devObj, err = devfile.ParseFromURLAndValidate(registryURL.String())
+		devObj, err = devfile.ParseFromURL(registryURL.String())
 		if err != nil {
 			return devObj, errors.Wrapf(err, "Failed to download devfile.yaml from OCI-based registry for devfile component: %s", devfileComponent.Name)
 		}

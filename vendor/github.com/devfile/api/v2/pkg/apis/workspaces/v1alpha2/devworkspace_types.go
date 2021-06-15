@@ -16,9 +16,9 @@ type DevWorkspaceSpec struct {
 type DevWorkspaceStatus struct {
 	// Id of the DevWorkspace
 	DevWorkspaceId string `json:"devworkspaceId"`
-	// URL at which the DevWorkspace Editor can be joined
-	IdeUrl string            `json:"ideUrl,omitempty"`
-	Phase  DevWorkspacePhase `json:"phase,omitempty"`
+	// Main URL for this DevWorkspace
+	MainUrl string            `json:"mainUrl,omitempty"`
+	Phase   DevWorkspacePhase `json:"phase,omitempty"`
 	// Conditions represent the latest available observations of an object's state
 	Conditions []DevWorkspaceCondition `json:"conditions,omitempty"`
 	// Message is a short user-readable message giving additional information

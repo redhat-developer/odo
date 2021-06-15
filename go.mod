@@ -5,8 +5,8 @@ go 1.13
 require (
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/devfile/api/v2 v2.0.0-20210408144711-a313872749ed
-	github.com/devfile/library v1.0.0-alpha.2.0.20210409194304-7a52b221a48e
+	github.com/devfile/api/v2 v2.1.0
+	github.com/devfile/library v1.0.0
 	github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873
 	github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible

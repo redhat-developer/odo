@@ -7,12 +7,12 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 
-	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/occlient"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -90,7 +90,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	if util.CheckPathExists(po.DevfilePath) {
 
-		po.Devfile, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: po.DevfilePath})
+		po.Devfile, err = devfile.ParseFromFile(po.DevfilePath)
 		if err != nil {
 			return errors.Wrap(err, "unable to parse devfile")
 		}
