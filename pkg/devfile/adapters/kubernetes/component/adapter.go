@@ -427,12 +427,13 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	}
 
 	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
-	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
-	initContainers, err := utils.GetPreStartInitContainers(a.Devfile, containers)
-	if err != nil {
-		return err
-	}
-	initContainers = append(initContainers, supervisordInitContainer)
+	var initContainers []corev1.Container
+	initContainers = append(initContainers, kclient.GetBootstrapSupervisordInitContainer())
+
+	// odo currently does not support PreStart event or apply commands
+	// https://github.com/openshift/odo/issues/4187
+	// after odo support apply commands, should append result from generator.getInitContainers()
+	// initContainers := generator.GetInitContainers(a.Devfile)
 
 	var odoSourcePVCName string
 
