@@ -874,7 +874,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		name := svc.GetName()
 		kind := svc.GetKind()
 		deployedLabels := svc.GetLabels()
-		if deployedLabels[applabels.OdoManagedBy] == "odo" && deployedLabels[componentlabels.ComponentLabel] == labels[componentlabels.ComponentLabel] {
+		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.ComponentLabel] == labels[componentlabels.ComponentLabel] {
 			deployed[kind+"/"+name] = struct{}{}
 		}
 	}

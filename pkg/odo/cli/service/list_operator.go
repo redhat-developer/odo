@@ -135,7 +135,7 @@ func getTabularInfo(serviceItem *serviceItem, devfileComponent string) (managedB
 		// service deployed into cluster
 		var component string
 		labels := clusterItem.Labels
-		isManagedByOdo := labels[applabels.OdoManagedBy] == "odo"
+		isManagedByOdo := labels[applabels.ManagedBy] == "odo"
 		if isManagedByOdo {
 			component = labels[cmplabels.ComponentLabel]
 			managedByOdo = fmt.Sprintf("Yes (%s)", component)
