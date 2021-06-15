@@ -33,8 +33,8 @@ func NewOcRunner(ocPath string) OcRunner {
 }
 
 // Run oc with given arguments
-func (oc OcRunner) Run(cmd string) *gexec.Session {
-	session := CmdRunner(cmd)
+func (oc OcRunner) Run(args ...string) *gexec.Session {
+	session := CmdRunner(oc.path, args...)
 	Eventually(session).Should(gexec.Exit(0))
 	return session
 }

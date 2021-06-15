@@ -703,4 +703,98 @@ func componentTests(args ...string) {
 		})
 	})
 
+	Context("when components are not created/managed by odo", func() {
+		var runner helper.CliRunner
+		type compStruct struct {
+			App, Name string
+		}
+		// This array will contain static data taken from tests/examples/manifests/dc-label.yaml and
+		// tests/examples/manifests/deployment-httpd-label.yaml, tests/examples/manifests/deployment-app-label.yaml.
+		// If this test breaks, check if the data here matches with that of the manifest files
+		var compList = []compStruct{
+			{"app", "example-deployment"},
+		}
+
+		JustBeforeEach(func() {
+			// Create resources that are not managed by odo
+			runner = helper.GetCliRunner()
+			dfile := filepath.Join(commonVar.Context, "deployment-app-label.yaml")
+			helper.CopyManifestFile("deployment-app-label.yaml", dfile)
+			runner.Run("apply", "-f", dfile).Wait()
+
+			// if it is openshift env, we also deploy the deploymentconfig yaml
+			if !helper.IsKubernetesCluster() {
+				dcfile := filepath.Join(commonVar.Context, "dc-label.yaml")
+				helper.CopyManifestFile("dc-label.yaml", dcfile)
+				runner.Run("apply", "-f", dcfile).Wait()
+				compList = append(compList, compStruct{"app", "example-dc"})
+			}
+		})
+		JustAfterEach(func() {
+			// Relying on the project deletion to delete resources not managed by odo
+		})
+
+		// verifyListOutput verifies if the components not managed by odo are listed
+		var verifyListOutput = func(output string, componentList []compStruct) {
+			Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
+			for _, comp := range componentList {
+				Expect(output).To(ContainSubstring(comp.Name))
+				Expect(output).To(ContainSubstring(comp.App))
+			}
+		}
+
+		It("should list the components", func() {
+			output := helper.CmdShouldPass("odo", append(args, "list")...)
+			verifyListOutput(output, compList)
+		})
+
+		Context("The component has a different app name than the default 'app'", func() {
+			JustBeforeEach(func() {
+				// Create resources that are not managed by odo
+				dfile := filepath.Join(commonVar.Context, "deployment-httpd-label.yaml")
+				helper.CopyManifestFile("deployment-httpd-label.yaml", dfile)
+				runner.Run("apply", "-f", dfile).Wait()
+			})
+			JustAfterEach(func() {
+				// relying on project deletion to delete the resources not managed by odo
+			})
+
+			It("should list the components with --all-apps flag", func() {
+				output := helper.CmdShouldPass("odo", append(args, "list", "--all-apps")...)
+				verifyListOutput(output, append(compList, compStruct{"httpd", "example-deployment-httpd"}))
+			})
+
+			It("should list the components with --app flag", func() {
+				output := helper.CmdShouldPass("odo", append(args, "list", "--app", "httpd")...)
+				verifyListOutput(output, []compStruct{{"httpd", "example-deployment-httpd"}})
+			})
+		})
+
+		It("should list the components in json format with -o json flag", func() {
+			output := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...)
+			for _, comp := range compList {
+				valuesCList := gjson.GetMany(output, "kind", "otherComponents.#.kind", "otherComponents.#.metadata.name", "otherComponents.#.spec.app")
+				expectedCList := []string{"List", "Component", comp.Name, comp.App}
+				Expect(helper.GjsonMatcher(valuesCList, expectedCList)).To(Equal(true))
+			}
+		})
+
+		When("executing odo list from other project", func() {
+			var otherProject string
+			JustBeforeEach(func() {
+				otherProject = commonVar.CliRunner.CreateRandNamespaceProject()
+			})
+			JustAfterEach(func() {
+				helper.CmdShouldPass("odo", "project", "set", commonVar.Project)
+				commonVar.CliRunner.DeleteNamespaceProject(otherProject)
+			})
+
+			It("should list the components with --project flag", func() {
+				output := helper.CmdShouldPass("odo", append(args, "list", "--project", commonVar.Project)...)
+				verifyListOutput(output, compList)
+			})
+
+		})
+	})
+
 }

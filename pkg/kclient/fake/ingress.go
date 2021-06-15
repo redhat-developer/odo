@@ -22,8 +22,8 @@ func GetIngressListWithMultiple(componentName, appName string) *extensionsv1.Ing
 					Labels: map[string]string{
 						applabels.ApplicationLabel:     appName,
 						componentlabels.ComponentLabel: componentName,
-						applabels.OdoManagedBy:         "odo",
-						applabels.OdoVersion:           version.VERSION,
+						applabels.ManagedBy:            "odo",
+						applabels.ManagerVersion:       version.VERSION,
 						labels.URLLabel:                "example-0",
 						applabels.App:                  appName,
 					},
@@ -40,8 +40,8 @@ func GetIngressListWithMultiple(componentName, appName string) *extensionsv1.Ing
 					Labels: map[string]string{
 						applabels.ApplicationLabel:     "app",
 						componentlabels.ComponentLabel: componentName,
-						applabels.OdoManagedBy:         "odo",
-						applabels.OdoVersion:           version.VERSION,
+						applabels.ManagedBy:            "odo",
+						applabels.ManagerVersion:       version.VERSION,
 						labels.URLLabel:                "example-1",
 						applabels.App:                  "app",
 					},
@@ -64,8 +64,8 @@ func GetSingleIngress(urlName, componentName, appName string) *extensionsv1.Ingr
 			Labels: map[string]string{
 				applabels.ApplicationLabel:     appName,
 				componentlabels.ComponentLabel: componentName,
-				applabels.OdoManagedBy:         "odo",
-				applabels.OdoVersion:           version.VERSION,
+				applabels.ManagedBy:            "odo",
+				applabels.ManagerVersion:       version.VERSION,
 				labels.URLLabel:                urlName,
 				applabels.App:                  appName,
 			},

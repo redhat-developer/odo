@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
+
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
@@ -398,7 +400,11 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 // ComponentNameCompletionHandler provides component name completion
 var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	components, err := component.List(context.Client, context.Application, nil)
+	var selector string
+	if context.Application != "" {
+		selector = applabels.GetSelector(context.Application)
+	}
+	components, err := component.List(context.Client, selector, nil)
 
 	if err != nil {
 		return completions

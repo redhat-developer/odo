@@ -7,7 +7,7 @@ import (
 )
 
 func componentTestsSub() {
-	componentTests("component")
+	//componentTests("component")
 }
 
 var _ = Describe("odo sub component command tests", componentTestsSub)

@@ -126,6 +126,21 @@ func CopyExample(exampleName string, targetDir string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+func CopyManifestFile(fileName, targetDst string) {
+	// filename of this file
+	_, filename, _, _ := runtime.Caller(0)
+	// path to the examples directory
+	manifestsDir := filepath.Join(filepath.Dir(filename), "..", "examples", "manifests")
+
+	src := filepath.Join(manifestsDir, fileName)
+	info, err := os.Stat(src)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = util.CopyFile(src, targetDst, info)
+	Expect(err).NotTo(HaveOccurred())
+
+}
+
 // CopyExampleDevFile copies an example devfile from tests/examples/source/devfiles/<componentName>/devfile.yaml
 // into targetDst
 func CopyExampleDevFile(devfilePath, targetDst string) {
