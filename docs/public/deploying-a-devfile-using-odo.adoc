@@ -435,11 +435,13 @@ In this example we will be deploying a https://github.com/OpenLiberty/applicatio
 +
 [source,sh]
 ----
-   $ odo create myopenliberty
+   $ odo create java-openliberty myopenliberty
 
+   Devfile Object Validation
+    ✓  Checking devfile existence [109745ns]
+    ✓  Creating a devfile component from registry: DefaultDevfileRegistry [131586ns]
    Validation
-    ✓  Creating a devfile component from devfile path: .../application-stack-intro/devfile.yaml [253220ns]
-    ✓  Validating devfile component [263521ns]
+    ✓  Validating if devfile name is correct [106545ns]
 
    Please use `odo push` command to create the component with source deployed
 
