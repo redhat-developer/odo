@@ -1,5 +1,16 @@
 #  Odo Changelog
 
+## 2.2.3 (tentative)
+
+### Feature/Enhancements
+
+### Bug Fixes
+
+### Tests
+
+### Documentation
+
+
 ## 2.2.2
 
 ### Feature/Enhancements
