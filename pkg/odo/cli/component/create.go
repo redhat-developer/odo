@@ -13,11 +13,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
-	"github.com/devfile/library/pkg/devfile"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/convert"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -836,7 +836,10 @@ func (co *CreateOptions) devfileRun() (err error) {
 			}
 		}
 	}
-	devObj, err := devfile.ParseFromDataAndValidate(devfileData)
+	// TODO: this should be replaced with github.com/openshift/odo/pkg/devile.ParseFromFile(DevfilePath)
+	// But this can be only after we deprecate support for "github based" registries.
+	// When we do that the above "if" will be deleted and parsing from []data won't be necessary
+	devObj, err := devfile.ParseFromData(devfileData)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse devfile")
 	}

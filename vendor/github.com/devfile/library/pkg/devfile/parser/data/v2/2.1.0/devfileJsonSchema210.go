@@ -1,14 +1,19 @@
 package version210
 
-// https://raw.githubusercontent.com/devfile/api/main/schemas/latest/devfile.json
+// https://raw.githubusercontent.com/devfile/api/2.1.x/schemas/latest/devfile.json
 const JsonSchema210 = `{
   "description": "Devfile describes the structure of a cloud-native devworkspace and development environment.",
   "type": "object",
-  "title": "Devfile schema - Version 2.1.0-alpha",
+  "title": "Devfile schema - Version 2.1.0",
   "required": [
     "schemaVersion"
   ],
   "properties": {
+    "attributes": {
+      "description": "Map of implementation-dependant free-form YAML attributes.",
+      "type": "object",
+      "additionalProperties": true
+    },
     "commands": {
       "description": "Predefined, ready-to-use, devworkspace-related commands",
       "type": "array",
@@ -635,7 +640,7 @@ const JsonSchema210 = `{
       "type": "object",
       "properties": {
         "attributes": {
-          "description": "Map of implementation-dependant free-form YAML attributes.",
+          "description": "Map of implementation-dependant free-form YAML attributes. Deprecated, use the top-level attributes field instead.",
           "type": "object",
           "additionalProperties": true
         },
@@ -652,7 +657,7 @@ const JsonSchema210 = `{
           "type": "string"
         },
         "icon": {
-          "description": "Optional devfile icon",
+          "description": "Optional devfile icon, can be a URI or a relative path in the project",
           "type": "string"
         },
         "language": {
@@ -707,6 +712,11 @@ const JsonSchema210 = `{
         }
       ],
       "properties": {
+        "attributes": {
+          "description": "Overrides of attributes encapsulated in a parent devfile. Overriding is done according to K8S strategic merge patch standard rules.",
+          "type": "object",
+          "additionalProperties": true
+        },
         "commands": {
           "description": "Overrides of commands encapsulated in a parent devfile or a plugin. Overriding is done according to K8S strategic merge patch standard rules.",
           "type": "array",
@@ -1298,11 +1308,6 @@ const JsonSchema210 = `{
               },
               {
                 "required": [
-                  "github"
-                ]
-              },
-              {
-                "required": [
                   "zip"
                 ]
               }
@@ -1346,47 +1351,11 @@ const JsonSchema210 = `{
                 },
                 "additionalProperties": false
               },
-              "github": {
-                "description": "Project's GitHub source. Deprecated, use 'Git' instead",
-                "type": "object",
-                "properties": {
-                  "checkoutFrom": {
-                    "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
-                    "type": "object",
-                    "properties": {
-                      "remote": {
-                        "description": "The remote name should be used as init. Required if there are more than one remote configured",
-                        "type": "string"
-                      },
-                      "revision": {
-                        "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  "remotes": {
-                    "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "additionalProperties": false
-              },
               "name": {
                 "description": "Project name",
                 "type": "string",
                 "maxLength": 63,
                 "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
-              },
-              "sparseCheckoutDirs": {
-                "description": "Populate the project sparsely with selected directories.",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
               },
               "zip": {
                 "description": "Project's Zip source",
@@ -1404,6 +1373,7 @@ const JsonSchema210 = `{
           }
         },
         "registryUrl": {
+          "description": "Registry URL to pull the parent devfile from when using id in the parent reference. To ensure the parent devfile gets resolved consistently in different environments, it is recommended to always specify the 'regsitryURL' when 'Id' is used.",
           "type": "string"
         },
         "starterProjects": {
@@ -1418,11 +1388,6 @@ const JsonSchema210 = `{
               {
                 "required": [
                   "git"
-                ]
-              },
-              {
-                "required": [
-                  "github"
                 ]
               },
               {
@@ -1443,35 +1408,6 @@ const JsonSchema210 = `{
               },
               "git": {
                 "description": "Project's Git source",
-                "type": "object",
-                "properties": {
-                  "checkoutFrom": {
-                    "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
-                    "type": "object",
-                    "properties": {
-                      "remote": {
-                        "description": "The remote name should be used as init. Required if there are more than one remote configured",
-                        "type": "string"
-                      },
-                      "revision": {
-                        "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  "remotes": {
-                    "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "additionalProperties": false
-              },
-              "github": {
-                "description": "Project's GitHub source. Deprecated, use 'Git' instead",
                 "type": "object",
                 "properties": {
                   "checkoutFrom": {
@@ -1525,8 +1461,15 @@ const JsonSchema210 = `{
           }
         },
         "uri": {
-          "description": "Uri of a Devfile yaml file",
+          "description": "URI Reference of a parent devfile YAML file. It can be a full URL or a relative URI with the current devfile as the base URI.",
           "type": "string"
+        },
+        "variables": {
+          "description": "Overrides of variables encapsulated in a parent devfile. Overriding is done according to K8S strategic merge patch standard rules.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false
@@ -1543,11 +1486,6 @@ const JsonSchema210 = `{
           {
             "required": [
               "git"
-            ]
-          },
-          {
-            "required": [
-              "github"
             ]
           },
           {
@@ -1598,50 +1536,11 @@ const JsonSchema210 = `{
             },
             "additionalProperties": false
           },
-          "github": {
-            "description": "Project's GitHub source. Deprecated, use 'Git' instead",
-            "type": "object",
-            "required": [
-              "remotes"
-            ],
-            "properties": {
-              "checkoutFrom": {
-                "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
-                "type": "object",
-                "properties": {
-                  "remote": {
-                    "description": "The remote name should be used as init. Required if there are more than one remote configured",
-                    "type": "string"
-                  },
-                  "revision": {
-                    "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
-                    "type": "string"
-                  }
-                },
-                "additionalProperties": false
-              },
-              "remotes": {
-                "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
-              }
-            },
-            "additionalProperties": false
-          },
           "name": {
             "description": "Project name",
             "type": "string",
             "maxLength": 63,
             "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
-          },
-          "sparseCheckoutDirs": {
-            "description": "Populate the project sparsely with selected directories.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "zip": {
             "description": "Project's Zip source",
@@ -1679,11 +1578,6 @@ const JsonSchema210 = `{
           },
           {
             "required": [
-              "github"
-            ]
-          },
-          {
-            "required": [
               "zip"
             ]
           }
@@ -1700,38 +1594,6 @@ const JsonSchema210 = `{
           },
           "git": {
             "description": "Project's Git source",
-            "type": "object",
-            "required": [
-              "remotes"
-            ],
-            "properties": {
-              "checkoutFrom": {
-                "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
-                "type": "object",
-                "properties": {
-                  "remote": {
-                    "description": "The remote name should be used as init. Required if there are more than one remote configured",
-                    "type": "string"
-                  },
-                  "revision": {
-                    "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
-                    "type": "string"
-                  }
-                },
-                "additionalProperties": false
-              },
-              "remotes": {
-                "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          "github": {
-            "description": "Project's GitHub source. Deprecated, use 'Git' instead",
             "type": "object",
             "required": [
               "remotes"
@@ -1785,6 +1647,13 @@ const JsonSchema210 = `{
           }
         },
         "additionalProperties": false
+      }
+    },
+    "variables": {
+      "description": "Map of key-value variables used for string replacement in the devfile. Values can can be referenced via {{variable-key}} to replace the corresponding value in string fields in the devfile. Replacement cannot be used for\n\n - schemaVersion, metadata, parent source  - element identifiers, e.g. command id, component name, endpoint name, project name  - references to identifiers, e.g. in events, a command's component, container's volume mount name  - string enums, e.g. command group kind, endpoint exposure",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
       }
     }
   },

@@ -93,7 +93,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 
 	log.Info("\nStarter Project")
 
-	if starterProject.Git != nil || starterProject.Github != nil {
+	if starterProject.Git != nil {
 		err := downloadGitProject(starterProject, decryptedToken, path)
 
 		if err != nil {
@@ -119,15 +119,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 
 // downloadGitProject downloads the git starter projects from devfile.yaml
 func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, path string) error {
-
-	var projectSource devfilev1.GitLikeProjectSource
-	if starterProject.Git != nil {
-		projectSource = starterProject.Git.GitLikeProjectSource
-	} else {
-		projectSource = starterProject.Github.GitLikeProjectSource
-	}
-
-	remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(projectSource)
+	remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(starterProject.Git.GitLikeProjectSource)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
 	}

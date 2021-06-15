@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/pkg/errors"
-
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/validate"
+	"github.com/openshift/odo/pkg/devfile"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/util"
 
@@ -61,11 +58,7 @@ func (to *TestOptions) Validate() (err error) {
 		return fmt.Errorf("unable to find devfile, odo test command is only supported by devfile components")
 	}
 
-	devObj, err := devfile.ParseDevfileAndValidate(devfileParser.ParserArgs{Path: to.devfilePath})
-	if err != nil {
-		return errors.Wrap(err, "fail to parse devfile")
-	}
-	err = validate.ValidateDevfileData(devObj.Data)
+	devObj, err := devfile.ParseFromFile(to.devfilePath)
 	if err != nil {
 		return err
 	}

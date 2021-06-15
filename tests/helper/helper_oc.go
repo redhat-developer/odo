@@ -33,8 +33,8 @@ func NewOcRunner(ocPath string) OcRunner {
 }
 
 // Run oc with given arguments
-func (oc OcRunner) Run(cmd string) *gexec.Session {
-	session := CmdRunner(cmd)
+func (oc OcRunner) Run(args ...string) *gexec.Session {
+	session := CmdRunner(oc.path, args...)
 	Eventually(session).Should(gexec.Exit(0))
 	return session
 }
@@ -695,4 +695,16 @@ func (oc OcRunner) WaitAndCheckForTerminatingState(resourceType, namespace strin
 // belonging to the given component, app and project
 func (oc OcRunner) GetAnnotationsDeployment(componentName, appName, projectName string) map[string]string {
 	return GetAnnotationsDeployment(oc.path, componentName, appName, projectName)
+}
+
+func (oc OcRunner) PodsShouldBeRunning(project string, regex string) {
+	// now verify if the pods for the operator have started
+	pods := oc.GetAllPodsInNs(project)
+	// Look for pods with specified regex
+	etcdPod := regexp.MustCompile(regex).FindString(pods)
+
+	ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+	WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+		return strings.Contains(output, "Running")
+	})
 }

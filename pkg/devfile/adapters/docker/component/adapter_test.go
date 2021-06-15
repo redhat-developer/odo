@@ -106,7 +106,7 @@ func TestPush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -302,7 +302,7 @@ func TestDockerTest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -391,7 +391,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}
@@ -773,7 +773,7 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 					if err != nil {
 						t.Error(err)
 					}

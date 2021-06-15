@@ -28,8 +28,8 @@ func GetSingleRoute(urlName string, port int, componentName, applicationName str
 			Labels: map[string]string{
 				applabels.ApplicationLabel:     applicationName,
 				componentlabels.ComponentLabel: componentName,
-				applabels.OdoManagedBy:         "odo",
-				applabels.OdoVersion:           version.VERSION,
+				applabels.ManagedBy:            "odo",
+				applabels.ManagerVersion:       version.VERSION,
 				labels.URLLabel:                urlName,
 			},
 		},

@@ -6,11 +6,8 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/devfile/library/pkg/devfile/parser"
-
-	"github.com/devfile/library/pkg/devfile"
 	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/devfile/validate"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
@@ -71,11 +68,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: lo.devfilePath})
-		if err != nil {
-			return err
-		}
-		err = validate.ValidateDevfileData(devObj.Data)
+		devObj, err := devfile.ParseFromFile(lo.devfilePath)
 		if err != nil {
 			return err
 		}
@@ -140,7 +133,7 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
-
+	var otherComps []component.Component
 	// --path workflow
 
 	if len(lo.pathFlag) != 0 {
@@ -154,7 +147,7 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 			return err
 		}
 
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps)
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComps, devfileComps, otherComps)
 
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(combinedComponents)
@@ -259,7 +252,8 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 			}
 
 			if len(apps) == 0 && lo.LocalConfigInfo.Exists() {
-				comps, err := component.ListS2IComponents(lo.Client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
+				selector = applabels.GetSelector(lo.LocalConfigInfo.GetApplication())
+				comps, err := component.ListS2IComponents(lo.Client, selector, lo.LocalConfigInfo)
 				if err != nil {
 					return err
 				}
@@ -268,15 +262,16 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 
 			// iterating over list of application and get list of all components
 			for _, app := range apps {
-				comps, err := component.ListS2IComponents(lo.Client, app, lo.LocalConfigInfo)
+				selector = applabels.GetSelector(app)
+				comps, err := component.ListS2IComponents(lo.Client, selector, lo.LocalConfigInfo)
 				if err != nil {
 					return err
 				}
 				s2iComponents = append(s2iComponents, comps.Items...)
 			}
 		} else {
-
-			componentList, err := component.ListS2IComponents(lo.Client, lo.Application, lo.LocalConfigInfo)
+			selector = applabels.GetSelector(lo.Application)
+			componentList, err := component.ListS2IComponents(lo.Client, selector, lo.LocalConfigInfo)
 			// compat
 			s2iComponents = componentList.Items
 			if err != nil {
@@ -284,6 +279,19 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 			}
 		}
 	}
+
+	// list components managed by other sources/tools
+	if lo.allAppsFlag {
+		selector = project.GetNonOdoSelector()
+	} else {
+		selector = applabels.GetNonOdoSelector(lo.Application)
+	}
+
+	otherComponents, err := component.List(lo.Client, selector, lo.LocalConfigInfo)
+	if err != nil {
+		return fmt.Errorf("failed to fetch components not managed by odo: %w", err)
+	}
+	otherComps = otherComponents.Items
 
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
@@ -313,13 +321,22 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 			}
 			w.Flush()
 		}
+		if len(otherComps) != 0 {
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "Other Components running on the cluster(read-only): ")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE")
+			for _, comp := range otherComps {
+				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type)
+			}
+			w.Flush()
+		}
 
-		if !lo.hasDevfileComponents && !lo.hasS2IComponents {
+		if !lo.hasDevfileComponents && !lo.hasS2IComponents && len(otherComps) == 0 {
 			log.Info("There are no components deployed.")
 			return
 		}
 	} else {
-		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComponents, devfileComponents)
+		combinedComponents := component.GetMachineReadableFormatForCombinedCompList(s2iComponents, devfileComponents, otherComps)
 		machineoutput.OutputSuccess(combinedComponents)
 	}
 

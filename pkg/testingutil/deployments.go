@@ -20,7 +20,7 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 				applabels.App:                  "app",
 				applabels.ApplicationLabel:     "app",
 				componentlabels.ComponentLabel: podName,
-				applabels.OdoManagedBy:         "odo",
+				applabels.ManagedBy:            "odo",
 			},
 		},
 	}

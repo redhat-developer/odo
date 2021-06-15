@@ -82,6 +82,10 @@ type DownloadParams struct {
 }
 
 // ConvertLabelsToSelector converts the given labels to selector
+// To pass operands such as !=, append a ! prefix to the value.
+// For E.g. map[string]string{"app.kubernetes.io/managed-by": "!odo"}
+// Using != operators also means that resource will be filtered even if it doesn't have the key.
+// So a resource not labelled with key "app.kubernetes.io/managed-by" will also be returned.
 func ConvertLabelsToSelector(labels map[string]string) string {
 	var selector string
 	isFirst := true
@@ -91,13 +95,23 @@ func ConvertLabelsToSelector(labels map[string]string) string {
 			if v == "" {
 				selector = selector + fmt.Sprintf("%v", k)
 			} else {
-				selector = fmt.Sprintf("%v=%v", k, v)
+				if strings.HasPrefix(v, "!") {
+					v = strings.Replace(v, "!", "", -1)
+					selector = fmt.Sprintf("%v!=%v", k, v)
+				} else {
+					selector = fmt.Sprintf("%v=%v", k, v)
+				}
 			}
 		} else {
 			if v == "" {
 				selector = selector + fmt.Sprintf(",%v", k)
 			} else {
-				selector = selector + fmt.Sprintf(",%v=%v", k, v)
+				if strings.HasPrefix(v, "!") {
+					v = strings.Replace(v, "!", "", -1)
+					selector = selector + fmt.Sprintf(",%v!=%v", k, v)
+				} else {
+					selector = selector + fmt.Sprintf(",%v=%v", k, v)
+				}
 			}
 		}
 	}

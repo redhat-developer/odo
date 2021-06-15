@@ -47,8 +47,6 @@ func GetProjectSourceType(projectSrc v1.ProjectSource) (v1.ProjectSourceType, er
 	switch {
 	case projectSrc.Git != nil:
 		return v1.GitProjectSourceType, nil
-	case projectSrc.Github != nil:
-		return v1.GitHubProjectSourceType, nil
 	case projectSrc.Zip != nil:
 		return v1.ZipProjectSourceType, nil
 	case projectSrc.Custom != nil:

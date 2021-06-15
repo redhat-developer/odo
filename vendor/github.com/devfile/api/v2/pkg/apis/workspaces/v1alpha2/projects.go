@@ -19,10 +19,6 @@ type Project struct {
 	// +optional
 	ClonePath string `json:"clonePath,omitempty"`
 
-	// Populate the project sparsely with selected directories.
-	// +optional
-	SparseCheckoutDirs []string `json:"sparseCheckoutDirs,omitempty"`
-
 	ProjectSource `json:",inline"`
 }
 
@@ -51,12 +47,11 @@ type StarterProject struct {
 // Only one of the following project sources may be specified.
 // If none of the following policies is specified, the default one
 // is AllowConcurrent.
-// +kubebuilder:validation:Enum=Git;Github;Zip;Custom
+// +kubebuilder:validation:Enum=Git;Zip;Custom
 type ProjectSourceType string
 
 const (
 	GitProjectSourceType    ProjectSourceType = "Git"
-	GitHubProjectSourceType ProjectSourceType = "Github"
 	ZipProjectSourceType    ProjectSourceType = "Zip"
 	CustomProjectSourceType ProjectSourceType = "Custom"
 )
@@ -72,10 +67,6 @@ type ProjectSource struct {
 	// Project's Git source
 	// +optional
 	Git *GitProjectSource `json:"git,omitempty"`
-
-	// Project's GitHub source. Deprecated, use `Git` instead
-	// +optional
-	Github *GithubProjectSource `json:"github,omitempty"`
 
 	// Project's Zip source
 	// +optional
@@ -127,9 +118,5 @@ type CheckoutFrom struct {
 }
 
 type GitProjectSource struct {
-	GitLikeProjectSource `json:",inline"`
-}
-
-type GithubProjectSource struct {
 	GitLikeProjectSource `json:",inline"`
 }

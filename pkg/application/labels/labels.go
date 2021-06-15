@@ -16,11 +16,11 @@ const ApplicationLabel = "app.kubernetes.io/part-of"
 // App is the default name used when labeling
 const App = "app"
 
-// OdoManagedBy notes that this is managed by odo
-const OdoManagedBy = "app.kubernetes.io/managed-by"
+// ManagedBy notes that this is managed by odo
+const ManagedBy = "app.kubernetes.io/managed-by"
 
-// OdoVersion is a Kubernetes label that adds what version of odo is being ran.
-const OdoVersion = "app.kubernetes.io/managed-by-version"
+// ManagerVersion is a Kubernetes label that adds what version of odo is being ran.
+const ManagerVersion = "app.kubernetes.io/managed-by-version"
 
 // GetLabels return labels that identifies given application
 // additional labels are used only when creating object
@@ -33,20 +33,29 @@ func GetLabels(application string, additional bool) map[string]string {
 
 	if additional {
 		labels[App] = application
-		labels[OdoVersion] = version.VERSION
-		labels[OdoManagedBy] = "odo"
+		labels[ManagerVersion] = version.VERSION
+		labels[ManagedBy] = "odo"
 	}
 
 	return labels
 }
 
-// GetSelector are supposed to be used for selection of any resource part of an application
+// GetSelector are supposed to be used for selection of any resource part of an application that is managed by odo
 func GetSelector(application string) string {
 	labels := map[string]string{
 		ApplicationLabel: application,
 		App:              application,
-		OdoManagedBy:     "odo",
+		ManagedBy:        "odo",
 	}
 
+	return util.ConvertLabelsToSelector(labels)
+}
+
+// GetNonOdoSelector are supposed to be used for selection of any resource part of an application that is not managed by odo
+func GetNonOdoSelector(application string) string {
+	labels := map[string]string{
+		ApplicationLabel: application,
+		ManagedBy:        "!odo",
+	}
 	return util.ConvertLabelsToSelector(labels)
 }

@@ -567,7 +567,7 @@ func TestList(t *testing.T) {
 				}
 			})
 
-			results, err := List(client, "app", tt.existingLocalConfigInfo)
+			results, err := List(client, applabels.GetSelector("app"), tt.existingLocalConfigInfo)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
@@ -1059,7 +1059,7 @@ func getFakeDC(name, namespace, appName, componentType string) appsv1.Deployment
 			Namespace: namespace,
 			Labels: map[string]string{
 				applabels.App:                      appName,
-				applabels.OdoManagedBy:             "odo",
+				applabels.ManagedBy:                "odo",
 				applabels.ApplicationLabel:         appName,
 				componentlabels.ComponentLabel:     name,
 				componentlabels.ComponentTypeLabel: componentType,

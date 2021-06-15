@@ -202,11 +202,11 @@ func resourceAsJson(resource interface{}) string {
 	return string(data)
 }
 
-// ApplyDeployment updates a deployment based on the given deployment spec
+// CreateDeployment creates a deployment based on the given deployment spec
 func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
+		return nil, errors.Wrapf(err, "unable to create Deployment %s", deploy.Name)
 	}
 	return deployment, nil
 }

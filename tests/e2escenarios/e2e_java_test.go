@@ -52,7 +52,7 @@ var _ = Describe("odo java e2e tests", func() {
 			helper.HttpWaitFor(routeURL, "Insult", 90, 1)
 
 			// Delete the component
-			helper.Cmd("odo", "delete", "wo-wait-javaee-git-test", "-f", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 	})
 	// Test Java
@@ -71,7 +71,7 @@ var _ = Describe("odo java e2e tests", func() {
 			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
 
 			// Delete the component
-			helper.Cmd("odo", "delete", "javaee-war-test", "-f", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 
 		It("Should be able to deploy a git repo that contains a java uberjar application using openjdk", func() {
@@ -90,7 +90,7 @@ var _ = Describe("odo java e2e tests", func() {
 			helper.HttpWaitFor(routeURL, "Hello World", 90, 1)
 
 			// Delete the component
-			helper.Cmd("odo", "delete", "uberjar-git-test", "-f", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
@@ -109,7 +109,7 @@ var _ = Describe("odo java e2e tests", func() {
 			helper.HttpWaitFor(routeURL, "HTTP Booster", 300, 1)
 
 			// Delete the component
-			helper.Cmd("odo", "delete", "sb-jar-test", "-f", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 
 	})

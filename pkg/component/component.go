@@ -900,13 +900,7 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 }
 
 // ListS2IComponents lists s2i components in active application
-func ListS2IComponents(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
-
-	var applicationSelector string
-	if applicationName != "" {
-		applicationSelector = applabels.GetSelector(applicationName)
-	}
-
+func ListS2IComponents(client *occlient.Client, applicationSelector string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 	deploymentConfigSupported := false
 	var err error
 
@@ -929,11 +923,12 @@ func ListS2IComponents(client *occlient.Client, applicationName string, localCon
 
 		// create a list of object metadata based on the component and application name (extracted from DeploymentConfig labels)
 		for _, elem := range dcList {
-			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.Namespace)
 			if err != nil {
 				return ComponentList{}, errors.Wrap(err, "Unable to get component")
 			}
-			if !reflect.ValueOf(component).IsZero() {
+			value := reflect.ValueOf(component)
+			if !value.IsZero() {
 				components = append(components, component)
 				componentNamesMap[component.Name] = true
 			}
@@ -950,7 +945,7 @@ func ListS2IComponents(client *occlient.Client, applicationName string, localCon
 
 		if client != nil {
 			_, ok := componentNamesMap[component.Name]
-			if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+			if component.Name != "" && !ok && component.Spec.App == localConfigInfo.GetApplication() && component.Namespace == client.Namespace {
 				component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
 				components = append(components, component)
 			}
@@ -967,11 +962,7 @@ func ListS2IComponents(client *occlient.Client, applicationName string, localCon
 }
 
 // List lists all s2i and devfile components in active application
-func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
-	var applicationSelector string
-	if applicationName != "" {
-		applicationSelector = applabels.GetSelector(applicationName)
-	}
+func List(client *occlient.Client, applicationSelector string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 	var components []Component
 	devfileList, err := ListDevfileComponents(client, applicationSelector)
 	if err != nil {
@@ -979,7 +970,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 	}
 	components = append(components, devfileList.Items...)
 
-	s2iList, err := ListS2IComponents(client, applicationName, localConfigInfo)
+	s2iList, err := ListS2IComponents(client, applicationSelector, localConfigInfo)
 	if err != nil {
 		return ComponentList{}, err
 	}
@@ -1652,13 +1643,16 @@ func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
 	}
 }
 
-// GetMachineReadableFormatForCombinedCompList returns list of devfile and s2i components in machine readable format
-func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []Component) CombinedComponentList {
+// GetMachineReadableFormatForCombinedCompList returns list of devfile, s2i components and other components(not managed by odo) in machine readable format
+func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []Component, otherComps []Component) CombinedComponentList {
 	if len(s2iComps) == 0 {
 		s2iComps = []Component{}
 	}
 	if len(devfileComps) == 0 {
 		devfileComps = []Component{}
+	}
+	if len(otherComps) == 0 {
+		otherComps = []Component{}
 	}
 
 	return CombinedComponentList{
@@ -1669,6 +1663,7 @@ func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileCo
 		ListMeta:          metav1.ListMeta{},
 		S2IComponents:     s2iComps,
 		DevfileComponents: devfileComps,
+		OtherComponents:   otherComps,
 	}
 }
 

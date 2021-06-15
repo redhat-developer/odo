@@ -50,6 +50,7 @@ type CombinedComponentList struct {
 	metav1.ListMeta   `json:"metadata,omitempty"`
 	S2IComponents     []Component `json:"s2iComponents"`
 	DevfileComponents []Component `json:"devfileComponents"`
+	OtherComponents   []Component `json:"otherComponents"`
 }
 
 // State represents the component state

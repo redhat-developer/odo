@@ -58,8 +58,8 @@ func TestGetLabels(t *testing.T) {
 			want: map[string]string{
 				applabels.ApplicationLabel:     "applicationame",
 				applabels.App:                  "applicationame",
-				applabels.OdoManagedBy:         "odo",
-				applabels.OdoVersion:           version.VERSION,
+				applabels.ManagedBy:            "odo",
+				applabels.ManagerVersion:       version.VERSION,
 				componentlabels.ComponentLabel: "componentname",
 				StorageLabel:                   "storagename",
 			},

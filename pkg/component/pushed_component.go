@@ -280,7 +280,14 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 			dc, err := c.GetDeploymentConfigFromName(deploymentName)
 			if err != nil {
 				if kerrors.IsNotFound(err) {
-					return nil, nil
+					// in case where odo's standard naming practices are not followed, it makes sense to do a double check with component name
+					// this is useful when dealing with components that are not managed/created by odo
+					dc, err = c.GetDeploymentConfigFromName(componentName)
+					if err != nil {
+						return nil, nil
+					} else {
+						return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c), nil
+					}
 				}
 			} else {
 				return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c), nil

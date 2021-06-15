@@ -5,12 +5,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
@@ -80,12 +79,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Get the component name
 		so.componentName = so.EnvSpecificInfo.GetName()
 
-		// Parse devfile
-		devObj, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: so.devfilePath})
-		if err != nil {
-			return err
-		}
-		err = validate.ValidateDevfileData(devObj.Data)
+		devObj, err := devfile.ParseFromFile(so.devfilePath)
 		if err != nil {
 			return err
 		}

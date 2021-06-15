@@ -127,7 +127,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -202,7 +202,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -256,7 +256,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -298,7 +298,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -358,7 +358,7 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -392,7 +392,7 @@ func TestEnvInfo_ValidateStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -479,7 +479,7 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
@@ -510,7 +510,7 @@ func TestEnvInfo_GetStorage(t *testing.T) {
 			fields: fields{
 				devfileObj: parser.DevfileObj{
 					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APIVersion200))
+						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 						if err != nil {
 							t.Error(err)
 						}
