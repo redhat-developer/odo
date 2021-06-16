@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
@@ -225,18 +226,71 @@ func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment,
 // odo overrides it with the value it expects instead of failing due to conflict.
 func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	data, err := json.Marshal(deploy)
-
-	klog.V(5).Infoln("Applying Deployment via server-side apply:")
-	klog.V(5).Infoln(resourceAsJson(deploy))
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to marshal deployment")
 	}
+	klog.V(5).Infoln("Applying Deployment via server-side apply:")
+	klog.V(5).Infoln(resourceAsJson(deploy))
+
+	err = c.removeDuplicateEnv(deploy)
+	if err != nil {
+		return nil, err
+	}
+
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
 	return deployment, nil
+}
+
+// removeDuplicateEnv removes duplicate environment variables from containers, due to a bug in Service Binding Operator:
+// https://github.com/redhat-developer/service-binding-operator/issues/983
+func (c *Client) removeDuplicateEnv(deployment appsv1.Deployment) error {
+	_, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(context.Background(), deployment.Name, metav1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	containers := deployment.Spec.Template.Spec.Containers
+	for i, container := range containers {
+		duplicates := []corev1.EnvVar{}
+		found := map[string]bool{}
+		envs := container.Env
+		for _, env := range envs {
+			if _, ok := found[env.Name]; ok {
+				duplicates = append(duplicates, env)
+			} else {
+				found[env.Name] = true
+			}
+		}
+		if len(duplicates) > 0 {
+			newEnv := []corev1.EnvVar{}
+			// first remove duplicates
+			for _, env := range envs {
+				found := false
+				for _, duplicate := range duplicates {
+					if env.Name == duplicate.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					newEnv = append(newEnv, env)
+				}
+			}
+			// next add them as single values
+			newEnv = append(newEnv, duplicates...)
+			containers[i].Env = newEnv
+		}
+	}
+	_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.Background(), &deployment, metav1.UpdateOptions{})
+	if kerrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 // DeleteDeployment deletes the deployments with the given selector
@@ -297,6 +351,17 @@ func (c *Client) GetDynamicResource(group, version, resource, name string) (*uns
 		return nil, err
 	}
 	return res, nil
+}
+
+// UpdateDynamicResource updates a dynamic resource
+func (c *Client) UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error {
+	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+
+	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Update(context.TODO(), u, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource

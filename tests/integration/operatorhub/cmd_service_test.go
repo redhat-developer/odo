@@ -456,12 +456,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							BeforeEach(func() {
 								linkName = "link-" + helper.RandString(6)
 								helper.Cmd("odo", "link", "EtcdCluster/"+name, "--name", linkName).ShouldPass()
-								// for the moment, odo push is not necessary to deploy the link
+								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							AfterEach(func() {
 								// delete the link
 								helper.Cmd("odo", "unlink", "EtcdCluster/"+name).ShouldPass()
+								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							It("should create the link with the specified name", func() {
@@ -479,12 +480,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							BeforeEach(func() {
 								linkName = "link-" + helper.RandString(6)
 								helper.Cmd("odo", "link", "EtcdCluster/"+name, "--name", linkName, "--bind-as-files").ShouldPass()
-								// for the moment, odo push is not necessary to deploy the link
+								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							AfterEach(func() {
 								// delete the link
 								helper.Cmd("odo", "unlink", "EtcdCluster/"+name).ShouldPass()
+								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							It("should create a servicebinding resource with bindAsFiles set to true", func() {
@@ -607,6 +609,7 @@ spec:
 				It("should link the two components successfully", func() {
 
 					helper.Cmd("odo", "link", cmp1, "--context", context0).ShouldPass()
+					helper.Cmd("odo", "push", "--context", context0).ShouldPass()
 
 					// check the link exists with the specific name
 					ocArgs := []string{"get", "servicebinding", strings.Join([]string{cmp0, cmp1}, "-"), "-o", "jsonpath='{.status.secret}'", "-n", commonVar.Project}
@@ -614,9 +617,9 @@ spec:
 						return strings.Contains(output, strings.Join([]string{cmp0, cmp1}, "-"))
 					})
 
-					// delete the link
+					// delete the link and undeploy it
 					helper.Cmd("odo", "unlink", cmp1, "--context", context0).ShouldPass()
-
+					helper.Cmd("odo", "push", "--context", context0).ShouldPass()
 					commonVar.CliRunner.WaitAndCheckForTerminatingState("servicebinding", commonVar.Project, 1)
 				})
 			})
