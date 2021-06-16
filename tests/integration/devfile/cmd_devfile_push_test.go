@@ -110,6 +110,23 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 		})
 
+		When("Devfile 2.1.0 is used", func() {
+			It("should work with devfile variables", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+				output := helper.CmdShouldPass("odo", "push")
+				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+				routeURL := helper.DetermineRouteURL(commonVar.Context)
+
+				// Ping said URL
+				helper.HttpWaitFor(routeURL, "Hello from Node.js", 10, 5)
+
+			})
+		})
+
 		It("checks that odo push works with a devfile with sourcemapping set", func() {
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
