@@ -234,12 +234,6 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		if err != nil {
 			log.Errorf("error occurred while deleting component, cause: %v", err)
 		}
-
-		// delete the information about link of the components because deleting a component also deletes its links (Service Binding Requests)
-		err = do.EnvSpecificInfo.DeleteConfiguration("link")
-		if err != nil {
-			log.Errorf("error occurred while deleting environment specific information of the component, cause: %v", err)
-		}
 	} else {
 		log.Error("Aborting deletion of component")
 	}

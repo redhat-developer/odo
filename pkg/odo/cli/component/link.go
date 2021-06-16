@@ -103,7 +103,7 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	o.commonLinkOptions.devfilePath = filepath.Join(o.componentContext, DevfilePath)
 	o.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 
-	err = o.complete(name, cmd, args)
+	err = o.complete(name, cmd, args, o.componentContext)
 	if err != nil {
 		return err
 	}
