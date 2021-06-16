@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
@@ -80,6 +81,31 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 }
 
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
+
+	if dso.IsExample {
+		almExample, err := svc.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
+		if err != nil {
+			return err
+		}
+		if log.IsJSON() {
+			jsonCR, err := json.MarshalIndent(almExample, "", "  ")
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(string(jsonCR))
+
+		} else {
+			yamlCR, err := yaml.Marshal(almExample)
+			if err != nil {
+				return err
+			}
+
+			log.Info(string(yamlCR))
+		}
+		return nil
+	}
+
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(svc.ConvertCRDToJSONRepr(ohb.CR))
 		return nil
