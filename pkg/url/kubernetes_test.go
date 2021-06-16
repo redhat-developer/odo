@@ -684,18 +684,18 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			name:   "Case 1: Component name same as urlName",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: getFakeURL("nodejs", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
+				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "nodejs-app",
+					Name: "example-nodejs",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
 						applabels.App:                "app",
 						applabels.ManagedBy:          "odo",
 						applabels.ManagerVersion:     version.VERSION,
-						"odo.openshift.io/url-name":  "nodejs",
+						"odo.openshift.io/url-name":  "example",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -719,7 +719,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-app",
+					Name: "example-url-nodejs",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -754,7 +754,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-app",
+					Name: "example-url-nodejs",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",

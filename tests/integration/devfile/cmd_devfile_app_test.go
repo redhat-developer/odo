@@ -78,7 +78,7 @@ func runner(namespace string, s2i bool) {
 	} else {
 		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, component00, "--context", context00, "--app", app0)
 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context00)
-		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-endpoints.yaml"), filepath.Join(context00, "devfile.yaml"))
+		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context00, "devfile.yaml"))
 		helper.CmdShouldPass("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00)
 		helper.CmdShouldPass("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress")
 	}

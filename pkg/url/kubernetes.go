@@ -267,7 +267,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	// we avoid using the getResourceName() and use the previous method from s2i
 	// as the host name, which is automatically created on openshift,
 	// can become more than 63 chars, which is invalid
-	routeName, err := util.NamespaceOpenShiftObject(url.Name, k.appName)
+	routeName, err := util.NamespaceOpenShiftObject(url.Name, k.componentName)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}
