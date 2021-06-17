@@ -1,16 +1,16 @@
-package url
+package urltype
 
 import (
 	"github.com/openshift/odo/pkg/localConfigProvider"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // URL is
 type URL struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              URLSpec   `json:"spec,omitempty"`
-	Status            URLStatus `json:"status,omitempty"`
+	v1.TypeMeta   `json:",inline"`
+	v1.ObjectMeta `json:"metadata,omitempty"`
+	Spec          URLSpec   `json:"spec,omitempty"`
+	Status        URLStatus `json:"status,omitempty"`
 }
 
 // URLSpec is
@@ -27,9 +27,9 @@ type URLSpec struct {
 
 // URLList is a list of applications
 type URLList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []URL `json:"items"`
+	v1.TypeMeta `json:",inline"`
+	v1.ListMeta `json:"metadata,omitempty"`
+	Items       []URL `json:"items"`
 }
 
 // URLStatus is Status of url
@@ -48,3 +48,14 @@ const (
 	// StateTypeLocallyDeleted means that URL was deleted from the local config, but it is still present on the cluster/container
 	StateTypeLocallyDeleted = "Locally Deleted"
 )
+
+// Get returns URL definition for given URL name
+func (urls URLList) Get(urlName string) URL {
+	for _, url := range urls.Items {
+		if url.Name == urlName {
+			return url
+		}
+	}
+	return URL{}
+
+}

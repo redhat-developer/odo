@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/odo/pkg/urltype"
 	"strings"
 
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -24,7 +25,7 @@ type ComponentFullDescriptionSpec struct {
 	Type       string              `json:"type,omitempty"`
 	Source     string              `json:"source,omitempty"`
 	SourceType string              `json:"sourceType,omitempty"`
-	URL        urlpkg.URLList      `json:"urls,omitempty"`
+	URL        urltype.URLList     `json:"urls,omitempty"`
 	Storage    storage.StorageList `json:"storages,omitempty"`
 	Env        []corev1.EnvVar     `json:"env,omitempty"`
 	Ports      []string            `json:"ports,omitempty"`
@@ -146,7 +147,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 
 	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
 
-	var urls urlpkg.URLList
+	var urls urltype.URLList
 
 	var routeSupported bool
 	var e error
@@ -244,7 +245,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 		var output string
 		// if the component is not pushed
 		for _, componentURL := range cfd.Spec.URL.Items {
-			if componentURL.Status.State == urlpkg.StateTypePushed {
+			if componentURL.Status.State == urltype.StateTypePushed {
 				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, "", true), componentURL.Spec.Port)
 			} else {
 				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, componentURL.Spec.Port)

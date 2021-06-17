@@ -7,6 +7,7 @@ package url
 import (
 	gomock "github.com/golang/mock/gomock"
 	localConfigProvider "github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/pkg/urltype"
 	reflect "reflect"
 )
 
@@ -34,7 +35,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Create mocks base method
-func (m *MockClient) Create(url URL) (string, error) {
+func (m *MockClient) Create(url urltype.URL) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", url)
 	ret0, _ := ret[0].(string)
@@ -63,10 +64,10 @@ func (mr *MockClientMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // ListFromCluster mocks base method
-func (m *MockClient) ListFromCluster() (URLList, error) {
+func (m *MockClient) ListFromCluster() (urltype.URLList, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListFromCluster")
-	ret0, _ := ret[0].(URLList)
+	ret0, _ := ret[0].(urltype.URLList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -78,10 +79,10 @@ func (mr *MockClientMockRecorder) ListFromCluster() *gomock.Call {
 }
 
 // List mocks base method
-func (m *MockClient) List() (URLList, error) {
+func (m *MockClient) List() (urltype.URLList, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List")
-	ret0, _ := ret[0].(URLList)
+	ret0, _ := ret[0].(urltype.URLList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

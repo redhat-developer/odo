@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/urltype"
 	"os"
 	"strings"
 	"unicode"
@@ -144,7 +145,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 			}
 		} else {
 			// Retrieve the URLs
-			urls := urlPkg.URLList{Items: componentDesc.Spec.URLSpec}
+			urls := urltype.URLList{Items: componentDesc.Spec.URLSpec}
 
 			// Gather the output
 			for _, componentURL := range componentDesc.Spec.URL {

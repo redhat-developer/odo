@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/urltype"
 	"sort"
 
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -29,25 +30,25 @@ type kubernetesClient struct {
 }
 
 // ListFromCluster lists both route and ingress based URLs from the cluster
-func (k kubernetesClient) ListFromCluster() (URLList, error) {
+func (k kubernetesClient) ListFromCluster() (urltype.URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, k.componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := k.client.GetKubeClient().ListIngresses(labelSelector)
 	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list ingress")
+		return urltype.URLList{}, errors.Wrap(err, "unable to list ingress")
 	}
 
 	var routes []routev1.Route
 	if k.isRouteSupported {
 		routes, err = k.client.ListRoutes(labelSelector)
 		if err != nil {
-			return URLList{}, errors.Wrap(err, "unable to list routes")
+			return urltype.URLList{}, errors.Wrap(err, "unable to list routes")
 		}
 	}
 
-	var clusterURLs []URL
+	var clusterURLs []urltype.URL
 	for _, i := range ingresses {
-		clusterURLs = append(clusterURLs, ConvertKubernetesIngressToURL(i))
+		clusterURLs = append(clusterURLs, i.GetURL())
 	}
 	for _, r := range routes {
 		// ignore the routes created by ingresses
@@ -62,15 +63,15 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 }
 
 // List lists both route/ingress based URLs and local URLs with respective states
-func (k kubernetesClient) List() (URLList, error) {
+func (k kubernetesClient) List() (urltype.URLList, error) {
 	// get the URLs present on the cluster
-	clusterURLMap := make(map[string]URL)
-	var clusterURLs URLList
+	clusterURLMap := make(map[string]urltype.URL)
+	var clusterURLs urltype.URLList
 	var err error
 	if k.client.GetKubeClient() != nil {
 		clusterURLs, err = k.ListFromCluster()
 		if err != nil {
-			return URLList{}, errors.Wrap(err, "unable to list routes")
+			return urltype.URLList{}, errors.Wrap(err, "unable to list routes")
 		}
 	}
 
@@ -78,12 +79,12 @@ func (k kubernetesClient) List() (URLList, error) {
 		clusterURLMap[url.Name] = url
 	}
 
-	localMap := make(map[string]URL)
+	localMap := make(map[string]urltype.URL)
 	if k.localConfig != nil {
 		// get the URLs present on the localConfigProvider
 		localURLS, err := k.localConfig.ListURLs()
 		if err != nil {
-			return URLList{}, err
+			return urltype.URLList{}, err
 		}
 		for _, url := range localURLS {
 			if !k.isRouteSupported && url.Kind == localConfigProvider.ROUTE {
@@ -102,11 +103,11 @@ func (k kubernetesClient) List() (URLList, error) {
 		_, found := localMap[URLName]
 		if found {
 			// URL is in both local env file and cluster
-			clusterURL.Status.State = StateTypePushed
+			clusterURL.Status.State = urltype.StateTypePushed
 			urls = append(urls, clusterURL)
 		} else {
 			// URL is on the cluster but not in local env file
-			clusterURL.Status.State = StateTypeLocallyDeleted
+			clusterURL.Status.State = urltype.StateTypeLocallyDeleted
 			urls = append(urls, clusterURL)
 		}
 	}
@@ -117,7 +118,7 @@ func (k kubernetesClient) List() (URLList, error) {
 		_, remoteURLFound := clusterURLMap[localName]
 		if !remoteURLFound {
 			// URL is in the local env file but not pushed to cluster
-			localURL.Status.State = StateTypeNotPushed
+			localURL.Status.State = urltype.StateTypeNotPushed
 			urls = append(urls, localURL)
 		}
 	}
@@ -151,7 +152,7 @@ func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) 
 }
 
 // Create creates a route or ingress based on the given URL
-func (k kubernetesClient) Create(url URL) (string, error) {
+func (k kubernetesClient) Create(url urltype.URL) (string, error) {
 	if url.Spec.Kind != localConfigProvider.INGRESS && url.Spec.Kind != localConfigProvider.ROUTE {
 		return "", fmt.Errorf("urlKind %s is not supported for URL creation", url.Spec.Kind)
 	}
@@ -175,7 +176,7 @@ func (k kubernetesClient) Create(url URL) (string, error) {
 }
 
 // createIngress creates a ingress for the given URL with the given labels
-func (k kubernetesClient) createIngress(url URL, labels map[string]string) (string, error) {
+func (k kubernetesClient) createIngress(url urltype.URL, labels map[string]string) (string, error) {
 	if url.Spec.Host == "" {
 		return "", errors.Errorf("the host cannot be empty")
 	}
@@ -261,7 +262,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 }
 
 // createRoute creates a route for the given URL with the given labels
-func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string, error) {
+func (k kubernetesClient) createRoute(url urltype.URL, labels map[string]string) (string, error) {
 	// to avoid error due to duplicate ingress name defined in different devfile components
 	// we avoid using the getResourceName() and use the previous method from s2i
 	// as the host name, which is automatically created on openshift,

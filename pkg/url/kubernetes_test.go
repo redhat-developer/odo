@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/urltype"
 	networkingv1 "k8s.io/api/networking/v1"
 	"reflect"
 	"testing"
@@ -29,8 +30,8 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
-func getFakeURL(name string, host string, port int, path string, protocol string, kind localConfigProvider.URLKind, urlState StateType) URL {
-	return URL{
+func getFakeURL(name string, host string, port int, path string, protocol string, kind localConfigProvider.URLKind, urlState urltype.StateType) urltype.URL {
+	return urltype.URL{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "url",
 			APIVersion: "odo.dev/v1alpha1",
@@ -38,14 +39,14 @@ func getFakeURL(name string, host string, port int, path string, protocol string
 		ObjectMeta: v1.ObjectMeta{
 			Name: name,
 		},
-		Spec: URLSpec{
+		Spec: urltype.URLSpec{
 			Host:     host,
 			Protocol: protocol,
 			Kind:     kind,
 			Path:     path,
 			Port:     port,
 		},
-		Status: URLStatus{
+		Status: urltype.URLStatus{
 			State: urlState,
 		},
 	}
@@ -75,7 +76,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 		fields            fields
 		returnedIngresses extensionsv1.IngressList
 		returnedRoutes    routev1.RouteList
-		want              URLList
+		want              urltype.URLList
 		wantErr           bool
 	}{
 		{
@@ -93,7 +94,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					*ingress1,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: getMachineReadableFormatForList([]urltype.URL{
 				getMachineReadableFormatExtensionV1Ingress(*ingress0),
 				getMachineReadableFormatExtensionV1Ingress(*ingress1),
 			}),
@@ -113,7 +114,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					route1,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: getMachineReadableFormatForList([]urltype.URL{
 				getMachineReadableFormat(route0),
 				getMachineReadableFormat(route1)},
 			),
@@ -139,7 +140,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					*ingress1,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: getMachineReadableFormatForList([]urltype.URL{
 				getMachineReadableFormatExtensionV1Ingress(*ingress0),
 				getMachineReadableFormatExtensionV1Ingress(*ingress1),
 				getMachineReadableFormat(route0),
@@ -172,7 +173,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					routeOwnedByIngress,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: getMachineReadableFormatForList([]urltype.URL{
 				getMachineReadableFormat(route0)},
 			),
 		},
@@ -232,7 +233,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 		returnedRoutes    routev1.RouteList
 		returnedIngress   extensionsv1.IngressList
 		returnedLocalURLs []localConfigProvider.LocalURL
-		want              URLList
+		want              urltype.URLList
 		wantErr           bool
 	}{
 		{
@@ -260,9 +261,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
-				getFakeURL("example-1", "example-1.com", 8080, "", "", localConfigProvider.INGRESS, StateTypeNotPushed),
-				getFakeURL("example-2", "example-2.com", 8080, "", "", localConfigProvider.INGRESS, StateTypeNotPushed)}),
+			want: getMachineReadableFormatForList([]urltype.URL{
+				getFakeURL("example-1", "example-1.com", 8080, "", "", localConfigProvider.INGRESS, urltype.StateTypeNotPushed),
+				getFakeURL("example-2", "example-2.com", 8080, "", "", localConfigProvider.INGRESS, urltype.StateTypeNotPushed)}),
 		},
 		{
 			name: "case 2: two urls pushed but are deleted locally",
@@ -280,9 +281,15 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			returnedLocalURLs: []localConfigProvider.LocalURL{},
+<<<<<<< HEAD
 			want: getMachineReadableFormatForList([]URL{
 				getFakeURL("testRoute0", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted),
 				getFakeURL("testRoute1", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted)}),
+=======
+			want: getMachineReadableFormatForList([]urltype.URL{
+				getFakeURL("testRoute0", "", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeLocallyDeleted),
+				getFakeURL("testRoute1", "", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeLocallyDeleted)}),
+>>>>>>> 9a522e384 (Fixing missing protocol in list.)
 		},
 		{
 			name: "case 3: two urls which are pushed",
@@ -320,9 +327,15 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
+<<<<<<< HEAD
 			want: getMachineReadableFormatForList([]URL{
 				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "", localConfigProvider.INGRESS, StateTypePushed),
 				getFakeURL("testRoute0", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypePushed),
+=======
+			want: getMachineReadableFormatForList([]urltype.URL{
+				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypePushed),
+				getFakeURL("testRoute0", "", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypePushed),
+>>>>>>> 9a522e384 (Fixing missing protocol in list.)
 			}),
 		},
 		{
@@ -360,10 +373,17 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
+<<<<<<< HEAD
 			want: getMachineReadableFormatForList([]URL{
 				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "", localConfigProvider.INGRESS, StateTypePushed),
 				getFakeURL("testRoute0", "", 8080, "/", "", localConfigProvider.ROUTE, StateTypeNotPushed),
 				getFakeURL("testRoute1", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted),
+=======
+			want: getMachineReadableFormatForList([]urltype.URL{
+				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypePushed),
+				getFakeURL("testRoute0", "", 8080, "/", "", localConfigProvider.ROUTE, urltype.StateTypeNotPushed),
+				getFakeURL("testRoute1", "", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeLocallyDeleted),
+>>>>>>> 9a522e384 (Fixing missing protocol in list.)
 			}),
 		},
 		{
@@ -392,8 +412,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
-				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "", localConfigProvider.INGRESS, StateTypeNotPushed),
+			want: getMachineReadableFormatForList([]urltype.URL{
+				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "", localConfigProvider.INGRESS, urltype.StateTypeNotPushed),
 			}),
 		},
 	}
@@ -419,9 +439,6 @@ func Test_kubernetesClient_List(t *testing.T) {
 			fkocclient.SetKubeClient(fkclient)
 
 			fkocclientset.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
-					return true, &networkingv1.Ingress{}, nil
-				}
 				return true, &tt.returnedRoutes, nil
 			})
 
@@ -449,7 +466,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 		isRouteSupported bool
 	}
 	type args struct {
-		url URL
+		url urltype.URL
 	}
 	tests := []struct {
 		name               string
@@ -465,7 +482,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			name:   "Case 1: Create a ingress, with same name as component",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: getFakeURL("nodejs", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
+				url: getFakeURL("nodejs", "com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypeNotPushed),
 			},
 			createdIngress: fake.GetSingleExtensionV1Ingress("nodejs-nodejs-app", "nodejs", "app"),
 			want:           "http://nodejs.com",
@@ -475,7 +492,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			name:   "Case 2: Create a ingress, with different name as component",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
+				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypeNotPushed),
 			},
 			createdIngress: fake.GetSingleExtensionV1Ingress("example-nodejs-app", "nodejs", "app"),
 			want:           "http://example.com",
@@ -485,8 +502,8 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			name:   "Case 3: Create a secure ingress, default tls exists",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypeNotPushed)
 					url.Spec.Secure = true
 					return url
 				}(),
@@ -500,8 +517,8 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			name:   "Case 4: Create a secure ingress and default tls doesn't exist",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypeNotPushed)
 					url.Spec.Secure = true
 					return url
 				}(),
@@ -515,8 +532,8 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			name:   "Case 5: Fail when while creating ingress when user given tls secret doesn't exists",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypeNotPushed)
 					url.Spec.Secure = true
 					url.Spec.TLSSecret = "user-secret"
 					return url
@@ -531,8 +548,8 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			name:   "Case 6: Create a secure ingress, user tls secret does exists",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypeNotPushed)
 					url.Spec.Secure = true
 					url.Spec.TLSSecret = "user-secret"
 					return url
@@ -680,7 +697,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 		isRouteSupported bool
 	}
 	type args struct {
-		url URL
+		url urltype.URL
 	}
 	tests := []struct {
 		name          string
@@ -694,7 +711,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			name:   "Case 1: Component name same as urlName",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
+				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeNotPushed),
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
@@ -725,7 +742,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			name:   "Case 2: Component name different than urlName",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: getFakeURL("example-url", "com", 9100, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
+				url: getFakeURL("example-url", "com", 9100, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeNotPushed),
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
@@ -756,8 +773,8 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			name:   "Case 3: a secure URL",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example-url", "com", 9100, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example-url", "com", 9100, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeNotPushed)
 					url.Spec.Secure = true
 					return url
 				}(),
@@ -853,7 +870,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 		isRouteSupported bool
 	}
 	type args struct {
-		url URL
+		url urltype.URL
 	}
 	tests := []struct {
 		name            string
@@ -867,7 +884,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			name:   "Case 1: invalid url kind",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}},
 			args: args{
-				url: getFakeURL("nodejs", "com", 8080, "/", "http", "blah", StateTypeNotPushed),
+				url: getFakeURL("nodejs", "com", 8080, "/", "http", "blah", urltype.StateTypeNotPushed),
 			},
 			wantErr: true,
 		},
@@ -875,7 +892,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			name:   "Case 2: route is not supported on the cluster",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: false},
 			args: args{
-				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
+				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeNotPushed),
 			},
 			wantErr: true,
 		},
@@ -883,8 +900,8 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			name:   "Case 3: secretName used without secure flag",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: false},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeNotPushed)
 					url.Spec.TLSSecret = "secret"
 					return url
 				}(),
@@ -895,8 +912,8 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			name:   "Case 4: create a route",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: true},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.ROUTE, urltype.StateTypeNotPushed)
 					return url
 				}(),
 			},
@@ -907,8 +924,8 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			name:   "Case 5: create a ingress",
 			fields: fields{generic: generic{componentName: "nodejs", appName: "app"}, isRouteSupported: true},
 			args: args{
-				url: func() URL {
-					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed)
+				url: func() urltype.URL {
+					url := getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, urltype.StateTypeNotPushed)
 					return url
 				}(),
 			},
