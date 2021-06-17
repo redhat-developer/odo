@@ -122,7 +122,7 @@ func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngres
 			LabelSelector: labelSelector,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("unable to list ingresses as networking v1 ingresses")
+			return nil, fmt.Errorf("unable to list ingresses as networking v1 ingresses %w", err)
 		} else {
 			for k := range ingressList.Items {
 				ki := unions.NewEmptyKubernetesIngress()
@@ -135,6 +135,7 @@ func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngres
 			LabelSelector: labelSelector,
 		})
 		if err != nil {
+			return nil, fmt.Errorf("unable to list ingresses as extensions v1 ingress %w", err)
 		} else {
 			for k := range ingressList.Items {
 				ki := unions.NewEmptyKubernetesIngress()
