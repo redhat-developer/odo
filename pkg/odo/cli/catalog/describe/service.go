@@ -40,7 +40,7 @@ type DescribeServiceOptions struct {
 	*genericclioptions.Context
 
 	backend   CatalogProviderBackend
-	IsExample bool
+	isExample bool
 }
 
 // NewDescribeServiceOptions creates a new DescribeServiceOptions instance
@@ -91,7 +91,7 @@ func NewCmdCatalogDescribeService(name, fullName string) *cobra.Command {
 		},
 	}
 
-	command.Flags().BoolVarP(&o.IsExample, "example", "e", false, "Show an example of the service")
+	command.Flags().BoolVarP(&o.isExample, "example", "e", false, "Show an example of the service")
 
 	return command
 }

@@ -8,6 +8,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type OperatorExample struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              map[string]interface{} `json:"spec,omitempty"`
+}
+
 // ServiceInfo holds all important information about one service
 type Service struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -91,4 +97,14 @@ func (sp *ServicePlanParameter) UnmarshalJSON(data []byte) error {
 	sp.Validatable = tempServicePlanParameter.Validatable
 
 	return nil
+}
+
+func NewOperatorExample(almExample map[string]interface{}) OperatorExample {
+	return OperatorExample{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "OperatorExample",
+			APIVersion: "odo.dev/v1alpha1",
+		},
+		Spec: almExample,
+	}
 }

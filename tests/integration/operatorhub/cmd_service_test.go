@@ -74,7 +74,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			It("should describe the example of the operator as json", func() {
 				outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example", "-o", "json")
-				value := gjson.Get(outputJSON, "kind")
+				value := gjson.Get(outputJSON, "spec.kind")
 				Expect(value.String()).To(Equal("EtcdCluster"))
 			})
 

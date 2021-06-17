@@ -82,13 +82,14 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
 
-	if dso.IsExample {
+	if dso.isExample {
 		almExample, err := svc.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
 		if err != nil {
 			return err
 		}
 		if log.IsJSON() {
-			jsonCR, err := json.MarshalIndent(almExample, "", "  ")
+			jsonExample := service.NewOperatorExample(almExample)
+			jsonCR, err := json.MarshalIndent(jsonExample, "", "  ")
 			if err != nil {
 				return err
 			}
