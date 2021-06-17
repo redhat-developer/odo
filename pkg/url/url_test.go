@@ -394,8 +394,8 @@ func TestPush(t *testing.T) {
 			args:              args{isRouteSupported: true},
 			existingLocalURLs: []localConfigProvider.LocalURL{},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
+				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
+				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-1", "nodejs", "app")),
 			}),
 			deletedItems: []deleteParameters{
 				{"example-0", localConfigProvider.INGRESS},
@@ -422,8 +422,8 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-1", "nodejs", "app")),
+				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
+				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-1", "nodejs", "app")),
 			}),
 			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
@@ -466,8 +466,8 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatIngress((*fake.GetIngressListWithMultiple("wildfly", "app")).Items[0]),
-				getMachineReadableFormatIngress((*fake.GetIngressListWithMultiple("wildfly", "app")).Items[1]),
+				getMachineReadableFormatExtensionV1Ingress((*fake.GetExtensionV1IngressListWithMultiple("wildfly", "app")).Items[0]),
+				getMachineReadableFormatExtensionV1Ingress((*fake.GetExtensionV1IngressListWithMultiple("wildfly", "app")).Items[1]),
 			}),
 			createdURLs: []URL{},
 		},
@@ -490,7 +490,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-0", "nodejs", "app")),
+				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9090, "nodejs", "app")),
 			}),
 			createdURLs: []URL{
@@ -552,7 +552,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatIngress(*fake.GetSingleIngress("example-local-0", "nodejs", "app")),
+				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-local-0", "nodejs", "app")),
 			}),
 			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{

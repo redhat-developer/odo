@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/unions"
 	"net"
 	"reflect"
 	"strconv"
@@ -35,6 +36,41 @@ func (urls URLList) Get(urlName string) URL {
 	}
 	return URL{}
 
+}
+
+func getURLTypeMeta() metav1.TypeMeta {
+	return metav1.TypeMeta{Kind: "url", APIVersion: apiVersion}
+}
+
+//ConvertKubernetesIngressToURL gives equivalent URL from passed Kubernetes ingress.
+//This ingress SHOULD NOT be a generated one
+func ConvertKubernetesIngressToURL(ki *unions.KubernetesIngress) URL {
+	if ki.IsGenerated() {
+		return URL{}
+	}
+	u := URL{
+		TypeMeta: getURLTypeMeta(),
+	}
+	if ki.NetworkingV1Ingress != nil {
+		u.ObjectMeta = metav1.ObjectMeta{Name: ki.NetworkingV1Ingress.Labels[urlLabels.URLLabel]}
+		u.Spec = URLSpec{
+			Host:   ki.NetworkingV1Ingress.Spec.Rules[0].Host,
+			Port:   int(ki.NetworkingV1Ingress.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Number),
+			Secure: ki.NetworkingV1Ingress.Spec.TLS != nil,
+			Path:   ki.NetworkingV1Ingress.Spec.Rules[0].HTTP.Paths[0].Path,
+			Kind:   localConfigProvider.INGRESS,
+		}
+	} else if ki.ExtensionV1Beta1Ingress != nil {
+		u.ObjectMeta = metav1.ObjectMeta{Name: ki.ExtensionV1Beta1Ingress.Labels[urlLabels.URLLabel]}
+		u.Spec = URLSpec{
+			Host:   ki.ExtensionV1Beta1Ingress.Spec.Rules[0].Host,
+			Port:   int(ki.ExtensionV1Beta1Ingress.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal),
+			Secure: ki.ExtensionV1Beta1Ingress.Spec.TLS != nil,
+			Path:   ki.ExtensionV1Beta1Ingress.Spec.Rules[0].HTTP.Paths[0].Path,
+			Kind:   localConfigProvider.INGRESS,
+		}
+	}
+	return u
 }
 
 // ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
@@ -75,13 +111,12 @@ func ListPushedIngress(client *kclient.Client, componentName string) (URLList, e
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list ingress names")
+		return URLList{}, fmt.Errorf("unable to list ingress names %w", err)
 	}
 
 	var urls []URL
 	for _, i := range ingresses {
-		a := getMachineReadableFormatIngress(i)
-		urls = append(urls, a)
+		urls = append(urls, ConvertKubernetesIngressToURL(i))
 	}
 
 	urlList := getMachineReadableFormatForList(urls)
@@ -261,9 +296,9 @@ func getMachineReadableFormatForList(urls []URL) URLList {
 	}
 }
 
-func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
+func getMachineReadableFormatExtensionV1Ingress(i iextensionsv1.Ingress) URL {
 	url := URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
+		TypeMeta:   getURLTypeMeta(),
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
 		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: localConfigProvider.INGRESS},
 	}

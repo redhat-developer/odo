@@ -1,6 +1,7 @@
 package url
 
 import (
+	networkingv1 "k8s.io/api/networking/v1"
 	"reflect"
 	"testing"
 
@@ -137,7 +138,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 
 			ingressList: &extensionsv1.IngressList{
 				Items: []extensionsv1.Ingress{
-					kclient_fake.GetIngressListWithMultiple(componentName, "app").Items[0],
+					kclient_fake.GetExtensionV1IngressListWithMultiple(componentName, "app").Items[0],
 				},
 			},
 			routeList: &routev1.RouteList{
@@ -169,6 +170,9 @@ func TestGetURLsForKubernetes(t *testing.T) {
 
 			// Return the test's ingress list when requested
 			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
+					return true, &networkingv1.Ingress{}, nil
+				}
 				return true, tt.ingressList, nil
 			})
 

@@ -1,11 +1,6 @@
 package occlient
 
 import (
-	"fmt"
-	"os"
-	"runtime"
-	"sync"
-
 	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
 	fakeAppsClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	fakeBuildClientset "github.com/openshift/client-go/build/clientset/versioned/fake"
@@ -13,12 +8,10 @@ import (
 	fakeProjClientset "github.com/openshift/client-go/project/clientset/versioned/fake"
 	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
 	"github.com/openshift/odo/pkg/kclient"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
+	"os"
 )
 
 // FakeClientset holds fake ClientSets
@@ -64,82 +57,27 @@ func FakeNew() (*Client, *FakeClientset) {
 	fkclientset.BuildClientset = fakeBuildClientset.NewSimpleClientset()
 	client.buildClient = fkclientset.BuildClientset.BuildV1()
 
+	fd := kclient.NewKubernetesFakedDiscovery(true, true)
 	if os.Getenv("KUBERNETES") != "true" {
-		client.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithRoute)
-		client.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithDeploymentConfig)
-	} else {
-		client.GetKubeClient().SetDiscoveryInterface(&fakeDiscovery{
-			resourceMap: map[string]*resourceMapEntry{},
+		fd.AddResourceList("project.openshift.io/v1", &metav1.APIResourceList{
+			GroupVersion: "project.openshift.io/v1",
+			APIResources: []metav1.APIResource{{
+				Name:         "routes",
+				SingularName: "route",
+				Namespaced:   true,
+				Kind:         "route",
+			}},
+		})
+		fd.AddResourceList("apps.openshift.io/v1", &metav1.APIResourceList{
+			GroupVersion: "apps.openshift.io/v1",
+			APIResources: []metav1.APIResource{{
+				Name:         "deploymentconfigs",
+				SingularName: "deploymentconfigs",
+				Namespaced:   true,
+				Kind:         "deploymentconfigs",
+			}},
 		})
 	}
-
+	client.GetKubeClient().SetDiscoveryInterface(fd)
 	return client, fkclientset
-}
-
-type resourceMapEntry struct {
-	list *metav1.APIResourceList
-	err  error
-}
-
-type fakeDiscovery struct {
-	*fake.FakeDiscovery
-
-	lock        sync.Mutex
-	resourceMap map[string]*resourceMapEntry
-}
-
-var fakeDiscoveryWithRoute = &fakeDiscovery{
-	resourceMap: map[string]*resourceMapEntry{
-		"project.openshift.io/v1": {
-			list: &metav1.APIResourceList{
-				GroupVersion: "project.openshift.io/v1",
-				APIResources: []metav1.APIResource{{
-					Name:         "routes",
-					SingularName: "route",
-					Namespaced:   true,
-					Kind:         "route",
-				}},
-			},
-		},
-	},
-}
-
-var fakeDiscoveryWithDeploymentConfig = &fakeDiscovery{
-	resourceMap: map[string]*resourceMapEntry{
-		"apps.openshift.io/v1": {
-			list: &metav1.APIResourceList{
-				GroupVersion: "apps.openshift.io/v1",
-				APIResources: []metav1.APIResource{{
-					Name:         "deploymentconfigs",
-					SingularName: "deploymentconfigs",
-					Namespaced:   true,
-					Kind:         "deploymentconfigs",
-				}},
-			},
-		},
-	},
-}
-
-func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if rl, ok := c.resourceMap[groupVersion]; ok {
-		return rl.list, rl.err
-	}
-	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
-}
-
-func (c *fakeDiscovery) ServerVersion() (*version.Info, error) {
-	versionInfo := version.Info{
-		Major:        "1",
-		Minor:        "16",
-		GitVersion:   "v1.16.0+0000000",
-		GitCommit:    "",
-		GitTreeState: "",
-		BuildDate:    "",
-		GoVersion:    runtime.Version(),
-		Compiler:     runtime.Compiler,
-		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-	}
-	return &versionInfo, nil
 }

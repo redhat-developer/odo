@@ -71,7 +71,7 @@ func TestCreateTLSSecret(t *testing.T) {
 			createdTLSSceret, err := fkclient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, tt.objectMeta)
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("fkclient.CreateIngress unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("fkclient.CreateIngressExtensionV1 unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 			if err == nil {
 				if len(fkclientset.Kubernetes.Actions()) != 1 {

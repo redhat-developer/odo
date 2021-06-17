@@ -47,8 +47,7 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 
 	var clusterURLs []URL
 	for _, i := range ingresses {
-		clusterURL := getMachineReadableFormatIngress(i)
-		clusterURLs = append(clusterURLs, clusterURL)
+		clusterURLs = append(clusterURLs, ConvertKubernetesIngressToURL(i))
 	}
 	for _, r := range routes {
 		// ignore the routes created by ingresses
@@ -139,7 +138,7 @@ func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) 
 		if err != nil {
 			return err
 		}
-		return k.client.GetKubeClient().DeleteIngress(ingress.Name)
+		return k.client.GetKubeClient().DeleteIngressExtensionV1(ingress.Name)
 	case localConfigProvider.ROUTE:
 		route, err := k.client.GetOneRouteFromSelector(selector)
 		if err != nil {
@@ -254,7 +253,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	}
 	ingress := generator.GetIngress(ingressParam)
 	// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
-	i, err := k.client.GetKubeClient().CreateIngress(*ingress)
+	i, err := k.client.GetKubeClient().CreateIngressExtensionV1(*ingress)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to create ingress")
 	}
