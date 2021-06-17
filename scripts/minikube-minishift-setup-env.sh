@@ -39,9 +39,7 @@ case ${1} in
         export GOPATH=$HOME/go
         mkdir -p $GOPATH/bin
         export PATH="$PATH:$(pwd):$GOPATH/bin"
-        curl -kJLO https://github.com/openshift/odo/blob/master/scripts/minishift-start-if-required.sh
-        chmod +x minishift-start-if-required.sh
-        sh ./minishift-start-if-required.sh
+        sh .scripts/minishift-start-if-required.sh
         ;;
     minikube)
         shout "| Start minikube"
@@ -59,7 +57,7 @@ case ${1} in
         export KUBERNETES=true
         ;;
     *)
-        echo "<<< Need (parameter) CLUSTER env. variable set to minikube or minishift >>>"
+        echo "<<< Need parameter set to minikube or minishift >>>"
         exit 1
         ;;
 esac
