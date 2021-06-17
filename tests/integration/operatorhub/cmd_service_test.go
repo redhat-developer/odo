@@ -18,12 +18,10 @@ import (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
-	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
-		oc = helper.NewOcRunner("oc")
 	})
 
 	AfterEach(func() {
@@ -220,7 +218,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
 						})
 					})
 
@@ -246,7 +244,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
 						})
 					})
 				})
@@ -273,7 +271,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(commonVar.Project, `etcdcluster-.[a-z0-9]*`)
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
 						})
 
 						It("should list the service", func() {
@@ -414,7 +412,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
 						})
 
 						It("should fail to create a service again with the same name", func() {
@@ -466,8 +464,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							It("should create the link with the specified name", func() {
-								ocArgs := []string{"get", "servicebinding", linkName, "-n", commonVar.Project}
-								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+								args := []string{"get", "servicebinding", linkName, "-n", commonVar.Project}
+								commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 									return strings.Contains(output, linkName)
 								})
 							})
@@ -490,8 +488,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							It("should create a servicebinding resource with bindAsFiles set to true", func() {
-								ocArgs := []string{"get", "servicebinding", linkName, "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
-								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+								args := []string{"get", "servicebinding", linkName, "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
+								commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 									return strings.Contains(output, "true")
 								})
 							})

@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -259,7 +260,19 @@ func (kubectl KubectlRunner) GetAllPodsInNs(namespace string) string {
 	kubectl.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 		return !strings.Contains(output, noResourcesMsg)
 	}, true)
-	return CmdShouldPass(kubectl.path, args...)
+	return Cmd(kubectl.path, args...).ShouldPass().Out()
+}
+
+func (kubectl KubectlRunner) PodsShouldBeRunning(project string, regex string) {
+	// now verify if the pods for the operator have started
+	pods := kubectl.GetAllPodsInNs(project)
+	// Look for pods with specified regex
+	redisPod := regexp.MustCompile(regex).FindString(pods)
+
+	args := []string{"get", "pods", redisPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+	kubectl.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
+		return strings.Contains(output, "Running")
+	})
 }
 
 // WaitForCmdOut runs "kubectl" command until it gets
