@@ -19,18 +19,18 @@ $ minikube addons enable olm
 
 === Installing etcd Operator
 
-Operators can be installed in a specific namepsace or across the cluster (that is, for all the namespaces). We will install etcd Operator across the cluster such that if you create a new namespace, the etcd Operator will be automatically available for use.
+Operators can be installed in a specific namespace or across the cluster (that is, for all the namespaces). We will install etcd Operator across the cluster such that if you create a new namespace, the etcd Operator will be automatically available for use.
 
 To install an Operator, we need to make sure that the namespace in which we're installing it has an `OperatorGroup`. Since we want to install etcd Operator across all the namespaces, we will install it in `operators` namespace and `olm` takes care of making it available across all the namespace.
 
 [NOTE]
 ====
-You can't always install an Operator in the `operators` namespace and expect it to be available across all namespaces. The Operator you're trying to installing needs to be designed to be available in this way as well. Certain Operators only support installation in a single namespace.
+You can't always install an Operator in the `operators` namespace and expect it to be available across all namespaces. The Operator you're trying to install needs to be designed to be available in this way as well. Certain Operators only support installation in a single namespace.
 
-Discussing this topic is out of scope of this guide so we have stated it as a note.
+Discussing this topic is out of scope of this guide, so we have stated it as a note.
 ====
 
-Enabling the `olm` addon will, among other things, create an `OperatorGroup` in the `operators` namepsace. Make sure that it's there:
+Enabling the `olm` addon will, among other things, create an `OperatorGroup` in the `operators` namespace. Make sure that it's there:
 [source,sh]
 ----
 $ kubectl get og -n operators
@@ -72,7 +72,7 @@ spec:
 EOF
 ----
 
-Give it a few seconds before checking the availability of the etcd Operator. odo lists only those Operators which are successfully installed on the cluster. If an Operator failed to install or is getting installed (that is, its status is `Installing`), odo won't list it. This is to prevent accidental creation of service(s) from an Operator that is not yet availabe for use:
+Give it a few seconds before checking the availability of the etcd Operator. odo lists only those Operators which are successfully installed on the cluster. If an Operator failed to install or is getting installed (that is, its status is `Installing`), odo won't list it. This is to prevent accidental creation of service(s) from an Operator that is not yet available for use:
 [source,sh]
 ----
 $ odo catalog list services
@@ -100,4 +100,4 @@ Once the pod for this `CatalogSource` is up, wait a few seconds before trying to
 
 === Installing the Service Binding Operator
 
-Service Binding Operator is used by odo to provide `odo link` feature. Please refer to link:https://odo.dev/docs/install-service-binding-operator.adoc[this document] to install it on both OpenShift and Kubernetes.
+odo uses Service Binding Operator to provide `odo link` feature. Please refer to link:https://odo.dev/docs/install-service-binding-operator[this document] to install it on both OpenShift and Kubernetes.
