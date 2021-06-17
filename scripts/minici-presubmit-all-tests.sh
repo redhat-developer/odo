@@ -30,7 +30,6 @@ case $1 in
         export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minishift"
         export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minishift"
         export TIMEOUT="4h00m"
-        export CLUSTER="minishift"
         ;;
     *)
         echo "Must pass minikube or minishift as paramater"
