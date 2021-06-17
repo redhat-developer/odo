@@ -119,7 +119,7 @@ func NewKubernetesIngressFromURL(ingressURL urltype.URL, serviceName string) *Ku
 	if len(ingressURL.Spec.TLSSecret) > 0 {
 		ki.NetworkingV1Ingress.Spec.TLS = []v1.IngressTLS{
 			{
-				Hosts:      []string{
+				Hosts: []string{
 					ingressURL.Spec.Host,
 				},
 				SecretName: ingressURL.Spec.TLSSecret,
