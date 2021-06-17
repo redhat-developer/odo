@@ -1,7 +1,6 @@
 package url
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"reflect"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/openshift/odo/pkg/log"
 
-	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -20,11 +18,8 @@ import (
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
 )
@@ -39,176 +34,6 @@ func (urls URLList) Get(urlName string) URL {
 		}
 	}
 	return URL{}
-
-}
-
-// Delete deletes a URL
-func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string, urlType localConfigProvider.URLKind, isS2i bool) error {
-	if urlType == localConfigProvider.INGRESS {
-		return kClient.DeleteIngress(urlName)
-	} else if urlType == localConfigProvider.ROUTE {
-		if isS2i {
-			// Namespace the URL name
-			var err error
-			urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
-			if err != nil {
-				return errors.Wrapf(err, "unable to create namespaced name")
-			}
-		}
-
-		return client.DeleteRoute(urlName)
-	}
-	return errors.New("url type is not supported")
-}
-
-type CreateParameters struct {
-	urlName         string
-	portNumber      int
-	secureURL       bool
-	componentName   string
-	applicationName string
-	host            string
-	secretName      string
-	urlKind         localConfigProvider.URLKind
-	path            string
-}
-
-// Create creates a URL and returns url string and error if any
-// portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateParameters, isRouteSupported bool, isS2I bool) (string, error) {
-
-	if parameters.urlKind != localConfigProvider.INGRESS && parameters.urlKind != localConfigProvider.ROUTE {
-		return "", fmt.Errorf("urlKind %s is not supported for URL creation", parameters.urlKind)
-	}
-
-	if !parameters.secureURL && parameters.secretName != "" {
-		return "", fmt.Errorf("secret name can only be used for secure URLs")
-	}
-
-	labels := urlLabels.GetLabels(parameters.urlName, parameters.componentName, parameters.applicationName, true)
-
-	serviceName := ""
-
-	if !isS2I && parameters.urlKind == localConfigProvider.INGRESS && kClient != nil {
-		if parameters.host == "" {
-			return "", errors.Errorf("the host cannot be empty")
-		}
-		serviceName := parameters.componentName
-		ingressDomain := fmt.Sprintf("%v.%v", parameters.urlName, parameters.host)
-
-		deployment, err := kClient.GetOneDeployment(parameters.componentName, parameters.applicationName)
-		if err != nil {
-			return "", err
-		}
-		ownerReference := generator.GetOwnerReference(deployment)
-		if parameters.secureURL {
-			if len(parameters.secretName) != 0 {
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(context.TODO(), parameters.secretName, metav1.GetOptions{})
-				if err != nil {
-					return "", errors.Wrap(err, "unable to get the provided secret: "+parameters.secretName)
-				}
-			}
-			if len(parameters.secretName) == 0 {
-				defaultTLSSecretName := parameters.componentName + "-tlssecret"
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(context.TODO(), defaultTLSSecretName, metav1.GetOptions{})
-				// create tls secret if it does not exist
-				if kerrors.IsNotFound(err) {
-					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(parameters.host)
-					if err != nil {
-						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+parameters.host)
-					}
-					// create tls secret
-					secretlabels := componentlabels.GetLabels(parameters.componentName, parameters.applicationName, true)
-					objectMeta := metav1.ObjectMeta{
-						Name:   defaultTLSSecretName,
-						Labels: secretlabels,
-						OwnerReferences: []v1.OwnerReference{
-							ownerReference,
-						},
-					}
-					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, objectMeta)
-					if err != nil {
-						return "", errors.Wrap(err, "unable to create tls secret")
-					}
-					parameters.secretName = secret.Name
-				} else if err != nil {
-					return "", err
-				} else {
-					// tls secret found for this component
-					parameters.secretName = defaultTLSSecretName
-				}
-
-			}
-
-		}
-
-		objectMeta := generator.GetObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
-		// to avoid error due to duplicate ingress name defined in different devfile components
-		objectMeta.Name = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
-		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
-
-		ingressParam := generator.IngressParams{
-			ObjectMeta: objectMeta,
-			IngressSpecParams: generator.IngressSpecParams{
-				ServiceName:   serviceName,
-				IngressDomain: ingressDomain,
-				PortNumber:    intstr.FromInt(parameters.portNumber),
-				TLSSecretName: parameters.secretName,
-				Path:          parameters.path,
-			},
-		}
-		ingress := generator.GetIngress(ingressParam)
-		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
-		i, err := kClient.CreateIngress(*ingress)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to create ingress")
-		}
-		return GetURLString(GetProtocol(routev1.Route{}, *i), "", ingressDomain, false), nil
-	} else {
-		if !isRouteSupported {
-			return "", errors.Errorf("routes are not available on non OpenShift clusters")
-		}
-
-		var ownerReference metav1.OwnerReference
-		if isS2I || kClient == nil {
-			var err error
-			parameters.urlName, err = util.NamespaceOpenShiftObject(parameters.urlName, parameters.applicationName)
-			if err != nil {
-				return "", errors.Wrapf(err, "unable to create namespaced name")
-			}
-			serviceName, err = util.NamespaceOpenShiftObject(parameters.componentName, parameters.applicationName)
-			if err != nil {
-				return "", errors.Wrapf(err, "unable to create namespaced name")
-			}
-
-			// since the serviceName is same as the DC name, we use that to get the DC
-			// to which this route belongs. A better way could be to get service from
-			// the name and set it as owner of the route
-			dc, err := client.GetDeploymentConfigFromName(serviceName)
-			if err != nil {
-				return "", errors.Wrapf(err, "unable to get DeploymentConfig %s", serviceName)
-			}
-
-			ownerReference = occlient.GenerateOwnerReference(dc)
-		} else {
-			// to avoid error due to duplicate ingress name defined in different devfile components
-			parameters.urlName = fmt.Sprintf("%s-%s", parameters.urlName, parameters.componentName)
-			serviceName = parameters.componentName
-
-			deployment, err := kClient.GetOneDeployment(parameters.componentName, parameters.applicationName)
-			if err != nil {
-				return "", err
-			}
-			ownerReference = generator.GetOwnerReference(deployment)
-		}
-
-		// Pass in the namespace name, link to the service (componentName) and labels to create a route
-		route, err := client.CreateRoute(parameters.urlName, serviceName, intstr.FromInt(parameters.portNumber), labels, parameters.secureURL, parameters.path, ownerReference)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to create route")
-		}
-		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", true), nil
-	}
 
 }
 
@@ -501,11 +326,10 @@ type PushParameters struct {
 	LocalConfig      localConfigProvider.LocalConfigProvider
 	URLClient        Client
 	IsRouteSupported bool
-	IsS2I            bool
 }
 
 // Push creates and deletes the required URLs
-func Push(client *occlient.Client, parameters PushParameters) error {
+func Push(parameters PushParameters) error {
 	urlLOCAL := make(map[string]URL)
 
 	localConfigURLs, err := parameters.LocalConfig.ListURLs()
@@ -568,17 +392,8 @@ func Push(client *occlient.Client, parameters PushParameters) error {
 		}
 
 		if !ok || configMismatch {
-			if urlSpec.Spec.Kind == localConfigProvider.INGRESS && client.GetKubeClient() == nil {
-				continue
-			}
 			// delete the url
-			deleteURLName := urlName
-			if !parameters.IsS2I && client.GetKubeClient() != nil {
-				// route/ingress name is defined as <urlName>-<componentName>
-				// to avoid error due to duplicate ingress name defined in different devfile components
-				deleteURLName = fmt.Sprintf("%s-%s", urlName, parameters.LocalConfig.GetName())
-			}
-			err := Delete(client, client.GetKubeClient(), deleteURLName, parameters.LocalConfig.GetApplication(), urlSpec.Spec.Kind, parameters.IsS2I)
+			err := parameters.URLClient.Delete(urlName, urlSpec.Spec.Kind)
 			if err != nil {
 				return err
 			}
@@ -593,21 +408,7 @@ func Push(client *occlient.Client, parameters PushParameters) error {
 	for urlName, urlInfo := range urlLOCAL {
 		_, ok := urlCLUSTER[urlName]
 		if !ok {
-			if urlInfo.Spec.Kind == localConfigProvider.INGRESS && client.GetKubeClient() == nil {
-				continue
-			}
-			createParameters := CreateParameters{
-				urlName:         urlName,
-				portNumber:      urlInfo.Spec.Port,
-				secureURL:       urlInfo.Spec.Secure,
-				componentName:   parameters.LocalConfig.GetName(),
-				applicationName: parameters.LocalConfig.GetApplication(),
-				host:            urlInfo.Spec.Host,
-				secretName:      urlInfo.Spec.TLSSecret,
-				urlKind:         urlInfo.Spec.Kind,
-				path:            urlInfo.Spec.Path,
-			}
-			host, err := Create(client, client.GetKubeClient(), createParameters, parameters.IsRouteSupported, parameters.IsS2I)
+			host, err := parameters.URLClient.Create(urlInfo)
 			if err != nil {
 				return err
 			}
@@ -630,6 +431,8 @@ type ClientOptions struct {
 }
 
 type Client interface {
+	Create(url URL) (string, error)
+	Delete(string, localConfigProvider.URLKind) error
 	ListFromCluster() (URLList, error)
 	List() (URLList, error)
 }
