@@ -42,12 +42,24 @@ case ${1} in
         sh .scripts/minishift-start-if-required.sh
         ;;
     minikube)
-        shout "| Start minikube"
-        # Delete minikube instance, if in anycase already exists
-        minikube delete
-        minikube start --vm-driver=docker --container-runtime=docker
+        mkStatus=$(minikube status)
+        shout "| Checking if Minikube needs to be started..."
+        if [[ "$mkStatus" == *"host: Running"* ]] then 
+            shout "| Copying kubeconfig to current directory"
+            touch $PWD/config
+            cp -avrf ~/.kube/config $PWD
+            chmod 640 $PWD/config
+            export KUBECONFIG=$PWD/config
+            kubectl config use-context minikube
+        else
+            shout "| Start minikube"
+            minikube start --vm-driver=docker --container-runtime=docker
+            cp -avrf ~/.kube/confg $PWD
+            chmod 640 $PWD/config
+            export KUBECONFIG=$PWD/config
+        fi
+        
         minikube version
-
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
