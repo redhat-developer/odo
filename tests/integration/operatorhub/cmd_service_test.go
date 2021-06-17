@@ -33,7 +33,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		BeforeEach(func() {
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
-			operators := []string{"etcdoperator", "service-binding-operator"}
+			operators := []string{"redis-operator", "service-binding-operator"}
 			for _, operator := range operators {
 				helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
 					return strings.Contains(output, operator)
@@ -97,7 +97,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(projectName, fmt.Sprintf(`%s-.[\-a-z0-9]*`, operandName))
+							commonVar.CliRunner.PodsShouldBeRunning(projectName, fmt.Sprintf(`%s-.[\-a-z0-9]*`, operandName))
 						})
 
 						It("should list the service", func() {
@@ -142,7 +142,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			It("should describe the operator with json output", func() {
 				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", etcdCluster, "-o", "json").ShouldPass().Out()
 				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
-				expected := []string{"EtcdCluster", "etcd Cluster"}
+				expected := []string{"Redis", "etcd Cluster"}
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 			})
 
@@ -187,7 +187,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an EtcdCluster instance is created in dryRun mode and output stored in a file", func() {
+				When("an Redis instance is created in dryRun mode", func() {
 
 					var fileName string
 
@@ -249,7 +249,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an EtcdCluster instance is created with no name", func() {
+				When("an Redis instance is created with no name", func() {
 					var stdOut string
 					BeforeEach(func() {
 						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project).ShouldPass().Out()
@@ -260,7 +260,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 						content, err := ioutil.ReadFile(devfilePath)
 						Expect(err).To(BeNil())
-						matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "etcdcluster"}
+						matchInOutput := []string{"kubernetes", "inlined", "Redis", "example"}
 						helper.MatchAllInOutput(string(content), matchInOutput)
 					})
 
@@ -338,7 +338,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 								content, err := ioutil.ReadFile(devfilePath)
 								Expect(err).To(BeNil())
-								matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "etcdcluster"}
+								matchInOutput := []string{"kubernetes", "inlined", "Redis", "example"}
 								helper.DontMatchAllInOutput(string(content), matchInOutput)
 							})
 
@@ -377,15 +377,15 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							It("should list both services", func() {
 								stdOut = helper.Cmd("odo", "service", "list").ShouldPass().Out()
 								// first service still here
-								Expect(stdOut).To(ContainSubstring("EtcdCluster/etcdcluster"))
+								Expect(stdOut).To(ContainSubstring("Redis/example"))
 								// second service created
-								Expect(stdOut).To(ContainSubstring("EtcdCluster/myetcd2"))
+								Expect(stdOut).To(ContainSubstring("Redis/myetcd2"))
 							})
 						})
 					})
 				})
 
-				When("an EtcdCluster instance is created with a specific name", func() {
+				When("an Redis instance is created with a specific name", func() {
 
 					var name string
 					var svcFullName string
@@ -509,7 +509,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						// TODO write helpers to create such files
 						noMetadata := `
 apiVersion: etcd.database.coreos.com/v1beta2
-kind: EtcdCluster
+kind: Redis
 spec:
   size: 3
   version: 3.2.13`
@@ -521,7 +521,7 @@ spec:
 
 						invalidMetadata := `
 apiVersion: etcd.database.coreos.com/v1beta2
-kind: EtcdCluster
+kind: Redis
 metadata:
   noname: noname
 spec:
