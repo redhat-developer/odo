@@ -1,0 +1,35 @@
+schemaVersion: 2.1.0
+metadata:
+  name: nodejs
+variables:
+  VARIABLE_TEST: FOO
+  VALUE_TEST: bar
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 100Mi
+      endpoints:
+        - name: "3000-tcp"
+          targetPort: 3000
+      mountSources: true
+      env:
+        - name: "{{VARIABLE_TEST}}"
+          value: "{{VALUE_TEST}}"
+commands:
+  - id: build
+    exec:
+      component: runtime
+      commandLine: "npm install"
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+        isDefault: true

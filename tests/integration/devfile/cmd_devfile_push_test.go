@@ -119,10 +119,10 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				output := helper.CmdShouldPass("odo", "push")
 				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-				routeURL := helper.DetermineRouteURL(commonVar.Context)
 
-				// Ping said URL
-				helper.HttpWaitFor(routeURL, "Hello from Node.js", 10, 5)
+				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, "app", commonVar.Project)
+				// check if the env variable has a correct value. This value was substituted from in devfile from variable
+				Expect(envVars["FOO"]).To(Equal("bar"))
 
 			})
 		})
