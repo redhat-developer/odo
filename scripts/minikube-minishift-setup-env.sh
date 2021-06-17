@@ -44,7 +44,7 @@ case ${1} in
     minikube)
         mkStatus=$(minikube status)
         shout "| Checking if Minikube needs to be started..."
-        if [[ "$mkStatus" == *"host: Running"* ]] then 
+        if [[ "$mkStatus" == *"host: Running"* ]]; then 
             shout "| Copying kubeconfig to current directory"
             touch $PWD/config
             cp -avrf ~/.kube/config $PWD
