@@ -59,6 +59,10 @@ func ParseFromURL(url string) (parser.DevfileObj, error) {
 }
 
 func variableWarning(section string, variable string, messages []string) string {
-	return fmt.Sprintf("Variable %q in %q section was not successfully substituted. Reason: %q", section, variable, strings.Join(messages, ", "))
+	quotedVars := []string{}
+	for _, v := range messages {
+		quotedVars = append(quotedVars, fmt.Sprintf("%q", v))
+	}
+	return fmt.Sprintf("Invalid variable(s) %s in %q section with name %q. ", strings.Join(quotedVars, ","), section, variable)
 
 }
