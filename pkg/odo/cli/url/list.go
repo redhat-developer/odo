@@ -95,7 +95,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 			if u.Spec.Kind == localConfigProvider.ROUTE {
 				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.Context.LocalConfigInfo.Exists()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 			} else {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol , "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 			}
 			if u.Status.State != urltype.StateTypePushed {
 				outOfSync = true
