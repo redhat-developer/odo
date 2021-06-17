@@ -101,7 +101,7 @@ func GetComponentTypeFromDevfile(metadata devfile.DevfileMetadata) string {
 	} else if metadata.Language != "" {
 		componentType = metadata.Language
 	} else {
-		componentType = metadata.Name
+		componentType = "Not available"
 	}
 	return componentType
 }
