@@ -68,7 +68,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			It("should describe the example of the operator", func() {
 				output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example")
-				Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
+				Expect(output).To(ContainSubstring("kind: EtcdCluster"))
 				helper.MatchAllInOutput(output, []string{"apiVersion", "kind"})
 			})
 
