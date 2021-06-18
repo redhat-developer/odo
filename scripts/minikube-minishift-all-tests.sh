@@ -16,7 +16,7 @@ case ${1} in
         # Integration tests
         shout "| Running integration Tests on MiniKube"
         make test-cmd-project
-        # make test-integration-devfile
+        make test-integration-devfile
 
         shout "Cleaning up some leftover namespaces"
 
