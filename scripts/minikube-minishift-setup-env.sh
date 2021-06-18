@@ -11,9 +11,6 @@ mkdir bin artifacts
 # Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
 # for eg go get ginkgo later on will produce ginkgo binary in GOBIN
 export GOBIN="`pwd`/bin"
-
-# Set kubeconfig to current dir. This ensures no clashes with other test runs
-export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
@@ -29,8 +26,22 @@ make bin
 
 # copy built odo to GOBIN
 cp -avrf ./odo $GOBIN/
-shout "| Getting ginkgo"
-make goget-ginkgo
+
+setup_kubeconfig() {
+    export ORIGINAL_KUBECONFIG=${KUBECONFIG:-"${HOME}/.kube/config"}
+    export KUBECONFIG=$ORIGINAL_KUBECONFIG
+    if [[ ! -f $KUBECONFIG ]]; then
+        echo "Could not find kubeconfig file"
+        exit 1
+    fi
+    if [[ ! -z $KUBECONFIG ]]; then
+        # Copy kubeconfig to current directory, to avoid clashes with other test runs
+        # Read and Write permission to current kubeconfig file
+        cp $KUBECONFIG "`pwd`/config"
+        chmod 640 "`pwd`/config"
+        export KUBECONFIG="`pwd`/config"
+    fi
+}
 
 case ${1} in
     minishift)
@@ -42,12 +53,21 @@ case ${1} in
         sh .scripts/minishift-start-if-required.sh
         ;;
     minikube)
-        shout "| Start minikube"
-        # Delete minikube instance, if in anycase already exists
-        minikube delete
-        minikube start --vm-driver=docker --container-runtime=docker
+        mkStatus=$(minikube status)
+        shout "| Checking if Minikube needs to be started..."
+        if [[ "$mkStatus" == *"host: Running"* ]]; then 
+            if [[ "$mkStatus" == *"kubeconfig: Misconfigured"* ]]; then
+                minikube update-context
+            fi
+            setup_kubeconfig
+            kubectl config use-context minikube
+        else
+            shout "| Start minikube"
+            minikube start --vm-driver=docker --container-runtime=docker
+            setup_kubeconfig
+        fi
+        
         minikube version
-
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
