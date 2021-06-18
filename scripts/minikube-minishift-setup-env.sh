@@ -13,7 +13,7 @@ mkdir bin artifacts
 export GOBIN="`pwd`/bin"
 
 # Set kubeconfig to current dir. This ensures no clashes with other test runs
-export KUBECONFIG="`pwd`/config"
+export KUBECONFIG=$HOME/.kube/config
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
@@ -29,8 +29,6 @@ make bin
 
 # copy built odo to GOBIN
 cp -avrf ./odo $GOBIN/
-shout "| Getting ginkgo"
-make goget-ginkgo
 
 case ${1} in
     minishift)
@@ -46,17 +44,18 @@ case ${1} in
         shout "| Checking if Minikube needs to be started..."
         if [[ "$mkStatus" == *"host: Running"* ]]; then 
             shout "| Copying kubeconfig to current directory"
-            touch $PWD/config
-            cp -avrf ~/.kube/config $PWD
-            chmod 640 $PWD/config
-            export KUBECONFIG=$PWD/config
+            set -x
+            touch "`pwd`/config"
+            cp $KUBECONFIG "`pwd`/config"
+            chmod 640 "`pwd`/config"
+            export KUBECONFIG="`pwd`/config"
             kubectl config use-context minikube
         else
             shout "| Start minikube"
             minikube start --vm-driver=docker --container-runtime=docker
-            cp -avrf ~/.kube/confg $PWD
-            chmod 640 $PWD/config
-            export KUBECONFIG=$PWD/config
+            cp $KUBECONFIG "`pwd`/config"
+            chmod 640 "`pwd`/config"
+            export KUBECONFIG="`pwd`/config"
         fi
         
         minikube version
