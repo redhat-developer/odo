@@ -271,7 +271,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `redis-.[a-z0-9]*`)
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `redis-.[a-z0-9]*-[0-9]`)
 						})
 
 						It("should list the service", func() {

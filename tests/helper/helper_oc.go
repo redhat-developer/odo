@@ -708,7 +708,8 @@ func (oc OcRunner) PodsShouldBeRunning(project string, regex string) {
 	pods := oc.GetAllPodsInNs(project)
 	// Look for pods with specified regex
 	redisPod := regexp.MustCompile(regex).FindString(pods)
-
+	redisPendingReason := Cmd("oc", "describe", "pod", redisPod, "-n", project).ShouldPass().Out()
+	fmt.Println("pod describe is", redisPendingReason)
 	args := []string{"get", "pods", redisPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
 	oc.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 		return strings.Contains(output, "Running")
