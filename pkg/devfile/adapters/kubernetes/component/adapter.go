@@ -192,16 +192,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
-	// create the Kubernetes objects from the manifest
-	services, err := service.CreateServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
+	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
+	err = service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
-	}
-
-	if len(services) == 1 {
-		log.Infof("Created service %q on the cluster; refer %q to know how to link it to the component", services[0], "odo link -h")
-	} else if len(services) > 1 {
-		log.Infof("Created services %q on the cluster; refer %q to know how to link them to the component", strings.Join(services, ", "), "odo link -h")
 	}
 
 	a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)
@@ -421,12 +415,6 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels)
-	if err != nil {
-		return err
-	}
-
-	objectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	supervisordInitContainer := kclient.GetBootstrapSupervisordInitContainer()
 	initContainers, err := utils.GetPreStartInitContainers(a.Devfile, containers)
 	if err != nil {
@@ -472,6 +460,11 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		"component": componentName,
 	}
 
+	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels)
+	if err != nil {
+		return err
+	}
+
 	deployParams := generator.DeploymentParams{
 		TypeMeta:          generator.GetTypeMeta(kclient.DeploymentKind, kclient.DeploymentAPIVersion),
 		ObjectMeta:        deploymentObjectMeta,
@@ -489,11 +482,18 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		deployment.Annotations["app.openshift.io/vcs-uri"] = vcsUri
 	}
 
+	// add the annotations to the service for linking
+	serviceAnnotations := make(map[string]string)
+	serviceAnnotations["service.binding/backend_ip"] = "path={.spec.clusterIP}"
+	serviceAnnotations["service.binding/backend_port"] = "path={.spec.ports},elementType=sliceOfMaps,sourceKey=name,sourceValue=port"
+
+	serviceObjectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, serviceAnnotations)
 	serviceParams := generator.ServiceParams{
-		ObjectMeta:     objectMeta,
+		ObjectMeta:     serviceObjectMeta,
 		SelectorLabels: selectorLabels,
 	}
 	svc, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
+
 	if err != nil {
 		return err
 	}

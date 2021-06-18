@@ -100,15 +100,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
 				})
 
-				It("should fail if service name doesn't adhere to <service-type>/<service-name> format", func() {
-					if os.Getenv("KUBERNETES") == "true" {
-						Skip("This is a OpenShift specific scenario, skipping")
-					}
-					helper.CmdShouldFail("odo", "link", "EtcdCluster")
-					helper.CmdShouldFail("odo", "link", "EtcdCluster/")
-					helper.CmdShouldFail("odo", "link", "/example")
-				})
-
 				When("odo push is executed", func() {
 					JustBeforeEach(func() {
 						helper.CmdShouldPass("odo", "push")
@@ -119,7 +110,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							Skip("This is a OpenShift specific scenario, skipping")
 						}
 						stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
-						Expect(stdOut).To(ContainSubstring("Couldn't find service named %q", "EtcdCluster/example"))
+						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", "EtcdCluster/example"))
 					})
 				})
 
@@ -297,22 +288,28 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								helper.DontMatchAllInOutput(string(content), matchInOutput)
 							})
 
-							It("Should fail listing the services", func() {
-								out := helper.CmdShouldFail("odo", "service", "list")
-								msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
-								Expect(out).To(ContainSubstring(msg))
-							})
-
-							It("Should fail listing the services in JSON format", func() {
-								jsonOut := helper.CmdShouldFail("odo", "service", "list", "-o", "json")
-								msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
-								msgWithQuote := fmt.Sprintf("\"message\": \"no operator backed services found in namespace: %s\"", commonVar.Project)
-								helper.MatchAllInOutput(jsonOut, []string{msg, msgWithQuote})
-							})
-
 							It("should fail to delete the service again", func() {
 								stdOut = helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
 								Expect(stdOut).To(ContainSubstring("couldn't find service named"))
+							})
+
+							When("odo push is executed", func() {
+								JustBeforeEach(func() {
+									helper.CmdShouldPass("odo", "push")
+								})
+
+								It("Should fail listing the services", func() {
+									out := helper.CmdShouldFail("odo", "service", "list")
+									msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
+									Expect(out).To(ContainSubstring(msg))
+								})
+
+								It("Should fail listing the services in JSON format", func() {
+									jsonOut := helper.CmdShouldFail("odo", "service", "list", "-o", "json")
+									msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
+									msgWithQuote := fmt.Sprintf("\"message\": \"no operator backed services found in namespace: %s\"", commonVar.Project)
+									helper.MatchAllInOutput(jsonOut, []string{msg, msgWithQuote})
+								})
 							})
 						})
 
@@ -351,7 +348,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 
 					JustAfterEach(func() {
-						helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
+						helper.Cmd("odo", "service", "delete", svcFullName, "-f").ShouldRun()
+					})
+
+					It("should be listed as Not pushed", func() {
+						stdOut := helper.CmdShouldPass("odo", "service", "list")
+						helper.MatchAllInOutput(stdOut, []string{svcFullName, "Not pushed"})
 					})
 
 					When("odo push is executed", func() {
@@ -367,6 +369,33 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						It("should fail to create a service again with the same name", func() {
 							stdOut := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
 							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
+						})
+
+						It("should be listed as Pushed", func() {
+							stdOut := helper.CmdShouldPass("odo", "service", "list")
+							helper.MatchAllInOutput(stdOut, []string{svcFullName, "Pushed"})
+						})
+
+						When("the etcdCluster instance is deleted", func() {
+							JustBeforeEach(func() {
+								helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
+							})
+
+							It("should be listed as Deleted locally", func() {
+								stdOut := helper.CmdShouldPass("odo", "service", "list")
+								helper.MatchAllInOutput(stdOut, []string{svcFullName, "Deleted locally"})
+							})
+
+							When("odo push is executed", func() {
+								JustBeforeEach(func() {
+									helper.CmdShouldPass("odo", "push")
+								})
+
+								It("should not be listed anymore", func() {
+									stdOut := helper.Cmd("odo", "service", "list").ShouldRun().Out()
+									Expect(strings.Contains(stdOut, svcFullName)).To(BeFalse())
+								})
+							})
 						})
 
 						When("a link is created with a specific name", func() {
@@ -472,5 +501,74 @@ spec:
 			})
 		})
 
+		When("one component is deployed", func() {
+			var context0 string
+			var cmp0 string
+
+			JustBeforeEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
+
+				context0 = helper.CreateNewContext()
+				cmp0 = helper.RandString(5)
+
+				helper.CmdShouldPass("odo", "create", "nodejs", cmp0, "--context", context0)
+				helper.CmdShouldPass("odo", "push", "--context", context0)
+			})
+
+			JustAfterEach(func() {
+				helper.CmdShouldPass("odo", "delete", "-f", "--context", context0)
+				helper.DeleteDir(context0)
+			})
+
+			It("should fail when linking to itself", func() {
+				stdOut := helper.CmdShouldFail("odo", "link", cmp0, "--context", context0)
+				helper.MatchAllInOutput(stdOut, []string{cmp0, "cannot be linked with itself"})
+			})
+
+			It("should fail if the component doesn't exist and the service name doesn't adhere to the <service-type>/<service-name> format", func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
+				helper.CmdShouldFail("odo", "link", "EtcdCluster")
+				helper.CmdShouldFail("odo", "link", "EtcdCluster/")
+				helper.CmdShouldFail("odo", "link", "/example")
+			})
+
+			When("another component is deployed", func() {
+				var context1 string
+				var cmp1 string
+
+				JustBeforeEach(func() {
+					context1 = helper.CreateNewContext()
+					cmp1 = helper.RandString(5)
+
+					helper.CmdShouldPass("odo", "create", "nodejs", cmp1, "--context", context1)
+					helper.CmdShouldPass("odo", "push", "--context", context1)
+				})
+
+				JustAfterEach(func() {
+					helper.CmdShouldPass("odo", "delete", "-f", "--context", context1)
+					helper.DeleteDir(context1)
+				})
+
+				It("should link the two components successfully", func() {
+
+					helper.CmdShouldPass("odo", "link", cmp1, "--context", context0)
+
+					// check the link exists with the specific name
+					ocArgs := []string{"get", "servicebinding", strings.Join([]string{cmp0, cmp1}, "-"), "-o", "jsonpath='{.status.secret}'", "-n", commonVar.Project}
+					helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+						return strings.Contains(output, strings.Join([]string{cmp0, cmp1}, "-"))
+					})
+
+					// delete the link
+					helper.CmdShouldPass("odo", "unlink", cmp1, "--context", context0)
+
+					commonVar.CliRunner.WaitAndCheckForTerminatingState("servicebinding", commonVar.Project, 1)
+				})
+			})
+		})
 	})
 })

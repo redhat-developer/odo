@@ -44,53 +44,13 @@ $ kubectl create -f https://operatorhub.io/install/postgresql-operator-dev4devs-
 
 **NOTE**: The `my-postgresql-operator-dev4devs-com` Operator will be installed in the `my-postgresql-operator-dev4devs-com` namespace and will be usable from this namespace only.
 
-==== Creating a database to be used by the sample application
-Since the PostgreSQL Operator we installed in above step is available only in `my-postgresql-operator-dev4devs-com` namespace, ensure that `odo` uses this namespace to perform any tasks:
+=== Application Developer
+
+Since the PostgreSQL Operator installed in above step is available only in `my-postgresql-operator-dev4devs-com` namespace, ensure that `odo` uses this namespace to perform any tasks:
 [source,sh]
 ----
 $ odo project set my-postgresql-operator-dev4devs-com
 ----
-
-You can use the default configurations of the PostgreSQL Operator to start a Postgres database from it. But since our app uses few specific configuration values, lets make sure they are properly populated in the database service we start.
-
-. Store the YAML of the service in a file:
-+
-[source,sh]
-----
-$ odo service create postgresql-operator.v0.1.1/Database --dry-run > db.yaml
-----
-
-. Modify and add following values under `metadata:` section in the `db.yaml` file:
-+
-[source,yaml]
-----
-  name: sampledatabase
-  annotations:
-    service.binding/db_name: 'path={.spec.databaseName}'
-    service.binding/db_password: 'path={.spec.databasePassword}'
-    service.binding/db_user: 'path={.spec.databaseUser}'
-----
-+
-This configuration ensures that when a database service is started using this file, appropriate annotations are added to it. Annotations help the Service Binding Operator in injecting those values into the application. Hence, the above configuration will help Service Binding Operator inject the values for `databaseName`, `databasePassword` and `databaseUser` into the application.
-
-. Change the following values under `spec:` section of the YAML file:
-+
-[source,yaml]
-----
-  databaseName: "sampledb"
-  databasePassword: "samplepwd"
-  databaseUser: "sampleuser"
-----
-
-. Create the database from the YAML file:
-+
-[source,sh]
-----
-$ odo service create --from-file db.yaml
-----
-This action will create a database instance pod in the `my-postgresql-operator-dev4devs-com` namespace. The application will be configured to use this database.
-
-=== Application Developer
 
 ==== Importing the demo Java MicroService JPA application
 
@@ -204,6 +164,48 @@ URL/CreatePerson.xhtml' and enter a user's name and age data using the the form.
 
 Note that the entry of any data does not result in the data being displayed when you click on the "View Persons Record List" link.
 
+==== Creating a database to be used by the sample application
+
+You can use the default configurations of the PostgreSQL Operator to start a Postgres database from it. But since our app uses few specific configuration values, lets make sure they are properly populated in the database service we start.
+
+. Store the YAML of the service in a file:
++
+[source,sh]
+----
+$ odo service create postgresql-operator.v0.1.1/Database --dry-run > db.yaml
+----
+
+. Modify and add following values under `metadata:` section in the `db.yaml` file:
++
+[source,yaml]
+----
+  name: sampledatabase
+  annotations:
+    service.binding/db_name: 'path={.spec.databaseName}'
+    service.binding/db_password: 'path={.spec.databasePassword}'
+    service.binding/db_user: 'path={.spec.databaseUser}'
+----
++
+This configuration ensures that when a database service is started using this file, appropriate annotations are added to it. Annotations help the Service Binding Operator in injecting those values into the application. Hence, the above configuration will help Service Binding Operator inject the values for `databaseName`, `databasePassword` and `databaseUser` into the application.
+
+. Change the following values under `spec:` section of the YAML file:
++
+[source,yaml]
+----
+  databaseName: "sampledb"
+  databasePassword: "samplepwd"
+  databaseUser: "sampleuser"
+----
+
+. Create the database from the YAML file:
++
+[source,sh]
+----
+$ odo service create --from-file db.yaml
+$ odo push
+----
+This action will create a database instance pod in the `my-postgresql-operator-dev4devs-com` namespace. The application will be configured to use this database.
+
 ==== Binding the database and the application
 
 Now, the only thing that remains is to connect the DB and the application. We will use odo to create a link to the Dev4Devs PostgreSQL Database Operator in order to access the database connection information.
@@ -223,8 +225,8 @@ postgresql-operator.v0.1.1                       Backup, Database
 [source,sh]
 ----
 $ odo service list
-NAME                        AGE
-Database/sampledatabase     6m31s
+NAME                       MANAGED BY ODO     STATE     AGE
+Database/sampledatabase   Yes (mysboproj)    Pushed    6m35s
 ----
 
 . Create a Service Binding Request between the application and the database using the Service Binding Operator service created in the previous step `odo link` command: 
@@ -245,12 +247,7 @@ After the link has been created and pushed a secret will have been created conta
 +
 You can inspect the new intermediate secret via the dashboard console in the 'my-postgresql-operator-dev4devs-com' namespace by navigating to Secrets and clicking on the secret named `mysboproj-database-sampledatabase` Notice it contains 4 pieces of data all related to the connection information for your PostgreSQL database instance.
 +
-. Push the newly created link. This will terminate the existing application pod and start a new application pod.
-+
-[source,sh]
-----
-odo push 
-----
+Pushing the newly created link will also terminate the existing application pod and start a new application pod that mounts this secret.
 +
 . Once the new pod has initialized you can see the secret database connection data as it is injected into the pod environment by executing the following:
 +

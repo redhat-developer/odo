@@ -92,13 +92,32 @@ In this example, we will be deploying `EtcdCluster` service from link:https://op
 [source,sh]
 ----
 $ odo service create etcdoperator.v0.9.4/EtcdCluster
+Successfully added service to the configuration; do 'odo push' to create service on the cluster
 ----
 
-. Confirm the Operator backed service was deployed:
+. Confirm the Operator backed service has been created:
 +
 [source,sh]
 ----
 $ odo service list
+NAME                   MANAGED BY ODO                    STATE        AGE
+EtcdCluster/example   Yes (nodejs-myproject-api-twhk)   Not pushed   
+----
+
+. Deploy the service on the cluster
++
+[source,sh]
+----
+$ odo push
+----
+
+. Confirm the service has been deployed:
++
+[source,sh]
+----
+$ odo service list
+NAME                   MANAGED BY ODO                    STATE     AGE
+EtcdCluster/example   Yes (nodejs-myproject-api-twhk)   Pushed      8s
 ----
 
 It is important to note that `EtcdBackup` and `EtcdRestore` cannot be deployed the same way as we deployed `EtcdCluster` as they require configuring other parameters in their YAML definition.
@@ -164,8 +183,8 @@ After having created a service using either of the two approaches discussed abov
 [source,shell]
 ----
 $ odo service list
-NAME                    AGE
-EtcdCluster/example     46m2s
+NAME                           MANAGED BY ODO                    STATE     AGE
+EtcdCluster/my-etcd-cluster   Yes (nodejs-myproject-api-twhk)   Pushed    17s
 
 $ odo link EtcdCluster/example
  ✓  Successfully created link between component "node-todo" and service "EtcdCluster/example"
@@ -212,8 +231,8 @@ To delete an Operator backed service, provide full name of the service that you 
 [source,shell]
 ----
 $ odo service list
-NAME                    AGE
-EtcdCluster/example     2s
+NAME                           MANAGED BY ODO                    STATE     AGE
+EtcdCluster/my-etcd-cluster   Yes (nodejs-myproject-api-twhk)   Pushed    3m11s
 
 $ odo service delete EtcdCluster/example
 ----
@@ -223,4 +242,22 @@ To forcefully delete a service without being prompted for confirmation, use the 
 [source,shell]
 ----
 $ odo service delete EtcdCluster/example -f
+----
+
+Confirm that the service has been deleted from the devfile:
+
+[source,shell]
+----
+$ odo service list
+NAME                           MANAGED BY ODO                    STATE             AGE
+EtcdCluster/my-etcd-cluster   Yes (nodejs-myproject-api-twhk)   Deleted locally   3m26s
+----
+
+Undeploy the service from the cluster and verify it has been undeployed:
+
+[source,shell]
+----
+$ odo push
+$ odo service list 
+ ✗  no operator backed services found in namespace: myproject
 ----

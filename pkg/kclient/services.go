@@ -8,6 +8,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetService retrieves the service with the given name
+func (c *Client) GetService(name string) (*corev1.Service, error) {
+	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get the Service with name %q", name)
+	}
+	return service, err
+}
+
 // CreateService generates and creates the service
 // commonObjectMeta is the ObjectMeta for the service
 func (c *Client) CreateService(svc corev1.Service) (*corev1.Service, error) {

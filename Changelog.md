@@ -1,21 +1,41 @@
 #  Odo Changelog
 
+## 2.x
+
+### Feature/Enhancements
+
+- `odo delete` removes Operator backed services from the Devfile only, without undeploying them from the cluster ([#4761](https://github.com/openshift/odo/pull/4761))
+- `odo service list` lists Operator backed services in Devfile and/or deployed into the cluster and their state (Pushed, Not pushed, Deleted locally) ([#4761](https://github.com/openshift/odo/pull/4761))
+- `odo push` undeploys Operator backed services marked as managed by the current devfile not present in this devfile anymore ([#4761](https://github.com/openshift/odo/pull/4761))
+
+### Bug Fixes
+
+### Tests
+
+### Documentation
+
 ## 2.2.2
 
 ### Feature/Enhancements
 
 - Custom link name and bind-as-files option for `odo link` ([#4729](https://github.com/openshift/odo/pull/4729))
+- `odo list` now lists components created/managed by other tools ([#4742](https://github.com/openshift/odo/pull/4742))
 
 ### Bug Fixes
 
 - Adding KUBECONFIG checks in odo catalog list components ([#4756](https://github.com/openshift/odo/pull/4756))
 - use filepath Join instead of / while constructing kubeconfig path ([#4765](https://github.com/openshift/odo/pull/4765))
 - `odo push` can deploy new services when a service is already deployed ([#4772](https://github.com/openshift/odo/pull/4772))
-- odo env set DebugPort doesn't work for converted devfile([#4785](https://github.com/openshift/odo/pull/4785))
+- `odo env set DebugPort` doesn't work for converted devfile ([#4785](https://github.com/openshift/odo/pull/4785))
+- Sanitize Telemetry data ([#4758](https://github.com/openshift/odo/pull/4758))
 
 ### Tests
 
+- Refactor devfile delete tests and add validity checks for delete command ([#4793](https://github.com/openshift/odo/pull/4793))
+
 ### Documentation
+
+- Enhance usage data documentation ([#4774](https://github.com/openshift/odo/pull/4774))
 
 ## 2.2.1
 

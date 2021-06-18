@@ -169,6 +169,11 @@ func (b *ServiceCatalogBackend) RunServiceCreate(o *CreateOptions) (err error) {
 	return
 }
 
+// ServiceDefined returns true if the service is defined in the devfile
+func (b *ServiceCatalogBackend) ServiceDefined(o *DeleteOptions) (bool, error) {
+	return svc.IsDefined(o.serviceName, o.EnvSpecificInfo.GetDevfileObj())
+}
+
 func (b *ServiceCatalogBackend) ServiceExists(o *DeleteOptions) (bool, error) {
 	return svc.SvcExists(o.Client, o.serviceName, o.Application)
 }

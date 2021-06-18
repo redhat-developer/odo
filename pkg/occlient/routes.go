@@ -2,6 +2,7 @@ package occlient
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
@@ -70,6 +71,23 @@ func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
 	}
 
 	return routeList.Items, nil
+}
+
+// GetOneRouteFromSelector gets one route with the given selector
+// if no or multiple routes are found with the given selector, it throws an error
+func (c *Client) GetOneRouteFromSelector(selector string) (*routev1.Route, error) {
+	routes, err := c.ListRoutes(selector)
+	if err != nil {
+		return nil, err
+	}
+
+	if num := len(routes); num == 0 {
+		return nil, fmt.Errorf("no ingress was found for the selector: %v", selector)
+	} else if num > 1 {
+		return nil, fmt.Errorf("multiple ingresses exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &routes[0], nil
 }
 
 // ListRouteNames lists all the names of the routes based on the given label
