@@ -3,7 +3,6 @@ package utils
 import (
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -11,11 +10,9 @@ import (
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -922,173 +919,4 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetPreStartInitContainers(t *testing.T) {
-
-	containers := []corev1.Container{
-		testingutil.CreateFakeContainer("container1"),
-		testingutil.CreateFakeContainer("container2"),
-	}
-
-	execCommands := []devfilev1.Command{
-		{
-			Id: "exec1",
-			CommandUnion: devfilev1.CommandUnion{
-				Exec: &devfilev1.ExecCommand{
-					CommandLine: "execcommand1",
-					WorkingDir:  "execworkdir1",
-					Component:   "container1",
-				},
-			},
-		},
-		{
-			Id: "exec2",
-			CommandUnion: devfilev1.CommandUnion{
-				Exec: &devfilev1.ExecCommand{
-					CommandLine: "execcommand2",
-					WorkingDir:  "",
-					Component:   "container1",
-				},
-			},
-		},
-		{
-			Id: "exec3",
-			CommandUnion: devfilev1.CommandUnion{
-				Exec: &devfilev1.ExecCommand{
-					CommandLine: "execcommand3",
-					WorkingDir:  "execworkdir3",
-					Component:   "container2",
-				},
-			},
-		},
-	}
-
-	compCommands := []devfilev1.Command{
-		{
-			Id: "comp1",
-			CommandUnion: devfilev1.CommandUnion{
-				Composite: &devfilev1.CompositeCommand{
-					Commands: []string{
-						"exec1",
-						"exec3",
-					},
-				},
-			},
-		},
-	}
-
-	longContainerName := "thisisaverylongcontainerandkuberneteshasalimitforanamesize-exec2"
-	trimmedLongContainerName := util.TruncateString(longContainerName, containerNameMaxLen)
-
-	tests := []struct {
-		name              string
-		eventCommands     []string
-		wantInitContainer map[string]corev1.Container
-		longName          bool
-		wantErr           bool
-	}{
-		{
-			name: "Case 1: Composite and Exec events",
-			eventCommands: []string{
-				"exec1",
-				"exec3",
-				"exec2",
-			},
-			wantInitContainer: map[string]corev1.Container{
-				"container1-exec1": {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "cd execworkdir1 && execcommand1"},
-				},
-				"container1-exec2": {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "execcommand2"},
-				},
-				"container2-exec3": {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "cd execworkdir3 && execcommand3"},
-				},
-			},
-		},
-		{
-			name: "Case 2: Long Container Name",
-			eventCommands: []string{
-				"exec2",
-			},
-			wantInitContainer: map[string]corev1.Container{
-				trimmedLongContainerName: {
-					Command: []string{adaptersCommon.ShellExecutable, "-c", "execcommand2"},
-				},
-			},
-			longName: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if tt.longName {
-				containers[0].Name = longContainerName
-				execCommands[1].Exec.Component = longContainerName
-			}
-
-			devObj := devfileParser.DevfileObj{
-				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddCommands(execCommands)
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddCommands(compCommands)
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddEvents(devfilev1.Events{
-						DevWorkspaceEvents: devfilev1.DevWorkspaceEvents{
-							PreStart: tt.eventCommands,
-						},
-					})
-					if err != nil {
-						t.Error(err)
-					}
-					return devfileData
-				}(),
-			}
-
-			initContainers, err := GetPreStartInitContainers(devObj, containers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPreStartInitContainers() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if len(tt.wantInitContainer) != len(initContainers) {
-				t.Errorf("TestGetPreStartInitContainers error: init container length mismatch, wanted %v got %v", len(tt.wantInitContainer), len(initContainers))
-			}
-
-			for _, initContainer := range initContainers {
-				nameMatched := false
-				commandMatched := false
-				for containerName, container := range tt.wantInitContainer {
-					if strings.Contains(initContainer.Name, containerName) {
-						nameMatched = true
-					}
-
-					if reflect.DeepEqual(initContainer.Command, container.Command) {
-						commandMatched = true
-					}
-
-					if !reflect.DeepEqual(initContainer.Args, []string{}) {
-						t.Errorf("TestGetPreStartInitContainers error: init container args not empty, got %v", initContainer.Args)
-					}
-				}
-
-				if !nameMatched {
-					t.Errorf("TestGetPreStartInitContainers error: init container name mismatch, container name not present in %v", initContainer.Name)
-				}
-
-				if !commandMatched {
-					t.Errorf("TestGetPreStartInitContainers error: init container command mismatch, command not found in %v", initContainer.Command)
-				}
-			}
-		})
-	}
-
 }
