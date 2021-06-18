@@ -860,6 +860,12 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 // PushServiceFromKubernetesInlineComponents updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) error {
 
+	// check csv support before proceeding
+	csvSupported, err := IsCSVSupported()
+	if err != nil || !csvSupported {
+		return err
+	}
+
 	created := []string{}
 	deleted := []string{}
 
