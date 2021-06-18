@@ -77,3 +77,31 @@ func GetSingleIngress(urlName, componentName, appName string) *extensionsv1.Ingr
 		},
 	})
 }
+
+// GetSingleSecureIngress gets a single secure ingress with the given secret name
+// if no secret name is provided, the default one is used
+func GetSingleSecureIngress(urlName, componentName, appName, secretName string) *extensionsv1.Ingress {
+
+	if secretName == "" {
+		secretName = componentName + "-tlssecret"
+	}
+	return generator.GetIngress(generator.IngressParams{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: urlName,
+			Labels: map[string]string{
+				applabels.ApplicationLabel:     appName,
+				componentlabels.ComponentLabel: componentName,
+				applabels.ManagedBy:            "odo",
+				applabels.ManagerVersion:       version.VERSION,
+				labels.URLLabel:                urlName,
+				applabels.App:                  appName,
+			},
+		},
+		IngressSpecParams: generator.IngressSpecParams{
+			TLSSecretName: secretName,
+			IngressDomain: fmt.Sprintf("%s.com", urlName),
+			ServiceName:   urlName,
+			PortNumber:    intstr.FromInt(8080),
+		},
+	})
+}
