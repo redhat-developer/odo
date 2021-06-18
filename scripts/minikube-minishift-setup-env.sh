@@ -13,7 +13,6 @@ mkdir bin artifacts
 export GOBIN="`pwd`/bin"
 
 # Set kubeconfig to current dir. This ensures no clashes with other test runs
-export KUBECONFIG=$HOME/.kube/config
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 
@@ -43,6 +42,9 @@ case ${1} in
         mkStatus=$(minikube status)
         shout "| Checking if Minikube needs to be started..."
         if [[ "$mkStatus" == *"host: Running"* ]]; then 
+            minikube update-context
+            minikube status
+            export KUBECONFIG=$HOME/.kube/config
             shout "| Copying kubeconfig to current directory"
             set -x
             touch "`pwd`/config"
