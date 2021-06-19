@@ -40,9 +40,9 @@ var _ = Describe("odo source e2e tests", func() {
 		// 		commonVar.Project, "--context", commonVar.Context).ShouldPass()
 
 		// 	// Push changes
-		// 	helper.Cmd("odo", "push", "--context", commonVar.Context)
-		// 	cmpList := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass()
-		// 	Expect(cmpList).To(ContainSubstring("wildfly-app")).ShouldPass()
+		// 	helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+		// 	cmpList := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass().Out()
+		// 	Expect(cmpList).To(ContainSubstring("wildfly-app"))
 
 		// 	// Create a URL
 		// 	helper.Cmd("odo", "url", "create", "--port", "8080", "--context", commonVar.Context).ShouldPass()
@@ -65,7 +65,7 @@ var _ = Describe("odo source e2e tests", func() {
 
 		// 	// Push changes
 		// 	helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
-		// 	cmpList := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass()
+		// 	cmpList := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass().Out()
 		// 	Expect(cmpList).To(ContainSubstring("dotnet-app"))
 
 		// 	// Create a URL
