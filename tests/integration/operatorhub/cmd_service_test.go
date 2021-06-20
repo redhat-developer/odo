@@ -52,12 +52,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			Expect(stdOut).To(ContainSubstring("service can be created/deleted from a valid component directory only"))
 		})
 
-		Context("a namespace specific operator is installed", func() {
+		FContext("a namespace specific operator is installed", func() {
 
 			var postgresOperator string
 			var postgresDatabase string
 
 			JustBeforeEach(func() {
+				helper.GetCliRunner().SetProject(util.GetEnvWithDefault("REDHAT_POSTGRES_OPERATOR_PROJECT", "odo-operator-test"))
 				operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 				postgresOperator = regexp.MustCompile(`postgresql-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 				postgresDatabase = fmt.Sprintf("%s/Database", postgresOperator)
@@ -66,7 +67,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			When("a nodejs component is created", func() {
 
 				JustBeforeEach(func() {
-					helper.GetCliRunner().SetProject(util.GetEnvWithDefault("REDHAT_POSTGRES_OPERATOR_PROJECT", "odo-operator-test"))
 					helper.CmdShouldPass("odo", "create", "nodejs")
 				})
 
@@ -87,7 +87,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 
 					JustAfterEach(func() {
-						helper.CmdShouldPass("odo", "service", "delete", operandName, "-f")
+						helper.CmdShouldPass("odo", "service", "delete", fmt.Sprintf("Database/%s", operandName), "-f")
 						helper.CmdShouldPass("odo", "push")
 					})
 
@@ -103,7 +103,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						It("should list the service", func() {
 							// now test listing of the service using odo
 							stdOut := helper.CmdShouldPass("odo", "service", "list")
-							Expect(stdOut).To(ContainSubstring(operandName))
+							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Database/%s", operandName)))
 						})
 					})
 
