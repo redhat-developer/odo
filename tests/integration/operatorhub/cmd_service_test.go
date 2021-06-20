@@ -52,13 +52,15 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			Expect(stdOut).To(ContainSubstring("service can be created/deleted from a valid component directory only"))
 		})
 
-		FContext("a namespace specific operator is installed", func() {
+		Context("a namespace specific operator is installed", func() {
 
 			var postgresOperator string
 			var postgresDatabase string
+			var projectName string
 
 			JustBeforeEach(func() {
-				helper.GetCliRunner().SetProject(util.GetEnvWithDefault("REDHAT_POSTGRES_OPERATOR_PROJECT", "odo-operator-test"))
+				projectName = util.GetEnvWithDefault("REDHAT_POSTGRES_OPERATOR_PROJECT", "odo-operator-test")
+				helper.GetCliRunner().SetProject(projectName)
 				operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 				postgresOperator = regexp.MustCompile(`postgresql-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 				postgresDatabase = fmt.Sprintf("%s/Database", postgresOperator)
@@ -97,7 +99,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(commonVar.Project, fmt.Sprintf(`%s-.[a-z0-9]*`, operandName))
+							oc.PodsShouldBeRunning(projectName, fmt.Sprintf(`%s-.[\-a-z0-9]*`, operandName))
 						})
 
 						It("should list the service", func() {
