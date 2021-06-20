@@ -6,6 +6,33 @@ shout() {
   set -x
 }
 
+install_postgres_operator(){
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1
+  kind: OperatorGroup
+  metadata:
+    generateName: ${1}-
+    namespace: ${1}
+  spec:
+    targetNamespaces:
+    - ${1}
+EOF
+
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: postgresql-operator-dev4devs-com
+    namespace: ${1}
+  spec:
+    channel: alpha
+    name: postgresql-operator-dev4devs-com
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: "Automatic"
+EOF
+}
+
 set -ex
 
 shout "Setting up some stuff"
@@ -88,9 +115,10 @@ export REDHAT_OPENJDK11_UBI8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr 
 export REDHAT_NODEJS12_RHEL7_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 export REDHAT_NODEJS12_UBI8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 export REDHAT_NODEJS14_UBI8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
+export REDHAT_POSTGRES_OPERATOR_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 
 # Create the namespace for e2e image test apply pull secret to the namespace
-for i in `echo "$REDHAT_OPENJDK11_RHEL8_PROJECT $REDHAT_NODEJS12_RHEL7_PROJECT $REDHAT_NODEJS12_UBI8_PROJECT $REDHAT_OPENJDK11_UBI8_PROJECT $REDHAT_NODEJS14_UBI8_PROJECT"`; do
+for i in `echo "$REDHAT_OPENJDK11_RHEL8_PROJECT $REDHAT_NODEJS12_RHEL7_PROJECT $REDHAT_NODEJS12_UBI8_PROJECT $REDHAT_OPENJDK11_UBI8_PROJECT $REDHAT_NODEJS14_UBI8_PROJECT $REDHAT_POSTGRES_OPERATOR_PROJECT"`; do
     # create the namespace
     oc new-project $i
     # Applying pull secret to the namespace which will be used for pulling images from authenticated registry
@@ -98,6 +126,17 @@ for i in `echo "$REDHAT_OPENJDK11_RHEL8_PROJECT $REDHAT_NODEJS12_RHEL7_PROJECT $
     # Let developer user have access to the project
     oc adm policy add-role-to-user edit developer
 done
+
+#---------------------------------------------------------------------
+
+# Install namespace specific operators 
+
+
+install_postgres_operator $REDHAT_POSTGRES_OPERATOR_PROJECT
+
+
+
+#---------------------------------------------------------------------
 
 shout "Logging into 4x cluster as developer (logs hidden)"
 set +x
