@@ -93,9 +93,9 @@ func (k kubernetesClient) List() (URLList, error) {
 			if localURL.Spec.Protocol == "" {
 				if localURL.Spec.Secure {
 					localURL.Spec.Protocol = "https"
+				} else {
+					localURL.Spec.Protocol = "http"
 				}
-			} else {
-				localURL.Spec.Protocol = "http"
 			}
 			localMap[url.Name] = localURL
 		}
