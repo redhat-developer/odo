@@ -7,8 +7,6 @@ import (
 	"k8s.io/api/networking/v1"
 )
 
-const apiVersion = "odo.dev/v1alpha1"
-
 type KubernetesIngress struct {
 	NetworkingV1Ingress     *v1.Ingress
 	ExtensionV1Beta1Ingress *v1beta1.Ingress
