@@ -13,8 +13,8 @@ type KubernetesIngress struct {
 	isGenerated             bool
 }
 
-//NewEmptyKubernetesIngress returns a new empty KubernetesIngress to be populated by caller
-func NewEmptyKubernetesIngress() *KubernetesIngress {
+//NewNonGeneratedKubernetesIngress returns a new empty KubernetesIngress to be populated by caller. It is not genrated
+func NewNonGeneratedKubernetesIngress() *KubernetesIngress {
 	return &KubernetesIngress{
 		NetworkingV1Ingress:     nil,
 		ExtensionV1Beta1Ingress: nil,
@@ -22,13 +22,20 @@ func NewEmptyKubernetesIngress() *KubernetesIngress {
 	}
 }
 
-//NewKubernetesIngressFromParams generates a new KubernetesIngress from the ingress params
-func NewKubernetesIngressFromParams(ingressParams generator.IngressParams) *KubernetesIngress {
-	ki := &KubernetesIngress{
-		NetworkingV1Ingress:     odogenerator.GetNetworkingV1Ingress(ingressParams),
-		ExtensionV1Beta1Ingress: generator.GetIngress(ingressParams),
+//NewGeneratedKubernetesIngress returns a generated KubernetesIngress to be populated by caller
+func NewGeneratedKubernetesIngress() *KubernetesIngress {
+	return &KubernetesIngress{
+		NetworkingV1Ingress:     nil,
+		ExtensionV1Beta1Ingress: nil,
 		isGenerated:             true,
 	}
+}
+
+//NewKubernetesIngressFromParams generates a new KubernetesIngress from the ingress params
+func NewKubernetesIngressFromParams(ingressParams generator.IngressParams) *KubernetesIngress {
+	ki := NewGeneratedKubernetesIngress()
+	ki.NetworkingV1Ingress = odogenerator.GetNetworkingV1Ingress(ingressParams)
+	ki.ExtensionV1Beta1Ingress = generator.GetIngress(ingressParams)
 	return ki
 }
 

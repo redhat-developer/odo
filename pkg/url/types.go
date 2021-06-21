@@ -117,35 +117,34 @@ func (u URL) GetKubernetesIngress(serviceName string) *unions.KubernetesIngress 
 		Type:   intstr.Int,
 		IntVal: int32(u.Spec.Port),
 	}
-	ki := &unions.KubernetesIngress{
-		NetworkingV1Ingress: &networkingv1.Ingress{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Ingress",
-				APIVersion: "networking.k8s.io/v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: u.Name,
-			},
-			Spec: networkingv1.IngressSpec{
-				Rules: []networkingv1.IngressRule{
-					{
-						Host: u.Spec.Host,
-						IngressRuleValue: networkingv1.IngressRuleValue{
-							HTTP: &networkingv1.HTTPIngressRuleValue{
-								Paths: []networkingv1.HTTPIngressPath{
-									{
-										Path: u.Spec.Path,
+	ki := unions.NewGeneratedKubernetesIngress()
+	ki.NetworkingV1Ingress = &networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: u.Name,
+		},
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: u.Spec.Host,
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									Path: u.Spec.Path,
 
-										Backend: networkingv1.IngressBackend{
-											Service: &networkingv1.IngressServiceBackend{
-												Name: serviceName,
-												Port: networkingv1.ServiceBackendPort{
-													Name:   fmt.Sprintf("%s%d", serviceName, port.IntVal),
-													Number: port.IntVal,
-												},
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: serviceName,
+											Port: networkingv1.ServiceBackendPort{
+												Name:   fmt.Sprintf("%s%d", serviceName, port.IntVal),
+												Number: port.IntVal,
 											},
-											Resource: nil,
 										},
+										Resource: nil,
 									},
 								},
 							},
@@ -154,27 +153,27 @@ func (u URL) GetKubernetesIngress(serviceName string) *unions.KubernetesIngress 
 				},
 			},
 		},
-		ExtensionV1Beta1Ingress: &v1beta1.Ingress{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Ingress",
-				APIVersion: "extensions/v1beta1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: u.Name,
-			},
-			Spec: v1beta1.IngressSpec{
-				Rules: []v1beta1.IngressRule{
-					{
-						Host: u.Spec.Host,
-						IngressRuleValue: v1beta1.IngressRuleValue{
-							HTTP: &v1beta1.HTTPIngressRuleValue{
-								Paths: []v1beta1.HTTPIngressPath{
-									{
-										Path: u.Spec.Path,
-										Backend: v1beta1.IngressBackend{
-											ServiceName: serviceName,
-											ServicePort: port,
-										},
+	}
+	ki.ExtensionV1Beta1Ingress = &v1beta1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "extensions/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: u.Name,
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{
+				{
+					Host: u.Spec.Host,
+					IngressRuleValue: v1beta1.IngressRuleValue{
+						HTTP: &v1beta1.HTTPIngressRuleValue{
+							Paths: []v1beta1.HTTPIngressPath{
+								{
+									Path: u.Spec.Path,
+									Backend: v1beta1.IngressBackend{
+										ServiceName: serviceName,
+										ServicePort: port,
 									},
 								},
 							},

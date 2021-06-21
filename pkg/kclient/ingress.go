@@ -76,7 +76,7 @@ func (c *Client) CreateIngress(ingress unions.KubernetesIngress) (*unions.Kubern
 		return nil, fmt.Errorf("create ingress should get a generated ingress. If you are hiting this, contact the developer")
 	}
 	created := false
-	kubernetesIngress := unions.NewEmptyKubernetesIngress()
+	kubernetesIngress := unions.NewNonGeneratedKubernetesIngress()
 	if c.isNetworkingV1IngressSupported {
 		kubernetesIngress.NetworkingV1Ingress, err = c.KubeClient.NetworkingV1().Ingresses(c.Namespace).Create(context.TODO(), ingress.NetworkingV1Ingress, metav1.CreateOptions{})
 		if err != nil {
@@ -125,7 +125,7 @@ func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngres
 			return nil, fmt.Errorf("unable to list ingresses as networking v1 ingresses %w", err)
 		} else {
 			for k := range ingressList.Items {
-				ki := unions.NewEmptyKubernetesIngress()
+				ki := unions.NewNonGeneratedKubernetesIngress()
 				ki.NetworkingV1Ingress = &ingressList.Items[k]
 				kubernetesIngressList = append(kubernetesIngressList, ki)
 			}
@@ -138,7 +138,7 @@ func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngres
 			return nil, fmt.Errorf("unable to list ingresses as extensions v1 ingress %w", err)
 		} else {
 			for k := range ingressList.Items {
-				ki := unions.NewEmptyKubernetesIngress()
+				ki := unions.NewNonGeneratedKubernetesIngress()
 				ki.ExtensionV1Beta1Ingress = &ingressList.Items[k]
 				kubernetesIngressList = append(kubernetesIngressList, ki)
 			}
@@ -148,7 +148,7 @@ func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngres
 }
 
 func (c *Client) GetIngress(name string) (*unions.KubernetesIngress, error) {
-	ki := unions.NewEmptyKubernetesIngress()
+	ki := unions.NewNonGeneratedKubernetesIngress()
 	err := c.checkIngressSupport()
 	if err != nil {
 		return nil, err
