@@ -32,15 +32,15 @@ var _ = Describe("odo debug command tests", func() {
 
 		It("should expect a ws connection when tried to connect on different debug port locally and remotely", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "node", "--project", projName, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "env", "set", "--force", "DebugPort", "9292", "--context", commonVar.Context)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", "node", "--project", projName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "env", "set", "--force", "DebugPort", "9292", "--context", commonVar.Context).ShouldPass()
 			dbgPort := helper.GetLocalEnvInfoValueWithContext("DebugPort", commonVar.Context)
 			Expect(dbgPort).To(Equal("9292"))
-			helper.CmdShouldPass("odo", "push", "--debug", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--debug", "--context", commonVar.Context).ShouldPass()
 
 			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5050", "--context", commonVar.Context)
+				helper.Cmd("odo", "debug", "port-forward", "--local-port", "5050", "--context", commonVar.Context).WithTerminate(60*time.Second, stopChannel).ShouldRun()
 			}()
 
 			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET

@@ -26,14 +26,14 @@ var _ = Describe("odo login and logout command tests", func() {
 
 	Context("when running help for login command", func() {
 		It("should display the help", func() {
-			appHelp := helper.CmdShouldPass("odo", "login", "-h")
+			appHelp := helper.Cmd("odo", "login", "-h").ShouldPass().Out()
 			Expect(appHelp).To(ContainSubstring("Login to cluster"))
 		})
 	})
 
 	Context("when running help for logout command", func() {
 		It("should display the help", func() {
-			appHelp := helper.CmdShouldPass("odo", "logout", "-h")
+			appHelp := helper.Cmd("odo", "logout", "-h").ShouldPass().Out()
 			Expect(appHelp).To(ContainSubstring("Log out of the current OpenShift session"))
 		})
 	})
@@ -49,7 +49,7 @@ var _ = Describe("odo login and logout command tests", func() {
 			currentUserToken = oc.GetToken()
 
 			// Login successful without any projects with appropriate message
-			session1 = helper.CmdShouldPass("odo", "login", "-u", loginTestUserForNoProject, "-p", loginTestUserPassword)
+			session1 = helper.Cmd("odo", "login", "-u", loginTestUserForNoProject, "-p", loginTestUserPassword).ShouldPass().Out()
 			Expect(session1).To(ContainSubstring("Login successful"))
 			Expect(session1).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 			Expect(session1).To(ContainSubstring("odo project create <project-name>"))
@@ -60,7 +60,7 @@ var _ = Describe("odo login and logout command tests", func() {
 			testUserToken = oc.GetToken()
 
 			// Login successful with token without any projects with appropriate message
-			session1 = helper.CmdShouldPass("odo", "login", "-t", testUserToken)
+			session1 = helper.Cmd("odo", "login", "-t", testUserToken).ShouldPass().Out()
 			Expect(session1).To(ContainSubstring("Logged into"))
 			Expect(session1).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 			Expect(session1).To(ContainSubstring("odo project create <project-name>"))
@@ -68,11 +68,11 @@ var _ = Describe("odo login and logout command tests", func() {
 			Expect(session1).To(ContainSubstring(loginTestUserForNoProject))
 
 			// Login fails on invalid token with appropriate message
-			sessionErr := helper.CmdShouldFail("odo", "login", "-t", "verybadtoken")
+			sessionErr := helper.Cmd("odo", "login", "-t", "verybadtoken").ShouldFail().Err()
 			Expect(sessionErr).To(ContainSubstring("The token provided is invalid or expired"))
 
 			// loging back to current user
-			helper.CmdShouldPass("odo", "login", "--token", currentUserToken)
+			helper.Cmd("odo", "login", "--token", currentUserToken).ShouldPass()
 		})
 	})
 })

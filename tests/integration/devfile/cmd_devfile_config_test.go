@@ -28,8 +28,8 @@ var _ = Describe("odo devfile config command tests", func() {
 
 	Context("When executing config view", func() {
 		It("Should view all default parameters", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs")
-			output := helper.CmdShouldPass("odo", "config", "view")
+			helper.Cmd("odo", "create", "nodejs").ShouldPass()
+			output := helper.Cmd("odo", "config", "view").ShouldPass().Out()
 			wantOutput := []string{
 				"nodejs",
 				"Ports",
@@ -41,11 +41,11 @@ var _ = Describe("odo devfile config command tests", func() {
 
 	Context("When executing config set and unset", func() {
 		It("Should successfully set and unset the parameters", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs")
-			helper.CmdShouldPass("odo", "config", "set", "Name", testName, "-f")
-			helper.CmdShouldPass("odo", "config", "set", "Ports", testDebugPort, "-f")
-			helper.CmdShouldPass("odo", "config", "set", "Memory", testMemory, "-f")
-			output := helper.CmdShouldPass("odo", "config", "view")
+			helper.Cmd("odo", "create", "nodejs").ShouldPass()
+			helper.Cmd("odo", "config", "set", "Name", testName, "-f").ShouldPass()
+			helper.Cmd("odo", "config", "set", "Ports", testDebugPort, "-f").ShouldPass()
+			helper.Cmd("odo", "config", "set", "Memory", testMemory, "-f").ShouldPass()
+			output := helper.Cmd("odo", "config", "view").ShouldPass().Out()
 			wantOutput := []string{
 				testName,
 				testMemory,
@@ -53,19 +53,19 @@ var _ = Describe("odo devfile config command tests", func() {
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 
-			helper.CmdShouldPass("odo", "config", "unset", "Ports", "-f")
-			output = helper.CmdShouldPass("odo", "config", "view")
+			helper.Cmd("odo", "config", "unset", "Ports", "-f").ShouldPass()
+			output = helper.Cmd("odo", "config", "view").ShouldPass().Out()
 			dontWantOutput := []string{
 				testDebugPort,
 			}
 			helper.DontMatchAllInOutput(output, dontWantOutput)
-			helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 		})
 
 		It("Should fail to set and unset an invalid parameter", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs")
-			helper.CmdShouldFail("odo", "config", "set", fakeParameter, fakeParameter, "-f")
-			helper.CmdShouldFail("odo", "config", "unset", fakeParameter, "-f")
+			helper.Cmd("odo", "create", "nodejs").ShouldPass()
+			helper.Cmd("odo", "config", "set", fakeParameter, fakeParameter, "-f").ShouldFail()
+			helper.Cmd("odo", "config", "unset", fakeParameter, "-f").ShouldFail()
 		})
 	})
 })

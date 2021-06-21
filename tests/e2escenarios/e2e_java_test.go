@@ -40,76 +40,76 @@ var _ = Describe("odo java e2e tests", func() {
 		})
 
 		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "wildfly", "wo-wait-javaee-git-test", "--project",
-				commonVar.Project, "--ref", "master", "--git", warGitRepo, "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "wildfly", "wo-wait-javaee-git-test", "--project",
+				commonVar.Project, "--ref", "master", "--git", warGitRepo, "--context", commonVar.Context).ShouldPass()
 
 			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "gitrepo", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "-v", "4", "--context", commonVar.Context)
+			helper.Cmd("odo", "url", "create", "gitrepo", "--port", "8080", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "-v", "4", "--context", commonVar.Context).ShouldPass()
 			routeURL := helper.DetermineRouteURL(commonVar.Context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Insult", 90, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 	})
 	// Test Java
 	Context("odo component creation", func() {
 		It("Should be able to deploy a .war file using wildfly", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "wildfly"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "wildfly", "javaee-war-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "ROOT.war"), "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "wildfly", "javaee-war-test", "--project",
+				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "ROOT.war"), "--context", commonVar.Context).ShouldPass()
 
 			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "warfile", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "url", "create", "warfile", "--port", "8080", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			routeURL := helper.DetermineRouteURL(commonVar.Context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 
 		It("Should be able to deploy a git repo that contains a java uberjar application using openjdk", func() {
 			oc.ImportJavaIS(commonVar.Project)
 
 			// Deploy the git repo / wildfly example
-			helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "uberjar-git-test", "--project",
-				commonVar.Project, "--ref", "master", "--git", jarGitRepo, "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "java:8", "uberjar-git-test", "--project",
+				commonVar.Project, "--ref", "master", "--git", jarGitRepo, "--context", commonVar.Context).ShouldPass()
 
 			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "uberjar", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "url", "create", "uberjar", "--port", "8080", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			routeURL := helper.DetermineRouteURL(commonVar.Context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Hello World", 90, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			oc.ImportJavaIS(commonVar.Project)
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
 
-			helper.CmdShouldPass("odo", "create", "--s2i", "java:8", "sb-jar-test", "--project",
-				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "java:8", "sb-jar-test", "--project",
+				commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", commonVar.Context).ShouldPass()
 
 			// Create a URL
-			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			routeURL := helper.DetermineRouteURL(commonVar.Context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "HTTP Booster", 300, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 
 	})

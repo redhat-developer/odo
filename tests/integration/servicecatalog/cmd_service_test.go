@@ -37,7 +37,7 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("when running help for service command", func() {
 		It("should display the help", func() {
-			appHelp := helper.CmdShouldPass("odo", "service", "-h")
+			appHelp := helper.Cmd("odo", "service", "-h").ShouldPass().Out()
 			Expect(appHelp).To(ContainSubstring("Perform service catalog operations"))
 		})
 	})
@@ -45,7 +45,7 @@ var _ = Describe("odo service command tests", func() {
 	Context("check catalog service search functionality", func() {
 		It("check that a service does not exist", func() {
 			serviceRandomName := helper.RandString(7)
-			output := helper.CmdShouldFail("odo", "catalog", "search", "service", serviceRandomName)
+			output := helper.Cmd("odo", "catalog", "search", "service", serviceRandomName).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("no service matched the query: " + serviceRandomName))
 		})
 	})
@@ -53,7 +53,7 @@ var _ = Describe("odo service command tests", func() {
 	Context("checking machine readable output for service catalog", func() {
 		It("should succeed listing catalog components", func() {
 			// Since service catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
-			output := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+			output := helper.Cmd("odo", "catalog", "list", "services", "-o", "json").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("List"))
 		})
 	})
@@ -61,7 +61,7 @@ var _ = Describe("odo service command tests", func() {
 	Context("checking machine readable output for service catalog", func() {
 		It("should succeed listing catalog components", func() {
 			// Since service catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
-			helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+			helper.Cmd("odo", "catalog", "list", "services", "-o", "json").ShouldPass()
 		})
 	})
 
@@ -72,7 +72,7 @@ var _ = Describe("odo service command tests", func() {
 			// We just use "sql" as some catalogs only have postgresql-persistent and
 			// others dh-postgresql-db. So let's just see if there's "any" postgresql to begin
 			// with
-			output := helper.CmdShouldPass("odo", "catalog", "search", "service", "sql")
+			output := helper.Cmd("odo", "catalog", "search", "service", "sql").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("postgresql"))
 		})
 
@@ -84,9 +84,9 @@ var _ = Describe("odo service command tests", func() {
 		})
 
 		It("should be able to create postgresql with env", func() {
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", commonVar.Project, "--app", app,
+			helper.Cmd("odo", "service", "create", "dh-postgresql-apb", "--project", commonVar.Project, "--app", app,
 				"--plan", "dev", "-p", "postgresql_user=lukecage", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w").ShouldPass()
 			// there is only a single pod in the project
 			ocArgs := []string{"describe", "pod", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
@@ -94,13 +94,13 @@ var _ = Describe("odo service command tests", func() {
 			})
 
 			// Delete the service
-			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", commonVar.Project)
+			helper.Cmd("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", commonVar.Project).ShouldPass()
 		})
 
 		It("should be able to create postgresql with env multiple times", func() {
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", commonVar.Project, "--app", app,
+			helper.Cmd("odo", "service", "create", "dh-postgresql-apb", "--project", commonVar.Project, "--app", app,
 				"--plan", "dev", "-p", "postgresql_user=lukecage", "-p", "postgresql_user=testworker", "-p", "postgresql_password=secret",
-				"-p", "postgresql_password=universe", "-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
+				"-p", "postgresql_password=universe", "-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w").ShouldPass()
 			// there is only a single pod in the project
 			ocArgs := []string{"describe", "pod", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
@@ -108,7 +108,7 @@ var _ = Describe("odo service command tests", func() {
 			})
 
 			// Delete the service
-			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", commonVar.Project)
+			helper.Cmd("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", commonVar.Project).ShouldPass()
 		})
 	})
 
@@ -187,38 +187,38 @@ var _ = Describe("odo service command tests", func() {
 		It("should be able to create, list and delete a service using a given value for --context", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "python", "--app", app, "--project", commonVar.Project)
+			helper.Cmd("odo", "create", "--s2i", "python", "--app", app, "--project", commonVar.Project).ShouldPass()
 
 			// cd to the originalDir to create service using --context
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
+			helper.Cmd("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", serviceName,
 				"--context", commonVar.Context,
-			)
+			).ShouldPass()
 
 			// now check if listing the service using --context works
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, serviceName)
 			})
-			stdOut := helper.CmdShouldPass("odo", "service", "list", "--context", commonVar.Context)
+			stdOut := helper.Cmd("odo", "service", "list", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(stdOut).To(ContainSubstring(serviceName))
 
 			// now check if deleting the service using --context works
-			stdOut = helper.CmdShouldPass("odo", "service", "delete", "-f", serviceName, "--context", commonVar.Context)
+			stdOut = helper.Cmd("odo", "service", "delete", "-f", serviceName, "--context", commonVar.Context).ShouldPass().Out()
 			Expect(stdOut).To(ContainSubstring(serviceName))
 		})
 
 		It("should be able to list services, as well as json list in a given app and project combination", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--app", app, "--project", commonVar.Project)
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "--app", app, "--project", commonVar.Project).ShouldPass()
 
 			// create a service from within a component directory
-			helper.CmdShouldPass("odo", "service", "create", "dh-prometheus-apb", "--plan", "ephemeral",
+			helper.Cmd("odo", "service", "create", "dh-prometheus-apb", "--plan", "ephemeral",
 				"--app", app, "--project", commonVar.Project,
-			)
+			).ShouldPass()
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "dh-prometheus-apb")
@@ -226,21 +226,21 @@ var _ = Describe("odo service command tests", func() {
 
 			// Listing the services should work as expected from within the component directory.
 			// This means, it should not require --app or --project flags
-			stdOut := helper.CmdShouldPass("odo", "service", "list")
+			stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
 			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
 
 			// Check json output
-			stdOut = helper.CmdShouldPass("odo", "service", "list", "-o", "json")
+			stdOut = helper.Cmd("odo", "service", "list", "-o", "json").ShouldPass().Out()
 			helper.MatchAllInOutput(stdOut, []string{"dh-prometheus-apb", "List"})
 
 			// cd to a non-component directory and list services
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
-			stdOut = helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", commonVar.Project)
+			stdOut = helper.Cmd("odo", "service", "list", "--app", app, "--project", commonVar.Project).ShouldPass().Out()
 			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
 
 			// Check json output
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
-			stdOut = helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", commonVar.Project, "-o", "json")
+			stdOut = helper.Cmd("odo", "service", "list", "--app", app, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
 			helper.MatchAllInOutput(stdOut, []string{"dh-prometheus-apb", "List"})
 		})
 	})
@@ -249,10 +249,10 @@ var _ = Describe("odo service command tests", func() {
 		It("should be able to create, list and delete services without a context and using --app and --project flags instaed", func() {
 			app = helper.RandString(7)
 			// create the service
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
+			helper.Cmd("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6",
-				"--app", app, "--project", commonVar.Project)
+				"--app", app, "--project", commonVar.Project).ShouldPass()
 
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
@@ -260,11 +260,11 @@ var _ = Describe("odo service command tests", func() {
 			})
 
 			// list the service using app and project flags
-			stdOut := helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", commonVar.Project)
+			stdOut := helper.Cmd("odo", "service", "list", "--app", app, "--project", commonVar.Project).ShouldPass().Out()
 			Expect(stdOut).To(ContainSubstring("dh-postgresql-apb"))
 
 			// delete the service using app and project flags
-			helper.CmdShouldPass("odo", "service", "delete", "-f", "dh-postgresql-apb", "--app", app, "--project", commonVar.Project)
+			helper.Cmd("odo", "service", "delete", "-f", "dh-postgresql-apb", "--app", app, "--project", commonVar.Project).ShouldPass()
 		})
 	})
 
@@ -389,11 +389,11 @@ var _ = Describe("odo service command tests", func() {
 		It("should succeed when we're describing service that could have integer value for default field", func() {
 			// https://github.com/openshift/odo/issues/2488
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "python", "component1", "--context", commonVar.Context, "--project", commonVar.Project)
+			helper.Cmd("odo", "create", "--s2i", "python", "component1", "--context", commonVar.Context, "--project", commonVar.Project).ShouldPass()
 			helper.Chdir(commonVar.Context)
 
-			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-es-apb")
-			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-import-vm-apb")
+			helper.Cmd("odo", "catalog", "describe", "service", "dh-es-apb").ShouldPass()
+			helper.Cmd("odo", "catalog", "describe", "service", "dh-import-vm-apb").ShouldPass()
 		})
 	})
 
@@ -402,15 +402,15 @@ var _ = Describe("odo service command tests", func() {
 			app = helper.RandString(6)
 		})
 		It("should delete the service(s) in the application as well", func() {
-			helper.CmdShouldPass("odo", "service", "create", "--app", app, "-w", "dh-postgresql-apb", "--project", commonVar.Project, "--plan", "dev",
+			helper.Cmd("odo", "service", "create", "--app", app, "-w", "dh-postgresql-apb", "--project", commonVar.Project, "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6").ShouldPass()
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "dh-postgresql-apb")
 			})
 
-			helper.CmdShouldPass("odo", "app", "delete", app, "--project", commonVar.Project, "-f")
+			helper.Cmd("odo", "app", "delete", app, "--project", commonVar.Project, "-f").ShouldPass()
 
 			ocArgs = []string{"get", "serviceinstances", "-n", commonVar.Project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {

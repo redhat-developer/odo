@@ -36,22 +36,22 @@ var _ = Describe("odo generic", func() {
 	Context("Check the help usage for odo", func() {
 
 		It("Makes sure that we have the long-description when running odo and we dont error", func() {
-			output := helper.CmdShouldPass("odo")
+			output := helper.Cmd("odo").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("To see a full list of commands, run 'odo --help'"))
 		})
 
 		It("Make sure we have the full description when performing odo --help", func() {
-			output := helper.CmdShouldPass("odo", "--help")
+			output := helper.Cmd("odo", "--help").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Use \"odo [command] --help\" for more information about a command."))
 		})
 
 		It("Fail when entering an incorrect name for a component", func() {
-			output := helper.CmdShouldFail("odo", "component", "foobar")
+			output := helper.Cmd("odo", "component", "foobar").ShouldFail().Err()
 			Expect(output).To(ContainSubstring("Subcommand not found, use one of the available commands"))
 		})
 
 		It("Fail with showing help only once for incorrect command", func() {
-			output := helper.CmdShouldFail("odo", "hello")
+			output := helper.Cmd("odo", "hello").ShouldFail().Err()
 			Expect(strings.Count(output, "odo [flags]")).Should(Equal(1))
 		})
 
@@ -59,7 +59,7 @@ var _ = Describe("odo generic", func() {
 
 	Context("When executing catalog list without component directory", func() {
 		It("should list all component catalogs", func() {
-			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "components")
+			stdOut := helper.Cmd("odo", "catalog", "list", "components").ShouldPass().Out()
 			helper.MatchAllInOutput(stdOut, []string{"dotnet", "nginx", "php", "ruby", "wildfly"})
 		})
 
@@ -68,7 +68,7 @@ var _ = Describe("odo generic", func() {
 	Context("check catalog component search functionality", func() {
 		It("check that a component does not exist", func() {
 			componentRandomName := helper.RandString(7)
-			output := helper.CmdShouldFail("odo", "catalog", "search", "component", componentRandomName)
+			output := helper.Cmd("odo", "catalog", "search", "component", componentRandomName).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("no component matched the query: " + componentRandomName))
 		})
 	})
@@ -85,7 +85,7 @@ var _ = Describe("odo generic", func() {
 
 		// odo project create foobar -o json
 		It("should be able to create project and show output in json format", func() {
-			actual := helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+			actual := helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass().Out()
 			values := gjson.GetMany(actual, "kind", "message")
 			expected := []string{"Project", "is ready for use"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
@@ -102,8 +102,8 @@ var _ = Describe("odo generic", func() {
 		})
 		// odo project create foobar -o json (x2)
 		It("should fail along with proper machine readable output", func() {
-			helper.CmdShouldPass("odo", "project", "create", projectName)
-			actual := helper.CmdShouldFail("odo", "project", "create", projectName, "-o", "json")
+			helper.Cmd("odo", "project", "create", projectName).ShouldPass()
+			actual := helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldFail().Err()
 			valuesC := gjson.GetMany(actual, "kind", "message")
 			expectedC := []string{"Error", "unable to create new project"}
 			Expect(helper.GjsonMatcher(valuesC, expectedC)).To(Equal(true))
@@ -119,9 +119,9 @@ var _ = Describe("odo generic", func() {
 
 		// odo project delete foobar -o json
 		It("should be able to delete project and show output in json format", func() {
-			helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+			helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass()
 
-			actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
+			actual := helper.Cmd("odo", "project", "delete", projectName, "-o", "json").ShouldPass().Out()
 			valuesDel := gjson.GetMany(actual, "kind", "message")
 			expectedDel := []string{"Project", "Deleted project"}
 			Expect(helper.GjsonMatcher(valuesDel, expectedDel)).To(Equal(true))
@@ -134,12 +134,12 @@ var _ = Describe("odo generic", func() {
 			helper.Chdir(commonVar.Context)
 		})
 		It("should create the component in default application", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "php", "testcmp", "--app", "e2e-xyzk", "--project", commonVar.Project, "--git", testPHPGitURL)
-			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP", "-f")
-			helper.CmdShouldPass("odo", "push")
+			helper.Cmd("odo", "create", "--s2i", "php", "testcmp", "--app", "e2e-xyzk", "--project", commonVar.Project, "--git", testPHPGitURL).ShouldPass()
+			helper.Cmd("odo", "config", "set", "Ports", "8080/TCP", "-f").ShouldPass()
+			helper.Cmd("odo", "push").ShouldPass()
 			oc.VerifyCmpName("testcmp", commonVar.Project)
 			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", commonVar.Project)
-			helper.CmdShouldPass("odo", "app", "delete", "e2e-xyzk", "-f")
+			helper.Cmd("odo", "app", "delete", "e2e-xyzk", "-f").ShouldPass()
 		})
 	})
 
@@ -149,31 +149,31 @@ var _ = Describe("odo generic", func() {
 		})
 
 		It("should pass to build component if the given build timeout is more than the default(300s) value", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL)
-			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "600")
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL).ShouldPass()
+			helper.Cmd("odo", "preference", "set", "BuildTimeout", "600").ShouldPass()
 			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
 			helper.MatchAllInOutput(buildTimeout, []string{"600"})
-			helper.CmdShouldPass("odo", "push")
+			helper.Cmd("odo", "push").ShouldPass()
 		})
 
 		It("should fail to build component if the given build timeout is pretty less(2s)", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL)
-			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "2")
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL).ShouldPass()
+			helper.Cmd("odo", "preference", "set", "BuildTimeout", "2").ShouldPass()
 			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
 			helper.MatchAllInOutput(buildTimeout, []string{"2"})
-			stdOut := helper.CmdShouldFail("odo", "push")
+			stdOut := helper.Cmd("odo", "push").ShouldFail().Err()
 			helper.MatchAllInOutput(stdOut, []string{"Failed to create component", "timeout waiting for build"})
 		})
 	})
 
 	Context("should list applications in other project", func() {
 		It("should be able to create a php component with application created", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "php", "testcmp", "--app", "testing", "--project", commonVar.Project, "--ref", "master", "--git", testPHPGitURL, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "php", "testcmp", "--app", "testing", "--project", commonVar.Project, "--ref", "master", "--git", testPHPGitURL, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			currentProject := helper.CreateRandProject()
-			currentAppNames := helper.CmdShouldPass("odo", "app", "list", "--project", currentProject)
+			currentAppNames := helper.Cmd("odo", "app", "list", "--project", currentProject).ShouldPass().Out()
 			Expect(currentAppNames).To(ContainSubstring("There are no applications deployed in the project '" + currentProject + "'"))
-			appNames := helper.CmdShouldPass("odo", "app", "list", "--project", commonVar.Project)
+			appNames := helper.Cmd("odo", "app", "list", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(appNames).To(ContainSubstring("testing"))
 			helper.DeleteProject(currentProject)
 		})
@@ -183,10 +183,10 @@ var _ = Describe("odo generic", func() {
 		// works
 		It("should be able to push changes", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
 
 			// Push the changes with --show-log
-			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", commonVar.Context)
+			getLogging := helper.Cmd("odo", "push", "--show-log", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(getLogging).To(ContainSubstring("Creating Kubernetes resources for component nodejs"))
 		})
 	})
@@ -194,9 +194,9 @@ var _ = Describe("odo generic", func() {
 	Context("deploying a component with a specific image name", func() {
 		It("should deploy the component", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs:latest", "testversioncmp", "--project", commonVar.Project, "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "nodejs:latest", "testversioncmp", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 		})
 	})
 
@@ -225,7 +225,7 @@ var _ = Describe("odo generic", func() {
 
 	Context("when executing odo version command", func() {
 		It("should show the version of odo major components including server login URL", func() {
-			odoVersion := helper.CmdShouldPass("odo", "version")
+			odoVersion := helper.Cmd("odo", "version").ShouldPass().Out()
 			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`)
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
 			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
@@ -242,8 +242,8 @@ var _ = Describe("odo generic", func() {
 			helper.Chdir(commonVar.Context)
 		})
 		It("should not allow creating a URL with long name", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project)
-			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
+			helper.Cmd("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project).ShouldPass()
+			stdOut := helper.Cmd("odo", "url", "create", testLongURLName, "--port", "8080").ShouldFail().Err()
 			Expect(stdOut).To(ContainSubstring("must be shorter than 63 characters"))
 		})
 	})
@@ -288,7 +288,7 @@ var _ = Describe("odo generic", func() {
 			}
 			for _, testCase := range cases {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				output := helper.CmdShouldFail("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--"+testCase.paramName, testCase.paramValue, "--git", "https://github.com/sclorg/nodejs-ex.git")
+				output := helper.Cmd("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--"+testCase.paramName, testCase.paramValue, "--git", "https://github.com/sclorg/nodejs-ex.git").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("unknown flag: --" + testCase.paramName))
 			}
 		})

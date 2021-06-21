@@ -138,20 +138,20 @@ func (oc OcRunner) GetComponentDC(component string, app string, project string) 
 // source is the source of the component i.e gitURL or path to the directory or binary file
 func (oc OcRunner) SourceTest(appTestName string, sourceType string, source string) {
 	// checking for source-type in dc
-	sourceTypeInDc := CmdShouldPass(oc.path, "get", "dc", "wildfly-"+appTestName,
-		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/component-source-type\"}}'")
+	sourceTypeInDc := Cmd(oc.path, "get", "dc", "wildfly-"+appTestName,
+		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/component-source-type\"}}'").ShouldPass().Out()
 	Expect(sourceTypeInDc).To(ContainSubstring(sourceType))
 
 	// checking for source in dc
-	sourceInDc := CmdShouldPass(oc.path, "get", "dc", "wildfly-"+appTestName,
-		"-o", "go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'")
+	sourceInDc := Cmd(oc.path, "get", "dc", "wildfly-"+appTestName,
+		"-o", "go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'").ShouldPass().Out()
 	Expect(sourceInDc).To(ContainSubstring(source))
 }
 
 // ExecListDir returns dir list in specified location of pod
 func (oc OcRunner) ExecListDir(podName string, projectName string, dir string) string {
-	stdOut := CmdShouldPass(oc.path, "exec", podName, "--namespace", projectName,
-		"--", "ls", "-lai", dir)
+	stdOut := Cmd(oc.path, "exec", podName, "--namespace", projectName,
+		"--", "ls", "-lai", dir).ShouldPass().Out()
 	return stdOut
 }
 
@@ -162,16 +162,16 @@ func (oc OcRunner) Exec(podName string, projectName string, args ...string) stri
 
 	cmd = append(cmd, args...)
 
-	stdOut := CmdShouldPass(oc.path, cmd...)
+	stdOut := Cmd(oc.path, cmd...).ShouldPass().Out()
 	return stdOut
 }
 
 // CheckCmdOpInRemoteCmpPod runs the provided command on remote component pod and returns the return value of command output handler function passed to it
 func (oc OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool {
 	cmpDCName := fmt.Sprintf("%s-%s", cmpName, appName)
-	outPodName := CmdShouldPass(oc.path, "get", "pods", "--namespace", prjName,
+	outPodName := Cmd(oc.path, "get", "pods", "--namespace", prjName,
 		"--selector=deploymentconfig="+cmpDCName,
-		"-o", "jsonpath='{.items[0].metadata.name}'")
+		"-o", "jsonpath='{.items[0].metadata.name}'").ShouldPass().Out()
 	podName := strings.Replace(outPodName, "'", "", -1)
 	session := CmdRunner(oc.path, append([]string{"exec", podName, "--namespace", prjName,
 		"-c", cmpDCName, "--"}, cmd...)...)
@@ -203,37 +203,37 @@ func (oc OcRunner) CheckCmdOpInRemoteDevfilePod(podName string, containerName st
 // VerifyCmpExists verifies if component was created successfully
 func (oc OcRunner) VerifyCmpExists(cmpName string, appName string, prjName string) {
 	cmpDCName := fmt.Sprintf("%s-%s", cmpName, appName)
-	CmdShouldPass(oc.path, "get", "dc", cmpDCName, "--namespace", prjName)
+	Cmd(oc.path, "get", "dc", cmpDCName, "--namespace", prjName).ShouldPass()
 }
 
 // VerifyLabelExistsOfComponent verifies app name of component
 func (oc OcRunner) VerifyLabelExistsOfComponent(cmpName string, namespace string, labelName string) {
 	dcName := oc.GetDcName(cmpName, namespace)
-	session := CmdShouldPass(oc.path, "get", "dc", dcName, "--namespace", namespace,
-		"--template={{.metadata.labels}}")
+	session := Cmd(oc.path, "get", "dc", dcName, "--namespace", namespace,
+		"--template={{.metadata.labels}}").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(labelName))
 }
 
 // VerifyAppNameOfComponent verifies app name of component
 func (oc OcRunner) VerifyAppNameOfComponent(cmpName string, appName string, namespace string) {
-	session := CmdShouldPass(oc.path, "get", "dc", cmpName+"-"+appName, "--namespace", namespace,
-		"--template={{.metadata.labels.app}}")
+	session := Cmd(oc.path, "get", "dc", cmpName+"-"+appName, "--namespace", namespace,
+		"--template={{.metadata.labels.app}}").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(appName))
 }
 
 // VerifyCmpName verifies the component name
 func (oc OcRunner) VerifyCmpName(cmpName string, namespace string) {
 	dcName := oc.GetDcName(cmpName, namespace)
-	session := CmdShouldPass(oc.path, "get", "dc", dcName,
+	session := Cmd(oc.path, "get", "dc", dcName,
 		"--namespace", namespace,
-		"-L", "app.kubernetes.io/instance")
+		"-L", "app.kubernetes.io/instance").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(cmpName))
 }
 
 // GetDcName execute oc command and returns dc name of a deployed
 // component by passing component name as a argument
 func (oc OcRunner) GetDcName(compName string, namespace string) string {
-	session := CmdShouldPass(oc.path, "get", "dc", "--namespace", namespace)
+	session := Cmd(oc.path, "get", "dc", "--namespace", namespace).ShouldPass().Out()
 	re := regexp.MustCompile(compName + `-\S+ `)
 	dcName := re.FindString(session)
 	return strings.TrimSpace(dcName)
@@ -242,78 +242,78 @@ func (oc OcRunner) GetDcName(compName string, namespace string) string {
 // DescribeDc execute oc command and returns dc describe as a string
 // by passing dcname and namespace as arguments
 func (oc OcRunner) DescribeDc(dcName string, namespace string) string {
-	describeInfo := CmdShouldPass(oc.path, "describe", "dc/"+dcName, "-n", namespace)
+	describeInfo := Cmd(oc.path, "describe", "dc/"+dcName, "-n", namespace).ShouldPass().Out()
 	return strings.TrimSpace(describeInfo)
 }
 
 // GetDcPorts returns the ports of the component
 func (oc OcRunner) GetDcPorts(componentName string, appName string, project string) string {
-	ports := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{range.spec.template.spec.containers}}{{.ports}}{{end}}'")
+	ports := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{range.spec.template.spec.containers}}{{.ports}}{{end}}'").ShouldPass().Out()
 	return ports
 }
 
 // MaxMemory returns maximum memory
 func (oc OcRunner) MaxMemory(componentName string, appName string, project string) string {
-	maxMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'")
+	maxMemory := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'").ShouldPass().Out()
 	return maxMemory
 }
 
 // MinMemory returns minimum memory
 func (oc OcRunner) MinMemory(componentName string, appName string, project string) string {
-	minMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'")
+	minMemory := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'").ShouldPass().Out()
 	return minMemory
 }
 
 // MaxCPU returns maximum cpu
 func (oc OcRunner) MaxCPU(componentName string, appName string, project string) string {
-	maxCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.cpu}}{{end}}'")
+	maxCPU := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.cpu}}{{end}}'").ShouldPass().Out()
 	return maxCPU
 }
 
 // MinCPU returns minimum cpu
 func (oc OcRunner) MinCPU(componentName string, appName string, project string) string {
-	minCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'")
+	minCPU := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'").ShouldPass().Out()
 	return minCPU
 }
 
 // SourceTypeDC returns the source type from the deployment config
 func (oc OcRunner) SourceTypeDC(componentName string, appName string, project string) string {
-	sourceType := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/component-source-type\"}}'")
+	sourceType := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/component-source-type\"}}'").ShouldPass().Out()
 	return sourceType
 }
 
 // SourceTypeBC returns the source type from the build config
 func (oc OcRunner) SourceTypeBC(componentName string, appName string, project string) string {
-	sourceType := CmdShouldPass(oc.path, "get", "bc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{.spec.source.type}}'")
+	sourceType := Cmd(oc.path, "get", "bc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{.spec.source.type}}'").ShouldPass().Out()
 	return sourceType
 }
 
 // SourceLocationDC returns the source location from the deployment config
 func (oc OcRunner) SourceLocationDC(componentName string, appName string, project string) string {
-	sourceLocation := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'")
+	sourceLocation := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'").ShouldPass().Out()
 	return sourceLocation
 }
 
 // SourceLocationBC returns the source location from the build config
 func (oc OcRunner) SourceLocationBC(componentName string, appName string, project string) string {
-	sourceLocation := CmdShouldPass(oc.path, "get", "bc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{index .spec.source.git \"uri\"}}'")
+	sourceLocation := Cmd(oc.path, "get", "bc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{index .spec.source.git \"uri\"}}'").ShouldPass().Out()
 	return sourceLocation
 }
 
 // checkForImageStream checks if there is a ImageStream with name and tag in openshift namespace
 func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	// first check if there is ImageStream with given name
-	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
-		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"), "'")
+	names := strings.Trim(Cmd(oc.path, "get", "is", "-n", "openshift",
+		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'").ShouldPass().Out(), "'")
 	scanner := bufio.NewScanner(strings.NewReader(names))
 	namePresent := false
 	for scanner.Scan() {
@@ -324,8 +324,8 @@ func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	tagPresent := false
 	// if there is a ImageStream check if there is a given tag
 	if namePresent {
-		tags := strings.Trim(CmdShouldPass(oc.path, "get", "is", name, "-n", "openshift",
-			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'"), "'")
+		tags := strings.Trim(Cmd(oc.path, "get", "is", name, "-n", "openshift",
+			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'").ShouldPass().Out(), "'")
 		scanner := bufio.NewScanner(strings.NewReader(tags))
 		for scanner.Scan() {
 			if scanner.Text() == tag {
@@ -342,8 +342,8 @@ func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 
 // ImportImageFromRegistry import the required image of the respective component type from the specified registry
 func (oc OcRunner) ImportImageFromRegistry(registry, image, cmpType, project string) {
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, fmt.Sprintf("--from=%s/%s", registry, image), "--confirm")
-	CmdShouldPass(oc.path, "annotate", fmt.Sprintf("istag/%s", cmpType), "--namespace="+project, "tags=builder", "--overwrite")
+	Cmd(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, fmt.Sprintf("--from=%s/%s", registry, image), "--confirm").ShouldPass()
+	Cmd(oc.path, "annotate", fmt.Sprintf("istag/%s", cmpType), "--namespace="+project, "tags=builder", "--overwrite").ShouldPass()
 
 }
 
@@ -355,11 +355,11 @@ func (oc OcRunner) ImportJavaIS(project string) {
 	}
 
 	// we need to import the openjdk image which is used for jars because it's not available by default
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", "java:8",
+	Cmd(oc.path, "--request-timeout", "5m", "import-image", "java:8",
 		"--namespace="+project, "--from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.8",
-		"--confirm")
-	CmdShouldPass(oc.path, "annotate", "istag/java:8", "--namespace="+project,
-		"tags=builder", "--overwrite")
+		"--confirm").ShouldPass()
+	Cmd(oc.path, "annotate", "istag/java:8", "--namespace="+project,
+		"tags=builder", "--overwrite").ShouldPass()
 }
 
 // ImportDotnet20IS import the dotnet image
@@ -370,11 +370,11 @@ func (oc OcRunner) ImportDotnet20IS(project string) {
 	}
 
 	// we need to import the openjdk image which is used for jars because it's not available by default
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", "dotnet:2.0",
+	Cmd(oc.path, "--request-timeout", "5m", "import-image", "dotnet:2.0",
 		"--namespace="+project, "--from=registry.centos.org/dotnet/dotnet-20-centos7",
-		"--confirm")
-	CmdShouldPass(oc.path, "annotate", "istag/dotnet:2.0", "--namespace="+project,
-		"tags=builder", "--overwrite")
+		"--confirm").ShouldPass()
+	Cmd(oc.path, "annotate", "istag/dotnet:2.0", "--namespace="+project,
+		"tags=builder", "--overwrite").ShouldPass()
 }
 
 // EnvVarTest checks the component container env vars in the build config for git and deployment config for git/binary/local
@@ -384,21 +384,21 @@ func (oc OcRunner) EnvVarTest(resourceName string, sourceType string, envString 
 
 	if sourceType == "git" {
 		// checking the values of the env vars pairs in bc
-		envVars := CmdShouldPass(oc.path, "get", "bc", resourceName,
-			"-o", "go-template='{{range .spec.strategy.sourceStrategy.env}}{{.name}}{{.value}}{{end}}'")
+		envVars := Cmd(oc.path, "get", "bc", resourceName,
+			"-o", "go-template='{{range .spec.strategy.sourceStrategy.env}}{{.name}}{{.value}}{{end}}'").ShouldPass().Out()
 		Expect(envVars).To(Equal(envString))
 	}
 
 	// checking the values of the env vars pairs in dc
-	envVars := CmdShouldPass(oc.path, "get", "dc", resourceName,
-		"-o", "go-template='{{range .spec.template.spec.containers}}{{range .env}}{{.name}}{{.value}}{{end}}{{end}}'")
+	envVars := Cmd(oc.path, "get", "dc", resourceName,
+		"-o", "go-template='{{range .spec.template.spec.containers}}{{range .env}}{{.name}}{{.value}}{{end}}{{end}}'").ShouldPass().Out()
 	Expect(envVars).To(Equal(envString))
 }
 
 // GetRunningPodNameOfComp executes oc command and returns the running pod name of a deployed
 // component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) string {
-	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
+	stdOut := Cmd(oc.path, "get", "pods", "--namespace", namespace, "--show-labels").ShouldPass().Out()
 	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*deploymentconfig=` + compName)
 	podName := re.FindStringSubmatch(stdOut)[1]
 	return strings.TrimSpace(podName)
@@ -408,21 +408,21 @@ func (oc OcRunner) GetRunningPodNameOfComp(compName string, namespace string) st
 // devfile component by passing component name as a argument
 func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}")
+	stdOut := Cmd(oc.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}").ShouldPass().Out()
 	return strings.TrimSpace(stdOut)
 }
 
 // GetPVCSize executes oc command and returns the bound storage size
 func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
 	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
-	stdOut := CmdShouldPass(oc.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
+	stdOut := Cmd(oc.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}").ShouldPass().Out()
 	return strings.TrimSpace(stdOut)
 }
 
 // GetPodInitContainers executes oc command and returns the init containers of the pod
 func (oc OcRunner) GetPodInitContainers(compName string, namespace string) []string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}")
+	stdOut := Cmd(oc.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}").ShouldPass().Out()
 	return strings.Split(stdOut, " ")
 }
 
@@ -450,61 +450,61 @@ func (oc OcRunner) LoginUsingToken(token string) string {
 
 // GetLoginUser returns current user name
 func (oc OcRunner) GetLoginUser() string {
-	user := CmdShouldPass(oc.path, "whoami")
+	user := Cmd(oc.path, "whoami").ShouldPass().Out()
 	return strings.TrimSpace(user)
 }
 
 // ServiceInstanceStatus returns service instance
 func (oc OcRunner) ServiceInstanceStatus(serviceInstanceName string) string {
-	serviceinstance := CmdShouldPass(oc.path, "get", "serviceinstance", serviceInstanceName,
-		"-o", "go-template='{{ (index .status.conditions 0).reason}}'")
+	serviceinstance := Cmd(oc.path, "get", "serviceinstance", serviceInstanceName,
+		"-o", "go-template='{{ (index .status.conditions 0).reason}}'").ShouldPass().Out()
 	return strings.TrimSpace(serviceinstance)
 }
 
 // GetVolumeMountNamesandPathsFromContainer returns the volume name and mount path in the format name:path\n
 func (oc OcRunner) GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string {
-	volumeName := CmdShouldPass(oc.path, "get", "deploy", deployName, "--namespace", namespace,
+	volumeName := Cmd(oc.path, "get", "deploy", deployName, "--namespace", namespace,
 		"-o", "go-template="+
 			"{{range .spec.template.spec.containers}}{{if eq .name \""+containerName+
-			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}").ShouldPass().Out()
 
 	return strings.TrimSpace(volumeName)
 }
 
 // GetContainerEnv returns the container env in the format name:value\n
 func (oc OcRunner) GetContainerEnv(podName, containerName, namespace string) string {
-	containerEnv := CmdShouldPass(oc.path, "get", "po", podName, "--namespace", namespace,
+	containerEnv := Cmd(oc.path, "get", "po", podName, "--namespace", namespace,
 		"-o", "go-template="+
 			"{{range .spec.containers}}{{if eq .name \""+containerName+
-			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}").ShouldPass().Out()
 
 	return strings.TrimSpace(containerEnv)
 }
 
 // GetVolumeMountName returns the name of the volume
 func (oc OcRunner) GetVolumeMountName(dcName string, namespace string) string {
-	volumeName := CmdShouldPass(oc.path, "get", "dc", dcName, "--namespace", namespace,
+	volumeName := Cmd(oc.path, "get", "dc", dcName, "--namespace", namespace,
 		"-o", "go-template='"+
 			"{{range .spec.template.spec.containers}}"+
-			"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+			"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'").ShouldPass().Out()
 
 	return strings.TrimSpace(volumeName)
 }
 
 // GetVolumeMountPath returns the path of the volume mount
 func (oc OcRunner) GetVolumeMountPath(dcName string, namespace string) string {
-	volumePaths := CmdShouldPass(oc.path, "get", "dc", dcName, "--namespace", namespace,
+	volumePaths := Cmd(oc.path, "get", "dc", dcName, "--namespace", namespace,
 		"-o", "go-template='"+
 			"{{range .spec.template.spec.containers}}"+
-			"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
+			"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'").ShouldPass().Out()
 
 	return strings.TrimSpace(volumePaths)
 }
 
 // GetEnvFromEntry returns envFrom entry
 func (oc OcRunner) GetEnvFromEntry(componentName string, appName string, projectName string) string {
-	envFromOut := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
-		"-o", "jsonpath='{.spec.template.spec.containers[0].envFrom}'")
+	envFromOut := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
+		"-o", "jsonpath='{.spec.template.spec.containers[0].envFrom}'").ShouldPass().Out()
 	return strings.TrimSpace(envFromOut)
 }
 
@@ -512,8 +512,8 @@ func (oc OcRunner) GetEnvFromEntry(componentName string, appName string, project
 func (oc OcRunner) GetEnvs(componentName string, appName string, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
 
-	output := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
-		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+	output := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
+		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
 
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimPrefix(line, "'")
@@ -529,8 +529,8 @@ func (oc OcRunner) GetEnvsDevFileDeployment(componentName, appName, projectName 
 	var mapOutput = make(map[string]string)
 
 	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
-	output := CmdShouldPass(oc.path, "get", "deployment", selector, "--namespace", projectName,
-		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+	output := Cmd(oc.path, "get", "deployment", selector, "--namespace", projectName,
+		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
 
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimPrefix(line, "'")
@@ -625,7 +625,7 @@ func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 
 func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
+	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
 	Expect(session).To(ContainSubstring("New project created"))
 	Expect(session).To(ContainSubstring(projectName))
 	return projectName
@@ -634,7 +634,7 @@ func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 // DeleteNamespaceProject deletes a specified project in oc cluster
 func (oc OcRunner) DeleteNamespaceProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	session := CmdShouldPass("odo", "project", "delete", projectName, "-f")
+	session := Cmd("odo", "project", "delete", projectName, "-f").ShouldPass().Out()
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
 }
 
@@ -650,7 +650,7 @@ func (oc OcRunner) GetAllPVCNames(namespace string) []string {
 
 // DeletePod deletes a specified pod in the namespace
 func (oc OcRunner) DeletePod(podName string, namespace string) {
-	CmdShouldPass(oc.path, "delete", "pod", "--namespace", namespace, podName)
+	Cmd(oc.path, "delete", "pod", "--namespace", namespace, podName).ShouldPass()
 }
 
 //GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
@@ -660,7 +660,7 @@ func (oc OcRunner) GetAllPodsInNs(namespace string) string {
 	WaitForCmdOut(oc.path, ocArgs, 1, true, func(output string) bool {
 		return !strings.Contains(output, noResourcesMsg)
 	}, true)
-	return CmdShouldPass(oc.path, ocArgs...)
+	return Cmd(oc.path, ocArgs...).ShouldPass().Out()
 }
 
 //StatFileInPod returns stat result of filepath in pod of given component, in a given app, in a given project.

@@ -25,7 +25,7 @@ var _ = Describe("odo watch command tests", func() {
 
 	Context("when running help for watch command", func() {
 		It("should display the help", func() {
-			appHelp := helper.CmdShouldPass("odo", "watch", "-h")
+			appHelp := helper.Cmd("odo", "watch", "-h").ShouldPass().Out()
 			helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
 		})
 	})
@@ -33,8 +33,8 @@ var _ = Describe("odo watch command tests", func() {
 	Context("when executing watch without pushing the component", func() {
 		It("should fail", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context)
-			output := helper.CmdShouldFail("odo", "watch", "--context", commonVar.Context)
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
+			output := helper.Cmd("odo", "watch", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
 	})
@@ -45,16 +45,16 @@ var _ = Describe("odo watch command tests", func() {
 		})
 		It("should fail with proper error", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project)
-			output := helper.CmdShouldFail("odo", "watch", "--app", "dummy")
+			helper.Cmd("odo", "component", "create", "--s2i", "nodejs", "--project", commonVar.Project).ShouldPass()
+			output := helper.Cmd("odo", "watch", "--app", "dummy").ShouldFail().Err()
 			Expect(output).To(ContainSubstring("component does not exist"))
 		})
 	})
 
 	Context("when executing watch on a git source type component", func() {
 		It("should fail", func() {
-			helper.CmdShouldPass("odo", "create", "--s2i", "--context", commonVar.Context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
-			output := helper.CmdShouldFail("odo", "watch", "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "--s2i", "--context", commonVar.Context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git").ShouldPass()
+			output := helper.Cmd("odo", "watch", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("Watch is supported by binary and local components only"))
 		})
 	})
