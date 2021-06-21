@@ -55,13 +55,16 @@ case ${1} in
     minikube)
         mkStatus=$(minikube status)
         shout "| Checking if Minikube needs to be started..."
-        if [[ "$mkStatus" == *"host: Running"* ]]; then 
+        if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" == *"kubelet: Running"* ]]; then 
             if [[ "$mkStatus" == *"kubeconfig: Misconfigured"* ]]; then
                 minikube update-context
             fi
             setup_kubeconfig
             kubectl config use-context minikube
         else
+            if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" != *"kubelet: Running"* ]]; then
+                minikube delete
+            fi
             shout "| Start minikube"
             minikube start --vm-driver=docker --container-runtime=docker
             setup_kubeconfig
