@@ -90,6 +90,13 @@ func (k kubernetesClient) List() (URLList, error) {
 				continue
 			}
 			localURL := ConvertEnvinfoURL(url, k.componentName)
+			if localURL.Spec.Protocol == "" {
+				if localURL.Spec.Secure {
+					localURL.Spec.Protocol = "https"
+				}
+			} else {
+				localURL.Spec.Protocol = "http"
+			}
 			localMap[url.Name] = localURL
 		}
 	}
