@@ -262,8 +262,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			want: getMachineReadableFormatForList([]URL{
-				getFakeURL("example-1", "example-1.com", 8080, "", "", localConfigProvider.INGRESS, StateTypeNotPushed),
-				getFakeURL("example-2", "example-2.com", 8080, "", "", localConfigProvider.INGRESS, StateTypeNotPushed)}),
+				getFakeURL("example-1", "example-1.com", 8080, "", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
+				getFakeURL("example-2", "example-2.com", 8080, "", "http", localConfigProvider.INGRESS, StateTypeNotPushed)}),
 		},
 		{
 			name: "case 2: two urls pushed but are deleted locally",
@@ -365,7 +365,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 
 			want: getMachineReadableFormatForList([]URL{
 				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypePushed),
-				getFakeURL("testRoute0", "", 8080, "/", "", localConfigProvider.ROUTE, StateTypeNotPushed),
+				getFakeURL("testRoute0", "", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
 				getFakeURL("testRoute1", "", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted),
 			}),
 		},
@@ -396,7 +396,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			want: getMachineReadableFormatForList([]URL{
-				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "", localConfigProvider.INGRESS, StateTypeNotPushed),
+				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 			}),
 		},
 	}

@@ -105,7 +105,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 				kind:   "route",
 				port:   testURL3.Port,
 				secure: false,
-				url:    "",
+				url:    "http://",
 			},
 
 			routeList: &routev1.RouteList{
