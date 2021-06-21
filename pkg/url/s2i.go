@@ -2,8 +2,6 @@ package url
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/urltype"
-
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -23,7 +21,7 @@ type s2iClient struct {
 }
 
 // ListFromCluster lists route based URLs from the cluster
-func (s s2iClient) ListFromCluster() (urltype.URLList, error) {
+func (s s2iClient) ListFromCluster() (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, s.localConfig.GetApplication())
 
 	if s.localConfig.GetName() != "" {
@@ -34,10 +32,10 @@ func (s s2iClient) ListFromCluster() (urltype.URLList, error) {
 	routes, err := s.client.ListRoutes(labelSelector)
 
 	if err != nil {
-		return urltype.URLList{}, errors.Wrap(err, "unable to list route names")
+		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
-	var urls []urltype.URL
+	var urls []URL
 	for _, r := range routes {
 		a := getMachineReadableFormat(r)
 		urls = append(urls, a)
@@ -48,17 +46,17 @@ func (s s2iClient) ListFromCluster() (urltype.URLList, error) {
 }
 
 // List lists both route based URLs and local URLs with respective states
-func (s s2iClient) List() (urltype.URLList, error) {
-	var urls []urltype.URL
+func (s s2iClient) List() (URLList, error) {
+	var urls []URL
 
 	clusterUrls, err := s.ListFromCluster()
 	if err != nil {
-		return urltype.URLList{}, errors.Wrap(err, "unable to list route names")
+		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
 	localConfigURLs, err := s.localConfig.ListURLs()
 	if err != nil {
-		return urltype.URLList{}, err
+		return URLList{}, err
 	}
 
 	for _, clusterURL := range clusterUrls.Items {
@@ -67,7 +65,7 @@ func (s s2iClient) List() (urltype.URLList, error) {
 			localURL := ConvertConfigURL(configURL)
 			if localURL.Name == clusterURL.Name {
 				// URL is in both local config and cluster
-				clusterURL.Status.State = urltype.StateTypePushed
+				clusterURL.Status.State = StateTypePushed
 				urls = append(urls, clusterURL)
 				found = true
 			}
@@ -75,7 +73,7 @@ func (s s2iClient) List() (urltype.URLList, error) {
 
 		if !found {
 			// URL is on the cluster but not in local config
-			clusterURL.Status.State = urltype.StateTypeLocallyDeleted
+			clusterURL.Status.State = StateTypeLocallyDeleted
 			urls = append(urls, clusterURL)
 		}
 	}
@@ -90,7 +88,7 @@ func (s s2iClient) List() (urltype.URLList, error) {
 		}
 		if !found {
 			// URL is in the local config but not on the cluster
-			localURL.Status.State = urltype.StateTypeNotPushed
+			localURL.Status.State = StateTypeNotPushed
 			urls = append(urls, localURL)
 		}
 	}
@@ -111,7 +109,7 @@ func (s s2iClient) Delete(name string, kind localConfigProvider.URLKind) error {
 }
 
 // Create creates a route based on the given URL
-func (s s2iClient) Create(url urltype.URL) (string, error) {
+func (s s2iClient) Create(url URL) (string, error) {
 	routeName, err := util.NamespaceOpenShiftObject(url.Name, s.appName)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")

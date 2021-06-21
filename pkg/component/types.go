@@ -2,7 +2,7 @@ package component
 
 import (
 	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/urltype"
+	"github.com/openshift/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,7 +22,7 @@ type ComponentSpec struct {
 	Source      string            `json:"source,omitempty"`
 	SourceType  string            `json:"sourceType,omitempty"`
 	URL         []string          `json:"url,omitempty"`
-	URLSpec     []urltype.URL     `json:"-"`
+	URLSpec     []url.URL         `json:"-"`
 	Storage     []string          `json:"storage,omitempty"`
 	StorageSpec []storage.Storage `json:"-"`
 	Env         []corev1.EnvVar   `json:"env,omitempty"`

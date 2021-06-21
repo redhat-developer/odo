@@ -2,7 +2,6 @@ package url
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/urltype"
 	"os"
 	"text/tabwriter"
 
@@ -97,7 +96,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 			} else {
 				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 			}
-			if u.Status.State != urltype.StateTypePushed {
+			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
 			}
 		}

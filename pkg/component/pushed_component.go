@@ -2,13 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/urltype"
-
 	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
@@ -31,7 +29,7 @@ type provider interface {
 // PushedComponent is an abstraction over the cluster representation of the component
 type PushedComponent interface {
 	provider
-	GetURLs() ([]urltype.URL, error)
+	GetURLs() ([]url.URL, error)
 	GetApplication() string
 	GetType() (string, error)
 	GetSource() (string, string, error)
@@ -40,7 +38,7 @@ type PushedComponent interface {
 
 type defaultPushedComponent struct {
 	application string
-	urls        []urltype.URL
+	urls        []url.URL
 	storage     []storage.Storage
 	provider    provider
 	client      *occlient.Client
@@ -74,19 +72,19 @@ func (d defaultPushedComponent) GetLinkedSecretNames() []string {
 	return d.provider.GetLinkedSecretNames()
 }
 
-func (d defaultPushedComponent) GetURLs() ([]urltype.URL, error) {
+func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 	if d.urls == nil {
 		name := d.GetName()
-		var routes urltype.URLList
+		var routes url.URLList
 		if routeAvailable, err := d.client.IsRouteSupported(); routeAvailable && err == nil {
 			routes, err = url.ListPushed(d.client, name, d.GetApplication())
 			if err != nil && !isIgnorableError(err) {
-				return []urltype.URL{}, err
+				return []url.URL{}, err
 			}
 		}
 		ingresses, err := url.ListPushedIngress(d.client.GetKubeClient(), name)
 		if err != nil && !isIgnorableError(err) {
-			return []urltype.URL{}, err
+			return []url.URL{}, err
 		}
 		d.urls = append(routes.Items, ingresses.Items...)
 	}

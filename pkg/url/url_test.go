@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/urltype"
-
 	"github.com/golang/mock/gomock"
 	kappsv1 "k8s.io/api/apps/v1"
 
@@ -188,9 +186,9 @@ func TestPush(t *testing.T) {
 		componentName       string
 		applicationName     string
 		existingLocalURLs   []localConfigProvider.LocalURL
-		existingClusterURLs urltype.URLList
+		existingClusterURLs URLList
 		deletedItems        []deleteParameters
-		createdURLs         []urltype.URL
+		createdURLs         []URL
 		wantErr             bool
 	}{
 		{
@@ -222,7 +220,7 @@ func TestPush(t *testing.T) {
 					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example",
 					Port:   8080,
@@ -242,7 +240,7 @@ func TestPush(t *testing.T) {
 			componentName:   "wildfly",
 			applicationName: "app",
 			args:            args{isRouteSupported: true},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
 			}),
@@ -270,7 +268,7 @@ func TestPush(t *testing.T) {
 					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormat(testingutil.GetSingleRoute("example", 8080, "wildfly", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "wildfly", "app")),
 			}),
@@ -278,7 +276,7 @@ func TestPush(t *testing.T) {
 				{"example", localConfigProvider.ROUTE},
 				{"example-1", localConfigProvider.ROUTE},
 			},
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example-local-0",
 					Port:   8080,
@@ -339,14 +337,14 @@ func TestPush(t *testing.T) {
 					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example", "nodejs", "app")),
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleSecureIngress("example-default-secret", "nodejs", "app", "")),
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleSecureIngress("example-user-secret", "nodejs", "app", "secret-name")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "nodejs", "app")),
 				getMachineReadableFormat(testingutil.GetSingleSecureRoute("example-11", 9100, "nodejs", "app")),
 			}),
-			createdURLs: []urltype.URL{},
+			createdURLs: []URL{},
 		},
 		{
 			name:              "0 urls on env file and cluster",
@@ -374,7 +372,7 @@ func TestPush(t *testing.T) {
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name: "example",
 					Host: "com",
@@ -395,7 +393,7 @@ func TestPush(t *testing.T) {
 			applicationName:   "app",
 			args:              args{isRouteSupported: true},
 			existingLocalURLs: []localConfigProvider.LocalURL{},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-1", "nodejs", "app")),
 			}),
@@ -423,11 +421,11 @@ func TestPush(t *testing.T) {
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-1", "nodejs", "app")),
 			}),
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name: "example-local-0",
 					Host: "com",
@@ -471,11 +469,11 @@ func TestPush(t *testing.T) {
 					Path:     "/",
 				},
 			},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormatExtensionV1Ingress((*fake.GetExtensionV1IngressListWithMultiple("wildfly", "app")).Items[0]),
 				getMachineReadableFormatExtensionV1Ingress((*fake.GetExtensionV1IngressListWithMultiple("wildfly", "app")).Items[1]),
 			}),
-			createdURLs:  []urltype.URL{},
+			createdURLs:  []URL{},
 			deletedItems: []deleteParameters{},
 		},
 		{
@@ -496,11 +494,11 @@ func TestPush(t *testing.T) {
 					Kind: localConfigProvider.INGRESS,
 				},
 			},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9090, "nodejs", "app")),
 			}),
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name: "example-local-0",
 					Port: 8080,
@@ -533,7 +531,7 @@ func TestPush(t *testing.T) {
 					Kind:      localConfigProvider.INGRESS,
 				},
 			},
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:      "example",
 					Host:      "com",
@@ -558,10 +556,10 @@ func TestPush(t *testing.T) {
 					Kind: localConfigProvider.ROUTE,
 				},
 			},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-local-0", "nodejs", "app")),
 			}),
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name: "example-local-0",
 					Port: 8080,
@@ -586,10 +584,10 @@ func TestPush(t *testing.T) {
 					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			existingClusterURLs: getMachineReadableFormatForList([]urltype.URL{
+			existingClusterURLs: getMachineReadableFormatForList([]URL{
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-local-0-app", 9090, "nodejs", "app")),
 			}),
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example-local-0",
 					Port:   8080,
@@ -615,7 +613,7 @@ func TestPush(t *testing.T) {
 					Kind:   localConfigProvider.ROUTE,
 				},
 			},
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example",
 					Port:   8080,
@@ -638,7 +636,7 @@ func TestPush(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example",
 					Host:   "com",
@@ -663,7 +661,7 @@ func TestPush(t *testing.T) {
 					Kind:      localConfigProvider.INGRESS,
 				},
 			},
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:      "example",
 					Host:      "com",
@@ -686,7 +684,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			wantErr:     false,
-			createdURLs: []urltype.URL{},
+			createdURLs: []URL{},
 		},
 		{
 			name:            "should create route in openshift cluster if endpoint is defined in devfile",
@@ -702,7 +700,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example",
 					Port:   8080,
@@ -725,7 +723,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name: "example",
 					Host: "com",
@@ -749,7 +747,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example",
 					Port:   8080,
@@ -775,7 +773,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			createdURLs: []urltype.URL{
+			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
 					Name:   "example",
 					Host:   "com",
@@ -841,7 +839,7 @@ func TestConvertEnvinfoURL(t *testing.T) {
 	tests := []struct {
 		name       string
 		envInfoURL localConfigProvider.LocalURL
-		wantURL    urltype.URL
+		wantURL    URL
 	}{
 		{
 			name: "Case 1: insecure URL",
@@ -852,10 +850,10 @@ func TestConvertEnvinfoURL(t *testing.T) {
 				Secure: false,
 				Kind:   localConfigProvider.INGRESS,
 			},
-			wantURL: urltype.URL{
+			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       urltype.URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: false, Kind: localConfigProvider.INGRESS},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: false, Kind: localConfigProvider.INGRESS},
 			},
 		},
 		{
@@ -867,10 +865,10 @@ func TestConvertEnvinfoURL(t *testing.T) {
 				Secure: true,
 				Kind:   localConfigProvider.INGRESS,
 			},
-			wantURL: urltype.URL{
+			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       urltype.URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: fmt.Sprintf("%s-tlssecret", serviceName), Kind: localConfigProvider.INGRESS},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: fmt.Sprintf("%s-tlssecret", serviceName), Kind: localConfigProvider.INGRESS},
 			},
 		},
 		{
@@ -883,10 +881,10 @@ func TestConvertEnvinfoURL(t *testing.T) {
 				TLSSecret: secretName,
 				Kind:      localConfigProvider.INGRESS,
 			},
-			wantURL: urltype.URL{
+			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       urltype.URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: secretName, Kind: localConfigProvider.INGRESS},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: secretName, Kind: localConfigProvider.INGRESS},
 			},
 		},
 		{
@@ -896,10 +894,10 @@ func TestConvertEnvinfoURL(t *testing.T) {
 				Port: 8080,
 				Kind: localConfigProvider.ROUTE,
 			},
-			wantURL: urltype.URL{
+			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       urltype.URLSpec{Port: 8080, Secure: false, Kind: localConfigProvider.ROUTE},
+				Spec:       URLSpec{Port: 8080, Secure: false, Kind: localConfigProvider.ROUTE},
 			},
 		},
 		{
@@ -910,10 +908,10 @@ func TestConvertEnvinfoURL(t *testing.T) {
 				Secure: true,
 				Kind:   localConfigProvider.ROUTE,
 			},
-			wantURL: urltype.URL{
+			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       urltype.URLSpec{Port: 8080, Secure: true, Kind: localConfigProvider.ROUTE},
+				Spec:       URLSpec{Port: 8080, Secure: true, Kind: localConfigProvider.ROUTE},
 			},
 		},
 	}

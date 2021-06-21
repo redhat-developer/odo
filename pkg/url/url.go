@@ -35,7 +35,7 @@ func getURLTypeMeta() metav1.TypeMeta {
 // ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
 /// down if a component name is provided, which will only list URLs for the
 // given component
-func ListPushed(client *occlient.Client, componentName string, applicationName string) (urltype.URLList, error) {
+func ListPushed(client *occlient.Client, componentName string, applicationName string) (URLList, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
@@ -47,10 +47,10 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 	routes, err := client.ListRoutes(labelSelector)
 
 	if err != nil {
-		return urltype.URLList{}, errors.Wrap(err, "unable to list route names")
+		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
-	var urls []urltype.URL
+	var urls []URL
 	for _, r := range routes {
 		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
 			continue
@@ -65,24 +65,24 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 }
 
 // ListPushedIngress lists the ingress URLs on cluster for the given component
-func ListPushedIngress(client *kclient.Client, componentName string) (urltype.URLList, error) {
+func ListPushedIngress(client *kclient.Client, componentName string) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
-		return urltype.URLList{}, fmt.Errorf("unable to list ingress names %w", err)
+		return URLList{}, fmt.Errorf("unable to list ingress names %w", err)
 	}
 
-	var urls []urltype.URL
+	var urls []URL
 	for _, i := range ingresses {
-		urls = append(urls, i.GetURL())
+		urls = append(urls, NewURLFromKubernetesIngress(i))
 	}
 
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
 }
 
-type sortableURLs []urltype.URL
+type sortableURLs []URL
 
 func (s sortableURLs) Len() int {
 	return len(s)
@@ -107,8 +107,8 @@ func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 }
 
 // ConvertConfigURL converts ConfigURL to URL
-func ConvertConfigURL(configURL localConfigProvider.LocalURL) urltype.URL {
-	return urltype.URL{
+func ConvertConfigURL(configURL localConfigProvider.LocalURL) URL {
+	return URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
 			APIVersion: apiVersion,
@@ -116,7 +116,7 @@ func ConvertConfigURL(configURL localConfigProvider.LocalURL) urltype.URL {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configURL.Name,
 		},
-		Spec: urltype.URLSpec{
+		Spec: URLSpec{
 			Port:   configURL.Port,
 			Secure: configURL.Secure,
 			Kind:   localConfigProvider.ROUTE,
@@ -126,14 +126,14 @@ func ConvertConfigURL(configURL localConfigProvider.LocalURL) urltype.URL {
 }
 
 // ConvertEnvinfoURL converts EnvinfoURL to URL
-func ConvertEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName string) urltype.URL {
+func ConvertEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName string) URL {
 	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
 	// default to route kind if none is provided
 	kind := envinfoURL.Kind
 	if kind == "" {
 		kind = localConfigProvider.ROUTE
 	}
-	url := urltype.URL{
+	url := URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
 			APIVersion: apiVersion,
@@ -141,7 +141,7 @@ func ConvertEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName stri
 		ObjectMeta: metav1.ObjectMeta{
 			Name: envinfoURL.Name,
 		},
-		Spec: urltype.URLSpec{
+		Spec: URLSpec{
 			Host:      envinfoURL.Host,
 			Protocol:  envinfoURL.Protocol,
 			Port:      envinfoURL.Port,
@@ -163,8 +163,8 @@ func ConvertEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName stri
 }
 
 // ConvertLocalURL converts localConfigProvider.LocalURL to URL
-func ConvertLocalURL(localURL localConfigProvider.LocalURL) urltype.URL {
-	return urltype.URL{
+func ConvertLocalURL(localURL localConfigProvider.LocalURL) URL {
+	return URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
 			APIVersion: apiVersion,
@@ -172,7 +172,7 @@ func ConvertLocalURL(localURL localConfigProvider.LocalURL) urltype.URL {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: localURL.Name,
 		},
-		Spec: urltype.URLSpec{
+		Spec: URLSpec{
 			Host:      localURL.Host,
 			Protocol:  localURL.Protocol,
 			Port:      localURL.Port,
@@ -235,17 +235,17 @@ func GetValidExposedPortNumber(exposedPort int) (int, error) {
 }
 
 // getMachineReadableFormat gives machine readable URL definition
-func getMachineReadableFormat(r routev1.Route) urltype.URL {
-	return urltype.URL{
+func getMachineReadableFormat(r routev1.Route) URL {
+	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       urltype.URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: localConfigProvider.ROUTE},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: localConfigProvider.ROUTE},
 	}
 
 }
 
-func getMachineReadableFormatForList(urls []urltype.URL) urltype.URLList {
-	return urltype.URLList{
+func getMachineReadableFormatForList(urls []URL) URLList {
+	return URLList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
 			APIVersion: apiVersion,
@@ -255,11 +255,11 @@ func getMachineReadableFormatForList(urls []urltype.URL) urltype.URLList {
 	}
 }
 
-func getMachineReadableFormatExtensionV1Ingress(i iextensionsv1.Ingress) urltype.URL {
-	url := urltype.URL{
+func getMachineReadableFormatExtensionV1Ingress(i iextensionsv1.Ingress) URL {
+	url := URL{
 		TypeMeta:   getURLTypeMeta(),
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       urltype.URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: localConfigProvider.INGRESS},
+		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: localConfigProvider.INGRESS},
 	}
 	if i.Spec.TLS != nil {
 		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
@@ -277,7 +277,7 @@ func getDefaultTLSSecretName(componentName string) string {
 }
 
 // ConvertExtensionV1IngressURLToIngress converts IngressURL to Ingress
-func ConvertExtensionV1IngressURLToIngress(ingressURL urltype.URL, serviceName string) iextensionsv1.Ingress {
+func ConvertExtensionV1IngressURLToIngress(ingressURL URL, serviceName string) iextensionsv1.Ingress {
 	port := intstr.IntOrString{
 		Type:   intstr.Int,
 		IntVal: int32(ingressURL.Spec.Port),
@@ -332,7 +332,7 @@ type PushParameters struct {
 
 // Push creates and deletes the required URLs
 func Push(parameters PushParameters) error {
-	urlLOCAL := make(map[string]urltype.URL)
+	urlLOCAL := make(map[string]URL)
 
 	localConfigURLs, err := parameters.LocalConfig.ListURLs()
 	if err != nil {
@@ -352,7 +352,7 @@ func Push(parameters PushParameters) error {
 
 	log.Info("\nApplying URL changes")
 
-	urlCLUSTER := make(map[string]urltype.URL)
+	urlCLUSTER := make(map[string]URL)
 
 	// get the URLs on the cluster
 	urlList, err := parameters.URLClient.ListFromCluster()
@@ -439,10 +439,10 @@ type ClientOptions struct {
 }
 
 type Client interface {
-	Create(url urltype.URL) (string, error)
+	Create(url URL) (string, error)
 	Delete(string, localConfigProvider.URLKind) error
-	ListFromCluster() (urltype.URLList, error)
-	List() (urltype.URLList, error)
+	ListFromCluster() (URLList, error)
+	List() (URLList, error)
 }
 
 // NewClient gets the appropriate URL client based on the parameters

@@ -3,7 +3,6 @@ package url
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/openshift/odo/pkg/urltype"
 	"net/http"
 	"time"
 
@@ -96,7 +95,7 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, loca
 	for _, u := range urls.Items {
 
 		// Ignore unpushed URLs, they necessarily are unreachable
-		if u.Status.State != urltype.StateTypePushed && ignoreUnpushed {
+		if u.Status.State != StateTypePushed && ignoreUnpushed {
 			continue
 		}
 
