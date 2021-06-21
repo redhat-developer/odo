@@ -220,7 +220,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								})
 
 								It("should create pods in running state", func() {
-									oc.PodsShouldBeRunning(commonVar.Project, `etcdcluster-.[a-z0-9]*`)
+									oc.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
 								})
 							})
 						})

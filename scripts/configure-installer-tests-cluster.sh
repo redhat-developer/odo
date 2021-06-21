@@ -5,15 +5,19 @@ set -x
 LIBDIR="./scripts/configure-cluster"
 LIBCOMMON="$LIBDIR/common"
 SETUP_OPERATORS="$LIBCOMMON/setup-operators.sh"
+SETUP_POSTGRES_OPERATOR="$LIBCOMMON/setup-postgres-operator.sh"
 AUTH_SCRIPT="$LIBCOMMON/auth.sh"
 KUBEADMIN_SCRIPT="$LIBCOMMON/kubeconfigandadmin.sh"
 
 CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
+POSTGRES_OPERATOR_PROJECT="odo-operator-test"
 
 # list of namespace to create
 IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11 nodejs-14"
 
 . $KUBEADMIN_SCRIPT
+
+. $SETUP_POSTGRES_OPERATOR
 
 # Setup the cluster for Operator tests
 
@@ -23,6 +27,13 @@ oc new-project $CI_OPERATOR_HUB_PROJECT
 oc adm policy add-role-to-user edit developer
 
 sh $SETUP_OPERATORS
+
+oc new-project $POSTGRES_OPERATOR_PROJECT
+# Let developer user have access to the project
+oc adm policy add-role-to-user edit developer
+
+install_postgres_operator $POSTGRES_OPERATOR_PROJECT
+
 # OperatorHub setup complete
 
 # Create the namespace for e2e image test apply pull secret to the namespace
