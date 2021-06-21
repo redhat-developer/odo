@@ -211,7 +211,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							JustAfterEach(func() {
-								helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f")
+								helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 							})
 
 							When("odo push is executed", func() {
