@@ -3,6 +3,7 @@ package testingutil
 import (
 	"fmt"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -34,6 +35,7 @@ func GetSingleRoute(urlName string, port int, componentName, applicationName str
 			},
 		},
 		Spec: routev1.RouteSpec{
+			Host: "example.com",
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
 				Name: fmt.Sprintf("%s-%s", componentName, applicationName),
@@ -44,4 +46,28 @@ func GetSingleRoute(urlName string, port int, componentName, applicationName str
 			Path: "/",
 		},
 	}
+}
+
+// GetSingleSecureRoute returns a secure route generated with the given parameters
+func GetSingleSecureRoute(urlName string, port int, componentName, applicationName string) routev1.Route {
+	generatedRoute := *generator.GetRoute(generator.RouteParams{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: urlName,
+			Labels: map[string]string{
+				applabels.ApplicationLabel:     applicationName,
+				componentlabels.ComponentLabel: componentName,
+				applabels.ManagedBy:            "odo",
+				applabels.ManagerVersion:       version.VERSION,
+				labels.URLLabel:                urlName,
+				applabels.App:                  applicationName,
+			},
+		},
+		RouteSpecParams: generator.RouteSpecParams{
+			ServiceName: componentName,
+			PortNumber:  intstr.FromInt(port),
+			Secure:      true,
+		},
+	})
+	generatedRoute.Spec.Host = "example.com"
+	return generatedRoute
 }
