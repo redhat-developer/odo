@@ -78,9 +78,9 @@ func MockCRDescriptionTwo() *olm.CRDDescription {
 }
 func TestCRBuilderMap(t *testing.T) {
 	builder := NewCRBuilder(MockCRDescriptionTwo())
-	require.Nil(t, builder.ValidateAndSet("host", "10.1.10.2"), "set shouldn't fail")
-	require.Nil(t, builder.ValidateAndSet("cppimage", "crunchy-postgres-ha"), "set shouldn't fail")
-	require.Nil(t, builder.ValidateAndSet("cppimagetag", "2.5"), "set shouldn't fail")
+	require.Nil(t, builder.SetAndValidate("host", "10.1.10.2"), "set shouldn't fail")
+	require.Nil(t, builder.SetAndValidate("cppimage", "crunchy-postgres-ha"), "set shouldn't fail")
+	require.Nil(t, builder.SetAndValidate("cppimagetag", "2.5"), "set shouldn't fail")
 	outMap, err := builder.Map()
 	require.Nil(t, err, "error shouldn't be nil")
 	expected := map[string]interface{}{

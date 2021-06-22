@@ -274,7 +274,7 @@ func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterSe
 	var errorStrs []string
 
 	for key, value := range o.ParametersMap {
-		err := crBuilder.ValidateAndSet(key, value)
+		err := crBuilder.SetAndValidate(key, value)
 		if err != nil {
 			errorStrs = append(errorStrs, err.Error())
 		}
