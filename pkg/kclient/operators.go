@@ -59,6 +59,22 @@ func (c *Client) GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]ol
 	return &csv.Spec.CustomResourceDefinitions.Owned
 }
 
+// CheckCustomResourceInCSV checks if the custom resource is present in the CSV.
+func (c *Client) CheckCustomResourceInCSV(customResource string, csv *olm.ClusterServiceVersion) (bool, *olm.CRDDescription) {
+	var cr *olm.CRDDescription
+	hasCR := false
+	CRs := c.GetCustomResourcesFromCSV(csv)
+	for _, custRes := range *CRs {
+		c := custRes
+		if c.Kind == customResource {
+			cr = &c
+			hasCR = true
+			break
+		}
+	}
+	return hasCR, cr
+}
+
 // SearchClusterServiceVersionList searches for whether the operator/CSV contains
 // given keyword then return it
 func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServiceVersionList, error) {

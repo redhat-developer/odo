@@ -255,40 +255,10 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 }
 
 func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterServiceVersion) (map[string]interface{}, error) {
-	var cr *olm.CRDDescription
-	hasCR := false
-	CRs := o.KClient.GetCustomResourcesFromCSV(&csv)
-	for _, custRes := range *CRs {
-		c := custRes
-		if c.Kind == b.CustomResource {
-			cr = &c
-			hasCR = true
-			break
-		}
-	}
+	hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
 	if !hasCR {
 		return nil, fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
 	}
 
-	crBuilder := service.NewCRBuilder(cr)
-	var errorStrs []string
-
-	for key, value := range o.ParametersMap {
-		err := crBuilder.SetAndValidate(key, value)
-		if err != nil {
-			errorStrs = append(errorStrs, err.Error())
-		}
-	}
-
-	if len(errorStrs) > 0 {
-		return nil, errors.New(strings.Join(errorStrs, "\n"))
-	}
-
-	builtCRD, err := crBuilder.Map()
-	if err != nil {
-		return nil, err
-	}
-
-	return builtCRD, nil
-
+	return service.BuildCRDFromParams(cr, o.ParametersMap)
 }
