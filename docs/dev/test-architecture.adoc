@@ -134,7 +134,7 @@ If you are running `operatorhub` tests then you need to install certains operato
 - Service Binding operator
 - Postgres operator
 
-Etcd and Service Binding operator can be installed by running [setup-operator.sh](https://github.com/openshift/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh). To install Postgres operator you can run the following commands
+Etcd and Service Binding operator can be installed by running link:https://github.com/openshift/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh[setup-operator.sh]. To install Postgres operator you can run the following commands
 
 ----
   oc new-project odo-operator-test
