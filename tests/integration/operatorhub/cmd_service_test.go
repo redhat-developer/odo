@@ -61,7 +61,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			JustBeforeEach(func() {
 				projectName = util.GetEnvWithDefault("REDHAT_POSTGRES_OPERATOR_PROJECT", "odo-operator-test")
 				helper.GetCliRunner().SetProject(projectName)
-				operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 				postgresOperator = regexp.MustCompile(`postgresql-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 				postgresDatabase = fmt.Sprintf("%s/Database", postgresOperator)
 			})
@@ -69,12 +69,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			When("a nodejs component is created", func() {
 
 				JustBeforeEach(func() {
-					helper.CmdShouldPass("odo", "create", "nodejs")
+					helper.Cmd("odo", "create", "nodejs").ShouldPass().Out()
 				})
 
 				JustAfterEach(func() {
 					// we do this because for these specific tests we dont delete the project
-					helper.CmdShouldPass("odo", "delete", "--all", "-f")
+					helper.Cmd("odo", "delete", "--all", "-f").ShouldPass().Out()
 				})
 
 				When("creating a postgres operand with params", func() {
@@ -82,20 +82,20 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 					JustBeforeEach(func() {
 						operandName = helper.RandString(10)
-						helper.CmdShouldPass("odo", "service", "create", postgresDatabase, operandName, "-p",
+						helper.Cmd("odo", "service", "create", postgresDatabase, operandName, "-p",
 							"databaseName=odo", "-p", "size=1", "-p", "databaseUser=odo", "-p",
-							"databaseStorageRequest=1Gi", "-p", "databasePassword=odopasswd")
+							"databaseStorageRequest=1Gi", "-p", "databasePassword=odopasswd").ShouldPass().Out()
 
 					})
 
 					JustAfterEach(func() {
-						helper.CmdShouldPass("odo", "service", "delete", fmt.Sprintf("Database/%s", operandName), "-f")
-						helper.CmdShouldPass("odo", "push")
+						helper.Cmd("odo", "service", "delete", fmt.Sprintf("Database/%s", operandName), "-f").ShouldPass().Out()
+						helper.Cmd("odo", "push").ShouldPass().Out()
 					})
 
 					When("odo push is executed", func() {
 						JustBeforeEach(func() {
-							helper.CmdShouldPass("odo", "push")
+							helper.Cmd("odo", "push").ShouldPass().Out()
 						})
 
 						It("should create pods in running state", func() {
@@ -104,7 +104,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						It("should list the service", func() {
 							// now test listing of the service using odo
-							stdOut := helper.CmdShouldPass("odo", "service", "list")
+							stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
 							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Database/%s", operandName)))
 						})
 					})
@@ -127,6 +127,18 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			It("should describe the operator with human-readable output", func() {
 				output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster)
 				Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
+			})
+
+			It("should describe the example of the operator", func() {
+				output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example")
+				Expect(output).To(ContainSubstring("kind: EtcdCluster"))
+				helper.MatchAllInOutput(output, []string{"apiVersion", "kind"})
+			})
+
+			It("should describe the example of the operator as json", func() {
+				outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example", "-o", "json")
+				value := gjson.Get(outputJSON, "spec.kind")
+				Expect(value.String()).To(Equal("EtcdCluster"))
 			})
 
 			It("should describe the operator with json output", func() {

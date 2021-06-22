@@ -24,7 +24,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		// For some reason on TravisCI, there are flakes with regards to registrycachetime and doing
 		// odo catalog list components.
 		// TODO: Investigate this more.
-		helper.CmdShouldPass("odo", "preference", "set", "registrycachetime", "0")
+		helper.Cmd("odo", "preference", "set", "registrycachetime", "0").ShouldPass()
 	})
 
 	// This is run after every Spec (It)
@@ -34,7 +34,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog list components", func() {
 		It("should list all supported devfile components", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
+			output := helper.Cmd("odo", "catalog", "list", "components").ShouldPass().Out()
 			wantOutput := []string{
 				"Odo Devfile Components",
 				"NAME",
@@ -51,10 +51,10 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			originalKC := os.Getenv("KUBECONFIG")
 			err := os.Setenv("KUBECONFIG", "/idonotexist")
 			Expect(err).ToNot(HaveOccurred())
-			helper.CmdShouldPass("odo", "catalog", "list", "components")
+			helper.Cmd("odo", "catalog", "list", "components").ShouldPass()
 			err = os.Setenv("KUBECONFIG", commonVar.Context)
 			Expect(err).ToNot(HaveOccurred())
-			helper.CmdShouldPass("odo", "catalog", "list", "components")
+			helper.Cmd("odo", "catalog", "list", "components").ShouldPass()
 			err = os.Setenv("KUBECONFIG", originalKC)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -62,7 +62,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog list components with -o json flag", func() {
 		It("should list devfile components in json format", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			output := helper.Cmd("odo", "catalog", "list", "components", "-o", "json").ShouldPass().Out()
 
 			var outputData interface{}
 			unmarshalErr := json.Unmarshal([]byte(output), &outputData)
@@ -83,7 +83,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog describe component with -o json", func() {
 		It("should display a valid JSON", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs", "-o", "json")
+			output := helper.Cmd("odo", "catalog", "describe", "component", "nodejs", "-o", "json").ShouldPass().Out()
 			var outputData interface{}
 			unmarshalErr := json.Unmarshal([]byte(output), &outputData)
 			Expect(unmarshalErr).NotTo(HaveOccurred(), "Output is not a valid JSON")
@@ -92,28 +92,28 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog list components with registry that is not set up properly", func() {
 		It("should list components from valid registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", "fake", "http://fake")
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
+			helper.Cmd("odo", "registry", "add", "fake", "http://fake").ShouldPass()
+			output := helper.Cmd("odo", "catalog", "list", "components").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{
 				"Odo Devfile Components",
 				"java-springboot",
 				"java-quarkus",
 			})
-			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
+			helper.Cmd("odo", "registry", "delete", "fake", "-f").ShouldPass()
 		})
 	})
 
 	Context("When executing catalog describe component with a component name with multiple components", func() {
 		It("should print multiple devfiles from different registries", func() {
-			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
-			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
+			helper.Cmd("odo", "registry", "add", registryName, addRegistryURL).ShouldPass()
+			output := helper.Cmd("odo", "catalog", "describe", "component", "nodejs").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: " + registryName})
 		})
 	})
 
 	Context("When checking catalog for installed services", func() {
 		It("should succeed", func() {
-			helper.CmdShouldPass("odo", "catalog", "list", "services")
+			helper.Cmd("odo", "catalog", "list", "services").ShouldPass()
 		})
 	})
 })

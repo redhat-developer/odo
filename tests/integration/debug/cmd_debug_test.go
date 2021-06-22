@@ -37,12 +37,12 @@ var _ = Describe("odo debug command serial tests", func() {
 			helper.GetCliRunner().DeleteNamespaceProject(projName)
 		}()
 		helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-		helper.CmdShouldPass("odo", "component", "create", "--s2i", "nodejs:latest", "nodejs-cmp", "--project", projName, "--context", commonVar.Context)
-		helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+		helper.Cmd("odo", "component", "create", "--s2i", "nodejs:latest", "nodejs-cmp", "--project", projName, "--context", commonVar.Context).ShouldPass()
+		helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 		stopChannel := make(chan bool)
 		go func() {
-			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--context", commonVar.Context)
+			helper.Cmd("odo", "debug", "port-forward", "--context", commonVar.Context).WithTerminate(60*time.Second, stopChannel).ShouldRun()
 		}()
 
 		stopListenerChan := make(chan bool)

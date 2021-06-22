@@ -47,14 +47,14 @@ func (kubectl KubectlRunner) Exec(podName string, projectName string, args ...st
 
 	cmd = append(cmd, args...)
 
-	stdOut := CmdShouldPass(kubectl.path, cmd...)
+	stdOut := Cmd(kubectl.path, cmd...).ShouldPass().Out()
 	return stdOut
 }
 
 // ExecListDir returns dir list in specified location of pod
 func (kubectl KubectlRunner) ExecListDir(podName string, projectName string, dir string) string {
-	stdOut := CmdShouldPass(kubectl.path, "exec", podName, "--namespace", projectName,
-		"--", "ls", "-lai", dir)
+	stdOut := Cmd(kubectl.path, "exec", podName, "--namespace", projectName,
+		"--", "ls", "-lai", dir).ShouldPass().Out()
 	return stdOut
 }
 
@@ -79,40 +79,40 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 // devfile component by passing component name as a argument
 func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := CmdShouldPass(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}")
+	stdOut := Cmd(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}").ShouldPass().Out()
 	return strings.TrimSpace(stdOut)
 }
 
 // GetPVCSize executes kubectl command and returns the bound storage size
 func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string) string {
 	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
-	stdOut := CmdShouldPass(kubectl.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}")
+	stdOut := Cmd(kubectl.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}").ShouldPass().Out()
 	return strings.TrimSpace(stdOut)
 }
 
 // GetPodInitContainers executes kubectl command and returns the init containers of the pod
 func (kubectl KubectlRunner) GetPodInitContainers(compName string, namespace string) []string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := CmdShouldPass(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}")
+	stdOut := Cmd(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}").ShouldPass().Out()
 	return strings.Split(stdOut, " ")
 }
 
 // GetVolumeMountNamesandPathsFromContainer returns the volume name and mount path in the format name:path\n
 func (kubectl KubectlRunner) GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string {
-	volumeName := CmdShouldPass(kubectl.path, "get", "deploy", deployName, "--namespace", namespace,
+	volumeName := Cmd(kubectl.path, "get", "deploy", deployName, "--namespace", namespace,
 		"-o", "go-template="+
 			"{{range .spec.template.spec.containers}}{{if eq .name \""+containerName+
-			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}").ShouldPass().Out()
 
 	return strings.TrimSpace(volumeName)
 }
 
 // GetContainerEnv returns the container env in the format name:value\n
 func (kubectl KubectlRunner) GetContainerEnv(podName, containerName, namespace string) string {
-	containerEnv := CmdShouldPass(kubectl.path, "get", "po", podName, "--namespace", namespace,
+	containerEnv := Cmd(kubectl.path, "get", "po", podName, "--namespace", namespace,
 		"-o", "go-template="+
 			"{{range .spec.containers}}{{if eq .name \""+containerName+
-			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+			"\"}}{{range .env}}{{.name}}{{\":\"}}{{.value}}{{\"\\n\"}}{{end}}{{end}}{{end}}").ShouldPass().Out()
 
 	return strings.TrimSpace(containerEnv)
 }
@@ -158,12 +158,16 @@ func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
 
 func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	CmdShouldPass("kubectl", "create", "namespace", projectName)
-	return kubectl.SetProject(projectName)
+	Cmd("kubectl", "create", "namespace", projectName).ShouldPass()
+	Cmd("kubectl", "config", "set-context", "--current", "--namespace", projectName).ShouldPass()
+	session := Cmd("kubectl", "get", "namespaces").ShouldPass().Out()
+	Expect(session).To(ContainSubstring(projectName))
+	return projectName
 }
+
 func (kubectl KubectlRunner) SetProject(namespace string) string {
-	CmdShouldPass("kubectl", "config", "set-context", "--current", "--namespace", namespace)
-	session := CmdShouldPass("kubectl", "get", "namespaces")
+	Cmd("kubectl", "config", "set-context", "--current", "--namespace", namespace).ShouldPass()
+	session := Cmd("kubectl", "get", "namespaces").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(namespace))
 	return namespace
 }
@@ -178,14 +182,14 @@ func (kubectl KubectlRunner) CreateRandNamespaceProjectOfLength(i int) string {
 // DeleteNamespaceProject deletes a specified project in kubernetes cluster
 func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	CmdShouldPass("kubectl", "delete", "namespaces", projectName)
+	Cmd("kubectl", "delete", "namespaces", projectName).ShouldPass()
 }
 
 func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
 	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
-	output := CmdShouldPass(kubectl.path, "get", "deployment", selector, "--namespace", projectName,
-		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+	output := Cmd(kubectl.path, "get", "deployment", selector, "--namespace", projectName,
+		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
 
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimPrefix(line, "'")
@@ -209,7 +213,7 @@ func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
 
 // DeletePod deletes a specified pod in the namespace
 func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
-	CmdShouldPass(kubectl.path, "delete", "pod", "--namespace", namespace, podName)
+	Cmd(kubectl.path, "delete", "pod", "--namespace", namespace, podName).ShouldPass()
 }
 
 // WaitAndCheckForTerminatingState waits for the given interval

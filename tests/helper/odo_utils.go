@@ -20,9 +20,9 @@ func GetConfigValue(key string) string {
 func GetConfigValueWithContext(key string, context string) string {
 	var stdOut string
 	if context != "" {
-		stdOut = CmdShouldPass("odo", "config", "view", "--context", context)
+		stdOut = Cmd("odo", "config", "view", "--context", context).ShouldPass().Out()
 	} else {
-		stdOut = CmdShouldPass("odo", "config", "view")
+		stdOut = Cmd("odo", "config", "view").ShouldPass().Out()
 	}
 	re := regexp.MustCompile(key + `.+`)
 	odoConfigKeyValue := re.FindString(stdOut)
@@ -41,9 +41,9 @@ func GetConfigValueWithContext(key string, context string) string {
 func GetLocalEnvInfoValueWithContext(key string, context string) string {
 	var stdOut string
 	if context != "" {
-		stdOut = CmdShouldPass("odo", "env", "view", "--context", context)
+		stdOut = Cmd("odo", "env", "view", "--context", context).ShouldPass().Out()
 	} else {
-		stdOut = CmdShouldPass("odo", "env", "view")
+		stdOut = Cmd("odo", "env", "view").ShouldPass().Out()
 	}
 	re := regexp.MustCompile(key + `.+`)
 	odoConfigKeyValue := re.FindString(stdOut)
@@ -60,7 +60,7 @@ func GetLocalEnvInfoValueWithContext(key string, context string) string {
 // GetPreferenceValue a global config value of given key or
 // returns an empty string if value is not set
 func GetPreferenceValue(key string) string {
-	stdOut := CmdShouldPass("odo", "preference", "view")
+	stdOut := Cmd("odo", "preference", "view").ShouldPass().Out()
 	re := regexp.MustCompile(key + `.+`)
 	odoConfigKeyValue := re.FindString(stdOut)
 	if odoConfigKeyValue == "" {
@@ -92,9 +92,9 @@ func DetermineRouteURL(context string) string {
 func DetermineRouteURLs(context string) []string {
 	var stdOut string
 	if context != "" {
-		stdOut = CmdShouldPass("odo", "url", "list", "--context", context)
+		stdOut = Cmd("odo", "url", "list", "--context", context).ShouldPass().Out()
 	} else {
-		stdOut = CmdShouldPass("odo", "url", "list")
+		stdOut = Cmd("odo", "url", "list").ShouldPass().Out()
 	}
 	reURL := regexp.MustCompile(`\s+http(s?)://.\S+`)
 	odoURLs := reURL.FindAllString(stdOut, -1)
@@ -109,7 +109,7 @@ func DetermineRouteURLs(context string) []string {
 func CreateRandProject() string {
 	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
+	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
 	Expect(session).To(ContainSubstring("New project created"))
 	Expect(session).To(ContainSubstring(projectName))
 	return projectName
@@ -118,6 +118,6 @@ func CreateRandProject() string {
 // DeleteProject deletes a specified project
 func DeleteProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	session := CmdShouldPass("odo", "project", "delete", projectName, "-f")
+	session := Cmd("odo", "project", "delete", projectName, "-f").ShouldPass().Out()
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
 }

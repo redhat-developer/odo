@@ -1,6 +1,4 @@
 #!/bin/bash
-set -x
-
 
 install_postgres_operator(){
   oc create -f - <<EOF

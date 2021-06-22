@@ -199,7 +199,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 			}
 		} else {
 			// get the default secret
-			defaultTLSSecretName := k.componentName + "-tlssecret"
+			defaultTLSSecretName := getDefaultTLSSecretName(k.componentName)
 			_, err := k.client.GetKubeClient().GetSecret(defaultTLSSecretName, k.client.Namespace)
 
 			// create tls secret if it does not exist

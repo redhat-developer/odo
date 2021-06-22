@@ -7,13 +7,10 @@ shout() {
 }
 
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
-mkdir bin artifacts
-# Change the default location of go's bin directory (without affecting GOPATH). This is where compiled binaries will end up by default
-# for eg go get ginkgo later on will produce ginkgo binary in GOBIN
-export GOBIN="`pwd`/bin"
-export ARTIFACTS_DIR="`pwd`/artifacts"
-export CUSTOM_HOMEDIR=$ARTIFACT_DIR
-
+export HOME=`pwd`/home
+export GOPATH="`pwd`/home/go"
+export GOBIN="$GOPATH/bin"
+mkdir -p $GOBIN
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
@@ -47,21 +44,21 @@ case ${1} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
         export PATH="$PATH:/usr/local/go/bin/"
-        export GOPATH=$HOME/go
-        mkdir -p $GOPATH/bin
-        export PATH="$PATH:$(pwd):$GOPATH/bin"
         sh .scripts/minishift-start-if-required.sh
         ;;
     minikube)
         mkStatus=$(minikube status)
         shout "| Checking if Minikube needs to be started..."
-        if [[ "$mkStatus" == *"host: Running"* ]]; then 
+        if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" == *"kubelet: Running"* ]]; then 
             if [[ "$mkStatus" == *"kubeconfig: Misconfigured"* ]]; then
                 minikube update-context
             fi
             setup_kubeconfig
             kubectl config use-context minikube
         else
+            if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" != *"kubelet: Running"* ]]; then
+                minikube delete
+            fi
             shout "| Start minikube"
             minikube start --vm-driver=docker --container-runtime=docker
             setup_kubeconfig

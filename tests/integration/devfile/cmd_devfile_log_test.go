@@ -28,15 +28,15 @@ var _ = Describe("odo devfile log command tests", func() {
 
 		It("should log run command output and fail for debug command", func() {
 
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName, "--context", commonVar.Context)
+			helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName, "--context", commonVar.Context).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
-			output := helper.CmdShouldPass("odo", "log", "--context", commonVar.Context)
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+			output := helper.Cmd("odo", "log", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
 
 			// It should fail for debug command as no debug command in devfile
-			helper.CmdShouldFail("odo", "log", "--debug")
+			helper.Cmd("odo", "log", "--debug").ShouldFail()
 
 			/*
 				Flaky Test odo log -f, see issue https://github.com/openshift/odo/issues/3809
@@ -48,18 +48,18 @@ var _ = Describe("odo devfile log command tests", func() {
 		})
 
 		It("should error out if component does not exist", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", commonVar.Context)
-			helper.CmdShouldFail("odo", "log")
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "log").ShouldFail()
 		})
 
 		It("should log debug command output", func() {
 			projectDir := filepath.Join(commonVar.Context, "projectDir")
 			helper.CopyExample(filepath.Join("source", "web-nodejs-sample"), projectDir)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", projectDir)
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", projectDir).ShouldPass()
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDir, "devfile.yaml"))
-			helper.CmdShouldPass("odo", "push", "--debug", "--context", projectDir)
+			helper.Cmd("odo", "push", "--debug", "--context", projectDir).ShouldPass()
 
-			output := helper.CmdShouldPass("odo", "log", "--debug", "--context", projectDir)
+			output := helper.Cmd("odo", "log", "--debug", "--context", projectDir).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("ODO_COMMAND_DEBUG"))
 
 			/*

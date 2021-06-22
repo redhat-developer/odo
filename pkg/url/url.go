@@ -274,6 +274,11 @@ func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
 
 }
 
+// getDefaultTLSSecretName returns the name of the default tls secret name
+func getDefaultTLSSecretName(componentName string) string {
+	return componentName + "-tlssecret"
+}
+
 // ConvertIngressURLToIngress converts IngressURL to Ingress
 func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv1.Ingress {
 	port := intstr.IntOrString{
@@ -373,10 +378,16 @@ func Push(parameters PushParameters) error {
 			// since the host stored in an ingress
 			// is the combination of name and host of the url
 			if val.Spec.Kind == localConfigProvider.INGRESS {
+				// in case of a secure ingress type URL with no user given tls secret
+				// the default secret name is used during creation
+				// thus setting it to the local URLs to avoid config mismatch
+				if val.Spec.Secure && val.Spec.TLSSecret == "" {
+					val.Spec.TLSSecret = getDefaultTLSSecretName(parameters.LocalConfig.GetName())
+				}
 				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
 			} else if val.Spec.Kind == localConfigProvider.ROUTE {
 				// we don't allow the host input for route based URLs
-				// based removing it for the urls from the cluster to avoid config mismatch
+				// removing it for the urls from the cluster to avoid config mismatch
 				urlSpec.Spec.Host = ""
 
 				if val.Spec.Secure {

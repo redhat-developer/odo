@@ -40,22 +40,22 @@ var _ = Describe("odo devfile delete command tests", func() {
 	})
 	When("a component is created", func() {
 		JustBeforeEach(func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", commonVar.Project, "--app", appName)
+			helper.Cmd("odo", "create", "nodejs", componentName, "--project", commonVar.Project, "--app", appName).ShouldPass()
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
 		JustAfterEach(func() {})
 		It("should delete the component", func() {
-			helper.CmdShouldPass("odo", "delete", "-f")
+			helper.Cmd("odo", "delete", "-f").ShouldPass()
 		})
 
 		When("the component is pushed", func() {
 			JustBeforeEach(func() {
-				helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 			})
 			JustAfterEach(func() {})
 			It("should delete the component, env, odo folders and odo-index-file.json with --all flag", func() {
-				helper.CmdShouldPass("odo", "delete", "-f", "--all")
+				helper.Cmd("odo", "delete", "-f", "--all").ShouldPass()
 
 				files := helper.ListFilesInDir(commonVar.Context)
 				Expect(files).To(Not(ContainElement(".odo")))
@@ -78,24 +78,24 @@ var _ = Describe("odo devfile delete command tests", func() {
 				})
 				When("the second component is created", func() {
 					JustBeforeEach(func() {
-						helper.CmdShouldPass("odo", "create", "nodejs", secondComp, "--project", commonVar.Project)
+						helper.Cmd("odo", "create", "nodejs", secondComp, "--project", commonVar.Project).ShouldPass()
 						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					})
 					JustAfterEach(func() {})
 					When("the second component is pushed", func() {
 						JustBeforeEach(func() {
-							helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+							helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 						})
 						JustAfterEach(func() {})
 						It("should delete the context directory's component", func() {
-							output := helper.CmdShouldPass("odo", "delete", "--context", firstDir, "-f")
+							output := helper.Cmd("odo", "delete", "--context", firstDir, "-f").ShouldPass().Out()
 							Expect(output).To(ContainSubstring(firstComp))
 							Expect(output).ToNot(ContainSubstring(secondComp))
 						})
 
 						It("should delete all the config files and component of the context directory with --all flag", func() {
-							output := helper.CmdShouldPass("odo", "delete", "--all", "--context", firstDir, "-f")
+							output := helper.Cmd("odo", "delete", "--all", "--context", firstDir, "-f").ShouldPass().Out()
 							Expect(output).ToNot(ContainSubstring(secondComp))
 							Expect(output).To(ContainSubstring(firstComp))
 
@@ -109,7 +109,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 						})
 						// Marked as pending because it does not work at the moment. It takes the component in current directory into account while deleting.
 						XIt("should delete with the component name", func() {
-							output := helper.CmdShouldPass("odo", "delete", firstComp, "--app", "app", "--project", commonVar.Project, "-f")
+							output := helper.Cmd("odo", "delete", firstComp, "--app", "app", "--project", commonVar.Project, "-f").ShouldPass().Out()
 							Expect(output).ToNot(ContainSubstring(secondComp))
 							Expect(output).To(ContainSubstring(firstComp))
 						})
@@ -119,40 +119,40 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 		It("should throw an error on an invalid delete command", func() {
 			By("--project flag")
-			helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "-f")
+			helper.Cmd("odo", "delete", "--project", commonVar.Project, "-f").ShouldFail()
 
 			By("component name, --app, --project and --all flag")
-			helper.CmdShouldFail("odo", "delete", componentName, "--app", appName, "--project", commonVar.Project, "--all", "-f")
+			helper.Cmd("odo", "delete", componentName, "--app", appName, "--project", commonVar.Project, "--all", "-f").ShouldFail()
 
 			By("component name and --all flag")
-			helper.CmdShouldFail("odo", "delete", componentName, "--all", "-f")
+			helper.Cmd("odo", "delete", componentName, "--all", "-f").ShouldFail()
 
 			By("component name and --context flag")
-			helper.CmdShouldFail("odo", "delete", componentName, "--context", commonVar.Context, "-f")
+			helper.Cmd("odo", "delete", componentName, "--context", commonVar.Context, "-f").ShouldFail()
 
 			By("--project and --context flag")
-			helper.CmdShouldFail("odo", "delete", "--project", commonVar.Project, "--context", commonVar.Context, "-f")
+			helper.Cmd("odo", "delete", "--project", commonVar.Project, "--context", commonVar.Context, "-f").ShouldFail()
 		})
 
 		When("the component has resources attached to it", func() {
 			resourceTypes := []string{helper.ResourceTypeDeployment, helper.ResourceTypePod, helper.ResourceTypeService, helper.ResourceTypeIngress, helper.ResourceTypePVC}
 
 			JustBeforeEach(func() {
-				helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress")
+				helper.Cmd("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress").ShouldPass()
 
 				if os.Getenv("KUBERNETES") != "true" {
-					helper.CmdShouldPass("odo", "url", "create", "example-1", "--port", "3000")
+					helper.Cmd("odo", "url", "create", "example-1", "--port", "3000").ShouldPass()
 					resourceTypes = append(resourceTypes, helper.ResourceTypeRoute)
 				}
-				helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context)
+				helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 			})
 			JustAfterEach(func() {})
 			When("the component is pushed", func() {
 				JustBeforeEach(func() {
-					helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 				})
 				It("should delete the component and its owned resources", func() {
-					helper.CmdShouldPass("odo", "delete", "-f")
+					helper.Cmd("odo", "delete", "-f").ShouldPass()
 
 					for _, resourceType := range resourceTypes {
 						commonVar.CliRunner.WaitAndCheckForExistence(resourceType, commonVar.Project, 1)
@@ -164,7 +164,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 					Expect(podName).NotTo(BeEmpty())
 
 					// delete with --wait flag
-					helper.CmdShouldPass("odo", "delete", "-f", "-w", "--context", commonVar.Context)
+					helper.Cmd("odo", "delete", "-f", "-w", "--context", commonVar.Context).ShouldPass()
 
 					// Deployment and Pod should be deleted
 					helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
@@ -216,11 +216,11 @@ var _ = Describe("odo devfile delete command tests", func() {
 			JustAfterEach(func() {})
 			When("component is pushed", func() {
 				JustBeforeEach(func() {
-					helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 				})
 				JustAfterEach(func() {})
 				It("should execute the preStop events", func() {
-					output := helper.CmdShouldPass("odo", "delete", "-f")
+					output := helper.Cmd("odo", "delete", "-f").ShouldPass().Out()
 					helper.MatchAllInOutput(output, []string{
 						fmt.Sprintf("Executing preStop event commands for component %s", componentName),
 						"Executing myprestop command",
@@ -235,7 +235,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 	When("the component is created in a non-existent project", func() {
 		invalidNamespace = "garbage"
 		JustBeforeEach(func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", componentName, "--project", invalidNamespace, "--app", appName)
+			helper.Cmd("odo", "create", "nodejs", componentName, "--project", invalidNamespace, "--app", appName).ShouldPass()
 		})
 		JustAfterEach(func() {})
 		It("should let the user delete the local config files with -a flag", func() {
@@ -261,25 +261,25 @@ var _ = Describe("odo devfile delete command tests", func() {
 			newContext := createNewContext()
 			devfilePath = filepath.Join(newContext, devfile)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", devfilePath)
+			helper.Cmd("odo", "create", "nodejs", "--devfile", devfilePath).ShouldPass()
 		})
 		It("should successfully delete devfile", func() {
 			// devfile was copied to top level
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
-			helper.CmdShouldPass("odo", "delete", "--all", "-f")
+			helper.Cmd("odo", "delete", "--all", "-f").ShouldPass()
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeFalse())
 		})
 	})
 	When("component is created from an existing devfile present in its directory", func() {
 		JustBeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), path.Join(commonVar.Context, devfile))
-			helper.CmdShouldPass("odo", "create", "nodejs")
+			helper.Cmd("odo", "create", "nodejs").ShouldPass()
 		})
 		JustAfterEach(func() {})
 		It("should not delete the devfile", func() {
 			// devfile was copied to top level
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
-			helper.CmdShouldPass("odo", "delete", "--all", "-f")
+			helper.Cmd("odo", "delete", "--all", "-f").ShouldPass()
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
 		})
 	})

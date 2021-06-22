@@ -43,7 +43,7 @@ export TARGET="$(jq .refs.pulls[0].number <<< $(echo $JOB_SPEC))"
 ##### ci-firewall parameters end
 
 # The version of CI_FIREWALL TO USE
-export CI_FIREWALL_VERSION="v0.1.1"
+export CI_FIREWALL_VERSION="v0.1.2"
 
 echo "Getting ci-firewall, see https://github.com,/mohammedzee1000/ci-firewall"
 # show commands

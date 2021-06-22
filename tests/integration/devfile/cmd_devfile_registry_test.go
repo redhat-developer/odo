@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/openshift/odo/tests/helper"
 )
@@ -27,18 +28,18 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 	Context("When executing registry list", func() {
 		It("Should list all default registries", func() {
-			output := helper.CmdShouldPass("odo", "registry", "list")
+			output := helper.Cmd("odo", "registry", "list").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
 		})
 
 		It("Should list all default registries with json", func() {
-			output := helper.CmdShouldPass("odo", "registry", "list", "-o", "json")
+			output := helper.Cmd("odo", "registry", "list", "-o", "json").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
 		})
 
 		It("Should fail with an error with no registries", func() {
-			helper.CmdShouldPass("odo", "registry", "delete", "DefaultDevfileRegistry", "-f")
-			output := helper.CmdShouldFail("odo", "registry", "list")
+			helper.Cmd("odo", "registry", "delete", "DefaultDevfileRegistry", "-f").ShouldPass()
+			output := helper.Cmd("odo", "registry", "list").ShouldFail().Err()
 			helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo registry add -h` to add one"})
 
 		})
@@ -47,41 +48,41 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 	Context("When executing registry commands with the registry is not present", func() {
 		It("Should successfully add the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
-			output := helper.CmdShouldPass("odo", "registry", "list")
+			helper.Cmd("odo", "registry", "add", registryName, addRegistryURL).ShouldPass()
+			output := helper.Cmd("odo", "registry", "list").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
-			helper.CmdShouldPass("odo", "create", "nodejs", "--registry", registryName)
-			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
+			helper.Cmd("odo", "create", "nodejs", "--registry", registryName).ShouldPass()
+			helper.Cmd("odo", "registry", "delete", registryName, "-f").ShouldPass()
 		})
 
 		It("Should fail to update the registry", func() {
-			helper.CmdShouldFail("odo", "registry", "update", registryName, updateRegistryURL, "-f")
+			helper.Cmd("odo", "registry", "update", registryName, updateRegistryURL, "-f").ShouldFail()
 		})
 
 		It("Should fail to delete the registry", func() {
-			helper.CmdShouldFail("odo", "registry", "delete", registryName, "-f")
+			helper.Cmd("odo", "registry", "delete", registryName, "-f").ShouldFail()
 		})
 	})
 
 	Context("When executing registry commands with the registry is present", func() {
 		It("Should fail to add the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
-			helper.CmdShouldFail("odo", "registry", "add", registryName, addRegistryURL)
-			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
+			helper.Cmd("odo", "registry", "add", registryName, addRegistryURL).ShouldPass()
+			helper.Cmd("odo", "registry", "add", registryName, addRegistryURL).ShouldFail()
+			helper.Cmd("odo", "registry", "delete", registryName, "-f").ShouldPass()
 		})
 
 		It("Should successfully update the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
-			helper.CmdShouldPass("odo", "registry", "update", registryName, updateRegistryURL, "-f")
-			output := helper.CmdShouldPass("odo", "registry", "list")
+			helper.Cmd("odo", "registry", "add", registryName, addRegistryURL).ShouldPass()
+			helper.Cmd("odo", "registry", "update", registryName, updateRegistryURL, "-f").ShouldPass()
+			output := helper.Cmd("odo", "registry", "list").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{registryName, updateRegistryURL})
-			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
+			helper.Cmd("odo", "registry", "delete", registryName, "-f").ShouldPass()
 		})
 
 		It("Should successfully delete the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
-			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
-			helper.CmdShouldFail("odo", "create", "java-maven", "--registry", registryName)
+			helper.Cmd("odo", "registry", "add", registryName, addRegistryURL).ShouldPass()
+			helper.Cmd("odo", "registry", "delete", registryName, "-f").ShouldPass()
+			helper.Cmd("odo", "create", "java-maven", "--registry", registryName).ShouldFail()
 		})
 	})
 
@@ -93,21 +94,21 @@ var _ = Describe("odo devfile registry command tests", func() {
 		})
 		It("should show deprecation warning when the git based registry is used", func() {
 
-			outstr, errstr := helper.CmdShouldPassIncludeErrStream("odo", "registry", "add", "RegistryFromGitHub", "https://github.com/odo-devfiles/registry")
+			outstr, errstr := helper.Cmd("odo", "registry", "add", "RegistryFromGitHub", "https://github.com/odo-devfiles/registry").ShouldPass().OutAndErr()
 			co := fmt.Sprintln(outstr, errstr)
 			helper.MatchAllInOutput(co, []string{deprecated, docLink})
-			outstr, errstr = helper.CmdShouldPassIncludeErrStream("odo", "registry", "list")
+			outstr, errstr = helper.Cmd("odo", "registry", "list").ShouldPass().OutAndErr()
 			co = fmt.Sprintln(outstr, errstr)
 			helper.MatchAllInOutput(co, []string{deprecated, docLink})
-			outstr, errstr = helper.CmdShouldPassIncludeErrStream("odo", "create", "nodejs", "--registry", "RegistryFromGitHub")
+			outstr, errstr = helper.Cmd("odo", "create", "nodejs", "--registry", "RegistryFromGitHub").ShouldPass().OutAndErr()
 			co = fmt.Sprintln(outstr, errstr)
 			helper.MatchAllInOutput(co, []string{deprecated, docLink})
 		})
 		It("should not show deprecation warning if non-git-based registry is used", func() {
-			out, err := helper.CmdShouldPassIncludeErrStream("odo", "registry", "list")
+			out, err := helper.Cmd("odo", "registry", "list").ShouldPass().OutAndErr()
 			helper.DontMatchAllInOutput(fmt.Sprintln(out, err), []string{deprecated, docLink})
-			helper.CmdShouldPass("odo", "registry", "add", "RegistryFromGitHub", "https://github.com/odo-devfiles/registry")
-			out, err = helper.CmdShouldPassIncludeErrStream("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry")
+			helper.Cmd("odo", "registry", "add", "RegistryFromGitHub", "https://github.com/odo-devfiles/registry").ShouldPass()
+			out, err = helper.Cmd("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry").ShouldPass().OutAndErr()
 			helper.DontMatchAllInOutput(fmt.Sprintln(out, err), []string{deprecated, docLink})
 		})
 	})

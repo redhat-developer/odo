@@ -42,12 +42,12 @@ var _ = Describe("odo devfile status command tests", func() {
 
 		It("Verify that odo component status correctly reports supervisord status", func() {
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.Cmd("odo", "create", "nodejs", "--project", namespace, cmpName).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "-o", "json", "--project", namespace)
+			helper.Cmd("odo", "push", "-o", "json", "--project", namespace).ShouldPass()
 
 			session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--project", namespace, "--follow")
 
@@ -129,12 +129,12 @@ var _ = Describe("odo devfile status command tests", func() {
 
 		It("Verify that odo component status correctly detects component Kubernetes pods", func() {
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.Cmd("odo", "create", "nodejs", "--project", namespace, cmpName).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "-o", "json", "--project", namespace)
+			helper.Cmd("odo", "push", "-o", "json", "--project", namespace).ShouldPass()
 
 			session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--project", namespace, "--follow")
 
@@ -313,7 +313,7 @@ var _ = Describe("odo devfile status command tests", func() {
 
 				urlHost := helper.RandString(12) + ".com"
 
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", namespace, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -328,9 +328,9 @@ var _ = Describe("odo devfile status command tests", func() {
 					urlParams = append(urlParams, "--host", urlHost)
 				}
 
-				helper.CmdShouldPass("odo", urlParams...)
+				helper.Cmd("odo", urlParams...).ShouldPass()
 
-				helper.CmdShouldPass("odo", "push", "-o", "json", "--project", namespace)
+				helper.Cmd("odo", "push", "-o", "json", "--project", namespace).ShouldPass()
 
 				session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--project", namespace, "--follow")
 
