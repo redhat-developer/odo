@@ -26,12 +26,12 @@ var _ = Describe("odo project command tests", func() {
 	Context("Machine readable output tests", func() {
 
 		It("Help for odo project list should contain machine output", func() {
-			output := helper.CmdShouldPass("odo", "project", "list", "--help")
+			output := helper.Cmd("odo", "project", "list", "--help").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Specify output format, supported format: json"))
 		})
 
 		It("should be able to get project", func() {
-			projectGetJSON := helper.CmdShouldPass("odo", "project", "get", "-o", "json")
+			projectGetJSON := helper.Cmd("odo", "project", "get", "-o", "json").ShouldPass().Out()
 			getOutputJSON, err := helper.Unindented(projectGetJSON)
 			Expect(err).Should(BeNil())
 			valuesJSON := gjson.GetMany(getOutputJSON, "kind", "status.active")
@@ -44,14 +44,14 @@ var _ = Describe("odo project command tests", func() {
 
 	Context("when running help for project command", func() {
 		It("should display the help", func() {
-			projectHelp := helper.CmdShouldPass("odo", "project", "-h")
+			projectHelp := helper.Cmd("odo", "project", "-h").ShouldPass().Out()
 			Expect(projectHelp).To(ContainSubstring("Perform project operations"))
 		})
 	})
 
 	Context("when running get command with -q flag", func() {
 		It("should display only the project name", func() {
-			projectName := helper.CmdShouldPass("odo", "project", "get", "-q")
+			projectName := helper.Cmd("odo", "project", "get", "-q").ShouldPass().Out()
 			Expect(projectName).Should(ContainSubstring(commonVar.Project))
 		})
 	})
@@ -77,10 +77,10 @@ var _ = Describe("odo project command tests", func() {
 		It("--wait should work with deleting a project", func() {
 
 			// Create the project
-			helper.CmdShouldPass("odo", "project", "create", projectName)
+			helper.Cmd("odo", "project", "create", projectName).ShouldPass()
 
 			// Delete with --wait
-			output := helper.CmdShouldPass("odo", "project", "delete", projectName, "-f", "--wait")
+			output := helper.Cmd("odo", "project", "delete", projectName, "-f", "--wait").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Waiting for project to be deleted"))
 
 		})
@@ -95,9 +95,9 @@ var _ = Describe("odo project command tests", func() {
 
 		// odo project delete foobar -o json
 		It("should be able to delete project and show output in json format", func() {
-			helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+			helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass()
 
-			actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
+			actual := helper.Cmd("odo", "project", "delete", projectName, "-o", "json").ShouldPass().Out()
 			values := gjson.GetMany(actual, "kind", "message")
 			expected := []string{"Project", "Deleted project :"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
