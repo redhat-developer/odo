@@ -1530,7 +1530,15 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		if urlsNb > 0 {
 			res := make([]string, 0, urlsNb)
 			for _, url := range urls {
-				res = append(res, url.Name)
+				var urlString string
+				if url.Spec.Kind == localConfigProvider.ROUTE {
+					urlString = urlpkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", false)
+				} else if url.Spec.Kind == localConfigProvider.INGRESS {
+					urlString = urlpkg.GetURLString(url.Spec.Protocol, "", url.Spec.Host, false)
+				} else {
+					continue
+				}
+				res = append(res, urlString)
 			}
 			component.Spec.URL = res
 		}
