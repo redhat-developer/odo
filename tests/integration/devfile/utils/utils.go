@@ -84,38 +84,10 @@ func ExecWithMissingRunCommand(projectDirPath, cmpName, namespace string) {
 
 // ExecWithCustomCommand executes odo push with a custom command
 func ExecWithCustomCommand(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "nodejs", cmpName}
-	args = useProjectIfAvailable(args, namespace)
-	helper.Cmd("odo", args...).ShouldPass()
-
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
-
-	args = []string{"push", "--build-command", "build", "--run-command", "run"}
-	args = useProjectIfAvailable(args, namespace)
-	output := helper.Cmd("odo", args...).ShouldPass().Out()
-	helper.MatchAllInOutput(output, []string{
-		"Executing build command \"npm install\"",
-		"Executing run command \"npm start\"",
-	})
 }
 
 // ExecWithWrongCustomCommand executes odo push with a wrong custom command
 func ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace string) {
-	garbageCommand := "buildgarbage"
-
-	args := []string{"create", "nodejs", cmpName}
-	args = useProjectIfAvailable(args, namespace)
-	helper.Cmd("odo", args...).ShouldPass()
-
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
-
-	args = []string{"push", "--build-command", garbageCommand}
-	args = useProjectIfAvailable(args, namespace)
-	output := helper.Cmd("odo", args...).ShouldFail().Err()
-	Expect(output).NotTo(ContainSubstring("Executing buildgarbage command"))
-	Expect(output).To(ContainSubstring("the command \"%v\" is not found in the devfile", garbageCommand))
 }
 
 // ExecWithMultipleOrNoDefaults executes odo push with multiple or no default commands
@@ -150,20 +122,6 @@ func ExecWithMultipleOrNoDefaults(projectDirPath, cmpName, namespace string) {
 
 // ExecCommandWithoutGroupUsingFlags executes odo push with no command group using flags
 func ExecCommandWithoutGroupUsingFlags(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "nodejs", cmpName}
-	args = useProjectIfAvailable(args, namespace)
-	helper.Cmd("odo", args...).ShouldPass()
-
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-group-kind.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
-
-	args = []string{"push", "--build-command", "devbuild", "--run-command", "devrun"}
-	args = useProjectIfAvailable(args, namespace)
-	output := helper.Cmd("odo", args...).ShouldPass().Out()
-	helper.MatchAllInOutput(output, []string{
-		"Executing devbuild command \"npm install\"",
-		"Executing devrun command \"npm start\"",
-	})
 }
 
 // ExecWithInvalidCommandGroup executes odo push with an invalid command group
@@ -325,34 +283,6 @@ func ExecPushWithNewFileAndDir(projectDirPath, cmpName, namespace, newFilePath, 
 
 // ExecWithHotReload executes odo push with hot reload true
 func ExecWithHotReload(projectDirPath, cmpName, namespace string, hotReload bool) {
-	args := []string{"create", "nodejs", cmpName}
-	args = useProjectIfAvailable(args, namespace)
-	helper.Cmd("odo", args...).ShouldPass()
-
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-
-	if hotReload {
-		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
-	} else {
-		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
-	}
-
-	args = []string{"push"}
-	args = useProjectIfAvailable(args, namespace)
-	output := helper.Cmd("odo", args...).ShouldPass().Out()
-	Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
-
-	args = []string{"push", "-f"}
-	args = useProjectIfAvailable(args, namespace)
-	helper.Cmd("odo", args...).ShouldPass()
-
-	args = useProjectIfAvailable([]string{"log"}, namespace)
-	logs := helper.Cmd("odo", args...).ShouldPass().Out()
-	if hotReload {
-		Expect(logs).To(ContainSubstring("Don't start program again, program is already started"))
-	} else {
-		Expect(logs).To(ContainSubstring("stop the program"))
-	}
 }
 
 type OdoV1Watch struct {
