@@ -311,7 +311,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								})
 
 								It("Should fail listing the services", func() {
-									out := helper.Cmd("odo", "service", "list").ShouldFail()
+									out := helper.Cmd("odo", "service", "list").ShouldFail().Err()
 									msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
 									Expect(out).To(ContainSubstring(msg))
 								})
