@@ -65,17 +65,17 @@ var _ = Describe("odo devfile push command tests", func() {
 		When("JSON output is requested", func() {
 			It("should display output in JSON format", func() {
 
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push", "-o", "json", "--project", commonVar.Project)
+				output := helper.Cmd("odo", "push", "-o", "json", "--project", commonVar.Project).ShouldPass().Out()
 				utils.AnalyzePushConsoleOutput(output)
 
 				// update devfile and push again
 				helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-				output = helper.CmdShouldPass("odo", "push", "-o", "json", "--project", commonVar.Project)
+				output = helper.Cmd("odo", "push", "-o", "json", "--project", commonVar.Project).ShouldPass().Out()
 				utils.AnalyzePushConsoleOutput(output)
 
 			})
@@ -86,12 +86,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			It("should be able to push based on name passed", func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "springboot")
+				output := helper.Cmd("odo", "push", "--project", commonVar.Project, "springboot").ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Executing devfile commands for component springboot"))
 			})
 
 			It("should error out on devfile flag", func() {
-				helper.CmdShouldFail("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml")
+				helper.Cmd("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml").ShouldFail()
 			})
 
 		})
@@ -102,25 +102,25 @@ var _ = Describe("odo devfile push command tests", func() {
 				defer helper.DeleteDir(newContext)
 				helper.Chdir(newContext)
 
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), newContext)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(newContext, "devfile.yaml"))
 
 				helper.Chdir(commonVar.Context)
-				output := helper.CmdShouldPass("odo", "push", "--context", newContext)
+				output := helper.Cmd("odo", "push", "--context", newContext).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 			})
 		})
 
 		When("Devfile 2.1.0 is used", func() {
 			It("devfile variables should work", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push")
+				output := helper.Cmd("odo", "push").ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, "app", commonVar.Project)
@@ -152,7 +152,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				// Now we delete the file and dir and push
 				helper.DeleteDir(newFilePath)
 				helper.DeleteDir(newDirPath)
-				helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "-v4")
+				helper.Cmd("odo", "push", "--project", commonVar.Project, "-v4").ShouldPass()
 
 				// Then check to see if it's truly been deleted
 				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
@@ -163,13 +163,13 @@ var _ = Describe("odo devfile push command tests", func() {
 		When("devfile is modified", func() {
 			// Tests https://github.com/openshift/odo/issues/3838
 			ensureFilesSyncedTest := func(namespace string, shouldForcePush bool) {
-				helper.CmdShouldPass("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 
 				fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
 
 				// 1) Push a standard spring boot project
-				output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+				output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 				// 2) Update the devfile.yaml, causing push to redeploy the component
@@ -181,7 +181,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				}
 
 				// 3) Ensure the build passes, indicating that all files were correctly synced to the new pod
-				output = helper.CmdShouldPass("odo", commands...)
+				output = helper.Cmd("odo", commands...).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("BUILD SUCCESS"))
 
 				// 4) Acquire files from remote container, filtering out target/* and .*
@@ -246,7 +246,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("run command has dev.odo.push.path attribute", func() {
 			It("should push only the mentioned files at the appropriate remote destination", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project)
+				helper.Cmd("odo", "create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -256,7 +256,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				_, _ = helper.CreateSimpleFile(filepath.Join(commonVar.Context, "views"), "view", ".html")
 
 				helper.ReplaceString("package.json", "node server.js", "node server/server.js")
-				helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 				stdOut := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
@@ -266,19 +266,19 @@ var _ = Describe("odo devfile push command tests", func() {
 				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath+"/server")
 				helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
 
-				stdOut = helper.CmdShouldPass("odo", "push", "--context", commonVar.Context)
+				stdOut = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 				Expect(stdOut).To(ContainSubstring("No file changes detected"))
 			})
 		})
 
 		When("devfile has sourcemappings", func() {
 			It("should sync files to the correct location", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+				output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 				// Verify source code was synced to /test instead of /projects
@@ -300,13 +300,13 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("project and clonePath is present", func() {
 			It("should sync to the correct dir in container", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
 				// devfile with clonePath set in project field
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				helper.CmdShouldPass("odo", "push", "--v", "5")
+				helper.Cmd("odo", "push", "--v", "5").ShouldPass()
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 				// source code is synced to $PROJECTS_ROOT/clonePath
 				// $PROJECTS_ROOT is /projects by default, if sourceMapping is set it is same as sourceMapping
@@ -322,14 +322,14 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("devfile project field is present", func() {
 			It("should sync to the correct dir in container", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 				// reset clonePath and change the workdir accordingly, it should sync to project name
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
 
-				helper.CmdShouldPass("odo", "push")
+				helper.Cmd("odo", "push").ShouldPass()
 
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/apps/nodeshift")
@@ -342,11 +342,11 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("multiple project is present", func() {
 			It("should sync to the correct dir in container", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				helper.CmdShouldPass("odo", "push")
+				helper.Cmd("odo", "push").ShouldPass()
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 				// for devfile-with-multiple-projects.yaml source mapping is not set so $PROJECTS_ROOT is /projects
 				// multiple projects, so source code would sync to the first project /projects/webapp
@@ -360,11 +360,11 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("no project is present", func() {
 			It("should sync to the correct dir in container", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				helper.CmdShouldPass("odo", "push")
+				helper.Cmd("odo", "push").ShouldPass()
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 				helper.MatchAllInOutput(output, []string{"package.json"})
@@ -440,7 +440,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should successfully use the volume components in container components", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -465,18 +465,18 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("odo push --debug is executed", func() {
 			It("should execute debug commands", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push", "--debug", "--project", commonVar.Project)
+				output := helper.Cmd("odo", "push", "--debug", "--project", commonVar.Project).ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{
 					"Executing devbuild command",
 					"Executing debugrun command",
 				})
 
-				output = helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{
 					"Executing devbuild command",
 					"Executing devrun command",
@@ -519,18 +519,18 @@ var _ = Describe("odo devfile push command tests", func() {
 		When("run command is not marked as hotReloadCapable", func() {
 			It("should restart the application", func() {
 				// TODO: this is almost the same test as one below
-				helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--project", commonVar.Project)
+				helper.Cmd("odo", "create", "nodejs", cmpName, "--project", commonVar.Project).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push")
+				output := helper.Cmd("odo", "push").ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
-				helper.CmdShouldPass("odo", "push", "-f")
+				helper.Cmd("odo", "push", "-f").ShouldPass()
 
-				logs := helper.CmdShouldPass("odo", "log")
+				logs := helper.Cmd("odo", "log").ShouldPass().Out()
 				Expect(logs).To(ContainSubstring("stop the program"))
 
 			})
@@ -538,34 +538,34 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("run command is marked as hotReloadCapable:true", func() {
 			It("should not restart the application", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--project", commonVar.Project)
+				helper.Cmd("odo", "create", "nodejs", cmpName, "--project", commonVar.Project).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push")
+				output := helper.Cmd("odo", "push").ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
-				helper.CmdShouldPass("odo", "push", "-f")
+				helper.Cmd("odo", "push", "-f").ShouldPass()
 
-				logs := helper.CmdShouldPass("odo", "log")
+				logs := helper.Cmd("odo", "log").ShouldPass().Out()
 				Expect(logs).To(ContainSubstring("Don't start program again, program is already started"))
 
 			})
 
 			When("run mode is changed to debug", func() {
 				It("should restart the application regardless of hotReloadCapable value", func() {
-					helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+					helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-hotReload.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-					helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 
-					stdOut := helper.CmdShouldPass("odo", "push", "--debug", "--project", commonVar.Project)
+					stdOut := helper.Cmd("odo", "push", "--debug", "--project", commonVar.Project).ShouldPass().Out()
 					Expect(stdOut).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
-					logs := helper.CmdShouldPass("odo", "log")
+					logs := helper.Cmd("odo", "log").ShouldPass().Out()
 
 					helper.MatchAllInOutput(logs, []string{
 						"\"stop the program\" program=debugrun",
@@ -578,12 +578,12 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("devfile with composite command", func() {
 			It("should execute all commands in composite commmand", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push")
+				output := helper.Cmd("odo", "push").ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Executing mkdir command"))
 
 				// Verify the command executed successfully
@@ -604,12 +604,12 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			When("composite command is marked as paralell:true ", func() {
 				It("should execute all commands in composite commmand", func() {
-					helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+					helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-					output := helper.CmdShouldPass("odo", "push", "--build-command", "buildandmkdir")
+					output := helper.Cmd("odo", "push", "--build-command", "buildandmkdir").ShouldPass().Out()
 					Expect(output).To(ContainSubstring("Executing mkdir command"))
 
 					// Verify the command executed successfully
@@ -631,13 +631,13 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			When("composite command are nested", func() {
 				It("should execute all commands in composite commmand", func() {
-					helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+					helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 					// Verify nested command was executed
-					output := helper.CmdShouldPass("odo", "push")
+					output := helper.Cmd("odo", "push").ShouldPass().Out()
 					Expect(output).To(ContainSubstring("Executing mkdir command"))
 
 					// Verify the command executed successfully
@@ -658,13 +658,13 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			When("composite command is used as a run command", func() {
 				It("should throw a validation error for composite run commands", func() {
-					helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+					helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 					// Verify odo push failed
-					output := helper.CmdShouldFail("odo", "push")
+					output := helper.Cmd("odo", "push").ShouldFail().Err()
 					Expect(output).To(ContainSubstring("not supported currently"))
 				})
 			})
@@ -675,12 +675,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			It("should correctly execute PreStart commands", func() {
 				// expectedInitContainers := []string{"tools-myprestart-1", "tools-myprestart-2", "runtime-secondprestart-3"}
 
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-preStart.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldFail("odo", "push", "--project", commonVar.Project)
+				output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldFail().Err()
 				// This is expected to fail for now.
 				// see https://github.com/openshift/odo/issues/4187 for more info
 				helper.MatchAllInOutput(output, []string{"myprestart should either map to an apply command or a composite command with apply commands\n"})
@@ -696,7 +696,7 @@ var _ = Describe("odo devfile push command tests", func() {
 					helper.MatchAllInOutput(strings.Join(firstPushInitContainers, ","), expectedInitContainers)
 
 					// Need to force so build and run get triggered again with the component already created.
-					output = helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "-f")
+					output = helper.Cmd("odo", "push", "--project", commonVar.Project, "-f").ShouldPass().Out()
 					helper.MatchAllInOutput(output, []string{"PreStart commands have been added to the component"})
 
 					secondPushPodName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -737,16 +737,16 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 
 			It("should correctly execute PostStart commands", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.CmdShouldPass("odo", "push", "--project", commonVar.Project)
+				output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
 
 				// Need to force so build and run get triggered again with the component already created.
-				output = helper.CmdShouldPass("odo", "push", "--project", commonVar.Project, "-f")
+				output = helper.Cmd("odo", "push", "--project", commonVar.Project, "-f").ShouldPass().Out()
 				helper.DontMatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
 				helper.MatchAllInOutput(output, []string{
 					"Executing devbuild command",
@@ -757,10 +757,10 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("using custom commands (specified by flags)", func() {
 			It("should push successfully", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Project)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run")
+				output := helper.Cmd("odo", "push", "--build-command", "build", "--run-command", "run").ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{
 					"Executing build command \"npm install\"",
 					"Executing run command \"npm start\"",
@@ -769,10 +769,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 
 			It("should error out on a wrong custom commands", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--project", commonVar.Project)
+				helper.Cmd("odo", "create", "nodejs", cmpName, "--project", commonVar.Project).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output := helper.CmdShouldFail("odo", "push", "--build-command", "buildgarbage")
+				output := helper.Cmd("odo", "push", "--build-command", "buildgarbage").ShouldFail().Err()
 				Expect(output).NotTo(ContainSubstring("Executing buildgarbage command"))
 				Expect(output).To(ContainSubstring("the command \"%v\" is not found in the devfile", "buildgarbage"))
 			})
@@ -781,10 +781,10 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("command has no group kind", func() {
 			It("should execute commands with flags", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", cmpName, "--project", commonVar.Project)
+				helper.Cmd("odo", "create", "nodejs", cmpName, "--project", commonVar.Project).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-group-kind.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output := helper.CmdShouldPass("odo", "push", "--build-command", "devbuild", "--run-command", "devrun")
+				output := helper.Cmd("odo", "push", "--build-command", "devbuild", "--run-command", "devrun").ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{
 					"Executing devbuild command \"npm install\"",
 					"Executing devrun command \"npm start\"",
@@ -795,7 +795,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		When("the run command throws an error", func() {
 			It("should wait and error out with some log", func() {
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project)
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project)
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
@@ -817,10 +817,10 @@ var _ = Describe("odo devfile push command tests", func() {
 		When("commands specify have env variables", func() {
 			When("sigle env var is set", func() {
 				It("should be able to exec command", func() {
-					helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+					helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-envs.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-					output := helper.CmdShouldPass("odo", "push", "--build-command", "buildwithenv", "--run-command", "singleenv")
+					output := helper.Cmd("odo", "push", "--build-command", "buildwithenv", "--run-command", "singleenv").ShouldPass().Out()
 					helper.MatchAllInOutput(output, []string{"mkdir $ENV1", "mkdir $BUILD_ENV1"})
 
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -830,10 +830,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			When("multiple env variables are set", func() {
 				It("should be able to exec command", func() {
-					helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+					helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-envs.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-					output := helper.CmdShouldPass("odo", "push", "--build-command", "buildwithmultipleenv", "--run-command", "multipleenv")
+					output := helper.Cmd("odo", "push", "--build-command", "buildwithmultipleenv", "--run-command", "multipleenv").ShouldPass().Out()
 					helper.MatchAllInOutput(output, []string{"mkdir $ENV1 $ENV2", "mkdir $BUILD_ENV1 $BUILD_ENV2"})
 
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -843,10 +843,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			When("there is a env variable with spaces", func() {
 				It("should be able to exec command", func() {
-					helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+					helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-envs.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-					output := helper.CmdShouldPass("odo", "push", "--build-command", "buildenvwithspace", "--run-command", "envwithspace")
+					output := helper.Cmd("odo", "push", "--build-command", "buildenvwithspace", "--run-command", "envwithspace").ShouldPass().Out()
 					helper.MatchAllInOutput(output, []string{"mkdir \\\"$ENV1\\\"", "mkdir \\\"$BUILD_ENV1\\\""})
 
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -868,12 +868,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			It("should throw an error", func() {
 				componentName := helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", "default", componentName)
+				helper.Cmd("odo", "create", "nodejs", "--project", "default", componentName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				stdout := helper.CmdShouldFail("odo", "push")
+				stdout := helper.Cmd("odo", "push").ShouldFail().Err()
 				helper.MatchAllInOutput(stdout, []string{"odo may not work as expected in the default project, please run the odo component in a non-default project"})
 			})
 		})
@@ -890,12 +890,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			It("should push successfully", func() {
 				componentName := helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CmdShouldPass("odo", "create", "nodejs", "--project", "default", componentName)
+				helper.Cmd("odo", "create", "nodejs", "--project", "default", componentName).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				stdout := helper.CmdShouldPass("odo", "push")
+				stdout := helper.Cmd("odo", "push").ShouldPass().Out()
 				helper.DontMatchAllInOutput(stdout, []string{"odo may not work as expected in the default project"})
 			})
 		})
