@@ -92,14 +92,13 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		outOfSync := false
 		for _, u := range urls.Items {
 			if u.Spec.Kind == localConfigProvider.ROUTE {
-				if u.Spec.Protocol == "" {
-					if u.Spec.Secure {
-						u.Spec.Protocol = "https"
-					} else {
-						u.Spec.Protocol = "http"
-					}
+				var urlStr string
+				if u.Status.State == url.StateTypeNotPushed {
+					urlStr = "<provided by cluster>"
+				} else {
+					urlStr = url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.Context.LocalConfigInfo.Exists())
 				}
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "<provided by cluster>", o.Context.LocalConfigInfo.Exists()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlStr, "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 			} else {
 				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 			}
