@@ -56,9 +56,7 @@ case ${1} in
             setup_kubeconfig
             kubectl config use-context minikube
         else
-            if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" != *"kubelet: Running"* ]]; then
-                minikube delete
-            fi
+            minikube delete
             shout "| Start minikube"
             minikube start --vm-driver=docker --container-runtime=docker
             setup_kubeconfig
