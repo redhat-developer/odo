@@ -59,8 +59,8 @@ func (pb *CRSpecBuilder) convertType(value string) interface{} {
 	return value
 }
 
-// SetAndValidate validates if a param is part of the operand schema and then sets it.
-func (pb *CRSpecBuilder) SetAndValidate(param string, value string) error {
+// ValidateAndSet validates if a param is part of the operand schema and then sets it.
+func (pb *CRSpecBuilder) ValidateAndSet(param string, value string) error {
 	if pb.hasParam(param) {
 		return pb.set(param, value)
 	}

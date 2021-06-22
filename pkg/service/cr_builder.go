@@ -18,8 +18,8 @@ func NewCRBuilder(crd *olm.CRDDescription) *CRBuilder {
 	}
 }
 
-func (crb *CRBuilder) SetAndValidate(param string, value string) error {
-	return crb.CRSpecBuilder.SetAndValidate(param, value)
+func (crb *CRBuilder) ValidateAndSet(param string, value string) error {
+	return crb.CRSpecBuilder.ValidateAndSet(param, value)
 }
 
 func (crb *CRBuilder) Map() (map[string]interface{}, error) {
