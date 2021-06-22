@@ -25,8 +25,7 @@ make bin
 cp -avrf ./odo $GOBIN/
 
 setup_kubeconfig() {
-    export ORIGINAL_KUBECONFIG=${KUBECONFIG:-"${HOME}/.kube/config"}
-    export KUBECONFIG=$ORIGINAL_KUBECONFIG
+    export KUBECONFIG=$HOME/.kube/config
     if [[ ! -f $KUBECONFIG ]]; then
         echo "Could not find kubeconfig file"
         exit 1
