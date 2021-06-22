@@ -369,7 +369,6 @@ func Push(parameters PushParameters) error {
 	// find URLs to delete
 	for urlName, urlSpec := range urlCLUSTER {
 		val, ok := urlLOCAL[urlName]
-
 		configMismatch := false
 		if ok {
 			// since the host stored in an ingress
@@ -386,13 +385,16 @@ func Push(parameters PushParameters) error {
 				// we don't allow the host input for route based URLs
 				// removing it for the urls from the cluster to avoid config mismatch
 				urlSpec.Spec.Host = ""
+			}
 
+			if val.Spec.Protocol == "" {
 				if val.Spec.Secure {
 					val.Spec.Protocol = "https"
 				} else {
 					val.Spec.Protocol = "http"
 				}
 			}
+
 			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
 				configMismatch = true
 				klog.V(4).Infof("config and cluster mismatch for url %s", urlName)
