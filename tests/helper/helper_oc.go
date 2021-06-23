@@ -633,7 +633,7 @@ func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 
 func (oc OcRunner) SetProject(namespace string) string {
 	fmt.Fprintf(GinkgoWriter, "Setting project: %s\n", namespace)
-	CmdShouldPass("odo", "project", "set", namespace)
+	Cmd("odo", "project", "set", namespace).ShouldPass()
 	return namespace
 }
 
