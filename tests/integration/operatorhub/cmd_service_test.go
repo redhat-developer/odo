@@ -67,13 +67,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			})
 
 			It("should describe the example of the operator", func() {
-				output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example")
+				output := helper.Cmd("odo", "catalog", "describe", "service", etcdCluster, "--example").ShouldPass().Out()
 				Expect(output).To(ContainSubstring("kind: EtcdCluster"))
 				helper.MatchAllInOutput(output, []string{"apiVersion", "kind"})
 			})
 
 			It("should describe the example of the operator as json", func() {
-				outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example", "-o", "json")
+				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", etcdCluster, "--example", "-o", "json").ShouldPass().Out()
 				value := gjson.Get(outputJSON, "spec.kind")
 				Expect(value.String()).To(Equal("EtcdCluster"))
 			})
