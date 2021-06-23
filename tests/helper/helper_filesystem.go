@@ -157,6 +157,22 @@ func CopyExampleDevFile(devfilePath, targetDst string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+// CopyExampleFile copies an example file from tests/examples/<file-path>
+// into targetDst
+func CopyExampleFile(filePath, targetDst string) {
+	// filename of this file
+	_, filename, _, _ := runtime.Caller(0)
+	// path to the examples directory
+	examplesDir := filepath.Join(filepath.Dir(filename), "..", "examples")
+
+	src := filepath.Join(examplesDir, filePath)
+	info, err := os.Stat(src)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = util.CopyFile(src, targetDst, info)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // FileShouldContainSubstring check if file contains subString
 func FileShouldContainSubstring(file string, subString string) {
 	data, err := ioutil.ReadFile(file)

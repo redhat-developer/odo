@@ -18,10 +18,12 @@ import (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
+	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
+		oc = helper.NewOcRunner("oc")
 	})
 
 	AfterEach(func() {
@@ -33,7 +35,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		BeforeEach(func() {
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
-			operators := []string{"redis-operator", "service-binding-operator"}
+			operators := []string{"etcdoperator", "service-binding-operator"}
 			for _, operator := range operators {
 				helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
 					return strings.Contains(output, operator)
@@ -113,8 +115,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		})
 
 		Context("a specific operator is installed", func() {
-			var redisOperator string
-			var redisCluster string
+			var etcdOperator string
+			var etcdCluster string
 
 			BeforeEach(func() {
 				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
@@ -142,7 +144,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			It("should describe the operator with json output", func() {
 				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", redisCluster, "-o", "json").ShouldPass().Out()
 				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
-				expected := []string{"Redis", "Redis"}
+				expected := []string{"EtcdCluster", "etcd Cluster"}
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 			})
 
@@ -187,7 +189,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created in dryRun mode", func() {
+				When("an EtcdCluster instance is created in dryRun mode", func() {
 
 					var fileName string
 
@@ -249,7 +251,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created with no name", func() {
+				When("an EtcdCluster instance is created with no name", func() {
 					var stdOut string
 					BeforeEach(func() {
 						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/RedisCluster", redisOperator), "--project", commonVar.Project).ShouldPass().Out()
@@ -260,7 +262,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 						content, err := ioutil.ReadFile(devfilePath)
 						Expect(err).To(BeNil())
-						matchInOutput := []string{"kubernetes", "inlined", "Redis", "redis"}
+						matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "example"}
 						helper.MatchAllInOutput(string(content), matchInOutput)
 					})
 
@@ -271,7 +273,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `redis-.[a-z0-9-]*`)
+							oc.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
 						})
 
 						It("should list the service", func() {
@@ -338,7 +340,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 								content, err := ioutil.ReadFile(devfilePath)
 								Expect(err).To(BeNil())
-								matchInOutput := []string{"kubernetes", "inlined", "Redis", "redis"}
+								matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "example"}
 								helper.DontMatchAllInOutput(string(content), matchInOutput)
 							})
 
@@ -385,7 +387,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created with a specific name", func() {
+				When("an EtcdCluster instance is created with a specific name", func() {
 
 					var name string
 					var svcFullName string
@@ -412,7 +414,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9-]*`)
+							oc.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
 						})
 
 						It("should fail to create a service again with the same name", func() {
@@ -464,8 +466,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							It("should create the link with the specified name", func() {
-								args := []string{"get", "servicebinding", linkName, "-n", commonVar.Project}
-								commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
+								ocArgs := []string{"get", "servicebinding", linkName, "-n", commonVar.Project}
+								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 									return strings.Contains(output, linkName)
 								})
 							})
@@ -488,8 +490,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							It("should create a servicebinding resource with bindAsFiles set to true", func() {
-								args := []string{"get", "servicebinding", linkName, "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
-								commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
+								ocArgs := []string{"get", "servicebinding", linkName, "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
+								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 									return strings.Contains(output, "true")
 								})
 							})
@@ -508,10 +510,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						// TODO write helpers to create such files
 						noMetadata := `
-apiVersion: redis.redis.opstreelabs.in/v1beta1
-kind: Redis
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
 spec:
-  size: 3`
+  size: 3
+  version: 3.2.13`
 						noMetaFile := helper.RandString(6) + ".yaml"
 						noMetaFileName = filepath.Join(tmpContext, noMetaFile)
 						if err := ioutil.WriteFile(noMetaFileName, []byte(noMetadata), 0644); err != nil {
@@ -519,12 +522,13 @@ spec:
 						}
 
 						invalidMetadata := `
-apiVersion: redis.redis.opstreelabs.in/v1beta1
-kind: Redis
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
 metadata:
   noname: noname
 spec:
-  size: 3`
+  size: 3
+  version: 3.2.13`
 						invalidMetaFile := helper.RandString(6) + ".yaml"
 						invalidFileName = filepath.Join(tmpContext, invalidMetaFile)
 						if err := ioutil.WriteFile(invalidFileName, []byte(invalidMetadata), 0644); err != nil {

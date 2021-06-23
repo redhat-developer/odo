@@ -341,7 +341,7 @@ func SetProjectName() string {
 	//Get current test filename and remove file path, file extension and replace undescores with hyphens
 	currGinkgoTestFileName := strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1)
 	currGinkgoTestLineNum := strconv.Itoa(CurrentGinkgoTestDescription().LineNumber)
-	projectName := currGinkgoTestFileName + currGinkgoTestLineNum + "pv" + RandString(3)
+	projectName := currGinkgoTestFileName + currGinkgoTestLineNum + RandString(3)
 	return projectName
 }
 
