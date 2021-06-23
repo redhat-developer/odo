@@ -128,7 +128,7 @@ To run ONE individual test, you can either:
 
 Integration tests validate and focus on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
 
-If you are running `operatorhub` tests then you need to install certains operators on the cluster -
+If you are running `operatorhub` tests then you need to install certain operators on the cluster -
 
 - Etcd Cluster-wide operator
 - Service Binding operator
