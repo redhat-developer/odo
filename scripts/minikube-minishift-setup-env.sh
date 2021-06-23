@@ -25,8 +25,7 @@ make bin
 cp -avrf ./odo $GOBIN/
 
 setup_kubeconfig() {
-    export ORIGINAL_KUBECONFIG=${KUBECONFIG:-"${HOME}/.kube/config"}
-    export KUBECONFIG=$ORIGINAL_KUBECONFIG
+    export KUBECONFIG=$HOME/.kube/config
     if [[ ! -f $KUBECONFIG ]]; then
         echo "Could not find kubeconfig file"
         exit 1
@@ -56,9 +55,7 @@ case ${1} in
             setup_kubeconfig
             kubectl config use-context minikube
         else
-            if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" != *"kubelet: Running"* ]]; then
-                minikube delete
-            fi
+            minikube delete
             shout "| Start minikube"
             minikube start --vm-driver=docker --container-runtime=docker
             setup_kubeconfig
