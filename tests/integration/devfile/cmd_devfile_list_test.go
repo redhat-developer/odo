@@ -30,15 +30,15 @@ var _ = Describe("odo list with devfile", func() {
 		It("should correctly output component information", func() {
 
 			// component created in "app" application
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			By("checking that component correctly shows as 'NotPushed'")
-			output := helper.CmdShouldPass("odo", "list")
+			output := helper.Cmd("odo", "list").ShouldPass().Out()
 			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sNotPushed", "app", cmpName, commonVar.Project, "nodejs"))))
 
-			output = helper.CmdShouldPass("odo", "push")
+			output = helper.Cmd("odo", "push").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// component created in different application
@@ -46,19 +46,19 @@ var _ = Describe("odo list with devfile", func() {
 			cmpName2 := helper.RandString(6)
 			appName := helper.RandString(6)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, "--app", appName, "--context", context2, cmpName2)
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--app", appName, "--context", context2, cmpName2).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
 
 			By("checking that second component correctly shows as 'NotPushed'")
-			output = helper.CmdShouldPass("odo", "list", "--context", context2)
+			output = helper.Cmd("odo", "list", "--context", context2).ShouldPass().Out()
 			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sNotPushed", appName, cmpName2, commonVar.Project, "nodejs"))))
 
-			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
+			output2 := helper.Cmd("odo", "push", "--context", context2).ShouldPass().Out()
 			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
 
 			By("checking listing components in the current application in 'Pushed' state")
-			output = helper.CmdShouldPass("odo", "list", "--project", commonVar.Project)
+			output = helper.Cmd("odo", "list", "--project", commonVar.Project).ShouldPass().Out()
 			// this test makes sure that a devfile component doesn't show up as an s2i component as well
 			Expect(helper.Suffocate(output)).To(Equal(helper.Suffocate(fmt.Sprintf(`
 			Devfile Components:
@@ -67,7 +67,7 @@ var _ = Describe("odo list with devfile", func() {
 			`, cmpName, commonVar.Project))))
 
 			By("checking that it shows components in all applications")
-			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", commonVar.Project)
+			output = helper.Cmd("odo", "list", "--all-apps", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring(cmpName))
 			Expect(output).To(ContainSubstring(cmpName2))
 

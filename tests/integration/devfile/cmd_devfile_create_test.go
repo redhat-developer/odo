@@ -36,7 +36,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("when .gitignore file exists", func() {
 		It("checks that .odo/env exists in gitignore", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", commonVar.Project, cmpName)
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 
 			ignoreFilePath := filepath.Join(commonVar.Context, ".gitignore")
 
