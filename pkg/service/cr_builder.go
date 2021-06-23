@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CRBuilder is responsible for build the full CR including the meta and spec.
 type CRBuilder struct {
 	CRSpecBuilder *CRSpecBuilder
 	crd           *olm.CRDDescription
