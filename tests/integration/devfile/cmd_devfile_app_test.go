@@ -169,7 +169,7 @@ func runner(info testInfo) {
 	Expect(helper.IsJSON(stdOut)).To(BeTrue())
 
 	stdOut = helper.Cmd("odo", "app", "describe", info.app0, "--project", info.namespace).ShouldPass().Out()
-	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.storage00, info.url00, "http"})
+	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.storage00, info.url00, "http", "3000"})
 
 	// test the json output
 	stdOut = helper.Cmd("odo", "app", "describe", info.app0, "--project", info.namespace, "-o", "json").ShouldPass().Out()
