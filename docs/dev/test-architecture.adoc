@@ -168,7 +168,7 @@ EOF
 
 ----
 
-Note - the `odo-operator-test` is the namespace where postgres operatorhub tests execute by default. You can configure that buy setting `REDHAT_POSTGRES_OPERATOR_PROJECT` env variable.
+Note - the `odo-operator-test` is the namespace where postgres operatorhub tests execute by default. You can configure that by setting `REDHAT_POSTGRES_OPERATOR_PROJECT` env variable.
 
 *E2e tests:*
 
