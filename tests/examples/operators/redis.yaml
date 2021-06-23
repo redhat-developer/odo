@@ -1,24 +1,21 @@
 apiVersion: redis.redis.opstreelabs.in/v1beta1
-kind: Redis
+kind: RedisCluster
 metadata:
-  name: redis
+  name: redis-cluster
 spec:
-  global:
+  clusterSize: 3
+  kubernetesConfig:
     image: quay.io/opstree/redis:v6.2
     imagePullPolicy: IfNotPresent
+    password: Opstree@1234
     resources:
       limits:
-        cpu: 100m
+        cpu: 101m
         memory: 128Mi
       requests:
-        cpu: 100m
+        cpu: 101m
         memory: 128Mi
-  master:
-    redisConfig: {}
-    service:
-      type: ClusterIP
-  mode: cluster
-  redisConfig: {}
+    serviceType: ClusterIP
   redisExporter:
     enabled: true
     image: quay.io/opstree/redis-exporter:1.0
@@ -30,13 +27,10 @@ spec:
       requests:
         cpu: 100m
         memory: 128Mi
-  service:
-    type: ClusterIP
-  size: 3
-  slave:
-    redisConfig: {}
-    service:
-      type: ClusterIP
+  redisFollower:
+    serviceType: ClusterIP
+  redisLeader:
+    serviceType: ClusterIP
   storage:
     volumeClaimTemplate:
       spec:

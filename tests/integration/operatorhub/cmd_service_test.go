@@ -18,12 +18,10 @@ import (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
-	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
-		oc = helper.NewOcRunner("oc")
 	})
 
 	AfterEach(func() {
@@ -35,7 +33,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		BeforeEach(func() {
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
-			operators := []string{"etcdoperator", "service-binding-operator"}
+			operators := []string{"redis-operator", "service-binding-operator"}
 			for _, operator := range operators {
 				helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
 					return strings.Contains(output, operator)
@@ -115,8 +113,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		})
 
 		Context("a specific operator is installed", func() {
-			var etcdOperator string
-			var etcdCluster string
+			var redisOperator string
+			var redisCluster string
 
 			BeforeEach(func() {
 				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
@@ -126,34 +124,34 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			It("should describe the operator with human-readable output", func() {
 				output := helper.Cmd("odo", "catalog", "describe", "service", redisCluster).ShouldPass().Out()
-				Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
+				Expect(output).To(ContainSubstring("Kind: RedisCluster"))
 			})
 
 			It("should describe the example of the operator", func() {
 				output := helper.Cmd("odo", "catalog", "describe", "service", redisCluster, "--example").ShouldPass().Out()
-				Expect(output).To(ContainSubstring("kind: EtcdCluster"))
+				Expect(output).To(ContainSubstring("kind: RedisCluster"))
 				helper.MatchAllInOutput(output, []string{"apiVersion", "kind"})
 			})
 
 			It("should describe the example of the operator as json", func() {
 				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", redisCluster, "--example", "-o", "json").ShouldPass().Out()
 				value := gjson.Get(outputJSON, "spec.kind")
-				Expect(value.String()).To(Equal("EtcdCluster"))
+				Expect(value.String()).To(Equal("RedisCluster"))
 			})
 
 			It("should describe the operator with json output", func() {
 				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", redisCluster, "-o", "json").ShouldPass().Out()
 				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
-				expected := []string{"EtcdCluster", "etcd Cluster"}
+				expected := []string{"RedisCluster", "RedisCluster"}
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 			})
 
 			It("should find the services by keyword", func() {
-				stdOut := helper.Cmd("odo", "catalog", "search", "service", "etcd").ShouldPass().Out()
-				helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
+				stdOut := helper.Cmd("odo", "catalog", "search", "service", "redis").ShouldPass().Out()
+				helper.MatchAllInOutput(stdOut, []string{"redis-operator", "RedisCluster"})
 
-				stdOut = helper.Cmd("odo", "catalog", "search", "service", "EtcdCluster").ShouldPass().Out()
-				helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
+				stdOut = helper.Cmd("odo", "catalog", "search", "service", "RedisCluster").ShouldPass().Out()
+				helper.MatchAllInOutput(stdOut, []string{"redis-operator", "RedisCluster"})
 
 				stdOut = helper.Cmd("odo", "catalog", "search", "service", "dummy").ShouldFail().Err()
 				Expect(stdOut).To(ContainSubstring("no service matched the query: dummy"))
@@ -161,7 +159,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			It("should list the operator in JSON output", func() {
 				jsonOut := helper.Cmd("odo", "catalog", "list", "services", "-o", "json").ShouldPass().Out()
-				helper.MatchAllInOutput(jsonOut, []string{"etcdoperator"})
+				helper.MatchAllInOutput(jsonOut, []string{"redis-operator"})
 			})
 
 			When("a nodejs component is created", func() {
@@ -175,6 +173,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
 				})
 
+				It("should define the CR output of the operator instance in dryRun mode", func() {
+					stdOut := helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/RedisCluster", redisOperator), "--dry-run", "--project", commonVar.Project).ShouldPass().Out()
+					helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
+				})
+
 				When("odo push is executed", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "push").ShouldPass()
@@ -184,24 +187,19 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						if os.Getenv("KUBERNETES") == "true" {
 							Skip("This is a OpenShift specific scenario, skipping")
 						}
-						stdOut := helper.Cmd("odo", "link", "EtcdCluster/example").ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", "EtcdCluster/example"))
+						stdOut := helper.Cmd("odo", "link", "RedisCluster/redis-cluster").ShouldFail().Err()
+						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", "RedisCluster/redis-cluster"))
 					})
 				})
 
-				When("an EtcdCluster instance is created in dryRun mode", func() {
+				When("an RedisCluster instance definition copied from example file", func() {
 
 					var fileName string
 
 					BeforeEach(func() {
-						stdOut := helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/RedisCluster", redisOperator), "--dry-run", "--project", commonVar.Project).ShouldPass().Out()
-						helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
-
 						randomFileName := helper.RandString(6) + ".yaml"
 						fileName = filepath.Join(os.TempDir(), randomFileName)
-						if err := ioutil.WriteFile(fileName, []byte(stdOut), 0644); err != nil {
-							fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
-						}
+						helper.CopyExampleFile(filepath.Join("operators", "redis.yaml"), filepath.Join(fileName))
 					})
 
 					AfterEach(func() {
@@ -215,7 +213,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						AfterEach(func() {
-							helper.Cmd("odo", "service", "delete", "EtcdCluster/example", "-f").ShouldPass()
+							helper.Cmd("odo", "service", "delete", "RedisCluster/rediscluster", "-f").ShouldPass()
 							helper.Cmd("odo", "push").ShouldPass()
 						})
 
@@ -230,7 +228,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						var svcFullName string
 						BeforeEach(func() {
 							name = helper.RandString(6)
-							svcFullName = strings.Join([]string{"EtcdCluster", name}, "/")
+							svcFullName = strings.Join([]string{"RedisCluster", name}, "/")
 							helper.Cmd("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project).ShouldPass()
 							helper.Cmd("odo", "push").ShouldPass()
 						})
@@ -251,7 +249,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an EtcdCluster instance is created with no name", func() {
+				When("an RedisCluster instance is created with no name", func() {
 					var stdOut string
 					BeforeEach(func() {
 						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/RedisCluster", redisOperator), "--project", commonVar.Project).ShouldPass().Out()
@@ -262,7 +260,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 						content, err := ioutil.ReadFile(devfilePath)
 						Expect(err).To(BeNil())
-						matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "example"}
+						matchInOutput := []string{"kubernetes", "inlined", "RedisCluster", "redis-cluster"}
 						helper.MatchAllInOutput(string(content), matchInOutput)
 					})
 
@@ -273,24 +271,24 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(commonVar.Project, `example-.[a-z0-9]*`)
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `redis-cluster-.[a-z0-9-]*`)
 						})
 
 						It("should list the service", func() {
 							// now test listing of the service using odo
 							stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
-							Expect(stdOut).To(ContainSubstring("EtcdCluster/etcdcluster"))
+							Expect(stdOut).To(ContainSubstring("RedisCluster/redis-cluster"))
 						})
 
 						It("should list the service in JSON format", func() {
 							jsonOut := helper.Cmd("odo", "service", "list", "-o", "json").ShouldPass().Out()
-							helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"etcd.database.coreos.com/v1beta2\"", "\"kind\": \"EtcdCluster\"", "\"name\": \"etcdcluster\""})
+							helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"redis.redis.opstreelabs.in/v1beta1\"", "\"kind\": \"RedisCluster\"", "\"name\": \"redis-cluster\""})
 						})
 
 						When("a link is created with the service", func() {
 							var stdOut string
 							BeforeEach(func() {
-								stdOut = helper.Cmd("odo", "link", "EtcdCluster/etcdcluster").ShouldPass().Out()
+								stdOut = helper.Cmd("odo", "link", "RedisCluster/redis-cluster").ShouldPass().Out()
 							})
 
 							It("should display a successful message", func() {
@@ -304,13 +302,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								if os.Getenv("KUBERNETES") == "true" {
 									Skip("This is a OpenShift specific scenario, skipping")
 								}
-								stdOut = helper.Cmd("odo", "link", "EtcdCluster/etcdcluster").ShouldFail().Err()
+								stdOut = helper.Cmd("odo", "link", "RedisCluster/redis-cluster").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("already linked with the service"))
 							})
 
 							When("the link is deleted", func() {
 								BeforeEach(func() {
-									stdOut = helper.Cmd("odo", "unlink", "EtcdCluster/etcdcluster").ShouldPass().Out()
+									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/redis-cluster").ShouldPass().Out()
 								})
 
 								It("should display a successful message", func() {
@@ -324,7 +322,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									if os.Getenv("KUBERNETES") == "true" {
 										Skip("This is a OpenShift specific scenario, skipping")
 									}
-									stdOut = helper.Cmd("odo", "unlink", "EtcdCluster/etcdcluster").ShouldFail().Err()
+									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/redis-cluster").ShouldFail().Err()
 									Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
 								})
 							})
@@ -332,7 +330,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						When("the service is deleted", func() {
 							BeforeEach(func() {
-								helper.Cmd("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f").ShouldPass()
+								helper.Cmd("odo", "service", "delete", "RedisCluster/redis-cluster", "-f").ShouldPass()
 							})
 
 							It("should delete service definition from devfile.yaml", func() {
@@ -340,12 +338,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 								content, err := ioutil.ReadFile(devfilePath)
 								Expect(err).To(BeNil())
-								matchInOutput := []string{"kubernetes", "inlined", "EtcdCluster", "example"}
+								matchInOutput := []string{"kubernetes", "inlined", "RedisCluster", "redis-cluster"}
 								helper.DontMatchAllInOutput(string(content), matchInOutput)
 							})
 
 							It("should fail to delete the service again", func() {
-								stdOut = helper.Cmd("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f").ShouldFail().Err()
+								stdOut = helper.Cmd("odo", "service", "delete", "RedisCluster/redis-cluster", "-f").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("couldn't find service named"))
 							})
 
@@ -387,7 +385,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an EtcdCluster instance is created with a specific name", func() {
+				When("an RedisCluster instance is created with a specific name", func() {
 
 					var name string
 					var svcFullName string
@@ -414,7 +412,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should create pods in running state", func() {
-							oc.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9]*`)
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, name+`-.[a-z0-9-]*`)
 						})
 
 						It("should fail to create a service again with the same name", func() {
@@ -455,19 +453,19 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 							BeforeEach(func() {
 								linkName = "link-" + helper.RandString(6)
-								helper.Cmd("odo", "link", "EtcdCluster/"+name, "--name", linkName).ShouldPass()
+								helper.Cmd("odo", "link", "RedisCluster/"+name, "--name", linkName).ShouldPass()
 								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							AfterEach(func() {
 								// delete the link
-								helper.Cmd("odo", "unlink", "EtcdCluster/"+name).ShouldPass()
+								helper.Cmd("odo", "unlink", "RedisCluster/"+name).ShouldPass()
 								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							It("should create the link with the specified name", func() {
-								ocArgs := []string{"get", "servicebinding", linkName, "-n", commonVar.Project}
-								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+								args := []string{"get", "servicebinding", linkName, "-n", commonVar.Project}
+								commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 									return strings.Contains(output, linkName)
 								})
 							})
@@ -479,19 +477,19 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 							BeforeEach(func() {
 								linkName = "link-" + helper.RandString(6)
-								helper.Cmd("odo", "link", "EtcdCluster/"+name, "--name", linkName, "--bind-as-files").ShouldPass()
+								helper.Cmd("odo", "link", "RedisCluster/"+name, "--name", linkName, "--bind-as-files").ShouldPass()
 								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							AfterEach(func() {
 								// delete the link
-								helper.Cmd("odo", "unlink", "EtcdCluster/"+name).ShouldPass()
+								helper.Cmd("odo", "unlink", "RedisCluster/"+name).ShouldPass()
 								helper.Cmd("odo", "push").ShouldPass()
 							})
 
 							It("should create a servicebinding resource with bindAsFiles set to true", func() {
-								ocArgs := []string{"get", "servicebinding", linkName, "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
-								helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+								args := []string{"get", "servicebinding", linkName, "-o", "jsonpath='{.spec.bindAsFiles}'", "-n", commonVar.Project}
+								commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 									return strings.Contains(output, "true")
 								})
 							})
@@ -510,11 +508,10 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						// TODO write helpers to create such files
 						noMetadata := `
-apiVersion: etcd.database.coreos.com/v1beta2
-kind: EtcdCluster
+apiVersion: redis.redis.opstreelabs.in/v1beta1
+kind: RedisCluster
 spec:
-  size: 3
-  version: 3.2.13`
+  size: 3`
 						noMetaFile := helper.RandString(6) + ".yaml"
 						noMetaFileName = filepath.Join(tmpContext, noMetaFile)
 						if err := ioutil.WriteFile(noMetaFileName, []byte(noMetadata), 0644); err != nil {
@@ -522,13 +519,12 @@ spec:
 						}
 
 						invalidMetadata := `
-apiVersion: etcd.database.coreos.com/v1beta2
-kind: EtcdCluster
+apiVersion: redis.redis.opstreelabs.in/v1beta1
+kind: RedisCluster
 metadata:
   noname: noname
 spec:
-  size: 3
-  version: 3.2.13`
+  size: 3`
 						invalidMetaFile := helper.RandString(6) + ".yaml"
 						invalidFileName = filepath.Join(tmpContext, invalidMetaFile)
 						if err := ioutil.WriteFile(invalidFileName, []byte(invalidMetadata), 0644); err != nil {
@@ -581,12 +577,9 @@ spec:
 			})
 
 			It("should fail if the component doesn't exist and the service name doesn't adhere to the <service-type>/<service-name> format", func() {
-				if os.Getenv("KUBERNETES") == "true" {
-					Skip("This is a OpenShift specific scenario, skipping")
-				}
-				helper.Cmd("odo", "link", "EtcdCluster").ShouldFail()
-				helper.Cmd("odo", "link", "EtcdCluster/").ShouldFail()
-				helper.Cmd("odo", "link", "/example").ShouldFail()
+				helper.Cmd("odo", "link", "RedisCluster").ShouldFail()
+				helper.Cmd("odo", "link", "RedisCluster/").ShouldFail()
+				helper.Cmd("odo", "link", "/redis-cluster").ShouldFail()
 			})
 
 			When("another component is deployed", func() {
