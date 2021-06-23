@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
 )
 
@@ -82,6 +83,11 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				It("should find files in component container", func() {
 					helper.Cmd("odo", "exec", "--", "ls", "/project/server.js").ShouldPass()
 				})
+
+				It("should find the link environment variable", func() {
+					stdOut := helper.Cmd("odo", "exec", "--", "sh", "-c", "echo $ETCDCLUSTER_CLUSTERIP").ShouldPass().Out()
+					Expect(stdOut).To(Not(BeEmpty()))
+				})
 			})
 
 			When("a link with between the component and the service is created with --bind-as-files and deployed", func() {
@@ -94,6 +100,10 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 
 				It("should find files in component container", func() {
 					helper.Cmd("odo", "exec", "--", "ls", "/project/server.js").ShouldPass()
+				})
+
+				It("should find bindings for service", func() {
+					helper.Cmd("odo", "exec", "--", "ls", "/bindings/etcd-link/clusterIP").ShouldPass()
 				})
 			})
 		})

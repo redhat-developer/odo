@@ -232,7 +232,7 @@ func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, 
 	klog.V(5).Infoln("Applying Deployment via server-side apply:")
 	klog.V(5).Infoln(resourceAsJson(deploy))
 
-	err = c.removeDuplicateEnv(deploy)
+	err = c.removeDuplicateEnv(deploy.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -246,14 +246,15 @@ func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, 
 
 // removeDuplicateEnv removes duplicate environment variables from containers, due to a bug in Service Binding Operator:
 // https://github.com/redhat-developer/service-binding-operator/issues/983
-func (c *Client) removeDuplicateEnv(deployment appsv1.Deployment) error {
-	_, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(context.Background(), deployment.Name, metav1.GetOptions{})
+func (c *Client) removeDuplicateEnv(deploymentName string) error {
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(context.Background(), deploymentName, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
+	changes := false
 	containers := deployment.Spec.Template.Spec.Containers
 	for i, container := range containers {
 		duplicates := []corev1.EnvVar{}
@@ -267,6 +268,7 @@ func (c *Client) removeDuplicateEnv(deployment appsv1.Deployment) error {
 			}
 		}
 		if len(duplicates) > 0 {
+			changes = true
 			newEnv := []corev1.EnvVar{}
 			// first remove duplicates
 			for _, env := range envs {
@@ -286,11 +288,14 @@ func (c *Client) removeDuplicateEnv(deployment appsv1.Deployment) error {
 			containers[i].Env = newEnv
 		}
 	}
-	_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.Background(), &deployment, metav1.UpdateOptions{})
-	if kerrors.IsNotFound(err) {
-		return nil
+	if changes {
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.Background(), deployment, metav1.UpdateOptions{})
+		if kerrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	}
-	return err
+	return nil
 }
 
 // DeleteDeployment deletes the deployments with the given selector
