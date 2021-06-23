@@ -261,9 +261,9 @@ var _ = Describe("odo generic", func() {
         })
         It("should deploy the component", func() {
             helper.CopyExample(filepath.Join("source", "nodejs"), context)
-            helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--project", project, "--context", context)
-            helper.CmdShouldPass("odo", "push", "--context", context)
-            helper.CmdShouldPass("odo", "delete", "-f", "--context", context)
+            helper.Cmd("odo", "create", "nodejs:latest", "testversioncmp", "--project", project, "--context", context).ShouldPass()
+            helper.Cmd("odo", "push", "--context", context).ShouldPass()
+            helper.Cmd("odo", "delete", "-f", "--context", context).ShouldPass()
         })
     })
 })
@@ -280,8 +280,8 @@ var _ = Describe("odo generic", func() {
 For example:
 While running multiple push on same component without changing any source file.
 
-helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
-output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+helper.Cmd("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+output := helper.Cmd("odo", "push", "--show-log", "--context", context+"/nodejs-ex").ShouldPass().Out()
 Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 ----
 +

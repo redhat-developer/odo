@@ -48,7 +48,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		})
 
 		It("should not allow creating service without valid context", func() {
-			stdOut := helper.CmdShouldFail("odo", "service", "create")
+			stdOut := helper.Cmd("odo", "service", "create").ShouldFail().Err()
 			Expect(stdOut).To(ContainSubstring("service can be created/deleted from a valid component directory only"))
 		})
 
@@ -119,72 +119,72 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			var etcdCluster string
 
 			JustBeforeEach(func() {
-				operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 				etcdOperator = regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 				etcdCluster = fmt.Sprintf("%s/EtcdCluster", etcdOperator)
 			})
 
 			It("should describe the operator with human-readable output", func() {
-				output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster)
+				output := helper.Cmd("odo", "catalog", "describe", "service", etcdCluster).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Kind: EtcdCluster"))
 			})
 
 			It("should describe the example of the operator", func() {
-				output := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example")
+				output := helper.Cmd("odo", "catalog", "describe", "service", etcdCluster, "--example").ShouldPass().Out()
 				Expect(output).To(ContainSubstring("kind: EtcdCluster"))
 				helper.MatchAllInOutput(output, []string{"apiVersion", "kind"})
 			})
 
 			It("should describe the example of the operator as json", func() {
-				outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "--example", "-o", "json")
+				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", etcdCluster, "--example", "-o", "json").ShouldPass().Out()
 				value := gjson.Get(outputJSON, "spec.kind")
 				Expect(value.String()).To(Equal("EtcdCluster"))
 			})
 
 			It("should describe the operator with json output", func() {
-				outputJSON := helper.CmdShouldPass("odo", "catalog", "describe", "service", etcdCluster, "-o", "json")
+				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", etcdCluster, "-o", "json").ShouldPass().Out()
 				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
 				expected := []string{"EtcdCluster", "etcd Cluster"}
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 			})
 
 			It("should find the services by keyword", func() {
-				stdOut := helper.CmdShouldPass("odo", "catalog", "search", "service", "etcd")
+				stdOut := helper.Cmd("odo", "catalog", "search", "service", "etcd").ShouldPass().Out()
 				helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
 
-				stdOut = helper.CmdShouldPass("odo", "catalog", "search", "service", "EtcdCluster")
+				stdOut = helper.Cmd("odo", "catalog", "search", "service", "EtcdCluster").ShouldPass().Out()
 				helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
 
-				stdOut = helper.CmdShouldFail("odo", "catalog", "search", "service", "dummy")
+				stdOut = helper.Cmd("odo", "catalog", "search", "service", "dummy").ShouldFail().Err()
 				Expect(stdOut).To(ContainSubstring("no service matched the query: dummy"))
 			})
 
 			It("should list the operator in JSON output", func() {
-				jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+				jsonOut := helper.Cmd("odo", "catalog", "list", "services", "-o", "json").ShouldPass().Out()
 				helper.MatchAllInOutput(jsonOut, []string{"etcdoperator"})
 			})
 
 			When("a nodejs component is created", func() {
 
 				JustBeforeEach(func() {
-					helper.CmdShouldPass("odo", "create", "nodejs")
+					helper.Cmd("odo", "create", "nodejs").ShouldPass()
 				})
 
 				It("should fail for interactive mode", func() {
-					stdOut := helper.CmdShouldFail("odo", "service", "create")
+					stdOut := helper.Cmd("odo", "service", "create").ShouldFail().Err()
 					Expect(stdOut).To(ContainSubstring("odo doesn't support interactive mode for creating Operator backed service"))
 				})
 
 				When("odo push is executed", func() {
 					JustBeforeEach(func() {
-						helper.CmdShouldPass("odo", "push")
+						helper.Cmd("odo", "push").ShouldPass()
 					})
 
 					It("should fail if the provided service doesn't exist in the namespace", func() {
 						if os.Getenv("KUBERNETES") == "true" {
 							Skip("This is a OpenShift specific scenario, skipping")
 						}
-						stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
+						stdOut := helper.Cmd("odo", "link", "EtcdCluster/example").ShouldFail().Err()
 						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", "EtcdCluster/example"))
 					})
 				})
@@ -194,7 +194,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					var stdOut string
 
 					JustBeforeEach(func() {
-						stdOut = helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", commonVar.Project)
+						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run", "--project", commonVar.Project).ShouldPass().Out()
 					})
 
 					It("should only output the definition of the CR that will be used to start service", func() {
@@ -219,16 +219,16 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						When("a service is created from the output of the dryRun command with no name", func() {
 							JustBeforeEach(func() {
-								helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project)
+								helper.Cmd("odo", "service", "create", "--from-file", fileName, "--project", commonVar.Project).ShouldPass()
 							})
 
 							JustAfterEach(func() {
-								helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
+								helper.Cmd("odo", "service", "delete", "EtcdCluster/example", "-f").ShouldPass()
 							})
 
 							When("odo push is executed", func() {
 								JustBeforeEach(func() {
-									helper.CmdShouldPass("odo", "push")
+									helper.Cmd("odo", "push").ShouldPass()
 								})
 
 								It("should create pods in running state", func() {
@@ -244,21 +244,21 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							JustBeforeEach(func() {
 								name = helper.RandString(6)
 								svcFullName = strings.Join([]string{"EtcdCluster", name}, "/")
-								helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project)
+								helper.Cmd("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project).ShouldPass()
 							})
 
 							JustAfterEach(func() {
-								helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
+								helper.Cmd("odo", "service", "delete", svcFullName, "-f").ShouldPass()
 							})
 
 							When("odo push is executed", func() {
 
 								JustBeforeEach(func() {
-									helper.CmdShouldPass("odo", "push")
+									helper.Cmd("odo", "push").ShouldPass()
 								})
 
 								It("should fail to create a service again with the same name", func() {
-									stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project)
+									stdOut = helper.Cmd("odo", "service", "create", "--from-file", fileName, name, "--project", commonVar.Project).ShouldFail().Err()
 									Expect(stdOut).To(ContainSubstring("please provide a different name or delete the existing service first"))
 								})
 
@@ -273,7 +273,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				When("an EtcdCluster instance is created with no name", func() {
 					var stdOut string
 					JustBeforeEach(func() {
-						stdOut = helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project)
+						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--project", commonVar.Project).ShouldPass().Out()
 						Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
 					})
 
@@ -288,7 +288,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					When("odo push is executed", func() {
 
 						JustBeforeEach(func() {
-							helper.CmdShouldPass("odo", "push")
+							helper.Cmd("odo", "push").ShouldPass()
 						})
 
 						It("should create pods in running state", func() {
@@ -297,19 +297,19 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						It("should list the service", func() {
 							// now test listing of the service using odo
-							stdOut := helper.CmdShouldPass("odo", "service", "list")
+							stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
 							Expect(stdOut).To(ContainSubstring("EtcdCluster/etcdcluster"))
 						})
 
 						It("should list the service in JSON format", func() {
-							jsonOut := helper.CmdShouldPass("odo", "service", "list", "-o", "json")
+							jsonOut := helper.Cmd("odo", "service", "list", "-o", "json").ShouldPass().Out()
 							helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"etcd.database.coreos.com/v1beta2\"", "\"kind\": \"EtcdCluster\"", "\"name\": \"etcdcluster\""})
 						})
 
 						When("a link is created with the service", func() {
 							var stdOut string
 							JustBeforeEach(func() {
-								stdOut = helper.CmdShouldPass("odo", "link", "EtcdCluster/etcdcluster")
+								stdOut = helper.Cmd("odo", "link", "EtcdCluster/etcdcluster").ShouldPass().Out()
 							})
 
 							It("should display a successful message", func() {
@@ -323,13 +323,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								if os.Getenv("KUBERNETES") == "true" {
 									Skip("This is a OpenShift specific scenario, skipping")
 								}
-								stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/etcdcluster")
+								stdOut = helper.Cmd("odo", "link", "EtcdCluster/etcdcluster").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("already linked with the service"))
 							})
 
 							When("the link is deleted", func() {
 								JustBeforeEach(func() {
-									stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/etcdcluster")
+									stdOut = helper.Cmd("odo", "unlink", "EtcdCluster/etcdcluster").ShouldPass().Out()
 								})
 
 								It("should display a successful message", func() {
@@ -343,7 +343,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									if os.Getenv("KUBERNETES") == "true" {
 										Skip("This is a OpenShift specific scenario, skipping")
 									}
-									stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/etcdcluster")
+									stdOut = helper.Cmd("odo", "unlink", "EtcdCluster/etcdcluster").ShouldFail().Err()
 									Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
 								})
 							})
@@ -351,7 +351,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						When("the service is deleted", func() {
 							JustBeforeEach(func() {
-								helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f")
+								helper.Cmd("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f").ShouldPass()
 							})
 
 							It("should delete service definition from devfile.yaml", func() {
@@ -364,23 +364,23 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							It("should fail to delete the service again", func() {
-								stdOut = helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f")
+								stdOut = helper.Cmd("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("couldn't find service named"))
 							})
 
 							When("odo push is executed", func() {
 								JustBeforeEach(func() {
-									helper.CmdShouldPass("odo", "push")
+									helper.Cmd("odo", "push").ShouldPass()
 								})
 
 								It("Should fail listing the services", func() {
-									out := helper.CmdShouldFail("odo", "service", "list")
+									out := helper.Cmd("odo", "service", "list").ShouldFail().Err()
 									msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
 									Expect(out).To(ContainSubstring(msg))
 								})
 
 								It("Should fail listing the services in JSON format", func() {
-									jsonOut := helper.CmdShouldFail("odo", "service", "list", "-o", "json")
+									jsonOut := helper.Cmd("odo", "service", "list", "-o", "json").ShouldFail().Err()
 									msg := fmt.Sprintf("no operator backed services found in namespace: %s", commonVar.Project)
 									msgWithQuote := fmt.Sprintf("\"message\": \"no operator backed services found in namespace: %s\"", commonVar.Project)
 									helper.MatchAllInOutput(jsonOut, []string{msg, msgWithQuote})
@@ -390,17 +390,17 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						When("a second service is created", func() {
 							JustBeforeEach(func() {
-								stdOut = helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "myetcd2", "--project", commonVar.Project)
+								stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "myetcd2", "--project", commonVar.Project).ShouldPass().Out()
 								Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
 							})
 
 							When("odo push is executed", func() {
 								JustBeforeEach(func() {
-									helper.CmdShouldPass("odo", "push")
+									helper.Cmd("odo", "push").ShouldPass()
 								})
 
 								It("should list both services", func() {
-									stdOut = helper.CmdShouldPass("odo", "service", "list")
+									stdOut = helper.Cmd("odo", "service", "list").ShouldPass().Out()
 									// first service still here
 									Expect(stdOut).To(ContainSubstring("EtcdCluster/etcdcluster"))
 									// second service created
@@ -419,7 +419,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					JustBeforeEach(func() {
 						name = helper.RandString(6)
 						svcFullName = strings.Join([]string{"EtcdCluster", name}, "/")
-						helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
+						helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project).ShouldPass()
 					})
 
 					JustAfterEach(func() {
@@ -427,14 +427,14 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 
 					It("should be listed as Not pushed", func() {
-						stdOut := helper.CmdShouldPass("odo", "service", "list")
+						stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
 						helper.MatchAllInOutput(stdOut, []string{svcFullName, "Not pushed"})
 					})
 
 					When("odo push is executed", func() {
 
 						JustBeforeEach(func() {
-							helper.CmdShouldPass("odo", "push")
+							helper.Cmd("odo", "push").ShouldPass()
 						})
 
 						It("should create pods in running state", func() {
@@ -442,28 +442,28 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						It("should fail to create a service again with the same name", func() {
-							stdOut := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project)
+							stdOut := helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name, "--project", commonVar.Project).ShouldFail().Err()
 							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
 						})
 
 						It("should be listed as Pushed", func() {
-							stdOut := helper.CmdShouldPass("odo", "service", "list")
+							stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
 							helper.MatchAllInOutput(stdOut, []string{svcFullName, "Pushed"})
 						})
 
 						When("the etcdCluster instance is deleted", func() {
 							JustBeforeEach(func() {
-								helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
+								helper.Cmd("odo", "service", "delete", svcFullName, "-f").ShouldPass()
 							})
 
 							It("should be listed as Deleted locally", func() {
-								stdOut := helper.CmdShouldPass("odo", "service", "list")
+								stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
 								helper.MatchAllInOutput(stdOut, []string{svcFullName, "Deleted locally"})
 							})
 
 							When("odo push is executed", func() {
 								JustBeforeEach(func() {
-									helper.CmdShouldPass("odo", "push")
+									helper.Cmd("odo", "push").ShouldPass()
 								})
 
 								It("should not be listed anymore", func() {
@@ -479,13 +479,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 							JustBeforeEach(func() {
 								linkName = "link-" + helper.RandString(6)
-								helper.CmdShouldPass("odo", "link", "EtcdCluster/"+name, "--name", linkName)
+								helper.Cmd("odo", "link", "EtcdCluster/"+name, "--name", linkName).ShouldPass()
 								// for the moment, odo push is not necessary to deploy the link
 							})
 
 							JustAfterEach(func() {
 								// delete the link
-								helper.CmdShouldPass("odo", "unlink", "EtcdCluster/"+name)
+								helper.Cmd("odo", "unlink", "EtcdCluster/"+name).ShouldPass()
 							})
 
 							It("should create the link with the specified name", func() {
@@ -502,13 +502,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 							JustBeforeEach(func() {
 								linkName = "link-" + helper.RandString(6)
-								helper.CmdShouldPass("odo", "link", "EtcdCluster/"+name, "--name", linkName, "--bind-as-files")
+								helper.Cmd("odo", "link", "EtcdCluster/"+name, "--name", linkName, "--bind-as-files").ShouldPass()
 								// for the moment, odo push is not necessary to deploy the link
 							})
 
 							JustAfterEach(func() {
 								// delete the link
-								helper.CmdShouldPass("odo", "unlink", "EtcdCluster/"+name)
+								helper.Cmd("odo", "unlink", "EtcdCluster/"+name).ShouldPass()
 							})
 
 							It("should create a servicebinding resource with bindAsFiles set to true", func() {
@@ -564,12 +564,12 @@ spec:
 					})
 
 					It("should fail to create a service based on a template without metadata", func() {
-						stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", noMetaFileName, "--project", commonVar.Project)
+						stdOut := helper.Cmd("odo", "service", "create", "--from-file", noMetaFileName, "--project", commonVar.Project).ShouldFail().Err()
 						Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
 					})
 
 					It("should fail to create a service based on a template with invalid metadata", func() {
-						stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", invalidFileName, "--project", commonVar.Project)
+						stdOut := helper.Cmd("odo", "service", "create", "--from-file", invalidFileName, "--project", commonVar.Project).ShouldFail().Err()
 						Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
 					})
 				})
@@ -588,17 +588,17 @@ spec:
 				context0 = helper.CreateNewContext()
 				cmp0 = helper.RandString(5)
 
-				helper.CmdShouldPass("odo", "create", "nodejs", cmp0, "--context", context0)
-				helper.CmdShouldPass("odo", "push", "--context", context0)
+				helper.Cmd("odo", "create", "nodejs", cmp0, "--context", context0).ShouldPass()
+				helper.Cmd("odo", "push", "--context", context0).ShouldPass()
 			})
 
 			JustAfterEach(func() {
-				helper.CmdShouldPass("odo", "delete", "-f", "--context", context0)
+				helper.Cmd("odo", "delete", "-f", "--context", context0).ShouldPass()
 				helper.DeleteDir(context0)
 			})
 
 			It("should fail when linking to itself", func() {
-				stdOut := helper.CmdShouldFail("odo", "link", cmp0, "--context", context0)
+				stdOut := helper.Cmd("odo", "link", cmp0, "--context", context0).ShouldFail().Err()
 				helper.MatchAllInOutput(stdOut, []string{cmp0, "cannot be linked with itself"})
 			})
 
@@ -606,9 +606,9 @@ spec:
 				if os.Getenv("KUBERNETES") == "true" {
 					Skip("This is a OpenShift specific scenario, skipping")
 				}
-				helper.CmdShouldFail("odo", "link", "EtcdCluster")
-				helper.CmdShouldFail("odo", "link", "EtcdCluster/")
-				helper.CmdShouldFail("odo", "link", "/example")
+				helper.Cmd("odo", "link", "EtcdCluster").ShouldFail()
+				helper.Cmd("odo", "link", "EtcdCluster/").ShouldFail()
+				helper.Cmd("odo", "link", "/example").ShouldFail()
 			})
 
 			When("another component is deployed", func() {
@@ -619,18 +619,18 @@ spec:
 					context1 = helper.CreateNewContext()
 					cmp1 = helper.RandString(5)
 
-					helper.CmdShouldPass("odo", "create", "nodejs", cmp1, "--context", context1)
-					helper.CmdShouldPass("odo", "push", "--context", context1)
+					helper.Cmd("odo", "create", "nodejs", cmp1, "--context", context1).ShouldPass()
+					helper.Cmd("odo", "push", "--context", context1).ShouldPass()
 				})
 
 				JustAfterEach(func() {
-					helper.CmdShouldPass("odo", "delete", "-f", "--context", context1)
+					helper.Cmd("odo", "delete", "-f", "--context", context1).ShouldPass()
 					helper.DeleteDir(context1)
 				})
 
 				It("should link the two components successfully", func() {
 
-					helper.CmdShouldPass("odo", "link", cmp1, "--context", context0)
+					helper.Cmd("odo", "link", cmp1, "--context", context0).ShouldPass()
 
 					// check the link exists with the specific name
 					ocArgs := []string{"get", "servicebinding", strings.Join([]string{cmp0, cmp1}, "-"), "-o", "jsonpath='{.status.secret}'", "-n", commonVar.Project}
@@ -639,7 +639,7 @@ spec:
 					})
 
 					// delete the link
-					helper.CmdShouldPass("odo", "unlink", cmp1, "--context", context0)
+					helper.Cmd("odo", "unlink", cmp1, "--context", context0).ShouldPass()
 
 					commonVar.CliRunner.WaitAndCheckForTerminatingState("servicebinding", commonVar.Project, 1)
 				})
