@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/openshift/odo/pkg/urltype"
-
 	"github.com/openshift/odo/pkg/log"
 
 	routev1 "github.com/openshift/api/route/v1"
