@@ -41,12 +41,12 @@ var _ = Describe("odo app command tests", func() {
 		})
 
 		It("should fail deleting non existing app", func() {
-			appDelete := helper.Cmd("odo", "app", "delete", "test", "--project", commonVar.Project, "-f").ShouldFail().Out()
+			appDelete := helper.Cmd("odo", "app", "delete", "test", "--project", commonVar.Project, "-f").ShouldFail().Err()
 			Expect(appDelete).To(ContainSubstring("test app does not exists"))
 		})
 
 		It("should fail describing non existing app", func() {
-			appDescribe := helper.Cmd("odo", "app", "describe", "test", "--project", commonVar.Project).ShouldFail().Out()
+			appDescribe := helper.Cmd("odo", "app", "describe", "test", "--project", commonVar.Project).ShouldFail().Err()
 			Expect(appDescribe).To(ContainSubstring("test app does not exists"))
 		})
 
