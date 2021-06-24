@@ -127,23 +127,18 @@ var _ = Describe("odo app command tests", func() {
 			})
 		})
 
-		When("adding storage", func() {
+		When("adding storage and odo push is executed", func() {
 
 			mountPath := "/data"
 			size := "1Gi"
 
 			BeforeEach(func() {
 				helper.Cmd("odo", "storage", "create", "storage-one", "--context", commonVar.Context, "--path", mountPath, "--size", size).ShouldPass()
+				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			})
 
-			When("odo push is executed", func() {
-				BeforeEach(func() {
-					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
-				})
-
-				It("should successfully execute describe", func() {
-					helper.Cmd("odo", "app", "describe", appName, "--project", commonVar.Project).ShouldPass()
-				})
+			It("should successfully execute describe", func() {
+				helper.Cmd("odo", "app", "describe", appName, "--project", commonVar.Project).ShouldPass()
 			})
 		})
 	})
