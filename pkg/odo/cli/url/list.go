@@ -5,7 +5,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	routev1 "github.com/openshift/api/route/v1"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
@@ -93,9 +92,15 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		outOfSync := false
 		for _, u := range urls.Items {
 			if u.Spec.Kind == localConfigProvider.ROUTE {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.Context.LocalConfigInfo.Exists()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				var urlStr string
+				if u.Status.State == url.StateTypeNotPushed {
+					urlStr = "<provided by cluster>"
+				} else {
+					urlStr = url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.Context.LocalConfigInfo.Exists())
+				}
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlStr, "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 			} else {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 			}
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true

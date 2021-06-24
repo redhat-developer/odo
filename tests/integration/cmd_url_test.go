@@ -36,8 +36,7 @@ var _ = Describe("odo url command tests", func() {
 
 			helper.Cmd("odo", "url", "create", url1, "--port", "8080", "--context", commonVar.Context).ShouldPass()
 			stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()
-			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
-			helper.DontMatchAllInOutput(stdout, []string{"://"})
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push", "<provided by cluster>"})
 
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()

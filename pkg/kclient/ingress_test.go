@@ -7,9 +7,9 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -43,11 +43,11 @@ func TestCreateIngress(t *testing.T) {
 				IngressSpecParams: generator.IngressSpecParams{ServiceName: tt.ingressName},
 			}
 			ingress := generator.GetIngress(ingressParams)
-			createdIngress, err := fkclient.CreateIngress(*ingress)
+			createdIngress, err := fkclient.CreateIngressExtensionV1(*ingress)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("fkclient.CreateIngress unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("fkclient.CreateIngressExtensionV1 unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err == nil {
@@ -119,15 +119,18 @@ func TestListIngresses(t *testing.T) {
 				if tt.labelSelector != action.(ktesting.ListAction).GetListRestrictions().Labels.String() {
 					return true, nil, errors.Errorf("selectors are different")
 				}
+				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
+					return true, &networkingv1.Ingress{}, nil
+				}
 				ingress := extensionsv1.IngressList{
 					Items: tt.wantIngress,
 				}
 				return true, &ingress, nil
 			})
-			ingresses, err := fkclient.ListIngresses(tt.labelSelector)
+			ingresses, err := fkclient.ListIngressesExtensionV1(tt.labelSelector)
 
 			if err != nil {
-				t.Errorf("fkclient.ListIngresses unexpected error %v", err)
+				t.Errorf("fkclient.ListIngressesExtensionV1 unexpected error %v", err)
 			}
 
 			if err == nil {
@@ -172,11 +175,11 @@ func TestDeleteIngress(t *testing.T) {
 				return true, nil, nil
 			})
 
-			err := fkclient.DeleteIngress(tt.ingressName)
+			err := fkclient.DeleteIngressExtensionV1(tt.ingressName)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("fkclient.DeleteIngress unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("fkclient.DeleteIngressExtensionV1 unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err == nil {
@@ -230,11 +233,11 @@ func TestGetIngresses(t *testing.T) {
 				return true, &ingress, nil
 			})
 
-			ingress, err := fkclient.GetIngress(tt.ingressName)
+			ingress, err := fkclient.GetIngressExtensionV1(tt.ingressName)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("fkclient.GetIngress unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("fkclient.GetIngressExtensionV1 unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err == nil {

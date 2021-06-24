@@ -2,7 +2,6 @@ package url
 
 import (
 	"fmt"
-
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/localConfigProvider"

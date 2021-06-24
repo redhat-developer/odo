@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func GetIngressListWithMultiple(componentName, appName string) *extensionsv1.IngressList {
+func GetExtensionV1IngressListWithMultiple(componentName, appName string) *extensionsv1.IngressList {
 	return &extensionsv1.IngressList{
 		Items: []extensionsv1.Ingress{
 			*generator.GetIngress(generator.IngressParams{
@@ -56,7 +56,7 @@ func GetIngressListWithMultiple(componentName, appName string) *extensionsv1.Ing
 	}
 }
 
-func GetSingleIngress(urlName, componentName, appName string) *extensionsv1.Ingress {
+func GetSingleExtensionV1Ingress(urlName, componentName, appName string) *extensionsv1.Ingress {
 
 	return generator.GetIngress(generator.IngressParams{
 		ObjectMeta: metav1.ObjectMeta{

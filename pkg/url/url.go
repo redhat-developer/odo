@@ -26,19 +26,12 @@ import (
 
 const apiVersion = "odo.dev/v1alpha1"
 
-// Get returns URL definition for given URL name
-func (urls URLList) Get(urlName string) URL {
-	for _, url := range urls.Items {
-		if url.Name == urlName {
-			return url
-		}
-	}
-	return URL{}
-
+func getURLTypeMeta() metav1.TypeMeta {
+	return metav1.TypeMeta{Kind: "url", APIVersion: apiVersion}
 }
 
 // ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
-// down if a component name is provided, which will only list URLs for the
+/// down if a component name is provided, which will only list URLs for the
 // given component
 func ListPushed(client *occlient.Client, componentName string, applicationName string) (URLList, error) {
 
@@ -75,13 +68,12 @@ func ListPushedIngress(client *kclient.Client, componentName string) (URLList, e
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list ingress names")
+		return URLList{}, fmt.Errorf("unable to list ingress names %w", err)
 	}
 
 	var urls []URL
 	for _, i := range ingresses {
-		a := getMachineReadableFormatIngress(i)
-		urls = append(urls, a)
+		urls = append(urls, NewURLFromKubernetesIngress(i))
 	}
 
 	urlList := getMachineReadableFormatForList(urls)
@@ -198,6 +190,10 @@ func GetURLString(protocol, URL, ingressDomain string, isS2I bool) string {
 	if !isS2I && URL == "" {
 		return protocol + "://" + ingressDomain
 	}
+	// if we are here we are dealing with s2i
+	if URL == "" {
+		return protocol + "://" + "<provided by cluster>"
+	}
 	return protocol + "://" + URL
 }
 
@@ -261,14 +257,17 @@ func getMachineReadableFormatForList(urls []URL) URLList {
 	}
 }
 
-func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
+func getMachineReadableFormatExtensionV1Ingress(i iextensionsv1.Ingress) URL {
 	url := URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
+		TypeMeta:   getURLTypeMeta(),
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
 		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: localConfigProvider.INGRESS},
 	}
 	if i.Spec.TLS != nil {
 		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
+		url.Spec.Protocol = "https"
+	} else {
+		url.Spec.Protocol = "http"
 	}
 	return url
 
@@ -279,8 +278,8 @@ func getDefaultTLSSecretName(componentName string) string {
 	return componentName + "-tlssecret"
 }
 
-// ConvertIngressURLToIngress converts IngressURL to Ingress
-func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv1.Ingress {
+// ConvertExtensionV1IngressURLToIngress converts IngressURL to Ingress
+func ConvertExtensionV1IngressURLToIngress(ingressURL URL, serviceName string) iextensionsv1.Ingress {
 	port := intstr.IntOrString{
 		Type:   intstr.Int,
 		IntVal: int32(ingressURL.Spec.Port),
@@ -372,7 +371,6 @@ func Push(parameters PushParameters) error {
 	// find URLs to delete
 	for urlName, urlSpec := range urlCLUSTER {
 		val, ok := urlLOCAL[urlName]
-
 		configMismatch := false
 		if ok {
 			// since the host stored in an ingress
@@ -389,13 +387,16 @@ func Push(parameters PushParameters) error {
 				// we don't allow the host input for route based URLs
 				// removing it for the urls from the cluster to avoid config mismatch
 				urlSpec.Spec.Host = ""
+			}
 
+			if val.Spec.Protocol == "" {
 				if val.Spec.Secure {
 					val.Spec.Protocol = "https"
 				} else {
 					val.Spec.Protocol = "http"
 				}
 			}
+
 			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
 				configMismatch = true
 				klog.V(4).Infof("config and cluster mismatch for url %s", urlName)

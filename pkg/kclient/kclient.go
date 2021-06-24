@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -53,7 +54,9 @@ type Client struct {
 	supportedResources map[string]bool
 	// Is server side apply supported by cluster
 	// Use IsSSASupported()
-	isSSASupported *bool
+	isSSASupported                     *bool
+	isNetworkingV1IngressSupported     bool
+	isExtensionV1Beta1IngressSupported bool
 }
 
 // New creates a new client
@@ -109,6 +112,11 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	}
 
 	client.discoveryClient, err = discovery.NewDiscoveryClientForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	err = client.checkIngressSupport()
 	if err != nil {
 		return nil, err
 	}
@@ -210,8 +218,10 @@ func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) 
 		c.supportedResources = make(map[string]bool, 7)
 	}
 	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
+	resource := metav1.GroupVersionResource{Group: apiGroup, Version: apiVersion, Resource: resourceName}
+	groupVersionResource := resource.String()
 
-	supported, found := c.supportedResources[groupVersion]
+	supported, found := c.supportedResources[groupVersionResource]
 	if !found {
 		list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
 		if err != nil {
@@ -229,7 +239,7 @@ func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) 
 				}
 			}
 		}
-		c.supportedResources[groupVersion] = supported
+		c.supportedResources[groupVersionResource] = supported
 	}
 	return supported, nil
 }
@@ -267,4 +277,17 @@ func (c *Client) IsSSASupported() bool {
 	}
 	return *c.isSSASupported
 
+}
+
+func (c *Client) checkIngressSupport() error {
+	var err error
+	c.isNetworkingV1IngressSupported, err = c.IsResourceSupported("networking.k8s.io", "v1", "ingresses")
+	if err != nil {
+		return fmt.Errorf("failed to check networking v1 ingress support %w", err)
+	}
+	c.isExtensionV1Beta1IngressSupported, err = c.IsResourceSupported("extensions", "v1beta1", "ingresses")
+	if err != nil {
+		return fmt.Errorf("failed to check extensions v1beta1 ingress support %w", err)
+	}
+	return nil
 }

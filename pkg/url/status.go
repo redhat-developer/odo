@@ -102,7 +102,7 @@ func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, loca
 		var properURL, protocol string
 
 		if u.Spec.Kind != localConfigProvider.ROUTE {
-			protocol = GetProtocol(routev1.Route{}, ConvertIngressURLToIngress(u, componentName))
+			protocol = GetProtocol(routev1.Route{}, ConvertExtensionV1IngressURLToIngress(u, componentName))
 			properURL = GetURLString(protocol, "", u.Spec.Host, false)
 		} else {
 			protocol = u.Spec.Protocol
