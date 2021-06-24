@@ -204,7 +204,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		for _, linkedService := range componentDesc.Status.LinkedServices {
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetKubeClient().GetSecret(linkedService, project)
+			secrets, err := client.GetKubeClient().GetSecret(linkedService.SecretName, project)
 			LogErrorAndExit(err, "")
 
 			if len(secrets.Data) > 0 {
@@ -217,11 +217,11 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 				if len(secretOutput) > 0 {
 					// Cut off the last newline
 					secretOutput = secretOutput[:len(secretOutput)-1]
-					output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService, secretOutput)
+					output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService.SecretName, secretOutput)
 				}
 
 			} else {
-				output += fmt.Sprintf(" · %s\n", linkedService)
+				output += fmt.Sprintf(" · %s\n", linkedService.SecretName)
 			}
 
 		}

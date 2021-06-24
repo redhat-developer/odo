@@ -1100,7 +1100,7 @@ func getFakeComponent(compName, namespace, appName, compType string, state State
 		},
 		Status: ComponentStatus{
 			State:            state,
-			LinkedServices:   []string{},
+			LinkedServices:   []SecretMount{},
 			LinkedComponents: map[string][]string{},
 		},
 	}

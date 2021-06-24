@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -285,7 +286,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 		for _, linkedService := range cfd.Status.LinkedServices {
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetKubeClient().GetSecret(linkedService, cfd.GetNamespace())
+			secrets, err := client.GetKubeClient().GetSecret(linkedService.SecretName, cfd.GetNamespace())
 			if err != nil {
 				return err
 			}
@@ -294,17 +295,25 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 				// Iterate through the secrets to throw in a string
 				var secretOutput string
 				for i := range secrets.Data {
-					secretOutput += fmt.Sprintf("    · %v\n", i)
+					if linkedService.MountVolume {
+						secretOutput += fmt.Sprintf("    · %v\n", filepath.Join(linkedService.MountPath, i))
+					} else {
+						secretOutput += fmt.Sprintf("    · %v\n", i)
+					}
 				}
 
 				if len(secretOutput) > 0 {
 					// Cut off the last newline
 					secretOutput = secretOutput[:len(secretOutput)-1]
-					output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService, secretOutput)
+					if linkedService.MountVolume {
+						output += fmt.Sprintf(" · %s\n   Files:\n%s\n", linkedService.ServiceName, secretOutput)
+					} else {
+						output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService.ServiceName, secretOutput)
+					}
 				}
 
 			} else {
-				output += fmt.Sprintf(" · %s\n", linkedService)
+				output += fmt.Sprintf(" · %s\n", linkedService.SecretName)
 			}
 
 		}

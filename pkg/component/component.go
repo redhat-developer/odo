@@ -3,6 +3,7 @@ package component
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -37,6 +38,7 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
+	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -1560,13 +1562,15 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		}
 	}
 
-	linkedServices := make([]string, 0, 5)
+	linkedServices := make([]SecretMount, 0, 5)
 	linkedComponents := make(map[string][]string)
-	linkedSecretNames := fromCluster.GetLinkedSecretNames()
-	for _, secretName := range linkedSecretNames {
-		secret, err := client.GetKubeClient().GetSecret(secretName, projectName)
+	linkedSecrets := fromCluster.GetLinkedSecrets()
+	setLinksServiceNames(client, linkedSecrets)
+
+	for _, secretMount := range linkedSecrets {
+		secret, err := client.GetKubeClient().GetSecret(secretMount.SecretName, projectName)
 		if err != nil {
-			return Component{}, errors.Wrapf(err, "unable to get info about secret %s", secretName)
+			return Component{}, errors.Wrapf(err, "unable to get info about secret %s", secretMount.SecretName)
 		}
 		componentName, containsComponentLabel := secret.Labels[componentlabels.ComponentLabel]
 		if containsComponentLabel {
@@ -1574,7 +1578,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 				linkedComponents[componentName] = append(linkedComponents[componentName], port)
 			}
 		} else {
-			linkedServices = append(linkedServices, secretName)
+			linkedServices = append(linkedServices, secretMount)
 		}
 	}
 
@@ -1586,6 +1590,34 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	component.Status.State = StateTypePushed
 
 	return component, nil
+}
+
+// setLinksServiceNames sets the service name of the links from the info in ServiceBindingRequests present in the cluster
+func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount) error {
+	serviceBindings := map[string]string{}
+	list, err := client.GetKubeClient().ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+	if err != nil {
+		return err
+	}
+	for _, u := range list.Items {
+		var sbr servicebinding.ServiceBinding
+		js, err := u.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(js, &sbr)
+		services := sbr.Spec.Services
+		if len(services) != 1 {
+			return errors.New("ServiceBinding should have only one service")
+		}
+		service := services[0]
+		serviceBindings[sbr.Status.Secret] = service.Kind + "/" + service.Name
+	}
+
+	for i, linkedSecret := range linkedSecrets {
+		linkedSecrets[i].ServiceName = serviceBindings[linkedSecret.SecretName]
+	}
+	return nil
 }
 
 // GetLogs follow the DeploymentConfig logs if follow is set to true
