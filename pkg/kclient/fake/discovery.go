@@ -43,9 +43,7 @@ func (c *FakedDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*m
 	for k, v := range c.resourceMap {
 		if strings.Contains(k, groupVersion) {
 			found = true
-			for _, i := range v.list.APIResources {
-				arl.APIResources = append(arl.APIResources, i)
-			}
+			arl.APIResources = append(arl.APIResources, v.list.APIResources...)
 		}
 	}
 	if found {
