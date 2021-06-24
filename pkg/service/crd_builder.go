@@ -42,7 +42,7 @@ func (crb *CRDBuilder) Map() (map[string]interface{}, error) {
 	return crb.cr, nil
 }
 
-// BuildCRDFromParams iterates over the parameter maps provided by the user and builds the CR
+// BuildCRDFromParams iterates over the parameter maps provided by the user and builds the CRD
 func BuildCRDFromParams(cr *olm.CRDDescription, paramMap map[string]string) (map[string]interface{}, error) {
 
 	crBuilder := NewCRDBuilder(cr)
