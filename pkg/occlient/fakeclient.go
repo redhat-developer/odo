@@ -59,7 +59,7 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	fd := kclient.NewKubernetesFakedDiscovery(true, true)
 	if os.Getenv("KUBERNETES") != "true" {
-		fd.AddResourceList("project.openshift.io/v1", &metav1.APIResourceList{
+		fd.AddResourceList("project.openshift.io/v1/routes", &metav1.APIResourceList{
 			GroupVersion: "project.openshift.io/v1",
 			APIResources: []metav1.APIResource{{
 				Name:         "routes",
@@ -68,7 +68,7 @@ func FakeNew() (*Client, *FakeClientset) {
 				Kind:         "route",
 			}},
 		})
-		fd.AddResourceList("apps.openshift.io/v1", &metav1.APIResourceList{
+		fd.AddResourceList("apps.openshift.io/v1/deploymentconfigs", &metav1.APIResourceList{
 			GroupVersion: "apps.openshift.io/v1",
 			APIResources: []metav1.APIResource{{
 				Name:         "deploymentconfigs",

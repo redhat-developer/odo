@@ -218,8 +218,10 @@ func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) 
 		c.supportedResources = make(map[string]bool, 7)
 	}
 	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
+	resource := metav1.GroupVersionResource{Group: apiGroup, Version: apiVersion, Resource: resourceName}
+	groupVersionResource := resource.String()
 
-	supported, found := c.supportedResources[groupVersion]
+	supported, found := c.supportedResources[groupVersionResource]
 	if !found {
 		list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
 		if err != nil {
@@ -237,7 +239,7 @@ func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) 
 				}
 			}
 		}
-		c.supportedResources[groupVersion] = supported
+		c.supportedResources[groupVersionResource] = supported
 	}
 	return supported, nil
 }
