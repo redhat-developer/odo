@@ -58,8 +58,18 @@ func FakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
 
 func NewKubernetesFakedDiscovery(extv1b1supported, nwv1suppored bool) *odoFake.FakedDiscovery {
 	fd := odoFake.NewFakeDiscovery()
+	extingress := metav1.GroupVersionResource{
+		Group:    "extensions",
+		Version:  "v1beta1",
+		Resource: "ingress",
+	}
+	netv1ingress := metav1.GroupVersionResource{
+		Group:    "networking.k8s.io",
+		Version:  "v1",
+		Resource: "ingress",
+	}
 	if extv1b1supported {
-		fd.AddResourceList("extensions/v1beta1/ingress", &metav1.APIResourceList{
+		fd.AddResourceList(extingress.String(), &metav1.APIResourceList{
 			GroupVersion: "extensions/v1beta1",
 			APIResources: []metav1.APIResource{{
 				Name:         "ingress",
@@ -71,7 +81,7 @@ func NewKubernetesFakedDiscovery(extv1b1supported, nwv1suppored bool) *odoFake.F
 	}
 
 	if nwv1suppored {
-		fd.AddResourceList("networking.k8s.io/v1/ingress", &metav1.APIResourceList{
+		fd.AddResourceList(netv1ingress.String(), &metav1.APIResourceList{
 			GroupVersion: "networking.k8s.io/v1",
 			APIResources: []metav1.APIResource{{
 				Name:         "ingress",

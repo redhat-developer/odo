@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery/fake"
 	"runtime"
+	"strings"
 	"sync"
 )
 
@@ -34,8 +35,21 @@ func (c *FakedDiscovery) AddResourceList(key string, are *metav1.APIResourceList
 func (c *FakedDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if rl, ok := c.resourceMap[groupVersion]; ok {
-		return rl.list, rl.err
+	found := false
+	arl := metav1.APIResourceList{
+		GroupVersion: groupVersion,
+		APIResources: nil,
+	}
+	for k, v := range c.resourceMap {
+		if strings.Contains(k, groupVersion) {
+			found = true
+			for _, i := range v.list.APIResources {
+				arl.APIResources = append(arl.APIResources, i)
+			}
+		}
+	}
+	if found {
+		return &arl, nil
 	}
 	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
 }
