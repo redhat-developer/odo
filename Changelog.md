@@ -7,6 +7,8 @@
 - `odo delete` removes Operator backed services from the Devfile only, without undeploying them from the cluster ([#4761](https://github.com/openshift/odo/pull/4761))
 - `odo service list` lists Operator backed services in Devfile and/or deployed into the cluster and their state (Pushed, Not pushed, Deleted locally) ([#4761](https://github.com/openshift/odo/pull/4761))
 - `odo push` undeploys Operator backed services marked as managed by the current devfile not present in this devfile anymore ([#4761](https://github.com/openshift/odo/pull/4761))
+- param based `odo service create` for operator backed services ([#4704](https://github.com/openshift/odo/pull/4704))
+- add `odo catalog describe service <operator> --example` ([#4821](https://github.com/openshift/odo/pull/4821))
 
 ### Bug Fixes
 
