@@ -56,7 +56,7 @@ func FakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
 	}
 }
 
-func NewKubernetesFakedDiscovery(extv1b1supported, nwv1suppored bool) *odoFake.FakedDiscovery {
+func NewKubernetesFakedDiscovery(extv1b1supported, nwv1suppored bool) *odoFake.FakeDiscovery {
 	fd := odoFake.NewFakeDiscovery()
 	extingress := metav1.GroupVersionResource{
 		Group:    "extensions",

@@ -14,25 +14,24 @@ import (
 
 type ResourceMapEntry struct {
 	list *metav1.APIResourceList
-	err  error
 }
 
-type FakedDiscovery struct {
+type FakeDiscovery struct {
 	*fake.FakeDiscovery
 
 	lock        sync.Mutex
 	resourceMap map[string]*ResourceMapEntry
 }
 
-func NewFakeDiscovery() *FakedDiscovery {
-	return &FakedDiscovery{resourceMap: make(map[string]*ResourceMapEntry, 7)}
+func NewFakeDiscovery() *FakeDiscovery {
+	return &FakeDiscovery{resourceMap: make(map[string]*ResourceMapEntry, 7)}
 }
 
-func (c *FakedDiscovery) AddResourceList(key string, are *metav1.APIResourceList) {
+func (c *FakeDiscovery) AddResourceList(key string, are *metav1.APIResourceList) {
 	c.resourceMap[key] = &ResourceMapEntry{list: are}
 }
 
-func (c *FakedDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	found := false
@@ -52,7 +51,7 @@ func (c *FakedDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*m
 	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
 }
 
-func (c *FakedDiscovery) ServerVersion() (*version.Info, error) {
+func (c *FakeDiscovery) ServerVersion() (*version.Info, error) {
 	versionInfo := version.Info{
 		Major:        "1",
 		Minor:        "16",
@@ -66,10 +65,4 @@ func (c *FakedDiscovery) ServerVersion() (*version.Info, error) {
 	}
 
 	return &versionInfo, nil
-}
-
-func NewFakedDiscovery() *FakedDiscovery {
-	fd := &FakedDiscovery{}
-	fd.resourceMap = make(map[string]*ResourceMapEntry, 7)
-	return fd
 }
