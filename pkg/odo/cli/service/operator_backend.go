@@ -13,6 +13,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/service"
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
@@ -121,17 +122,30 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			// k8s does't have it installed by default but OCP does
 			return err
 		}
-
-		almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
+		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
 		if err != nil {
 			return err
 		}
 
-		d.OriginalCRD = almExample
+		// if the service name is blank then we set it to custom resource name
+		if o.ServiceName == "" {
+			o.ServiceName = strings.ToLower(b.CustomResource)
+		}
 
-		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
-		if err != nil {
-			return err
+		if len(o.parameters) != 0 {
+			builtCRD, err := b.buildCRDfromParams(o, csv)
+			if err != nil {
+				return err
+			}
+
+			d.OriginalCRD = builtCRD
+		} else {
+			almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
+			if err != nil {
+				return err
+			}
+
+			d.OriginalCRD = almExample
 		}
 
 		if o.ServiceName != "" && !o.DryRun {
@@ -147,7 +161,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 
 			d.SetServiceName(o.ServiceName)
 		}
-
 		err = d.ValidateMetadataInCRD()
 		if err != nil {
 			return err
@@ -239,4 +252,13 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 	}
 
 	return nil
+}
+
+func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterServiceVersion) (map[string]interface{}, error) {
+	hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+	if !hasCR {
+		return nil, fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
+	}
+
+	return service.BuildCRDFromParams(cr, o.ParametersMap)
 }

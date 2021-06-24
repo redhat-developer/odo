@@ -6,6 +6,7 @@ shout() {
   set -x
 }
 
+
 set -ex
 
 shout "Setting up some stuff"
@@ -19,6 +20,9 @@ export GOBIN="`pwd`/bin"
 export KUBECONFIG="`pwd`/config"
 export ARTIFACTS_DIR="`pwd`/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
+LIBDIR="./scripts/configure-cluster"
+LIBCOMMON="$LIBDIR/common"
+SETUP_POSTGRES_OPERATOR="$LIBCOMMON/setup-postgres-operator.sh"
 
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
@@ -88,9 +92,10 @@ export REDHAT_OPENJDK11_UBI8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr 
 export REDHAT_NODEJS12_RHEL7_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 export REDHAT_NODEJS12_UBI8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 export REDHAT_NODEJS14_UBI8_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
+export REDHAT_POSTGRES_OPERATOR_PROJECT="${SCRIPT_IDENTITY}$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)"
 
 # Create the namespace for e2e image test apply pull secret to the namespace
-for i in `echo "$REDHAT_OPENJDK11_RHEL8_PROJECT $REDHAT_NODEJS12_RHEL7_PROJECT $REDHAT_NODEJS12_UBI8_PROJECT $REDHAT_OPENJDK11_UBI8_PROJECT $REDHAT_NODEJS14_UBI8_PROJECT"`; do
+for i in `echo "$REDHAT_OPENJDK11_RHEL8_PROJECT $REDHAT_NODEJS12_RHEL7_PROJECT $REDHAT_NODEJS12_UBI8_PROJECT $REDHAT_OPENJDK11_UBI8_PROJECT $REDHAT_NODEJS14_UBI8_PROJECT $REDHAT_POSTGRES_OPERATOR_PROJECT"`; do
     # create the namespace
     oc new-project $i
     # Applying pull secret to the namespace which will be used for pulling images from authenticated registry
@@ -98,6 +103,17 @@ for i in `echo "$REDHAT_OPENJDK11_RHEL8_PROJECT $REDHAT_NODEJS12_RHEL7_PROJECT $
     # Let developer user have access to the project
     oc adm policy add-role-to-user edit developer
 done
+
+#---------------------------------------------------------------------
+
+# Install namespace specific operators 
+
+. $SETUP_POSTGRES_OPERATOR
+
+install_postgres_operator $REDHAT_POSTGRES_OPERATOR_PROJECT
+
+
+#---------------------------------------------------------------------
 
 shout "Logging into 4x cluster as developer (logs hidden)"
 set +x

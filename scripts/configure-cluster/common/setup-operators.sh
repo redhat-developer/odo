@@ -36,6 +36,7 @@ install_service_binding_operator(){
 EOF
 }
 
+
 # install etcd operator
 
 install_etcd_operator

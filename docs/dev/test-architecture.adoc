@@ -128,6 +128,48 @@ To run ONE individual test, you can either:
 
 Integration tests validate and focus on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
 
+If you are running `operatorhub` tests then you need to install certain operators on the cluster -
+
+- Etcd Cluster-wide operator
+- Service Binding operator
+- Postgres operator
+
+Etcd and Service Binding operator can be installed by running link:https://github.com/openshift/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh[setup-operator.sh]. To install Postgres operator you can run the following commands
+
+----
+  oc new-project odo-operator-test
+  # Let developer user have access to the project
+  oc adm policy add-role-to-user edit developer
+
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1
+  kind: OperatorGroup
+  metadata:
+    generateName: odo-operator-test-
+    namespace: odo-operator-test
+  spec:
+    targetNamespaces:
+    - odo-operator-test
+EOF
+
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: postgresql-operator-dev4devs-com
+    namespace: odo-operator-test
+  spec:
+    channel: alpha
+    name: postgresql-operator-dev4devs-com
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: "Automatic"
+EOF
+
+----
+
+Note - the `odo-operator-test` is the namespace where postgres operatorhub tests execute by default. You can configure that by setting `REDHAT_POSTGRES_OPERATOR_PROJECT` env variable.
+
 *E2e tests:*
 
 E2e (End to end) uses the same library as integration test. E2e tests and test suite files are located in `tests/e2escenarios` directory and can be called using `.PHONY` within `makefile`. Basically end to end (e2e) test contains user specific scenario that is combination of some features/commands in a single test file.
