@@ -34,6 +34,17 @@ var _ = Describe("odo devfile create command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
+	Context("when .gitignore file exists", func() {
+		It("checks that .odo/env exists in gitignore", func() {
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+
+			ignoreFilePath := filepath.Join(commonVar.Context, ".gitignore")
+
+			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "env"))
+
+		})
+	})
+
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component with valid component name", func() {
 			helper.Cmd("odo", "create", "java-openliberty", cmpName).ShouldPass()
