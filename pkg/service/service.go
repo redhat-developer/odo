@@ -1048,6 +1048,16 @@ func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8s
 			return err
 		}
 
+		found := false
+		for _, ownerRef := range u.GetOwnerReferences() {
+			if ownerRef.UID == ownerReference.UID {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
 		u.SetOwnerReferences(append(u.GetOwnerReferences(), ownerReference))
 
 		err = client.UpdateDynamicResource(group, version, resource, crdName, u)
