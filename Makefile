@@ -176,7 +176,7 @@ test-cmd-service: ## Run odo service command tests
 
 .PHONY: test-cmd-project
 test-cmd-project: ## Run odo project command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) -focus="odo project command tests" tests/integration/project/
+	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo project command tests" tests/integration/project/
 
 .PHONY: test-cmd-app
 test-cmd-app: ## Run odo app command tests
