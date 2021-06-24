@@ -165,6 +165,13 @@ func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) stri
 	return projectName
 }
 
+func (kubectl KubectlRunner) SetProject(namespace string) string {
+	Cmd("kubectl", "config", "set-context", "--current", "--namespace", namespace).ShouldPass()
+	session := Cmd("kubectl", "get", "namespaces").ShouldPass().Out()
+	Expect(session).To(ContainSubstring(namespace))
+	return namespace
+}
+
 // CreateRandNamespaceProjectOfLength create new project with i as the length of the name
 func (kubectl KubectlRunner) CreateRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)

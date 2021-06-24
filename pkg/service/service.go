@@ -820,9 +820,8 @@ func (d *DynamicCRD) SetServiceName(name string) {
 			metaMap[k] = name
 			return
 		}
-		// if metadata doesn't have 'name' field, we set it up
-		metaMap["name"] = name
 	}
+	metaMap["name"] = name
 }
 
 // GetServiceNameFromCRD fetches the service name from metadata.name field of the CRD
