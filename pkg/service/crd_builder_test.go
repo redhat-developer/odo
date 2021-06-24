@@ -8,7 +8,7 @@ import (
 )
 
 // MockCRDescriptionOne a mock description
-func MockCRDescriptionOne() *olm.CRDDescription {
+func MockCRDDescriptionOne() *olm.CRDDescription {
 	return &olm.CRDDescription{
 		Name:        "etcdclusters.etcd.database.coreos.com",
 		Version:     "v1beta2",
@@ -40,7 +40,7 @@ func MockCRDescriptionOne() *olm.CRDDescription {
 }
 
 // MockCRDescriptionTwo a mock description
-func MockCRDescriptionTwo() *olm.CRDDescription {
+func MockCRDDescriptionTwo() *olm.CRDDescription {
 	return &olm.CRDDescription{
 		Name:        "pgclusters.crunchydata.com",
 		Version:     "v1",
@@ -76,8 +76,8 @@ func MockCRDescriptionTwo() *olm.CRDDescription {
 		},
 	}
 }
-func TestCRBuilderMap(t *testing.T) {
-	builder := NewCRBuilder(MockCRDescriptionTwo())
+func TestCRDBuilderMap(t *testing.T) {
+	builder := NewCRDBuilder(MockCRDDescriptionTwo())
 	require.Nil(t, builder.SetAndValidate("host", "10.1.10.2"), "set shouldn't fail")
 	require.Nil(t, builder.SetAndValidate("cppimage", "crunchy-postgres-ha"), "set shouldn't fail")
 	require.Nil(t, builder.SetAndValidate("cppimagetag", "2.5"), "set shouldn't fail")

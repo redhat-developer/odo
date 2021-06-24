@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCRSpecBuilderSetAndValidate(t *testing.T) {
-	builder := NewCRSpecBuilder(MockCRDescriptionOne().SpecDescriptors)
+func TestCRDSpecBuilderSetAndValidate(t *testing.T) {
+	builder := NewCRDSpecBuilder(MockCRDDescriptionOne().SpecDescriptors)
 	err := builder.SetAndValidate("size", "3")
 	require.Nil(t, err, "set shouldn't fail")
 	result := builder.JSON()
