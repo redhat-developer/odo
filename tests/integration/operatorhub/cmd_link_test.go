@@ -14,12 +14,10 @@ import (
 var _ = Describe("odo link command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
-	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
-		oc = helper.NewOcRunner("oc")
 	})
 
 	AfterEach(func() {
@@ -65,7 +63,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "service", "create", etcdCluster, serviceName, "--project", commonVar.Project).ShouldPass()
 
 				helper.Cmd("odo", "push").ShouldPass()
-				oc.PodsShouldBeRunning(commonVar.Project, componentName+`-app-.[a-z0-9-]*`)
+				name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+				Expect(name).To(Not(BeEmpty()))
 			})
 
 			It("should find files in component container", func() {
@@ -77,7 +76,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "link", svcFullName).ShouldPass()
 					helper.Cmd("odo", "push").ShouldPass()
-					oc.PodsShouldBeRunning(commonVar.Project, componentName+`-app-.[a-z0-9-]*`)
+					name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+					Expect(name).To(Not(BeEmpty()))
 				})
 
 				It("should find files in component container", func() {
@@ -95,7 +95,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "link", svcFullName, "--bind-as-files").ShouldPass()
 					helper.Cmd("odo", "push").ShouldPass()
-					oc.PodsShouldBeRunning(commonVar.Project, componentName+`-app-.[a-z0-9-]*`)
+					name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+					Expect(name).To(Not(BeEmpty()))
 				})
 
 				It("should find files in component container", func() {
@@ -111,12 +112,14 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 		When("getting sources, a devfile defining a component, a service and a link, and executing odo push", func() {
 
 			BeforeEach(func() {
+				componentName := "api" // this is the name of the component in the devfile
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-link.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				helper.Cmd("odo", "create", "api").ShouldPass()
+				helper.Cmd("odo", "create", componentName).ShouldPass()
 
 				helper.Cmd("odo", "push").ShouldPass()
-				oc.PodsShouldBeRunning(commonVar.Project, `api-app-.[a-z0-9-]*`)
+				name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+				Expect(name).To(Not(BeEmpty()))
 			})
 
 			It("should find files in component container", func() {
