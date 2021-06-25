@@ -1010,6 +1010,8 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 	return needRestart, nil
 }
 
+// UpdateKubernetesInlineComponentsOwnerReferences adds an owner reference to an inlined Kubernetes resource
+// if not already present in the list of owner references
 func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference) error {
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
