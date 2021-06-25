@@ -177,11 +177,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if componentExists && needRestart {
-		time.Sleep(time.Second)
-		a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)
+		s = log.Spinner("Waiting for component to be reconfigured")
+		err = a.Client.GetKubeClient().WaitForPodNotRunning(podName)
 		if err != nil {
-			return errors.Wrap(err, "error while waiting for deployment rollout")
+			return err
 		}
+		s.End(true)
 	}
 
 	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)

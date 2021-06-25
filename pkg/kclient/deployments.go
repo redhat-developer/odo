@@ -116,6 +116,40 @@ func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error
 	})
 }
 
+func (c *Client) WaitForPodNotRunning(name string) error {
+	watch, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
+	if err != nil {
+		return err
+	}
+	defer watch.Stop()
+
+	if _, err = c.KubeClient.CoreV1().Pods(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{}); kerrors.IsNotFound(err) {
+		fmt.Printf("\npod not found\n")
+		return nil
+	}
+
+	for {
+		select {
+		case <-time.After(time.Minute):
+			return errors.New("timeout")
+
+		case val, ok := <-watch.ResultChan():
+			if !ok {
+				return errors.New("error getting value from resultchan")
+			}
+			if pod, ok := val.Object.(*corev1.Pod); ok {
+				for _, cond := range pod.Status.Conditions {
+					if cond.Type == "Ready" {
+						if cond.Status == corev1.ConditionFalse {
+							return nil
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
 func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
 	klog.V(3).Infof("Waiting for %s deployment rollout", deploymentName)

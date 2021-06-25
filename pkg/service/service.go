@@ -963,7 +963,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		}
 
 		if _, found := deployed[cr+"/"+crdName]; !found && isLinkResource(cr) {
-			// If creating the ServiceBinding, first delete the component
+			// If creating the ServiceBinding, the component will restart
 			needRestart = true
 		}
 
