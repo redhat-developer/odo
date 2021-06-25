@@ -290,37 +290,18 @@ func (c *Client) removeDuplicateEnv(deploymentName string) error {
 	}
 	changes := false
 	containers := deployment.Spec.Template.Spec.Containers
-	for i, container := range containers {
-		duplicates := []corev1.EnvVar{}
+	for i := range containers {
 		found := map[string]bool{}
-		envs := container.Env
-		for _, env := range envs {
-			if _, ok := found[env.Name]; ok {
-				duplicates = append(duplicates, env)
-			} else {
+		var newEnv []corev1.EnvVar
+		for _, env := range containers[i].Env {
+			if _, ok := found[env.Name]; !ok {
 				found[env.Name] = true
+				newEnv = append(newEnv, env)
+			} else {
+				changes = true
 			}
 		}
-		if len(duplicates) > 0 {
-			changes = true
-			newEnv := []corev1.EnvVar{}
-			// first remove duplicates
-			for _, env := range envs {
-				found := false
-				for _, duplicate := range duplicates {
-					if env.Name == duplicate.Name {
-						found = true
-						break
-					}
-				}
-				if !found {
-					newEnv = append(newEnv, env)
-				}
-			}
-			// next add them as single values
-			newEnv = append(newEnv, duplicates...)
-			containers[i].Env = newEnv
-		}
+		containers[i].Env = newEnv
 	}
 	if changes {
 		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.Background(), deployment, metav1.UpdateOptions{})
