@@ -52,6 +52,14 @@ func newCommonLinkOptions() *commonLinkOptions {
 	return &commonLinkOptions{}
 }
 
+func (o *commonLinkOptions) getLinkType() string {
+	linkType := "component"
+	if o.isTargetAService {
+		linkType = "service"
+	}
+	return linkType
+}
+
 // Complete completes LinkOptions after they've been created
 func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []string, context string) (err error) {
 	o.csvSupport, _ = svc.IsCSVSupported()
@@ -166,11 +174,6 @@ func (o *commonLinkOptions) run() (err error) {
 		return o.linkOperator()
 	}
 
-	linkType := "Component"
-	if o.isTargetAService {
-		linkType = "Service"
-	}
-
 	var component string
 	if o.Context.EnvSpecificInfo != nil {
 		component = o.EnvSpecificInfo.GetName()
@@ -186,9 +189,9 @@ func (o *commonLinkOptions) run() (err error) {
 
 	switch o.operationName {
 	case "link":
-		log.Successf("%s %s has been successfully linked to the component %s\n", linkType, o.suppliedName, component)
+		log.Successf("The %s %s has been successfully linked to the component %s\n", o.getLinkType(), o.suppliedName, component)
 	case "unlink":
-		log.Successf("%s %s has been successfully unlinked from the component %s\n", linkType, o.suppliedName, component)
+		log.Successf("The %s %s has been successfully unlinked from the component %s\n", o.getLinkType(), o.suppliedName, component)
 	default:
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
@@ -339,11 +342,9 @@ func (o *commonLinkOptions) completeForOperator() (err error) {
 // validateForOperator validates the options when svc is supported
 func (o *commonLinkOptions) validateForOperator() (err error) {
 	var svcFullName string
-	var linkType string
 
 	if o.isTargetAService {
 		// let's validate if the service exists
-		linkType = "service"
 		svcFullName = strings.Join([]string{o.serviceType, o.serviceName}, "/")
 		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
 		if err != nil {
@@ -354,7 +355,6 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 		}
 	} else {
 		o.serviceType = "Service"
-		linkType = "component"
 		svcFullName = o.serviceName
 		if o.suppliedName == o.EnvSpecificInfo.GetName() {
 			return fmt.Errorf("the component %q cannot be linked with itself", o.suppliedName)
@@ -375,7 +375,7 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 			return err
 		}
 		if !found {
-			return fmt.Errorf("failed to unlink the %s %q since no link was found in the configuration referring this %s", linkType, svcFullName, linkType)
+			return fmt.Errorf("failed to unlink the %s %q since no link was found in the configuration referring this %s", o.getLinkType(), svcFullName, o.getLinkType())
 		}
 		return nil
 	}
@@ -450,18 +450,14 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 		return err
 	}
 	if found {
-		return fmt.Errorf("component %q is already linked with the service %q", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+		return fmt.Errorf("component %q is already linked with the %s %q", o.Context.EnvSpecificInfo.GetName(), o.getLinkType(), o.suppliedName)
 	}
 	err = svc.AddKubernetesComponentToDevfile(string(yamlDesc), o.serviceBinding.Name, o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}
 
-	targetType := "component"
-	if o.isTargetAService {
-		targetType = "service"
-	}
-	log.Successf("Successfully created link between component %q and %s %q\n", o.Context.EnvSpecificInfo.GetName(), targetType, o.suppliedName)
+	log.Successf("Successfully created link between component %q and %s %q\n", o.Context.EnvSpecificInfo.GetName(), o.getLinkType(), o.suppliedName)
 	log.Italic("To apply the link, please use `odo push`")
 	return err
 }
@@ -480,11 +476,7 @@ func (o *commonLinkOptions) unlinkOperator() (err error) {
 		return err
 	}
 
-	targetType := "component"
-	if o.isTargetAService {
-		targetType = "service"
-	}
-	log.Successf("Successfully unlinked component %q from %s %q\n", o.Context.EnvSpecificInfo.GetName(), targetType, o.suppliedName)
+	log.Successf("Successfully unlinked component %q from %s %q\n", o.Context.EnvSpecificInfo.GetName(), o.getLinkType(), o.suppliedName)
 	log.Italic("To apply the changes, please use `odo push`")
 	return nil
 }
