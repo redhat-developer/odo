@@ -9,9 +9,9 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/service"
-	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type operatorBackend struct {
@@ -32,7 +32,7 @@ func (ohb *operatorBackend) CompleteDescribeService(dso *DescribeServiceOptions,
 		return err
 	}
 	// we check if the cluster supports ClusterServiceVersion or not.
-	isCSVSupported, err := svc.IsCSVSupported()
+	isCSVSupported, err := service.IsCSVSupported()
 	if err != nil {
 		// if there is an error checking it, we return the error.
 		return err
@@ -84,7 +84,7 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
 
 	if dso.isExample {
-		almExample, err := svc.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
+		almExample, err := service.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
 		if err != nil {
 			return err
 		}
@@ -109,10 +109,10 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 	}
 
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(svc.ConvertCRDToJSONRepr(ohb.CR))
+		machineoutput.OutputSuccess(service.ConvertCRDToJSONRepr(ohb.CR))
 		return nil
 	}
-	repr := svc.ConvertCRDToRepr(ohb.CR)
+	repr := service.ConvertCRDToRepr(ohb.CR)
 
 	fmt.Printf("Kind: %s\n", repr.Kind)
 	fmt.Printf("Version: %s\n", repr.Version)
