@@ -113,8 +113,8 @@ func (c *Client) DeleteIngress(name string) error {
 }
 
 //ListIngresses lists all the ingresses based on given label selector
-func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngress, error) {
-	var kubernetesIngressList []*unions.KubernetesIngress
+func (c *Client) ListIngresses(labelSelector string) (*unions.KubernetesIngressList, error) {
+	kubernetesIngressList := unions.NewEmptyKubernetesIngressList()
 	// if networking v1 ingress is supported then extension v1 ingress are automatically wrapped
 	// by net v1 ingresses
 	if c.isNetworkingV1IngressSupported {
@@ -127,7 +127,7 @@ func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngres
 			for k := range ingressList.Items {
 				ki := unions.NewNonGeneratedKubernetesIngress()
 				ki.NetworkingV1Ingress = &ingressList.Items[k]
-				kubernetesIngressList = append(kubernetesIngressList, ki)
+				kubernetesIngressList.Items = append(kubernetesIngressList.Items, ki)
 			}
 		}
 	} else if c.isExtensionV1Beta1IngressSupported {
@@ -140,7 +140,7 @@ func (c *Client) ListIngresses(labelSelector string) ([]*unions.KubernetesIngres
 			for k := range ingressList.Items {
 				ki := unions.NewNonGeneratedKubernetesIngress()
 				ki.ExtensionV1Beta1Ingress = &ingressList.Items[k]
-				kubernetesIngressList = append(kubernetesIngressList, ki)
+				kubernetesIngressList.Items = append(kubernetesIngressList.Items, ki)
 			}
 		}
 	}

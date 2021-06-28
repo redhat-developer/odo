@@ -46,9 +46,7 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 	}
 
 	var clusterURLs []URL
-	for _, i := range ingresses {
-		clusterURLs = append(clusterURLs, NewURLFromKubernetesIngress(i))
-	}
+	clusterURLs = append(clusterURLs, NewURLsFromKubernetesIngressList(ingresses)...)
 	for _, r := range routes {
 		// ignore the routes created by ingresses
 		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {

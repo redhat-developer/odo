@@ -52,6 +52,14 @@ const (
 	StateTypeLocallyDeleted = "Locally Deleted"
 )
 
+func NewURLsFromKubernetesIngressList(kil *unions.KubernetesIngressList) []URL {
+	var ul []URL
+	for _, it := range kil.Items {
+		ul = append(ul, NewURLFromKubernetesIngress(it))
+	}
+	return ul
+}
+
 func NewURLFromKubernetesIngress(ki *unions.KubernetesIngress) URL {
 	if ki.IsGenerated() {
 		return URL{}
