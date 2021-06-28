@@ -46,10 +46,9 @@ type SecretMount struct {
 
 // ComponentStatus is Status of components
 type ComponentStatus struct {
-	Context          string              `json:"context,omitempty"`
-	State            State               `json:"state"`
-	LinkedComponents map[string][]string `json:"linkedComponents,omitempty"`
-	LinkedServices   []SecretMount       `json:"linkedServices,omitempty"`
+	Context        string        `json:"context,omitempty"`
+	State          State         `json:"state"`
+	LinkedServices []SecretMount `json:"linkedServices,omitempty"`
 }
 
 // CombinedComponentList is list of s2i and devfile components

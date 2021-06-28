@@ -175,27 +175,6 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 
 	}
 
-	// Linked components
-	if len(componentDesc.Status.LinkedComponents) > 0 {
-
-		// Gather the output
-		var output string
-		for name, ports := range componentDesc.Status.LinkedComponents {
-			if len(ports) > 0 {
-				output += fmt.Sprintf(" · %v - Port(s): %v\n", name, strings.Join(ports, ","))
-			} else {
-				output += fmt.Sprintf(" · %v\n", name)
-			}
-		}
-
-		// Cut off the last newline and output
-		if len(output) > 0 {
-			output = output[:len(output)-1]
-			log.Describef("Linked Components:\n", output)
-		}
-
-	}
-
 	// Linked services
 	if len(componentDesc.Status.LinkedServices) > 0 {
 
