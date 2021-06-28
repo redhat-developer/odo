@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
@@ -149,7 +150,19 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 			// Gather the output
 			for _, componentURL := range componentDesc.Spec.URL {
 				url := urls.Get(componentURL)
-				output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", true), url.Spec.Port)
+
+				var urlString string
+
+				switch url.Spec.Kind {
+				case localConfigProvider.ROUTE:
+					urlString = urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", false)
+				case localConfigProvider.INGRESS:
+					urlString = urlPkg.GetURLString(url.Spec.Protocol, "", url.Spec.Host, false)
+				default:
+					continue
+				}
+
+				output += fmt.Sprintf(" · %v exposed via %v\n", urlString, url.Spec.Port)
 			}
 
 		}

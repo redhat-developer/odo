@@ -16,5 +16,5 @@ var _ = BeforeSuite(func() {
 	const addRegistryURL string = "https://registry.stage.devfile.io"
 
 	// Use staging OCI-based registry for tests to avoid a potential overload
-	helper.Cmd("odo", "registry", "update", registryName, addRegistryURL).ShouldPass()
+	helper.Cmd("odo", "registry", "update", registryName, addRegistryURL, "-f").ShouldPass()
 })
