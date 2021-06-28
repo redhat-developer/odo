@@ -92,8 +92,11 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 
 			When("a link with between the component and the service is created with --bind-as-files and deployed", func() {
 
+				var bindingName string
+
 				BeforeEach(func() {
-					helper.Cmd("odo", "link", svcFullName, "--bind-as-files").ShouldPass()
+					bindingName = "sbr-" + helper.RandString(6)
+					helper.Cmd("odo", "link", svcFullName, "--bind-as-files", "--name", bindingName).ShouldPass()
 					helper.Cmd("odo", "push").ShouldPass()
 					name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
 					Expect(name).To(Not(BeEmpty()))
@@ -104,7 +107,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				})
 
 				It("should find bindings for service", func() {
-					helper.Cmd("odo", "exec", "--", "ls", "/bindings/etcd-link/clusterIP").ShouldPass()
+					helper.Cmd("odo", "exec", "--", "ls", "/bindings/"+bindingName+"/clusterIP").ShouldPass()
 				})
 			})
 		})
