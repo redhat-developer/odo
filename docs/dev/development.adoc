@@ -7,7 +7,7 @@ toc::[]
 
 == Setting up
 
-Requires *Go 1.13*
+Requires *Go 1.15*
 
 Testing and release builds happen with the above version. Developers are advised to stick to this version if they can but it is not compulsory.
 
@@ -18,7 +18,6 @@ If you are adding any features that require a higher version of golang, than the
 
 .List of files to update for golang version
  * link:/scripts/rpm-prepare.sh[`scripts/rpm-prepare.sh`]
- * link:/.travis.yml[`.travis.yml`]
  * link:/Dockerfile.rhel[`Dockerfile.rhel`]
  * link:/openshift-ci/build-root/Dockerfile[`openshift-ci/build-root/Dockerfile`]
 ====

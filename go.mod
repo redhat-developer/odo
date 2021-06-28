@@ -1,6 +1,6 @@
 module github.com/openshift/odo
 
-go 1.13
+go 1.15
 
 require (
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
