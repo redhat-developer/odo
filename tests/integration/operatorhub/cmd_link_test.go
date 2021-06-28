@@ -78,7 +78,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				})
 
 				It("should find the link in odo describe", func() {
-
+					stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(svcFullName))
 				})
 
 				When("odo push is executed", func() {
@@ -115,7 +116,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				})
 
 				It("should dislay the link in odo describe", func() {
-
+					stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(svcFullName))
 				})
 
 				When("odo push is executed", func() {
