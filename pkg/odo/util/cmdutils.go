@@ -152,11 +152,13 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 				url := urls.Get(componentURL)
 
 				var urlString string
-				if url.Spec.Kind == localConfigProvider.ROUTE {
+
+				switch url.Spec.Kind {
+				case localConfigProvider.ROUTE:
 					urlString = urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", false)
-				} else if url.Spec.Kind == localConfigProvider.INGRESS {
+				case localConfigProvider.INGRESS:
 					urlString = urlPkg.GetURLString(url.Spec.Protocol, "", url.Spec.Host, false)
-				} else {
+				default:
 					continue
 				}
 
