@@ -38,6 +38,7 @@ func FakeNewWithIngressSupports(networkingv1Supported, extensionV1Supported bool
 	client.appsClient = fkclientset.Kubernetes.AppsV1()
 	client.isExtensionV1Beta1IngressSupported = extensionV1Supported
 	client.isNetworkingV1IngressSupported = networkingv1Supported
+	client.checkIngressSupports = false
 	client.SetDiscoveryInterface(NewKubernetesFakedDiscovery(true, true))
 
 	return &client, &fkclientset
