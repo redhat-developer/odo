@@ -925,6 +925,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		}
 	}
 	needRestart := false
+	madeChange := false
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
@@ -987,6 +988,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		} else {
 			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{kind, name}, "/"), "odo link -h")
 		}
+		madeChange = true
 	}
 
 	for key, val := range deployed {
@@ -1001,10 +1003,15 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		} else {
 			log.Successf("Deleted service %q from the cluster", key)
 		}
+		madeChange = true
 
 		if val.DoesDeleteRestartsComponent {
 			needRestart = true
 		}
+	}
+
+	if !madeChange {
+		log.Success("Services and Links are in sync with the cluster, no changes are required")
 	}
 
 	return needRestart, nil

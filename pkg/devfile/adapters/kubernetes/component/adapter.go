@@ -178,7 +178,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if componentExists && needRestart {
-		err = a.Client.GetKubeClient().WaitForPodNotRunning(podName)
+		err = a.Client.GetKubeClient().WaitForPodNotReady(podName)
 		if err != nil {
 			return err
 		}
