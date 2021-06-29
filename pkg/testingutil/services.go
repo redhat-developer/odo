@@ -162,10 +162,8 @@ func FakeServiceClassInstance(serviceInstanceName string, serviceClassName strin
 func FakeKubeService(componentName, serviceName string) corev1.Service {
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: serviceName,
-			Labels: map[string]string{
-				"component-name": componentName,
-			},
+			Name:   serviceName,
+			Labels: componentlabels.GetLabels(componentName, "app", false),
 		},
 	}
 }

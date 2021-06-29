@@ -182,6 +182,31 @@ func NamespaceKubernetesObject(componentName string, applicationName string) (st
 	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
 }
 
+// NamespaceKubernetesObjectWithTrim hyphenates applicationName and componentName
+// if the resultant name is greater than 63 characters
+// it trims each to 31 characters
+// <31-characters>+"-"+<31-characters> = 63 characters
+func NamespaceKubernetesObjectWithTrim(componentName, applicationName string) (string, error) {
+	value, err := NamespaceKubernetesObject(componentName, applicationName)
+	if err != nil {
+		return "", err
+	}
+
+	// doesn't require trim
+	if len(value) <= 63 {
+		return value, nil
+	}
+
+	// trim to 31 characters
+	componentName = componentName[:31]
+	applicationName = applicationName[:31]
+	value, err = NamespaceKubernetesObject(componentName, applicationName)
+	if err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
 // ExtractComponentType returns only component type part from passed component type(default unqualified, fully qualified, versioned, etc...and their combinations) for use as component name
 // Possible types of parameters:
 // 1. "myproject/python:3.5" -- Return python

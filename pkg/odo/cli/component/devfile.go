@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
@@ -193,9 +194,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		Namespace: do.namespace,
 	}
 
-	labels := map[string]string{
-		"component": componentName,
-	}
+	labels := componentlabels.GetLabels(componentName, do.EnvSpecificInfo.GetApplication(), false)
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.Application, devObj, kc)
 	if err != nil {
 		return err

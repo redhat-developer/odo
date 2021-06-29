@@ -11,6 +11,7 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -210,7 +211,7 @@ func TestListServices(t *testing.T) {
 		{
 			name: "case 1: returned 3 services",
 			args: args{
-				selector: "component-name=nodejs",
+				selector: componentlabels.GetSelector("nodejs", "app"),
 			},
 			returnedServices: corev1.ServiceList{
 				Items: odoTestingUtil.FakeKubeServices("nodejs"),
@@ -218,9 +219,9 @@ func TestListServices(t *testing.T) {
 			want: odoTestingUtil.FakeKubeServices("nodejs"),
 		},
 		{
-			name: "case 2: no service retuned",
+			name: "case 2: no service returned",
 			args: args{
-				selector: "component-name=nodejs",
+				selector: componentlabels.GetSelector("nodejs", "app"),
 			},
 			returnedServices: corev1.ServiceList{
 				Items: nil,
@@ -245,6 +246,75 @@ func TestListServices(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListServices() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClient_GetOneServiceFromSelector(t *testing.T) {
+	wantService := odoTestingUtil.FakeKubeService("nodejs", "nodejs-app")
+
+	type args struct {
+		selector string
+	}
+	tests := []struct {
+		name             string
+		args             args
+		returnedServices corev1.ServiceList
+		want             *corev1.Service
+		wantErr          bool
+	}{
+
+		{
+			name: "case 1: returned the correct service",
+			args: args{
+				selector: componentlabels.GetSelector("nodejs", "app"),
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					odoTestingUtil.FakeKubeService("nodejs", "nodejs-app"),
+				},
+			},
+			want: &wantService,
+		},
+		{
+			name: "case 2: no service returned",
+			args: args{
+				selector: componentlabels.GetSelector("nodejs", "app"),
+			},
+			returnedServices: corev1.ServiceList{
+				Items: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 3: more than one service returned",
+			args: args{
+				selector: componentlabels.GetSelector("nodejs", "app"),
+			},
+			returnedServices: corev1.ServiceList{
+				Items: odoTestingUtil.FakeKubeServices("nodejs"),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+			fkclient.Namespace = "default"
+
+			fkclientset.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.returnedServices, nil
+			})
+
+			got, err := fkclient.GetOneServiceFromSelector(tt.args.selector)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetOneServiceFromSelector() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetOneServiceFromSelector() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
