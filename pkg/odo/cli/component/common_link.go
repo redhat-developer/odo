@@ -357,7 +357,11 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 		o.serviceType = "Service"
 		svcFullName = o.serviceName
 		if o.suppliedName == o.EnvSpecificInfo.GetName() {
-			return fmt.Errorf("the component %q cannot be linked with itself", o.suppliedName)
+			if o.operationName == unlink {
+				return fmt.Errorf("the component %q cannot be unlinked from itself", o.suppliedName)
+			} else {
+				return fmt.Errorf("the component %q cannot be linked with itself", o.suppliedName)
+			}
 		}
 
 		_, err := o.Context.Client.GetKubeClient().GetService(o.suppliedName)
