@@ -8,8 +8,6 @@ SETUP_OPERATORS="$LIBCOMMON/setup-operators.sh"
 SETUP_POSTGRES_OPERATOR="$LIBCOMMON/setup-postgres-operator.sh"
 AUTH_SCRIPT="$LIBCOMMON/auth.sh"
 KUBEADMIN_SCRIPT="$LIBCOMMON/kubeconfigandadmin.sh"
-
-CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 POSTGRES_OPERATOR_PROJECT="odo-operator-test"
 
 # list of namespace to create

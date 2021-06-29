@@ -314,3 +314,8 @@ func (kubectl KubectlRunner) WaitForRunnerCmdOut(args []string, timeout int, err
 		}
 	}
 }
+
+// CreateSecretForRandomNamespace creates required secret inside specific namespace into the cluster
+func (kubectl KubectlRunner) CreateSecretForRandomNamespace(secretName, secretPass, project string) {
+	Cmd(kubectl.path, "create", "secret", "generic", secretName, "--from-literal=password="+secretPass, "-n", project).ShouldPass()
+}
