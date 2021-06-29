@@ -116,7 +116,8 @@ func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error
 	})
 }
 
-func (c *Client) WaitForPodNotRunning(name string) error {
+// WaitForPodNotReady waits for the status of the given pod to be not ready, or the pod to be deleted
+func (c *Client) WaitForPodNotReady(name string) error {
 	watch, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
 	if err != nil {
 		return err
@@ -124,14 +125,13 @@ func (c *Client) WaitForPodNotRunning(name string) error {
 	defer watch.Stop()
 
 	if _, err = c.KubeClient.CoreV1().Pods(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{}); kerrors.IsNotFound(err) {
-		fmt.Printf("\npod not found\n")
 		return nil
 	}
 
 	for {
 		select {
 		case <-time.After(time.Minute):
-			return errors.New("timeout")
+			return fmt.Errorf("timeout while waiting for %q pod to stop", name)
 
 		case val, ok := <-watch.ResultChan():
 			if !ok {
