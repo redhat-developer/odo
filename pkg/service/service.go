@@ -707,7 +707,7 @@ func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
 	return false, nil
 }
 
-// ListDevfileServices returns the names of the services defined in a Devfile
+// ListDevfileLinks returns the names of the links defined in a Devfile
 func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
