@@ -2,14 +2,15 @@ package fake
 
 import (
 	"fmt"
+	"runtime"
+	"strings"
+	"sync"
+
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery/fake"
-	"runtime"
-	"strings"
-	"sync"
 )
 
 type ResourceMapEntry struct {
@@ -23,14 +24,17 @@ type FakeDiscovery struct {
 	resourceMap map[string]*ResourceMapEntry
 }
 
+// NewFakeDiscovery returns a FakeDiscovery instance
 func NewFakeDiscovery() *FakeDiscovery {
 	return &FakeDiscovery{resourceMap: make(map[string]*ResourceMapEntry, 7)}
 }
 
+// AddResourceList appends a resource to the APIResourceList
 func (c *FakeDiscovery) AddResourceList(key string, are *metav1.APIResourceList) {
 	c.resourceMap[key] = &ResourceMapEntry{list: are}
 }
 
+// ServerResourcesForGroupVersion returns the supported resources for a group and version.
 func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -51,6 +55,7 @@ func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
 }
 
+// ServerVersion returns the server version information of the FakeDiscovery client instance
 func (c *FakeDiscovery) ServerVersion() (*version.Info, error) {
 	versionInfo := version.Info{
 		Major:        "1",

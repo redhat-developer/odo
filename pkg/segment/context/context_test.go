@@ -3,13 +3,9 @@ package context
 import (
 	"context"
 	"reflect"
-	"sync"
 	"testing"
 
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"k8s.io/client-go/discovery/fake"
+	odoFake "github.com/openshift/odo/pkg/kclient/fake"
 
 	"github.com/openshift/odo/pkg/occlient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,24 +38,22 @@ func TestSetComponentType(t *testing.T) {
 
 func TestSetClusterType(t *testing.T) {
 	tests := []struct {
-		want  string
-		setup func(client *occlient.Client)
+		want   string
+		groups []string
 	}{
 		{
-			want:  "openshift3",
-			setup: fakeProjects,
+			want:   "openshift3",
+			groups: []string{"project.openshift.io/v1"},
 		},
 		{
-			want:  "openshift4",
-			setup: setupOCP4,
+			want:   "openshift4",
+			groups: []string{"project.openshift.io/v1", "operators.coreos.com/v1alpha1"},
 		},
 		{
-			want:  "kubernetes",
-			setup: nil,
+			want: "kubernetes",
 		},
 		{
-			want:  "not-found",
-			setup: nil,
+			want: "not-found",
 		},
 	}
 
@@ -68,8 +62,8 @@ func TestSetClusterType(t *testing.T) {
 		if tt.want != "not-found" {
 			fakeClient, _ = occlient.FakeNew()
 		}
-		if tt.setup != nil {
-			tt.setup(fakeClient)
+		if tt.groups != nil {
+			setupCluster(fakeClient, tt.groups)
 		}
 
 		ctx := NewContext(context.Background())
@@ -82,78 +76,34 @@ func TestSetClusterType(t *testing.T) {
 	}
 }
 
-type resourceMapEntry struct {
-	list *metav1.APIResourceList
-	err  error
-}
-
-type fakeDiscovery struct {
-	*fake.FakeDiscovery
-
-	lock        sync.Mutex
-	resourceMap map[string]*resourceMapEntry
-}
-
-var fakeDiscoveryWithProject = &fakeDiscovery{
-	resourceMap: map[string]*resourceMapEntry{
-		"project.openshift.io/v1": {
-			list: &metav1.APIResourceList{
-				GroupVersion: "project.openshift.io/v1",
-				APIResources: []metav1.APIResource{{
-					Name:         "projects",
-					SingularName: "project",
-					Namespaced:   false,
-					Kind:         "Project",
-					ShortNames:   []string{"proj"},
-				}},
-			},
-		},
+var apiResourceList = map[string]*metav1.APIResourceList{
+	"operators.coreos.com/v1alpha1": {
+		GroupVersion: "operators.coreos.com/v1alpha1",
+		APIResources: []metav1.APIResource{{
+			Name:         "clusterserviceversions",
+			SingularName: "clusterserviceversion",
+			Namespaced:   false,
+			Kind:         "ClusterServiceVersion",
+			ShortNames:   []string{"csv", "csvs"},
+		}},
+	},
+	"project.openshift.io/v1": {
+		GroupVersion: "project.openshift.io/v1",
+		APIResources: []metav1.APIResource{{
+			Name:         "projects",
+			SingularName: "project",
+			Namespaced:   false,
+			Kind:         "Project",
+			ShortNames:   []string{"proj"},
+		}},
 	},
 }
 
-var fakeDiscoveryOCP4 = &fakeDiscovery{
-	resourceMap: map[string]*resourceMapEntry{
-		"operators.coreos.com/v1alpha1": {
-			list: &metav1.APIResourceList{
-				GroupVersion: "operators.coreos.com/v1alpha1",
-				APIResources: []metav1.APIResource{{
-					Name:         "clusterserviceversions",
-					SingularName: "clusterserviceversion",
-					Namespaced:   false,
-					Kind:         "ClusterServiceVersion",
-					ShortNames:   []string{"csv", "csvs"},
-				}},
-			},
-		},
-		"project.openshift.io/v1": {
-			list: &metav1.APIResourceList{
-				GroupVersion: "project.openshift.io/v1",
-				APIResources: []metav1.APIResource{{
-					Name:         "projects",
-					SingularName: "project",
-					Namespaced:   false,
-					Kind:         "Project",
-					ShortNames:   []string{"proj"},
-				}},
-			},
-		},
-	},
-}
-
-func fakeProjects(fakeClient *occlient.Client) {
-	fakeClient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithProject)
-}
-
-// setupOCP4 adds fakeDiscovery with clusterserviceversion and project
-func setupOCP4(fakeClient *occlient.Client) {
-	fakeClient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryOCP4)
-}
-
-func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if rl, ok := c.resourceMap[groupVersion]; ok {
-		return rl.list, rl.err
+// setupCluster adds resource groups to the client
+func setupCluster(fakeClient *occlient.Client, groupVersion []string) {
+	fd := odoFake.NewFakeDiscovery()
+	for _, group := range groupVersion {
+		fd.AddResourceList(group, apiResourceList[group])
 	}
-	return nil, kerrors.NewNotFound(schema.GroupResource{}, "")
+	fakeClient.GetKubeClient().SetDiscoveryInterface(fd)
 }
