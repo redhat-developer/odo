@@ -76,7 +76,7 @@ func TestListIngresses(t *testing.T) {
 			name:          "Case: one ingress",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
 			wantIngress: []extensionsv1.Ingress{
-				extensionsv1.Ingress{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "testIngress1",
 						Labels: map[string]string{
@@ -90,7 +90,7 @@ func TestListIngresses(t *testing.T) {
 			name:          "Case: two ingresses",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
 			wantIngress: []extensionsv1.Ingress{
-				extensionsv1.Ingress{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "testIngress1",
 						Labels: map[string]string{
@@ -98,7 +98,7 @@ func TestListIngresses(t *testing.T) {
 						},
 					},
 				},
-				extensionsv1.Ingress{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "testIngress2",
 						Labels: map[string]string{
