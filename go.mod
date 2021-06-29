@@ -17,7 +17,6 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/gobwas/glob v0.2.3
-	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.5.0
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
