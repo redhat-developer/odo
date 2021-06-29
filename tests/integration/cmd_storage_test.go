@@ -40,6 +40,7 @@ var _ = Describe("odo storage command tests", func() {
 			actualJSONStorage := ""
 
 			BeforeEach(func() {
+				// create storage
 				actualJSONStorage = helper.Cmd("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
 			})
 
@@ -83,30 +84,33 @@ var _ = Describe("odo storage command tests", func() {
 
 		When("creating storage", func() {
 			BeforeEach(func() {
-				// create storage, list storage should have state "Not Pushed"
+				// create storage
 				helper.Cmd("odo", "storage", "create", "pv1", "--path=/tmp1", "--size=1Gi", "--context", commonVar.Context).ShouldPass()
 			})
 
 			It("should list storage as Not Pushed", func() {
-
+				// list storage should have state "Not Pushed"
 				StorageList := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 				Expect(StorageList).To(ContainSubstring("Not Pushed"))
 			})
 			When("storage is pushed", func() {
-				// Push storage, list storage should have state "Pushed"
-				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+				BeforeEach(func() {
+					// Push storage, list storage should have state "Pushed"
+					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+				})
 				It("should have state push", func() {
-
+					// list storage should have state "Pushed"
 					StorageList := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 					Expect(StorageList).To(ContainSubstring("Pushed"))
-
 				})
+
 				When("storage is deleted", func() {
 					BeforeEach(func() {
+						// Delete storage
 						helper.Cmd("odo", "storage", "delete", "pv1", "-f", "--context", commonVar.Context).ShouldPass()
 					})
 					It("should have state Locally Deleted", func() {
-						// Delete storage, list storage should have state "Locally Deleted"
+						// list storage should have state "Locally Deleted"
 						StorageList := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 						Expect(StorageList).To(ContainSubstring("Locally Deleted"))
 					})
