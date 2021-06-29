@@ -20,4 +20,4 @@ make cross
 cp -r dist $ARTIFACT_DIR
 
 # RPM Tests
-scripts/rpm-x86_64-test.sh
+#scripts/rpm-x86_64-test.sh
