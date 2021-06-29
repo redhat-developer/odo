@@ -20,14 +20,8 @@ const (
 	appList       = "List"
 )
 
-// List all applications in current project
+// List all applications names in current project by looking at `app` labels in deploymentconfigs, deployments and services instances
 func List(client *occlient.Client) ([]string, error) {
-	return ListInProject(client)
-}
-
-// ListInProject lists all applications in given project by Querying the cluster
-func ListInProject(client *occlient.Client) ([]string, error) {
-
 	var appNames []string
 
 	if client == nil {
@@ -70,7 +64,7 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	return util.RemoveDuplicates(appNames), nil
 }
 
-// Exists checks whether the given app exist or not
+// Exists checks whether the given app exist or not in the list of applications
 func Exists(app string, client *occlient.Client, kClient *kclient.Client) (bool, error) {
 
 	appList, err := List(client)
@@ -86,7 +80,7 @@ func Exists(app string, client *occlient.Client, kClient *kclient.Client) (bool,
 	return false, nil
 }
 
-// Delete deletes the given application
+// Delete the given application by deleting deploymentconfigs, deployments and services instances belonging to this application
 func Delete(client *occlient.Client, name string) error {
 	klog.V(4).Infof("Deleting application %s", name)
 
