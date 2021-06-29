@@ -12,6 +12,7 @@ export PATH=$PATH:$GOPATH/bin
 export GOLANGCI_LINT_CACHE="/tmp/.cache"
 
 go version
+yum whatprovides go
 
 make goget-tools
 make validate
