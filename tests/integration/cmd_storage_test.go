@@ -84,33 +84,27 @@ var _ = Describe("odo storage command tests", func() {
 
 		When("creating storage", func() {
 			BeforeEach(func() {
-				// create storage
 				helper.Cmd("odo", "storage", "create", "pv1", "--path=/tmp1", "--size=1Gi", "--context", commonVar.Context).ShouldPass()
 			})
 
 			It("should list storage as Not Pushed", func() {
-				// list storage should have state "Not Pushed"
 				StorageList := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 				Expect(StorageList).To(ContainSubstring("Not Pushed"))
 			})
 			When("storage is pushed", func() {
 				BeforeEach(func() {
-					// Push storage, list storage should have state "Pushed"
 					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 				})
 				It("should have state push", func() {
-					// list storage should have state "Pushed"
 					StorageList := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 					Expect(StorageList).To(ContainSubstring("Pushed"))
 				})
 
 				When("storage is deleted", func() {
 					BeforeEach(func() {
-						// Delete storage
 						helper.Cmd("odo", "storage", "delete", "pv1", "-f", "--context", commonVar.Context).ShouldPass()
 					})
 					It("should have state Locally Deleted", func() {
-						// list storage should have state "Locally Deleted"
 						StorageList := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 						Expect(StorageList).To(ContainSubstring("Locally Deleted"))
 					})
