@@ -6,6 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -257,13 +258,16 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
+	scontext.SetClusterType(cmd.Context(), po.Client)
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
+		scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(po.Devfile.Data.GetMetadata()))
 		// Return Devfile push
 		return po.DevfilePush()
 	}
 
 	// Legacy odo push
+	scontext.SetComponentType(cmd.Context(), po.LocalConfigInfo.GetType())
 	return po.Push()
 }
 

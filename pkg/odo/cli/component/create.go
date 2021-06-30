@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -31,6 +29,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/preference"
+	scontext "github.com/openshift/odo/pkg/segment/context"
 	"github.com/openshift/odo/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -769,7 +768,7 @@ func (co *CreateOptions) s2iRun() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (co *CreateOptions) devfileRun() (err error) {
+func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 	var devfileData []byte
 	devfileExist := util.CheckPathExists(DevfilePath)
 	// Use existing devfile directly from --devfile flag
@@ -843,6 +842,10 @@ func (co *CreateOptions) devfileRun() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "unable to parse devfile")
 	}
+	// Add component type in case it is not already added or is empty
+	if value, ok := scontext.GetContextProperties(cmd.Context())[scontext.ComponentType]; !ok || value == "" {
+		scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(devObj.Data.GetMetadata()))
+	}
 	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return err
@@ -913,10 +916,11 @@ func (co *CreateOptions) devfileRun() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
-	scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
+
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
-		err := co.devfileRun()
+		scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
+		err := co.devfileRun(cmd)
 		if err != nil {
 			return err
 		}
@@ -926,6 +930,8 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		return nil
 	}
 
+	// Add component type for s2i components
+	scontext.SetComponentType(cmd.Context(), *co.componentSettings.Type)
 	// we only do conversion if the --s2i is provided and the component is not of --git type
 	if co.forceS2i && len(co.componentGit) == 0 && len(co.componentBinary) == 0 {
 		log.Info("Conversion")

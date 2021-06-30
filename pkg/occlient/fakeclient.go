@@ -1,6 +1,8 @@
 package occlient
 
 import (
+	"os"
+
 	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
 	fakeAppsClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	fakeBuildClientset "github.com/openshift/client-go/build/clientset/versioned/fake"
@@ -11,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
-	"os"
 )
 
 // FakeClientset holds fake ClientSets

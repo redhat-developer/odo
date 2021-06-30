@@ -3,7 +3,20 @@ package context
 import (
 	"context"
 	"sync"
+
+	"github.com/openshift/odo/pkg/util"
+
+	"github.com/pkg/errors"
+	"k8s.io/klog"
+
+	"github.com/openshift/odo/pkg/occlient"
 )
+
+const ComponentType = "componentType"
+
+const ClusterType = "clusterType"
+
+const NOTFOUND = "not-found"
 
 type contextKey struct{}
 
@@ -22,16 +35,49 @@ func NewContext(ctx context.Context) context.Context {
 
 // GetContextProperties retrieves all the values set in a given context
 func GetContextProperties(ctx context.Context) map[string]interface{} {
-	properties := propertiesFromContext(ctx)
-	if properties == nil {
+	cProperties := propertiesFromContext(ctx)
+	if cProperties == nil {
 		return make(map[string]interface{})
 	}
-	return properties.values()
+	return cProperties.values()
 }
 
-// SetComponentType sets componentType property for telemetry data when a new component is created
+// SetComponentType sets componentType property for telemetry data when a component is created/pushed
 func SetComponentType(ctx context.Context, value string) {
-	setContextProperty(ctx, "componentType", value)
+	setContextProperty(ctx, ComponentType, util.ExtractComponentType(value))
+}
+
+// SetClusterType sets clusterType property for telemetry data when a component is pushed or a project is created/set
+func SetClusterType(ctx context.Context, client *occlient.Client) {
+	var value string
+	if client == nil {
+		value = NOTFOUND
+	} else {
+		// We are not checking ServerVersion to decide the cluster type because it does not always return the version,
+		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
+		isOC, err := client.IsProjectSupported()
+		if err != nil {
+			klog.V(3).Info(errors.Wrap(err, "unable to detect project support"))
+			value = NOTFOUND
+		} else {
+			if isOC {
+				isOC4, err := client.GetKubeClient().IsCSVSupported()
+				// TODO: Add a unit test for this case
+				if err != nil {
+					value = "openshift"
+				} else {
+					if isOC4 {
+						value = "openshift4"
+					} else {
+						value = "openshift3"
+					}
+				}
+			} else {
+				value = "kubernetes"
+			}
+		}
+	}
+	setContextProperty(ctx, ClusterType, value)
 }
 
 // set safely sets value for a key in storage
@@ -63,8 +109,8 @@ func propertiesFromContext(ctx context.Context) *properties {
 
 // setContextProperty sets the value of a key in given context for telemetry data
 func setContextProperty(ctx context.Context, key string, value interface{}) {
-	properties := propertiesFromContext(ctx)
-	if properties != nil {
-		properties.set(key, value)
+	cProperties := propertiesFromContext(ctx)
+	if cProperties != nil {
+		cProperties.set(key, value)
 	}
 }
