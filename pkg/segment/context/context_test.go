@@ -53,13 +53,13 @@ func TestSetClusterType(t *testing.T) {
 			want: "kubernetes",
 		},
 		{
-			want: "not-found",
+			want: NOTFOUND,
 		},
 	}
 
 	for _, tt := range tests {
 		var fakeClient *occlient.Client
-		if tt.want != "not-found" {
+		if tt.want != NOTFOUND {
 			fakeClient, _ = occlient.FakeNew()
 		}
 		if tt.groups != nil {

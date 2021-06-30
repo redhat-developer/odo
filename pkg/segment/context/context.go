@@ -16,6 +16,8 @@ const ComponentType = "componentType"
 
 const ClusterType = "clusterType"
 
+const NOTFOUND = "not-found"
+
 type contextKey struct{}
 
 var key = contextKey{}
@@ -49,14 +51,14 @@ func SetComponentType(ctx context.Context, value string) {
 func SetClusterType(ctx context.Context, client *occlient.Client) {
 	var value string
 	if client == nil {
-		value = "not-found"
+		value = NOTFOUND
 	} else {
 		// We are not checking ServerVersion to decide the cluster type because it does not always return the version,
 		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
 		isOC, err := client.IsProjectSupported()
 		if err != nil {
 			klog.V(3).Info(errors.Wrap(err, "unable to detect project support"))
-			value = "not-found"
+			value = NOTFOUND
 		} else {
 			if isOC {
 				isOC4, err := client.GetKubeClient().IsCSVSupported()

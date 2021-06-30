@@ -12,6 +12,8 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 )
 
+const NOTAVAILABLE = "Not available"
+
 func (co *CreateOptions) SetComponentSettings(args []string) error {
 	err := co.setComponentSourceAttributes()
 	if err != nil {
@@ -101,7 +103,7 @@ func GetComponentTypeFromDevfile(metadata devfile.DevfileMetadata) string {
 	} else if metadata.Language != "" {
 		componentType = metadata.Language
 	} else {
-		componentType = "Not available"
+		componentType = NOTAVAILABLE
 	}
 	return componentType
 }
