@@ -161,7 +161,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	s.End(true)
 
 	log.Info("\nUpdating services")
-	s = log.Spinner("Updating services")
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
 	k8sComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
@@ -183,7 +182,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 			return err
 		}
 	}
-	s.End(true)
 
 	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 
