@@ -294,7 +294,8 @@ func write(filePath string, fi *FileIndex) error {
 	if err != nil {
 		return err
 	}
-	// 0600 is the mask used when a file is created using os.Create hence defaulting
+	// While 0666 is the mask used when a file is created using os.Create,
+	// gosec objects, so use 0600 instead
 	return ioutil.WriteFile(filePath, jsonData, 0600)
 }
 
