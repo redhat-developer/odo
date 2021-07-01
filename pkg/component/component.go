@@ -3,6 +3,7 @@ package component
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -37,6 +38,7 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
+	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -1560,32 +1562,54 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		}
 	}
 
-	linkedServices := make([]string, 0, 5)
-	linkedComponents := make(map[string][]string)
-	linkedSecretNames := fromCluster.GetLinkedSecretNames()
-	for _, secretName := range linkedSecretNames {
-		secret, err := client.GetKubeClient().GetSecret(secretName, projectName)
-		if err != nil {
-			return Component{}, errors.Wrapf(err, "unable to get info about secret %s", secretName)
-		}
-		componentName, containsComponentLabel := secret.Labels[componentlabels.ComponentLabel]
-		if containsComponentLabel {
-			if port, ok := secret.Annotations[kclient.ComponentPortAnnotationName]; ok {
-				linkedComponents[componentName] = append(linkedComponents[componentName], port)
-			}
-		} else {
-			linkedServices = append(linkedServices, secretName)
-		}
+	linkedSecrets := fromCluster.GetLinkedSecrets()
+	err = setLinksServiceNames(client, linkedSecrets)
+	if err != nil {
+		return Component{}, fmt.Errorf("unable to get name of services: %w", err)
 	}
 
 	component.Namespace = client.Namespace
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
-	component.Status.LinkedComponents = linkedComponents
-	component.Status.LinkedServices = linkedServices
+	component.Status.LinkedServices = linkedSecrets
 	component.Status.State = StateTypePushed
 
 	return component, nil
+}
+
+// setLinksServiceNames sets the service name of the links from the info in ServiceBindingRequests present in the cluster
+func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount) error {
+	serviceBindings := map[string]string{}
+	list, err := client.GetKubeClient().ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+	if err != nil || list == nil {
+		return err
+	}
+	for _, u := range list.Items {
+		var sbr servicebinding.ServiceBinding
+		js, err := u.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(js, &sbr)
+		if err != nil {
+			return err
+		}
+		services := sbr.Spec.Services
+		if len(services) != 1 {
+			return errors.New("ServiceBinding should have only one service")
+		}
+		service := services[0]
+		if service.Kind == "Service" {
+			serviceBindings[sbr.Status.Secret] = service.Name
+		} else {
+			serviceBindings[sbr.Status.Secret] = service.Kind + "/" + service.Name
+		}
+	}
+
+	for i, linkedSecret := range linkedSecrets {
+		linkedSecrets[i].ServiceName = serviceBindings[linkedSecret.SecretName]
+	}
+	return nil
 }
 
 // GetLogs follow the DeploymentConfig logs if follow is set to true
@@ -1687,30 +1711,4 @@ func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.Loc
 		Name:  "DEBUG_PORT",
 		Value: fmt.Sprint(componentConfig.GetDebugPort()),
 	})
-}
-
-// UnlinkComponents takes the component to be deleted and list of active components in the cluster as arguments.
-// It returns a map with keys indicating the components that are linked to the parent component
-// and values indicating the corresponding secret names
-func UnlinkComponents(parentComponent Component, compoList ComponentList) map[string][]string {
-	componentSecrets := make(map[string][]string)
-	for _, comp := range compoList.Items {
-		// .Items contains the list of components in the cluster
-		for component, ports := range comp.Status.LinkedComponents {
-			// Status.LinkedComponents is a map where key is the name of the component and value is a slice of ports.
-			// We can use this info to create a secret name
-			if component == parentComponent.Name {
-				// Component is linked with our parent component
-				// We need to create secret name for this and unlink the secret from component before deleting parent component
-				for _, port := range ports {
-					componentSecrets[comp.Name] = append(componentSecrets[comp.Name], generateSecretName(parentComponent.Name, comp.Spec.App, port))
-				}
-			}
-		}
-	}
-	return componentSecrets
-}
-
-func generateSecretName(compName, app, port string) string {
-	return strings.Join([]string{compName, app, port}, "-")
 }

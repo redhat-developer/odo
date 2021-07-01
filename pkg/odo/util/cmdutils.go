@@ -175,27 +175,6 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 
 	}
 
-	// Linked components
-	if len(componentDesc.Status.LinkedComponents) > 0 {
-
-		// Gather the output
-		var output string
-		for name, ports := range componentDesc.Status.LinkedComponents {
-			if len(ports) > 0 {
-				output += fmt.Sprintf(" · %v - Port(s): %v\n", name, strings.Join(ports, ","))
-			} else {
-				output += fmt.Sprintf(" · %v\n", name)
-			}
-		}
-
-		// Cut off the last newline and output
-		if len(output) > 0 {
-			output = output[:len(output)-1]
-			log.Describef("Linked Components:\n", output)
-		}
-
-	}
-
 	// Linked services
 	if len(componentDesc.Status.LinkedServices) > 0 {
 
@@ -204,7 +183,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		for _, linkedService := range componentDesc.Status.LinkedServices {
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetKubeClient().GetSecret(linkedService, project)
+			secrets, err := client.GetKubeClient().GetSecret(linkedService.SecretName, project)
 			LogErrorAndExit(err, "")
 
 			if len(secrets.Data) > 0 {
@@ -217,11 +196,11 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 				if len(secretOutput) > 0 {
 					// Cut off the last newline
 					secretOutput = secretOutput[:len(secretOutput)-1]
-					output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService, secretOutput)
+					output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService.SecretName, secretOutput)
 				}
 
 			} else {
-				output += fmt.Sprintf(" · %s\n", linkedService)
+				output += fmt.Sprintf(" · %s\n", linkedService.SecretName)
 			}
 
 		}

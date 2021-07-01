@@ -71,43 +71,76 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "exec", "--", "ls", "/project/server.js").ShouldPass()
 			})
 
-			When("a link between the component and the service is created and deployed", func() {
+			When("a link between the component and the service is created", func() {
 
 				BeforeEach(func() {
 					helper.Cmd("odo", "link", svcFullName).ShouldPass()
-					helper.Cmd("odo", "push").ShouldPass()
-					name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-					Expect(name).To(Not(BeEmpty()))
 				})
 
-				It("should find files in component container", func() {
-					helper.Cmd("odo", "exec", "--", "ls", "/project/server.js").ShouldPass()
+				It("should find the link in odo describe", func() {
+					stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(svcFullName))
 				})
 
-				It("should find the link environment variable", func() {
-					stdOut := helper.Cmd("odo", "exec", "--", "sh", "-c", "echo $ETCDCLUSTER_CLUSTERIP").ShouldPass().Out()
-					Expect(stdOut).To(Not(BeEmpty()))
+				When("odo push is executed", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "push").ShouldPass()
+						name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+						Expect(name).To(Not(BeEmpty()))
+					})
+
+					It("should find files in component container", func() {
+						helper.Cmd("odo", "exec", "--", "ls", "/project/server.js").ShouldPass()
+					})
+
+					It("should find the link environment variable", func() {
+						stdOut := helper.Cmd("odo", "exec", "--", "sh", "-c", "echo $ETCDCLUSTER_CLUSTERIP").ShouldPass().Out()
+						Expect(stdOut).To(Not(BeEmpty()))
+					})
+
+					It("should find the link in odo describe", func() {
+						stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
+						Expect(stdOut).To(ContainSubstring(svcFullName))
+						Expect(stdOut).To(ContainSubstring("Environment Variables"))
+						Expect(stdOut).To(ContainSubstring("ETCDCLUSTER_CLUSTERIP"))
+					})
 				})
 			})
 
-			When("a link with between the component and the service is created with --bind-as-files and deployed", func() {
+			When("a link with between the component and the service is created with --bind-as-files", func() {
 
 				var bindingName string
-
 				BeforeEach(func() {
 					bindingName = "sbr-" + helper.RandString(6)
 					helper.Cmd("odo", "link", svcFullName, "--bind-as-files", "--name", bindingName).ShouldPass()
-					helper.Cmd("odo", "push").ShouldPass()
-					name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-					Expect(name).To(Not(BeEmpty()))
 				})
 
-				It("should find files in component container", func() {
-					helper.Cmd("odo", "exec", "--", "ls", "/project/server.js").ShouldPass()
+				It("should dislay the link in odo describe", func() {
+					stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(svcFullName))
 				})
 
-				It("should find bindings for service", func() {
-					helper.Cmd("odo", "exec", "--", "ls", "/bindings/"+bindingName+"/clusterIP").ShouldPass()
+				When("odo push is executed", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "push").ShouldPass()
+						name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+						Expect(name).To(Not(BeEmpty()))
+					})
+
+					It("should find files in component container", func() {
+						helper.Cmd("odo", "exec", "--", "ls", "/project/server.js").ShouldPass()
+					})
+
+					It("should find bindings for service", func() {
+						helper.Cmd("odo", "exec", "--", "ls", "/bindings/"+bindingName+"/clusterIP").ShouldPass()
+					})
+
+					It("should display the link in odo describe", func() {
+						stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
+						Expect(stdOut).To(ContainSubstring(svcFullName))
+						Expect(stdOut).To(ContainSubstring("Files"))
+						Expect(stdOut).To(ContainSubstring("/bindings/" + bindingName + "/clusterIP"))
+					})
 				})
 			})
 		})
