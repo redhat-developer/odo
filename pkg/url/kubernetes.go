@@ -263,7 +263,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	if err != nil {
 		return "", fmt.Errorf("unable to create ingress %w", err)
 	}
-	return GetURLString(i.GetProtocol(), "", ingressDomain, false), nil
+	return i.GetURLString(), nil
 }
 
 // createRoute creates a route for the given URL with the given labels
