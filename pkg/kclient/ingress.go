@@ -123,8 +123,7 @@ func (c *Client) DeleteIngress(name string) error {
 //ListIngresses lists all the ingresses based on given label selector
 func (c *Client) ListIngresses(labelSelector string) (*unions.KubernetesIngressList, error) {
 	kubernetesIngressList := unions.NewEmptyKubernetesIngressList()
-	var err error
-	err = c.checkIngressSupport()
+	err := c.checkIngressSupport()
 	if err != nil {
 		return nil, err
 	}
