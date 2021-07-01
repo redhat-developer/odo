@@ -5,14 +5,15 @@ set -e
 # show commands
 set -x
 
+export GOROOT="/usr/lib/golang" 
+export GOPROXY="https://proxy.golang.org,direct"
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/go/bin:/usr/lib/golang 
+
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 export PATH=$PATH:$GOPATH/bin
 # set location for golangci-lint cache
 # otherwise /.cache is used, and it fails on permission denied
 export GOLANGCI_LINT_CACHE="/tmp/.cache"
-
-go version
-yum whatprovides go
 
 make goget-tools
 make validate
