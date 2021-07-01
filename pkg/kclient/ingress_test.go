@@ -17,25 +17,52 @@ import (
 func TestCreateIngress(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		ingressName string
-		wantErr     bool
+		name                    string
+		ingressName             string
+		wantErr                 bool
+		isNetworkingV1Supported bool
+		ieExtensionV1Supported  bool
 	}{
 		{
-			name:        "Case: Valid ingress name",
-			ingressName: "testIngress",
-			wantErr:     false,
+			name:                    "Case: Valid networking v1 ingress name",
+			ingressName:             "testIngress",
+			wantErr:                 false,
+			isNetworkingV1Supported: true,
+			ieExtensionV1Supported:  false,
 		},
 		{
-			name:        "Case: Invalid ingress name",
-			ingressName: "",
-			wantErr:     true,
+			name:                    "Case: Invalid networking v1 ingress name",
+			ingressName:             "",
+			wantErr:                 true,
+			isNetworkingV1Supported: true,
+			ieExtensionV1Supported:  false,
+		},
+		{
+			name:                    "Case: Valid extensions v1 beta1 ingress name",
+			ingressName:             "testIngress",
+			wantErr:                 false,
+			isNetworkingV1Supported: false,
+			ieExtensionV1Supported:  true,
+		},
+		{
+			name:                    "Case: Invalid extensions v1 beta1 ingress name",
+			ingressName:             "",
+			wantErr:                 true,
+			isNetworkingV1Supported: false,
+			ieExtensionV1Supported:  true,
+		},
+		{
+			name:                    "Case: fail if neither is supported",
+			ingressName:             "testIngress",
+			wantErr:                 true,
+			isNetworkingV1Supported: false,
+			ieExtensionV1Supported:  false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// initialising the fakeclient
-			fkclient, fkclientset := FakeNew()
+			fkclient, fkclientset := FakeNewWithIngressSupports(tt.isNetworkingV1Supported, tt.ieExtensionV1Supported)
 			fkclient.Namespace = "default"
 
 			objectMeta := generator.GetObjectMeta(tt.ingressName, "default", nil, nil)
@@ -43,20 +70,20 @@ func TestCreateIngress(t *testing.T) {
 				ObjectMeta:        objectMeta,
 				IngressSpecParams: generator.IngressSpecParams{ServiceName: tt.ingressName},
 			}
-			ingress := generator.GetIngress(ingressParams)
-			createdIngress, err := fkclient.CreateIngressExtensionV1(*ingress)
+			ingress := unions.NewKubernetesIngressFromParams(ingressParams)
+			createdIngress, err := fkclient.CreateIngress(*ingress)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("fkclient.CreateIngressExtensionV1 unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("fkclient.CreateIngress unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if err == nil {
 				if len(fkclientset.Kubernetes.Actions()) != 1 {
 					t.Errorf("expected 1 action, got: %v", fkclientset.Kubernetes.Actions())
 				} else {
-					if createdIngress.Name != tt.ingressName {
-						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.ingressName, createdIngress.Name)
+					if createdIngress.GetName() != tt.ingressName {
+						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.ingressName, createdIngress.GetName())
 					}
 				}
 			}
@@ -74,9 +101,10 @@ func TestListIngresses(t *testing.T) {
 		wantIngress             unions.KubernetesIngressList
 		isNetworkingV1Supported bool
 		isExtensionV1Supported  bool
+		wantErr                 bool
 	}{
 		{
-			name:          "Case: one ingress",
+			name:          "Case: one networking v1 ingress",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
 			wantIngress: unions.KubernetesIngressList{
 				Items: []*unions.KubernetesIngress{
@@ -95,9 +123,10 @@ func TestListIngresses(t *testing.T) {
 			},
 			isNetworkingV1Supported: true,
 			isExtensionV1Supported:  false,
+			wantErr:                 false,
 		},
 		{
-			name:          "Case: One extension v1 beta ingress",
+			name:          "Case: One extension v1 beta1 ingress",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
 			wantIngress: unions.KubernetesIngressList{
 				Items: []*unions.KubernetesIngress{
@@ -116,9 +145,10 @@ func TestListIngresses(t *testing.T) {
 			},
 			isNetworkingV1Supported: false,
 			isExtensionV1Supported:  true,
+			wantErr:                 false,
 		},
 		{
-			name:          "Case: two ingresses",
+			name:          "Case: two networking v1 ingresses",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
 			wantIngress: unions.KubernetesIngressList{
 				Items: []*unions.KubernetesIngress{
@@ -148,6 +178,15 @@ func TestListIngresses(t *testing.T) {
 			},
 			isNetworkingV1Supported: true,
 			isExtensionV1Supported:  false,
+			wantErr:                 false,
+		},
+		{
+			name:                    "Case: fails if none of the ingresses are supported",
+			labelSelector:           fmt.Sprintf("%v=%v", componentLabel, componentName),
+			wantIngress:             unions.KubernetesIngressList{},
+			isNetworkingV1Supported: false,
+			isExtensionV1Supported:  false,
+			wantErr:                 true,
 		},
 	}
 	for _, tt := range tests {
@@ -168,8 +207,11 @@ func TestListIngresses(t *testing.T) {
 			})
 			ingresses, err := fkclient.ListIngresses(tt.labelSelector)
 
-			if err != nil {
-				t.Errorf("fkclient.ListIngressesExtensionV1 unexpected error %v", err)
+			if tt.wantErr && err == nil {
+				t.Errorf("fkclient.ListIngress expected err got %s", err)
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("fkclient.ListIngresses unexpected error %v", err)
 			}
 
 			if err == nil {
@@ -194,27 +236,38 @@ func TestListIngresses(t *testing.T) {
 func TestDeleteIngress(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		ingressName string
-		wantErr     bool
+		name                    string
+		ingressName             string
+		wantErr                 bool
+		isNetworkingV1Supported bool
+		isExtensionV1Supported  bool
 	}{
 		{
-			name:        "delete test",
-			ingressName: "testIngress",
-			wantErr:     false,
+			name:                    "delete networking v1 test",
+			ingressName:             "testIngress",
+			wantErr:                 false,
+			isNetworkingV1Supported: true,
+			isExtensionV1Supported:  false,
+		},
+		{
+			name:                    "delete extension v1 beta1 test",
+			ingressName:             "testIngress",
+			wantErr:                 false,
+			isNetworkingV1Supported: false,
+			isExtensionV1Supported:  true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// initialising the fakeclient
-			fkclient, fkclientset := FakeNew()
+			fkclient, fkclientset := FakeNewWithIngressSupports(tt.isNetworkingV1Supported, tt.isExtensionV1Supported)
 			fkclient.Namespace = "default"
 
 			fkclientset.Kubernetes.PrependReactor("delete", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, nil, nil
 			})
 
-			err := fkclient.DeleteIngressExtensionV1(tt.ingressName)
+			err := fkclient.DeleteIngress(tt.ingressName)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
