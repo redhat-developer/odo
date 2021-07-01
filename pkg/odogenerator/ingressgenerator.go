@@ -27,7 +27,6 @@ func getNetworkingV1IngressSpec(ingressSpecParams generator.IngressSpecParams) *
 										Name: ingressSpecParams.ServiceName,
 										Port: v1.ServiceBackendPort{
 											//Looks like we can either set name or number. going with number as it is more important
-											//Name:   fmt.Sprintf("%s%d", ingressSpecParams.ServiceName, ingressSpecParams.PortNumber.IntVal),
 											Number: ingressSpecParams.PortNumber.IntVal,
 										},
 									},
