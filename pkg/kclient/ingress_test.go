@@ -239,30 +239,58 @@ func TestDeleteIngress(t *testing.T) {
 
 func TestGetIngresses(t *testing.T) {
 	tests := []struct {
-		name        string
-		ingressName string
-		wantErr     bool
+		name                           string
+		ingressName                    string
+		wantErr                        bool
+		isNetworkingV1IngressSupported bool
+		isExtensionV1IngressSupported  bool
 	}{
 		{
-			name:        "Case: Valid ingress name",
-			ingressName: "testIngress",
-			wantErr:     false,
+			name:                           "Case: Valid ingress name",
+			ingressName:                    "testIngress",
+			wantErr:                        false,
+			isNetworkingV1IngressSupported: true,
+			isExtensionV1IngressSupported:  false,
 		},
 		{
-			name:        "Case: Invalid ingress name",
-			ingressName: "",
-			wantErr:     true,
+			name:                           "Case: Invalid ingress name",
+			ingressName:                    "",
+			wantErr:                        true,
+			isNetworkingV1IngressSupported: true,
+			isExtensionV1IngressSupported:  false,
+		},
+		{
+			name:                           "Case: valid extension v1 ingress name",
+			ingressName:                    "testIngress",
+			wantErr:                        false,
+			isExtensionV1IngressSupported:  true,
+			isNetworkingV1IngressSupported: false,
+		},
+		{
+			name:                           "Case: invalid extension v1 ingress name",
+			ingressName:                    "",
+			wantErr:                        true,
+			isExtensionV1IngressSupported:  true,
+			isNetworkingV1IngressSupported: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// initialising the fakeclient
-			fkclient, fkclientset := FakeNew()
+			fkclient, fkclientset := FakeNewWithIngressSupports(tt.isNetworkingV1IngressSupported, tt.isExtensionV1IngressSupported)
 			fkclient.Namespace = "default"
 
 			fkclientset.Kubernetes.PrependReactor("get", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.ingressName == "" {
 					return true, nil, errors.Errorf("ingress name is empty")
+				}
+				if action.GetResource().Group == "networking.k8s.io" {
+					ingress := networkingv1.Ingress{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: tt.ingressName,
+						},
+					}
+					return true, &ingress, nil
 				}
 				ingress := extensionsv1.Ingress{
 					ObjectMeta: metav1.ObjectMeta{
@@ -272,7 +300,7 @@ func TestGetIngresses(t *testing.T) {
 				return true, &ingress, nil
 			})
 
-			ingress, err := fkclient.GetIngressExtensionV1(tt.ingressName)
+			ingress, err := fkclient.GetIngress(tt.ingressName)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -283,8 +311,8 @@ func TestGetIngresses(t *testing.T) {
 				if len(fkclientset.Kubernetes.Actions()) != 1 {
 					t.Errorf("expected 1 action, got: %v", fkclientset.Kubernetes.Actions())
 				} else {
-					if ingress.Name != tt.ingressName {
-						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.ingressName, ingress.Name)
+					if ingress.GetName() != tt.ingressName {
+						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.ingressName, ingress.GetName())
 					}
 				}
 			}

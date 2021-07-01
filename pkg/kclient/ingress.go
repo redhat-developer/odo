@@ -49,12 +49,6 @@ func (c *Client) GetOneIngressFromSelector(selector string) (*unions.KubernetesI
 	return ingresses.Items[0], nil
 }
 
-// GetIngressExtensionV1 gets an ingress based on the given name
-func (c *Client) GetIngressExtensionV1(name string) (*extensionsv1.Ingress, error) {
-	ingress, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
-	return ingress, err
-}
-
 //CreateIngress creates a specified Kubernetes Ingress as a networking v1 or extensions v1beta1 ingress depending on what
 //is supported, with preference for networking v1 ingress. The passed ingress MUST be a generated one, i.e it must
 //have been created using unions.NewKubernetesIngressFromParams
