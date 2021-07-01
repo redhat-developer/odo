@@ -55,7 +55,7 @@ func NewUnlinkOptions() *UnlinkOptions {
 // Complete completes UnlinkOptions after they've been created
 func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
-	err = o.complete(name, cmd, args)
+	err = o.complete(name, cmd, args, o.componentContext)
 	if err != nil {
 		return err
 	}

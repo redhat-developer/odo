@@ -1,0 +1,95 @@
+commands:
+- exec:
+    commandLine: npm install
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    workingDir: /project
+  id: install
+- exec:
+    commandLine: npm start
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    workingDir: /project
+  id: run
+- exec:
+    commandLine: npm run debug
+    component: runtime
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: /project
+  id: debug
+- exec:
+    commandLine: npm test
+    component: runtime
+    group:
+      isDefault: true
+      kind: test
+    workingDir: /project
+  id: test
+components:
+- container:
+    endpoints:
+    - name: http-3000
+      targetPort: 3000
+    image: registry.access.redhat.com/ubi8/nodejs-14:latest
+    memoryLimit: 1024Mi
+    mountSources: true
+    sourceMapping: /project
+  name: runtime
+- kubernetes:
+    inlined: |
+      apiVersion: etcd.database.coreos.com/v1beta2
+      kind: EtcdCluster
+      metadata:
+        annotations:
+          etcd.database.coreos.com/scope: clusterwide
+        name: myetcd
+      spec:
+        size: 1
+        version: 3.2.13
+  name: myetcd
+- kubernetes:
+    inlined: |
+      apiVersion: binding.operators.coreos.com/v1alpha1
+      kind: ServiceBinding
+      metadata:
+        creationTimestamp: null
+        name: etcd-link
+      spec:
+        application:
+          group: apps
+          name: api-app
+          resource: deployments
+          version: v1
+        bindAsFiles: true
+        detectBindingResources: true
+        services:
+        - group: etcd.database.coreos.com
+          kind: EtcdCluster
+          name: myetcd
+          version: v1beta2
+      status:
+        secret: ""
+  name: etcd-link
+metadata:
+  description: Stack with Node.js 14
+  displayName: Node.js Runtime
+  language: nodejs
+  name: nodejs
+  projectType: nodejs
+  tags:
+  - NodeJS
+  - Express
+  - ubi8
+  version: 1.0.1
+schemaVersion: 2.0.0
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/odo-devfiles/nodejs-ex.git
+  name: nodejs-starter

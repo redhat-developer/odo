@@ -9,6 +9,7 @@
 - `odo push` undeploys Operator backed services marked as managed by the current devfile not present in this devfile anymore ([#4761](https://github.com/openshift/odo/pull/4761))
 - param based `odo service create` for operator backed services ([#4704](https://github.com/openshift/odo/pull/4704))
 - add `odo catalog describe service <operator> --example` ([#4821](https://github.com/openshift/odo/pull/4821))
+- `odo link` and `odo unlink` write to devfile without deploying to cluster. Deploying happens when running `odo push` ([#4819](https://github.com/openshift/odo/pull/4819))
 
 ### Bug Fixes
 

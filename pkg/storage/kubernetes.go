@@ -149,6 +149,13 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		}
 	}
 
+	// to track volumes created by Service Binding Operator
+	for _, volume := range pod.Spec.Volumes {
+		if volume.Secret != nil {
+			validVolumeMounts[volume.Name] = true
+		}
+	}
+
 	for _, volumeMount := range volumeMounts {
 		if _, ok := validVolumeMounts[volumeMount.Name]; !ok {
 			return StorageList{}, fmt.Errorf("pvc not found for mount path %s", volumeMount.Name)

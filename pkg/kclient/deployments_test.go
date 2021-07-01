@@ -114,8 +114,8 @@ func TestCreateDeployment(t *testing.T) {
 
 			if err == nil {
 
-				if len(fkclientset.Kubernetes.Actions()) != 1 {
-					t.Errorf("expected 1 action in StartDeployment got: %v", fkclientset.Kubernetes.Actions())
+				if len(fkclientset.Kubernetes.Actions()) != 2 {
+					t.Errorf("expected 2 action in StartDeployment got %d: %v", len(fkclientset.Kubernetes.Actions()), fkclientset.Kubernetes.Actions())
 				} else {
 					if createdDeployment.Name != tt.deploymentName {
 						t.Errorf("deployment name does not match the expected name, expected: %s, got %s", tt.deploymentName, createdDeployment.Name)
@@ -261,8 +261,8 @@ func TestUpdateDeployment(t *testing.T) {
 
 			if err == nil {
 
-				if len(fkclientset.Kubernetes.Actions()) != 1 {
-					t.Errorf("expected 1 action in UpdateDeployment got: %v", fkclientset.Kubernetes.Actions())
+				if len(fkclientset.Kubernetes.Actions()) != 2 {
+					t.Errorf("expected 2 action in UpdateDeployment got %d: %v", len(fkclientset.Kubernetes.Actions()), fkclientset.Kubernetes.Actions())
 				} else {
 					if updatedDeployment.Name != tt.deploymentName {
 						t.Errorf("deployment name does not match the expected name, expected: %s, got %s", tt.deploymentName, updatedDeployment.Name)

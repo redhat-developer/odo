@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
@@ -113,6 +114,40 @@ func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error
 	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
 	})
+}
+
+// WaitForPodNotReady waits for the status of the given pod to be not ready, or the pod to be deleted
+func (c *Client) WaitForPodNotReady(name string) error {
+	watch, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
+	if err != nil {
+		return err
+	}
+	defer watch.Stop()
+
+	if _, err = c.KubeClient.CoreV1().Pods(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{}); kerrors.IsNotFound(err) {
+		return nil
+	}
+
+	for {
+		select {
+		case <-time.After(time.Minute):
+			return fmt.Errorf("timeout while waiting for %q pod to stop", name)
+
+		case val, ok := <-watch.ResultChan():
+			if !ok {
+				return errors.New("error getting value from resultchan")
+			}
+			if pod, ok := val.Object.(*corev1.Pod); ok {
+				for _, cond := range pod.Status.Conditions {
+					if cond.Type == "Ready" {
+						if cond.Status == corev1.ConditionFalse {
+							return nil
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
@@ -225,18 +260,57 @@ func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment,
 // odo overrides it with the value it expects instead of failing due to conflict.
 func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	data, err := json.Marshal(deploy)
-
-	klog.V(5).Infoln("Applying Deployment via server-side apply:")
-	klog.V(5).Infoln(resourceAsJson(deploy))
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to marshal deployment")
 	}
+	klog.V(5).Infoln("Applying Deployment via server-side apply:")
+	klog.V(5).Infoln(resourceAsJson(deploy))
+
+	err = c.removeDuplicateEnv(deploy.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
 	}
 	return deployment, nil
+}
+
+// removeDuplicateEnv removes duplicate environment variables from containers, due to a bug in Service Binding Operator:
+// https://github.com/redhat-developer/service-binding-operator/issues/983
+func (c *Client) removeDuplicateEnv(deploymentName string) error {
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(context.Background(), deploymentName, metav1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	changes := false
+	containers := deployment.Spec.Template.Spec.Containers
+	for i := range containers {
+		found := map[string]bool{}
+		var newEnv []corev1.EnvVar
+		for _, env := range containers[i].Env {
+			if _, ok := found[env.Name]; !ok {
+				found[env.Name] = true
+				newEnv = append(newEnv, env)
+			} else {
+				changes = true
+			}
+		}
+		containers[i].Env = newEnv
+	}
+	if changes {
+		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.Background(), deployment, metav1.UpdateOptions{})
+		if kerrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 // DeleteDeployment deletes the deployments with the given selector
@@ -297,6 +371,17 @@ func (c *Client) GetDynamicResource(group, version, resource, name string) (*uns
 		return nil, err
 	}
 	return res, nil
+}
+
+// UpdateDynamicResource updates a dynamic resource
+func (c *Client) UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error {
+	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+
+	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Update(context.TODO(), u, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource

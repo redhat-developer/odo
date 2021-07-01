@@ -36,8 +36,7 @@ type ComponentSettings struct {
 	URL *[]localConfigProvider.LocalURL `yaml:"Url,omitempty" json:"url,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
 	// for grouping of components. A namespace can contain multiple applications
-	AppName string         `yaml:"AppName,omitempty" json:"appName,omitempty"`
-	Link    *[]EnvInfoLink `yaml:"Link,omitempty" json:"link,omitempty"`
+	AppName string `yaml:"AppName,omitempty" json:"appName,omitempty"`
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty" json:"debugPort,omitempty"`
@@ -86,15 +85,6 @@ type EnvSpecificInfo struct {
 	fs                filesystem.Filesystem
 	EnvInfo           `yaml:",omitempty"`
 	envinfoFileExists bool
-}
-
-type EnvInfoLink struct {
-	// Name of link (same as name of k8s secret)
-	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
-	// Kind of service with which the component is linked
-	ServiceKind string `yaml:"ServiceKind,omitempty" json:"serviceKind,omitempty"`
-	// Name of the instance of the ServiceKind that component is linked with
-	ServiceName string `yaml:"ServiceName,omitempty" json:"serviceName,omitempty"`
 }
 
 func WrapForJSONOutput(compSettings ComponentSettings) JSONEnvInfoRepr {
@@ -216,14 +206,6 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 			} else {
 				esi.componentSettings.URL = &[]localConfigProvider.LocalURL{urlValue}
 			}
-
-		case "link":
-			linkValue := value.(EnvInfoLink)
-			if esi.componentSettings.Link != nil {
-				*esi.componentSettings.Link = append(*esi.componentSettings.Link, linkValue)
-			} else {
-				esi.componentSettings.Link = &[]EnvInfoLink{linkValue}
-			}
 		}
 
 		return esi.writeToFile()
@@ -303,26 +285,6 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 	}
 	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
 
-}
-
-func (esi *EnvSpecificInfo) DeleteLink(parameter string) error {
-	index := -1
-
-	for i, link := range *esi.componentSettings.Link {
-		if link.Name == parameter {
-			index = i
-			break
-		}
-	}
-
-	if index != -1 {
-		s := *esi.componentSettings.Link
-		s = append(s[:index], s[index+1:]...)
-		esi.componentSettings.Link = &s
-		return esi.writeToFile()
-	} else {
-		return nil
-	}
 }
 
 // GetComponentSettings returns the componentSettings from envinfo
@@ -431,26 +393,6 @@ func (ei *EnvInfo) SetIsRouteSupported(isRouteSupported bool) {
 	ei.isRouteSupported = isRouteSupported
 }
 
-// GetLink returns the EnvInfoLink, returns default if nil
-func (ei *EnvInfo) GetLink() []EnvInfoLink {
-	if ei.componentSettings.Link == nil {
-		return []EnvInfoLink{}
-	}
-	return *ei.componentSettings.Link
-}
-
-// SearchLinkName searches for a Link with given service kind and service name
-// and returns its name if found
-func (ei *EnvInfo) SearchLinkName(serviceKind, serviceName string) (string, bool) {
-	links := ei.GetLink()
-	for _, link := range links {
-		if link.ServiceKind == serviceKind && link.ServiceName == serviceName {
-			return link.Name, true
-		}
-	}
-	return "", false
-}
-
 const (
 	// Name is the name of the setting controlling the component name
 	Name = "Name"
@@ -472,10 +414,6 @@ const (
 	Push = "PUSH"
 	// PushDescription is the description of push parameter
 	PushDescription = "Push parameter is the action to write devfile commands to env.yaml"
-	// Link parameter
-	Link = "LINK"
-	// LinkDescription is the description of Link
-	LinkDescription = "Link to an Operator backed service"
 )
 
 var (
@@ -485,7 +423,6 @@ var (
 		DebugPort: DebugPortDescription,
 		URL:       URLDescription,
 		Push:      PushDescription,
-		Link:      LinkDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())
