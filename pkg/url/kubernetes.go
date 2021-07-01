@@ -143,7 +143,7 @@ func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) 
 		if err != nil {
 			return err
 		}
-		return k.client.GetKubeClient().DeleteIngressExtensionV1(ingress.Name)
+		return k.client.GetKubeClient().DeleteIngressExtensionV1(ingress.GetName())
 	case localConfigProvider.ROUTE:
 		route, err := k.client.GetOneRouteFromSelector(selector)
 		if err != nil {

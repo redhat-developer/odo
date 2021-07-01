@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/unions"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -68,51 +69,91 @@ func TestListIngresses(t *testing.T) {
 	componentName := "testcomponent"
 	componentLabel := "componentName"
 	tests := []struct {
-		name          string
-		labelSelector string
-		wantIngress   []extensionsv1.Ingress
+		name                    string
+		labelSelector           string
+		wantIngress             unions.KubernetesIngressList
+		isNetworkingV1Supported bool
+		isExtensionV1Supported  bool
 	}{
 		{
 			name:          "Case: one ingress",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
-			wantIngress: []extensionsv1.Ingress{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "testIngress1",
-						Labels: map[string]string{
-							componentLabel: componentName,
+			wantIngress: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					{
+						NetworkingV1Ingress: &networkingv1.Ingress{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "testIngress1",
+								Labels: map[string]string{
+									componentLabel: componentName,
+								},
+							},
+						},
+						ExtensionV1Beta1Ingress: nil,
+					},
+				},
+			},
+			isNetworkingV1Supported: true,
+			isExtensionV1Supported:  false,
+		},
+		{
+			name:          "Case: One extension v1 beta ingress",
+			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
+			wantIngress: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					{
+						NetworkingV1Ingress: nil,
+						ExtensionV1Beta1Ingress: &extensionsv1.Ingress{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "testIngress1",
+								Labels: map[string]string{
+									componentLabel: componentName,
+								},
+							},
 						},
 					},
 				},
 			},
+			isNetworkingV1Supported: false,
+			isExtensionV1Supported:  true,
 		},
 		{
 			name:          "Case: two ingresses",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
-			wantIngress: []extensionsv1.Ingress{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "testIngress1",
-						Labels: map[string]string{
-							componentLabel: componentName,
+			wantIngress: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					{
+						NetworkingV1Ingress: &networkingv1.Ingress{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "testIngress1",
+								Labels: map[string]string{
+									componentLabel: componentName,
+								},
+							},
 						},
+						ExtensionV1Beta1Ingress: nil,
 					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "testIngress2",
-						Labels: map[string]string{
-							componentLabel: componentName,
+					{
+						NetworkingV1Ingress: &networkingv1.Ingress{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "testIngress2",
+								Labels: map[string]string{
+									componentLabel: componentName,
+								},
+							},
 						},
+						ExtensionV1Beta1Ingress: nil,
 					},
 				},
 			},
+			isNetworkingV1Supported: true,
+			isExtensionV1Supported:  false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// initialising the fakeclient
-			fkclient, fkclientset := FakeNew()
+			fkclient, fkclientset := FakeNewWithIngressSupports(tt.isNetworkingV1Supported, tt.isExtensionV1Supported)
 			fkclient.Namespace = "default"
 
 			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -120,14 +161,12 @@ func TestListIngresses(t *testing.T) {
 					return true, nil, errors.Errorf("selectors are different")
 				}
 				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
-					return true, &networkingv1.Ingress{}, nil
+					return true, tt.wantIngress.GetNetworkingV1IngressList(true), nil
 				}
-				ingress := extensionsv1.IngressList{
-					Items: tt.wantIngress,
-				}
-				return true, &ingress, nil
+				ingress := tt.wantIngress.GetExtensionV1Beta1IngresList(true)
+				return true, ingress, nil
 			})
-			ingresses, err := fkclient.ListIngressesExtensionV1(tt.labelSelector)
+			ingresses, err := fkclient.ListIngresses(tt.labelSelector)
 
 			if err != nil {
 				t.Errorf("fkclient.ListIngressesExtensionV1 unexpected error %v", err)
@@ -137,12 +176,12 @@ func TestListIngresses(t *testing.T) {
 				if len(fkclientset.Kubernetes.Actions()) != 1 {
 					t.Errorf("expected 1 action, got: %v", fkclientset.Kubernetes.Actions())
 				} else {
-					if len(tt.wantIngress) != len(ingresses) {
-						t.Errorf("IngressList length is different, expected %v, got %v", len(tt.wantIngress), len(ingresses))
-					} else if len(ingresses) == 1 && ingresses[0].Name != tt.wantIngress[0].Name {
-						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.wantIngress[0].Name, ingresses[0].Name)
-					} else if len(ingresses) == 2 && (ingresses[0].Name != tt.wantIngress[0].Name || ingresses[1].Name != tt.wantIngress[1].Name) {
-						t.Errorf("ingress name does not match the expected name, expected: %s and %s, got %s and %s", tt.wantIngress[0].Name, tt.wantIngress[1].Name, ingresses[0].Name, ingresses[1].Name)
+					if len(tt.wantIngress.Items) != len(ingresses.Items) {
+						t.Errorf("IngressList length is different, expected %v, got %v", len(tt.wantIngress.Items), len(ingresses.Items))
+					} else if len(ingresses.Items) == 1 && ingresses.Items[0].GetName() != tt.wantIngress.Items[0].GetName() {
+						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.wantIngress.Items[0].GetName(), ingresses.Items[0].GetName())
+					} else if len(ingresses.Items) == 2 && (ingresses.Items[0].GetName() != tt.wantIngress.Items[0].GetName() || ingresses.Items[1].GetName() != tt.wantIngress.Items[1].GetName()) {
+						t.Errorf("ingress name does not match the expected name, expected: %s and %s, got %s and %s", tt.wantIngress.Items[0].GetName(), tt.wantIngress.Items[1].GetName(), ingresses.Items[0].GetName(), ingresses.Items[1].GetName())
 					}
 				}
 			}

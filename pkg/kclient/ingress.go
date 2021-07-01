@@ -32,33 +32,21 @@ func (c *Client) DeleteIngressExtensionV1(name string) error {
 	return nil
 }
 
-// ListIngressesExtensionV1 lists all the ingresses based on the given label selector
-func (c *Client) ListIngressesExtensionV1(labelSelector string) ([]extensionsv1.Ingress, error) {
-	ingressList, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get ingress list")
-	}
-
-	return ingressList.Items, nil
-}
-
 // GetOneIngressFromSelector gets one ingress with the given selector
 // if no or multiple ingresses are found with the given selector, it throws an error
-func (c *Client) GetOneIngressFromSelector(selector string) (*extensionsv1.Ingress, error) {
-	ingresses, err := c.ListIngressesExtensionV1(selector)
+func (c *Client) GetOneIngressFromSelector(selector string) (*unions.KubernetesIngress, error) {
+	ingresses, err := c.ListIngresses(selector)
 	if err != nil {
 		return nil, err
 	}
 
-	if num := len(ingresses); num == 0 {
+	if num := len(ingresses.Items); num == 0 {
 		return nil, fmt.Errorf("no ingress was found for the selector: %v", selector)
 	} else if num > 1 {
 		return nil, fmt.Errorf("multiple ingresses exist for the selector: %v. Only one must be present", selector)
 	}
 
-	return &ingresses[0], nil
+	return ingresses.Items[0], nil
 }
 
 // GetIngressExtensionV1 gets an ingress based on the given name
