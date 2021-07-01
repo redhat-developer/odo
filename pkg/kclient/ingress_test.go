@@ -14,6 +14,17 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
+func ingressNameMatchError(expected, got []string) string {
+	if len(expected) != len(got) {
+		return "invalid error string format expected and got length should be the same"
+	}
+	val := "ingress name does not match the expected name"
+	for i := 0; i < len(expected); i++ {
+		val = fmt.Sprintf("%s, expected %s, got %s", val, expected[i], got[i])
+	}
+	return fmt.Sprintf("ingress name does not match the expected name, expected: %s, got %s", expected, got)
+}
+
 func TestCreateIngress(t *testing.T) {
 
 	tests := []struct {
@@ -83,7 +94,7 @@ func TestCreateIngress(t *testing.T) {
 					t.Errorf("expected 1 action, got: %v", fkclientset.Kubernetes.Actions())
 				} else {
 					if createdIngress.GetName() != tt.ingressName {
-						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.ingressName, createdIngress.GetName())
+						t.Errorf(ingressNameMatchError([]string{tt.ingressName}, []string{createdIngress.GetName()}))
 					}
 				}
 			}
@@ -221,9 +232,9 @@ func TestListIngresses(t *testing.T) {
 					if len(tt.wantIngress.Items) != len(ingresses.Items) {
 						t.Errorf("IngressList length is different, expected %v, got %v", len(tt.wantIngress.Items), len(ingresses.Items))
 					} else if len(ingresses.Items) == 1 && ingresses.Items[0].GetName() != tt.wantIngress.Items[0].GetName() {
-						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.wantIngress.Items[0].GetName(), ingresses.Items[0].GetName())
+						t.Errorf(ingressNameMatchError([]string{tt.wantIngress.Items[0].GetName()}, []string{ingresses.Items[0].GetName()}))
 					} else if len(ingresses.Items) == 2 && (ingresses.Items[0].GetName() != tt.wantIngress.Items[0].GetName() || ingresses.Items[1].GetName() != tt.wantIngress.Items[1].GetName()) {
-						t.Errorf("ingress name does not match the expected name, expected: %s and %s, got %s and %s", tt.wantIngress.Items[0].GetName(), tt.wantIngress.Items[1].GetName(), ingresses.Items[0].GetName(), ingresses.Items[1].GetName())
+						t.Errorf(ingressNameMatchError([]string{tt.wantIngress.Items[0].GetName(), tt.wantIngress.Items[1].GetName()}, []string{ingresses.Items[0].GetName(), ingresses.Items[1].GetName()}))
 					}
 				}
 			}
@@ -365,7 +376,7 @@ func TestGetIngresses(t *testing.T) {
 					t.Errorf("expected 1 action, got: %v", fkclientset.Kubernetes.Actions())
 				} else {
 					if ingress.GetName() != tt.ingressName {
-						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.ingressName, ingress.GetName())
+						t.Errorf(ingressNameMatchError([]string{tt.ingressName}, []string{ingress.GetName()}))
 					}
 				}
 			}
