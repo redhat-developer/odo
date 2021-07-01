@@ -2,7 +2,7 @@
 
 What is a devfile?
 
-A https://redhat-developer.github.io/devfile/[devfile] is a portable file that describes your development environment. It allows reproducing a _portable_ developmental environment without the need of reconfiguration.
+A https://devfile.io/[devfile] is a portable file that describes your development environment. It allows reproducing a _portable_ developmental environment without the need of reconfiguration.
 
 With a devfile you can describe:
 
