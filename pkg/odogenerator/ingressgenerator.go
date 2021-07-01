@@ -26,13 +26,11 @@ func getNetworkingV1IngressSpec(ingressSpecParams generator.IngressSpecParams) *
 									Service: &v1.IngressServiceBackend{
 										Name: ingressSpecParams.ServiceName,
 										Port: v1.ServiceBackendPort{
-											//Looks like we can either set name or number. going with number as it is more important
 											Number: ingressSpecParams.PortNumber.IntVal,
 										},
 									},
 									Resource: nil,
 								},
-								//this field is compulsory
 								PathType: &pathType,
 							},
 						},
