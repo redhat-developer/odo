@@ -111,6 +111,22 @@ func Getwd() string {
 	return dir
 }
 
+// CopyExampleFile copies an example file from tests/examples/<file-path>
+// into targetDst
+func CopyExampleFile(filePath, targetDst string) {
+	// filename of this file
+	_, filename, _, _ := runtime.Caller(0)
+	// path to the examples directory
+	examplesDir := filepath.Join(filepath.Dir(filename), "..", "examples")
+
+	src := filepath.Join(examplesDir, filePath)
+	info, err := os.Stat(src)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = util.CopyFile(src, targetDst, info)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // CopyExample copies an example from tests/examples/<binaryOrSource>/<componentName>/<exampleName> into targetDir
 func CopyExample(exampleName string, targetDir string) {
 	// filename of this file

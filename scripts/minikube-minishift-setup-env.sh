@@ -66,12 +66,10 @@ case ${1} in
         ## Constants
         SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
 
-        # Enable OLM for running operator tests
-        curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.17.0/install.sh | bash -s v0.17.0
-
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
+
         # Enable OLM for running operator tests
         curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.17.0/install.sh | bash -s v0.17.0
         
