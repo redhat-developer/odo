@@ -31,7 +31,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	Context("Operators are installed in the cluster", func() {
 
 		BeforeEach(func() {
-			commonVar.CliRunner.CreateSecretForRandomNamespace("redis-secret", "password", commonVar.Project)
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
 			operators := []string{"redis-operator", "service-binding-operator"}
@@ -114,6 +113,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			var redisCluster string
 
 			BeforeEach(func() {
+				commonVar.CliRunner.CreateSecretForRandomNamespace("redis-secret", "password", commonVar.Project)
 				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 				redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 				redisCluster = fmt.Sprintf("%s/RedisCluster", redisOperator)
@@ -285,40 +285,34 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						When("a link is created with the service", func() {
 							var stdOut string
 							BeforeEach(func() {
+								if os.Getenv("KUBERNETES") == "true" {
+									Skip("This is a OpenShift specific scenario, skipping")
+								}
 								stdOut = helper.Cmd("odo", "link", "RedisCluster/rediscluster").ShouldPass().Out()
 							})
 
 							It("should display a successful message", func() {
-								if os.Getenv("KUBERNETES") == "true" {
-									Skip("This is a OpenShift specific scenario, skipping")
-								}
 								Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
 							})
 
 							It("Should fail to link it again", func() {
-								if os.Getenv("KUBERNETES") == "true" {
-									Skip("This is a OpenShift specific scenario, skipping")
-								}
 								stdOut = helper.Cmd("odo", "link", "RedisCluster/rediscluster").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("already linked with the service"))
 							})
 
 							When("the link is deleted", func() {
 								BeforeEach(func() {
+									if os.Getenv("KUBERNETES") == "true" {
+										Skip("This is a OpenShift specific scenario, skipping")
+									}
 									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/rediscluster").ShouldPass().Out()
 								})
 
 								It("should display a successful message", func() {
-									if os.Getenv("KUBERNETES") == "true" {
-										Skip("This is a OpenShift specific scenario, skipping")
-									}
 									Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))
 								})
 
 								It("should fail to delete it again", func() {
-									if os.Getenv("KUBERNETES") == "true" {
-										Skip("This is a OpenShift specific scenario, skipping")
-									}
 									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/rediscluster").ShouldFail().Err()
 									Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
 								})
