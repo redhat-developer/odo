@@ -1,7 +1,6 @@
 package odogenerator
 
 import (
-	"fmt"
 	"github.com/devfile/library/pkg/devfile/generator"
 	"k8s.io/api/networking/v1"
 )
@@ -10,6 +9,7 @@ import (
 // getNetworkingV1IngressSpec gets an networking v1 ingress spec
 func getNetworkingV1IngressSpec(ingressSpecParams generator.IngressSpecParams) *v1.IngressSpec {
 	path := "/"
+	pathType := v1.PathTypeImplementationSpecific
 	if ingressSpecParams.Path != "" {
 		path = ingressSpecParams.Path
 	}
@@ -26,12 +26,12 @@ func getNetworkingV1IngressSpec(ingressSpecParams generator.IngressSpecParams) *
 									Service: &v1.IngressServiceBackend{
 										Name: ingressSpecParams.ServiceName,
 										Port: v1.ServiceBackendPort{
-											Name:   fmt.Sprintf("%s%d", ingressSpecParams.ServiceName, ingressSpecParams.PortNumber.IntVal),
 											Number: ingressSpecParams.PortNumber.IntVal,
 										},
 									},
 									Resource: nil,
 								},
+								PathType: &pathType,
 							},
 						},
 					},

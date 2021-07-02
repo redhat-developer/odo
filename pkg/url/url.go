@@ -72,10 +72,7 @@ func ListPushedIngress(client *kclient.Client, componentName string) (URLList, e
 	}
 
 	var urls []URL
-	for _, i := range ingresses {
-		urls = append(urls, NewURLFromKubernetesIngress(i))
-	}
-
+	urls = append(urls, NewURLsFromKubernetesIngressList(ingresses)...)
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
 }

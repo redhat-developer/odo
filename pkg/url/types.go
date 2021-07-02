@@ -6,6 +6,7 @@ import (
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"reflect"
 )
 
 // URL is
@@ -51,6 +52,17 @@ const (
 	// StateTypeLocallyDeleted means that URL was deleted from the local config, but it is still present on the cluster/container
 	StateTypeLocallyDeleted = "Locally Deleted"
 )
+
+func NewURLsFromKubernetesIngressList(kil *unions.KubernetesIngressList) []URL {
+	var urlList []URL
+	for _, item := range kil.Items {
+		urlItem := NewURLFromKubernetesIngress(item)
+		if !reflect.DeepEqual(urlItem, URL{}) {
+			urlList = append(urlList, urlItem)
+		}
+	}
+	return urlList
+}
 
 func NewURLFromKubernetesIngress(ki *unions.KubernetesIngress) URL {
 	if ki.IsGenerated() {

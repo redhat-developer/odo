@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/unions"
 	"sort"
 
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -46,9 +47,7 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 	}
 
 	var clusterURLs []URL
-	for _, i := range ingresses {
-		clusterURLs = append(clusterURLs, NewURLFromKubernetesIngress(i))
-	}
+	clusterURLs = append(clusterURLs, NewURLsFromKubernetesIngressList(ingresses)...)
 	for _, r := range routes {
 		// ignore the routes created by ingresses
 		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
@@ -145,7 +144,7 @@ func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) 
 		if err != nil {
 			return err
 		}
-		return k.client.GetKubeClient().DeleteIngressExtensionV1(ingress.Name)
+		return k.client.GetKubeClient().DeleteIngress(ingress.GetName())
 	case localConfigProvider.ROUTE:
 		route, err := k.client.GetOneRouteFromSelector(selector)
 		if err != nil {
@@ -258,13 +257,13 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 			Path:          url.Spec.Path,
 		},
 	}
-	ingress := generator.GetIngress(ingressParam)
+	ingress := unions.NewKubernetesIngressFromParams(ingressParam)
 	// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
-	i, err := k.client.GetKubeClient().CreateIngressExtensionV1(*ingress)
+	i, err := k.client.GetKubeClient().CreateIngress(*ingress)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to create ingress")
+		return "", fmt.Errorf("unable to create ingress %w", err)
 	}
-	return GetURLString(GetProtocol(routev1.Route{}, *i), "", ingressDomain, false), nil
+	return i.GetURLString(), nil
 }
 
 // createRoute creates a route for the given URL with the given labels

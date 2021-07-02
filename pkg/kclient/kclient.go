@@ -54,7 +54,10 @@ type Client struct {
 	supportedResources map[string]bool
 	// Is server side apply supported by cluster
 	// Use IsSSASupported()
-	isSSASupported                     *bool
+	isSSASupported *bool
+	// checkIngressSupports is used to check ingress support
+	//(used to prevent duplicate checks and disable check in UTs)
+	checkIngressSupports               bool
 	isNetworkingV1IngressSupported     bool
 	isExtensionV1Beta1IngressSupported bool
 }
@@ -116,10 +119,7 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 		return nil, err
 	}
 
-	err = client.checkIngressSupport()
-	if err != nil {
-		return nil, err
-	}
+	client.checkIngressSupports = true
 
 	return client, nil
 }
@@ -281,13 +281,16 @@ func (c *Client) IsSSASupported() bool {
 
 func (c *Client) checkIngressSupport() error {
 	var err error
-	c.isNetworkingV1IngressSupported, err = c.IsResourceSupported("networking.k8s.io", "v1", "ingresses")
-	if err != nil {
-		return fmt.Errorf("failed to check networking v1 ingress support %w", err)
-	}
-	c.isExtensionV1Beta1IngressSupported, err = c.IsResourceSupported("extensions", "v1beta1", "ingresses")
-	if err != nil {
-		return fmt.Errorf("failed to check extensions v1beta1 ingress support %w", err)
+	if c.checkIngressSupports {
+		c.isNetworkingV1IngressSupported, err = c.IsResourceSupported("networking.k8s.io", "v1", "ingresses")
+		if err != nil {
+			return fmt.Errorf("failed to check networking v1 ingress support %w", err)
+		}
+		c.isExtensionV1Beta1IngressSupported, err = c.IsResourceSupported("extensions", "v1beta1", "ingresses")
+		if err != nil {
+			return fmt.Errorf("failed to check extensions v1beta1 ingress support %w", err)
+		}
+		c.checkIngressSupports = false
 	}
 	return nil
 }
