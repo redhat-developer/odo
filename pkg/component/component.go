@@ -1562,16 +1562,22 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		}
 	}
 
-	linkedSecrets := fromCluster.GetLinkedSecrets()
-	err = setLinksServiceNames(client, linkedSecrets)
+	ok, err := client.GetKubeClient().IsServiceBindingSupported()
 	if err != nil {
-		return Component{}, fmt.Errorf("unable to get name of services: %w", err)
+		return Component{}, fmt.Errorf("unable to check if service binding is supported: %w", err)
+	}
+	if ok {
+		linkedSecrets := fromCluster.GetLinkedSecrets()
+		err = setLinksServiceNames(client, linkedSecrets)
+		if err != nil {
+			return Component{}, fmt.Errorf("unable to get name of services: %w", err)
+		}
+		component.Status.LinkedServices = linkedSecrets
 	}
 
 	component.Namespace = client.Namespace
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
-	component.Status.LinkedServices = linkedSecrets
 	component.Status.State = StateTypePushed
 
 	return component, nil
