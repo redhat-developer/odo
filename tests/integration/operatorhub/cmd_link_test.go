@@ -26,26 +26,23 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 
 	Context("Operators are installed in the cluster", func() {
 
-		var etcdOperator string
-		var etcdCluster string
+		var redisOperator string
+		var redisCluster string
 
 		BeforeEach(func() {
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
-			operators := []string{"etcdoperator", "service-binding-operator"}
+			operators := []string{"redis-operator", "service-binding-operator"}
 			for _, operator := range operators {
 				helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
 					return strings.Contains(output, operator)
 				})
 			}
 
+			commonVar.CliRunner.CreateSecretForRandomNamespace("redis-secret", "password", commonVar.Project)
 			list := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
-			etcdOperator = regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(list)
-			etcdCluster = fmt.Sprintf("%s/EtcdCluster", etcdOperator)
-		})
-
-		AfterEach(func() {
-			helper.DeleteProject(commonVar.Project)
+			redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(list)
+			redisCluster = fmt.Sprintf("%s/RedisCluster", redisOperator)
 		})
 
 		When("a component and a service are deployed", func() {
@@ -59,8 +56,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "create", "nodejs", componentName).ShouldPass()
 
 				serviceName := "service-" + helper.RandString(6)
-				svcFullName = strings.Join([]string{"EtcdCluster", serviceName}, "/")
-				helper.Cmd("odo", "service", "create", etcdCluster, serviceName, "--project", commonVar.Project).ShouldPass()
+				svcFullName = strings.Join([]string{"RedisCluster", serviceName}, "/")
+				helper.Cmd("odo", "service", "create", redisCluster, serviceName, "--project", commonVar.Project).ShouldPass()
 
 				helper.Cmd("odo", "push").ShouldPass()
 				name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
@@ -94,7 +91,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					})
 
 					It("should find the link environment variable", func() {
-						stdOut := helper.Cmd("odo", "exec", "--", "sh", "-c", "echo $ETCDCLUSTER_CLUSTERIP").ShouldPass().Out()
+						stdOut := helper.Cmd("odo", "exec", "--", "sh", "-c", "echo $REDISCLUSTER_CLUSTERIP").ShouldPass().Out()
 						Expect(stdOut).To(Not(BeEmpty()))
 					})
 
@@ -102,7 +99,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 						stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
 						Expect(stdOut).To(ContainSubstring(svcFullName))
 						Expect(stdOut).To(ContainSubstring("Environment Variables"))
-						Expect(stdOut).To(ContainSubstring("ETCDCLUSTER_CLUSTERIP"))
+						Expect(stdOut).To(ContainSubstring("REDISCLUSTER_CLUSTERIP"))
 					})
 				})
 			})
@@ -163,16 +160,16 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			})
 
 			It("should find bindings for service", func() {
-				helper.Cmd("odo", "exec", "--", "ls", "/bindings/etcd-link/clusterIP").ShouldPass()
+				helper.Cmd("odo", "exec", "--", "ls", "/bindings/redis-link/clusterIP").ShouldPass()
 			})
 
 			It("should find owner references on link and service", func() {
-				ocArgs := []string{"get", "servicebinding", "etcd-link", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
+				ocArgs := []string{"get", "servicebinding", "redis-link", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
 				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 					return strings.Contains(output, "api-app")
 				})
 
-				ocArgs = []string{"get", "etcdclusters.etcd.database.coreos.com", "myetcd", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
+				ocArgs = []string{"get", "redis.redis.opstreelabs.in", "myredis", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
 				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 					return strings.Contains(output, "api-app")
 				})

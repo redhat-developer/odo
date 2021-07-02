@@ -257,7 +257,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 						content, err := ioutil.ReadFile(devfilePath)
 						Expect(err).To(BeNil())
-						matchInOutput := []string{"kubernetes", "inlined", "RedisCluster"}
+						matchInOutput := []string{"kubernetes", "inlined", "RedisCluster", "rediscluster"}
 						helper.MatchAllInOutput(string(content), matchInOutput)
 					})
 
@@ -274,12 +274,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						It("should list the service", func() {
 							// now test listing of the service using odo
 							stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
-							Expect(stdOut).To(ContainSubstring("RedisCluster/redis-cluster"))
+							Expect(stdOut).To(ContainSubstring("RedisCluster/rediscluster"))
 						})
 
 						It("should list the service in JSON format", func() {
 							jsonOut := helper.Cmd("odo", "service", "list", "-o", "json").ShouldPass().Out()
-							helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"redis.redis.opstreelabs.in/v1beta1\"", "\"kind\": \"RedisCluster\"", "\"name\": \"redis-cluster\""})
+							helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"redis.redis.opstreelabs.in/v1beta1\"", "\"kind\": \"RedisCluster\"", "\"name\": \"rediscluster\""})
 						})
 
 						When("a link is created with the service", func() {
@@ -288,7 +288,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								if os.Getenv("KUBERNETES") == "true" {
 									Skip("This is a OpenShift specific scenario, skipping")
 								}
-								stdOut = helper.Cmd("odo", "link", "RedisCluster/redis-cluster").ShouldPass().Out()
+								stdOut = helper.Cmd("odo", "link", "RedisCluster/rediscluster").ShouldPass().Out()
 							})
 
 							It("should display a successful message", func() {
@@ -296,7 +296,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							It("Should fail to link it again", func() {
-								stdOut = helper.Cmd("odo", "link", "RedisCluster/redis-cluster").ShouldFail().Err()
+								stdOut = helper.Cmd("odo", "link", "RedisCluster/rediscluster").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("already linked with the service"))
 							})
 
@@ -305,7 +305,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									if os.Getenv("KUBERNETES") == "true" {
 										Skip("This is a OpenShift specific scenario, skipping")
 									}
-									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/redis-cluster").ShouldPass().Out()
+									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/rediscluster").ShouldPass().Out()
 								})
 
 								It("should display a successful message", func() {
@@ -313,7 +313,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								})
 
 								It("should fail to delete it again", func() {
-									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/redis-cluster").ShouldFail().Err()
+									stdOut = helper.Cmd("odo", "unlink", "RedisCluster/rediscluster").ShouldFail().Err()
 									Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
 								})
 							})

@@ -43,23 +43,22 @@ components:
   name: runtime
 - kubernetes:
     inlined: |
-      apiVersion: etcd.database.coreos.com/v1beta2
-      kind: EtcdCluster
+      apiVersion: redis.redis.opstreelabs.in/v1beta1
+      kind: RedisCluster
       metadata:
         annotations:
-          etcd.database.coreos.com/scope: clusterwide
-        name: myetcd
+          redis.redis.opstreelabs.in/scope: clusterwide
+        name: myredis
       spec:
-        size: 1
-        version: 3.2.13
-  name: myetcd
+        clusterSize: 3
+  name: myredis
 - kubernetes:
     inlined: |
       apiVersion: binding.operators.coreos.com/v1alpha1
       kind: ServiceBinding
       metadata:
         creationTimestamp: null
-        name: etcd-link
+        name: redis-link
       spec:
         application:
           group: apps
@@ -69,13 +68,13 @@ components:
         bindAsFiles: true
         detectBindingResources: true
         services:
-        - group: etcd.database.coreos.com
-          kind: EtcdCluster
-          name: myetcd
-          version: v1beta2
+        - group: redis.redis.opstreelabs.in
+          kind: RedisCluster
+          name: myredis
+          version: v1beta1
       status:
         secret: ""
-  name: etcd-link
+  name: redis-link
 metadata:
   description: Stack with Node.js 14
   displayName: Node.js Runtime
