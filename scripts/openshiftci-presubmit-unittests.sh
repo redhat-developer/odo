@@ -5,9 +5,6 @@ set -e
 # show commands
 set -x
 
-set +x
-yum -y install golang
-set -x
 
 export GOROOT="/usr/lib/golang" 
 export GOPROXY="https://proxy.golang.org,direct"
