@@ -10,8 +10,10 @@
 - param based `odo service create` for operator backed services ([#4704](https://github.com/openshift/odo/pull/4704))
 - add `odo catalog describe service <operator> --example` ([#4821](https://github.com/openshift/odo/pull/4821))
 - `odo link` and `odo unlink` write to devfile without deploying to cluster. Deploying happens when running `odo push` ([#4819](https://github.com/openshift/odo/pull/4819))
+- collect component type and cluster type data for telemetry ([#4763](https://github.com/openshift/odo/pull/4763))
 
 ### Bug Fixes
+- Update telemetry contextual properties only when it is enabled([#4870](https://github.com/openshift/odo/pull/4870))
 
 - Completely move to using networking v1 and extensions v1 ingresses based on cluster support as extensions v1 ingress is deprecated ([#4853](https://github.com/openshift/odo/pull/4853))
 
