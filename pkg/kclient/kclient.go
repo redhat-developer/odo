@@ -54,7 +54,9 @@ type Client struct {
 	supportedResources map[string]bool
 	// Is server side apply supported by cluster
 	// Use IsSSASupported()
-	isSSASupported                     *bool
+	isSSASupported *bool
+	// checkIngressSupports is used to check ingress support
+	//(used to prevent duplicate checks and disable check in UTs)
 	checkIngressSupports               bool
 	isNetworkingV1IngressSupported     bool
 	isExtensionV1Beta1IngressSupported bool
@@ -288,6 +290,7 @@ func (c *Client) checkIngressSupport() error {
 		if err != nil {
 			return fmt.Errorf("failed to check extensions v1beta1 ingress support %w", err)
 		}
+		c.checkIngressSupports = false
 	}
 	return nil
 }

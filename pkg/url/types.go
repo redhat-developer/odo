@@ -6,6 +6,7 @@ import (
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"reflect"
 )
 
 // URL is
@@ -53,11 +54,14 @@ const (
 )
 
 func NewURLsFromKubernetesIngressList(kil *unions.KubernetesIngressList) []URL {
-	var ul []URL
-	for _, it := range kil.Items {
-		ul = append(ul, NewURLFromKubernetesIngress(it))
+	var urlList []URL
+	for _, item := range kil.Items {
+		urlItem := NewURLFromKubernetesIngress(item)
+		if !reflect.DeepEqual(urlItem, URL{}) {
+			urlList = append(urlList, urlItem)
+		}
 	}
-	return ul
+	return urlList
 }
 
 func NewURLFromKubernetesIngress(ki *unions.KubernetesIngress) URL {

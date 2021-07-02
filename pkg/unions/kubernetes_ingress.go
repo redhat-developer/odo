@@ -45,6 +45,7 @@ func (ki *KubernetesIngress) IsGenerated() bool {
 	return ki.isGenerated
 }
 
+//GetName returns the name of underlying networking v1 or extensions v1 ingress
 func (ki *KubernetesIngress) GetName() string {
 	if ki.NetworkingV1Ingress != nil {
 		return ki.NetworkingV1Ingress.GetName()
@@ -54,6 +55,7 @@ func (ki *KubernetesIngress) GetName() string {
 	return ""
 }
 
+//GetProtocol returns `https` if tls is configured on either networking v1 or extensions v1 ingress, else `http`
 func (ki *KubernetesIngress) GetProtocol() string {
 	if (ki.NetworkingV1Ingress != nil && len(ki.NetworkingV1Ingress.Spec.TLS) > 0) || (ki.ExtensionV1Beta1Ingress != nil && len(ki.ExtensionV1Beta1Ingress.Spec.TLS) > 0) {
 		return "https"
@@ -61,6 +63,7 @@ func (ki *KubernetesIngress) GetProtocol() string {
 	return "http"
 }
 
+//GetHost returns the host of underlying networking v1 or extensions v1 ingress
 func (ki *KubernetesIngress) GetHost() string {
 	if ki.NetworkingV1Ingress != nil {
 		return ki.NetworkingV1Ingress.Spec.Rules[0].Host
@@ -70,6 +73,7 @@ func (ki *KubernetesIngress) GetHost() string {
 	return ""
 }
 
+//GetURLString returns the fully formed url of the form `GetProtocol()://GetHost()`
 func (ki *KubernetesIngress) GetURLString() string {
 	return fmt.Sprintf("%v://%v", ki.GetProtocol(), ki.GetHost())
 }
@@ -82,6 +86,9 @@ func NewEmptyKubernetesIngressList() *KubernetesIngressList {
 	return &KubernetesIngressList{}
 }
 
+//GetNetworkingV1IngressList returns a v1.IngressList populated by networking v1 ingresses
+//if skipIfExtensionV1Set it true, then if both networking v1 and extension v1 are set for
+//specific KubernetesIngress, then it will be skipped form the returned list
 func (kil *KubernetesIngressList) GetNetworkingV1IngressList(skipIfExtensionV1Set bool) *v1.IngressList {
 	il := v1.IngressList{}
 	for _, it := range kil.Items {
@@ -94,6 +101,9 @@ func (kil *KubernetesIngressList) GetNetworkingV1IngressList(skipIfExtensionV1Se
 	return &il
 }
 
+//GetExtensionV1Beta1IngresList returns a v1beta1.IngressList populated by extensions v1 beta1 ingresses
+//if skipIfNetworkingV1Set it true, then if both networking v1 and extension v1 are set for
+//specific KubernetesIngress, then it will be skipped form the returned list
 func (kil *KubernetesIngressList) GetExtensionV1Beta1IngresList(skipIfNetworkingV1Set bool) *v1beta1.IngressList {
 	il := v1beta1.IngressList{}
 	for _, it := range kil.Items {
