@@ -53,6 +53,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			var projectName string
 
 			BeforeEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
 				projectName = util.GetEnvWithDefault("REDHAT_POSTGRES_OPERATOR_PROJECT", "odo-operator-test")
 				helper.GetCliRunner().SetProject(projectName)
 				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
@@ -321,7 +324,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						When("the service is deleted", func() {
 							BeforeEach(func() {
-								helper.Cmd("odo", "service", "delete", "RedisCluster/redis-cluster", "-f").ShouldPass()
+								helper.Cmd("odo", "service", "delete", "RedisCluster/rediscluster", "-f").ShouldPass()
 							})
 
 							It("should delete service definition from devfile.yaml", func() {
@@ -329,12 +332,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 								content, err := ioutil.ReadFile(devfilePath)
 								Expect(err).To(BeNil())
-								matchInOutput := []string{"kubernetes", "inlined", "RedisCluster", "redis-cluster"}
+								matchInOutput := []string{"kubernetes", "inlined", "RedisCluster", "rediscluster"}
 								helper.DontMatchAllInOutput(string(content), matchInOutput)
 							})
 
 							It("should fail to delete the service again", func() {
-								stdOut = helper.Cmd("odo", "service", "delete", "RedisCluster/redis-cluster", "-f").ShouldFail().Err()
+								stdOut = helper.Cmd("odo", "service", "delete", "RedisCluster/rediscluster", "-f").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("couldn't find service named"))
 							})
 
@@ -368,7 +371,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							It("should list both services", func() {
 								stdOut = helper.Cmd("odo", "service", "list").ShouldPass().Out()
 								// first service still here
-								Expect(stdOut).To(ContainSubstring("RedisCluster/redis-cluster"))
+								Expect(stdOut).To(ContainSubstring("RedisCluster/rediscluster"))
 								// second service created
 								Expect(stdOut).To(ContainSubstring("RedisCluster/myredis2"))
 							})
