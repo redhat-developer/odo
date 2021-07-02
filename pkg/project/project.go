@@ -10,12 +10,12 @@ import (
 
 const apiVersion = "odo.dev/v1alpha1"
 
-// GetCurrent return current project
+// GetCurrent returns the name of the current project
 func GetCurrent(context *genericclioptions.Context) string {
 	return context.KClient.GetCurrentNamespace()
 }
 
-// SetCurrent sets the projectName as current project
+// SetCurrent sets projectName as the current project
 func SetCurrent(context *genericclioptions.Context, projectName string) error {
 	err := context.KClient.SetCurrentNamespace(projectName)
 	if err != nil {
@@ -24,6 +24,11 @@ func SetCurrent(context *genericclioptions.Context, projectName string) error {
 	return nil
 }
 
+// Create a new project, either by creating a `project.openshift.io` resource if supported by the cluster
+// (which will trigger the creation of a namespace),
+// or by creating directly a `namespace` resource.
+// With the `wait` flag, the function will wait for the `default` service account
+// to be created in the namespace before to return.
 func Create(context *genericclioptions.Context, projectName string, wait bool) error {
 	if projectName == "" {
 		return errors.Errorf("no project name given")
@@ -55,7 +60,8 @@ func Create(context *genericclioptions.Context, projectName string, wait bool) e
 	return nil
 }
 
-// Delete deletes the project with name projectName and returns errors if any
+// Delete deletes the project (the `project` resource if supported, or directly the `namespace`)
+// with the name projectName and returns an error if any
 func Delete(context *genericclioptions.Context, projectName string, wait bool) error {
 	if projectName == "" {
 		return errors.Errorf("no project name given")
@@ -81,8 +87,7 @@ func Delete(context *genericclioptions.Context, projectName string, wait bool) e
 	return nil
 }
 
-// List lists all the projects on the cluster
-// returns a list of the projects or the error if any
+// List all the projects on the cluster on a machine readable format and returns an error if any
 func List(context *genericclioptions.Context) (ProjectList, error) {
 	currentProject := context.KClient.GetCurrentNamespace()
 
@@ -116,10 +121,7 @@ func List(context *genericclioptions.Context) (ProjectList, error) {
 	return getMachineReadableFormatForList(projects), nil
 }
 
-// Exists Checks whether a project with the given name exists or not
-// projectName is the project name to perform check for
-// The first returned parameter is a bool indicating if a project with the given name already exists or not
-// The second returned parameter is the error that might occurs while execution
+// Exists checks whether a project with the name `projectName` exists and returns an error if any
 func Exists(context *genericclioptions.Context, projectName string) (bool, error) {
 	projectSupport, err := context.Client.IsProjectSupported()
 	if err != nil {
