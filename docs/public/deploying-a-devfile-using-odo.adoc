@@ -2,7 +2,7 @@
 
 What is a devfile?
 
-A https://redhat-developer.github.io/devfile/[devfile] is a portable file that describes your development environment. It allows reproducing a _portable_ developmental environment without the need of reconfiguration.
+A https://devfile.io/[devfile] is a portable file that describes your development environment. It allows reproducing a _portable_ developmental environment without the need of reconfiguration.
 
 With a devfile you can describe:
 
@@ -435,11 +435,13 @@ In this example we will be deploying a https://github.com/OpenLiberty/applicatio
 +
 [source,sh]
 ----
-   $ odo create myopenliberty
+   $ odo create java-openliberty myopenliberty
 
+   Devfile Object Validation
+    ✓  Checking devfile existence [20171ns]
+    ✓  Creating a devfile component from registry: DefaultDevfileRegistry [30200ns]
    Validation
-    ✓  Creating a devfile component from devfile path: .../application-stack-intro/devfile.yaml [253220ns]
-    ✓  Validating devfile component [263521ns]
+    ✓  Validating if devfile name is correct [20710ns]
 
    Please use `odo push` command to create the component with source deployed
 
@@ -454,7 +456,7 @@ NOTE: If deploying on OpenShift, you can skip this step and a Route will be crea
  $ odo url create --host $(minikube ip).nip.io
   ✓  URL myopenliberty-9080 created for component: myopenliberty
 
- To apply the URL configuration changes, please use odo push
+ To apply the URL configuration changes, please use `odo push`
 ----
 +
 
@@ -470,15 +472,20 @@ Validation
 Creating Kubernetes resources for component myopenliberty
  ✓  Waiting for component to start [23s]
 
+Applying URL changes
+ ✓  URL ep1: http://ep1.192.168.39.247.nip.io/ created
+ ✓  URL myopenliberty-9080: http://myopenliberty-9080.192.168.39.247.nip.io/ created
+
 Syncing to component myopenliberty
  ✓  Checking files for pushing [4ms]
  ✓  Syncing files to the component [4s]
 
 Executing devfile commands for component myopenliberty
- ✓  Executing build command "if [ -e /projects/.disable-bld-cmd ]; then echo \"found the disable file\" && echo \"devBuild command will not run\" && exit 0; else echo \"will run the devBuild command\" && mkdir -p /projects/target/liberty && if [ ! -d /projects/target/liberty/wlp ]; then echo \"...moving liberty\"; mv /opt/ol/wlp /projects/target/liberty; touch ./.liberty-mv; elif [[ -d /projects/target/liberty/wlp && ! -e /projects/.liberty-mv ]]; then echo \"STACK WARNING - LIBERTY RUNTIME WAS LOADED FROM HOST\"; fi && mvn -Dliberty.runtime.version=20.0.0.10 package && touch ./.disable-bld-cmd; fi" [9s]
+ ✓  Waiting for component to start [5ms]
+ ✓  Executing build command "/stack/ol/scripts/devbuild-cmd.sh 21.0.0.3" [59s] 
  ✓  Executing run command "mvn -Dliberty.runtime.version=20.0.0.10 -Ddebug=false -DhotTests=true -DcompileWait=3 liberty:dev", if not running [2s]
 
-Pushing devfile component myopenliberty
+Pushing devfile component "myopenliberty"
  ✓  Changes successfully pushed to component
 
 ----
@@ -488,16 +495,19 @@ Pushing devfile component myopenliberty
 [source,sh]
 ----
  $ odo url list
+
   Found the following URLs for component myopenliberty
-  NAME                STATE      URL                                                 PORT     SECURE
-  myopenliberty-9     Pushed     http://myopenliberty-9.192.168.99.100.nip.io        9080     false
+  NAME   STATE      URL                                 PORT     SECURE     KIND
+  ep1    Pushed     http://ep1.192.168.39.247.nip.io    9080     false      ingress
 ----
 
 . View your deployed application using the generated URL (this example shows an ingress hostname URL, while an OpenShift route would look a bit different):
 +
 [source,sh]
 ----
- $ curl http://myopenliberty-9.$(minikube ip).nip.io/api/resource
+ $ curl http://ep1.$(minikube ip).nip.io/api/resource; echo
+
+ Hello! Welcome to Open Liberty
 ----
 +
 . Have odo watch for changes in the source code:
@@ -508,13 +518,6 @@ Pushing devfile component myopenliberty
 ----
 
 You can now continue developing your application. Refreshing the browser or hitting the endpoint again will render the source code changes.
-
-You can also trigger `odo watch` with custom devfile build, run and debug commands.
-
-[source,sh]
------
-$ odo watch --build-command="mybuild" --run-command="myrun" --debug-command="mydebug"
-----
 
 Run `odo delete` to delete the application from cluster.
 
