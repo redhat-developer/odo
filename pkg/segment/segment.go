@@ -207,6 +207,7 @@ func RunningInTerminal() bool {
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
 func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
+	klog.V(4).Info("Checking telemetry enable status")
 	var err error
 	if cfg == nil {
 		cfg, err = preference.New()

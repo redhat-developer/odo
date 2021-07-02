@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift/odo/pkg/occlient"
+
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/openshift/odo/pkg/log"
@@ -36,6 +38,7 @@ type segmentResponse struct {
 			Success       bool   `json:"success"`
 			Version       string `json:"version"`
 			ComponentType string `json:"componentType"`
+			ClusterType   string `json:"clusterType"`
 		} `json:"properties"`
 		Type string `json:"type"`
 	} `json:"batch"`
@@ -266,11 +269,15 @@ func TestClientUploadWithContext(t *testing.T) {
 	}
 	ctx := scontext.NewContext(context.Background())
 
-	for k, v := range map[string]string{"componentType": "nodejs"} {
+	for k, v := range map[string]string{scontext.ComponentType: "nodejs", scontext.ClusterType: ""} {
 		switch k {
-		case "componentType":
+		case scontext.ComponentType:
 			scontext.SetComponentType(ctx, v)
 			uploadData = fakeTelemetryData("odo create", nil, ctx)
+		case scontext.ClusterType:
+			fakeClient, _ := occlient.FakeNew()
+			scontext.SetClusterType(ctx, fakeClient)
+			uploadData = fakeTelemetryData("odo project set", nil, ctx)
 		}
 		c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
 		if err != nil {
@@ -291,11 +298,14 @@ func TestClientUploadWithContext(t *testing.T) {
 			}
 			if s.Batch[1].Type == "identify" {
 				switch k {
-				case "componentType":
+				case scontext.ComponentType:
 					if s.Batch[1].Properties.ComponentType != v {
-						t.Errorf("componentType did not match. Want: %q Got: %q", v, s.Batch[1].Properties.ComponentType)
+						t.Errorf("%v did not match. Want: %q Got: %q", scontext.ComponentType, v, s.Batch[1].Properties.ComponentType)
 					}
-
+				case scontext.ClusterType:
+					if s.Batch[1].Properties.ClusterType != v {
+						t.Errorf("%v did not match. Want: %q Got: %q", scontext.ClusterType, v, s.Batch[1].Properties.ClusterType)
+					}
 				}
 			}
 		default:
