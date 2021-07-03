@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/segment"
-
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	scontext "github.com/openshift/odo/pkg/segment/context"
@@ -260,12 +258,12 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
-	if segment.IsTelemetryEnabled(nil) {
+	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetClusterType(cmd.Context(), po.Client)
 	}
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
-		if segment.IsTelemetryEnabled(nil) {
+		if scontext.GetTelemetryStatus(cmd.Context()) {
 			scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(po.Devfile.Data.GetMetadata()))
 		}
 		// Return Devfile push
@@ -273,7 +271,7 @@ func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Legacy odo push
-	if segment.IsTelemetryEnabled(nil) {
+	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetComponentType(cmd.Context(), po.LocalConfigInfo.GetType())
 	}
 	return po.Push()

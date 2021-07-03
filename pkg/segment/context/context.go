@@ -13,8 +13,8 @@ import (
 )
 
 const ComponentType = "componentType"
-
 const ClusterType = "clusterType"
+const TelemetryStatus = "isTelemetryEnabled"
 
 const NOTFOUND = "not-found"
 
@@ -78,6 +78,20 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 		}
 	}
 	setContextProperty(ctx, ClusterType, value)
+}
+
+// SetTelemetryStatus sets telemetry status before a command is run
+func SetTelemetryStatus(ctx context.Context, isEnabled bool) {
+	setContextProperty(ctx, TelemetryStatus, isEnabled)
+}
+
+// GetTelemetryStatus gets the telemetry status that is set before a command is run
+func GetTelemetryStatus(ctx context.Context) bool {
+	isEnabled, ok := GetContextProperties(ctx)[TelemetryStatus]
+	if ok {
+		return isEnabled.(bool)
+	}
+	return false
 }
 
 // set safely sets value for a key in storage

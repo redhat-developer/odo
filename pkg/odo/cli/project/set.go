@@ -3,8 +3,6 @@ package project
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/segment"
-
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
@@ -70,7 +68,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 
 // Run runs the project set command
 func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
-	if segment.IsTelemetryEnabled(nil) {
+	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetClusterType(cmd.Context(), pso.Client)
 	}
 	current := pso.Project

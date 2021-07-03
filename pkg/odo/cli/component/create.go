@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/segment"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -845,7 +843,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		return errors.Wrap(err, "unable to parse devfile")
 	}
 	// Add component type in case it is not already added or is empty
-	if segment.IsTelemetryEnabled(nil) {
+	if scontext.GetTelemetryStatus(cmd.Context()) {
 		if value, ok := scontext.GetContextProperties(cmd.Context())[scontext.ComponentType]; !ok || value == "" {
 			scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(devObj.Data.GetMetadata()))
 		}
@@ -923,7 +921,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
-		if segment.IsTelemetryEnabled(nil) {
+		if scontext.GetTelemetryStatus(cmd.Context()) {
 			scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 		}
 		err := co.devfileRun(cmd)
@@ -937,7 +935,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Add component type for s2i components
-	if segment.IsTelemetryEnabled(nil) {
+	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetComponentType(cmd.Context(), *co.componentSettings.Type)
 	}
 	// we only do conversion if the --s2i is provided and the component is not of --git type
