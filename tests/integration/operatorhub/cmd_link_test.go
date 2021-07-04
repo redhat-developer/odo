@@ -169,7 +169,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					return strings.Contains(output, "api-app")
 				})
 
-				ocArgs = []string{"get", "redis.redis.opstreelabs.in", "myredis", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
+				ocArgs = []string{"get", "rediscluster.redis.redis.opstreelabs.in", "myredis", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
 				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 					return strings.Contains(output, "api-app")
 				})
