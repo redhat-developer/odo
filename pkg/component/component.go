@@ -1602,7 +1602,7 @@ func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount) 
 		}
 		services := sbr.Spec.Services
 		if len(services) != 1 {
-			return errors.New("ServiceBinding should have only one service")
+			return errors.New("the ServiceBinding resource should define only one service")
 		}
 		service := services[0]
 		if service.Kind == "Service" {
