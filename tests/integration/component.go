@@ -384,7 +384,7 @@ func componentTests(args ...string) {
 
 			})
 
-			It("should not fail when --context is not set", func() {
+			FIt("should not fail when --context is not set", func() {
 				// Was failing due to https://github.com/openshift/odo/issues/1969
 				if runtime.GOOS == "darwin" {
 					helper.Cmd("odo", append(args, "create", "--s2i", "java:8", cmpName, "--project",
@@ -393,8 +393,6 @@ func componentTests(args ...string) {
 					helper.Cmd("odo", append(args, "create", "--s2i", "java:8", cmpName, "--project",
 						commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"))...).ShouldPass()
 				}
-				helper.Cmd("odo", append(args, "create", "--s2i", "java:8", cmpName, "--project",
-					commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"))...).ShouldPass()
 				info := helper.LocalEnvInfo(commonVar.Context)
 				Expect(info.GetName(), cmpName)
 			})
