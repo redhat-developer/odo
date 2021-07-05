@@ -90,7 +90,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component type argument and --context flag", func() {
 		var newContext, envFilePath string
 		JustBeforeEach(func() {
-			newContext = path.Join(commonVar.Context, "newContext")
+			newContext = filepath.Join(commonVar.Context, "newContext")
 			devfilePath = filepath.Join(newContext, devfile)
 			helper.MakeDir(newContext)
 		})

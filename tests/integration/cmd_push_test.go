@@ -118,7 +118,8 @@ var _ = Describe("odo push command tests", func() {
 			// create a file and folder then push
 			err := os.MkdirAll(filepath.Join(commonVar.Context, "tests"), 0750)
 			Expect(err).To(BeNil())
-			_, err = os.Create(filepath.Join(commonVar.Context, "README.md"))
+			testFile, err := os.Create(filepath.Join(commonVar.Context, "README.md"))
+			testFile.Close()
 			Expect(err).To(BeNil())
 
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
