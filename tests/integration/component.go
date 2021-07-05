@@ -409,14 +409,12 @@ func componentTests(args ...string) {
 			It("should be valid if path is relative and includes ../", func() {
 				relativeContext := fmt.Sprintf("..%c%s", filepath.Separator, filepath.Base(commonVar.Context))
 				fmt.Printf("relativeContext = %#v\n", relativeContext)
-
+				binaryFilePath := filepath.Join(commonVar.Context, "sb.jar")
 				if runtime.GOOS == "darwin" {
-					helper.Cmd("odo", append(args, "create", "--s2i", "java:8", cmpName, "--project",
-						commonVar.Project, "--binary", filepath.Join("/private", commonVar.Context, "sb.jar"), "--context", relativeContext)...).ShouldPass()
-				} else {
-					helper.Cmd("odo", append(args, "create", "--s2i", "java:8", cmpName, "--project",
-						commonVar.Project, "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", relativeContext)...).ShouldPass()
+					binaryFilePath = filepath.Join("/private", binaryFilePath)
 				}
+				helper.Cmd("odo", append(args, "create", "--s2i", "java:8", cmpName, "--project",
+					commonVar.Project, "--binary", binaryFilePath, "--context", relativeContext)...).ShouldPass()
 				info := helper.LocalEnvInfo(relativeContext)
 				Expect(info.GetApplication(), "app")
 				Expect(info.GetName(), cmpName)
