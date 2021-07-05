@@ -362,7 +362,7 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	}
 
 	completions = make([]string, 0, len(components)+len(services.Items))
-	secretNames := comp.GetLinkedSecretNames()
+	secretMounts := comp.GetLinkedSecrets()
 	for _, component := range components {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
@@ -372,8 +372,8 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
 		if component != context.Component() {
 			// we also need to make sure that this component has been linked to the current component
-			for _, secret := range secretNames {
-				if strings.Contains(secret, component) {
+			for _, secret := range secretMounts {
+				if strings.Contains(secret.SecretName, component) {
 					completions = append(completions, component)
 				}
 			}
@@ -387,8 +387,8 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 			return nil
 		}
 		// we also need to make sure that this component has been linked to the current component
-		for _, secret := range secretNames {
-			if strings.Contains(secret, service.Name) {
+		for _, secret := range secretMounts {
+			if strings.Contains(secret.SecretName, service.Name) {
 				completions = append(completions, service.Name)
 			}
 		}

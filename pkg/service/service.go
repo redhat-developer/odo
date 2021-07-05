@@ -707,6 +707,50 @@ func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
 	return false, nil
 }
 
+// ListDevfileLinks returns the names of the links defined in a Devfile
+func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
+	if devfileObj.Data == nil {
+		return nil, nil
+	}
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfile.KubernetesComponentType},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var services []string
+	for _, c := range components {
+		var u unstructured.Unstructured
+		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
+		if err != nil {
+			return nil, err
+		}
+		if !isLinkResource(u.GetKind()) {
+			continue
+		}
+		var sbr servicebinding.ServiceBinding
+		js, err := u.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(js, &sbr)
+		if err != nil {
+			return nil, err
+		}
+		sbrServices := sbr.Spec.Services
+		if len(sbrServices) != 1 {
+			return nil, errors.New("ServiceBinding should have only one service")
+		}
+		service := sbrServices[0]
+		if service.Kind == "Service" {
+			services = append(services, service.Name)
+		} else {
+			services = append(services, service.Kind+"/"+service.Name)
+		}
+	}
+	return services, nil
+}
+
 // ListDevfileServices returns the names of the services defined in a Devfile
 func ListDevfileServices(devfileObj parser.DevfileObj) ([]string, error) {
 	if devfileObj.Data == nil {

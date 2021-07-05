@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/openshift/odo/pkg/util"
@@ -151,43 +150,6 @@ func (do *DeleteOptions) s2iRun() (err error) {
 		}
 
 		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
-			// Before actually deleting the component, first unlink it from any component(s) in the cluster it might be linked to
-			// We do this in three steps:
-			// 1. Get list of active components in the cluster
-			// 2. Use this list to find the components to which our component is linked and generate secret names that are linked
-			// 3. Unlink these secrets from the components
-			var selector string
-			if do.Context.Application != "" {
-				selector = applabels.GetSelector(do.Context.Application)
-			}
-			compoList, err := component.List(do.Client, selector, do.LocalConfigInfo)
-			if err != nil {
-				return err
-			}
-
-			parentComponent, err := component.GetComponent(do.Client, do.componentName, do.Context.Application, do.Context.Project)
-			if err != nil {
-				return err
-			}
-
-			componentSecrets := component.UnlinkComponents(parentComponent, compoList)
-
-			for component, secret := range componentSecrets {
-				spinner := log.Spinner("Unlinking components")
-				for _, secretName := range secret {
-
-					defer spinner.End(false)
-
-					err = do.Client.UnlinkSecret(secretName, component, do.Context.Application)
-					if err != nil {
-						log.Errorf("Unlinking failed")
-						return err
-					}
-
-					spinner.End(true)
-					log.Successf(fmt.Sprintf("Unlinked component %q from component %q for secret %q", parentComponent.Name, component, secretName))
-				}
-			}
 			err = component.Delete(do.Client, do.componentDeleteWaitFlag, do.componentName, do.Application)
 			if err != nil {
 				return err

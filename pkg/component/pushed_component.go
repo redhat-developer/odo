@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -23,7 +24,7 @@ type provider interface {
 	GetAnnotations() map[string]string
 	GetName() string
 	GetEnvVars() []v12.EnvVar
-	GetLinkedSecretNames() []string
+	GetLinkedSecrets() []SecretMount
 }
 
 // PushedComponent is an abstraction over the cluster representation of the component
@@ -68,8 +69,8 @@ func (d defaultPushedComponent) GetEnvVars() []v12.EnvVar {
 	return d.provider.GetEnvVars()
 }
 
-func (d defaultPushedComponent) GetLinkedSecretNames() []string {
-	return d.provider.GetLinkedSecretNames()
+func (d defaultPushedComponent) GetLinkedSecrets() []SecretMount {
+	return d.provider.GetLinkedSecrets()
 }
 
 func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
@@ -121,13 +122,16 @@ type s2iComponent struct {
 	dc appsv1.DeploymentConfig
 }
 
-func (s s2iComponent) GetLinkedSecretNames() (secretNames []string) {
+func (s s2iComponent) GetLinkedSecrets() (secretMounts []SecretMount) {
 	for _, env := range s.dc.Spec.Template.Spec.Containers[0].EnvFrom {
 		if env.SecretRef != nil {
-			secretNames = append(secretNames, env.SecretRef.Name)
+			secretMounts = append(secretMounts, SecretMount{
+				SecretName:  env.SecretRef.Name,
+				MountVolume: false,
+			})
 		}
 	}
-	return secretNames
+	return secretMounts
 }
 
 func (s s2iComponent) GetEnvVars() []v12.EnvVar {
@@ -158,15 +162,38 @@ type devfileComponent struct {
 	d v1.Deployment
 }
 
-func (d devfileComponent) GetLinkedSecretNames() (secretNames []string) {
+func (d devfileComponent) GetLinkedSecrets() (secretMounts []SecretMount) {
 	for _, container := range d.d.Spec.Template.Spec.Containers {
 		for _, env := range container.EnvFrom {
 			if env.SecretRef != nil {
-				secretNames = append(secretNames, env.SecretRef.Name)
+				secretMounts = append(secretMounts, SecretMount{
+					SecretName:  env.SecretRef.Name,
+					MountVolume: false,
+				})
 			}
 		}
 	}
-	return secretNames
+
+	for _, volume := range d.d.Spec.Template.Spec.Volumes {
+		if volume.Secret != nil {
+			mountPath := ""
+			for _, container := range d.d.Spec.Template.Spec.Containers {
+				for _, mount := range container.VolumeMounts {
+					if mount.Name == volume.Name {
+						mountPath = mount.MountPath
+						break
+					}
+				}
+			}
+			secretMounts = append(secretMounts, SecretMount{
+				SecretName:  volume.Secret.SecretName,
+				MountVolume: true,
+				MountPath:   mountPath,
+			})
+		}
+	}
+
+	return secretMounts
 }
 
 func (d devfileComponent) GetEnvVars() []v12.EnvVar {
