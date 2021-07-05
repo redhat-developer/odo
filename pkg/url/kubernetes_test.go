@@ -706,7 +706,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-nodejs",
+					Name: "example-app",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -737,7 +737,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-nodejs",
+					Name: "example-url-app",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -772,7 +772,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-nodejs",
+					Name: "example-url-app",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",

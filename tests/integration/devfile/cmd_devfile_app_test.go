@@ -41,12 +41,12 @@ var _ = Describe("odo devfile app command tests", func() {
 			// create first component in the first app
 			context0 = helper.CreateNewContext()
 			component0 = helper.RandString(4)
-			createComponent(component0, app0, namespace, context0, "")
+			createComponent(component0, app0, namespace, context0)
 
 			// create second component in the second app
 			context1 = helper.CreateNewContext()
 			component1 = helper.RandString(4)
-			createComponent(component1, app1, namespace, context1, "")
+			createComponent(component1, app1, namespace, context1)
 		})
 
 		AfterEach(func() {
@@ -111,7 +111,7 @@ var _ = Describe("odo devfile app command tests", func() {
 
 				helper.Cmd("odo", "create", "nodejs", "--project", namespace, component00, "--context", context00, "--app", app0).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context00)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context00, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(context00, "devfile.yaml"))
 				helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
 				helper.Cmd("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress").ShouldPass()
 				helper.Cmd("odo", "push", "--context", context00).ShouldPass()
@@ -154,11 +154,11 @@ var _ = Describe("odo devfile app command tests", func() {
 
 			// create first component in the first app
 			context0 = helper.CreateNewContext()
-			createComponent(component, app0, namespace, context0, "")
+			createComponent(component, app0, namespace, context0)
 
 			// create second component in the second app
 			context1 = helper.CreateNewContext()
-			createComponent(component, app1, namespace, context1, "devfileNestedCompCommands.yaml")
+			createComponent(component, app1, namespace, context1)
 		})
 
 		AfterEach(func() {
@@ -179,15 +179,10 @@ var _ = Describe("odo devfile app command tests", func() {
 })
 
 // createComponent creates with the given parameters and pushes it
-// devfileExampleName is the example devfile used during the creation
-// if empty a default devfile example is used
-func createComponent(componentName, appName, project, context, devfileExampleName string) {
-	if devfileExampleName == "" {
-		devfileExampleName = "devfile.yaml"
-	}
+func createComponent(componentName, appName, project, context string) {
 	helper.Cmd("odo", "create", "nodejs", "--project", project, componentName, "--context", context, "--app", appName).ShouldPass()
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfileExampleName), filepath.Join(context, "devfile.yaml"))
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 	helper.Cmd("odo", "push", "--context", context).ShouldPass()
 }
 
