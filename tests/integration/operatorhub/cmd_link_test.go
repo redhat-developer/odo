@@ -42,7 +42,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			commonVar.CliRunner.CreateSecretForRandomNamespace("redis-secret", "password", commonVar.Project)
 			list := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 			redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(list)
-			redisCluster = fmt.Sprintf("%s/RedisCluster", redisOperator)
+			redisCluster = fmt.Sprintf("%s/Redis", redisOperator)
 		})
 
 		When("a component and a service are deployed", func() {
@@ -56,7 +56,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "create", "nodejs", componentName).ShouldPass()
 
 				serviceName := "service-" + helper.RandString(6)
-				svcFullName = strings.Join([]string{"RedisCluster", serviceName}, "/")
+				svcFullName = strings.Join([]string{"Redis", serviceName}, "/")
 				helper.Cmd("odo", "service", "create", redisCluster, serviceName, "--project", commonVar.Project).ShouldPass()
 
 				helper.Cmd("odo", "push").ShouldPass()
@@ -169,7 +169,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					return strings.Contains(output, "api-app")
 				})
 
-				ocArgs = []string{"get", "rediscluster.redis.redis.opstreelabs.in", "myredis", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
+				ocArgs = []string{"get", "redis.redis.redis.opstreelabs.in", "myredis", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
 				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 					return strings.Contains(output, "api-app")
 				})

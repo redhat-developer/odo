@@ -32,15 +32,15 @@ EOF
 }
 
 if [ $KUBERNETES == "true" ]; then
-  # install redis-oprator
+  # install "redis-oprator" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog soure from "olm" namespace
   install_redis_operator kubectl operators operatorhubio-catalog olm
 
-  # install service-binding-operator
+  # install "service-binding-operator" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog soure from "olm" namespace
   install_service_binding_operator kubectl operators service-binding-operator operatorhubio-catalog olm
 else
-  # install redis-oprator
+  # install "redis-oprator" using "oc" in "openshift-operators" namespace; use "community-operators" catalog soure from "openshift-marketplace" namespace
   install_redis_operator oc openshift-operators community-operators openshift-marketplace
 
-  # install service-binding-operator
+  # install "service-binding-operator" using "oc" in "openshift-operators" namespace; use "redhat-operators" catalog soure from "openshift-marketplace" namespace
   install_service_binding_operator oc openshift-operators rh-service-binding-operator redhat-operators openshift-marketplace
 fi
