@@ -36,12 +36,19 @@ type ComponentList struct {
 	Items           []Component `json:"items"`
 }
 
+// SecretMount describes a Secret mount (either as environment variables with envFrom or as a volume)
+type SecretMount struct {
+	ServiceName string
+	SecretName  string
+	MountVolume bool
+	MountPath   string
+}
+
 // ComponentStatus is Status of components
 type ComponentStatus struct {
-	Context          string              `json:"context,omitempty"`
-	State            State               `json:"state"`
-	LinkedComponents map[string][]string `json:"linkedComponents,omitempty"`
-	LinkedServices   []string            `json:"linkedServices,omitempty"`
+	Context        string        `json:"context,omitempty"`
+	State          State         `json:"state"`
+	LinkedServices []SecretMount `json:"linkedServices,omitempty"`
 }
 
 // CombinedComponentList is list of s2i and devfile components

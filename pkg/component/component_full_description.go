@@ -3,9 +3,10 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/pkg/service"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/config"
@@ -119,8 +120,13 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	var componentDesc Component
 	var devfile devfileParser.DevfileObj
 	var err error
+	var configLinks []string
 	if envInfo != nil {
 		componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
+		if err != nil {
+			return cfd, err
+		}
+		configLinks, err = service.ListDevfileLinks(devfile)
 	} else {
 		componentDesc, err = GetComponentFromConfig(localConfigInfo)
 	}
@@ -140,8 +146,22 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		cfd.Spec.Env = componentDescFromCluster.Spec.Env
 		cfd.Spec.Type = componentDescFromCluster.Spec.Type
 		cfd.Spec.SourceType = componentDescFromCluster.Spec.SourceType
-		cfd.Status.LinkedComponents = componentDescFromCluster.Status.LinkedComponents
 		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
+	}
+
+	for _, link := range configLinks {
+		found := false
+		for _, linked := range cfd.Status.LinkedServices {
+			if linked.ServiceName == link {
+				found = true
+				break
+			}
+		}
+		if !found {
+			cfd.Status.LinkedServices = append(cfd.Status.LinkedServices, SecretMount{
+				ServiceName: link,
+			})
+		}
 	}
 
 	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
@@ -256,27 +276,6 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 		log.Describef("URLs:\n", output)
 	}
 
-	// Linked components
-	if len(cfd.Status.LinkedComponents) > 0 {
-
-		// Gather the output
-		var output string
-		for name, ports := range cfd.Status.LinkedComponents {
-			if len(ports) > 0 {
-				output += fmt.Sprintf(" · %v - Port(s): %v\n", name, strings.Join(ports, ","))
-			} else {
-				output += fmt.Sprintf(" · %v\n", name)
-			}
-		}
-
-		// Cut off the last newline and output
-		if len(output) > 0 {
-			output = output[:len(output)-1]
-			log.Describef("Linked Components:\n", output)
-		}
-
-	}
-
 	// Linked services
 	if len(cfd.Status.LinkedServices) > 0 {
 
@@ -284,8 +283,13 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 		var output string
 		for _, linkedService := range cfd.Status.LinkedServices {
 
+			if linkedService.SecretName == "" {
+				output += fmt.Sprintf(" · %s\n", linkedService.ServiceName)
+				continue
+			}
+
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetKubeClient().GetSecret(linkedService, cfd.GetNamespace())
+			secrets, err := client.GetKubeClient().GetSecret(linkedService.SecretName, cfd.GetNamespace())
 			if err != nil {
 				return err
 			}
@@ -294,17 +298,25 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 				// Iterate through the secrets to throw in a string
 				var secretOutput string
 				for i := range secrets.Data {
-					secretOutput += fmt.Sprintf("    · %v\n", i)
+					if linkedService.MountVolume {
+						secretOutput += fmt.Sprintf("    · %v\n", filepath.Join(linkedService.MountPath, i))
+					} else {
+						secretOutput += fmt.Sprintf("    · %v\n", i)
+					}
 				}
 
 				if len(secretOutput) > 0 {
 					// Cut off the last newline
 					secretOutput = secretOutput[:len(secretOutput)-1]
-					output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService, secretOutput)
+					if linkedService.MountVolume {
+						output += fmt.Sprintf(" · %s\n   Files:\n%s\n", linkedService.ServiceName, secretOutput)
+					} else {
+						output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService.ServiceName, secretOutput)
+					}
 				}
 
 			} else {
-				output += fmt.Sprintf(" · %s\n", linkedService)
+				output += fmt.Sprintf(" · %s\n", linkedService.SecretName)
 			}
 
 		}

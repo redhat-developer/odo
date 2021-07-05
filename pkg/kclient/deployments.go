@@ -351,6 +351,11 @@ func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interfac
 // ListDynamicResource returns an unstructured list of instances of a Custom
 // Resource currently deployed in the active namespace of the cluster
 func (c *Client) ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error) {
+
+	if c.DynamicClient == nil {
+		return nil, nil
+	}
+
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
 	list, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).List(context.TODO(), metav1.ListOptions{})
