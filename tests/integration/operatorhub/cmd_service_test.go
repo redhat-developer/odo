@@ -260,7 +260,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 						content, err := ioutil.ReadFile(devfilePath)
 						Expect(err).To(BeNil())
-						matchInOutput := []string{"kubernetes", "inlined", "Redis", "redis-standalone"}
+						matchInOutput := []string{"kubernetes", "inlined", "Redis", "redis"}
 						helper.MatchAllInOutput(string(content), matchInOutput)
 					})
 
@@ -277,12 +277,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						It("should list the service", func() {
 							// now test listing of the service using odo
 							stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
-							Expect(stdOut).To(ContainSubstring("Redis/redis-standalone"))
+							Expect(stdOut).To(ContainSubstring("Redis/redis"))
 						})
 
 						It("should list the service in JSON format", func() {
 							jsonOut := helper.Cmd("odo", "service", "list", "-o", "json").ShouldPass().Out()
-							helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"redis.redis.opstreelabs.in/v1beta1\"", "\"kind\": \"Redis\"", "\"name\": \"redis-standalone\""})
+							helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"redis.redis.opstreelabs.in/v1beta1\"", "\"kind\": \"Redis\"", "\"name\": \"redis\""})
 						})
 
 						When("a link is created with the service", func() {
@@ -291,7 +291,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								if os.Getenv("KUBERNETES") == "true" {
 									Skip("This is a OpenShift specific scenario, skipping")
 								}
-								stdOut = helper.Cmd("odo", "link", "Redis/redis-standalone").ShouldPass().Out()
+								stdOut = helper.Cmd("odo", "link", "Redis/redis").ShouldPass().Out()
 							})
 
 							It("should display a successful message", func() {
@@ -299,7 +299,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							})
 
 							It("Should fail to link it again", func() {
-								stdOut = helper.Cmd("odo", "link", "Redis/redis-standalone").ShouldFail().Err()
+								stdOut = helper.Cmd("odo", "link", "Redis/redis").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("already linked with the service"))
 							})
 
@@ -308,7 +308,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									if os.Getenv("KUBERNETES") == "true" {
 										Skip("This is a OpenShift specific scenario, skipping")
 									}
-									stdOut = helper.Cmd("odo", "unlink", "Redis/redis-standalone").ShouldPass().Out()
+									stdOut = helper.Cmd("odo", "unlink", "Redis/redis").ShouldPass().Out()
 								})
 
 								It("should display a successful message", func() {
@@ -316,7 +316,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								})
 
 								It("should fail to delete it again", func() {
-									stdOut = helper.Cmd("odo", "unlink", "Redis/redis-standalone").ShouldFail().Err()
+									stdOut = helper.Cmd("odo", "unlink", "Redis/redis").ShouldFail().Err()
 									Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
 								})
 							})
@@ -324,7 +324,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						When("the service is deleted", func() {
 							BeforeEach(func() {
-								helper.Cmd("odo", "service", "delete", "Redis/redis-standalone", "-f").ShouldPass()
+								helper.Cmd("odo", "service", "delete", "Redis/redis", "-f").ShouldPass()
 							})
 
 							It("should delete service definition from devfile.yaml", func() {
@@ -332,12 +332,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 								content, err := ioutil.ReadFile(devfilePath)
 								Expect(err).To(BeNil())
-								matchInOutput := []string{"kubernetes", "inlined", "Redis", "redis-standalone"}
+								matchInOutput := []string{"kubernetes", "inlined", "Redis", "redis"}
 								helper.DontMatchAllInOutput(string(content), matchInOutput)
 							})
 
 							It("should fail to delete the service again", func() {
-								stdOut = helper.Cmd("odo", "service", "delete", "Redis/redis-standalone", "-f").ShouldFail().Err()
+								stdOut = helper.Cmd("odo", "service", "delete", "Redis/redis", "-f").ShouldFail().Err()
 								Expect(stdOut).To(ContainSubstring("couldn't find service named"))
 							})
 
@@ -371,7 +371,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							It("should list both services", func() {
 								stdOut = helper.Cmd("odo", "service", "list").ShouldPass().Out()
 								// first service still here
-								Expect(stdOut).To(ContainSubstring("Redis/redis-standalone"))
+								Expect(stdOut).To(ContainSubstring("Redis/redis"))
 								// second service created
 								Expect(stdOut).To(ContainSubstring("Redis/myredis2"))
 							})
@@ -504,8 +504,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						noMetadata := `
 apiVersion: redis.redis.opstreelabs.in/v1beta1
 kind: Redis
-spec:
-	redisConfig: {}`
+spec:`
 						noMetaFile := helper.RandString(6) + ".yaml"
 						noMetaFileName = filepath.Join(tmpContext, noMetaFile)
 						if err := ioutil.WriteFile(noMetaFileName, []byte(noMetadata), 0644); err != nil {
@@ -517,8 +516,7 @@ apiVersion: redis.redis.opstreelabs.in/v1beta1
 kind: Redis
 metadata:
   noname: noname
-spec:
-	redisConfig: {}`
+spec:`
 						invalidMetaFile := helper.RandString(6) + ".yaml"
 						invalidFileName = filepath.Join(tmpContext, invalidMetaFile)
 						if err := ioutil.WriteFile(invalidFileName, []byte(invalidMetadata), 0644); err != nil {

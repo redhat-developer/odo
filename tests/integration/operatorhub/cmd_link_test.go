@@ -21,7 +21,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 	})
 
 	AfterEach(func() {
-		helper.CommonAfterEach(commonVar)
+		//helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Operators are installed in the cluster", func() {
@@ -91,7 +91,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					})
 
 					It("should find the link environment variable", func() {
-						stdOut := helper.Cmd("odo", "exec", "--", "sh", "-c", "echo $REDISCLUSTER_CLUSTERIP").ShouldPass().Out()
+						stdOut := helper.Cmd("odo", "exec", "--", "sh", "-c", "echo $REDIS_CLUSTERIP").ShouldPass().Out()
 						Expect(stdOut).To(Not(BeEmpty()))
 					})
 
@@ -99,7 +99,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 						stdOut := helper.Cmd("odo", "describe").ShouldPass().Out()
 						Expect(stdOut).To(ContainSubstring(svcFullName))
 						Expect(stdOut).To(ContainSubstring("Environment Variables"))
-						Expect(stdOut).To(ContainSubstring("REDISCLUSTER_CLUSTERIP"))
+						Expect(stdOut).To(ContainSubstring("REDIS_CLUSTERIP"))
 					})
 				})
 			})
