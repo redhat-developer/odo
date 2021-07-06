@@ -66,14 +66,14 @@ case ${1} in
         ## Constants
         SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
 
+        # The OLM Version
+        export OLM_VERSION="v0.17.0"
+        # Enable OLM for running operator tests
+        curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$OLM_VERSION/install.sh | bash -s $OLM_VERSION
+
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
-
-        # The OLM Version
-        export OLM_VERSION="v0.18.2"
-        # Enable OLM for running operator tests
-        curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$OLM_VERSION/install.sh | bash -s $OLM_VERSION
         
         set -x
         # Set kubernetes env var as true, to distinguish the platform inside the tests

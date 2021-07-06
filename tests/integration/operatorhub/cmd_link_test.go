@@ -164,13 +164,13 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			})
 
 			It("should find owner references on link and service", func() {
-				ocArgs := []string{"get", "servicebinding", "redis-link", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
-				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				args := []string{"get", "servicebinding", "redis-link", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
+				commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 					return strings.Contains(output, "api-app")
 				})
 
-				ocArgs = []string{"get", "redis.redis.redis.opstreelabs.in", "myredis", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
-				helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				args = []string{"get", "redis.redis.redis.opstreelabs.in", "myredis", "-o", "jsonpath='{.metadata.ownerReferences.*.name}'", "-n", commonVar.Project}
+				commonVar.CliRunner.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 					return strings.Contains(output, "api-app")
 				})
 			})
