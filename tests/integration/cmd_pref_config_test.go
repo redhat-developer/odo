@@ -276,12 +276,12 @@ var _ = Describe("odo preference and config command tests", func() {
 			Expect(ok).To(BeTrue())
 			Expect(val).To(ContainSubstring("world"))
 			// unset a valid env var
-			//helper.Cmd("odo", "config", "unset", "--now", "--env", "hello", "--context", commonVar.Context).ShouldPass()
-			//configValue2 := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
-			//helper.DontMatchAllInOutput(configValue2, []string{"hello", "world"})
-			//envs = oc.GetEnvsDevFileDeployment("nodejs", "app",commonVar.Project)
-			//_, ok = envs["hello"]
-			//Expect(ok).To(BeFalse())
+			helper.Cmd("odo", "config", "unset", "--now", "--env", "hello", "--context", commonVar.Context).ShouldPass()
+			configValue2 := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
+			helper.DontMatchAllInOutput(configValue2, []string{"hello", "world"})
+			envs = oc.GetEnvsDevFileDeployment("nodejs", "app",commonVar.Project)
+			_, ok = envs["hello"]
+			Expect(ok).To(BeFalse())
 		})
 	})
 

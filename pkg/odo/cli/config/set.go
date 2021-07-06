@@ -127,7 +127,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 		if err != nil {
 			return err
 		}
-		err = o.Context.EnvSpecificInfo.GetDevfileObj().AddEnvVars(newEnvVarList.ToDevfileEnv())
+		err = o.EnvSpecificInfo.GetDevfileObj().AddEnvVars(newEnvVarList.ToDevfileEnv())
 		if err != nil {
 			return err
 		}
@@ -140,7 +140,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 	}
 	if !o.configForceFlag {
 
-		if config.IsSetInDevfile(o.Context.EnvSpecificInfo.GetDevfileObj(), o.paramName) {
+		if config.IsSetInDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.paramName) {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
 				fmt.Println("Aborted by the user.")
 				return nil
@@ -148,7 +148,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 		}
 	}
 
-	err = config.SetDevfileConfiguration(o.Context.EnvSpecificInfo.GetDevfileObj(), strings.ToLower(o.paramName), o.paramValue)
+	err = config.SetDevfileConfiguration(o.EnvSpecificInfo.GetDevfileObj(), strings.ToLower(o.paramName), o.paramValue)
 	if err != nil {
 		return err
 	}
