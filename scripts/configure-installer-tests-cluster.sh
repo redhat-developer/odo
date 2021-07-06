@@ -8,8 +8,6 @@ SETUP_OPERATORS="$LIBCOMMON/setup-operators.sh"
 SETUP_POSTGRES_OPERATOR="$LIBCOMMON/setup-postgres-operator.sh"
 AUTH_SCRIPT="$LIBCOMMON/auth.sh"
 KUBEADMIN_SCRIPT="$LIBCOMMON/kubeconfigandadmin.sh"
-
-CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 POSTGRES_OPERATOR_PROJECT="odo-operator-test"
 
 # list of namespace to create
@@ -20,12 +18,6 @@ IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11 nod
 . $SETUP_POSTGRES_OPERATOR
 
 # Setup the cluster for Operator tests
-
-# Create a new namesapce which will be used for OperatorHub checks
-oc new-project $CI_OPERATOR_HUB_PROJECT
-# Let developer user have access to the project
-oc adm policy add-role-to-user edit developer
-
 sh $SETUP_OPERATORS
 
 oc new-project $POSTGRES_OPERATOR_PROJECT

@@ -62,13 +62,25 @@ case ${1} in
         fi
         
         minikube version
+        # Setup to find nessasary data from cluster setup
+        ## Constants
+        SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
+
+        # The OLM Version
+        export OLM_VERSION="v0.17.0"
+        # Enable OLM for running operator tests
+        curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$OLM_VERSION/install.sh | bash -s $OLM_VERSION
+
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
-
+        
         set -x
         # Set kubernetes env var as true, to distinguish the platform inside the tests
         export KUBERNETES=true
+
+        # Create Operators for Operator tests
+        sh $SETUP_OPERATORS
         ;;
     *)
         echo "<<< Need parameter set to minikube or minishift >>>"
