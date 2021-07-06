@@ -57,7 +57,9 @@ func (pco *ProjectCreateOptions) Validate() (err error) {
 
 // Run runs the project create command
 func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
-	scontext.SetClusterType(cmd.Context(), pco.Client)
+	if scontext.GetTelemetryStatus(cmd.Context()) {
+		scontext.SetClusterType(cmd.Context(), pco.Client)
+	}
 	successMessage := fmt.Sprintf(`Project '%s' is ready for use`, pco.projectName)
 
 	// Create the "spinner"

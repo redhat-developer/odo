@@ -843,8 +843,10 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		return errors.Wrap(err, "unable to parse devfile")
 	}
 	// Add component type in case it is not already added or is empty
-	if value, ok := scontext.GetContextProperties(cmd.Context())[scontext.ComponentType]; !ok || value == "" {
-		scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(devObj.Data.GetMetadata()))
+	if scontext.GetTelemetryStatus(cmd.Context()) {
+		if value, ok := scontext.GetContextProperties(cmd.Context())[scontext.ComponentType]; !ok || value == "" {
+			scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(devObj.Data.GetMetadata()))
+		}
 	}
 	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
@@ -919,7 +921,9 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 
 	// By default we run Devfile
 	if !co.forceS2i && co.devfileMetadata.devfileSupport {
-		scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
+		if scontext.GetTelemetryStatus(cmd.Context()) {
+			scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
+		}
 		err := co.devfileRun(cmd)
 		if err != nil {
 			return err
@@ -931,7 +935,9 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Add component type for s2i components
-	scontext.SetComponentType(cmd.Context(), *co.componentSettings.Type)
+	if scontext.GetTelemetryStatus(cmd.Context()) {
+		scontext.SetComponentType(cmd.Context(), *co.componentSettings.Type)
+	}
 	// we only do conversion if the --s2i is provided and the component is not of --git type
 	if co.forceS2i && len(co.componentGit) == 0 && len(co.componentBinary) == 0 {
 		log.Info("Conversion")

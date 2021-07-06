@@ -76,6 +76,26 @@ func TestSetClusterType(t *testing.T) {
 	}
 }
 
+func TestGetTelemetryStatus(t *testing.T) {
+	want := true
+	ctx := NewContext(context.Background())
+	setContextProperty(ctx, TelemetryStatus, want)
+	got := GetTelemetryStatus(ctx)
+	if got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}
+
+func TestSetTelemetryStatus(t *testing.T) {
+	want := false
+	ctx := NewContext(context.Background())
+	SetTelemetryStatus(ctx, want)
+	got := GetContextProperties(ctx)[TelemetryStatus]
+	if got != want {
+		t.Errorf("got: %v, want: %v", got, want)
+	}
+}
+
 var apiResourceList = map[string]*metav1.APIResourceList{
 	"operators.coreos.com/v1alpha1": {
 		GroupVersion: "operators.coreos.com/v1alpha1",

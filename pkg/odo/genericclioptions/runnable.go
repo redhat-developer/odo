@@ -59,6 +59,9 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			}
 		}
 	}
+	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
+	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
+
 	startTime = time.Now()
 
 	// CheckMachineReadableOutput
@@ -71,25 +74,25 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
 	err = o.Complete(cmd.Name(), cmd, args)
 	if err != nil {
-		startTelemetry(cfg, cmd, err, startTime)
+		startTelemetry(cmd, err, startTime)
 	}
 	util.LogErrorAndExit(err, "")
 
 	err = o.Validate()
 	if err != nil {
-		startTelemetry(cfg, cmd, err, startTime)
+		startTelemetry(cmd, err, startTime)
 	}
 	util.LogErrorAndExit(err, "")
 
 	err = o.Run(cmd)
-	startTelemetry(cfg, cmd, err, startTime)
+	startTelemetry(cmd, err, startTime)
 	util.LogErrorAndExit(err, "")
 }
 
 // startTelemetry uploads the data to segment if user has consented to usage data collection and the command is not telemetry
 // TODO: move this function to a more suitable place, preferably pkg/segment
-func startTelemetry(cfg *preference.PreferenceInfo, cmd *cobra.Command, err error, startTime time.Time) {
-	if segment.IsTelemetryEnabled(cfg) && !strings.Contains(cmd.CommandPath(), "telemetry") {
+func startTelemetry(cmd *cobra.Command, err error, startTime time.Time) {
+	if scontext.GetTelemetryStatus(cmd.Context()) && !strings.Contains(cmd.CommandPath(), "telemetry") {
 		uploadData := &segment.TelemetryData{
 			Event: cmd.CommandPath(),
 			Properties: segment.TelemetryProperties{

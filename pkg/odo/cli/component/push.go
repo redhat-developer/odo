@@ -258,16 +258,22 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
-	scontext.SetClusterType(cmd.Context(), po.Client)
+	if scontext.GetTelemetryStatus(cmd.Context()) {
+		scontext.SetClusterType(cmd.Context(), po.Client)
+	}
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
-		scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(po.Devfile.Data.GetMetadata()))
+		if scontext.GetTelemetryStatus(cmd.Context()) {
+			scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(po.Devfile.Data.GetMetadata()))
+		}
 		// Return Devfile push
 		return po.DevfilePush()
 	}
 
 	// Legacy odo push
-	scontext.SetComponentType(cmd.Context(), po.LocalConfigInfo.GetType())
+	if scontext.GetTelemetryStatus(cmd.Context()) {
+		scontext.SetComponentType(cmd.Context(), po.LocalConfigInfo.GetType())
+	}
 	return po.Push()
 }
 

@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	scontext "github.com/openshift/odo/pkg/segment/context"
+
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
@@ -104,7 +106,9 @@ func (c *Client) Upload(data TelemetryData) error {
 	// add information to the data
 	properties := analytics.NewProperties()
 	for k, v := range data.Properties.CmdProperties {
-		properties = properties.Set(k, v)
+		if k != scontext.TelemetryStatus {
+			properties = properties.Set(k, v)
+		}
 	}
 
 	properties = properties.Set("version", data.Properties.Version).
@@ -207,6 +211,7 @@ func RunningInTerminal() bool {
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
 func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
+	klog.V(4).Info("Checking telemetry enable status")
 	var err error
 	if cfg == nil {
 		cfg, err = preference.New()
