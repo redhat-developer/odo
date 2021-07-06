@@ -256,7 +256,6 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 	})
 
-	// TODO: issue https://github.com/openshift/odo/issues/4594
 	Context("when using --now with config command", func() {
 		var oc helper.OcRunner
 		BeforeEach(func() {
