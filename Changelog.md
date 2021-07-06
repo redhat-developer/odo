@@ -1,6 +1,16 @@
 #  Odo Changelog
 
-## 2.x
+## Next
+
+### Feature/Enhancements
+
+### Bug Fixes
+
+### Tests
+
+### Documentation
+
+## 2.2.3
 
 ### Feature/Enhancements
 
@@ -15,10 +25,6 @@
 ### Bug Fixes
 
 - Completely move to using networking v1 and extensions v1 ingresses based on cluster support as extensions v1 ingress is deprecated ([#4853](https://github.com/openshift/odo/pull/4853))
-
-### Tests
-
-### Documentation
 
 ## 2.2.2
 
