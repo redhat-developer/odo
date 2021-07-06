@@ -109,7 +109,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
 	if !o.Context.LocalConfigProvider.Exists() {
-		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+		return fmt.Errorf("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
 	if !o.IsDevfile && o.now {
 		err = o.ValidateComponentCreate()
@@ -183,7 +183,7 @@ func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
 		if o.now {
 			err = o.Push()
 			if err != nil {
-				return errors.Wrap(err, "failed to push changes")
+				return fmt.Errorf("failed to push changes %w", err)
 			}
 		} else {
 			log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
@@ -219,7 +219,7 @@ func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
 	if o.now {
 		err = o.Push()
 		if err != nil {
-			return errors.Wrap(err, "failed to push changes")
+			return fmt.Errorf("failed to push changes %w", err)
 		}
 	} else {
 		log.Italic("\nRun `odo push --config` command to apply changes to the cluster")

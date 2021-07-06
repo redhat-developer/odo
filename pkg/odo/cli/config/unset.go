@@ -9,7 +9,6 @@ import (
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -104,7 +103,7 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the UnsetOptions based on completed values
 func (o *UnsetOptions) Validate() (err error) {
 	if !o.Context.LocalConfigProvider.Exists() {
-		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+		return fmt.Errorf("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
 	if !o.IsDevfile && o.now {
 		err = o.ValidateComponentCreate()
@@ -141,7 +140,7 @@ func (o *UnsetOptions) DevfileRun() (err error) {
 		}
 		return err
 	}
-	return errors.New("config already unset, cannot unset a configuration which is not set")
+	return fmt.Errorf("config already unset, cannot unset a configuration which is not set")
 }
 
 // Run contains the logic for the command
@@ -168,7 +167,7 @@ func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
 		if o.now {
 			err = o.Push()
 			if err != nil {
-				return errors.Wrap(err, "failed to push changes")
+				return fmt.Errorf("failed to push changes %w", err)
 			}
 		} else {
 			log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
@@ -190,14 +189,14 @@ func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
 		if o.now {
 			err = o.Push()
 			if err != nil {
-				return errors.Wrap(err, "failed to push changes")
+				return fmt.Errorf("failed to push changes %w", err)
 			}
 		} else {
 			log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
 		}
 		return nil
 	}
-	return errors.New("config already unset, cannot unset a configuration which is not set")
+	return fmt.Errorf("config already unset, cannot unset a configuration which is not set")
 
 }
 
