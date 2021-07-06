@@ -116,7 +116,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			var redisCluster string
 
 			BeforeEach(func() {
-				commonVar.CliRunner.CreateSecretForRandomNamespace("redis-secret", "password", commonVar.Project)
+				commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
 				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 				redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 				redisCluster = fmt.Sprintf("%s/Redis", redisOperator)

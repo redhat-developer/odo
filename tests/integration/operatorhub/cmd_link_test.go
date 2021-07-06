@@ -21,7 +21,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 	})
 
 	AfterEach(func() {
-		//helper.CommonAfterEach(commonVar)
+		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Operators are installed in the cluster", func() {
@@ -39,7 +39,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				})
 			}
 
-			commonVar.CliRunner.CreateSecretForRandomNamespace("redis-secret", "password", commonVar.Project)
+			commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
 			list := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 			redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(list)
 			redisCluster = fmt.Sprintf("%s/Redis", redisOperator)

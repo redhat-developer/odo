@@ -267,9 +267,9 @@ func (kubectl KubectlRunner) PodsShouldBeRunning(project string, regex string) {
 	// now verify if the pods for the operator have started
 	pods := kubectl.GetAllPodsInNs(project)
 	// Look for pods with specified regex
-	redisPod := regexp.MustCompile(regex).FindString(pods)
+	pod := regexp.MustCompile(regex).FindString(pods)
 
-	args := []string{"get", "pods", redisPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+	args := []string{"get", "pods", pod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
 	kubectl.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 		return strings.Contains(output, "Running")
 	})
@@ -315,7 +315,7 @@ func (kubectl KubectlRunner) WaitForRunnerCmdOut(args []string, timeout int, err
 	}
 }
 
-// CreateSecretForRandomNamespace creates required secret inside specific namespace into the cluster
-func (kubectl KubectlRunner) CreateSecretForRandomNamespace(secretName, secretPass, project string) {
+// CreateSecret takes secret name, password and the namespace where we want to create the specific secret into the cluster
+func (kubectl KubectlRunner) CreateSecret(secretName, secretPass, project string) {
 	Cmd(kubectl.path, "create", "secret", "generic", secretName, "--from-literal=password="+secretPass, "-n", project).ShouldPass()
 }

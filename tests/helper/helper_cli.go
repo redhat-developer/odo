@@ -30,5 +30,5 @@ type CliRunner interface {
 	GetAllPodsInNs(namespace string) string
 	WaitForRunnerCmdOut(args []string, timeout int, errOnFail bool, check func(output string) bool, includeStdErr ...bool) bool
 	PodsShouldBeRunning(project string, regex string)
-	CreateSecretForRandomNamespace(secretName, secretPass, project string)
+	CreateSecret(secretName, secretPass, project string)
 }
