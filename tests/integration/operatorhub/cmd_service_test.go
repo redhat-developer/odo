@@ -69,7 +69,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			When("a nodejs component is created", func() {
 
 				BeforeEach(func() {
-					helper.Cmd("odo", "create", "nodejs").ShouldPass().Out()
+					// change the app name to avoid conflicts
+					appName := helper.RandString(5)
+					helper.Cmd("odo", "create", "nodejs", "--app", appName).ShouldPass().Out()
 				})
 
 				AfterEach(func() {

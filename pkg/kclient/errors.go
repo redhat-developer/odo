@@ -26,5 +26,5 @@ type ServiceNotFoundError struct {
 }
 
 func (e *ServiceNotFoundError) Error() string {
-	return fmt.Sprintf("service not found for the selector: %s", e.Selector)
+	return fmt.Sprintf("service not found for the selector %q", e.Selector)
 }

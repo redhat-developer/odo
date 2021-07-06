@@ -60,6 +60,7 @@ func (c *Client) DeleteService(serviceName string) error {
 }
 
 // GetOneService retrieves the service with the given component and app name
+// An error is thrown when exactly one service is not found for the selector.
 func (c *Client) GetOneService(componentName, appName string) (*corev1.Service, error) {
 	return c.GetOneServiceFromSelector(componentlabels.GetSelector(componentName, appName))
 }
@@ -69,7 +70,7 @@ func (c *Client) GetOneService(componentName, appName string) (*corev1.Service, 
 func (c *Client) GetOneServiceFromSelector(selector string) (*corev1.Service, error) {
 	services, err := c.ListServices(selector)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Deployments for the selector: %v", selector)
+		return nil, fmt.Errorf("unable to get services for the selector %q : %w", selector, err)
 	}
 
 	num := len(services)
