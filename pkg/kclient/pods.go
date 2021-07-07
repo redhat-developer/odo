@@ -17,6 +17,7 @@ import (
 
 	// api resource types
 
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -185,6 +186,11 @@ func (c *Client) ExtractProjectToComponent(containerName, podName string, target
 		return err
 	}
 	return nil
+}
+
+// GetOnePod gets a pod using the component and app name
+func (c *Client) GetOnePod(componentName, appName string) (*corev1.Pod, error) {
+	return c.GetOnePodFromSelector(componentlabels.GetSelector(componentName, appName))
 }
 
 // GetPodUsingComponentName gets a pod using the component name

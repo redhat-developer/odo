@@ -103,7 +103,7 @@ func (d defaultPushedComponent) GetStorage() ([]storage.Storage, error) {
 			storageItems = append(storageItems, storageList.Items...)
 		}
 		if _, ok := d.provider.(*devfileComponent); ok {
-			storageList, err := storage.DevfileListMounted(d.client.GetKubeClient(), d.GetName())
+			storageList, err := storage.DevfileListMounted(d.client.GetKubeClient(), d.GetName(), d.GetApplication())
 			if err != nil {
 				return nil, err
 			}

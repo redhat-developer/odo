@@ -562,8 +562,8 @@ func MachineReadableSuccessOutput(storageName string, message string) {
 }
 
 // DevfileListMounted lists the storage which are mounted on a container
-func DevfileListMounted(kClient *kclient.Client, componentName string) (StorageList, error) {
-	pod, err := kClient.GetPodUsingComponentName(componentName)
+func DevfileListMounted(kClient *kclient.Client, componentName, appName string) (StorageList, error) {
+	pod, err := kClient.GetOnePod(componentName, appName)
 	if err != nil {
 		if _, ok := err.(*kclient.PodNotFoundError); ok {
 			return StorageList{}, nil

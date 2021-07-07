@@ -80,7 +80,7 @@ func (k kubernetesClient) Delete(name string) error {
 
 // ListFromCluster lists pvc based Storage from the cluster
 func (k kubernetesClient) ListFromCluster() (StorageList, error) {
-	pod, err := k.client.GetKubeClient().GetPodUsingComponentName(k.localConfig.GetName())
+	pod, err := k.client.GetKubeClient().GetOnePod(k.localConfig.GetName(), k.localConfig.GetApplication())
 	if err != nil {
 		if _, ok := err.(*kclient.PodNotFoundError); ok {
 			return StorageList{}, nil

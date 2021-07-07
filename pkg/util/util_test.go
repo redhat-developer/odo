@@ -2729,3 +2729,60 @@ func TestConvertLabelsToSelector(t *testing.T) {
 		}
 	}
 }
+
+func TestNamespaceKubernetesObjectWithTrim(t *testing.T) {
+	type args struct {
+		componentName   string
+		applicationName string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "case 1: hyphenated name is less than 63 characters",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+			},
+			want:    "nodejs-app",
+			wantErr: false,
+		},
+		{
+			name: "case 2: hyphenated name is more than 63 characters",
+			args: args{
+				componentName:   "veryveryveryveryveryLongComponentName",
+				applicationName: "veryveryveryveryveryveryLongAppName",
+			},
+			want:    "veryveryveryveryveryLongCompone-veryveryveryveryveryveryLongApp",
+			wantErr: false,
+		},
+		{
+			name: "case 3: hyphenated name is equal to 63 characters",
+			args: args{
+				componentName:   "veryveryveryveryLongComponentGo",
+				applicationName: "veryveryveryveryLongAppNameInGo",
+			},
+			want:    "veryveryveryveryLongComponentGo-veryveryveryveryLongAppNameInGo",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NamespaceKubernetesObjectWithTrim(tt.args.componentName, tt.args.applicationName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NamespaceKubernetesObjectWithTrim() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("NamespaceKubernetesObjectWithTrim() got = %v, want %v", got, tt.want)
+			}
+
+			if len(got) > 63 {
+				t.Errorf("got = %s should be less than or equal to 63 characters", got)
+			}
+		})
+	}
+}

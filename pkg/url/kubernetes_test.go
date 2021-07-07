@@ -563,10 +563,18 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 				client:           *client,
 			}
 
+			fakeKClientSet.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &corev1.ServiceList{
+					Items: []corev1.Service{
+						testingutil.FakeKubeService("nodejs", "nodejs-app"),
+					},
+				}, nil
+			})
+
 			fakeKClientSet.Kubernetes.PrependReactor("get", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
 				var secretName string
 				if tt.args.url.Spec.TLSSecret == "" {
-					secretName = tt.fields.generic.componentName + "-tlssecret"
+					secretName = getDefaultTLSSecretName(tt.fields.generic.componentName, tt.fields.generic.appName)
 					if action.(ktesting.GetAction).GetName() != secretName {
 						return true, nil, fmt.Errorf("get for secrets called with invalid name, want: %s,got: %s", secretName, action.(ktesting.GetAction).GetName())
 					}
@@ -606,14 +614,14 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 
 			wantKubernetesActionLength := 0
 			if !tt.args.url.Spec.Secure {
-				wantKubernetesActionLength = 2
+				wantKubernetesActionLength = 3
 			} else {
 				if tt.args.url.Spec.TLSSecret != "" && tt.userGivenTLSExists {
-					wantKubernetesActionLength = 3
-				} else if !tt.defaultTLSExists {
 					wantKubernetesActionLength = 4
+				} else if !tt.defaultTLSExists {
+					wantKubernetesActionLength = 5
 				} else {
-					wantKubernetesActionLength = 3
+					wantKubernetesActionLength = 4
 				}
 			}
 			if len(fakeKClientSet.Kubernetes.Actions()) != wantKubernetesActionLength {
@@ -627,18 +635,18 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			var createdIngress *extensionsv1.Ingress
 			createIngressActionNo := 0
 			if !tt.args.url.Spec.Secure {
-				createIngressActionNo = 1
+				createIngressActionNo = 2
 			} else {
 				if tt.args.url.Spec.TLSSecret != "" {
-					createIngressActionNo = 2
+					createIngressActionNo = 3
 				} else if !tt.defaultTLSExists {
-					createdDefaultTLS := fakeKClientSet.Kubernetes.Actions()[2].(ktesting.CreateAction).GetObject().(*corev1.Secret)
-					if createdDefaultTLS.Name != tt.fields.generic.componentName+"-tlssecret" {
+					createdDefaultTLS := fakeKClientSet.Kubernetes.Actions()[3].(ktesting.CreateAction).GetObject().(*corev1.Secret)
+					if createdDefaultTLS.Name != getDefaultTLSSecretName(tt.fields.generic.componentName, tt.fields.generic.appName) {
 						t.Errorf("default tls created with different name, want: %s,got: %s", tt.fields.generic.componentName+"-tlssecret", createdDefaultTLS.Name)
 					}
-					createIngressActionNo = 3
+					createIngressActionNo = 4
 				} else {
-					createIngressActionNo = 2
+					createIngressActionNo = 3
 				}
 			}
 			createdIngress = fakeKClientSet.Kubernetes.Actions()[createIngressActionNo].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
@@ -659,7 +667,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 
 			if tt.args.url.Spec.Secure {
 				if wantedIngressSpecParams.TLSSecretName == "" {
-					wantedIngressSpecParams.TLSSecretName = tt.fields.generic.componentName + "-tlssecret"
+					wantedIngressSpecParams.TLSSecretName = getDefaultTLSSecretName(tt.fields.generic.componentName, tt.fields.generic.appName)
 				}
 				if !reflect.DeepEqual(createdIngress.Spec.TLS[0].SecretName, wantedIngressSpecParams.TLSSecretName) {
 					t.Errorf("ingress tls name not matching, expected: %s, got %s", wantedIngressSpecParams.TLSSecretName, createdIngress.Spec.TLS)
@@ -698,7 +706,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-nodejs",
+					Name: "example-app",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -711,7 +719,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					To: routev1.RouteTargetReference{
 						Kind: "Service",
-						Name: "nodejs",
+						Name: "nodejs-app",
 					},
 					Port: &routev1.RoutePort{
 						TargetPort: intstr.FromInt(8080),
@@ -729,7 +737,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-nodejs",
+					Name: "example-url-app",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -742,7 +750,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					To: routev1.RouteTargetReference{
 						Kind: "Service",
-						Name: "nodejs",
+						Name: "nodejs-app",
 					},
 					Port: &routev1.RoutePort{
 						TargetPort: intstr.FromInt(9100),
@@ -764,7 +772,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-nodejs",
+					Name: "example-url-app",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -781,7 +789,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 					},
 					To: routev1.RouteTargetReference{
 						Kind: "Service",
-						Name: "nodejs",
+						Name: "nodejs-app",
 					},
 					Port: &routev1.RoutePort{
 						TargetPort: intstr.FromInt(9100),
@@ -804,6 +812,14 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 				return true, route, nil
 			})
 
+			fakeKClientSet.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &corev1.ServiceList{
+					Items: []corev1.Service{
+						testingutil.FakeKubeService("nodejs", "nodejs-app"),
+					},
+				}, nil
+			})
+
 			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &appsv1.DeploymentList{Items: []appsv1.Deployment{*testingutil.CreateFakeDeployment("nodejs")}}, nil
 			})
@@ -823,7 +839,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			}
 
 			if len(fakeClientSet.RouteClientset.Actions()) != 1 {
-				t.Errorf("expected 1 RouteClientset.Actions() in CreateService, got: %v", fakeClientSet.RouteClientset.Actions())
+				t.Errorf("expected 1 RouteClientset.Actions() in CreateService, got: %v", len(fakeClientSet.RouteClientset.Actions()))
 			}
 
 			createdRoute := fakeClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
@@ -926,6 +942,14 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				return true, &appsv1.DeploymentList{Items: []appsv1.Deployment{*testingutil.CreateFakeDeployment("nodejs")}}, nil
 			})
 
+			fakeKClientSet.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &corev1.ServiceList{
+					Items: []corev1.Service{
+						testingutil.FakeKubeService("nodejs", "nodejs-app"),
+					},
+				}, nil
+			})
+
 			fakeClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				route := action.(ktesting.CreateAction).GetObject().(*routev1.Route)
 				route.Spec.Host = "host"
@@ -954,7 +978,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			if tt.args.url.Spec.Kind == localConfigProvider.INGRESS {
 				requiredIngress := fake.GetSingleExtensionV1Ingress(tt.args.url.Name, tt.fields.generic.componentName, tt.fields.generic.appName)
 
-				createdIngress := fakeKClientSet.Kubernetes.Actions()[1].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
+				createdIngress := fakeKClientSet.Kubernetes.Actions()[2].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
 				requiredIngress.Labels["odo.openshift.io/url-name"] = tt.args.url.Name
 				if !reflect.DeepEqual(createdIngress.Labels, requiredIngress.Labels) {
 					t.Errorf("ingress name not matching, expected: %s, got %s", requiredIngress.Labels, createdIngress.Labels)

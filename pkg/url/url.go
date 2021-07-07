@@ -271,8 +271,8 @@ func getMachineReadableFormatExtensionV1Ingress(i iextensionsv1.Ingress) URL {
 }
 
 // getDefaultTLSSecretName returns the name of the default tls secret name
-func getDefaultTLSSecretName(componentName string) string {
-	return componentName + "-tlssecret"
+func getDefaultTLSSecretName(componentName, appName string) string {
+	return componentName + "-" + appName + "-tlssecret"
 }
 
 // ConvertExtensionV1IngressURLToIngress converts IngressURL to Ingress
@@ -377,7 +377,7 @@ func Push(parameters PushParameters) error {
 				// the default secret name is used during creation
 				// thus setting it to the local URLs to avoid config mismatch
 				if val.Spec.Secure && val.Spec.TLSSecret == "" {
-					val.Spec.TLSSecret = getDefaultTLSSecretName(parameters.LocalConfig.GetName())
+					val.Spec.TLSSecret = getDefaultTLSSecretName(parameters.LocalConfig.GetName(), parameters.LocalConfig.GetApplication())
 				}
 				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
 			} else if val.Spec.Kind == localConfigProvider.ROUTE {

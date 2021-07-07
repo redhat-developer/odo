@@ -364,13 +364,16 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 			}
 		}
 
-		_, err := o.Context.Client.GetKubeClient().GetService(o.suppliedName)
+		// TODO find the service using an app name to link components in other apps
+		// requires modification of the app flag or finding some other way
+		service, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
 		if kerrors.IsNotFound(err) {
 			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
 		}
 		if err != nil {
 			return err
 		}
+		o.serviceName = service.Name
 	}
 
 	if o.operationName == unlink {

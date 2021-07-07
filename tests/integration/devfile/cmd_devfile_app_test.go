@@ -35,13 +35,6 @@ var _ = Describe("odo devfile app command tests", func() {
 		var app1 string
 
 		BeforeEach(func() {
-			createComponent := func(componentName, appName, project, context string) {
-				helper.Cmd("odo", "create", "nodejs", "--project", project, componentName, "--context", context, "--app", appName).ShouldPass()
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-				helper.Cmd("odo", "push", "--context", context).ShouldPass()
-			}
-
 			app0 = helper.RandString(4)
 			app1 = helper.RandString(4)
 
@@ -118,7 +111,7 @@ var _ = Describe("odo devfile app command tests", func() {
 
 				helper.Cmd("odo", "create", "nodejs", "--project", namespace, component00, "--context", context00, "--app", app0).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context00)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context00, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(context00, "devfile.yaml"))
 				helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
 				helper.Cmd("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress").ShouldPass()
 				helper.Cmd("odo", "push", "--context", context00).ShouldPass()
@@ -144,7 +137,54 @@ var _ = Describe("odo devfile app command tests", func() {
 			})
 		})
 	})
+
+	When("the user creates two components with the same name in different apps", func() {
+		var context0 string
+		var context1 string
+		var component string
+
+		var app0 string
+		var app1 string
+
+		BeforeEach(func() {
+			app0 = helper.RandString(4)
+			app1 = helper.RandString(4)
+
+			component = helper.RandString(4)
+
+			// create first component in the first app
+			context0 = helper.CreateNewContext()
+			createComponent(component, app0, namespace, context0)
+
+			// create second component in the second app
+			context1 = helper.CreateNewContext()
+			createComponent(component, app1, namespace, context1)
+		})
+
+		AfterEach(func() {
+			helper.Cmd("odo", "delete", "-f", "--context", context0).ShouldPass()
+			helper.Cmd("odo", "delete", "-f", "--context", context1).ShouldPass()
+
+			helper.DeleteDir(context0)
+			helper.DeleteDir(context1)
+		})
+
+		It("should list the components", func() {
+			output := helper.Cmd("odo", "list", "--app", app0).ShouldPass().Out()
+			helper.MatchAllInOutput(output, []string{app0, component})
+			output = helper.Cmd("odo", "list", "--app", app1).ShouldPass().Out()
+			helper.MatchAllInOutput(output, []string{app1, component})
+		})
+	})
 })
+
+// createComponent creates with the given parameters and pushes it
+func createComponent(componentName, appName, project, context string) {
+	helper.Cmd("odo", "create", "nodejs", "--project", project, componentName, "--context", context, "--app", appName).ShouldPass()
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+	helper.Cmd("odo", "push", "--context", context).ShouldPass()
+}
 
 // testInfo holds the information to run the matchers in the runner function
 type testInfo struct {

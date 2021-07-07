@@ -31,7 +31,7 @@ type kubernetesClient struct {
 
 // ListFromCluster lists both route and ingress based URLs from the cluster
 func (k kubernetesClient) ListFromCluster() (URLList, error) {
-	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, k.componentName)
+	labelSelector := componentlabels.GetSelector(k.componentName, k.appName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := k.client.GetKubeClient().ListIngresses(labelSelector)
 	if err != nil {
@@ -185,7 +185,12 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	if url.Spec.Host == "" {
 		return "", errors.Errorf("the host cannot be empty")
 	}
-	serviceName := k.componentName
+
+	service, err := k.client.GetKubeClient().GetOneService(k.componentName, k.appName)
+	if err != nil {
+		return "", err
+	}
+
 	ingressDomain := fmt.Sprintf("%v.%v", url.Name, url.Spec.Host)
 
 	// generate the owner reference
@@ -204,7 +209,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 			}
 		} else {
 			// get the default secret
-			defaultTLSSecretName := getDefaultTLSSecretName(k.componentName)
+			defaultTLSSecretName := getDefaultTLSSecretName(k.componentName, k.appName)
 			_, err := k.client.GetKubeClient().GetSecret(defaultTLSSecretName, k.client.Namespace)
 
 			// create tls secret if it does not exist
@@ -250,7 +255,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	ingressParam := generator.IngressParams{
 		ObjectMeta: objectMeta,
 		IngressSpecParams: generator.IngressSpecParams{
-			ServiceName:   serviceName,
+			ServiceName:   service.Name,
 			IngressDomain: ingressDomain,
 			PortNumber:    intstr.FromInt(url.Spec.Port),
 			TLSSecretName: url.Spec.TLSSecret,
@@ -272,11 +277,10 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	// we avoid using the getResourceName() and use the previous method from s2i
 	// as the host name, which is automatically created on openshift,
 	// can become more than 63 chars, which is invalid
-	routeName, err := util.NamespaceOpenShiftObject(url.Name, k.componentName)
+	routeName, err := util.NamespaceOpenShiftObject(url.Name, k.appName)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}
-	serviceName := k.componentName
 
 	deployment, err := k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
 	if err != nil {
@@ -284,8 +288,13 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	}
 	ownerReference := generator.GetOwnerReference(deployment)
 
+	service, err := k.client.GetKubeClient().GetOneService(k.componentName, k.appName)
+	if err != nil {
+		return "", err
+	}
+
 	// Pass in the namespace name, link to the service (componentName) and labels to create a route
-	route, err := k.client.CreateRoute(routeName, serviceName, intstr.FromInt(url.Spec.Port), labels, url.Spec.Secure, url.Spec.Path, ownerReference)
+	route, err := k.client.CreateRoute(routeName, service.Name, intstr.FromInt(url.Spec.Port), labels, url.Spec.Secure, url.Spec.Path, ownerReference)
 	if err != nil {
 		if kerrors.IsAlreadyExists(err) {
 			return "", fmt.Errorf("url named %q already exists in the same app named %q", url.Name, k.appName)

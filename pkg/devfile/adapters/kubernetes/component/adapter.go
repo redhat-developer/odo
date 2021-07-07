@@ -1,7 +1,6 @@
 package component
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -359,7 +358,7 @@ func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 
 // Test runs the devfile test command
 func (a Adapter) Test(testCmd string, show bool) (err error) {
-	pod, err := a.Client.GetKubeClient().GetPodUsingComponentName(a.ComponentName)
+	pod, err := a.Client.GetKubeClient().GetOnePod(a.ComponentName, a.AppName)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting the pod: %w", err)
 	}
@@ -501,7 +500,11 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	serviceAnnotations["service.binding/backend_ip"] = "path={.spec.clusterIP}"
 	serviceAnnotations["service.binding/backend_port"] = "path={.spec.ports},elementType=sliceOfMaps,sourceKey=name,sourceValue=port"
 
-	serviceObjectMeta := generator.GetObjectMeta(componentName, a.Client.Namespace, labels, serviceAnnotations)
+	serviceName, err := util.NamespaceKubernetesObjectWithTrim(componentName, a.AppName)
+	if err != nil {
+		return err
+	}
+	serviceObjectMeta := generator.GetObjectMeta(serviceName, a.Client.Namespace, labels, serviceAnnotations)
 	serviceParams := generator.ServiceParams{
 		ObjectMeta:     serviceObjectMeta,
 		SelectorLabels: selectorLabels,
@@ -525,7 +528,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
-		oldSvc, err := a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Get(context.TODO(), componentName, metav1.GetOptions{})
+		oldSvc, err := a.Client.GetKubeClient().GetOneService(a.ComponentName, a.AppName)
 		ownerReference := generator.GetOwnerReference(a.deployment)
 		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 		if err != nil {
@@ -547,7 +550,8 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 				}
 				klog.V(2).Infof("Successfully update Service for component %s", componentName)
 			} else {
-				err = a.Client.GetKubeClient().KubeClient.CoreV1().Services(a.Client.Namespace).Delete(context.TODO(), componentName, metav1.DeleteOptions{})
+				// delete the old existing service if the component currently doesn't expose any ports
+				err = a.Client.GetKubeClient().DeleteService(oldSvc.Name)
 				if err != nil {
 					return err
 				}
@@ -619,7 +623,7 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	podSpinner := log.Spinner("Checking status for component")
 	defer podSpinner.End(false)
 
-	pod, err := a.Client.GetKubeClient().GetPodUsingComponentName(a.ComponentName)
+	pod, err := a.Client.GetKubeClient().GetOnePod(a.ComponentName, a.AppName)
 	if kerrors.IsForbidden(err) {
 		klog.V(2).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
@@ -666,7 +670,7 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 // Log returns log from component
 func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
 
-	pod, err := a.Client.GetKubeClient().GetPodUsingComponentName(a.ComponentName)
+	pod, err := a.Client.GetKubeClient().GetOnePod(a.ComponentName, a.AppName)
 	if err != nil {
 		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
 	}
@@ -698,7 +702,7 @@ func (a Adapter) Exec(command []string) error {
 	containerName := runCommand.Exec.Component
 
 	// get the pod
-	pod, err := a.Client.GetKubeClient().GetPodUsingComponentName(a.ComponentName)
+	pod, err := a.Client.GetKubeClient().GetOnePod(a.ComponentName, a.AppName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}

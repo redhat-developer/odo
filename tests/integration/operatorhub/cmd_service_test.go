@@ -66,7 +66,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			When("a nodejs component is created", func() {
 
 				BeforeEach(func() {
-					helper.Cmd("odo", "create", "nodejs").ShouldPass().Out()
+					// change the app name to avoid conflicts
+					appName := helper.RandString(5)
+					helper.Cmd("odo", "create", "nodejs", "--app", appName).ShouldPass().Out()
 				})
 
 				AfterEach(func() {
@@ -555,6 +557,10 @@ spec:`
 				cmp0 = helper.RandString(5)
 
 				helper.Cmd("odo", "create", "nodejs", cmp0, "--context", context0).ShouldPass()
+
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context0)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context0, "devfile.yaml"))
+
 				helper.Cmd("odo", "push", "--context", context0).ShouldPass()
 			})
 
@@ -583,6 +589,10 @@ spec:`
 					cmp1 = helper.RandString(5)
 
 					helper.Cmd("odo", "create", "nodejs", cmp1, "--context", context1).ShouldPass()
+
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context1)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(context1, "devfile.yaml"))
+
 					helper.Cmd("odo", "push", "--context", context1).ShouldPass()
 				})
 

@@ -2,7 +2,9 @@ package kclient
 
 import (
 	"context"
+	"fmt"
 
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,4 +48,37 @@ func (c *Client) ListServices(selector string) ([]corev1.Service, error) {
 		return nil, errors.Wrap(err, "unable to list Services")
 	}
 	return serviceList.Items, nil
+}
+
+// DeleteService deletes the service with the given service name
+func (c *Client) DeleteService(serviceName string) error {
+	err := c.KubeClient.CoreV1().Services(c.Namespace).Delete(context.TODO(), serviceName, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetOneService retrieves the service with the given component and app name
+// An error is thrown when exactly one service is not found for the selector.
+func (c *Client) GetOneService(componentName, appName string) (*corev1.Service, error) {
+	return c.GetOneServiceFromSelector(componentlabels.GetSelector(componentName, appName))
+}
+
+// GetOneServiceFromSelector returns the service object associated with the given selector.
+// An error is thrown when exactly one service is not found for the selector.
+func (c *Client) GetOneServiceFromSelector(selector string) (*corev1.Service, error) {
+	services, err := c.ListServices(selector)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get services for the selector %q : %w", selector, err)
+	}
+
+	num := len(services)
+	if num == 0 {
+		return nil, &ServiceNotFoundError{Selector: selector}
+	} else if num > 1 {
+		return nil, fmt.Errorf("multiple services exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &services[0], nil
 }

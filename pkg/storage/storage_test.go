@@ -852,6 +852,7 @@ func generateStorage(storage Storage, status StorageStatus, containerName string
 func TestDevfileListMounted(t *testing.T) {
 	type args struct {
 		componentName string
+		appName       string
 	}
 	tests := []struct {
 		name         string
@@ -865,6 +866,7 @@ func TestDevfileListMounted(t *testing.T) {
 			name: "case 1: should error out for multiple pods returned",
 			args: args{
 				componentName: "nodejs",
+				appName:       "app",
 			},
 			returnedPods: &corev1.PodList{
 				Items: []corev1.Pod{
@@ -878,6 +880,7 @@ func TestDevfileListMounted(t *testing.T) {
 			name: "case 2: pod not found",
 			args: args{
 				componentName: "nodejs",
+				appName:       "app",
 			},
 			returnedPods: &corev1.PodList{
 				Items: []corev1.Pod{},
@@ -889,6 +892,7 @@ func TestDevfileListMounted(t *testing.T) {
 			name: "case 3: no volume mounts on pod",
 			args: args{
 				componentName: "nodejs",
+				appName:       "app",
 			},
 			returnedPods: &corev1.PodList{
 				Items: []corev1.Pod{
@@ -902,6 +906,7 @@ func TestDevfileListMounted(t *testing.T) {
 			name: "case 4: two volumes mounted on a single container",
 			args: args{
 				componentName: "nodejs",
+				appName:       "app",
 			},
 			returnedPods: &corev1.PodList{
 				Items: []corev1.Pod{
@@ -931,6 +936,7 @@ func TestDevfileListMounted(t *testing.T) {
 			name: "case 5: one volume is mounted on a single container and another on both",
 			args: args{
 				componentName: "nodejs",
+				appName:       "app",
 			},
 			returnedPods: &corev1.PodList{
 				Items: []corev1.Pod{
@@ -964,6 +970,7 @@ func TestDevfileListMounted(t *testing.T) {
 			name: "case 6: pvc for volumeMount not found",
 			args: args{
 				componentName: "nodejs",
+				appName:       "app",
 			},
 			returnedPods: &corev1.PodList{
 				Items: []corev1.Pod{
@@ -987,6 +994,7 @@ func TestDevfileListMounted(t *testing.T) {
 			name: "case 7: the storage label should be used as the name of the storage",
 			args: args{
 				componentName: "nodejs",
+				appName:       "app",
 			},
 			returnedPods: &corev1.PodList{
 				Items: []corev1.Pod{
@@ -1022,7 +1030,7 @@ func TestDevfileListMounted(t *testing.T) {
 				return true, tt.returnedPods, nil
 			})
 
-			got, err := DevfileListMounted(fakeClient, tt.args.componentName)
+			got, err := DevfileListMounted(fakeClient, tt.args.componentName, tt.args.appName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("devfileListMounted() error = %v, wantErr %v", err, tt.wantErr)
 				return

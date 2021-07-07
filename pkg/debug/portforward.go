@@ -52,7 +52,7 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 			return err
 		}
 
-		pod, err = f.kClient.GetPodUsingComponentName(f.componentName)
+		pod, err = f.kClient.GetOnePod(f.componentName, f.appName)
 		if err != nil {
 			return err
 		}

@@ -83,7 +83,7 @@ func GetSingleExtensionV1Ingress(urlName, componentName, appName string) *extens
 func GetSingleSecureIngress(urlName, componentName, appName, secretName string) *extensionsv1.Ingress {
 
 	if secretName == "" {
-		secretName = componentName + "-tlssecret"
+		secretName = componentName + "-" + appName + "-tlssecret"
 	}
 	return generator.GetIngress(generator.IngressParams{
 		ObjectMeta: metav1.ObjectMeta{
