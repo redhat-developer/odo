@@ -66,9 +66,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			When("a nodejs component is created", func() {
 
 				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 					// change the app name to avoid conflicts
 					appName := helper.RandString(5)
 					helper.Cmd("odo", "create", "nodejs", "--app", appName).ShouldPass().Out()
+					helper.Cmd("odo", "config", "set", "Memory", "300M", "-f").ShouldPass()
 				})
 
 				AfterEach(func() {
@@ -167,7 +169,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			When("a nodejs component is created", func() {
 
 				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 					helper.Cmd("odo", "create", "nodejs").ShouldPass()
+					helper.Cmd("odo", "config", "set", "Memory", "300M", "-f").ShouldPass()
 				})
 
 				It("should fail for interactive mode", func() {
@@ -557,6 +561,7 @@ spec:`
 				cmp0 = helper.RandString(5)
 
 				helper.Cmd("odo", "create", "nodejs", cmp0, "--context", context0).ShouldPass()
+				helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", context0).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context0)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context0, "devfile.yaml"))
@@ -589,6 +594,7 @@ spec:`
 					cmp1 = helper.RandString(5)
 
 					helper.Cmd("odo", "create", "nodejs", cmp1, "--context", context1).ShouldPass()
+					helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", context1).ShouldPass()
 
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context1)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(context1, "devfile.yaml"))
