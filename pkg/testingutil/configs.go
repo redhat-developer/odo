@@ -135,9 +135,9 @@ func CleanupEnv(confFiles []*os.File, t *testing.T) {
 		}
 		if err := confFile.Close(); err != nil {
 			t.Errorf("failed to cleanup the test env. Error: %v", err)
-			os.Remove(filepath.Dir(confFile.Name()))
 		}
 		os.Remove(confFile.Name())
+		os.Remove(filepath.Dir(confFile.Name()))
 	}
 }
 
