@@ -384,7 +384,7 @@ func componentTests(args ...string) {
 
 			})
 
-			FIt("should not fail when --context is not set", func() {
+			It("should not fail when --context is not set", func() {
 				binaryFilePath := filepath.Join(commonVar.Context, "sb.jar")
 				if runtime.GOOS == "darwin" {
 					binaryFilePath = filepath.Join("/private", binaryFilePath)
