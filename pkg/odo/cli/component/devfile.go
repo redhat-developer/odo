@@ -65,12 +65,10 @@ func (po *PushOptions) DevfilePush() error {
 }
 
 func (po *PushOptions) devfilePushInner() (err error) {
-
 	devObj, err := devfile.ParseFromFile(po.DevfilePath)
 	if err != nil {
 		return err
 	}
-
 	componentName := po.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)

@@ -62,7 +62,6 @@ type CreateParameters struct {
 // New creates a context based on the given parameters
 func New(parameters CreateParameters, toggles ...bool) (context *Context, err error) {
 	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
-
 	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
 	if isDevfile {
 		context, err = NewDevfileContext(parameters.Cmd)
