@@ -390,7 +390,7 @@ func componentTests(args ...string) {
 					binaryFilePath = filepath.Join("/private", binaryFilePath)
 				}
 				helper.Cmd("odo", append(args, "create", "--s2i", "java:8", cmpName, "--project",
-					commonVar.Project, "--binary", filepath.Join(binaryFilePath, "sb.jar"))...).ShouldPass()
+					commonVar.Project, "--binary", binaryFilePath...).ShouldPass()
 				info := helper.LocalEnvInfo(commonVar.Context)
 				Expect(info.GetName(), cmpName)
 			})
