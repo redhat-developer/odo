@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"path/filepath"
 	"testing"
 
 	"github.com/ghodss/yaml"
@@ -136,6 +137,7 @@ func CleanupEnv(confFiles []*os.File, t *testing.T) {
 			t.Errorf("failed to cleanup the test env. Error: %v", err)
 		}
 		os.Remove(confFile.Name())
+		os.Remove(filepath.Dir(confFile.Name()))
 	}
 }
 
