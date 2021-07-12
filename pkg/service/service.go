@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ghodss/yaml"
-
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -17,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -29,11 +28,28 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+
+	"github.com/ghodss/yaml"
+	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
+	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/builder"
+	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context"
+	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"
 const provisionedAndLinkedStatus = "ProvisionedAndLinked"
 const apiVersion = "odo.dev/v1alpha1"
+
+// LinkLabel is the name of the name of the link in the devfile
+const LinkLabel = "app.kubernetes.io/link-name"
+
+// ServiceLabel is the name of the service in the service binding object
+const ServiceLabel = "app.kubernetes.io/service-name"
+
+// ServiceKind is the kind of the service in the service binding object
+const ServiceKind = "app.kubernetes.io/service-kind"
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
@@ -939,7 +955,13 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
-	if err != nil || !csvSupported {
+	if err != nil {
+		return false, err
+	}
+
+	// check service binding support before proceeding
+	serviceBindingSupported, err := client.IsServiceBindingSupported()
+	if err != nil {
 		return false, err
 	}
 
@@ -961,6 +983,11 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		kind := svc.GetKind()
 		deployedLabels := svc.GetLabels()
 		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.ComponentLabel] == labels[componentlabels.ComponentLabel] {
+			if !csvSupported || (isLinkResource(kind) && !serviceBindingSupported) {
+				// operator hub is not installed on the cluster
+				// or it's a service binding related resource and service binding operator is not installed on the cluster
+				continue
+			}
 			deployed[kind+"/"+name] = DeployedInfo{
 				DoesDeleteRestartsComponent: isLinkResource(kind),
 				Kind:                        kind,
@@ -981,6 +1008,12 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
 		if err != nil {
 			return false, err
+		}
+
+		if !csvSupported || (d.OriginalCRD["kind"] == "ServiceBinding" && !serviceBindingSupported) {
+			// operator hub is not installed on the cluster
+			// or it's a service binding related resource and service binding operator is not installed on the cluster
+			continue
 		}
 
 		cr, csv, err := GetCSV(client, d.OriginalCRD)
@@ -1036,6 +1069,9 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 	}
 
 	for key, val := range deployed {
+		if !csvSupported || (!serviceBindingSupported && isLinkResource(val.Kind)) {
+			continue
+		}
 		err = DeleteOperatorService(client, key)
 		if err != nil {
 			return false, err
@@ -1055,15 +1091,230 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 	}
 
 	if !madeChange {
-		log.Success("Services and Links are in sync with the cluster, no changes are required")
+		if !serviceBindingSupported {
+			log.Success("Services are in sync with the cluster, no changes are required")
+		} else {
+			log.Success("Services and Links are in sync with the cluster, no changes are required")
+		}
 	}
 
 	return needRestart, nil
 }
 
+// PushWithoutOperator creates links or deletes links (if service binding operator is not installed) between components and services
+// returns true if the component needs to be restarted (a secret was generated and added to the deployment)
+func PushWithoutOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
+
+	// check csv support before proceeding
+	csvSupport, err := IsCSVSupported()
+	if err != nil {
+		return false, err
+	}
+
+	secrets, err := client.ListSecrets(componentlabels.GetSelector(labels[componentlabels.ComponentLabel], labels[applabels.ApplicationLabel]))
+
+	ownerReferences := generator.GetOwnerReference(deployment)
+
+	if err != nil {
+		return false, err
+	}
+
+	clusterLinksMap := make(map[string]string)
+	for _, secret := range secrets {
+		if value, ok := secret.GetLabels()[LinkLabel]; ok {
+			clusterLinksMap[value] = secret.Name
+		}
+	}
+
+	localLinksMap := make(map[string]string)
+	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
+	for _, c := range k8sComponents {
+		// get the string representation of the YAML definition of a CRD
+		strCRD := c.Kubernetes.Inlined
+
+		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
+		d := NewDynamicCRD()
+		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		if err != nil {
+			return false, err
+		}
+
+		if d.OriginalCRD["kind"] != "ServiceBinding" {
+			// not a service binding object, thus continue
+			continue
+		}
+		localLinksMap[c.Name] = strCRD
+	}
+
+	var processingPipeline pipeline.Pipeline
+
+	deploymentGVR, err := client.GetDeploymentAPIVersion()
+	if err != nil {
+		return false, err
+	}
+
+	var restartRequired bool
+
+	// delete the links not present on the devfile
+	for linkName, secretName := range clusterLinksMap {
+		if _, ok := localLinksMap[linkName]; !ok {
+
+			// recreate parts of the service binding request for deletion
+			var newServiceBinding servicebinding.ServiceBinding
+			newServiceBinding.Name = linkName
+			newServiceBinding.Namespace = client.Namespace
+			newServiceBinding.Spec.Application = &servicebinding.Application{
+				Ref: servicebinding.Ref{
+					Name:     deployment.Name,
+					Group:    deploymentGVR.Group,
+					Version:  deploymentGVR.Version,
+					Resource: deploymentGVR.Resource,
+				},
+			}
+			newServiceBinding.Status.Secret = secretName
+
+			// set the deletion time stamp to trigger deletion
+			timeNow := metav1.Now()
+			newServiceBinding.DeletionTimestamp = &timeNow
+
+			// if the pipeline was created before
+			// skip deletion
+			if processingPipeline == nil {
+				processingPipeline, err = getPipeline(client)
+				if err != nil {
+					return false, err
+				}
+			}
+			_, err = processingPipeline.Process(&newServiceBinding)
+			if err != nil {
+				return false, err
+			}
+
+			// since the library currently doesn't delete the secret after unbinding
+			// delete the secret manually
+			err = client.DeleteSecret(secretName, client.Namespace)
+			if err != nil {
+				return false, err
+			}
+			restartRequired = true
+			log.Successf("Deleted link %q on the cluster; component will be restarted", linkName)
+		}
+	}
+
+	var serviceCompMap map[string]string
+
+	// create the links
+	for linkName, strCRD := range localLinksMap {
+		if _, ok := clusterLinksMap[linkName]; !ok {
+			if serviceCompMap == nil {
+				// prevent listing of services unless required
+				services, err := client.ListServices("")
+				if err != nil {
+					return false, err
+				}
+
+				// get the services and get match them against the component
+				serviceCompMap = make(map[string]string)
+				for _, service := range services {
+					serviceCompMap[service.Name] = service.Labels[componentlabels.ComponentLabel]
+				}
+			}
+
+			// get the string representation of the YAML definition of a CRD
+			var serviceBinding servicebinding.ServiceBinding
+			err = yaml.Unmarshal([]byte(strCRD), &serviceBinding)
+			if err != nil {
+				return false, err
+			}
+
+			if len(serviceBinding.Spec.Services) != 1 {
+				continue
+			}
+
+			if !csvSupport && serviceBinding.Spec.Services[0].Kind != "Service" {
+				continue
+			}
+
+			// set the labels and namespace
+			serviceBinding.SetLabels(labels)
+			serviceBinding.Namespace = client.Namespace
+			serviceBinding.Spec.Services[0].Namespace = &client.Namespace
+
+			_, err = json.MarshalIndent(serviceBinding, " ", " ")
+			if err != nil {
+				return false, err
+			}
+
+			if processingPipeline == nil {
+				processingPipeline, err = getPipeline(client)
+				if err != nil {
+					return false, err
+				}
+			}
+
+			_, err = processingPipeline.Process(&serviceBinding)
+			if err != nil {
+				return false, err
+			}
+
+			if len(serviceBinding.Status.Secret) == 0 {
+				return false, fmt.Errorf("no secret was provided by service binding's pipleine")
+			}
+
+			// get the generated secret and update it with the labels and owner reference
+			secret, err := client.GetSecret(serviceBinding.Status.Secret, client.Namespace)
+			if err != nil {
+				return false, err
+			}
+			secret.Labels = labels
+			secret.Labels[LinkLabel] = linkName
+			if _, ok := serviceCompMap[serviceBinding.Spec.Services[0].Name]; ok {
+				secret.Labels[ServiceLabel] = serviceCompMap[serviceBinding.Spec.Services[0].Name]
+			} else {
+				secret.Labels[ServiceLabel] = serviceBinding.Spec.Services[0].Name
+			}
+			secret.Labels[ServiceKind] = serviceBinding.Spec.Services[0].Kind
+			if serviceBinding.Spec.Services[0].Kind != "Service" {
+				// the service name is stored as kind-name as `/` is not a valid char for labels of kubernetes secrets
+				secret.Labels[ServiceLabel] = fmt.Sprintf("%v-%v", serviceBinding.Spec.Services[0].Kind, serviceBinding.Spec.Services[0].Name)
+			}
+			secret.SetOwnerReferences([]metav1.OwnerReference{ownerReferences})
+			_, err = client.UpdateSecret(secret, client.Namespace)
+			if err != nil {
+				return false, err
+			}
+			restartRequired = true
+			log.Successf("Created link %q on the cluster; component will be restarted", linkName)
+		}
+	}
+
+	if restartRequired {
+		return true, nil
+	} else {
+		log.Success("Links are in sync with the cluster, no changes are required")
+	}
+
+	return false, nil
+}
+
 // UpdateKubernetesInlineComponentsOwnerReferences adds an owner reference to an inlined Kubernetes resource
 // if not already present in the list of owner references
 func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference) error {
+	csvSupport, err := client.IsCSVSupported()
+	if err != nil {
+		return err
+	}
+
+	if !csvSupport {
+		return nil
+	}
+
+	// check service binding support before proceeding
+	serviceBindingSupported, err := client.IsServiceBindingSupported()
+	if err != nil {
+		return err
+	}
+
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
 		strCRD := c.Kubernetes.Inlined
@@ -1073,6 +1324,10 @@ func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8s
 		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
 		if err != nil {
 			return err
+		}
+
+		if d.OriginalCRD["kind"] == "ServiceBinding" && !serviceBindingSupported {
+			continue
 		}
 
 		cr, csv, err := GetCSV(client, d.OriginalCRD)
@@ -1135,4 +1390,20 @@ func getCRDName(crd map[string]interface{}) (string, bool) {
 
 func isLinkResource(kind string) bool {
 	return kind == "ServiceBinding"
+}
+
+// getPipeline gets the pipeline to process service binding requests
+func getPipeline(client *kclient.Client) (pipeline.Pipeline, error) {
+	mgr, err := ctrl.NewManager(client.KubeClientConfig, ctrl.Options{
+		Scheme: runtime.NewScheme(),
+		// disable the health probes to prevent binding to them
+		HealthProbeBindAddress: "0",
+		// disable the prometheus metrics
+		MetricsBindAddress: "0",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return builder.DefaultBuilder.WithContextProvider(context.Provider(client.DynamicClient, context.ResourceLookup(mgr.GetRESTMapper()))).Build(), nil
 }

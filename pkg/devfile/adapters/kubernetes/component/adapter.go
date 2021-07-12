@@ -159,28 +159,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 	s.End(true)
 
-	log.Info("\nUpdating services")
-	// fetch the "kubernetes inlined components" to create them on cluster
-	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
-	k8sComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
-	})
-	if err != nil {
-		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
-	}
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
-	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
-	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
-	}
-
-	if componentExists && needRestart {
-		err = a.Client.GetKubeClient().WaitForPodNotReady(podName)
-		if err != nil {
-			return err
-		}
-	}
 
 	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 
@@ -200,6 +179,31 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		parameters.RunModeChanged = true
 	}
 
+	// fetch the "kubernetes inlined components" to create them on cluster
+	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
+	k8sComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
+	})
+	if err != nil {
+		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
+	}
+
+	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
+	needRestart, err := service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
+	if err != nil {
+		return errors.Wrap(err, "failed to create service(s) associated with the component")
+	}
+
+	if componentExists && needRestart {
+		s := log.Spinner("Restarting the component")
+		defer s.End(false)
+		err = a.Client.GetKubeClient().WaitForPodDeletion(podName)
+		if err != nil {
+			return err
+		}
+		s.End(true)
+	}
+
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
@@ -208,6 +212,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
+	}
+
+	err = a.deployLinksWithoutOperator(k8sComponents, labels)
+	if err != nil {
+		return err
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
@@ -313,6 +322,45 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 	}
 
+	return nil
+}
+
+// deployLinksWithoutOperator deploys services without the service binding operator
+// if service binding operator is installed, it does nothing and returns
+func (a Adapter) deployLinksWithoutOperator(k8sComponents []devfilev1.Component, labels map[string]string) error {
+	// check service binding support before proceeding
+	serviceBindingSupported, err := a.Client.GetKubeClient().IsServiceBindingSupported()
+	if err != nil {
+		return err
+	}
+
+	if !serviceBindingSupported {
+		// wait and get the pod for detecting restarts in case of a re-deployment
+		pod, err := a.getPod(true)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		}
+
+		needRestart, err := service.PushWithoutOperator(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
+		if err != nil {
+			return err
+		}
+
+		if needRestart {
+			// restart is needed, wait for the previous pod to be deleted
+			s := log.Spinner("Restarting the component")
+			defer s.End(false)
+			err = a.Client.GetKubeClient().WaitForPodDeletion(pod.Name)
+			if err != nil {
+				return err
+			}
+			s.End(true)
+			a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)
+			if err != nil {
+				return errors.Wrap(err, "error while waiting for deployment rollout")
+			}
+		}
+	}
 	return nil
 }
 
