@@ -406,7 +406,6 @@ func componentTests(args ...string) {
 
 			It("should be valid if path is relative and includes ../", func() {
 				relativeContext := fmt.Sprintf("..%c%s", filepath.Separator, filepath.Base(commonVar.Context))
-				fmt.Printf("relativeContext = %#v\n", relativeContext)
 				binaryFilePath := filepath.Join(commonVar.Context, "sb.jar")
 				if runtime.GOOS == "darwin" {
 					binaryFilePath = filepath.Join("/private", binaryFilePath)
