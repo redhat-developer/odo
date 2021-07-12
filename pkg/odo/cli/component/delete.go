@@ -28,10 +28,24 @@ import (
 // DeleteRecommendedCommandName is the recommended delete command name
 const DeleteRecommendedCommandName = "delete"
 
-var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'. 
+var deleteExample = ktemplates.Examples(`
+# Delete the component present in the current directory
+%[1]s
+
+# Delete the component named 'frontend'
 %[1]s frontend
-%[1]s frontend --all
-  `)
+
+# Delete the component and all the related config files from the current directory
+%[1]s --all
+
+# Delete the component present in the './frontend' directory
+%[1]s --context ./frontend
+
+# Delete the component present in the './frontend' directory and all the config files related to it 
+%[1]s --context ./frontend --all
+
+# Delete the component 'frontend' that is a part of 'myapp' app inside the 'myproject' project
+%[1]s frontend --app myapp --project myproject`)
 
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
