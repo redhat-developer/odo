@@ -1,7 +1,7 @@
 package url
 
 import (
-	networkingv1 "k8s.io/api/networking/v1"
+	"github.com/openshift/odo/pkg/unions"
 	"reflect"
 	"testing"
 
@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 
-	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kclient_fake "github.com/openshift/odo/pkg/kclient/fake"
@@ -57,14 +56,14 @@ func TestGetURLsForKubernetes(t *testing.T) {
 		name              string
 		envURLs           []localConfigProvider.LocalURL
 		routeList         *routev1.RouteList
-		ingressList       *extensionsv1.IngressList
+		ingressList       *unions.KubernetesIngressList
 		expectedStatusURL statusURL
 	}{
 		{
 			name:    "1) Cluster with https URL defined in env info",
 			envURLs: []localConfigProvider.LocalURL{testURL1},
-			ingressList: &extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{},
+			ingressList: &unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{},
 			},
 			expectedStatusURL: statusURL{
 				name:   testURL1.Name,
@@ -80,8 +79,8 @@ func TestGetURLsForKubernetes(t *testing.T) {
 		{
 			name:    "2) Cluster with https URL defined in env info",
 			envURLs: []localConfigProvider.LocalURL{testURL2},
-			ingressList: &extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{},
+			ingressList: &unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{},
 			},
 			expectedStatusURL: statusURL{
 				name:   testURL2.Name,
@@ -97,8 +96,8 @@ func TestGetURLsForKubernetes(t *testing.T) {
 		{
 			name:    "3) Cluster with route defined in env info",
 			envURLs: []localConfigProvider.LocalURL{testURL3},
-			ingressList: &extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{},
+			ingressList: &unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{},
 			},
 			expectedStatusURL: statusURL{
 				name:   testURL3.Name,
@@ -116,8 +115,8 @@ func TestGetURLsForKubernetes(t *testing.T) {
 		{
 			name:    "4) Cluster with route defined",
 			envURLs: []localConfigProvider.LocalURL{},
-			ingressList: &extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{},
+			ingressList: &unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{},
 			},
 			expectedStatusURL: statusURL{
 				name:   testURL4.Name,
@@ -136,9 +135,9 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			name:    "5) Cluster with ingress defined",
 			envURLs: []localConfigProvider.LocalURL{},
 
-			ingressList: &extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{
-					kclient_fake.GetExtensionV1IngressListWithMultiple(componentName, "app").Items[0],
+			ingressList: &unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					kclient_fake.GetKubernetesIngressListWithMultiple(componentName, "app", true, false).Items[0],
 				},
 			},
 			routeList: &routev1.RouteList{
@@ -165,15 +164,15 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			mockLocalConfig.EXPECT().ListURLs().Return(tt.envURLs, nil)
 
 			// Initialising the fakeclient
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNewWithIngressSupports(true, false)
 			fkclient.Namespace = "default"
 
 			// Return the test's ingress list when requested
 			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
-					return true, &networkingv1.Ingress{}, nil
+					return true, tt.ingressList.GetNetworkingV1IngressList(true), nil
 				}
-				return true, tt.ingressList, nil
+				return true, tt.ingressList.GetExtensionV1Beta1IngresList(true), nil
 			})
 
 			// Initializing the fake occlient

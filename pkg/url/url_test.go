@@ -209,8 +209,8 @@ func TestPush(t *testing.T) {
 			applicationName: "app",
 			args: args{
 				isRouteSupported:             true,
-				networkingV1IngressSupported: false,
-				extensionV1IngressSupported:  true,
+				networkingV1IngressSupported: true,
+				extensionV1IngressSupported:  false,
 			},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
@@ -259,7 +259,7 @@ func TestPush(t *testing.T) {
 			name:            "2 url on local config and 2 on openshift cluster, but they are different",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example-local-0",
@@ -301,7 +301,7 @@ func TestPush(t *testing.T) {
 			name:            "5 urls (both types and different configurations) on config and openshift cluster are in sync",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
@@ -344,9 +344,9 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example", "nodejs", "app")),
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleSecureIngress("example-default-secret", "nodejs", "app", "")),
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleSecureIngress("example-user-secret", "nodejs", "app", "secret-name")),
+				NewURLFromKubernetesIngress(fake.GetSingleKubernetesIngress("example", "nodejs", "app", true, false), false),
+				NewURLFromKubernetesIngress(fake.GetSingleSecureKubernetesIngress("example-default-secret", "nodejs", "app", "", true, false), false),
+				NewURLFromKubernetesIngress(fake.GetSingleSecureKubernetesIngress("example-user-secret", "nodejs", "app", "secret-name", true, false), false),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9100, "nodejs", "app")),
 				getMachineReadableFormat(testingutil.GetSingleSecureRoute("example-11", 9100, "nodejs", "app")),
 			}),
@@ -356,14 +356,14 @@ func TestPush(t *testing.T) {
 			name:              "0 urls on env file and cluster",
 			componentName:     "nodejs",
 			applicationName:   "app",
-			args:              args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:              args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{},
 		},
 		{
 			name:            "2 urls on env file and 0 on openshift cluster",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example",
@@ -397,11 +397,11 @@ func TestPush(t *testing.T) {
 			name:              "0 urls on env file and 2 on openshift cluster",
 			componentName:     "nodejs",
 			applicationName:   "app",
-			args:              args{isRouteSupported: true},
+			args:              args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-1", "nodejs", "app")),
+				NewURLFromKubernetesIngress(fake.GetSingleKubernetesIngress("example-0", "nodejs", "app", true, false), false),
+				NewURLFromKubernetesIngress(fake.GetSingleKubernetesIngress("example-1", "nodejs", "app", true, false), false),
 			}),
 			deletedItems: []deleteParameters{
 				{"example-0", localConfigProvider.INGRESS},
@@ -412,7 +412,7 @@ func TestPush(t *testing.T) {
 			name:            "2 urls on env file and 2 on openshift cluster, but they are different",
 			componentName:   "wildfly",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example-local-0",
@@ -428,8 +428,8 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-1", "nodejs", "app")),
+				NewURLFromKubernetesIngress(fake.GetSingleKubernetesIngress("example-0", "nodejs", "app", true, false), false),
+				NewURLFromKubernetesIngress(fake.GetSingleKubernetesIngress("example-1", "nodejs", "app", true, false), false),
 			}),
 			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
@@ -454,7 +454,7 @@ func TestPush(t *testing.T) {
 			name:            "2 urls on env file and openshift cluster are in sync",
 			componentName:   "wildfly",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:     "example-0",
@@ -476,8 +476,8 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress((*fake.GetExtensionV1IngressListWithMultiple("wildfly", "app")).Items[0]),
-				getMachineReadableFormatExtensionV1Ingress((*fake.GetExtensionV1IngressListWithMultiple("wildfly", "app")).Items[1]),
+				NewURLFromKubernetesIngress(fake.GetKubernetesIngressListWithMultiple("wildfly", "app", true, false).Items[0], false),
+				NewURLFromKubernetesIngress(fake.GetKubernetesIngressListWithMultiple("wildfly", "app", true, false).Items[1], false),
 			}),
 			createdURLs:  []URL{},
 			deletedItems: []deleteParameters{},
@@ -486,7 +486,7 @@ func TestPush(t *testing.T) {
 			name:            "2 (1 ingress,1 route) urls on env file and 2 on openshift cluster (1 ingress,1 route), but they are different",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example-local-0",
@@ -501,7 +501,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-0", "nodejs", "app")),
+				NewURLFromKubernetesIngress(fake.GetSingleKubernetesIngress("example-0", "nodejs", "app", true, false), false),
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1", 9090, "nodejs", "app")),
 			}),
 			createdURLs: []URL{
@@ -526,7 +526,7 @@ func TestPush(t *testing.T) {
 			name:            "create a ingress on a kubernetes cluster",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: false, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: false, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:      "example",
@@ -554,8 +554,8 @@ func TestPush(t *testing.T) {
 			applicationName: "app",
 			args: args{
 				isRouteSupported:             true,
-				networkingV1IngressSupported: false,
-				extensionV1IngressSupported:  true,
+				networkingV1IngressSupported: true,
+				extensionV1IngressSupported:  false,
 			},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
@@ -565,7 +565,7 @@ func TestPush(t *testing.T) {
 				},
 			},
 			existingClusterURLs: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress(*fake.GetSingleExtensionV1Ingress("example-local-0", "nodejs", "app")),
+				NewURLFromKubernetesIngress(fake.GetSingleKubernetesIngress("example-local-0", "nodejs", "app", true, false), false),
 			}),
 			createdURLs: []URL{
 				ConvertLocalURL(localConfigProvider.LocalURL{
@@ -583,7 +583,7 @@ func TestPush(t *testing.T) {
 			name:            "url with same name exists on config and cluster but with different specs",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example-local-0",
@@ -612,7 +612,7 @@ func TestPush(t *testing.T) {
 			name:            "create a secure route url",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
@@ -634,7 +634,7 @@ func TestPush(t *testing.T) {
 			name:            "create a secure ingress url with empty user given tls secret",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
@@ -658,7 +658,7 @@ func TestPush(t *testing.T) {
 			name:            "create a secure ingress url with user given tls secret",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:      "example",
@@ -683,7 +683,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "no host defined for ingress should not create any URL",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: false, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:          args{isRouteSupported: false, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example",
@@ -698,7 +698,7 @@ func TestPush(t *testing.T) {
 			name:            "should create route in openshift cluster if endpoint is defined in devfile",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
@@ -721,7 +721,7 @@ func TestPush(t *testing.T) {
 			name:            "should create ingress if endpoint is defined in devfile",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name: "example",
@@ -744,7 +744,7 @@ func TestPush(t *testing.T) {
 			name:            "should create route in openshift cluster with path defined in devfile",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",
@@ -769,7 +769,7 @@ func TestPush(t *testing.T) {
 			name:            "should create ingress with path defined in devfile",
 			componentName:   "nodejs",
 			applicationName: "app",
-			args:            args{isRouteSupported: true, networkingV1IngressSupported: false, extensionV1IngressSupported: true},
+			args:            args{isRouteSupported: true, networkingV1IngressSupported: true, extensionV1IngressSupported: false},
 			existingLocalURLs: []localConfigProvider.LocalURL{
 				{
 					Name:   "example",

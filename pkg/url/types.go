@@ -56,7 +56,7 @@ const (
 func NewURLsFromKubernetesIngressList(kil *unions.KubernetesIngressList) []URL {
 	var urlList []URL
 	for _, item := range kil.Items {
-		urlItem := NewURLFromKubernetesIngress(item)
+		urlItem := NewURLFromKubernetesIngress(item, true)
 		if !reflect.DeepEqual(urlItem, URL{}) {
 			urlList = append(urlList, urlItem)
 		}
@@ -64,8 +64,8 @@ func NewURLsFromKubernetesIngressList(kil *unions.KubernetesIngressList) []URL {
 	return urlList
 }
 
-func NewURLFromKubernetesIngress(ki *unions.KubernetesIngress) URL {
-	if ki.IsGenerated() {
+func NewURLFromKubernetesIngress(ki *unions.KubernetesIngress, skipIfGenerated bool) URL {
+	if skipIfGenerated && ki.IsGenerated() {
 		return URL{}
 	}
 	u := URL{

@@ -2,10 +2,10 @@ package url
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/unions"
+	networkingv1 "k8s.io/api/networking/v1"
 	"reflect"
 	"testing"
-
-	networkingv1 "k8s.io/api/networking/v1"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
@@ -55,8 +55,8 @@ func getFakeURL(name string, host string, port int, path string, protocol string
 func Test_kubernetesClient_ListCluster(t *testing.T) {
 	componentName := "nodejs"
 	appName := "app"
-	ingress0 := fake.GetSingleExtensionV1Ingress("testIngress0", componentName, appName)
-	ingress1 := fake.GetSingleExtensionV1Ingress("testIngress1", componentName, appName)
+	ingress0 := fake.GetSingleKubernetesIngress("testIngress0", componentName, appName, true, false)
+	ingress1 := fake.GetSingleKubernetesIngress("testIngress1", componentName, appName, true, false)
 
 	route0 := testingutil.GetSingleRoute("testRoute0", 8080, componentName, appName)
 	route1 := testingutil.GetSingleRoute("testRoute1", 8080, componentName, appName)
@@ -74,7 +74,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 	tests := []struct {
 		name              string
 		fields            fields
-		returnedIngresses extensionsv1.IngressList
+		returnedIngresses unions.KubernetesIngressList
 		returnedRoutes    routev1.RouteList
 		want              URLList
 		wantErr           bool
@@ -88,15 +88,15 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 				},
 				isRouteSupported: false,
 			},
-			returnedIngresses: extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{
-					*ingress0,
-					*ingress1,
+			returnedIngresses: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					ingress0,
+					ingress1,
 				},
 			},
 			want: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress(*ingress0),
-				getMachineReadableFormatExtensionV1Ingress(*ingress1),
+				NewURLFromKubernetesIngress(ingress0, false),
+				NewURLFromKubernetesIngress(ingress1, false),
 			}),
 		},
 		{
@@ -134,15 +134,15 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					route1,
 				},
 			},
-			returnedIngresses: extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{
-					*ingress0,
-					*ingress1,
+			returnedIngresses: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					ingress0,
+					ingress1,
 				},
 			},
 			want: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormatExtensionV1Ingress(*ingress0),
-				getMachineReadableFormatExtensionV1Ingress(*ingress1),
+				NewURLFromKubernetesIngress(ingress0, false),
+				NewURLFromKubernetesIngress(ingress1, false),
 				getMachineReadableFormat(route0),
 				getMachineReadableFormat(route1),
 			}),
@@ -180,14 +180,14 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNewWithIngressSupports(true, false)
 			fkclient.Namespace = "default"
 
 			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
-					return true, &networkingv1.Ingress{}, nil
+					return true, tt.returnedIngresses.GetNetworkingV1IngressList(true), nil
 				}
-				return true, &tt.returnedIngresses, nil
+				return true, tt.returnedIngresses.GetExtensionV1Beta1IngresList(true), nil
 			})
 
 			fkocclient, fkocclientset := occlient.FakeNew()
@@ -221,7 +221,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 	route0 := testingutil.GetSingleRoute("testRoute0", 8080, componentName, appName)
 	route1 := testingutil.GetSingleRoute("testRoute1", 8080, componentName, appName)
 
-	ingress0 := fake.GetSingleExtensionV1Ingress("testIngress0", componentName, appName)
+	ingress0 := fake.GetSingleKubernetesIngress("testIngress0", componentName, appName, true, false)
 
 	type fields struct {
 		generic          generic
@@ -231,7 +231,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 		name              string
 		fields            fields
 		returnedRoutes    routev1.RouteList
-		returnedIngress   extensionsv1.IngressList
+		returnedIngress   unions.KubernetesIngressList
 		returnedLocalURLs []localConfigProvider.LocalURL
 		want              URLList
 		wantErr           bool
@@ -300,9 +300,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					route0,
 				},
 			},
-			returnedIngress: extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{
-					*ingress0,
+			returnedIngress: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					ingress0,
 				},
 			},
 			returnedLocalURLs: []localConfigProvider.LocalURL{
@@ -341,9 +341,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					route1,
 				},
 			},
-			returnedIngress: extensionsv1.IngressList{
-				Items: []extensionsv1.Ingress{
-					*ingress0,
+			returnedIngress: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					ingress0,
 				},
 			},
 			returnedLocalURLs: []localConfigProvider.LocalURL{
@@ -408,14 +408,14 @@ func Test_kubernetesClient_List(t *testing.T) {
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 			mockLocalConfig.EXPECT().ListURLs().Return(tt.returnedLocalURLs, nil)
 
-			fkclient, fkclientset := kclient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNewWithIngressSupports(true, false)
 			fkclient.Namespace = "default"
 
 			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
-					return true, &networkingv1.Ingress{}, nil
+					return true, tt.returnedIngress.GetNetworkingV1IngressList(true), nil
 				}
-				return true, &tt.returnedIngress, nil
+				return true, tt.returnedIngress.GetExtensionV1Beta1IngresList(true), nil
 			})
 
 			fkocclient, fkocclientset := occlient.FakeNew()
@@ -455,7 +455,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 		name               string
 		fields             fields
 		args               args
-		createdIngress     *extensionsv1.Ingress
+		createdIngress     *unions.KubernetesIngress
 		defaultTLSExists   bool
 		userGivenTLSExists bool
 		want               string
@@ -467,7 +467,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			args: args{
 				url: getFakeURL("nodejs", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 			},
-			createdIngress: fake.GetSingleExtensionV1Ingress("nodejs-nodejs-app", "nodejs", "app"),
+			createdIngress: fake.GetSingleKubernetesIngress("nodejs-nodejs-app", "nodejs", "app", true, false),
 			want:           "http://nodejs.com",
 			wantErr:        false,
 		},
@@ -477,7 +477,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			args: args{
 				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 			},
-			createdIngress: fake.GetSingleExtensionV1Ingress("example-nodejs-app", "nodejs", "app"),
+			createdIngress: fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
 			want:           "http://example.com",
 			wantErr:        false,
 		},
@@ -491,7 +491,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					return url
 				}(),
 			},
-			createdIngress:   fake.GetSingleExtensionV1Ingress("example-nodejs-app", "nodejs", "app"),
+			createdIngress:   fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
 			defaultTLSExists: true,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -506,7 +506,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					return url
 				}(),
 			},
-			createdIngress:   fake.GetSingleExtensionV1Ingress("example-nodejs-app", "nodejs", "app"),
+			createdIngress:   fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
 			defaultTLSExists: false,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -538,7 +538,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					return url
 				}(),
 			},
-			createdIngress:     fake.GetSingleExtensionV1Ingress("example-nodejs-app", "nodejs", "app"),
+			createdIngress:     fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "https://example.com",
@@ -554,7 +554,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			}
 
 			client, fakeClientSet := occlient.FakeNew()
-			fakeKClient, fakeKClientSet := kclient.FakeNew()
+			fakeKClient, fakeKClientSet := kclient.FakeNewWithIngressSupports(true, false)
 			client.SetKubeClient(fakeKClient)
 
 			k := kubernetesClient{
@@ -632,7 +632,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 				t.Errorf("expected 0 RouteClientset.Actions() in CreateService, got: %v", fakeClientSet.RouteClientset.Actions())
 			}
 
-			var createdIngress *extensionsv1.Ingress
+			var createdIngress *networkingv1.Ingress
 			createIngressActionNo := 0
 			if !tt.args.url.Spec.Secure {
 				createIngressActionNo = 2
@@ -649,13 +649,13 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					createIngressActionNo = 3
 				}
 			}
-			createdIngress = fakeKClientSet.Kubernetes.Actions()[createIngressActionNo].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
-			tt.createdIngress.Labels["odo.openshift.io/url-name"] = tt.args.url.Name
-			if !reflect.DeepEqual(createdIngress.Name, tt.createdIngress.Name) {
-				t.Errorf("ingress name not matching, expected: %s, got %s", tt.createdIngress.Name, createdIngress.Name)
+			createdIngress = fakeKClientSet.Kubernetes.Actions()[createIngressActionNo].(ktesting.CreateAction).GetObject().(*networkingv1.Ingress)
+			tt.createdIngress.NetworkingV1Ingress.Labels["odo.openshift.io/url-name"] = tt.args.url.Name
+			if !reflect.DeepEqual(createdIngress.Name, tt.createdIngress.GetName()) {
+				t.Errorf("ingress name not matching, expected: %s, got %s", tt.createdIngress.GetName(), createdIngress.Name)
 			}
-			if !reflect.DeepEqual(createdIngress.Labels, tt.createdIngress.Labels) {
-				t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.createdIngress.Labels, createdIngress.Labels))
+			if !reflect.DeepEqual(createdIngress.Labels, tt.createdIngress.NetworkingV1Ingress.Labels) {
+				t.Errorf("ingress labels not matching, %v", pretty.Compare(tt.createdIngress.NetworkingV1Ingress.Labels, createdIngress.Labels))
 			}
 
 			wantedIngressSpecParams := generator.IngressSpecParams{
@@ -976,12 +976,12 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			}
 
 			if tt.args.url.Spec.Kind == localConfigProvider.INGRESS {
-				requiredIngress := fake.GetSingleExtensionV1Ingress(tt.args.url.Name, tt.fields.generic.componentName, tt.fields.generic.appName)
+				requiredIngress := fake.GetSingleKubernetesIngress(tt.args.url.Name, tt.fields.generic.componentName, tt.fields.generic.appName, true, false)
 
 				createdIngress := fakeKClientSet.Kubernetes.Actions()[2].(ktesting.CreateAction).GetObject().(*extensionsv1.Ingress)
-				requiredIngress.Labels["odo.openshift.io/url-name"] = tt.args.url.Name
-				if !reflect.DeepEqual(createdIngress.Labels, requiredIngress.Labels) {
-					t.Errorf("ingress name not matching, expected: %s, got %s", requiredIngress.Labels, createdIngress.Labels)
+				requiredIngress.NetworkingV1Ingress.Labels["odo.openshift.io/url-name"] = tt.args.url.Name
+				if !reflect.DeepEqual(createdIngress.Labels, requiredIngress.NetworkingV1Ingress.Labels) {
+					t.Errorf("ingress name not matching, expected: %s, got %s", requiredIngress.NetworkingV1Ingress.Labels, createdIngress.Labels)
 				}
 			} else if tt.args.url.Spec.Kind == localConfigProvider.ROUTE {
 				requiredRoute := testingutil.GetSingleRoute(tt.args.url.Name, tt.args.url.Spec.Port, tt.fields.generic.componentName, tt.fields.generic.appName)
