@@ -14,8 +14,8 @@ import (
 )
 
 func GetKubernetesIngressListWithMultiple(componentName, appName string, networkingV1Supported, extensionV1Supported bool) *unions.KubernetesIngressList {
-	kil := unions.NewEmptyKubernetesIngressList()
-	ki1 := unions.NewKubernetesIngressFromParams(generator.IngressParams{
+	kubernetesIngressList := unions.NewEmptyKubernetesIngressList()
+	kubernetesIngress1 := unions.NewKubernetesIngressFromParams(generator.IngressParams{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "example-0",
 			Labels: map[string]string{
@@ -34,13 +34,13 @@ func GetKubernetesIngressListWithMultiple(componentName, appName string, network
 		},
 	})
 	if !networkingV1Supported {
-		ki1.NetworkingV1Ingress = nil
+		kubernetesIngress1.NetworkingV1Ingress = nil
 	}
 	if !extensionV1Supported {
-		ki1.ExtensionV1Beta1Ingress = nil
+		kubernetesIngress1.ExtensionV1Beta1Ingress = nil
 	}
-	kil.Items = append(kil.Items, ki1)
-	ki2 := unions.NewKubernetesIngressFromParams(generator.IngressParams{
+	kubernetesIngressList.Items = append(kubernetesIngressList.Items, kubernetesIngress1)
+	kubernetesIngress2 := unions.NewKubernetesIngressFromParams(generator.IngressParams{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "example-1",
 			Labels: map[string]string{
@@ -59,17 +59,17 @@ func GetKubernetesIngressListWithMultiple(componentName, appName string, network
 		},
 	})
 	if !networkingV1Supported {
-		ki2.NetworkingV1Ingress = nil
+		kubernetesIngress2.NetworkingV1Ingress = nil
 	}
 	if !extensionV1Supported {
-		ki2.ExtensionV1Beta1Ingress = nil
+		kubernetesIngress2.ExtensionV1Beta1Ingress = nil
 	}
-	kil.Items = append(kil.Items, ki2)
-	return kil
+	kubernetesIngressList.Items = append(kubernetesIngressList.Items, kubernetesIngress2)
+	return kubernetesIngressList
 }
 
 func GetSingleKubernetesIngress(urlName, componentName, appName string, networkingv1Supported, extensionv1Supported bool) *unions.KubernetesIngress {
-	ki := unions.NewKubernetesIngressFromParams(generator.IngressParams{
+	kubernetesIngress := unions.NewKubernetesIngressFromParams(generator.IngressParams{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
@@ -88,12 +88,12 @@ func GetSingleKubernetesIngress(urlName, componentName, appName string, networki
 		},
 	})
 	if !networkingv1Supported {
-		ki.NetworkingV1Ingress = nil
+		kubernetesIngress.NetworkingV1Ingress = nil
 	}
 	if !extensionv1Supported {
-		ki.ExtensionV1Beta1Ingress = nil
+		kubernetesIngress.ExtensionV1Beta1Ingress = nil
 	}
-	return ki
+	return kubernetesIngress
 }
 
 // GetSingleSecureKubernetesIngress gets a single secure ingress with the given secret name
@@ -102,7 +102,7 @@ func GetSingleSecureKubernetesIngress(urlName, componentName, appName, secretNam
 	if secretName == "" {
 		secretName = componentName + "-" + appName + "-tlssecret"
 	}
-	ki := unions.NewKubernetesIngressFromParams(generator.IngressParams{
+	kubernetesIngress := unions.NewKubernetesIngressFromParams(generator.IngressParams{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
@@ -122,10 +122,10 @@ func GetSingleSecureKubernetesIngress(urlName, componentName, appName, secretNam
 		},
 	})
 	if !networkingV1Supported {
-		ki.NetworkingV1Ingress = nil
+		kubernetesIngress.NetworkingV1Ingress = nil
 	}
 	if !extensionV1Supported {
-		ki.ExtensionV1Beta1Ingress = nil
+		kubernetesIngress.ExtensionV1Beta1Ingress = nil
 	}
-	return ki
+	return kubernetesIngress
 }
