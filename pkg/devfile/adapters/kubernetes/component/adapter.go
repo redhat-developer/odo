@@ -415,7 +415,6 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	if err != nil {
 		return err
 	}
-
 	if len(containers) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
@@ -428,11 +427,11 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	var initContainers []corev1.Container
-	// odo currently does not support PreStart event or apply commands
-	// https://github.com/openshift/odo/issues/4187
-	// after odo support apply commands, should append result from generator.getInitContainers()
-	// initContainers := generator.GetInitContainers(a.Devfile)
+	initContainers, err := generator.GetInitContainers(a.Devfile)
+	if err != nil {
+		return err
+	}
+
 	initContainers = append(initContainers, kclient.GetBootstrapSupervisordInitContainer())
 
 	var odoSourcePVCName string
@@ -462,7 +461,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	}
 
 	// Get PVC volumes and Volume Mounts
-	pvcVolumes, err := storage.GetVolumesAndVolumeMounts(a.Devfile, containers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
+	pvcVolumes, err := storage.GetVolumesAndVolumeMounts(a.Devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}
