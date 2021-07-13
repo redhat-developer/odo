@@ -37,7 +37,7 @@ components:
     - name: http-3000
       targetPort: 3000
     image: registry.access.redhat.com/ubi8/nodejs-14:latest
-    memoryLimit: 1024Mi
+    memoryLimit: 300Mi
     mountSources: true
     sourceMapping: /project
   name: runtime

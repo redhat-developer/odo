@@ -54,6 +54,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				componentName = "cmp-" + helper.RandString(6)
 				helper.Cmd("odo", "create", "nodejs", componentName).ShouldPass()
+				helper.Cmd("odo", "config", "set", "Memory", "300M", "-f").ShouldPass()
 
 				serviceName := "service-" + helper.RandString(6)
 				svcFullName = strings.Join([]string{"Redis", serviceName}, "/")
