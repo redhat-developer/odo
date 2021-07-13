@@ -5,9 +5,9 @@ sidebar_position: 2
 
 # Features provided by odo
 
-By using odo, application developers can develop, test, debug and deploy microservices based applications on Kubernetes without having a deep understanding of the platform.
+By using odo, application developers can develop, test, debug, and deploy microservices based applications on Kubernetes without having a deep understanding of the platform.
 
-odo follows "create and push" workflow for almost everything. It means, as a user, when you "create" something the information (or manifest) is stored in a configuration file, and then upon doing a "push" it gets created  on the Kubernetes cluster. One can take an existing git repository and create an odo component from it, which can be pushed to a Kubernetes cluster.
+odo follows "create and push" workflow for almost everything. It means, as a user, when you "create", something the information (or manifest) is stored in a configuration file, and then upon doing a "push" it gets created  on the Kubernetes cluster. You can take an existing git repository and create an odo component from it, which can be pushed to a Kubernetes cluster.
 
 odo helps "deploy and link" multiple components and services with each other. Using odo, developers can create and deploy services based on [Kubernetes Operators](https://github.com/operator-framework/) in their [development cluster](cluster-setup/development-clusters). These services can be created using any of the Operators available on [OperatorHub.io](https://operatorhub.io). Next, upon linking this service, odo injects the service configuration into the microservice created using odo. Your application can use this configuration to communicate with the Operator backed service. 
 
@@ -36,4 +36,4 @@ We are working on some exciting features like:
 * Create `odo deploy` command to transition from inner loop to outer loop.
 * Support for Knative eventing.
 
-For a quick high level summary of the features we're planning to add, take a look at odo's [milestones on GitHub](https://github.com/openshift/odo/milestones).
+For a quick high level summary of the features we are planning to add, take a look at odo's [milestones on GitHub](https://github.com/openshift/odo/milestones).
