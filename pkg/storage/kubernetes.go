@@ -108,15 +108,23 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		}
 	}
 
+	containerVolumeMounts := make(map[string]bool)
+	for _, container := range k.deployment.Spec.Template.Spec.Containers {
+		for _, volumeMount := range container.VolumeMounts {
+			containerVolumeMounts[volumeMount.Name] = true
+		}
+	}
+
 	var storage []Storage
 	var volumeMounts []Storage
 	for _, container := range k.deployment.Spec.Template.Spec.Containers {
 		for _, volumeMount := range container.VolumeMounts {
 
-			// avoid the volume mounts from the init containers
+			// avoid the volume mounts only from the init containers
 			// and the source volume mount
-			_, ok := initContainerVolumeMounts[volumeMount.Name]
-			if ok || volumeMount.Name == OdoSourceVolume {
+			_, initOK := initContainerVolumeMounts[volumeMount.Name]
+			_, ok := containerVolumeMounts[volumeMount.Name]
+			if (!ok && initOK) || volumeMount.Name == OdoSourceVolume || volumeMount.Name == OdoSupervisordVolume {
 				continue
 			}
 
@@ -159,6 +167,13 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		}
 		if !found {
 			return StorageList{}, fmt.Errorf("mount path for pvc %s not found", pvc.Name)
+		}
+	}
+
+	// to track non PVC volumes
+	for _, volume := range k.deployment.Spec.Template.Spec.Volumes {
+		if volume.PersistentVolumeClaim == nil {
+			validVolumeMounts[volume.Name] = true
 		}
 	}
 

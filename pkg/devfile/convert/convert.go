@@ -97,6 +97,12 @@ func GenerateDevfileYaml(client *occlient.Client, co *config.LocalConfigInfo, co
 	// set commands
 	setDevfileCommandsForS2I(s2iDevfile)
 
+	// set an init container to copy files from /opt/app-root
+	err = setInitContainer(s2iDevfile, imageforDevfile)
+	if err != nil {
+		return err
+	}
+
 	ctx := devfileCtx.NewDevfileCtx(filepath.Join(context, "devfile.yaml"))
 	err = ctx.SetAbsPath()
 	if err != nil {
@@ -236,6 +242,52 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 
 }
 
+func setInitContainer(d data.DevfileData, s2iImage string) error {
+	err := d.AddEvents(devfilev1.Events{
+		DevWorkspaceEvents: devfilev1.DevWorkspaceEvents{
+			PreStart: []string{"copy-app-root"},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	err = d.AddCommands([]devfilev1.Command{
+		{
+			Id: "copy-app-root",
+			CommandUnion: devfilev1.CommandUnion{
+				Apply: &devfilev1.ApplyCommand{
+					Component: "copy-app-root-container",
+				},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	initContainer := devfilev1.Component{
+		Name: "copy-app-root-container",
+		ComponentUnion: devfilev1.ComponentUnion{
+			Container: &devfilev1.ContainerComponent{
+				Container: devfilev1.Container{
+					Image: s2iImage,
+					VolumeMounts: []devfilev1.VolumeMount{
+						{
+							Name: "app-root-volume",
+							Path: "/mnt/app-root",
+						},
+					},
+					Command: []string{
+						"/bin/sh",
+						"-c",
+						"[ -d /opt/app-root ] && cp -R /opt/app-root /mnt/ || true",
+					},
+				},
+			},
+		},
+	}
+	return d.AddComponents([]devfilev1.Component{initContainer})
+}
+
 // setDevfileComponentsForS2I sets the devfile.yaml components field from s2i data.
 func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig *config.LocalConfigInfo, s2iEnv config.EnvVarList) error {
 	klog.V(2).Info("Set devfile components from s2i data")
@@ -276,6 +328,57 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		}
 
 		volumeMounts = append(volumeMounts, volumeMount)
+	}
+
+	// Add volumes for:
+	// - /opt/app-root
+	// - ${ODO_S2I_DEPLOYMENT_DIR} if outside of /opt/app-root
+
+	var deploymentDir string
+	for _, env := range s2iEnv {
+		if env.Name == "ODO_S2I_DEPLOYMENT_DIR" {
+			deploymentDir = env.Value
+			break
+		}
+	}
+
+	separateDeploymentsMount := len(deploymentDir) > 0 && !strings.HasPrefix(deploymentDir, occlient.DefaultAppRootDir)
+
+	volumeAppRoot := devfilev1.Component{
+		Name: "app-root-volume",
+		ComponentUnion: devfilev1.ComponentUnion{
+			Volume: &devfilev1.VolumeComponent{
+				Volume: devfilev1.Volume{
+					Size: "1Gi",
+				},
+			},
+		},
+	}
+	components = append(components, volumeAppRoot)
+
+	volumeMountAppRoot := devfilev1.VolumeMount{
+		Name: "app-root-volume",
+		Path: occlient.DefaultAppRootDir,
+	}
+	volumeMounts = append(volumeMounts, volumeMountAppRoot)
+
+	if separateDeploymentsMount {
+		volumeDeployments := devfilev1.Component{
+			Name: "deployments-volume",
+			ComponentUnion: devfilev1.ComponentUnion{
+				Volume: &devfilev1.VolumeComponent{
+					Volume: devfilev1.Volume{
+						Size: "1Gi",
+					},
+				},
+			},
+		}
+		components = append(components, volumeDeployments)
+		volumeMountDeployments := devfilev1.VolumeMount{
+			Name: "deployments-volume",
+			Path: deploymentDir,
+		}
+		volumeMounts = append(volumeMounts, volumeMountDeployments)
 	}
 
 	sourceMapping := DefaultSourceMappingS2i

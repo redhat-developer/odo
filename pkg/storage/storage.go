@@ -14,6 +14,9 @@ const (
 	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
 	OdoSourceVolume = "odo-projects"
 
+	// OdoSupervisordVolume is the constant containing the name of the emptyDir volume containing Supervisord shared data
+	OdoSupervisordVolume = "odo-supervisord-shared-data"
+
 	// OdoSourceVolumeSize specifies size for odo source volume.
 	OdoSourceVolumeSize = "2Gi"
 )
