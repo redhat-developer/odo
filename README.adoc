@@ -6,7 +6,7 @@
 
 https://github.com/openshift/odo/releases/latest[image:https://img.shields.io/github/v/release/openshift/odo?style=for-the-badge[GitHub release]]
 image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[License]
-image:https://api.netlify.com/api/v1/badges/e07867b0-56a4-4905-92a9-a152ceab5f0d/deploy-status[![Netlify Status]
+https://app.netlify.com/sites/odo-docusaurus-preview/deploys[image:https://api.netlify.com/api/v1/badges/e07867b0-56a4-4905-92a9-a152ceab5f0d/deploy-status[![Netlify Status]]
 
 
 [[overview]]
