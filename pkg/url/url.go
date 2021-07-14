@@ -26,10 +26,6 @@ import (
 
 const apiVersion = "odo.dev/v1alpha1"
 
-func getURLTypeMeta() metav1.TypeMeta {
-	return metav1.TypeMeta{Kind: "url", APIVersion: apiVersion}
-}
-
 // ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
 /// down if a component name is provided, which will only list URLs for the
 // given component
@@ -252,22 +248,6 @@ func getMachineReadableFormatForList(urls []URL) URLList {
 		ListMeta: metav1.ListMeta{},
 		Items:    urls,
 	}
-}
-
-func getMachineReadableFormatExtensionV1Ingress(i iextensionsv1.Ingress) URL {
-	url := URL{
-		TypeMeta:   getURLTypeMeta(),
-		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Path: i.Spec.Rules[0].HTTP.Paths[0].Path, Kind: localConfigProvider.INGRESS},
-	}
-	if i.Spec.TLS != nil {
-		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
-		url.Spec.Protocol = "https"
-	} else {
-		url.Spec.Protocol = "http"
-	}
-	return url
-
 }
 
 // getDefaultTLSSecretName returns the name of the default tls secret name
