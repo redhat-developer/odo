@@ -13,41 +13,42 @@ odo abstracts Kubernetes concepts into a developer focused terminology. In this 
   
   A component is like a microservice. Each component can be run and deployed separately. Examples of components: Warehouse API Backend, Inventory API, Web Frontend, Payment Backend
 
-  > Creating a component with odo creates Kubernetes resources such as deployment or deploymentconfig which creates replicaset and pod, service, and storage which are necessary to run the microservice.
+  > Deploying a component created with odo will create resources such as deployments or deploymentconfigs (which in turn creates replicasets and pods), services, and storage which are necessary to run the microservice in the Kubernetes cluster.
 
 * **Application**
   
-  An application consists of multiple components which may span over multiple projects, and work individually to build the entire application. Examples of applications: e-Shop, Hotel Reservation System, Online Booking
-  > An application can be considered as an equivalent of labels in Kubernetes that help in grouping a set of resources.
+  An application is a group of one or more components that work individually to build an entire application. Examples of applications: e-Shop, Hotel Reservation System, Online Booking
+  
+  > An application can be considered as an equivalent of labels in Kubernetes that helps in grouping a set of resource.
 
 
 * **Project**
   
-  A project is your source code, tests, and libraries organized in a separate single unit.
-  > A project in odo is an equivalent of a namespace in Kubernetes. Creating a project in odo will create a namespace in Kubernetes with the same name.
+  A project is a separate single unit that provides a scope for names and helps in dividing cluster resources between users. A resource name must be unique within the project but not across multiple projects.
+  > A project is an equivalent of a namespace in Kubernetes. Creating a project with odo will create a namespace in the Kubernetes cluster with the same name.
 
 
 * **Context**
   
-  A context is the directory where the source code, tests, and libraries for your component resides. A single context can only contain a single component.
-
+  A context is the directory where the source code, tests, libraries and odo specific config files for your component resides. A single context can only contain one component.
+  > There is no Kubernetes equivalent of a context because it is merely a directory.
 
 * **URL**
   
   A URL exposes your component to be accessed outside the cluster.
-  > A URL is an equivalent of a service in Kubernetes.
+  > A URL is an equivalent of Ingress in Kubernetes. Deploying a URL with odo will create an Ingress resource in the Kubernetes cluster. 
 
 
 * **Storage**
   
-  A storage volume is [PVC](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim) which is a way for you to "claim" persistent storage without knowing the details of the environment. Storage volume can persist data across restarts and rebuilds of a component.
-  > A storage volume is an equivalent of PVC in Kubernetes. Creating a storage with odo will create a PVC resource in Kubernetes with the same name.
+  A storage is a way to "claim" persistent storage in the cluster environment. A storage can persist data across restarts and rebuilds of a component.
+  > A storage is an equivalent of PVC in Kubernetes. Deploying a storage with odo will create a PVC resource in the Kubernetes cluster.
 
 
 * **Service**
   
-  A service is another microservice, or a Kubernetes Custom Resource that your component connects to or depends on. Example of services: MariaDB, MySQL
-  > A service created with odo creates multiple Kubernetes resources to establish a proper linking between the source component and target microservice, or 
+  A service is an external application that a component can connect to or depend on to gain some functionality. Example of services: MySQL, Redis
+  > Deploying a service created with odo, creates necessary resources in the Kubernetes cluster to establish a proper connection between the component and the external application. odo service is not the same as a Kubernetes service, see [odo services vs. Kubernetes services](/basics#odo-services-vs-kubernetes-services).
 
 
 * **Devfile**
@@ -57,8 +58,12 @@ odo abstracts Kubernetes concepts into a developer focused terminology. In this 
   
 
 ### Component vs. Application
-A component is a microservice, while an application is a group of microservices. To make a microservice belong to an application, all the resources belonging to the microservice are assigned a label.
+A component is akin to a microservice, while an application is a group of components.
+
 
 ### odo services vs. Kubernetes services
-odo service helps in connecting one microservice to another, while a Kubernetes service helps in making a microservice accessible outside the cluster.
-Creating an odo service will create a set of resources to establish a successful connection between the two microservices.
+Service in terms of odo is an external application that provides an additional functionality, odo service can only be created with [Operators](https://operatorframework.io/what/).
+Service in terms of Kubernetes is a way of exposing a microservice accessible from the cluster to the outside world. Learn more about [Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/).
+
+
+Deploying a service created with odo will create a set of resources in the Kubernetes cluster to establish a successful connection between the odo component and the external application.
