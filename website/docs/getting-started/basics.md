@@ -4,7 +4,8 @@ sidebar_position: 3
 ---
 # odo concepts
 
-odo abstracts Kubernetes concepts into developer focused terminology. In this document, we will take a look at each of these concepts and also their Kubernetes equivalent.
+odo abstracts Kubernetes concepts into a developer focused terminology. In this document, we will take a look at each of these concepts and also their Kubernetes equivalent.
+> The quoted text will talk about the Kubernetes equivalent of these concepts.
 
 ### Concepts
 
@@ -12,7 +13,7 @@ odo abstracts Kubernetes concepts into developer focused terminology. In this do
   
   A component is like a microservice. Each component can be run and deployed separately. Examples of components: Warehouse API Backend, Inventory API, Web Frontend, Payment Backend
 
-  Creating a component with odo creates Kubernetes resources such as deployment which creates replicasets and pods, service, storage
+  > Creating a component with odo creates Kubernetes resources such as deployment or deploymentconfig which creates replicaset and pod, service, and storage which are necessary to run the microservice.
 
 * **Application**
   
