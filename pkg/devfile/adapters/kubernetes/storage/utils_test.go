@@ -294,7 +294,7 @@ func TestGetVolumesAndVolumeMounts(t *testing.T) {
 			}
 
 			containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
-			if err != nil {
+			if !tt.wantErr && err != nil {
 				t.Errorf("TestGetVolumesAndVolumeMounts error - %v", err)
 				return
 			}
