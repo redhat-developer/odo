@@ -35,6 +35,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog"
 )
 
@@ -768,7 +769,7 @@ func HTTPGetRequest(request HTTPRequestParams, cacheFor int) ([]byte, error) {
 
 	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
-		return nil, errors.Errorf("fail to retrive %s, %v: %s", request.URL, resp.StatusCode, http.StatusText(resp.StatusCode))
+		return nil, errors.Errorf("failed to retrieve %s, %v: %s", request.URL, resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
 	// Process http response
@@ -1032,7 +1033,7 @@ func DownloadFileInMemory(url string) ([]byte, error) {
 	}
 	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
-		return nil, errors.Errorf("fail to retrive %s, %v: %s", url, resp.StatusCode, http.StatusText(resp.StatusCode))
+		return nil, errors.Errorf("failed to retrieve %s, %v: %s", url, resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 	defer resp.Body.Close()
 
@@ -1071,8 +1072,13 @@ func CheckKubeConfigExist() bool {
 	if os.Getenv("KUBECONFIG") != "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 	} else {
-		home, _ := os.UserHomeDir()
-		kubeconfig = fmt.Sprintf("%s/.kube/config", home)
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = filepath.Join(home, ".kube", "config")
+			klog.V(4).Infof("using default kubeconfig path %s", kubeconfig)
+		} else {
+			klog.V(4).Infof("no KUBECONFIG provided and cannot fallback to default")
+			return false
+		}
 	}
 
 	if CheckPathExists(kubeconfig) {

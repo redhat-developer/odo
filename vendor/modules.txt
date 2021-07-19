@@ -97,7 +97,7 @@ github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
 github.com/devfile/api/v2/pkg/validation/variables
-# github.com/devfile/library v1.0.0
+# github.com/devfile/library v1.0.1-0.20210716161803-9de9d4cb6be7
 ## explicit
 github.com/devfile/library/pkg/devfile
 github.com/devfile/library/pkg/devfile/generator
@@ -107,6 +107,7 @@ github.com/devfile/library/pkg/devfile/parser/data
 github.com/devfile/library/pkg/devfile/parser/data/v2
 github.com/devfile/library/pkg/devfile/parser/data/v2/2.0.0
 github.com/devfile/library/pkg/devfile/parser/data/v2/2.1.0
+github.com/devfile/library/pkg/devfile/parser/data/v2/2.2.0
 github.com/devfile/library/pkg/devfile/parser/data/v2/common
 github.com/devfile/library/pkg/devfile/validate
 github.com/devfile/library/pkg/testingutil
