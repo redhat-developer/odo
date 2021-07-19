@@ -6,6 +6,8 @@
 
 ### Bug Fixes
 
+- `odo push` now displays "Waiting for component to start" only once ([4919](https://github.com/openshift/odo/pull/4919))
+
 ### Tests
 
 ### Documentation
