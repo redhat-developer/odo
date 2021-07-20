@@ -32,26 +32,28 @@ var _ = Describe("odo devfile push command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	Context("verify devfile push works", func() {
-		When("creating a nodejs compoenet", func() {
-
+	When("creating a nodejs compoenet", func() {
+		output := ""
+		BeforeEach(func() {
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+		})
+		When("setting git conifg", func() {
+			remoteURL := ""
 			BeforeEach(func() {
-				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
-
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("git", "init").ShouldPass()
+				remote := "origin"
+				remoteURL = "https://github.com/odo-devfiles/nodejs-ex"
+				helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			})
 
 			It("checks that odo push works with a devfile", func() {
-
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-				helper.Cmd("git", "init").ShouldPass()
-				remote := "origin"
-				remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
-				helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
-
-				output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+			})
+
+			It("checks that odo push works with a devfile", func() {
 
 				annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
 				var valueFound bool
@@ -61,75 +63,99 @@ var _ = Describe("odo devfile push command tests", func() {
 					}
 				}
 				Expect(valueFound).To(BeTrue())
+			})
 
+			It("update devfile and push again", func() {
 				// update devfile and push again
 				helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
 				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 			})
 
-			When("JSON output is requested", func() {
-				It("should display output in JSON format", func() {
+		})
 
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+		When("JSON output is requested", func() {
 
-					output := helper.Cmd("odo", "push", "-o", "json", "--project", commonVar.Project).ShouldPass().Out()
-					utils.AnalyzePushConsoleOutput(output)
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				output = helper.Cmd("odo", "push", "-o", "json", "--project", commonVar.Project).ShouldPass().Out()
+			})
 
-					// update devfile and push again
+			It("should display push output in JSON format", func() {
+
+				utils.AnalyzePushConsoleOutput(output)
+			})
+			When("update devfile and push again", func() {
+
+				BeforeEach(func() {
 					helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
 					output = helper.Cmd("odo", "push", "-o", "json", "--project", commonVar.Project).ShouldPass().Out()
+				})
+
+				It("should display push updated output in JSON format", func() {
+
 					utils.AnalyzePushConsoleOutput(output)
-
-				})
-			})
-			When("not in context directory", func() {
-				newContext := ""
-				BeforeEach(func() {
-					newContext = helper.CreateNewContext()
-				})
-
-				AfterEach(func() {
-					defer helper.DeleteDir(newContext)
-					helper.Chdir(commonVar.Context)
-				})
-
-				It("should push correct component based on --context flag", func() {
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-					helper.Chdir(newContext)
-					output := helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-					Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-				})
-			})
-
-			When("Devfile 2.1.0 is used", func() {
-				It("devfile variables should work", func() {
-
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-					output := helper.Cmd("odo", "push").ShouldPass().Out()
-					Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-
-					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, "app", commonVar.Project)
-					// check if the env variable has a correct value. This value was substituted from in devfile from variable
-					Expect(envVars["FOO"]).To(Equal("bar"))
-
 				})
 			})
 		})
 
-		When("pushing devfile without an .odo folder", func() {
+		When("not in context directory and doing odo push", func() {
+			newContext := ""
+			BeforeEach(func() {
+				newContext = helper.CreateNewContext()
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-			It("should be able to push based on name passed", func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output := helper.Cmd("odo", "push", "--project", commonVar.Project, "springboot").ShouldPass().Out()
-				Expect(output).To(ContainSubstring("Executing devfile commands for component springboot"))
+				helper.Chdir(newContext)
+				output = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 			})
 
-			It("should error out on devfile flag", func() {
-				helper.Cmd("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml").ShouldFail()
+			AfterEach(func() {
+				defer helper.DeleteDir(newContext)
+				helper.Chdir(commonVar.Context)
 			})
+
+			It("should push correct component based on --context flag", func() {
+
+				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+			})
+		})
+
+		When("Devfile 2.1.0 is used", func() {
+
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
+
+			When("doing odo push", func() {
+
+				BeforeEach(func() {
+					output = helper.Cmd("odo", "push").ShouldPass().Out()
+				})
+
+				It("should pass", func() {
+
+					Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+				})
+				It("should check if the env variable has a correct value", func() {
+
+					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(cmpName, "app", commonVar.Project)
+					// check if the env variable has a correct value. This value was substituted from in devfile from variable
+					Expect(envVars["FOO"]).To(Equal("bar"))
+				})
+			})
+		})
+	})
+
+	When("pushing devfile without an .odo folder", func() {
+
+		It("should be able to push based on name passed", func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			output := helper.Cmd("odo", "push", "--project", commonVar.Project, "springboot").ShouldPass().Out()
+			Expect(output).To(ContainSubstring("Executing devfile commands for component springboot"))
+		})
+
+		It("should error out on devfile flag", func() {
+			helper.Cmd("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml").ShouldFail()
 		})
 	})
 
