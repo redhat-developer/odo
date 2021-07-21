@@ -84,10 +84,12 @@ func GenerateDevfileYaml(client *occlient.Client, co *config.LocalConfigInfo, co
 
 	// set metadata
 	s2iDevfile.SetMetadata(devfilepkg.DevfileMetadata{
-		Name:    co.GetName(),
-		Version: "1.0.0",
+		Name:        co.GetName(),
+		Version:     "1.0.0",
+		Language:    componentType,
+		ProjectType: componentType,
 	})
-	// set commponents
+	// set components
 	err = setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, co, s2iEnv)
 	if err != nil {
 		return err

@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/openshift/odo/pkg/devfile"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
@@ -266,7 +268,14 @@ func componentTests(args ...string) {
 				Expect(info.GetApplication(), appName)
 				Expect(info.GetName(), cmpName)
 			})
-
+			It("should set the correct component name, language and projectType in devfile metadata", func() {
+				devObj, err := devfile.ParseFromFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+				Expect(err).ToNot(HaveOccurred())
+				metadata := devObj.Data.GetMetadata()
+				Expect(metadata.Name).To(BeEquivalentTo(cmpName))
+				Expect(metadata.Language).To(ContainSubstring("nodejs"))
+				Expect(metadata.ProjectType).To(ContainSubstring("nodejs"))
+			})
 			It("should list the component when it is not pushed", func() {
 				cmpList := helper.Cmd("odo", append(args, "list", "--context", commonVar.Context)...).ShouldPass().Out()
 				helper.MatchAllInOutput(cmpList, []string{cmpName, "Not Pushed"})
