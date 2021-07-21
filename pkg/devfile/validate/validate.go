@@ -2,10 +2,10 @@ package validate
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2"
+	v2 "github.com/devfile/library/pkg/devfile/parser/data/v2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog"
 )
@@ -13,7 +13,6 @@ import (
 // ValidateDevfileData validates whether sections of devfile are odo compatible
 // after invoking the generic devfile validation
 func ValidateDevfileData(data interface{}) error {
-	var events devfilev1.Events
 
 	switch d := data.(type) {
 	case *v2.DevfileV2:
@@ -25,7 +24,6 @@ func ValidateDevfileData(data interface{}) error {
 		if err != nil {
 			return err
 		}
-		events = d.GetEvents()
 
 		commandsMap := common.GetCommandsMap(commands)
 
@@ -39,9 +37,6 @@ func ValidateDevfileData(data interface{}) error {
 			return err
 		}
 
-		if err := validateEvents(events); err != nil {
-			return err
-		}
 	default:
 		return fmt.Errorf("unknown devfile type %T", d)
 	}
