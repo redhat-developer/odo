@@ -44,7 +44,7 @@ var (
 # and make the secrets accessible as files in the '/bindings/etcd/' directory
 %[1]s EtcdCluster/myetcd  --bind-as-files --name etcd`)
 
-	linkLongDesc = `Link component to a service (backed by an Operator or Service Catalog) or component (works only with s2i components)
+	linkLongDesc = `Link component to a service (backed by an Operator or Service Catalog) or component
 
 If the source component is not provided, the current active component is assumed.
 In both use cases, link adds the appropriate secret to the environment of the source component. 
