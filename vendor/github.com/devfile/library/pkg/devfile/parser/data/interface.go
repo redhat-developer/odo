@@ -7,6 +7,9 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
+// Generate mock interfaces for DevfileData by executing the following cmd in pkg/devfile/parser/data
+// mockgen -package=data -source=interface.go DevfileData > /tmp/mock_interface.go ; cp /tmp/mock_interface.go ./mock_interface.go
+
 // DevfileData is an interface that defines functions for Devfile data operations
 type DevfileData interface {
 

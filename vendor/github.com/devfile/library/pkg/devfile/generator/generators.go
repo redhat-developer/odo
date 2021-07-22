@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -12,6 +13,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -53,50 +55,55 @@ func GetObjectMeta(name, namespace string, labels, annotations map[string]string
 	return objectMeta
 }
 
-// GetContainers iterates through the devfile components and returns a slice of the corresponding containers
+// GetContainers iterates through all container components, filters out init containers and returns corresponding containers
 func GetContainers(devfileObj parser.DevfileObj, options common.DevfileOptions) ([]corev1.Container, error) {
-	var containers []corev1.Container
-	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
+	allContainers, err := getAllContainers(devfileObj, options)
 	if err != nil {
 		return nil, err
 	}
-	for _, comp := range containerComponents {
-		envVars := convertEnvs(comp.Container.Env)
-		resourceReqs := getResourceReqs(comp)
-		ports := convertPorts(comp.Container.Endpoints)
-		containerParams := containerParams{
-			Name:         comp.Name,
-			Image:        comp.Container.Image,
-			IsPrivileged: false,
-			Command:      comp.Container.Command,
-			Args:         comp.Container.Args,
-			EnvVars:      envVars,
-			ResourceReqs: resourceReqs,
-			Ports:        ports,
-		}
-		container := getContainer(containerParams)
 
-		// If `mountSources: true` was set PROJECTS_ROOT & PROJECT_SOURCE env
-		if comp.Container.MountSources == nil || *comp.Container.MountSources {
-			syncRootFolder := addSyncRootFolder(container, comp.Container.SourceMapping)
+	// filter out containers for preStart and postStop events
+	preStartEvents := devfileObj.Data.GetEvents().PreStart
+	postStopEvents := devfileObj.Data.GetEvents().PostStop
+	if len(preStartEvents) > 0 || len(postStopEvents) > 0 {
+		var eventCommands []string
+		commands, err := devfileObj.Data.GetCommands(common.DevfileOptions{})
+		if err != nil {
+			return nil, err
+		}
 
-			projects, err := devfileObj.Data.GetProjects(common.DevfileOptions{})
-			if err != nil {
-				return nil, err
-			}
-			err = addSyncFolder(container, syncRootFolder, projects)
-			if err != nil {
-				return nil, err
+		commandsMap := common.GetCommandsMap(commands)
+
+		for _, event := range preStartEvents {
+			eventSubCommands := common.GetCommandsFromEvent(commandsMap, event)
+			eventCommands = append(eventCommands, eventSubCommands...)
+		}
+
+		for _, event := range postStopEvents {
+			eventSubCommands := common.GetCommandsFromEvent(commandsMap, event)
+			eventCommands = append(eventCommands, eventSubCommands...)
+		}
+
+		for _, commandName := range eventCommands {
+			command, _ := commandsMap[commandName]
+			component := common.GetApplyComponent(command)
+
+			// Get the container info for the given component
+			for i, container := range allContainers {
+				if container.Name == component {
+					allContainers = append(allContainers[:i], allContainers[i+1:]...)
+				}
 			}
 		}
-		containers = append(containers, *container)
 	}
-	return containers, nil
+
+	return allContainers, nil
+
 }
 
 // GetInitContainers gets the init container for every preStart devfile event
 func GetInitContainers(devfileObj parser.DevfileObj) ([]corev1.Container, error) {
-	containers, err := GetContainers(devfileObj, common.DevfileOptions{})
+	containers, err := getAllContainers(devfileObj, common.DevfileOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -117,25 +124,24 @@ func GetInitContainers(devfileObj parser.DevfileObj) ([]corev1.Container, error)
 		}
 
 		for i, commandName := range eventCommands {
-			if command, ok := commandsMap[commandName]; ok {
-				component := common.GetApplyComponent(command)
+			command, _ := commandsMap[commandName]
+			component := common.GetApplyComponent(command)
 
-				// Get the container info for the given component
-				for _, container := range containers {
-					if container.Name == component {
-						// Override the init container name since there cannot be two containers with the same
-						// name in a pod. This applies to pod containers and pod init containers. The convention
-						// for init container name here is, containername-eventname-<position of command in prestart events>
-						// If there are two events referencing the same devfile component, then we will have
-						// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
-						// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
-						initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
-						initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
-						initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
-						container.Name = initContainerName
+			// Get the container info for the given component
+			for _, container := range containers {
+				if container.Name == component {
+					// Override the init container name since there cannot be two containers with the same
+					// name in a pod. This applies to pod containers and pod init containers. The convention
+					// for init container name here is, containername-eventname-<position of command in prestart events>
+					// If there are two events referencing the same devfile component, then we will have
+					// tools-event1-1 & tools-event2-3, for example. And if in the edge case, the same command is
+					// executed twice by preStart events, then we will have tools-event1-1 & tools-event1-2
+					initContainerName := fmt.Sprintf("%s-%s", container.Name, commandName)
+					initContainerName = util.TruncateString(initContainerName, containerNameMaxLen)
+					initContainerName = fmt.Sprintf("%s-%d", initContainerName, i+1)
+					container.Name = initContainerName
 
-						initContainers = append(initContainers, container)
-					}
+					initContainers = append(initContainers, container)
 				}
 			}
 		}
@@ -235,6 +241,19 @@ func GetIngress(ingressParams IngressParams) *extensionsv1.Ingress {
 	ingressSpec := getIngressSpec(ingressParams.IngressSpecParams)
 
 	ingress := &extensionsv1.Ingress{
+		TypeMeta:   ingressParams.TypeMeta,
+		ObjectMeta: ingressParams.ObjectMeta,
+		Spec:       *ingressSpec,
+	}
+
+	return ingress
+}
+
+// GetNetworkingV1Ingress gets a networking v1 ingress
+func GetNetworkingV1Ingress(ingressParams IngressParams) *networkingv1.Ingress {
+	ingressSpec := getNetworkingV1IngressSpec(ingressParams.IngressSpecParams)
+
+	ingress := &networkingv1.Ingress{
 		TypeMeta:   ingressParams.TypeMeta,
 		ObjectMeta: ingressParams.ObjectMeta,
 		Spec:       *ingressSpec,
@@ -357,7 +376,10 @@ type VolumeParams struct {
 // GetVolumesAndVolumeMounts gets the PVC volumes and updates the containers with the volume mounts.
 func GetVolumesAndVolumeMounts(devfileObj parser.DevfileObj, volumeParams VolumeParams, options common.DevfileOptions) ([]corev1.Volume, error) {
 
-	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
+	options.ComponentOptions = common.ComponentOptions{
+		ComponentType: v1.ContainerComponentType,
+	}
+	containerComponents, err := devfileObj.Data.GetComponents(options)
 	if err != nil {
 		return nil, err
 	}

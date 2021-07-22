@@ -13,6 +13,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -254,7 +255,10 @@ func getServiceSpec(devfileObj parser.DevfileObj, selectorLabels map[string]stri
 // exposure level: public > internal > none
 func getPortExposure(devfileObj parser.DevfileObj, options common.DevfileOptions) (map[int]v1.EndpointExposure, error) {
 	portExposureMap := make(map[int]v1.EndpointExposure)
-	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
+	options.ComponentOptions = common.ComponentOptions{
+		ComponentType: v1.ContainerComponentType,
+	}
+	containerComponents, err := devfileObj.Data.GetComponents(options)
 	if err != nil {
 		return portExposureMap, err
 	}
@@ -320,6 +324,54 @@ func getIngressSpec(ingressSpecParams IngressSpecParams) *extensionsv1.IngressSp
 	secretNameLength := len(ingressSpecParams.TLSSecretName)
 	if secretNameLength != 0 {
 		ingressSpec.TLS = []extensionsv1.IngressTLS{
+			{
+				Hosts: []string{
+					ingressSpecParams.IngressDomain,
+				},
+				SecretName: ingressSpecParams.TLSSecretName,
+			},
+		}
+	}
+
+	return ingressSpec
+}
+
+// getNetworkingV1IngressSpec gets a networking v1 ingress spec
+func getNetworkingV1IngressSpec(ingressSpecParams IngressSpecParams) *networkingv1.IngressSpec {
+	path := "/"
+	pathTypeImplementationSpecific := networkingv1.PathTypeImplementationSpecific
+	if ingressSpecParams.Path != "" {
+		path = ingressSpecParams.Path
+	}
+	ingressSpec := &networkingv1.IngressSpec{
+		Rules: []networkingv1.IngressRule{
+			{
+				Host: ingressSpecParams.IngressDomain,
+				IngressRuleValue: networkingv1.IngressRuleValue{
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							{
+								Path: path,
+								Backend: networkingv1.IngressBackend{
+									Service: &networkingv1.IngressServiceBackend{
+										Name: ingressSpecParams.ServiceName,
+										Port: networkingv1.ServiceBackendPort{
+											Number: ingressSpecParams.PortNumber.IntVal,
+										},
+									},
+								},
+								//Field is required to be set based on attempt to create the ingress
+								PathType: &pathTypeImplementationSpecific,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	secretNameLength := len(ingressSpecParams.TLSSecretName)
+	if secretNameLength != 0 {
+		ingressSpec.TLS = []networkingv1.IngressTLS{
 			{
 				Hosts: []string{
 					ingressSpecParams.IngressDomain,
@@ -450,4 +502,49 @@ func addVolumeMountToContainers(containers []corev1.Container, volumeName string
 			}
 		}
 	}
+}
+
+// getAllContainers iterates through the devfile components and returns all container components
+func getAllContainers(devfileObj parser.DevfileObj, options common.DevfileOptions) ([]corev1.Container, error) {
+	var containers []corev1.Container
+
+	options.ComponentOptions = common.ComponentOptions{
+		ComponentType: v1.ContainerComponentType,
+	}
+	containerComponents, err := devfileObj.Data.GetComponents(options)
+	if err != nil {
+		return nil, err
+	}
+	for _, comp := range containerComponents {
+		envVars := convertEnvs(comp.Container.Env)
+		resourceReqs := getResourceReqs(comp)
+		ports := convertPorts(comp.Container.Endpoints)
+		containerParams := containerParams{
+			Name:         comp.Name,
+			Image:        comp.Container.Image,
+			IsPrivileged: false,
+			Command:      comp.Container.Command,
+			Args:         comp.Container.Args,
+			EnvVars:      envVars,
+			ResourceReqs: resourceReqs,
+			Ports:        ports,
+		}
+		container := getContainer(containerParams)
+
+		// If `mountSources: true` was set PROJECTS_ROOT & PROJECT_SOURCE env
+		if comp.Container.MountSources == nil || *comp.Container.MountSources {
+			syncRootFolder := addSyncRootFolder(container, comp.Container.SourceMapping)
+
+			projects, err := devfileObj.Data.GetProjects(common.DevfileOptions{})
+			if err != nil {
+				return nil, err
+			}
+			err = addSyncFolder(container, syncRootFolder, projects)
+			if err != nil {
+				return nil, err
+			}
+		}
+		containers = append(containers, *container)
+	}
+	return containers, nil
 }
