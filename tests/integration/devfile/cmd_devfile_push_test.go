@@ -195,22 +195,13 @@ var _ = Describe("odo devfile push command tests", func() {
 				helper.Cmd("odo", "push", "--project", commonVar.Project, "-v4").ShouldPass()
 			})
 
-			It("should correctly propagate changes to the container", func() {
+			FIt("should correctly propagate changes to the container", func() {
 
 				// Check to see if it's been pushed (foobar.txt abd directory testdir)
 				podName = commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
 				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
 				helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
-
-				// Now we delete the file and dir and push
-				helper.DeleteDir(newFilePath)
-				helper.DeleteDir(newDirPath)
-				helper.Cmd("odo", "push", "--project", commonVar.Project, "-v4").ShouldPass()
-
-				// Then check to see if it's truly been deleted
-				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
-				helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 			})
 			When("deleting local files and dir and doing odo push again", func() {
 				BeforeEach(func() {
@@ -219,7 +210,8 @@ var _ = Describe("odo devfile push command tests", func() {
 					helper.DeleteDir(newDirPath)
 					helper.Cmd("odo", "push", "--project", commonVar.Project, "-v4").ShouldPass()
 				})
-				It("should not list deleted dir and file in container", func() {
+				FIt("should not list deleted dir and file in container", func() {
+					podName = commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					// Then check to see if it's truly been deleted
 					stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
 					helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
