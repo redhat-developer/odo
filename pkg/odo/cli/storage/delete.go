@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -83,11 +84,11 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 
 		successMessage := fmt.Sprintf("Deleted storage %v from %v", o.storageName, o.Context.LocalConfigProvider.GetName())
 
+		log.Infof(successMessage)
+		log.Italic("\nPlease use `odo push` command to delete the storage from the cluster")
+
 		if log.IsJSON() {
-			storage.MachineReadableSuccessOutput(o.storageName, successMessage)
-		} else {
-			log.Infof(successMessage)
-			log.Italic("\nPlease use `odo push` command to delete the storage from the cluster")
+			machineoutput.SuccessStatus(storage.StorageKind, o.storageName, successMessage)
 		}
 	} else {
 		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)

@@ -93,7 +93,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pvc-example",
 				},
-				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.dev/v1alpha1"},
+				TypeMeta: metav1.TypeMeta{Kind: StorageKind, APIVersion: "odo.dev/v1alpha1"},
 				Spec: StorageSpec{
 					Size: "100Mi",
 					Path: "data",
@@ -110,7 +110,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pvc-example",
 				},
-				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.dev/v1alpha1"},
+				TypeMeta: metav1.TypeMeta{Kind: StorageKind, APIVersion: "odo.dev/v1alpha1"},
 				Spec: StorageSpec{
 					Size: "500Mi",
 					Path: "",
@@ -120,7 +120,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotStorage := GetMachineReadableFormat(tt.storageName, tt.storageSize, tt.mountedPath)
+			gotStorage := NewStorage(tt.storageName, tt.storageSize, tt.mountedPath)
 			if !reflect.DeepEqual(tt.want, gotStorage) {
 				t.Errorf("the returned storage is different, expected: %v, got: %v", tt.want, gotStorage)
 			}
@@ -244,7 +244,7 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotStorage := GetMachineReadableFormatForList(tt.inputStorage)
+			gotStorage := NewStorageList(tt.inputStorage)
 			if !reflect.DeepEqual(tt.want, gotStorage) {
 				t.Errorf("the returned storage is different, expected: %v, got: %v", tt.want, gotStorage)
 			}
@@ -364,9 +364,9 @@ func TestList(t *testing.T) {
 				"/data":   pvc1,
 				"/data-1": pvc2,
 			},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{
-				GetMachineReadableFormat("storage-1", "100Mi", "/data"),
-				GetMachineReadableFormat("storage-2", "500Mi", "/data-1"),
+			wantedStorageList: NewStorageList([]Storage{
+				NewStorage("storage-1", "100Mi", "/data"),
+				NewStorage("storage-2", "500Mi", "/data-1"),
 			}),
 			wantErr: false,
 		},
@@ -385,9 +385,9 @@ func TestList(t *testing.T) {
 				"/data":   pvc1,
 				"/data-1": pvc2,
 			},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{
-				GetMachineReadableFormat("storage-1", "100Mi", "/data"),
-				GetMachineReadableFormat("storage-2", "500Mi", "/data-1"),
+			wantedStorageList: NewStorageList([]Storage{
+				NewStorage("storage-1", "100Mi", "/data"),
+				NewStorage("storage-2", "500Mi", "/data-1"),
 			}),
 			wantErr: false,
 		},
@@ -406,10 +406,10 @@ func TestList(t *testing.T) {
 				"/data":   pvc1,
 				"/data-1": pvc2,
 			},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{
-				GetMachineReadableFormat("storage-1", "100Mi", "/data"),
-				GetMachineReadableFormat("storage-2", "500Mi", "/data-1"),
-				GetMachineReadableFormat("storage-4", "100Mi", ""),
+			wantedStorageList: NewStorageList([]Storage{
+				NewStorage("storage-1", "100Mi", "/data"),
+				NewStorage("storage-2", "500Mi", "/data-1"),
+				NewStorage("storage-4", "100Mi", ""),
 			}),
 			wantErr: false,
 		},
@@ -428,9 +428,9 @@ func TestList(t *testing.T) {
 				"/data":   pvc1,
 				"/data-1": pvc5,
 			},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{
-				GetMachineReadableFormat("storage-1", "100Mi", "/data"),
-				GetMachineReadableFormat("storage-2", "500Mi", "/data-1"),
+			wantedStorageList: NewStorageList([]Storage{
+				NewStorage("storage-1", "100Mi", "/data"),
+				NewStorage("storage-2", "500Mi", "/data-1"),
 			}),
 			wantErr: true,
 		},
@@ -509,9 +509,9 @@ func TestListMounted(t *testing.T) {
 				"/data":   pvc1,
 				"/data-1": pvc2,
 			},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{
-				GetMachineReadableFormat("storage-1", "100Mi", "/data"),
-				GetMachineReadableFormat("storage-2", "500Mi", "/data-1"),
+			wantedStorageList: NewStorageList([]Storage{
+				NewStorage("storage-1", "100Mi", "/data"),
+				NewStorage("storage-2", "500Mi", "/data-1"),
 			}),
 			wantErr: false,
 		},
@@ -530,9 +530,9 @@ func TestListMounted(t *testing.T) {
 				"/data":   pvc1,
 				"/data-1": pvc2,
 			},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{
-				GetMachineReadableFormat("storage-1", "100Mi", "/data"),
-				GetMachineReadableFormat("storage-2", "500Mi", "/data-1"),
+			wantedStorageList: NewStorageList([]Storage{
+				NewStorage("storage-1", "100Mi", "/data"),
+				NewStorage("storage-2", "500Mi", "/data-1"),
 			}),
 			wantErr: false,
 		},
@@ -605,8 +605,8 @@ func TestS2iPush(t *testing.T) {
 			args: args{
 				storageList: StorageList{
 					Items: []Storage{
-						GetMachineReadableFormat("backend", "100Mi", "data"),
-						GetMachineReadableFormat("backend-1", "500Mi", "data-1"),
+						NewStorage("backend", "100Mi", "data"),
+						NewStorage("backend-1", "500Mi", "data-1"),
 					},
 				},
 				componentName:     "nodejs",
@@ -647,8 +647,8 @@ func TestS2iPush(t *testing.T) {
 			args: args{
 				storageList: StorageList{
 					Items: []Storage{
-						GetMachineReadableFormat("backend", "100Mi", "data"),
-						GetMachineReadableFormat("backend-1", "500Mi", "data-1"),
+						NewStorage("backend", "100Mi", "data"),
+						NewStorage("backend-1", "500Mi", "data-1"),
 					},
 				},
 				componentName:     "nodejs",
@@ -671,8 +671,8 @@ func TestS2iPush(t *testing.T) {
 			name: "case 4: component exists, three PVCs, one in config and cluster, one not in cluster and one not in config",
 			args: args{
 				storageList: StorageList{Items: []Storage{
-					GetMachineReadableFormat("backend", "100Mi", "data"),
-					GetMachineReadableFormat("backend-1", "500Mi", "data-1"),
+					NewStorage("backend", "100Mi", "data"),
+					NewStorage("backend-1", "500Mi", "data-1"),
 				}},
 				componentName:     "nodejs",
 				applicationName:   "app",
@@ -696,8 +696,8 @@ func TestS2iPush(t *testing.T) {
 			args: args{
 				storageList: StorageList{
 					Items: []Storage{
-						GetMachineReadableFormat("backend", "100Mi", "data"),
-						GetMachineReadableFormat("backend-1", "500Mi", "data-100"),
+						NewStorage("backend", "100Mi", "data"),
+						NewStorage("backend-1", "500Mi", "data-100"),
 					},
 				},
 				componentName:     "nodejs",
@@ -718,8 +718,8 @@ func TestS2iPush(t *testing.T) {
 			args: args{
 				storageList: StorageList{
 					Items: []Storage{
-						GetMachineReadableFormat("backend", "100Mi", "data"),
-						GetMachineReadableFormat("backend-1", "50Mi", "data-1"),
+						NewStorage("backend", "100Mi", "data"),
+						NewStorage("backend-1", "50Mi", "data-1"),
 					},
 				},
 				componentName:     "nodejs",
@@ -926,8 +926,8 @@ func TestDevfileListMounted(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
 				},
 			},
 			wantErr: false,
@@ -959,9 +959,9 @@ func TestDevfileListMounted(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-1"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-1"),
 				},
 			},
 			wantErr: false,
@@ -1012,7 +1012,7 @@ func TestDevfileListMounted(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
 				},
 			},
 			wantErr: false,
@@ -1058,8 +1058,8 @@ func TestPush(t *testing.T) {
 		Container: "runtime-1",
 	}
 
-	clusterStorage0 := GetMachineFormatWithContainer("storage-0", "1Gi", "/data", "runtime-0")
-	clusterStorage1 := GetMachineFormatWithContainer("storage-1", "5Gi", "/path", "runtime-1")
+	clusterStorage0 := NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0")
+	clusterStorage1 := NewStorageWithContainer("storage-1", "5Gi", "/path", "runtime-1")
 
 	tests := []struct {
 		name                string
@@ -1203,8 +1203,8 @@ func TestPush(t *testing.T) {
 			returnedFromLocal: []localConfigProvider.LocalStorage{},
 			returnedFromCluster: StorageList{
 				Items: []Storage{
-					GetMachineFormatWithContainer("storage-0", "1Gi", "/data", "runtime-0"),
-					GetMachineFormatWithContainer("storage-0", "1Gi", "/data", "runtime-1"),
+					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0"),
+					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-1"),
 				},
 			},
 			deletedItems: []string{"storage-0"},

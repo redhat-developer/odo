@@ -92,7 +92,7 @@ var _ = Describe("odo url command tests", func() {
 			// odo url list -o json
 			actualURLListJSON := helper.Cmd("odo", "url", "list", "-o", "json").ShouldPass().Out()
 			valuesURLL := gjson.GetMany(actualURLListJSON, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.kind", "items.0.status.state")
-			expectedURLL := []string{"List", "url", "myurl", "route", "Pushed"}
+			expectedURLL := []string{"List", "URL", "myurl", "route", "Pushed"}
 			Expect(helper.GjsonMatcher(valuesURLL, expectedURLL)).To(Equal(true))
 
 		})
@@ -102,7 +102,7 @@ var _ = Describe("odo url command tests", func() {
 			helper.Cmd("odo", "url", "create", "myurl", "--secure").ShouldPass()
 			actualURLListJSON := helper.Cmd("odo", "url", "list", "-o", "json").ShouldPass().Out()
 			valuesURLLJ := gjson.GetMany(actualURLListJSON, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.port", "items.0.status.state")
-			expectedURLLJ := []string{"List", "url", "myurl", "8080", "Not Pushed"}
+			expectedURLLJ := []string{"List", "URL", "myurl", "8080", "Not Pushed"}
 			Expect(helper.GjsonMatcher(valuesURLLJ, expectedURLLJ)).To(Equal(true))
 
 			helper.Cmd("odo", "push").ShouldPass()
@@ -110,7 +110,7 @@ var _ = Describe("odo url command tests", func() {
 			// odo url list -o json
 			actualURLListJSON = helper.Cmd("odo", "url", "list", "-o", "json").ShouldPass().Out()
 			valuesURLLJP := gjson.GetMany(actualURLListJSON, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.port", "items.0.spec.secure", "items.0.status.state")
-			expectedURLLJP := []string{"List", "url", "myurl", "8080", "true", "Pushed"}
+			expectedURLLJP := []string{"List", "URL", "myurl", "8080", "true", "Pushed"}
 			Expect(helper.GjsonMatcher(valuesURLLJP, expectedURLLJP)).To(Equal(true))
 
 		})

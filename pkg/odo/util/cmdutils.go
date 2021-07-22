@@ -36,7 +36,7 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 			// Machine readble error output
 			machineOutput := machineoutput.GenericError{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       machineoutput.Kind,
+					Kind:       machineoutput.ErrorKind,
 					APIVersion: machineoutput.APIVersion,
 				},
 				Message: err.Error(),

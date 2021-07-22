@@ -1,14 +1,9 @@
 package project
 
 import (
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/pkg/errors"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-const apiVersion = "odo.dev/v1alpha1"
 
 // GetCurrent returns the name of the current project
 func GetCurrent(context *genericclioptions.Context) string {
@@ -87,7 +82,7 @@ func Delete(context *genericclioptions.Context, projectName string, wait bool) e
 	return nil
 }
 
-// List all the projects on the cluster on a machine readable format and returns an error if any
+// List all the projects on the cluster and returns an error if any
 func List(context *genericclioptions.Context) (ProjectList, error) {
 	currentProject := context.KClient.GetCurrentNamespace()
 
@@ -108,17 +103,14 @@ func List(context *genericclioptions.Context) (ProjectList, error) {
 			return ProjectList{}, errors.Wrap(err, "cannot get all the namespaces")
 		}
 	}
-	// Get apps from project
-	var projects []Project
-	for _, project := range allProjects {
-		isActive := false
-		if project == currentProject {
-			isActive = true
-		}
-		projects = append(projects, GetMachineReadableFormat(project, isActive))
+
+	projects := make([]Project, len(allProjects))
+	for i, project := range allProjects {
+		isActive := project == currentProject
+		projects[i] = NewProject(project, isActive)
 	}
 
-	return getMachineReadableFormatForList(projects), nil
+	return NewProjectList(projects), nil
 }
 
 // Exists checks whether a project with the name `projectName` exists and returns an error if any
@@ -141,53 +133,4 @@ func Exists(context *genericclioptions.Context, projectName string) (bool, error
 	}
 
 	return true, nil
-}
-
-// GetMachineReadableFormat gathers the readable format and output a Project struct
-// for json to marshal
-func GetMachineReadableFormat(projectName string, isActive bool) Project {
-	return Project{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Project",
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      projectName,
-			Namespace: projectName,
-		},
-		Spec: ProjectSpec{},
-		Status: ProjectStatus{
-			Active: isActive,
-		},
-	}
-}
-
-// MachineReadableSuccessOutput outputs a success output that includes
-// project information and namespace
-func MachineReadableSuccessOutput(projectName string, message string) {
-	machineOutput := machineoutput.GenericSuccess{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Project",
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      projectName,
-			Namespace: projectName,
-		},
-		Message: message,
-	}
-
-	machineoutput.OutputSuccess(machineOutput)
-}
-
-// getMachineReadableFormatForList returns application list in machine readable format
-func getMachineReadableFormatForList(projects []Project) ProjectList {
-	return ProjectList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    projects,
-	}
 }

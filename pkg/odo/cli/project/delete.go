@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
@@ -65,7 +66,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	return
 }
 
-// Run runs the project delete command
+// Run the project delete command
 func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 
 	// Create the "spinner"
@@ -85,8 +86,7 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 	//	return err
 	//}
 
-	if log.IsJSON() || (pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName))) {
-		successMessage := fmt.Sprintf("Deleted project : %v", pdo.projectName)
+	if log.IsJSON() || pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
 
 		// If the --wait parameter has been passed, we add a spinner..
 		if pdo.wait {
@@ -100,16 +100,17 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 		}
 		s.End(true)
 
+		successMessage := fmt.Sprintf("Deleted project : %v", pdo.projectName)
+		log.Success(successMessage)
+		log.Warning("Warning! Projects are deleted from the cluster asynchronously. Odo does its best to delete the project. Due to multi-tenant clusters, the project may still exist on a different node.")
+
 		if log.IsJSON() {
-			project.MachineReadableSuccessOutput(pdo.projectName, successMessage)
-		} else {
-			log.Success(successMessage)
-			log.Warning("Warning! Projects are deleted from the cluster asynchronously. Odo does its best to delete the project. Due to multi-tenant clusters, the project may still exist on a different node.")
+			machineoutput.SuccessStatus(project.ProjectKind, pdo.projectName, successMessage)
 		}
 		return nil
 	}
 
-	return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
+	return fmt.Errorf("aborting deletion of project: %v", pdo.projectName)
 }
 
 // NewCmdProjectDelete creates the project delete command

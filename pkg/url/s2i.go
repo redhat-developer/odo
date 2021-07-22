@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -37,11 +38,11 @@ func (s s2iClient) ListFromCluster() (URLList, error) {
 
 	var urls []URL
 	for _, r := range routes {
-		a := getMachineReadableFormat(r)
+		a := NewURL(r)
 		urls = append(urls, a)
 	}
 
-	urlList := getMachineReadableFormatForList(urls)
+	urlList := NewURLList(urls)
 	return urlList, nil
 }
 
@@ -62,7 +63,7 @@ func (s s2iClient) List() (URLList, error) {
 	for _, clusterURL := range clusterUrls.Items {
 		var found = false
 		for _, configURL := range localConfigURLs {
-			localURL := ConvertConfigURL(configURL)
+			localURL := NewURLFromConfigURL(configURL)
 			if localURL.Name == clusterURL.Name {
 				// URL is in both local config and cluster
 				clusterURL.Status.State = StateTypePushed
@@ -79,7 +80,7 @@ func (s s2iClient) List() (URLList, error) {
 	}
 
 	for _, configURL := range localConfigURLs {
-		localURL := ConvertConfigURL(configURL)
+		localURL := NewURLFromConfigURL(configURL)
 		var found = false
 		for _, clusterURL := range clusterUrls.Items {
 			if localURL.Name == clusterURL.Name {
@@ -93,7 +94,7 @@ func (s s2iClient) List() (URLList, error) {
 		}
 	}
 
-	urlList := getMachineReadableFormatForList(urls)
+	urlList := NewURLList(urls)
 	return urlList, nil
 }
 

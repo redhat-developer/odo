@@ -1,11 +1,14 @@
 package component
 
 import (
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const ComponentKind = "Component"
 
 // Component
 type Component struct {
@@ -71,3 +74,63 @@ const (
 	// StateTypeUnknown means that odo cannot tell its state
 	StateTypeUnknown State = "Unknown"
 )
+
+func newComponentWithType(componentName, componentType string) Component {
+	cmp := NewComponent(componentName)
+	cmp.Spec.Type = componentType
+	return cmp
+}
+
+// NewComponent provides a constructor to component struct with some metadata prefilled
+func NewComponent(componentName string) Component {
+	return Component{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       ComponentKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: componentName,
+		},
+		Status: ComponentStatus{},
+	}
+}
+
+// newComponentList returns list of devfile and s2i components in machine readable format
+func newComponentList(comps []Component) ComponentList {
+	if len(comps) == 0 {
+		comps = []Component{}
+	}
+
+	return ComponentList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       machineoutput.ListKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    comps,
+	}
+}
+
+// NewCombinedComponentList returns list of devfile, s2i components and other components(not managed by odo) in machine readable format
+func NewCombinedComponentList(s2iComps []Component, devfileComps []Component, otherComps []Component) CombinedComponentList {
+	if len(s2iComps) == 0 {
+		s2iComps = []Component{}
+	}
+	if len(devfileComps) == 0 {
+		devfileComps = []Component{}
+	}
+	if len(otherComps) == 0 {
+		otherComps = []Component{}
+	}
+
+	return CombinedComponentList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       machineoutput.ListKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ListMeta:          metav1.ListMeta{},
+		S2IComponents:     s2iComps,
+		DevfileComponents: devfileComps,
+		OtherComponents:   otherComps,
+	}
+}

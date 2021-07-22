@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/occlient"
-	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
@@ -23,8 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
 )
-
-const apiVersion = "odo.dev/v1alpha1"
 
 // ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
 /// down if a component name is provided, which will only list URLs for the
@@ -49,11 +46,11 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
 			continue
 		}
-		a := getMachineReadableFormat(r)
+		a := NewURL(r)
 		urls = append(urls, a)
 	}
 
-	urlList := getMachineReadableFormatForList(urls)
+	urlList := NewURLList(urls)
 	return urlList, nil
 
 }
@@ -69,7 +66,7 @@ func ListPushedIngress(client *kclient.Client, componentName string) (URLList, e
 
 	var urls []URL
 	urls = append(urls, NewURLsFromKubernetesIngressList(ingresses)...)
-	urlList := getMachineReadableFormatForList(urls)
+	urlList := NewURLList(urls)
 	return urlList, nil
 }
 
@@ -95,84 +92,6 @@ func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 		return "https"
 	}
 	return "http"
-}
-
-// ConvertConfigURL converts ConfigURL to URL
-func ConvertConfigURL(configURL localConfigProvider.LocalURL) URL {
-	return URL{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "url",
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: configURL.Name,
-		},
-		Spec: URLSpec{
-			Port:   configURL.Port,
-			Secure: configURL.Secure,
-			Kind:   localConfigProvider.ROUTE,
-			Path:   "/",
-		},
-	}
-}
-
-// ConvertEnvinfoURL converts EnvinfoURL to URL
-func ConvertEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName string) URL {
-	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
-	// default to route kind if none is provided
-	kind := envinfoURL.Kind
-	if kind == "" {
-		kind = localConfigProvider.ROUTE
-	}
-	url := URL{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "url",
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: envinfoURL.Name,
-		},
-		Spec: URLSpec{
-			Host:      envinfoURL.Host,
-			Protocol:  envinfoURL.Protocol,
-			Port:      envinfoURL.Port,
-			Secure:    envinfoURL.Secure,
-			Kind:      kind,
-			TLSSecret: envinfoURL.TLSSecret,
-			Path:      envinfoURL.Path,
-		},
-	}
-	if kind == localConfigProvider.INGRESS {
-		url.Spec.Host = hostString
-		if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
-			url.Spec.TLSSecret = envinfoURL.TLSSecret
-		} else if envinfoURL.Secure {
-			url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
-		}
-	}
-	return url
-}
-
-// ConvertLocalURL converts localConfigProvider.LocalURL to URL
-func ConvertLocalURL(localURL localConfigProvider.LocalURL) URL {
-	return URL{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "url",
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: localURL.Name,
-		},
-		Spec: URLSpec{
-			Host:      localURL.Host,
-			Protocol:  localURL.Protocol,
-			Port:      localURL.Port,
-			Secure:    localURL.Secure,
-			Kind:      localURL.Kind,
-			TLSSecret: localURL.TLSSecret,
-			Path:      localURL.Path,
-		},
-	}
 }
 
 // GetURLString returns a string representation of given url
@@ -226,27 +145,6 @@ func GetValidExposedPortNumber(exposedPort int) (int, error) {
 		}
 		defer listener.Close()
 		return exposedPort, nil
-	}
-}
-
-// getMachineReadableFormat gives machine readable URL definition
-func getMachineReadableFormat(r routev1.Route) URL {
-	return URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
-		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Path: r.Spec.Path, Kind: localConfigProvider.ROUTE},
-	}
-
-}
-
-func getMachineReadableFormatForList(urls []URL) URLList {
-	return URLList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    urls,
 	}
 }
 
@@ -326,7 +224,7 @@ func Push(parameters PushParameters) error {
 			continue
 		}
 
-		urlLOCAL[url.Name] = ConvertLocalURL(url)
+		urlLOCAL[url.Name] = NewURLFromLocalURL(url)
 	}
 
 	log.Info("\nApplying URL changes")

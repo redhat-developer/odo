@@ -28,8 +28,8 @@ func Test_isContainerDisplay(t *testing.T) {
 			args: args{
 				storageList: storage.StorageList{
 					Items: []storage.Storage{
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
 					},
 				},
 				obj: []localConfigProvider.LocalContainer{
@@ -48,8 +48,8 @@ func Test_isContainerDisplay(t *testing.T) {
 			args: args{
 				storageList: storage.StorageList{
 					Items: []storage.Storage{
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/path"), storage.StateTypePushed, "container-1"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/path"), storage.StateTypePushed, "container-1"),
 					},
 				},
 				obj: []localConfigProvider.LocalContainer{
@@ -68,8 +68,8 @@ func Test_isContainerDisplay(t *testing.T) {
 			args: args{
 				storageList: storage.StorageList{
 					Items: []storage.Storage{
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypeNotPushed, "container-1"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypeNotPushed, "container-1"),
 					},
 				},
 				obj: []localConfigProvider.LocalContainer{
@@ -88,7 +88,7 @@ func Test_isContainerDisplay(t *testing.T) {
 			args: args{
 				storageList: storage.StorageList{
 					Items: []storage.Storage{
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
 					},
 				},
 				obj: []localConfigProvider.LocalContainer{
@@ -107,8 +107,8 @@ func Test_isContainerDisplay(t *testing.T) {
 			args: args{
 				storageList: storage.StorageList{
 					Items: []storage.Storage{
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
-						generateStorage(storage.GetMachineReadableFormat("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-0"),
+						generateStorage(storage.NewStorage("pvc-1", "1Gi", "/data"), storage.StateTypePushed, "container-1"),
 					},
 				},
 				obj: []localConfigProvider.LocalContainer{

@@ -896,7 +896,7 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 
 	}
 
-	compoList := GetMachineReadableFormatForList(components)
+	compoList := newComponentList(components)
 	return compoList, nil
 }
 
@@ -941,7 +941,7 @@ func ListS2IComponents(client *occlient.Client, applicationSelector string, loca
 		component, err := GetComponentFromConfig(localConfigInfo)
 
 		if err != nil {
-			return GetMachineReadableFormatForList(components), err
+			return newComponentList(components), err
 		}
 
 		if client != nil {
@@ -958,7 +958,7 @@ func ListS2IComponents(client *occlient.Client, applicationSelector string, loca
 
 	}
 
-	compoList := GetMachineReadableFormatForList(components)
+	compoList := newComponentList(components)
 	return compoList, nil
 }
 
@@ -977,7 +977,7 @@ func List(client *occlient.Client, applicationSelector string, localConfigInfo *
 	}
 	components = append(components, s2iList.Items...)
 
-	return GetMachineReadableFormatForList(components), nil
+	return newComponentList(components), nil
 }
 
 // GetComponentFromConfig returns the component on the config if it exists
@@ -1042,7 +1042,7 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 
 func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
 	if info.Exists() {
-		component := getMachineReadableFormat(info.GetName(), componentType)
+		component := newComponentWithType(info.GetName(), componentType)
 
 		component.Namespace = info.GetNamespace()
 
@@ -1090,7 +1090,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, erro
 				}
 
 				con, _ := filepath.Abs(filepath.Dir(path))
-				a := getMachineReadableFormat(data.GetName(), data.GetType())
+				a := newComponentWithType(data.GetName(), data.GetType())
 				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
 				a.Spec.Ports, err = data.GetComponentPorts()
@@ -1507,7 +1507,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	}
 
 	// init component
-	component = getMachineReadableFormat(componentName, componentType)
+	component = newComponentWithType(componentName, componentType)
 
 	// Source
 	sourceType, path, sourceError := fromCluster.GetSource()
@@ -1681,66 +1681,6 @@ func GetLogs(client *occlient.Client, componentName string, applicationName stri
 	return nil
 }
 
-func getMachineReadableFormat(componentName, componentType string) Component {
-	cmp := NewComponent(componentName)
-	cmp.Spec.Type = componentType
-	return cmp
-}
-
-// NewComponent provides a constructor to component struct with some metadata prefilled
-func NewComponent(componentName string) Component {
-	return Component{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Component",
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: componentName,
-		},
-		Status: ComponentStatus{},
-	}
-}
-
-// GetMachineReadableFormatForList returns list of devfile and s2i components in machine readable format
-func GetMachineReadableFormatForList(s2iComps []Component) ComponentList {
-	if len(s2iComps) == 0 {
-		s2iComps = []Component{}
-	}
-
-	return ComponentList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    s2iComps,
-	}
-}
-
-// GetMachineReadableFormatForCombinedCompList returns list of devfile, s2i components and other components(not managed by odo) in machine readable format
-func GetMachineReadableFormatForCombinedCompList(s2iComps []Component, devfileComps []Component, otherComps []Component) CombinedComponentList {
-	if len(s2iComps) == 0 {
-		s2iComps = []Component{}
-	}
-	if len(devfileComps) == 0 {
-		devfileComps = []Component{}
-	}
-	if len(otherComps) == 0 {
-		otherComps = []Component{}
-	}
-
-	return CombinedComponentList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		ListMeta:          metav1.ListMeta{},
-		S2IComponents:     s2iComps,
-		DevfileComponents: devfileComps,
-		OtherComponents:   otherComps,
-	}
-}
-
 // getStorageFromConfig gets all the storage from the config
 // returns a list of storage in storage struct format
 func getStorageFromConfig(localConfig *config.LocalConfigInfo) (storage.StorageList, error) {
@@ -1751,7 +1691,7 @@ func getStorageFromConfig(localConfig *config.LocalConfigInfo) (storage.StorageL
 		return storage.StorageList{}, err
 	}
 	for _, storageVar := range configStorage {
-		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
+		storageList.Items = append(storageList.Items, storage.NewStorage(storageVar.Name, storageVar.Size, storageVar.Path))
 	}
 	return storageList, nil
 }

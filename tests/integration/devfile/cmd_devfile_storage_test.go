@@ -162,7 +162,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			Expect(len(PVCs)).To(Equal(1))
 		})
 
-		It("should create and output in json format", func() {
+		It("should create, delete and output in json format", func() {
 			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
 			helper.Cmd("odo", args...).ShouldPass()
 
@@ -171,9 +171,13 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			actualJSONStorage := helper.Cmd("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
 			values := gjson.GetMany(actualJSONStorage, "kind", "metadata.name", "spec.size", "spec.path")
-			expected := []string{"storage", "mystorage", "1Gi", "/opt/app-root/src/storage/"}
+			expected := []string{"Storage", "mystorage", "1Gi", "/opt/app-root/src/storage/"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 
+			deleteJSONStorage := helper.Cmd("odo", "storage", "delete", "mystorage", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
+			deleteValues := gjson.GetMany(deleteJSONStorage, "kind", "status", "message", "details.name", "details.kind")
+			deleteExpected := []string{"Status", "Success", "Deleted storage", "mystorage", "Storage"}
+			Expect(helper.GjsonMatcher(deleteValues, deleteExpected)).To(Equal(true))
 		})
 	})
 
@@ -257,10 +261,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.Cmd("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", commonVar.Context).ShouldPass()
 
 			actualStorageList := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
-			valuesSL := gjson.GetMany(actualStorageList, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.size", "items.0.spec.containerName", "items.0.status")
-			expectedSL := []string{"List", "storage", "mystorage", "1Gi", "runtime", "Not Pushed"}
+			valuesSL := gjson.GetMany(actualStorageList, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.size", "items.0.spec.path", "items.0.spec.containerName", "items.0.status")
+			expectedSL := []string{"List", "Storage", "mystorage", "1Gi", "/opt/app-root/src/storage/", "runtime", "Not Pushed"}
 			Expect(helper.GjsonMatcher(valuesSL, expectedSL)).To(Equal(true))
-
 		})
 	})
 

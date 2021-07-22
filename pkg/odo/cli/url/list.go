@@ -2,13 +2,14 @@ package url
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"text/tabwriter"
 
+	"github.com/openshift/odo/pkg/localConfigProvider"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -80,34 +81,13 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(urls)
 	} else {
-		if len(urls.Items) == 0 {
-			return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
+		isS2i := o.Context.LocalConfigInfo.Exists()
+		err = HumanReadableOutput(os.Stdout, urls, componentName, isS2i)
+		if err != nil {
+			return err
 		}
 
-		log.Infof("Found the following URLs for component %v", componentName)
-		tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE", "\t", "KIND")
-
-		// are there changes between local and cluster states?
-		outOfSync := false
-		for _, u := range urls.Items {
-			if u.Spec.Kind == localConfigProvider.ROUTE {
-				var urlStr string
-				if u.Status.State == url.StateTypeNotPushed {
-					urlStr = "<provided by cluster>"
-				} else {
-					urlStr = url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.Context.LocalConfigInfo.Exists())
-				}
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlStr, "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
-			} else {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
-			}
-			if u.Status.State != url.StateTypePushed {
-				outOfSync = true
-			}
-		}
-		tabWriterURL.Flush()
-		if outOfSync {
+		if urls.AreOutOfSync() {
 			log.Info("There are local changes. Please run 'odo push'.")
 		}
 	}
@@ -133,4 +113,32 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
 
 	return urlListCmd
+}
+
+// HumanReadableOutput outputs the list of projects in a human readable format
+func HumanReadableOutput(w io.Writer, urls url.URLList, componentName string, isS2i bool) error {
+	if len(urls.Items) == 0 {
+		return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
+	}
+
+	log.Infof("Found the following URLs for component %v", componentName)
+	tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE", "\t", "KIND")
+
+	// are there changes between local and cluster states?
+	for _, u := range urls.Items {
+		if u.Spec.Kind == localConfigProvider.ROUTE {
+			var urlStr string
+			if u.Status.State == url.StateTypeNotPushed {
+				urlStr = "<provided by cluster>"
+			} else {
+				urlStr = url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", isS2i)
+			}
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlStr, "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+		} else {
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+		}
+	}
+	tabWriterURL.Flush()
+	return nil
 }

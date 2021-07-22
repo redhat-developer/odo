@@ -3,8 +3,6 @@ package env
 import (
 	"fmt"
 	"os"
-	"reflect"
-	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
@@ -60,37 +58,13 @@ func (o *ViewOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
-	cs := o.cfg.GetComponentSettings()
+	info := envinfo.NewInfo(o.cfg.GetComponentSettings())
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(envinfo.WrapForJSONOutput(cs))
+		machineoutput.OutputSuccess(info)
 		return
 	}
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "PARAMETER NAME", "\t", "PARAMETER VALUE")
-	fmt.Fprintln(w, "Name", "\t", cs.Name)
-	fmt.Fprintln(w, "Project", "\t", cs.Project)
-	fmt.Fprintln(w, "Application", "\t", cs.AppName)
-	fmt.Fprintln(w, "DebugPort", "\t", showBlankIfNil(cs.DebugPort))
-
-	w.Flush()
-
+	info.Output(os.Stdout)
 	return nil
-}
-
-func showBlankIfNil(intf interface{}) interface{} {
-	imm := reflect.ValueOf(intf)
-
-	// if the value is nil then we should return a blank string
-	if imm.IsNil() {
-		return ""
-	}
-
-	// if its a pointer then we should de-ref it because we cant de-ref an interface{}
-	if imm.Kind() == reflect.Ptr {
-		return imm.Elem().Interface()
-	}
-
-	return intf
 }
 
 // NewCmdView implements the env view odo command

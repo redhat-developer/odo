@@ -16,13 +16,13 @@ import (
 	"k8s.io/klog"
 )
 
-type OdoDebugFile struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta `json:"metadata"`
-	Spec              OdoDebugFileSpec `json:"spec"`
+type Info struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              InfoSpec `json:"spec"`
 }
 
-type OdoDebugFileSpec struct {
+type InfoSpec struct {
 	App            string `json:"app,omitempty"`
 	DebugProcessID int    `json:"debugProcessID"`
 	RemotePort     int    `json:"remotePort"`
@@ -63,7 +63,7 @@ func createDebugInfoFile(f *DefaultPortForwarder, portPair string, fs filesystem
 		return errors.New("remote port should be a int")
 	}
 
-	odoDebugFile := OdoDebugFile{
+	debugFile := Info{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "OdoDebugInfo",
 			APIVersion: "v1",
@@ -72,14 +72,14 @@ func createDebugInfoFile(f *DefaultPortForwarder, portPair string, fs filesystem
 			Name:      f.componentName,
 			Namespace: f.projectName,
 		},
-		Spec: OdoDebugFileSpec{
+		Spec: InfoSpec{
 			App:            f.appName,
 			DebugProcessID: os.Getpid(),
 			RemotePort:     remotePort,
 			LocalPort:      localPort,
 		},
 	}
-	odoDebugPathData, err := json.Marshal(odoDebugFile)
+	odoDebugPathData, err := json.Marshal(debugFile)
 	if err != nil {
 		return errors.New("error marshalling json data")
 	}
@@ -96,28 +96,28 @@ func createDebugInfoFile(f *DefaultPortForwarder, portPair string, fs filesystem
 	return nil
 }
 
-// GetDebugInfo gathers the information with regards to debugging information
-func GetDebugInfo(f *DefaultPortForwarder) (OdoDebugFile, bool) {
-	return getDebugInfo(f, filesystem.DefaultFs{})
+// GetInfo gathers the information with regards to debugging information
+func GetInfo(f *DefaultPortForwarder) (Info, bool) {
+	return getInfo(f, filesystem.DefaultFs{})
 }
 
-// getDebugInfo gets information regarding the debugging session of the component
+// getInfo gets information regarding the debugging session of the component
 // returns the OdoDebugFile from the debug info file
 // returns true if debugging is running else false
-func getDebugInfo(f *DefaultPortForwarder, fs filesystem.Filesystem) (OdoDebugFile, bool) {
+func getInfo(f *DefaultPortForwarder, fs filesystem.Filesystem) (Info, bool) {
 	// gets the debug info file path and reads/unmarshalls it
 	debugInfoFilePath := GetDebugInfoFilePath(f.componentName, f.appName, f.projectName)
 	readFile, err := fs.ReadFile(debugInfoFilePath)
 	if err != nil {
 		klog.V(4).Infof("the debug %v is not present", debugInfoFilePath)
-		return OdoDebugFile{}, false
+		return Info{}, false
 	}
 
-	var odoDebugFileData OdoDebugFile
-	err = json.Unmarshal(readFile, &odoDebugFileData)
+	var info Info
+	err = json.Unmarshal(readFile, &info)
 	if err != nil {
 		klog.V(4).Infof("couldn't unmarshal the debug file %v", debugInfoFilePath)
-		return OdoDebugFile{}, false
+		return Info{}, false
 	}
 
 	// get the debug process id and send a signal 0 to check if it's alive or not
@@ -125,33 +125,33 @@ func getDebugInfo(f *DefaultPortForwarder, fs filesystem.Filesystem) (OdoDebugFi
 	// On Unix systems, FindProcess always succeeds and returns a Process for the given pid, regardless of whether the process exists.
 	// thus this step will pass on Unix systems and so for those systems and some others supporting signals
 	// we check if the process is alive or not by sending a signal 0 to the process
-	processInfo, err := os.FindProcess(odoDebugFileData.Spec.DebugProcessID)
+	processInfo, err := os.FindProcess(info.Spec.DebugProcessID)
 	if err != nil || processInfo == nil {
-		klog.V(4).Infof("error getting the process info for pid %v", odoDebugFileData.Spec.DebugProcessID)
-		return OdoDebugFile{}, false
+		klog.V(4).Infof("error getting the process info for pid %v", info.Spec.DebugProcessID)
+		return Info{}, false
 	}
 
 	// signal is not available on windows so we skip this step for windows
 	if runtime.GOOS != "windows" {
 		err = processInfo.Signal(syscall.Signal(0))
 		if err != nil {
-			klog.V(4).Infof("error sending signal 0 to pid %v, cause: %v", odoDebugFileData.Spec.DebugProcessID, err)
-			return OdoDebugFile{}, false
+			klog.V(4).Infof("error sending signal 0 to pid %v, cause: %v", info.Spec.DebugProcessID, err)
+			return Info{}, false
 		}
 	}
 
 	// gets the debug local port and tries to listen on it
 	// if error doesn't occur the debug port was free and thus no debug process was using the port
-	addressLook := "localhost:" + strconv.Itoa(odoDebugFileData.Spec.LocalPort)
+	addressLook := "localhost:" + strconv.Itoa(info.Spec.LocalPort)
 	listener, err := net.Listen("tcp", addressLook)
 	if err == nil {
-		klog.V(4).Infof("the debug port %v is free, thus debug is not running", odoDebugFileData.Spec.LocalPort)
+		klog.V(4).Infof("the debug port %v is free, thus debug is not running", info.Spec.LocalPort)
 		err = listener.Close()
 		if err != nil {
 			klog.V(4).Infof("error occurred while closing the listener, cause :%v", err)
 		}
-		return OdoDebugFile{}, false
+		return Info{}, false
 	}
-	// returns the unmarshalled data
-	return odoDebugFileData, true
+
+	return info, true
 }

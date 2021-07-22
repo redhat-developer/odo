@@ -6,7 +6,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -26,8 +25,6 @@ const (
 
 	// OdoSourceVolumeSize specifies size for odo source volume.
 	OdoSourceVolumeSize = "2Gi"
-
-	apiVersion = "odo.dev/v1alpha1"
 )
 
 // Get returns Storage defination for given Storage name
@@ -190,14 +187,14 @@ func List(client *occlient.Client, componentName string, applicationName string)
 			}
 			storageName := getStorageFromPVC(&pvc)
 			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
+			storageMachineReadable := NewStorage(getStorageFromPVC(&pvc),
 				storageSize.String(),
 				mountedStorageMap[storageName],
 			)
 			storage = append(storage, storageMachineReadable)
 		}
 	}
-	storageList := GetMachineReadableFormatForList(storage)
+	storageList := NewStorageList(storage)
 	return storageList, nil
 }
 
@@ -213,7 +210,7 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 			storageListMounted = append(storageListMounted, storage)
 		}
 	}
-	return GetMachineReadableFormatForList(storageListMounted), nil
+	return NewStorageList(storageListMounted), nil
 }
 
 // ListUnmounted lists all the unmounted storage associated with the given application
@@ -234,14 +231,14 @@ func ListUnmounted(client *occlient.Client, applicationName string) (StorageList
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
 			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
+			storageMachineReadable := NewStorage(getStorageFromPVC(&pvc),
 				storageSize.String(),
 				"",
 			)
 			storage = append(storage, storageMachineReadable)
 		}
 	}
-	storageList := GetMachineReadableFormatForList(storage)
+	storageList := NewStorageList(storage)
 	return storageList, nil
 }
 
@@ -454,46 +451,6 @@ func S2iPush(client *occlient.Client, storageList StorageList, componentName, ap
 	return storageToBeMounted, storageToBeUnMounted, err
 }
 
-// GetMachineReadableFormatForList gives machine readable StorageList definition
-func GetMachineReadableFormatForList(storage []Storage) StorageList {
-	return StorageList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    storage,
-	}
-}
-
-// GetMachineReadableFormat gives machine readable Storage definition
-// storagePath indicates the path to which the storage is mounted to, "" if not mounted
-func GetMachineReadableFormat(storageName, storageSize, storagePath string) Storage {
-	return Storage{
-		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: apiVersion},
-		ObjectMeta: metav1.ObjectMeta{Name: storageName},
-		Spec: StorageSpec{
-			Size: storageSize,
-			Path: storagePath,
-		},
-	}
-}
-
-// GetMachineFormatWithContainer gives machine readable Storage definition
-// storagePath indicates the path to which the storage is mounted to, "" if not mounted
-func GetMachineFormatWithContainer(storageName, storageSize, storagePath string, container string) Storage {
-	storage := Storage{
-		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: apiVersion},
-		ObjectMeta: metav1.ObjectMeta{Name: storageName},
-		Spec: StorageSpec{
-			Size: storageSize,
-			Path: storagePath,
-		},
-	}
-	storage.Spec.ContainerName = container
-	return storage
-}
-
 // generatePVCName generates a PVC name from the Devfile volume name, component name and app name
 func generatePVCName(volName, componentName, appName string) (string, error) {
 
@@ -536,29 +493,12 @@ func ConvertListLocalToMachine(storageListConfig []localConfigProvider.LocalStor
 	var storageListLocal []Storage
 
 	for _, storeLocal := range storageListConfig {
-		s := GetMachineReadableFormat(storeLocal.Name, storeLocal.Size, storeLocal.Path)
+		s := NewStorage(storeLocal.Name, storeLocal.Size, storeLocal.Path)
 		s.Spec.ContainerName = storeLocal.Container
 		storageListLocal = append(storageListLocal, s)
 	}
 
-	return GetMachineReadableFormatForList(storageListLocal)
-}
-
-// MachineReadableSuccessOutput outputs a success output that includes
-// storage information
-func MachineReadableSuccessOutput(storageName string, message string) {
-	machineOutput := machineoutput.GenericSuccess{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "storage",
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: storageName,
-		},
-		Message: message,
-	}
-
-	machineoutput.OutputSuccess(machineOutput)
+	return NewStorageList(storageListLocal)
 }
 
 // DevfileListMounted lists the storage which are mounted on a container
@@ -604,7 +544,7 @@ func DevfileListMounted(kClient *kclient.Client, componentName, appName string) 
 			if volumeMount.Name == pvc.Name+"-vol" {
 				found = true
 				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-				storage = append(storage, GetMachineFormatWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
+				storage = append(storage, NewStorageWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
 			}
 		}
 		if !found {

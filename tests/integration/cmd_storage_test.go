@@ -50,7 +50,7 @@ var _ = Describe("odo storage command tests", func() {
 
 			It("should create", func() {
 				valuesStoreC := gjson.GetMany(actualJSONStorage, "kind", "metadata.name", "spec.size", "spec.path")
-				expectedStoreC := []string{"storage", "mystorage", "1Gi", "/opt/app-root/src/storage/"}
+				expectedStoreC := []string{"Storage", "mystorage", "1Gi", "/opt/app-root/src/storage/"}
 				Expect(helper.GjsonMatcher(valuesStoreC, expectedStoreC)).To(Equal(true))
 
 			})
@@ -65,7 +65,7 @@ var _ = Describe("odo storage command tests", func() {
 
 				It("should list output in json format", func() {
 					valuesStoreL := gjson.GetMany(actualStorageList, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.size")
-					expectedStoreL := []string{"List", "storage", "mystorage", "1Gi"}
+					expectedStoreL := []string{"List", "Storage", "mystorage", "1Gi"}
 					Expect(helper.GjsonMatcher(valuesStoreL, expectedStoreL)).To(Equal(true))
 
 				})

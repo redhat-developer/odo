@@ -91,14 +91,18 @@ var _ = Describe("odo devfile url command tests", func() {
 			// remove the endpoint came with the devfile
 			// need to create an ingress to be more general for openshift/non-openshift cluster to run
 			helper.Cmd("odo", "url", "delete", "3000-tcp", "-f").ShouldPass()
-			helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress").ShouldPass()
+			createJSON := helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "-o", "json").ShouldPass().Out()
+			createValues := gjson.GetMany(createJSON, "kind", "metadata.name", "spec.port", "status.state")
+			createExpected := []string{"URL", url1, "3000", "Not Pushed"}
+			Expect(helper.GjsonMatcher(createValues, createExpected)).To(Equal(true))
+
 			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
 				if strings.Contains(output, url1) {
 					values := gjson.GetMany(output, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.host", "items.0.status.state")
-					expected := []string{"List", "url", url1, url1, "Pushed"}
+					expected := []string{"List", "URL", url1, url1, "Pushed"}
 					Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 					return true
 				}

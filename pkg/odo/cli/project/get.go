@@ -51,16 +51,20 @@ func (pgo *ProjectGetOptions) Validate() (err error) {
 	return
 }
 
-// Run runs the project get command
+// Run the project get command
 func (pgo *ProjectGetOptions) Run(cmd *cobra.Command) (err error) {
 	currentProject := pgo.Context.Project
 
 	if pgo.projectShortFlag {
 		fmt.Print(currentProject)
-	} else if log.IsJSON() {
-		machineoutput.OutputSuccess(project.GetMachineReadableFormat(currentProject, true))
-	} else {
-		log.Infof("The current project is: %v", currentProject)
+		return
+	}
+
+	log.Infof("The current project is: %v", currentProject)
+
+	if log.IsJSON() {
+		prj := project.NewProject(currentProject, true)
+		machineoutput.OutputSuccess(prj)
 	}
 
 	return

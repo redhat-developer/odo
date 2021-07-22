@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"text/tabwriter"
 
@@ -46,7 +47,7 @@ func (plo *ProjectListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo project list command
-func (plo *ProjectListOptions) Run(cmd *cobra.Command) (err error) {
+func (plo *ProjectListOptions) Run(cmd *cobra.Command) error {
 	projects, err := project.List(plo.Context)
 	if err != nil {
 		return err
@@ -55,22 +56,12 @@ func (plo *ProjectListOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(projects)
 	} else {
-
-		if len(projects.Items) == 0 {
-			return fmt.Errorf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
+		err = HumanReadableOutput(os.Stdout, projects)
+		if err != nil {
+			return err
 		}
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "ACTIVE", "\t", "NAME")
-		for _, project := range projects.Items {
-			activeMark := " "
-			if project.Status.Active {
-				activeMark = "*"
-			}
-			fmt.Fprintln(w, activeMark, "\t", project.Name)
-		}
-		w.Flush()
 	}
-	return
+	return nil
 }
 
 // NewCmdProjectList implements the odo project list command.
@@ -88,4 +79,22 @@ func NewCmdProjectList(name, fullName string) *cobra.Command {
 		},
 	}
 	return projectListCmd
+}
+
+// HumanReadableOutput outputs the list of projects in a human readable format
+func HumanReadableOutput(w io.Writer, o project.ProjectList) error {
+	if len(o.Items) == 0 {
+		return fmt.Errorf("you are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
+	}
+	wr := tabwriter.NewWriter(w, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(wr, "ACTIVE", "\t", "NAME")
+	for _, project := range o.Items {
+		activeMark := " "
+		if project.Status.Active {
+			activeMark = "*"
+		}
+		fmt.Fprintln(wr, activeMark, "\t", project.Name)
+	}
+	wr.Flush()
+	return nil
 }

@@ -336,6 +336,21 @@ func GjsonMatcher(values []gjson.Result, expected []string) bool {
 	return matched == numVars
 }
 
+// GjsonExactMatcher validates if []results from gjson.GetMany match the expected values for each json path requested
+// Values is an array of results returned by the gjson.GetMany function
+// Expected is an array of strings, defines the expected values for each of the paths requested in the gjson.GetMany function
+// For documentation about gjson see https://github.com/tidwall/gjson#get-multiple-values-at-once
+func GjsonExactMatcher(values []gjson.Result, expected []string) bool {
+	matched := 0
+	for i, v := range values {
+		if v.String() == expected[i] {
+			matched++
+		}
+	}
+	numVars := len(expected)
+	return matched == numVars
+}
+
 //SetProjectName sets projectNames based on the neame of the test file name (withouth path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
 func SetProjectName() string {
 	//Get current test filename and remove file path, file extension and replace undescores with hyphens

@@ -418,31 +418,25 @@ func TestList(t *testing.T) {
 			name:             "Case 1: Multiple projects returned",
 			wantErr:          false,
 			returnedProjects: testingutil.FakeProjects(),
-			expectedProjects: getMachineReadableFormatForList(
-				[]Project{
-					GetMachineReadableFormat("testing", false),
-					GetMachineReadableFormat("prj1", false),
-					GetMachineReadableFormat("prj2", false),
-				},
-			),
+			expectedProjects: NewProjectList([]Project{
+				NewProject("testing", false),
+				NewProject("prj1", false),
+				NewProject("prj2", false),
+			}),
 		},
 		{
 			name:             "Case 2: Single project returned",
 			wantErr:          false,
 			returnedProjects: testingutil.FakeOnlyOneExistingProjects(),
-			expectedProjects: getMachineReadableFormatForList(
-				[]Project{
-					GetMachineReadableFormat("testing", false),
-				},
-			),
+			expectedProjects: NewProjectList([]Project{
+				NewProject("testing", false),
+			}),
 		},
 		{
 			name:             "Case 3: No project returned",
 			wantErr:          false,
 			returnedProjects: &projectv1.ProjectList{},
-			expectedProjects: getMachineReadableFormatForList(
-				nil,
-			),
+			expectedProjects: NewProjectList([]Project{}),
 		},
 	}
 

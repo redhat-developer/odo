@@ -108,7 +108,7 @@ func TestGetComponentFrom(t *testing.T) {
 			if tt.isEnvInfo {
 				mockLocalConfigProvider.EXPECT().GetName().Return(tt.cmpSetting.componentName)
 
-				component := getMachineReadableFormat(tt.cmpSetting.componentName, tt.componentType)
+				component := newComponentWithType(tt.cmpSetting.componentName, tt.componentType)
 
 				mockLocalConfigProvider.EXPECT().GetNamespace().Return(tt.cmpSetting.project)
 
@@ -432,7 +432,7 @@ func TestList(t *testing.T) {
 			name:          "Case 2: no component and no config exists",
 			wantErr:       false,
 			projectExists: true,
-			output:        GetMachineReadableFormatForList([]Component{}),
+			output:        newComponentList([]Component{}),
 		},
 		{
 			name:                      "Case 3: Components are returned from the config plus and cluster",
@@ -459,7 +459,7 @@ func TestList(t *testing.T) {
 			wantErr:                 false,
 			projectExists:           false,
 			existingLocalConfigInfo: &existingSampleLocalConfig,
-			output:                  GetMachineReadableFormatForList([]Component{componentConfig2}),
+			output:                  newComponentList([]Component{componentConfig2}),
 		},
 		{
 			name:                      "Case 5: Components are returned from deployments on a kubernetes cluster",
@@ -755,7 +755,7 @@ func Test_getMachineReadableFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getMachineReadableFormat(tt.args.componentName, tt.args.componentType); !reflect.DeepEqual(got, tt.want) {
+			if got := newComponentWithType(tt.args.componentName, tt.args.componentType); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getMachineReadableFormat() = %v, want %v", got, tt.want)
 			}
 		})
@@ -842,7 +842,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetMachineReadableFormatForList(tt.args.components); !reflect.DeepEqual(got, tt.want) {
+			if got := newComponentList(tt.args.components); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getMachineReadableFormatForList() = %v, want %v", got, tt.want)
 			}
 		})

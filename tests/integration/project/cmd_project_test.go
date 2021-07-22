@@ -32,8 +32,8 @@ var _ = Describe("odo project command tests", func() {
 		projectGetJSON := helper.Cmd("odo", "project", "get", "-o", "json").ShouldPass().Out()
 		getOutputJSON, err := helper.Unindented(projectGetJSON)
 		Expect(err).Should(BeNil())
-		valuesJSON := gjson.GetMany(getOutputJSON, "kind", "status.active")
-		expectedJSON := []string{"Project", "true"}
+		valuesJSON := gjson.GetMany(getOutputJSON, "kind", "metadata.name", "status.active")
+		expectedJSON := []string{"Project", commonVar.Project, "true"}
 		Expect(helper.GjsonMatcher(valuesJSON, expectedJSON)).To(Equal(true))
 
 	})
@@ -52,6 +52,23 @@ var _ = Describe("odo project command tests", func() {
 		helper.WaitForCmdOut("odo", []string{"project", "list", "-o", "json"}, 5, true, func(output string) bool {
 			return strings.Contains(output, commonVar.Project)
 		})
+		projectListJSON := helper.Cmd("odo", "project", "list", "-o", "json").ShouldPass().Out()
+		valuesJSON := gjson.GetMany(projectListJSON, "kind")
+		expectedJSON := []string{"List"}
+		Expect(helper.GjsonMatcher(valuesJSON, expectedJSON)).To(Equal(true))
+
+		items := gjson.Get(projectListJSON, "items").Array()
+		found := false
+		for _, item := range items {
+			kind := item.Get("kind").String()
+			name := item.Get("metadata.name").String()
+			active := item.Get("status.active").String()
+			if kind == "Project" && name == commonVar.Project && active == "true" {
+				found = true
+				break
+			}
+		}
+		Expect(found).To(BeTrue())
 	})
 
 	It("should list current empty project", func() {
@@ -76,18 +93,24 @@ var _ = Describe("odo project command tests", func() {
 
 	When("creating a new project with -o json", func() {
 		var projectName string
+		var output string
 
 		BeforeEach(func() {
 			projectName = helper.RandString(6)
-			helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass()
+			output = helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass().Out()
+		})
+
+		It("should display information of created project", func() {
+			values := gjson.GetMany(output, "kind", "metadata.name", "status.active")
+			expected := []string{"Project", projectName, "true"}
+			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 		})
 
 		It("should delete project and show output in json format", func() {
 			actual := helper.Cmd("odo", "project", "delete", projectName, "-o", "json").ShouldPass().Out()
 			values := gjson.GetMany(actual, "kind", "message")
-			expected := []string{"Project", "Deleted project :"}
+			expected := []string{"Status", "Deleted project :"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-
 		})
 	})
 })
