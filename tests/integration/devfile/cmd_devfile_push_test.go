@@ -403,8 +403,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
-		///////////////////////////////////////////////////////////////////////
-
 		When("doing odo push --debug and devfile contain debugrun", func() {
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -900,8 +898,8 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
-	When("run command has dev.odo.push.path attribute", func() {
-		It("should push only the mentioned files at the appropriate remote destination", func() {
+	When("creating nodejs component, doing odo push and run command has dev.odo.push.path attribute", func() {
+		BeforeEach(func() {
 			helper.Cmd("odo", "create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -913,6 +911,8 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			helper.ReplaceString("package.json", "node server.js", "node server/server.js")
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+		})
+		It("should push only the mentioned files at the appropriate remote destination", func() {
 
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 			stdOut := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
