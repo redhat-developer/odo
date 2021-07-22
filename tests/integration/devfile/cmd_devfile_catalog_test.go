@@ -112,7 +112,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		})
 	})
 
-	When("executing catalog list components with registry that is not set up properly", func() {
+	When("adding a registry that is not set up properly", func() {
 
 		var output string
 
@@ -134,7 +134,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		})
 	})
 
-	When("executing catalog describe component with a component name with multiple components", func() {
+	When("adding multiple registries", func() {
 
 		const registryName string = "RegistryName"
 		// Use staging OCI-based registry for tests to avoid overload
