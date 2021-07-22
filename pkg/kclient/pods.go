@@ -26,7 +26,6 @@ import (
 
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
-// hideSpinner hides the spinner
 func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
 
 	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
@@ -40,8 +39,12 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 
 	klog.V(3).Infof("Waiting for %s pod", selector)
 
-	spinner := log.Spinner(waitMessage)
-	defer spinner.End(false)
+	var spinner *log.Status
+	defer func() {
+		if spinner != nil {
+			spinner.End(false)
+		}
+	}()
 
 	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
@@ -54,7 +57,8 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 	// Here we are going to start a loop watching for the pod status
 	podChannel := make(chan *corev1.Pod)
 	watchErrorChannel := make(chan error)
-	go func(spinny *log.Status) {
+	failedEvents := make(map[string]corev1.Event)
+	go func() {
 	loop:
 		for {
 			val, ok := <-w.ResultChan()
@@ -82,6 +86,15 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 				case corev1.PodFailed, corev1.PodUnknown:
 					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
 					break loop
+				default:
+					// we start in a phase different from the desired one, let's wait
+					if spinner == nil {
+						spinner = log.Spinner(waitMessage)
+						// Collect all the events in a separate go routine
+						quit := make(chan int)
+						go c.CollectEvents(selector, failedEvents, spinner, quit)
+						defer close(quit)
+					}
 				}
 			} else {
 				watchErrorChannel <- errors.New("unable to convert event object to Pod")
@@ -90,17 +103,13 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 		}
 		close(podChannel)
 		close(watchErrorChannel)
-	}(spinner)
-
-	// Collect all the events in a separate go routine
-	failedEvents := make(map[string]corev1.Event)
-	quit := make(chan int)
-	go c.CollectEvents(selector, failedEvents, spinner, quit)
-	defer close(quit)
+	}()
 
 	select {
 	case val := <-podChannel:
-		spinner.End(true)
+		if spinner != nil {
+			spinner.End(true)
+		}
 		return val, nil
 	case err := <-watchErrorChannel:
 		return nil, err
