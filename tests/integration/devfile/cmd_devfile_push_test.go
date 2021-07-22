@@ -195,7 +195,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				helper.Cmd("odo", "push", "--project", commonVar.Project, "-v4").ShouldPass()
 			})
 
-			FIt("should correctly propagate changes to the container", func() {
+			It("should correctly propagate changes to the container", func() {
 
 				// Check to see if it's been pushed (foobar.txt abd directory testdir)
 				podName = commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -210,7 +210,7 @@ var _ = Describe("odo devfile push command tests", func() {
 					helper.DeleteDir(newDirPath)
 					helper.Cmd("odo", "push", "--project", commonVar.Project, "-v4").ShouldPass()
 				})
-				FIt("should not list deleted dir and file in container", func() {
+				It("should not list deleted dir and file in container", func() {
 					podName = commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					// Then check to see if it's truly been deleted
 					stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
