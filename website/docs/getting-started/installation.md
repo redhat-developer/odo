@@ -21,7 +21,7 @@ sudo install odo /usr/local/bin/
 
 ### Installing odo on Windows
 1. Download the [odo-windows-amd64.exe](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe) file.
-2. Rename the downloaded file to odo.exe and move it to a folder of choice, for example C:\odo
+2. Rename the downloaded file to odo.exe and move it to a folder of choice, for example `C:\odo`.
 3. Add the location of odo.exe to `%PATH%` variable (refer to the steps below).
 
 #### Setting the PATH variable in Windows 10
@@ -31,12 +31,12 @@ sudo install odo /usr/local/bin/
 4. Click **New**, add the location where you copied the odo binary (e.g. `C:\odo` in [Step 2 of Installation](#installing-odo-on-windows) into the field or click **Browse** and select the directory, and click **OK**.
 
 #### Setting the PATH variable in Windows 7/8
-1. Click **Start** and in the Search box types `Advance System Settings`.
+1. Click **Start** and in the Search box types `Advanced System Settings`.
 2. Select **Advanced systems settings** and click the **Environment Variables** button at the bottom.
-3. Select the **Path** variable from the **System variable** section and click **Edit**.
-4. Scroll to the end of the **Variable Value** and add `;` followed by the location where you copied the odo binary (e.g. `C:\odo` in [Step 2 of Installation](#installing-odo-on-windows) and click **OK**.
-5. Click **OK** to close the **Environment Variable** dialog.
-6. Click **OK** to close the **Systems Properties** dialog.
+3. Select the **Path** variable from the **System variables** section and click **Edit**.
+4. Scroll to the end of the **Variable value** and add `;` followed by the location where you copied the odo binary (e.g. `C:\odo` in [Step 2 of Installation](#installing-odo-on-windows) and click **OK**.
+5. Click **OK** to close the **Environment Variables** dialog.
+6. Click **OK** to close the **System Properties** dialog.
 
 ## Installing odo in Visual Studio Code (VSCode)
 The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) uses both odo and oc binary to interact with Kubernetes or OpenShift cluster.
