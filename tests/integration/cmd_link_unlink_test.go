@@ -152,15 +152,10 @@ var _ = Describe("odo link and unlink command tests", func() {
 				})
 
 				It("should successfully link", func() {
-					By("ensuring that the proper envFrom entry was created", func() {
-						envFromOutput := oc.GetEnvFromEntry(frontendComp, "app", commonVar.Project, "deployment")
-						Expect(envFromOutput).To(ContainSubstring(backendComp))
-						helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
-					})
 					By("finding the link in odo describe", func() {
 						checkDescribe(frontendContext, backendComp, true, true)
 					})
-					By("finding the linked environment variable", func() {
+					By("finding the binding filepath", func() {
 						stdOut := helper.Cmd("odo", "exec", "--", "ls", "/bindings").ShouldPass().Out()
 						Expect(stdOut).To(Not(ContainSubstring(backendComp)))
 					})
