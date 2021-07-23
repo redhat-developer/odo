@@ -9,18 +9,18 @@ odo can be used as a CLI tool and as an IDE plugin; it can be run on Linux, Wind
 odo supports amd64 architecture for Linux, Mac and Windows.
 Additionally, it also supports amd64, arm64, s390x, and ppc64le architectures for Linux.
 
-See the [release page](https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/) for more information.
+See the [release page](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/) for more information.
 
 ### Installing odo on Linux/Mac
 ```shell
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
-curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-$OS-$ARCH -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-$OS-$ARCH -o odo
 sudo install odo /usr/local/bin/
 ```
 
 ### Installing odo on Windows
-1. Download the [odo-windows-amd64.exe](https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe) file.
+1. Download the [odo-windows-amd64.exe](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe) file.
 2. Rename the downloaded file to odo.exe and move it to a folder of choice, for example C:\odo
 3. Add the location of odo.exe to `%PATH%` variable (refer to the steps below).
 
