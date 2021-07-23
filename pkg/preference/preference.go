@@ -53,7 +53,7 @@ const (
 	// PushTimeoutSetting is the name of the setting controlling PushTimeout
 	PushTimeoutSetting = "PushTimeout"
 
-	// ExperimentalSetting is the name of the setting confrolling exposure of features in development/experimental mode
+	// ExperimentalSetting is the name of the setting controlling exposure of features in development/experimental mode
 	ExperimentalSetting = "Experimental"
 
 	// ExperimentalDescription is human-readable description for the experimental setting
