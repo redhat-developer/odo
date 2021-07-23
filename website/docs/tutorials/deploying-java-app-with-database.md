@@ -3,58 +3,58 @@ title: Deploying a Java OpenLiberty application with PostgreSQL
 sidebar_position: 1
 ---
 
-This scenario illustrates binding an `odo` managed Java MicroServices JPA application to an in-cluster Operator managed PostgreSQL Database in the minikube environment.
-
-### Pre-requisites
-
-1. `odo` is installed. See [Getting Started > Installation](../getting-started/installation.md).
-2. minikube is installed and configured. See [Getting Started > Cluster Setup > Kubernetes](../getting-started/cluster-setup/kubernetes.md).
-
-## Actions to be performed by a cluster admin and application developer
+This scenario illustrates deploying a Java application with odo and linking it to an in-cluster PostgreSQL service in the minikube environment.
 
 In this example there are two roles:
 
-1. Cluster Admin - Installs the Operators to the cluster
-2. Application Developer - Imports a Java MicroServices JPA application, creates a DB instance, creates a request to bind the application and DB (to connect the DB and the application).
- 
+1. Cluster Admin - Prepare the cluster by installing the required operators into the cluster
+2. Application Developer - Imports a Java application, creates a Database instance, and connect the application to the Database instance.
 
-### Cluster admin
+## Cluster admin
 ---
+
+This section assumes that you have installed minikube and configured it. See [Getting Started > Cluster Setup > Kubernetes](../getting-started/cluster-setup/kubernetes.md).
 
 The cluster admin must install two Operators into the cluster:
 
-1. Service Binding Operator
-2. A Backing Service Operator
+1. Operator Backed Service
+2. Service Binding Operator
 
-A Backing Service Operator that is "bind-able," in other
-words a Backing Service Operator that exposes binding information in secrets, config maps, status, and/or spec attributes. The Backing Service Operator may represent a database or other services required by applications. We will use Dev4Devs PostgreSQL Operator found in the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case.
+An _Operator Backed Service_ is an operator that helps in deploying instances of a given service, for example PostgreSQL, MySQL, Redis.
 
-#### Installing the Service Binding Operator
+Furthermore, these operators are "bind-able" as they expose information necessary for an application to connect to their instances.
 
-* Run the following `kubectl` command to make the Service Binding Operator available in all namespaces on your minikube:
-    ```shell
-    $ kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
-    ```
-    Refer to [Getting Started > Cluster Setup > Operators](../getting-started/cluster-setup/operators.md) for more information on installing operators.
+We will use Dev4Devs PostgreSQL Operator found in the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case.
 
-#### Installing the database operator
+Service Binding Operator is an operator that helps in easily binding an application to other Operator Backed Services. It accomplishes this through automatically collecting binding information and sharing with an application to bind it with operator managed backing services
+
+### Installing the Operator Backed Service
 
 * Run the following `kubectl` command to make the PostgreSQL Operator available in `my-postgresql-operator-dev4devs-com` namespace of your minikube cluster:
 ```shell
   $ kubectl create -f https://operatorhub.io/install/postgresql-operator-dev4devs-com.yaml
   ```
 
-**NOTE**: The `my-postgresql-operator-dev4devs-com` Operator will be installed in the `my-postgresql-operator-dev4devs-com` namespace and will be usable from this namespace only.
+**Note**: The `my-postgresql-operator-dev4devs-com` Operator will be installed in the `my-postgresql-operator-dev4devs-com` namespace and will be usable from this namespace only.
 
-### Application Developer
+### Installing the Service Binding Operator
+* Run the following `kubectl` command to make the Service Binding Operator available in all namespaces on your minikube:
+    ```shell
+    $ kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
+    ```
+  Refer to [Getting Started > Cluster Setup > Operators](../getting-started/cluster-setup/operators.md) for more information on installing operators.
+
+## Application Developer
 ---
+
+This section assumes that you have installed `odo`. See [Getting Started > Installation](../getting-started/installation.md).
 
 Since the PostgreSQL Operator installed in above step is available only in `my-postgresql-operator-dev4devs-com` namespace, ensure that `odo` uses this namespace to perform any tasks:
 
 ```shell
 $ odo project set my-postgresql-operator-dev4devs-com
 ```
-### Importing the demo Java MicroService JPA application
+## Importing the demo Java MicroService JPA application
 
 In this example we will use odo to manage a sample [Java MicroServices JPA application](https://github.com/OpenLiberty/application-stack-samples.git).
 
@@ -146,7 +146,7 @@ URL/CreatePerson.xhtml' and enter a user's name and age data using the form.
 
 Note that the entry of any data does not result in the data being displayed when you click on the "View Persons Record List" link.
 
-#### Creating a database to be used by the sample application
+### Creating a database to be used by the sample application
 
 You can use the default configurations of the PostgreSQL Operator to start a Postgres database from it. But since our app uses few specific configuration values, lets make sure they are properly populated in the database service we start.
 
@@ -181,7 +181,7 @@ You can use the default configurations of the PostgreSQL Operator to start a Pos
 
     This action will create a database instance pod in the `my-postgresql-operator-dev4devs-com` namespace. The application will be configured to use this database.
 
-#### Binding the database and the application
+## Binding the database and the application
 
 Now, the only thing that remains is to connect the DB and the application. We will use odo to create a link to the Dev4Devs PostgreSQL Database Operator in order to access the database connection information.
 
