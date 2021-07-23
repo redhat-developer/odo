@@ -69,7 +69,7 @@ $ odo preference unset updatednotification
 Global preference was successfully updated
 ```
 
-Unsetting a preference key sets it back to its default value.
+Unsetting a preference key sets it to an empty value in the preference file. odo will use the [default value](./configure#preference-key-table) for such configuration.
 
 ### Preference Key Table
 
