@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -53,17 +54,20 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 		project = &projects[0]
 		log.Warning("There are multiple projects in this devfile but none have been specified in --starter. Downloading the first: " + project.Name)
 	} else { //If the user has specified a project
+		var availableNames []string
+
 		projectFound := false
 		for indexOfProject, projectInfo := range projects {
+			availableNames = append(availableNames, projectInfo.Name)
 			if projectInfo.Name == projectPassed { //Get the index
 				project = &projects[indexOfProject]
 				projectFound = true
-				break
 			}
 		}
 
 		if !projectFound {
-			return nil, errors.Errorf("the project: %s specified in --starter does not exist", projectPassed)
+			availableNamesString := strings.Join(availableNames, ",")
+			return nil, errors.Errorf("the project: %s specified in --starter does not exist, available projects: %s", projectPassed, availableNamesString)
 		}
 	}
 
