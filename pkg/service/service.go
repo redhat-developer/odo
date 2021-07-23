@@ -1010,7 +1010,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 			return false, err
 		}
 
-		if !csvSupported || (d.OriginalCRD["kind"] == "ServiceBinding" && !serviceBindingSupported) {
+		if !csvSupported || (isLinkResource(d.OriginalCRD["kind"].(string)) && !serviceBindingSupported) {
 			// operator hub is not installed on the cluster
 			// or it's a service binding related resource and service binding operator is not installed on the cluster
 			continue
@@ -1139,7 +1139,7 @@ func PushWithoutOperator(client *kclient.Client, k8sComponents []devfile.Compone
 			return false, err
 		}
 
-		if d.OriginalCRD["kind"] != "ServiceBinding" {
+		if !isLinkResource(d.OriginalCRD["kind"].(string)) {
 			// not a service binding object, thus continue
 			continue
 		}
@@ -1231,7 +1231,7 @@ func PushWithoutOperator(client *kclient.Client, k8sComponents []devfile.Compone
 				continue
 			}
 
-			if !csvSupport && serviceBinding.Spec.Services[0].Kind != "Service" {
+			if !csvSupport && !isLinkResource(serviceBinding.Spec.Services[0].Kind) {
 				continue
 			}
 
@@ -1326,7 +1326,7 @@ func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8s
 			return err
 		}
 
-		if d.OriginalCRD["kind"] == "ServiceBinding" && !serviceBindingSupported {
+		if isLinkResource(d.OriginalCRD["kind"].(string)) && !serviceBindingSupported {
 			continue
 		}
 
