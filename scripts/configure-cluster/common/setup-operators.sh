@@ -28,6 +28,8 @@ install_service_binding_operator(){
     name: $3
     source: $4
     sourceNamespace: $5
+    startingCSV: service-binding-operator.v0.8.0
+    installPlanApproval: Manual
 EOF
 }
 
