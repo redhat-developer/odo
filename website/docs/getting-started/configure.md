@@ -18,9 +18,9 @@ values={[
 {label: 'Windows', value: 'windows'},
 {label: 'Mac', value: 'mac'},
 ]}>
-<TabItem value="linux">/home/foo/.odo/preference.yaml</TabItem>
-<TabItem value="windows">C:\\Users\foo\.odo\preference.yaml</TabItem>
-<TabItem value="mac">/Users/foo/.odo/preference.yaml</TabItem>
+<TabItem value="linux">/home/userName/.odo/preference.yaml</TabItem>
+<TabItem value="windows">C:\\Users\userName\.odo\preference.yaml</TabItem>
+<TabItem value="mac">/Users/userName/.odo/preference.yaml</TabItem>
 </Tabs>
 
 ---
