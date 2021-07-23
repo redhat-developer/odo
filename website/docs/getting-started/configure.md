@@ -6,7 +6,7 @@ sidebar_position: 6
 
 The global settings for odo can be found in `preference.yaml` file; which is located by default in the `.odo` directory of the user's HOME directory.
 
-Example -
+Example:
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -18,9 +18,9 @@ values={[
 {label: 'Windows', value: 'windows'},
 {label: 'Mac', value: 'mac'},
 ]}>
-<TabItem value="linux">/home/user/foo/myProject/.odo/preference.yaml</TabItem>
-<TabItem value="windows">C:\\myProject\.odo\preference.yaml</TabItem>
-<TabItem value="mac">/home/user/foo/myProject/.odo/preference.yaml</TabItem>
+<TabItem value="linux">/home/foo/.odo/preference.yaml</TabItem>
+<TabItem value="windows">C:\\Users\foo\.odo\preference.yaml</TabItem>
+<TabItem value="mac">/Users/foo/.odo/preference.yaml</TabItem>
 </Tabs>
 
 ---
@@ -32,7 +32,7 @@ To view the current configuration, run `odo preference view`.
 ```shell
 odo preference view
 ```
-Example -
+Example:
 ```shell
 $ odo preference view
 PARAMETER             CURRENT_VALUE
@@ -50,7 +50,7 @@ To set a value for a preference key, run `odo preference set <key> <value>`.
 ```shell
 odo preference set updatenotification false
 ```
-Example -
+Example:
 ```shell
 $ odo preference set updatenotification false
 Global preference was successfully updated
@@ -62,7 +62,7 @@ To unset a value of a preference key, run `odo preference unset <key>`; use `-f`
 ```shell
 odo preference unset updatednotification
 ```
-Example -
+Example:
 ```shell
 $ odo preference unset updatednotification
 ? Do you want to unset updatenotification in the preference (y/N) y
