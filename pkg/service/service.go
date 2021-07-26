@@ -1061,7 +1061,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 
 		name, _ := d.GetServiceNameFromCRD() // ignoring error because invalid yaml won't be inserted into devfile through odo
 		if isLinkResource(cr) {
-			log.Successf("Created link %q on the cluster; component will be restarted", name)
+			log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
 		} else {
 			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{kind, name}, "/"), "odo link -h")
 		}
