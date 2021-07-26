@@ -38,12 +38,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
-		When("setting git conifg", func() {
-			remoteURL := ""
+		When("setting git conifg and running odo push", func() {
+			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
 			BeforeEach(func() {
 				helper.Cmd("git", "init").ShouldPass()
 				remote := "origin"
-				remoteURL = "https://github.com/odo-devfiles/nodejs-ex"
 				helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
